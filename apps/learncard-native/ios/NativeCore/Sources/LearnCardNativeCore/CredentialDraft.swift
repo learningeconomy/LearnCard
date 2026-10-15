@@ -9,11 +9,14 @@ public struct CredentialDraft: Codable, Sendable {
     public let criteria: String
     public let artworkURL: URL?
     public let recipient: String?
+    public let details: CredentialDraftDetails?
 
     public init(requestID: String = UUID().uuidString, title: String, summary: String, kind: CredentialKind,
-                achievementType: String = "Badge", criteria: String = "", artworkURL: URL? = nil, recipient: String? = nil) {
+                achievementType: String = "Badge", criteria: String = "", artworkURL: URL? = nil, recipient: String? = nil,
+                details: CredentialDraftDetails? = nil) {
         self.requestID = requestID; self.title = title; self.summary = summary; self.kind = kind
         self.achievementType = achievementType; self.criteria = criteria; self.artworkURL = artworkURL; self.recipient = recipient
+        self.details = details
     }
 }
 

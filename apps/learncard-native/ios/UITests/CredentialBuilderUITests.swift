@@ -61,6 +61,12 @@ import XCTest
     func testArabicLargeTextDarkBuilderAndNestedRecipientPicker() {
         let app = openBuilder(extra: ["--locale", "ar", "--large-type", "--preview-dark"])
         XCTAssertTrue(app.staticTexts["أضف بهجة إلى يوم أحدهم."].exists)
+        let format = app.buttons["draft-format"]; reveal(format, in: app); format.tap()
+        XCTAssertTrue(app.scrollViews["builder-format-sheet"].waitForExistence(timeout: 5))
+        let option = app.buttons["builder-option-Certificate"]
+        XCTAssertTrue(option.label.contains("شهادة")); XCTAssertGreaterThanOrEqual(option.frame.height, 44)
+        capture(app, "Arabic accessibility designed format sheet")
+        app.buttons["builder-selector-cancel"].tap()
         let next = app.buttons["create-next"]
         XCTAssertEqual(next.label, "متابعة")
         XCTAssertGreaterThanOrEqual(next.frame.height, 44)
@@ -91,6 +97,53 @@ import XCTest
         XCTAssertTrue(confirm.waitForExistence(timeout: 5)); XCTAssertTrue(confirm.isHittable)
         XCTAssertEqual(confirm.label, "إنشاء وإرسال")
         capture(app, "Arabic accessibility credential review")
+    }
+
+    func testOptionalEvidenceAndActivityDetailsReachReviewWithoutBeingClearedOnBack() {
+        let app = openBuilder()
+        let title = app.textFields["draft-title"]; reveal(title, in: app); title.tap(); title.typeText("Team contribution")
+        let summary = app.descendants(matching: .any)["draft-summary"].firstMatch
+        reveal(summary, in: app); summary.tap(); summary.typeText("Helping everyone learn.")
+        app.toolbars.buttons["Done"].tap()
+        let more = app.buttons["draft-criteria-section"]; reveal(more, in: app); more.tap()
+        fill("draft-criteria-url", with: "https://example.org/criteria", app: app)
+        fill("draft-field-of-study", with: "Design", app: app)
+        fill("draft-role", with: "Team mentor", app: app)
+        fill("draft-term", with: "Autumn", app: app)
+        let start = app.buttons["draft-date-start"]; reveal(start, in: app); start.tap()
+        XCTAssertTrue(app.buttons["builder-date-confirm"].waitForExistence(timeout: 5)); app.buttons["builder-date-confirm"].tap()
+        XCTAssertFalse(start.label.contains("Add date"))
+        let expiry = app.buttons["draft-date-expiry"]; reveal(expiry, in: app); expiry.tap()
+        app.buttons["builder-date-cancel"].tap()
+        XCTAssertTrue(expiry.label.contains("Add date"))
+        expiry.tap(); app.buttons["builder-date-confirm"].tap()
+        let addLink = app.buttons["draft-add-evidence"]; reveal(addLink, in: app); addLink.tap()
+        let url = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "draft-evidence-url-")).firstMatch
+        reveal(url, in: app); url.tap(); url.typeText("file:///private/work")
+        app.toolbars.buttons["Done"].tap()
+        XCTAssertFalse(app.buttons["create-next"].isEnabled)
+        let remove = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "draft-evidence-remove-")).firstMatch
+        reveal(remove, in: app); remove.tap()
+        XCTAssertTrue(app.buttons["create-next"].isEnabled)
+        reveal(addLink, in: app); addLink.tap()
+        reveal(url, in: app); url.tap(); url.typeText("https://example.org/project")
+        app.toolbars.buttons["Done"].tap()
+        let name = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "draft-evidence-name-")).firstMatch
+        reveal(name, in: app); name.tap(); name.typeText("Team project"); app.toolbars.buttons["Done"].tap()
+        app.buttons["create-next"].tap(); app.buttons["create-next"].tap()
+        let review = app.staticTexts["Extra details"]
+        reveal(review, in: app)
+        XCTAssertTrue(app.staticTexts["Team mentor"].exists)
+        XCTAssertTrue(app.staticTexts["https://example.org/project"].exists)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Optional evidence and activity review"; shot.lifetime = .keepAlways; add(shot)
+        app.buttons["create-back"].tap(); app.buttons["create-back"].tap()
+        XCTAssertEqual(app.textFields["draft-role"].value as? String, "Team mentor")
+        XCTAssertEqual(url.value as? String, "https://example.org/project")
+    }
+
+    private func fill(_ id: String, with value: String, app: XCUIApplication) {
+        let field = app.textFields[id]; reveal(field, in: app); field.tap(); field.typeText(value)
+        app.toolbars.buttons["Done"].tap()
     }
 
     // A partly visible element can be "hittable" even when its center is under a fixed tray.

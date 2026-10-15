@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **276 cases** (110 Bun, 102 Swift, 64 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
+Current configured suite: **285 cases** (114 Bun, 106 Swift, 65 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
 
 The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -11,6 +11,17 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Mockup fidelity and optional creator details — October 15
+
+- All **114 Bun** cases pass (`artifacts/builder-refined-bun-final.log`). Four added cases cover optional fields surviving actual SDK signing/proof verification in web-compatible locations; blank-field omission; invalid links/dates/limits; and identical retry fingerprints after nested key reordering while preserving meaningful edits.
+- All **106 Swift** cases pass (`artifacts/builder-refined-core.log`: 77 XCTest + 29 Swift Testing). Four added cases cover ISO date/evidence encoding and legacy drafts, optional validation, inclusive local expiry across the 25-hour DST day, and invalid sample creation leaving state unchanged.
+- Source contracts pass (`artifacts/builder-refined-source-contracts-final.log`); 14 existing dependency diagnostics remain scoped to their owning packages.
+- All **seven focused UI** cases pass (`artifacts/builder-refined-ui-final.xcresult`): the four creator cases, existing self-create/sample-send, creation-for-someone/template separation, and designed Format/Category sheets. Checks cover actual sheet rows/selected state/cancel, native photo-picker cancellation, Back/criteria retention, recipient cancellation, optional fields/date confirm/cancel/invalid evidence/removal/review, and actual Arabic accessibility/dark nested selection/review. The ordinary phone and accessibility screenshots are exported in `artifacts/builder-refined-attachments/`, with selected screens in `design/credential-builder-refined-*.png`.
+- Live read-only review caught a narrow two-column tile splitting Achievements within the word. Giving the selected value the tile's full width retains two columns and readable type. Both affected selector and Arabic/accessibility/dark cases pass again (`artifacts/builder-refined-tile-ui.xcresult`, two passed).
+- Final Release compilation and Debug review installation pass (`artifacts/builder-refined-release.log`, `artifacts/builder-refined-review-install.log`). All five installed artifact hashes match (`artifacts/builder-refined-install-proof.json`). The separate checks simulator is shut down after tests.
+
+The first app compilation caught a mismatched local illustration helper; the first UI compilation caught a test variable shadowing XCTest's attachment method. Both were corrected before the passing UI run. There were no runtime test failures in that seven-case run. A final internal retry-fingerprint refinement changes no SwiftUI behavior; the complete 114-case Bun run covers its production wiring, and review builds bundle it. This is targeted UI verification, rather than a full local 285-case run. Private configuration is preserved/restored; samples/disposable SDK identities make no real-account mutations. Live authoring/upload and human VoiceOver/physical-device review remain separate. See [field and validation contracts](CREDENTIAL_BUILDER.md).
 
 ## Credential creator — October 15
 

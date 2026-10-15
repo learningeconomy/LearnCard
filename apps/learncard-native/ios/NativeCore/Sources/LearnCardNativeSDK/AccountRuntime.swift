@@ -82,7 +82,8 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         try await command("create", input: ["title": title, "summary": summary, "kind": kind.rawValue])
     }
     public func create(draft: CredentialDraft) async throws -> CollectionSnapshot {
-        let input = try JSONSerialization.jsonObject(with: JSONEncoder().encode(draft)) as? [String: Any] ?? [:]
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let input = try JSONSerialization.jsonObject(with: encoder.encode(draft)) as? [String: Any] ?? [:]
         return try await command("createDraft", input: input)
     }
     public func creations(cursor: String? = nil) async throws -> CreationPage {

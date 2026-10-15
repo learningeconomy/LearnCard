@@ -7,7 +7,11 @@ import {
     type PreparedShare,
 } from '../../../apps/learn-card-app/src/components/share-links/shareLinkFlow';
 import type { ShareLinkOperationKeyInput } from '@learncard/types';
-import { buildNativeTemplate, type NativeCredentialDraft } from './credential-draft';
+import {
+    buildNativeTemplate,
+    fingerprintNativeDraft,
+    type NativeCredentialDraft,
+} from './credential-draft';
 import { credentialCategoryForDisplay } from './credential-category';
 import { validateCollectionCursor } from './collection-pagination';
 import { nativeProfileUpdate } from './profile-update';
@@ -478,7 +482,7 @@ const commands = {
         const recipient = input.recipient?.trim() || wallet.id.did();
         if (input.recipient && !(await wallet.invoke.getProfile(recipient)))
             throw new Error('Recipient unavailable');
-        const fingerprint = JSON.stringify(input);
+        const fingerprint = fingerprintNativeDraft(input);
         let saved = drafts.get(input.requestID);
         if (saved && saved.fingerprint !== fingerprint)
             throw new Error('Draft changed during delivery');

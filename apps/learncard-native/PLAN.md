@@ -1,8 +1,12 @@
 # LearnCard native client plan
 
+## Mockup fidelity and richer optional details — October 15
+
+The creator now includes the approved plane/rays/card marks, integrated artwork/title preview, connected step indicator and side-by-side recipient choices. Format and Category use custom illustrated bottom selection sheets; the iOS confirmation-dialog bubble was explicitly rejected. More details now carries criteria links, supporting evidence, study/role/term, activity dates and expiry into the real signed credential, with portable dates and stable retry matching. See [web-field mapping](CREDENTIAL_BUILDER.md) and [refined native screenshots](design/CREDENTIAL_BUILDER_BRIEF.md).
+
 ## Illustrated credential creator — October 15
 
-The post-motion design pass replaces the plain Form with an artwork-led draft, persistent labels and character limits, colored format/category action sheets, illustrated recipient choices and a precise review before creating. A fixed action tray, focused-field scrolling and explicit nested-modal locale/RTL/text-size inheritance support native editing. Existing issuance, artwork upload and delivery contracts remain. See [flow contracts](CREDENTIAL_BUILDER.md) and [concept/prompts and native screenshots](design/CREDENTIAL_BUILDER_BRIEF.md). Full semantic-category authoring stays a separate SDK builder update.
+The post-motion design pass replaces the plain Form with an artwork-led draft, persistent labels and character limits, colored format/category controls opening designed selection sheets, illustrated recipient choices and a precise review before creating. A fixed action tray, focused-field scrolling and explicit nested-modal locale/RTL/text-size inheritance support native editing. Existing issuance, artwork upload and delivery contracts remain. See [flow contracts](CREDENTIAL_BUILDER.md) and [concept/prompts and native screenshots](design/CREDENTIAL_BUILDER_BRIEF.md). Full semantic-category authoring stays a separate SDK builder update.
 
 ## Expressive account transitions — October 15
 

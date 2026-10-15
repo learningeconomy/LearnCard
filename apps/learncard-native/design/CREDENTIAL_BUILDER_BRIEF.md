@@ -6,7 +6,7 @@ The user found the three-step creator drab after the account-motion pass. The bu
 
 ## Native implementation
 
-Use a compact numbered step indicator, an artwork-led credential canvas, persistent field labels and a fixed action tray. The category sets the credential's Colorful panel; the format and category selectors remain native action sheets. The title/description are required, with their actual 100/1,000-character limits; optional criteria retain their 2,000-character limit. Choose Myself or an explicitly selected LearnCard member, then review the actual draft, delivery and reuse behavior before creating anything.
+Use a compact numbered step indicator, an artwork-led credential canvas, persistent field labels and a fixed action tray. The category sets the credential's Colorful panel; the format and category selectors now open custom illustrated selection sheets. The title/description are required, with their actual 100/1,000-character limits; criteria retain their 2,000-character limit, with further optional evidence/activity/date details. Choose Myself or an explicitly selected LearnCard member, then review the actual draft, delivery and reuse behavior before creating anything.
 
 The mockup is composition guidance. The implementation uses navy text on bright panels, adaptive white/charcoal surfaces, existing bold SVG category artwork and the round smiley placeholder. It does not crop generated art or present fictional Alex details as a live account. Real selected artwork replaces the illustration. Review includes actual criteria and the public-artwork disclosure. It promises delivery to the Inbox, not push notifications. The final title is “One last look” so it also fits self-issued credentials.
 
@@ -14,7 +14,7 @@ Large text stacks the credential artwork/text and selectors. Long labels wrap; t
 
 The visual pass keeps the existing three authoring kinds and seven credential formats. Full semantic-category authoring, such as Qualifications and Portfolio, still needs a separate SDK builder contract update; Collection already displays those categories correctly. Original signed credential data is unaffected. See [flow and verification](../CREDENTIAL_BUILDER.md).
 
-## Actual simulator screens
+## First-pass simulator screens
 
 These are production SwiftUI views with unsigned sample data, rather than generated screens:
 
@@ -31,3 +31,19 @@ Design a polished high-fidelity three-screen iPhone UI concept board for the Lea
 ```
 
 Built-in image generation; no CLI/API fallback. The source board is saved here rather than treated as evidence of a shipped screen. Simulator screenshots and focused regression results are recorded separately in [TESTING](../TESTING.md).
+
+## Follow-up: preserve the invitation and illustration
+
+The user found the first implementation less dynamic than this board and specifically requested the plane, line marks and two-column controls. The refined native version adds the editable plane, pink/yellow rays and star/heart card marks, a connected dot step indicator, integrated artwork/title editing, and side-by-side colored recipient choices. The design preserves larger-text adaptations instead of hiding data to match a screenshot.
+
+The system confirmation-dialog selector was rejected because iOS 26 presents it as a floating bubble. It is replaced with a custom bottom sheet containing illustrated descriptive option rows and explicit current selection. More details now includes meaningful web fields, all reviewed and serialized into the signed credential. See [mapping and validation](../CREDENTIAL_BUILDER.md). No new image generation was needed for this refinement: the approved board is the reference, and shipping additions extend the original SVG illustration set.
+
+### Current refined simulator screens
+
+- [Design with integrated artwork and doodles](credential-builder-refined-design.png)
+- [Recipient with paper plane and two colored choices](credential-builder-refined-recipient.png)
+- [Review](credential-builder-refined-review.png)
+- [Format selection sheet](credential-builder-refined-format-sheet.png)
+- [Category selection sheet](credential-builder-refined-category-sheet.png)
+- [Optional details in Review](credential-builder-refined-optional-review.png)
+- [Arabic/accessibility/dark format sheet](credential-builder-refined-arabic-format.png)

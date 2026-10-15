@@ -14,6 +14,7 @@ struct CreateView: View {
     @State private var kind = CredentialKind.achievement
     @State private var achievementType = "Badge"
     @State private var criteria = ""
+    @State private var details = CredentialDraftDetails()
     @State private var step = 0
     @State private var forMe = true
     @State private var recipient: AccountRecipient?
@@ -28,13 +29,12 @@ struct CreateView: View {
     @State private var uploadedURL: URL?
     @State private var requestID = UUID().uuidString
     @State private var localError: String?
-    @FocusState private var focused: Field?
-    private enum Field: Hashable { case title, summary, criteria }
+    @FocusState private var focused: BuilderField?
 
     private var detailsValid: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        title.count <= 100 && summary.count <= 1000 && criteria.count <= 2000 && !preparing
+        title.count <= 100 && summary.count <= 1000 && criteria.count <= 2000 && details.validationIssue == nil && !preparing
     }
     private var ready: Bool { detailsValid && (forMe || recipient != nil) }
     private var preview: Credential {
@@ -90,6 +90,7 @@ struct CreateView: View {
             .onChange(of: kind) { _, _ in requestID = UUID().uuidString }
             .onChange(of: achievementType) { _, _ in requestID = UUID().uuidString }
             .onChange(of: criteria) { _, _ in requestID = UUID().uuidString }
+            .onChange(of: details) { _, _ in requestID = UUID().uuidString }
             .onChange(of: forMe) { _, _ in requestID = UUID().uuidString }
             .onChange(of: recipient) { _, _ in requestID = UUID().uuidString }
             .onChange(of: photo) { _, item in prepare(item) }
@@ -103,31 +104,9 @@ struct CreateView: View {
     }
 
     private var design: some View {
-        // PhotosPicker's label builder is nonisolated; capture immutable display values.
-        let isPreparing = preparing
-        let imageTitle = NativeText.text(preparing ? "builder.preparingPhoto" : jpeg == nil ? "builder.addImage" : "builder.changeImage")
-        return Group {
+        Group {
             BuilderHeading(title: NativeText.text("builder.designTitle"), detail: NativeText.text("builder.designDetail"))
-            VStack(alignment: .leading, spacing: 16) {
-                draftCard(compact: false)
-                HStack(alignment: .center) {
-                    PhotosPicker(selection: $photo, matching: .images, photoLibrary: .shared()) {
-                        HStack(spacing: 8) {
-                            if isPreparing { ProgressView().tint(Palette.ink) }
-                            else { Image("DrawnPencil").resizable().scaledToFit().frame(width: 24, height: 24) }
-                            Text(imageTitle)
-                                .font(.subheadline.weight(.semibold))
-                        }.padding(.horizontal, 14).frame(minHeight: 44)
-                            .background(Palette.surface, in: Capsule())
-                    }.buttonStyle(.plain).disabled(preparing).accessibilityIdentifier("draft-artwork")
-                    Spacer(minLength: 8)
-                    if jpeg != nil {
-                        Button(NativeText.text("builder.removeImage"), role: .destructive) {
-                            jpeg = nil; photo = nil; uploadedURL = nil; requestID = UUID().uuidString
-                        }.font(.footnote).frame(minHeight: 44).disabled(preparing)
-                    }
-                }
-            }
+            designCanvas
             VStack(alignment: .leading, spacing: 16) {
                 Text(NativeText.text("builder.details")).font(.title3.bold())
                 Text(NativeText.text("builder.required")).font(.footnote).foregroundStyle(Palette.secondary)
@@ -137,14 +116,14 @@ struct CreateView: View {
                         TextField(NativeText.text("builder.titlePlaceholder"), text: $title)
                             .font(.body).focused($focused, equals: .title).submitLabel(.next)
                             .onSubmit { focused = .summary }.accessibilityIdentifier("draft-title")
-                    }.id(Field.title)
+                    }.id(BuilderField.title)
                     Divider()
                     VStack(alignment: .leading, spacing: 12) {
                         fieldLabel("builder.description", count: summary.count, limit: 1000)
                         TextField(NativeText.text("builder.descriptionPlaceholder"), text: $summary, axis: .vertical)
                             .font(.body).lineLimit(3...6).focused($focused, equals: .summary)
                             .accessibilityIdentifier("draft-summary")
-                    }.id(Field.summary)
+                    }.id(BuilderField.summary)
                 }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
             }
             if textSize.isAccessibilitySize {
@@ -159,8 +138,8 @@ struct CreateView: View {
                 } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(NativeText.text("builder.criteriaHeading")).font(.headline)
-                            Text(NativeText.text("builder.optional")).font(.footnote).foregroundStyle(Palette.secondary)
+                            Text(NativeText.text("builder.moreDetails")).font(.headline)
+                            Text(NativeText.text("builder.moreDetailsHint")).font(.footnote).foregroundStyle(Palette.secondary)
                         }
                         Spacer(minLength: 8)
                         Image(systemName: showCriteria ? "chevron.up" : "chevron.down").font(.caption.weight(.semibold))
@@ -172,7 +151,8 @@ struct CreateView: View {
                         fieldLabel("builder.criteria", count: criteria.count, limit: 2000)
                         TextField(NativeText.text("builder.criteriaPlaceholder"), text: $criteria, axis: .vertical)
                             .lineLimit(2...5).focused($focused, equals: .criteria).accessibilityIdentifier("draft-criteria")
-                    }.id(Field.criteria)
+                    }.id(BuilderField.criteria)
+                    BuilderOptionalDetails(details: $details, focus: $focused)
                 }
             }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
         }
@@ -182,35 +162,23 @@ struct CreateView: View {
         Button { focused = nil; showFormat = true } label: {
             BuilderSelector(label: NativeText.text("builder.format"), value: formatName(achievementType), symbol: "DrawnCredential", tint: Palette.blueCard)
         }.buttonStyle(.plain).accessibilityIdentifier("draft-format")
-            .confirmationDialog(NativeText.text("builder.formatDialog"), isPresented: $showFormat, titleVisibility: .visible) {
-                ForEach(["Badge", "Certificate", "Course", "Competency", "Membership", "License", "MicroCredential"], id: \.self) { format in
-                    Button(formatName(format)) { achievementType = format }
-                }
-                Button(NativeText.literal("Cancel"), role: .cancel) {}
-            }
+            .sheet(isPresented: $showFormat) { BuilderSelectionSheet(selection: .format, format: $achievementType, category: $kind) }
     }
     private var categorySelector: some View {
         Button { focused = nil; showCategory = true } label: {
             BuilderSelector(label: NativeText.literal("Category"), value: categoryName, symbol: "DrawnCollection", tint: tint)
         }.buttonStyle(.plain).accessibilityIdentifier("draft-category")
-            .confirmationDialog(NativeText.text("builder.categoryDialog"), isPresented: $showCategory, titleVisibility: .visible) {
-                ForEach(CredentialKind.allCases, id: \.self) { category in Button(NativeText.literal(category.rawValue)) { kind = category } }
-                Button(NativeText.literal("Cancel"), role: .cancel) {}
-            }
+            .sheet(isPresented: $showCategory) { BuilderSelectionSheet(selection: .category, format: $achievementType, category: $kind) }
     }
 
     private var destination: some View {
         Group {
-            BuilderHeading(title: NativeText.text("builder.recipientTitle"), detail: NativeText.text("builder.recipientDetail"))
+            BuilderHeading(title: NativeText.text("builder.recipientTitle"), detail: NativeText.text("builder.recipientDetail"), illustration: "BuilderPlane")
             draftCard(compact: true)
-            VStack(spacing: 12) {
-                BuilderRecipientChoice(title: NativeText.text("builder.myself"), detail: NativeText.text("builder.selfDetail"),
-                                       image: "AccountAvatar", tint: Palette.portfolioCard, selected: forMe) { forMe = true }
-                    .accessibilityIdentifier("recipient-self")
-                BuilderRecipientChoice(title: NativeText.text("builder.someoneElse"), detail: NativeText.text("builder.otherDetail"),
-                                       image: "FamilyInviteIllustration", tint: Palette.cyanCard, selected: !forMe) {
-                    forMe = false; showRecipients = true
-                }.accessibilityIdentifier("recipient-other")
+            if textSize.isAccessibilitySize {
+                VStack(spacing: 12) { selfChoice; otherChoice }
+            } else {
+                HStack(alignment: .top, spacing: 12) { selfChoice; otherChoice }
             }
             if !forMe, let recipient {
                 HStack(spacing: 12) {
@@ -226,9 +194,21 @@ struct CreateView: View {
         }
     }
 
+    private var selfChoice: some View {
+        BuilderRecipientChoice(title: NativeText.text("builder.myself"), detail: NativeText.text("builder.selfDetail"),
+                               image: "AccountAvatar", tint: Palette.portfolioCard, selected: forMe) { forMe = true }
+            .accessibilityIdentifier("recipient-self")
+    }
+    private var otherChoice: some View {
+        BuilderRecipientChoice(title: NativeText.text("builder.someoneElse"), detail: NativeText.text("builder.otherDetail"),
+                               image: "FamilyInviteIllustration", tint: Palette.cyanCard, selected: !forMe) {
+            forMe = false; showRecipients = true
+        }.accessibilityIdentifier("recipient-other")
+    }
+
     private var review: some View {
         Group {
-            BuilderHeading(title: NativeText.text("builder.reviewTitle"), detail: NativeText.text("builder.reviewDetail"))
+            BuilderHeading(title: NativeText.text("builder.reviewTitle"), detail: NativeText.text("builder.reviewDetail"), illustration: "BuilderYellowRays")
             draftCard(compact: false)
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
@@ -251,6 +231,7 @@ struct CreateView: View {
                     Text(criteria).font(.body).foregroundStyle(Palette.secondary)
                 }.frame(maxWidth: .infinity, alignment: .leading).accessibilityIdentifier("draft-criteria-review")
             }
+            BuilderDetailsReview(details: details)
             if jpeg != nil {
                 Text(NativeText.text(store.isLive ? "builder.artworkPublic" : "builder.artworkSample"))
                     .font(.footnote).foregroundStyle(Palette.secondary)
@@ -258,28 +239,75 @@ struct CreateView: View {
         }
     }
 
-    private func draftCard(compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+    private var designCanvas: some View {
+        VStack(spacing: 14) {
             if textSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 16) { artwork(size: 88); cardIdentity(compact: compact) }
-            } else { ViewThatFits(in: .horizontal) {
-                HStack(spacing: 18) {
-                    artwork(size: compact ? 64 : 100)
-                    cardIdentity(compact: compact).frame(minWidth: 150, maxWidth: .infinity, alignment: .leading)
-                }
-                VStack(alignment: .leading, spacing: 16) { artwork(size: 88); cardIdentity(compact: compact) }
-            } }
-            if !compact, !summary.isEmpty { Text(summary).font(.body).lineLimit(step == 2 ? nil : 2).fixedSize(horizontal: false, vertical: true) }
+                decoratedArtwork(size: 116)
+                imagePicker
+            } else {
+                HStack(spacing: 12) { decoratedArtwork(size: 116); imagePicker }.padding(.horizontal, 4)
+            }
+            Button { focused = .title } label: {
+                HStack(spacing: 10) {
+                    Text(title.isEmpty ? NativeText.text("builder.previewTitle") : title).font(.headline).lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Image("DrawnPencil").resizable().scaledToFit().frame(width: 24, height: 24).accessibilityHidden(true)
+                }.padding(12).foregroundStyle(Palette.cardInk).frame(minHeight: 48)
+                    .background(.white.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
+            }.buttonStyle(.plain).accessibilityIdentifier("draft-preview-title")
+        }.padding(18).background(tint, in: RoundedRectangle(cornerRadius: 24))
+    }
+    private var imagePicker: some View {
+        // PhotosPicker's label builder is nonisolated; capture immutable display values.
+        let working = preparing
+        let large = textSize.isAccessibilitySize
+        let label = NativeText.text(preparing ? "builder.preparingPhoto" : jpeg == nil ? "builder.addImage" : "builder.changeImage")
+        return VStack(spacing: 4) {
+            PhotosPicker(selection: $photo, matching: .images, photoLibrary: .shared()) {
+                VStack(spacing: 6) {
+                    if working { ProgressView().tint(Palette.cardInk) }
+                    else { Image(systemName: "camera").font(.title3.weight(.semibold)).accessibilityHidden(true) }
+                    Text(label).font(.caption.weight(.semibold)).multilineTextAlignment(.center)
+                }.padding(12).frame(width: large ? nil : 90, height: large ? nil : 90)
+                    .frame(maxWidth: large ? .infinity : nil, minHeight: 54)
+                    .foregroundStyle(Palette.cardInk).background(.white.opacity(0.94), in: RoundedRectangle(cornerRadius: large ? 18 : 45))
+            }.buttonStyle(.plain).disabled(preparing).accessibilityIdentifier("draft-artwork")
+            if jpeg != nil {
+                Button(NativeText.text("builder.removeImage"), role: .destructive) {
+                    jpeg = nil; photo = nil; uploadedURL = nil; requestID = UUID().uuidString
+                }.font(.footnote.weight(.semibold)).foregroundStyle(Palette.cardInk).frame(minHeight: 44).disabled(preparing)
+            }
         }
-        .foregroundStyle(Palette.cardInk).padding(compact ? 18 : 22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tint, in: RoundedRectangle(cornerRadius: 26))
-        .accessibilityElement(children: .combine).accessibilityIdentifier("draft-preview")
+    }
+    private func draftCard(compact: Bool) -> some View {
+        Group {
+            if compact && !textSize.isAccessibilitySize {
+                HStack(spacing: 14) {
+                    artwork(size: 62).padding(8).background(tint, in: RoundedRectangle(cornerRadius: 16))
+                    cardIdentity(compact: true).frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(14).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                    .foregroundStyle(Palette.ink)
+            } else {
+                VStack(spacing: 16) {
+                    decoratedArtwork(size: compact ? 88 : 132)
+                    cardIdentity(compact: compact)
+                    if !compact, !summary.isEmpty { Text(summary).font(.body).fixedSize(horizontal: false, vertical: true) }
+                }.multilineTextAlignment(.center).foregroundStyle(Palette.cardInk).padding(22)
+                    .frame(maxWidth: .infinity).background(tint, in: RoundedRectangle(cornerRadius: 24))
+            }
+        }.accessibilityElement(children: .combine).accessibilityIdentifier("draft-preview")
+    }
+    private func decoratedArtwork(size: CGFloat) -> some View {
+        ZStack {
+            Image("BuilderCardMarks").resizable().scaledToFit().frame(maxWidth: 270, minHeight: size + 24, maxHeight: size + 24)
+                .accessibilityHidden(true).allowsHitTesting(false)
+            artwork(size: size)
+        }.frame(maxWidth: .infinity).frame(height: size + 24)
     }
     private func cardIdentity(compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: compact ? .leading : .center, spacing: 10) {
             Text(title.isEmpty ? NativeText.text("builder.previewTitle") : title)
-                .font(compact ? .headline : .title2.bold()).lineLimit(step == 2 ? nil : 3).fixedSize(horizontal: false, vertical: true)
+                .font(compact ? .headline : .title2.bold()).lineLimit(compact ? 3 : nil).fixedSize(horizontal: false, vertical: true)
             Text("\(formatName(achievementType)) · \(categoryName)").font(.subheadline.weight(.medium))
         }
     }
@@ -287,7 +315,11 @@ struct CreateView: View {
         if let jpeg, let image = UIImage(data: jpeg) {
             Image(uiImage: image).resizable().scaledToFill().frame(width: size, height: size).clipShape(Circle())
                 .overlay(Circle().stroke(.white.opacity(0.8), lineWidth: 3)).accessibilityHidden(true)
-        } else { CredentialArtwork(credential: preview, size: size) }
+        } else {
+            Image(kind == .achievement ? "CategoryAchievement" : kind == .membership ? "CategoryID" : "CategoryStudies")
+                .resizable().scaledToFit().padding(size * 0.17).frame(width: size, height: size)
+                .background(.white.opacity(0.95), in: Circle()).accessibilityHidden(true)
+        }
     }
     private func fieldLabel(_ key: String, count: Int, limit: Int) -> some View {
         HStack(alignment: .firstTextBaseline) {
@@ -300,8 +332,8 @@ struct CreateView: View {
     }
     private var actionTray: some View {
         VStack(spacing: 10) {
-            if let localError {
-                Label(localError, systemImage: "exclamationmark.circle").font(.subheadline)
+            if let message = localError ?? details.validationIssue.map({ NativeText.text("builder.detailError.\($0.rawValue)") }) {
+                Label(message, systemImage: "exclamationmark.circle").font(.subheadline)
                     .foregroundStyle(Palette.errorInk).frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("create-error")
             }
@@ -338,7 +370,7 @@ struct CreateView: View {
         }
     }
     @MainActor private func finish() async {
-        guard !submitting else { return }
+        guard !submitting, ready else { return }
         submitting = true; localError = nil
         defer { submitting = false }
         do {
@@ -351,7 +383,7 @@ struct CreateView: View {
             }
             let draft = CredentialDraft(requestID: requestID, title: title, summary: summary, kind: kind,
                                         achievementType: achievementType, criteria: criteria, artworkURL: uploadedURL,
-                                        recipient: forMe ? nil : recipient?.id)
+                                        recipient: forMe ? nil : recipient?.id, details: details.isEmpty ? nil : details)
             if await store.create(draft: draft) { dismiss() }
             else { localError = NativeText.text("builder.createError") }
         } catch { localError = NativeText.text("builder.uploadError") }

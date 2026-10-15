@@ -122,7 +122,8 @@ public actor DemoCredentialService: CredentialService {
     public func create(draft: CredentialDraft) throws -> CollectionSnapshot {
         let cleanTitle = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanSummary = draft.summary.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanTitle.isEmpty, !cleanSummary.isEmpty, cleanTitle.count <= 100, cleanSummary.count <= 1_000 else { throw ClientError.invalidDraft }
+        guard !cleanTitle.isEmpty, !cleanSummary.isEmpty, cleanTitle.count <= 100, cleanSummary.count <= 1_000,
+              draft.criteria.count <= 2000, draft.details?.validationIssue == nil else { throw ClientError.invalidDraft }
         let credential = Credential(id: UUID().uuidString, title: cleanTitle, issuer: "You", summary: cleanSummary,
                                     kind: draft.kind, date: .now, createdByMe: true, artworkURL: draft.artworkURL)
         templates.insert(credential, at: 0)
