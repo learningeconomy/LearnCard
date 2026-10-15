@@ -41,8 +41,9 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await waitForAuthenticatedState(page, {
             path: '/issue',
             profileId: TEST_USER_PROFILE_ID,
+            waitUntil: 'domcontentloaded',
         });
-        await page.waitForURL(/\/issue/, { timeout: 30_000 });
+        await page.waitForURL(/\/issue/, { timeout: 30_000, waitUntil: 'domcontentloaded' });
     });
 
     test('renders the type picker and gates the Issue button', async ({ page }) => {
@@ -108,7 +109,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await expect(page.getByRole('listitem').filter({ hasText: 'Person 9' })).toBeVisible();
         await page.getByRole('button', { name: 'Cancel', exact: true }).click();
         await expect(page.getByText('Draft saved on this device', { exact: true })).toBeVisible();
-        await page.reload();
+        await page.reload({ waitUntil: 'domcontentloaded' });
         await page
             .getByRole('button', { name: 'Restore Saved Run', exact: true })
             .click({ timeout: 30000 });
@@ -238,9 +239,13 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 .getByRole('button', { name: 'Skip', exact: true })
         ).toBeDisabled();
         await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-        await page.reload();
+        await page.reload({ waitUntil: 'domcontentloaded' });
         // The HAR seed login keeps its private key in memory; reauthenticate after reload.
-        await waitForAuthenticatedState(page, { path: '/issue', profileId: TEST_USER_PROFILE_ID });
+        await waitForAuthenticatedState(page, {
+            path: '/issue',
+            profileId: TEST_USER_PROFILE_ID,
+            waitUntil: 'domcontentloaded',
+        });
         await page
             .getByRole('button', { name: 'Restore Saved Run', exact: true })
             .click({ timeout: 30000 });
