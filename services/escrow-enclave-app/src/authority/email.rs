@@ -17,21 +17,54 @@ use crate::time::TimeSource;
 #[cfg(feature = "kms")]
 use std::sync::Arc;
 
-/// Every message explicitly tells the recipient recovery is self-service, so an
-/// unexpected email (attack C: an attacker who only controls the recipient key,
-/// not the inbox) is immediately recognizable as not theirs to act on.
-const CONTEXT_LINE: [&str; 4] = [
-    "Only enter this code if you started this recovery. If you did not, ignore this email.",
-    "Introduce este codigo solo si tu iniciaste esta recuperacion. Si no fuiste tu, ignora este correo.",
-    "Ne saisissez ce code que si vous avez demande cette recuperation. Sinon, ignorez cet e-mail.",
-    "أدخل هذا الرمز فقط إذا بدأت عملية استرداد الحساب. إذا لم تفعل ذلك، تجاهل هذه الرسالة.",
-];
+/// Maps the measured `ESCROW_AUTHORITY_TENANT` label to a short display name
+/// for user-facing copy. Plain text only, never HTML. Unknown labels fall
+/// back to the label unchanged; the label's own character-set/length
+/// validation happens in `config.rs`, not here.
+fn brand_name(tenant: &str) -> &str {
+    match tenant {
+        "learncard" => "LearnCard",
+        "scouts" => "ScoutPass",
+        other => other,
+    }
+}
 
 fn language_index(language: &str) -> Result<usize, Error> {
     RECOVERY_LANGUAGES
         .iter()
         .position(|l| *l == language)
         .ok_or(Error::InvalidRequest)
+}
+
+/// `OneTimeCode` only: the one line that lets a recipient who did not start
+/// recovery recognize the email as not theirs to act on (attack C). The
+/// other two message kinds use `cancel_line` instead: they carry no code, so
+/// "enter this code" would be meaningless there.
+const CODE_LINE: [&str; 4] = [
+    "Only enter this code if you started this recovery. If you didn't, ignore this email. Your account stays safe.",
+    "Introduce este código solo si tú iniciaste esta recuperación. Si no fuiste tú, ignora este correo. Tu cuenta sigue segura.",
+    "Saisissez ce code uniquement si vous avez démarré cette récupération. Sinon, ignorez cet e-mail. Votre compte reste en sécurité.",
+    "أدخل هذا الرمز فقط إذا بدأت هذه العملية. إذا لم تفعل ذلك، فتجاهل هذه الرسالة. حسابك يبقى آمنًا.",
+];
+
+/// `RecoveryStarted` and `ReleaseWarning`: tells a recipient who did not
+/// start recovery how to stop it (attack C). These emails are plain text
+/// with no links by design, so the instruction points at the app itself
+/// rather than a URL.
+fn cancel_line(index: usize, brand: &str) -> String {
+    match index {
+        0 => format!(
+            "If you didn't start this, open the {brand} app and cancel the recovery right away."
+        ),
+        1 => format!(
+            "Si no fuiste tú quien inició esto, abre la aplicación de {brand} y cancela la recuperación de inmediato."
+        ),
+        2 => format!(
+            "Si vous n'avez pas démarré cette opération, ouvrez l'application {brand} et annulez la récupération immédiatement."
+        ),
+        3 => format!("إذا لم تبدأ هذه العملية، فافتح تطبيق {brand} وألغِ عملية الاسترداد فورًا."),
+        _ => unreachable!("every index above is exhaustive for 4 languages"),
+    }
 }
 
 /// Compiled-image content only: no links, no images, no raw host strings.
@@ -46,75 +79,90 @@ pub enum EmailMessage {
     ReleaseWarning { hours: u32 },
 }
 
-fn subject(message: &EmailMessage, index: usize) -> &'static str {
+/// `tenant`: the measured `ESCROW_AUTHORITY_TENANT` label, mapped through
+/// `brand_name` for display; interpolated as plain text only, never HTML.
+fn subject(message: &EmailMessage, index: usize, tenant: &str) -> String {
+    let brand = brand_name(tenant);
     match (message, index) {
-        (EmailMessage::OneTimeCode { .. }, 0) => "Your account recovery code",
-        (EmailMessage::OneTimeCode { .. }, 1) => "Tu codigo de recuperacion de cuenta",
-        (EmailMessage::OneTimeCode { .. }, 2) => "Votre code de recuperation de compte",
-        (EmailMessage::OneTimeCode { .. }, 3) => "رمز استعادة الحساب",
-        (EmailMessage::RecoveryStarted, 0) => "Account recovery started",
-        (EmailMessage::RecoveryStarted, 1) => "Recuperacion de cuenta iniciada",
-        (EmailMessage::RecoveryStarted, 2) => "Recuperation de compte demarree",
-        (EmailMessage::RecoveryStarted, 3) => "تم بدء استعادة الحساب",
-        (EmailMessage::ReleaseWarning { .. }, 0) => "Your account recovery completes soon",
+        (EmailMessage::OneTimeCode { .. }, 0) => format!("Your {brand} recovery code"),
+        (EmailMessage::OneTimeCode { .. }, 1) => format!("Tu código de recuperación de {brand}"),
+        (EmailMessage::OneTimeCode { .. }, 2) => format!("Votre code de récupération {brand}"),
+        (EmailMessage::OneTimeCode { .. }, 3) => format!("رمز استعادة حساب {brand} الخاص بك"),
+        (EmailMessage::RecoveryStarted, 0) => format!("Your {brand} account recovery has started"),
+        (EmailMessage::RecoveryStarted, 1) => {
+            format!("Tu recuperación de cuenta de {brand} ha comenzado")
+        }
+        (EmailMessage::RecoveryStarted, 2) => {
+            format!("La récupération de votre compte {brand} a démarré")
+        }
+        (EmailMessage::RecoveryStarted, 3) => format!("تم بدء استعادة حساب {brand} الخاص بك"),
+        (EmailMessage::ReleaseWarning { .. }, 0) => format!("Your {brand} recovery completes soon"),
         (EmailMessage::ReleaseWarning { .. }, 1) => {
-            "Tu recuperacion de cuenta se completara pronto"
+            format!("Tu recuperación de cuenta de {brand} se completará pronto")
         }
         (EmailMessage::ReleaseWarning { .. }, 2) => {
-            "Votre recuperation de compte se terminera bientot"
+            format!("Votre récupération de compte {brand} se terminera bientôt")
         }
-        (EmailMessage::ReleaseWarning { .. }, 3) => "ستكتمل استعادة حسابك قريبًا",
+        (EmailMessage::ReleaseWarning { .. }, 3) => {
+            format!("ستكتمل استعادة حساب {brand} الخاص بك قريبًا")
+        }
         _ => unreachable!("every (kind, index) pair above is exhaustive for 4 languages"),
     }
 }
 
 /// `tenant`: the measured `ESCROW_AUTHORITY_TENANT` label (there is no richer
-/// enclave-side branding config); interpolated as plain text only, never HTML.
+/// enclave-side branding config); mapped through `brand_name` for display and
+/// interpolated as plain text only, never HTML.
 fn body(message: &EmailMessage, index: usize, tenant: &str) -> String {
-    let context = CONTEXT_LINE[index];
+    let brand = brand_name(tenant);
     match (message, index) {
         (EmailMessage::OneTimeCode { code }, 0) => {
-            format!("Your {tenant} recovery code is: {code}\n\n{context}")
+            format!("Your {brand} recovery code is: {code}\n\n{}", CODE_LINE[0])
         }
-        (EmailMessage::OneTimeCode { code }, 1) => {
-            format!("Tu codigo de recuperacion de {tenant} es: {code}\n\n{context}")
-        }
-        (EmailMessage::OneTimeCode { code }, 2) => {
-            format!("Votre code de recuperation {tenant} est : {code}\n\n{context}")
-        }
-        (EmailMessage::OneTimeCode { code }, 3) => {
-            format!("رمز استعادة حساب {tenant} الخاص بك هو: {code}\n\n{context}")
-        }
-        (EmailMessage::RecoveryStarted, 0) => {
-            format!("Account recovery has started for your {tenant} account.\n\n{context}")
-        }
-        (EmailMessage::RecoveryStarted, 1) => {
-            format!("Se ha iniciado la recuperacion de tu cuenta de {tenant}.\n\n{context}")
-        }
-        (EmailMessage::RecoveryStarted, 2) => {
-            format!("La recuperation de votre compte {tenant} a demarre.\n\n{context}")
-        }
-        (EmailMessage::RecoveryStarted, 3) => {
-            format!("تم بدء استعادة حساب {tenant} الخاص بك.\n\n{context}")
-        }
-        (EmailMessage::ReleaseWarning { hours }, 0) => {
-            format!(
-                "Your {tenant} account recovery will complete in about {hours} hours unless you cancel it.\n\n{context}"
-            )
-        }
-        (EmailMessage::ReleaseWarning { hours }, 1) => {
-            format!(
-                "Tu recuperacion de cuenta de {tenant} se completara en unas {hours} horas, a menos que la canceles.\n\n{context}"
-            )
-        }
-        (EmailMessage::ReleaseWarning { hours }, 2) => {
-            format!(
-                "Votre recuperation de compte {tenant} se terminera dans environ {hours} heures, sauf annulation.\n\n{context}"
-            )
-        }
-        (EmailMessage::ReleaseWarning { hours }, 3) => {
-            format!("ستكتمل استعادة حساب {tenant} خلال حوالي {hours} ساعة ما لم تقم بإلغائها.\n\n{context}")
-        }
+        (EmailMessage::OneTimeCode { code }, 1) => format!(
+            "Tu código de recuperación de {brand} es: {code}\n\n{}",
+            CODE_LINE[1]
+        ),
+        (EmailMessage::OneTimeCode { code }, 2) => format!(
+            "Votre code de récupération {brand} est : {code}\n\n{}",
+            CODE_LINE[2]
+        ),
+        (EmailMessage::OneTimeCode { code }, 3) => format!(
+            "رمز استعادة حساب {brand} الخاص بك هو: {code}\n\n{}",
+            CODE_LINE[3]
+        ),
+        (EmailMessage::RecoveryStarted, 0) => format!(
+            "Account recovery has started for your {brand} account.\n\n{}",
+            cancel_line(0, brand)
+        ),
+        (EmailMessage::RecoveryStarted, 1) => format!(
+            "Se ha iniciado la recuperación de tu cuenta de {brand}.\n\n{}",
+            cancel_line(1, brand)
+        ),
+        (EmailMessage::RecoveryStarted, 2) => format!(
+            "La récupération de votre compte {brand} a démarré.\n\n{}",
+            cancel_line(2, brand)
+        ),
+        (EmailMessage::RecoveryStarted, 3) => format!(
+            "تم بدء استعادة حساب {brand} الخاص بك.\n\n{}",
+            cancel_line(3, brand)
+        ),
+        (EmailMessage::ReleaseWarning { hours }, 0) => format!(
+            "Your {brand} account recovery will complete in about {hours} hours unless you cancel it.\n\n{}",
+            cancel_line(0, brand)
+        ),
+        (EmailMessage::ReleaseWarning { hours }, 1) => format!(
+            "Tu recuperación de cuenta de {brand} se completará en unas {hours} horas, a menos que la canceles.\n\n{}",
+            cancel_line(1, brand)
+        ),
+        (EmailMessage::ReleaseWarning { hours }, 2) => format!(
+            "Votre récupération de compte {brand} se terminera dans environ {hours} heures, sauf annulation.\n\n{}",
+            cancel_line(2, brand)
+        ),
+        (EmailMessage::ReleaseWarning { hours }, 3) => format!(
+            "ستكتمل استعادة حساب {brand} خلال حوالي {hours} ساعة ما لم تقم بإلغائها.\n\n{}",
+            cancel_line(3, brand)
+        ),
         _ => unreachable!("every (kind, index) pair above is exhaustive for 4 languages"),
     }
 }
@@ -169,9 +217,8 @@ impl EmailSender for SesEmailSender {
             // looser email-shape check is layered on here.
             let index = language_index(language)?;
             let text = body(&message, index, &self.tenant);
-            self.client
-                .send_email(recipient, subject(&message, index), &text)
-                .await?;
+            let subj = subject(&message, index, &self.tenant);
+            self.client.send_email(recipient, &subj, &text).await?;
             Ok(())
         })
     }
@@ -185,7 +232,7 @@ pub mod fake {
     pub struct Sent {
         pub recipient: String,
         pub language: String,
-        pub subject: &'static str,
+        pub subject: String,
         pub body: String,
         /// Test-only introspection: the raw code, when this was `OneTimeCode`.
         /// Production code never extracts this back out of a sent message.
@@ -225,7 +272,7 @@ pub mod fake {
                 self.sent.lock().unwrap().push(Sent {
                     recipient: recipient.to_owned(),
                     language: language.to_owned(),
-                    subject: subject(&message, index),
+                    subject: subject(&message, index, "learncard"),
                     body: body(&message, index, "learncard"),
                     code,
                 });

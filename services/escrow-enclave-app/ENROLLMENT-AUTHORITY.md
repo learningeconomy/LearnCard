@@ -737,9 +737,14 @@ visible only to the enclave and the user's inbox.
 **Content constraints.** Email text is part of the measured image, so changing it
 needs a new EIF, new PCRs and a measurement rotation. Keep it to three plain-text
 messages (code, started, release warning) with no links or images, in the four app
-languages, using the tenant name only. Every message says "Only enter this code if
-you started a recovery." A separately signed template file was considered and
-deferred: its signing key could produce misleading or leaking templates.
+languages, using a display name derived from the tenant label (`src/authority/email.rs`'s
+`brand_name`, e.g. `learncard` → `LearnCard`; unknown labels fall back unchanged).
+Only the code message says "Only enter this code if you started this recovery."
+— the other two carry no code, so that line only belongs there. The started and
+release-warning messages instead tell the recipient how to stop an unexpected
+recovery: "If you didn't start this, open the \[app] and cancel the recovery right
+away." A separately signed template file was considered and deferred: its signing
+key could produce misleading or leaking templates.
 
 **Operations.** SES sending domain with SPF/DKIM/DMARC, production access (out of
 the SES sandbox), bounce and complaint handling, quota monitoring. Cost is

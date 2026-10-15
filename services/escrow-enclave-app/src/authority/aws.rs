@@ -567,7 +567,7 @@ impl SesEmailClient {
     pub async fn send_email(
         &self,
         recipient: &str,
-        subject: &'static str,
+        subject: &str,
         text: &str,
     ) -> Result<EmailReceipt, Error> {
         if !email_address(recipient)
