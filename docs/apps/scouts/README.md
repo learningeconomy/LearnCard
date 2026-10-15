@@ -91,6 +91,18 @@ flowchart LR
 
 ### Key flows
 
+#### Competency framework administration
+
+ScoutPass shows the Competencies **Admin Panel** and framework management tools only when the current account's resolved IDs include a **Global Admin ID**. The controls stay hidden while the ID query is loading or fails. National admins, troop leaders, and scouts do not receive access through their membership IDs. Badge authors can still select existing competencies without editing the framework.
+
+If an admin overlay is open when access is lost or the ID query fails, ScoutPass closes that specific overlay, including its fullscreen shell. Other open overlays and badge-author competency selection remain available.
+
+This is a frontend visibility rule, using `useGetCurrentUserTroopIdsResolved().isScoutGlobalAdmin`. It is **not a server authorization boundary**: the ID lookup reads the user's personal LearnCloud index, and this change adds no server check of the ID's issuer, network claim status, or revocation status.
+
+The shared LearnCard Network API still allows any authenticated profile to create or link a framework; editing, deleting, and managing its competencies require framework manager permissions. A regular user can therefore bypass ScoutPass's UI and create a framework through the API, including retaining manager access to a framework created before the UI restriction. LearnCard App relies on the shared API behavior.
+
+For stronger enforcement, add a ScoutPass-specific server capability keyed to the authenticated profile and enforce it on framework and competency mutations, in addition to the existing framework manager checks. Trusted credential claim and revocation events could grant and remove that capability. The UI would read the same capability from the API. The policy must be selected by trusted deployment configuration, rather than a caller-controlled tenant header, to preserve LearnCard App's permissions and prevent bypasses.
+
 #### Setting up a troop
 
 ```mermaid
