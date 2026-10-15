@@ -361,8 +361,10 @@ durability/audit and independent monitor/kill-switch integration remain required
 `RoughtimeTimeSource::new` requires 2–16 distinct pins, a minimum of two
 successful responses, and an explicit radius cap (`production`: 10 seconds).
 Production uses Cloudflare, int08h and Tanner Ryan with `min_sources = 2`.
-All queries run concurrently against one shared two-second deadline. Every valid
-source participates in the intersection; no majority/outlier exclusion occurs.
+All queries run concurrently against one shared two-second deadline. Return as
+soon as a minimum-source authenticated quorum has mutually intersecting intervals
+that pass the supplied floor, aborting the remaining queries. If initial replies
+disagree, continue collecting to find a consistent quorum before the deadline.
 Missing/invalid replies count as unavailable; insufficient sources, disjoint
 intervals, or an intersection wholly before the supplied ledger floor fail closed.
 The caller supplies the authenticated ledger head floor; this module does not
@@ -396,7 +398,7 @@ proof; later ledger signing authenticates the enclave's verification result.
   Their captured responses are offline golden tests in `src/time/live_tests.rs`.
   Observed radii were 5s and 3s. The unchanged 10s cap accommodates these and
   leap smearing, tiny relative to the seven-day hold. No extra tolerance is added:
-  disjoint signed intervals fail closed, even if two other sources agree.
+  a quorum's signed intervals must intersect; no tolerance is added to bridge gaps.
   Tanner's operator asks for contact before high-volume infrastructure usage;
   obtain approval and rate-limit deployment traffic before launch.
 - Google's unreachable sandbox is removed. [Netnod's public service page](https://www.netnod.se/free-time-services)
@@ -415,7 +417,8 @@ proof; later ledger signing authenticates the enclave's verification result.
 `verified-roughtime-keys` feature gate (that compatibility feature is no longer
 required). Pins are never fetched dynamically or supplied by the host. One
 unavailable/bad-signature source is tolerated; two unavailable sources fail closed.
-All verified replies participate, so no early return at quorum hides dissent.
+The host can already suppress a source; waiting for all cannot constrain that
+adversary. Security rests on the independent authenticated signatures in the quorum.
 Public services offer no uptime guarantee; only two were live-verified here, so
 Cloudflare availability/interoperability must still be checked from staging.
 Custom pins
@@ -889,8 +892,8 @@ time authorities, and the separately administered audit monitor/KMS policy roles
 The enclave hypervisor clock was considered but not used; reading it locally does not authenticate
 elapsed time. Require fresh nonce-bound signed Roughtime responses from **at least
 two independent pinned sources** out of Cloudflare, int08h and Tanner Ryan,
-verified inside the enclave. One outage is tolerated; two fail closed. Intersect all verified
-intervals: `[max(lows), min(highs)]`; disagreement, missing evidence, or time before
+verified inside the enclave. One outage is tolerated; two fail closed. Intersect the quorum's
+intervals: `[max(lows), min(highs)]`; no consistent quorum, missing evidence, or time before
 the observable ledger head fails closed. Delayed release requires
 `trusted_now.lower >= hold.created.upper + 7 days`. A parent UDP relay is untrusted
 (the KMS vsock proxy is TCP-only). Public time services have production-readiness
