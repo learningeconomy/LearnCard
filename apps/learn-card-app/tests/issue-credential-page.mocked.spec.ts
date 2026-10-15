@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures/mocked-test';
 import type { Page } from '@playwright/test';
 import type { IssueInboxCredentialBatch, InboxBatchStatus } from '@learncard/types';
-import type { TrpcMock } from './mocks/trpc';
+import type { TrpcMock, BrainOutputs } from './mocks/trpc';
 import { installNetwork } from './mocks/network';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
@@ -18,6 +18,13 @@ const selectBadgeType = async (page: Page) => {
 
 const fillName = (page: Page, name: string) => page.getByPlaceholder(NAME_PLACEHOLDER).fill(name);
 
+const waitForIssueReady = async (page: Page): Promise<void> => {
+    // A route change can finish while the account's key is still being restored.
+    await expect(page.getByRole('heading', { name: 'What are you issuing?' })).toBeVisible({
+        timeout: 60_000,
+    });
+};
+
 // @mocked — this suite runs on the vite-only tier (no docker). The HAR baseline
 // serves the recorded auth/boot + issuance traffic; see tests/mocks/network.ts.
 test.describe('Issue Credential Page (/issue) @mocked', () => {
@@ -27,23 +34,92 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         network = await installNetwork(page);
         // Recovery requires the issuer profile. Repeated or multiplexed reads do not
         // match the HAR's single recorded request, so serve them deterministically.
-        network.on('profile.getProfile', () => ({
+        const issuerProfile = {
             profileId: TEST_USER_PROFILE_ID,
             displayName: 'User From Seed',
             shortBio: '',
             bio: '',
             did: `did:web:localhost%3A4000:users:${TEST_USER_PROFILE_ID}`,
-            profileVisibility: 'public',
+            profileVisibility: 'public' as const,
             showEmail: false,
-            allowConnectionRequests: 'anyone',
+            allowConnectionRequests: 'anyone' as const,
             isServiceProfile: false,
-        }));
+        };
+        network.on('profile.getProfile', () => issuerProfile);
+        network.on('profile.getOtherProfile', () => issuerProfile);
+        network.on(
+            'appStore.getPublicListingBySlug',
+            () => undefined satisfies BrainOutputs['appStore']['getPublicListingBySlug']
+        );
+        // tRPC batches are answered as a whole. Own the background lookups too,
+        // so a batch containing the issuer check never falls through to a mismatched HAR.
+        const emptyPage = { records: [], hasMore: false };
+        network.on(
+            'profile.searchProfiles',
+            () => [] satisfies BrainOutputs['profile']['searchProfiles']
+        );
+        network.on(
+            'profile.paginatedConnections',
+            () => emptyPage satisfies BrainOutputs['profile']['paginatedConnections']
+        );
+        network.on(
+            'profile.pendingConnectionPrompts',
+            () => [] satisfies BrainOutputs['profile']['pendingConnectionPrompts']
+        );
+        network.on(
+            'skillFrameworks.getAllAvailableFrameworks',
+            () => emptyPage satisfies BrainOutputs['skillFrameworks']['getAllAvailableFrameworks']
+        );
+        network.on(
+            'skills.searchFrameworkSkills',
+            () =>
+                ({
+                    ...emptyPage,
+                    cursor: null,
+                }) satisfies BrainOutputs['skills']['searchFrameworkSkills']
+        );
+        network.on(
+            'contracts.getConsentedContracts',
+            () => emptyPage satisfies BrainOutputs['contracts']['getConsentedContracts']
+        );
+        network.on(
+            'contracts.getAllCredentialsForTerms',
+            () => emptyPage satisfies BrainOutputs['contracts']['getAllCredentialsForTerms']
+        );
+        network.on(
+            'boost.getPaginatedBoosts',
+            () => emptyPage satisfies BrainOutputs['boost']['getPaginatedBoosts']
+        );
+        network.on(
+            'activity.getMyActivities',
+            () => emptyPage satisfies BrainOutputs['activity']['getMyActivities']
+        );
+        network.on(
+            'inbox.getMyInboxDeliveries',
+            () => emptyPage satisfies BrainOutputs['inbox']['getMyInboxDeliveries']
+        );
+        network.on(
+            'profile.updateProfile',
+            () => true satisfies BrainOutputs['profile']['updateProfile']
+        );
+        network.on(
+            'inbox.finalize',
+            () =>
+                ({
+                    processed: 0,
+                    claimed: 0,
+                    errors: 0,
+                    guardianPending: 0,
+                    verifiableCredentials: [],
+                }) satisfies BrainOutputs['inbox']['finalize']
+        );
         await waitForAuthenticatedState(page, {
             path: '/issue',
             profileId: TEST_USER_PROFILE_ID,
             waitUntil: 'domcontentloaded',
         });
         await page.waitForURL(/\/issue/, { timeout: 30_000, waitUntil: 'domcontentloaded' });
+        await waitForIssueReady(page);
     });
 
     test('renders the type picker and gates the Issue button', async ({ page }) => {
@@ -80,6 +156,8 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
     test('imports ten people, summarizes recipients, edits errors and restores the draft', async ({
         page,
     }) => {
+        // This scenario includes two complete app/account bootstraps.
+        test.setTimeout(180000);
         await selectBadgeType(page);
         await fillName(page, 'Roster Badge');
         await page.getByRole('button', { name: /specific people/i }).click();
@@ -110,6 +188,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await page.getByRole('button', { name: 'Cancel', exact: true }).click();
         await expect(page.getByText('Draft saved on this device', { exact: true })).toBeVisible();
         await page.reload({ waitUntil: 'domcontentloaded' });
+        await waitForIssueReady(page);
         await page
             .getByRole('button', { name: 'Restore Saved Run', exact: true })
             .click({ timeout: 30000 });
@@ -246,6 +325,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             profileId: TEST_USER_PROFILE_ID,
             waitUntil: 'domcontentloaded',
         });
+        await waitForIssueReady(page);
         await page
             .getByRole('button', { name: 'Restore Saved Run', exact: true })
             .click({ timeout: 30000 });
