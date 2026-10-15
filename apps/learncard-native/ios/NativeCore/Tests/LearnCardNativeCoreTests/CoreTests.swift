@@ -109,7 +109,7 @@ import Testing
     await #expect(throws: ClientError.invalidDraft) { try await service.share(credentialIDs: ["design", "design"], title: "Samples", requestID: "request", passcode: nil) }
 }
 
-@Test func originalCategoriesSurviveEncodingWithoutChangingNativeBrowsingGroups() throws {
+@Test func originalCategoriesSurviveEncodingIndependentlyOfLegacyAuthoringKinds() throws {
     let value = Credential(id: "portfolio", title: "Design", issuer: "Studio", summary: "Work samples",
                            kind: .achievement, date: .now, category: "Accomplishment")
     let decoded = try JSONDecoder().decode(Credential.self, from: JSONEncoder().encode(value))
@@ -129,6 +129,6 @@ import Testing
     #expect(legacy.displayCategory == .id)
     object["category"] = "partner.custom-category"
     let partner = try JSONDecoder().decode(Credential.self, from: JSONSerialization.data(withJSONObject: object))
-    #expect(partner.displayCategory == .id)
+    #expect(partner.displayCategory == .other)
     #expect(partner.category == "partner.custom-category")
 }

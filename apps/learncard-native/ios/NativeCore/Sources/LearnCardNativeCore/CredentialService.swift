@@ -22,7 +22,7 @@ public actor DemoCredentialService: CredentialService {
     private var activity: [Activity] = []
     private var templates: [Credential] = []
 
-    public init() {
+    public init(includeCategorySamples: Bool = false) {
         let date = Date(timeIntervalSince1970: 1_791_763_200)
         credentials = [
             Credential(id: "design", title: "Design for people", issuer: "Open Learning Studio",
@@ -35,6 +35,25 @@ public actor DemoCredentialService: CredentialService {
                        summary: "A member of a community that learns and grows together.",
                        kind: .membership, date: date, category: "ID"),
         ]
+        if includeCategorySamples {
+            let categories: [(String, String, String)] = [
+                ("qualification", "Professional license", "Qualifications"),
+                ("badge", "Community badge", "Social Badge"),
+                ("studies", "Course certificate", "Course"),
+                ("assistance", "Learning accommodations", "Accommodation"),
+                ("experience", "Work experience", "Work History"),
+                ("skill", "Creative thinking", "Skill"),
+                ("ai-topic", "A learning conversation", "AI Topic"),
+                ("ai-pathway", "A learning pathway", "AI Pathway"),
+                ("ai-insight", "Learning insights", "AI Insight"),
+                ("family", "Sample family membership", "Family"),
+                ("other", "Partner record", "partner.custom")
+            ]
+            credentials += categories.map { id, title, category in
+                Credential(id: "category-\(id)", title: title, issuer: "Sample Learning Studio", summary: "Unsigned category regression sample.",
+                           kind: .achievement, date: date.addingTimeInterval(-600), category: category)
+            }
+        }
         offers = [
             Credential(id: "first-aid", title: "Ready to help", issuer: "Community Skills Lab",
                        summary: "Completed a hands-on introduction to first aid and everyday emergency preparedness.",

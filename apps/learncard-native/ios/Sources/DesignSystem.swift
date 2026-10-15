@@ -28,6 +28,8 @@ enum Palette {
     static let cyanCard = Color(hex: 0x22D3EE) // Experiences: cyan-401
     static let blueCard = Color(hex: 0x93C5FD) // Badges / IDs: blue-300
     static let pinkCard = Color(hex: 0xF9A8D4) // Achievements: pink-300
+    static let qualificationCard = Color(hex: 0xFDBA74) // Qualifications: orange-300
+    static let otherCard = Color(hex: 0xE2E3E9)
     static let lilacCard = Color(hex: 0xC4B5FD) // Assistance / Skills: violet-300
     static let limeCard = Color(hex: 0xBEF264) // AI Insights: lime-300
     static let studiesCard = Color(hex: 0x34D399) // Studies: emerald-401
@@ -54,6 +56,7 @@ enum Palette {
     static func categoryTint(_ category: CredentialCategory) -> Color {
         switch category {
         case .achievement: pinkCard
+        case .qualification: qualificationCard
         case .badge, .id: blueCard
         case .studies: studiesCard
         case .portfolio: portfolioCard
@@ -63,12 +66,14 @@ enum Palette {
         case .aiTopic: topicCard
         case .aiPathway: tealCard
         case .aiInsight: limeCard
+        case .other: otherCard
         }
     }
 
     static func categoryAccent(_ category: CredentialCategory) -> Color {
         switch category {
         case .achievement: Color(light: 0xBE185D, dark: 0xF9A8D4)
+        case .qualification: Color(light: 0x9A3412, dark: 0xFDBA74)
         case .badge, .id: Color(light: 0x1D4ED8, dark: 0x93C5FD)
         case .studies, .aiPathway: green
         case .portfolio: Color(light: 0xA16207, dark: 0xFDE047)
@@ -76,6 +81,7 @@ enum Palette {
         case .experience, .aiTopic: Color(light: 0x0E7490, dark: 0x67E8F9)
         case .family: Color(light: 0x92400E, dark: 0xFBBF24)
         case .aiInsight: Color(light: 0x3F6212, dark: 0xBEF264)
+        case .other: secondary
         }
     }
 }
@@ -151,6 +157,7 @@ private extension CredentialCategory {
         switch self {
         case .badge: "CategoryBadge"
         case .achievement: "CategoryAchievement"
+        case .qualification: "CategoryQualification"
         case .studies: "CategoryStudies"
         case .portfolio: "CategoryPortfolio"
         case .assistance: "CategoryAssistance"
@@ -161,7 +168,15 @@ private extension CredentialCategory {
         case .aiTopic: "CategoryTopic"
         case .aiPathway: "CategoryPathway"
         case .aiInsight: "CategoryInsight"
+        case .other: "DrawnCredential"
         }
+    }
+}
+
+extension Credential {
+    var categoryTitle: String {
+        if displayCategory == .other, let category, !category.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return category }
+        return NativeText.text("credentialCategory.\(displayCategory.rawValue)")
     }
 }
 
@@ -218,7 +233,7 @@ struct CredentialCard: View {
 
     private var footer: some View {
         HStack(spacing: 4) {
-            Text(credential.isSample ? "Sample" : credential.kind.rawValue)
+            Text(credential.categoryTitle)
                 .font(.caption2.weight(.semibold)).foregroundStyle(onWhiteSurface ? Palette.cardSecondary : cardSecondary)
                 .lineLimit(textSize.isAccessibilitySize ? nil : 1).minimumScaleFactor(0.85)
                 .padding(.horizontal, onWhiteSurface ? 9 : 0).padding(.vertical, onWhiteSurface ? 5 : 0)

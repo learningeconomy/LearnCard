@@ -8,6 +8,7 @@ import {
 } from '../../../apps/learn-card-app/src/components/share-links/shareLinkFlow';
 import type { ShareLinkOperationKeyInput } from '@learncard/types';
 import { buildNativeTemplate, type NativeCredentialDraft } from './credential-draft';
+import { credentialCategoryForDisplay } from './credential-category';
 import { initLearnCard } from '@learncard/init';
 import { createSSSStrategy } from '../../../packages/sss-key-manager/src/sss-strategy';
 import type { RecoveryInput } from '../../../packages/sss-key-manager/src/types';
@@ -212,13 +213,14 @@ const display = async (record: Record<string, unknown>, verify = true) => {
     const subject = object(subjects[0]);
     const achievement = object(subject.achievement);
     const issuer = object(raw.issuer);
+    const category = credentialCategoryForDisplay(record.category, raw);
     return {
         id: uri,
         title: string(record.title) || string(raw.name) || string(achievement.name) || 'Credential',
         issuer: await issuerLabel(raw.issuer),
         summary: string(achievement.description) || string(raw.description),
-        kind: kindFor(record.category),
-        category: string(record.category) || undefined,
+        kind: kindFor(category),
+        category,
         date: string(raw.issuanceDate) || string(raw.validFrom) || '1970-01-01T00:00:00Z',
         createdByMe: raw.issuer === wallet.id.did() || issuer.id === wallet.id.did(),
         isSample: false,

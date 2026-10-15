@@ -1,12 +1,12 @@
 # Native experiment handoff — 2026-10-15
 
-Home now has an illustrated Inbox summary, collection/creation shortcuts, installed apps, Families and native Data Sharing. A cute house replaces the graph icon, and tray icons scale with logical screen width. Bold drawn category/app fallbacks replace thin system icons and initials while supplied images remain. The native design system records scale, Colorful accents, neutral canvases, artwork and motion rules. The earlier Account/Apps/Families layouts, stable header and automatic detail-card tilt/sheen remain.
+Collection now includes the web consumer categories, including independent Portfolio and Qualifications filters. Rows, featured cards and detail labels use the original semantic category instead of the older three native authoring kinds. Qualifications has the upstream orange Colorful accent and drawn certificate/seal artwork; Families remains in its dedicated native area. The Home/dashboard, illustrated fallbacks, neutral canvas, stable header and automatic detail-card motion from the previous update remain. See [category contracts and source audit](CATEGORY_PARITY.md).
 
 - Branch: `codex/vesper-73`.
 - Checkout: `/Users/donny/.codex/worktrees/vesper-73/LearnCard`; preserve unrelated primary-checkout work.
-- Baseline `c9c0cfbf4` passed [hosted CI 38690372140](https://github.com/learningeconomy/LearnCard/actions/runs/38690372140), including the prior 174-case suite and Release compilation. This Home implementation gets a separate run on push.
-- Current suite: **181 cases** — 84 Bun, 55 Swift and 42 simulator cases, plus one intentionally skipped live exchange.
-- Full local run passed all 181 cases, source contracts, independent verification of 10 iOS outputs and Release compilation. Result: `artifacts/native-regressions-20261015-022805-41537.xcresult`. The final Home → Apps stack/search reset and session-text locale observation then passed all three Home cases in `artifacts/home-final.xcresult`. See [TESTING.md](TESTING.md) for evidence and boundaries.
+- The preceding Home baseline `4dde77e13383394163bad3ddaa7131d0f6d0adc3` passed [hosted CI 38694796776](https://github.com/learningeconomy/LearnCard/actions/runs/38694796776), including its full 181-case suite, independent verification of ten iOS outputs and Release compilation. This category change gets a separate hosted run on push.
+- Current configured suite: **191 cases** — 89 Bun, 57 Swift and 45 simulator cases, plus one intentionally skipped live exchange.
+- This update passed all 89 Bun and 57 Swift cases, native source/type contracts and seven focused simulator checks in `artifacts/category-verified.xcresult`, including the three new category cases. Final Release compilation passed in `artifacts/category-release.log`. These are focused checks, not a new local full 191-case run; see [TESTING.md](TESTING.md).
 - Builds use two jobs at reduced priority; shared DerivedData operations remain sequential. Automated tests use the separate checks simulator, and private review configuration is preserved/restored around the CI script.
 
 ## What is ready to review
@@ -17,7 +17,7 @@ Consumer Apps now includes My apps/Discover, real catalog metadata and artwork, 
 
 Families is reachable from Home, Account and Apps. It includes roster/profile views, creation, name/motto/color editing and existing-account guardian invitations. It reuses web Family memberships, PINs, claim hooks and encrypted personal indexing. Generic creation/send screens exclude family templates so they cannot bypass invitation review. See [FAMILIES_INTEGRATION.md](FAMILIES_INTEGRATION.md).
 
-The default web **Colorful** theme is the design source, as clarified by the user. The October 14 review rejected strong page colors: Collection, Inbox, Apps, Home and Families use neutral gray-white/charcoal canvases with opaque white/dark panels. Original categories survive the account adapter: blue badges/IDs, pink achievements, green studies, yellow portfolio, violet assistance, cyan experiences and amber Families. Collection defaults to artwork-led rows on phones/accessibility sizes; regular-width browsing retains tiles. The featured Collection card keeps its distinct stack. Search hides that featured section, includes every match, shows filtering feedback and a vector illustrated empty/reset state. Search covers loaded credentials; Search more checks the next page. See [the drawn-shell brief](design/DRAWN_SHELL_BRIEF.md).
+The default web **Colorful** theme is the design source, as clarified by the user. The October 14 review rejected strong page colors: Collection, Inbox, Apps, Home and Families use neutral gray-white/charcoal canvases with opaque white/dark panels. Original categories survive the account adapter: blue badges/IDs, pink achievements, orange Qualifications, green studies, yellow portfolio, violet assistance, cyan experiences and amber Families. Collection filters include Badges, Achievements, Qualifications, Studies, Portfolio, Assistance, Experiences, IDs, Skills, AI Sessions, Pathways and Insights; unfamiliar partner categories keep their label under Other. Family records stay outside Collection without deleting or reindexing them. Filters cover loaded pages, with partial-result guidance and Load more; they do not claim account-wide search. Collection defaults to artwork-led rows on phones/accessibility sizes; regular-width browsing retains tiles. The featured Collection card keeps its distinct stack. Search hides that featured section, includes every match, shows filtering feedback and a vector illustrated empty/reset state. Search covers loaded credentials; Search more checks the next page. See [the drawn-shell brief](design/DRAWN_SHELL_BRIEF.md).
 
 All four tabs share an experimental soft painted-square mosaic without ink outlines and left-aligned LearnCard wordmark, which crossfades to the section title in the same fixed left slot on scroll, plus the compact action/account island. The user explicitly authorized this brand exploration after finding the implementation too small/timid. Intro/loading logo animation remains deferred. The create control has a clear navy plus on one blue tile; missing/failed profile photos use a round yellow winking face. Inbox has a compact envelope introduction and colorful artwork tiles/list accents, with real credential graphics preserved. Connection requests and notices use person-led rows, distinct action states, and a native illustrated Connect/Not now prompt. See [Inbox integration](INBOX_INTEGRATION.md) for server contracts, count semantics and deferred notification workflows. Avatar, Inbox and empty-search illustrations are editable light/dark SVGs. New Inbox/search copy has four-locale translations.
 
@@ -27,9 +27,9 @@ The app browser is separate from the account SDK. Embedded partner apps support 
 
 ## Installed simulator build
 
-The Home/adaptive-tray/illustrated-fallback build is installed and running on **LearnCard Native Lab**. The executable, Debug dylib, asset catalog, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/home-install-proof.json`). The existing account/profile resumed; Collection displayed 30+ with an Inbox badge of 3 during read-only review. Final Release and Debug/install logs are `artifacts/home-final-release.log` and `artifacts/home-review-install.log`. The agent did not claim/send credentials or act on live connections, family invitations, consent or shared links. Those real-account mutations remain manual validation items. Tests use the separate checks simulator, which is shut down after checks; private review configuration was preserved/restored around the CI script.
+The category-parity build is installed and running on **LearnCard Native Lab**. The executable, Debug dylib, asset catalog, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/category-install-proof.json`). The existing staging account/profile resumed; Collection displayed 30+ and Inbox badge 3 during read-only review. Release and Debug/install logs are `artifacts/category-release.log` and `artifacts/category-review-install.log`. The agent did not claim/send credentials or act on live connections, family invitations, consent or shared links. Tests used the separate checks simulator, which is shut down; private review configuration was preserved/restored.
 
-The full 181-case local run, independent verification of 10 iOS outputs and Release compilation passed; final navigation refinements have three additional Home checks. New hosted CI runs on push; verify its source SHA before reporting final hosted results.
+The current category update passed 89 Bun, 57 Swift and seven focused simulator cases, source/type contracts and Release compilation. The preceding Home baseline passed its full 181-case suite and ten independent iOS output verifications. A new hosted run checks the category source on push; verify its SHA before reporting hosted success.
 
 Open Simulator, select **LearnCard Native Lab**, and open **LearnCard Lab**. This is the review simulator (`ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E`); the automated UI checks use a separate simulator.
 
@@ -46,6 +46,8 @@ The existing ignored local configuration retains the approved test email. A fres
 
 ## Manual review focus
 
+First review the separate Portfolio and Qualifications filters, labels in rows/cards/details, category-scoped search and Load more guidance. Families should remain in its dedicated area. The category mapping is read-only; full authoring parity across all categories remains a separate builder/SDK update.
+
 Home’s new [reference](design/home-drawn-concept-2026-10-15.png) and [design rules](design/DESIGN_SYSTEM.md) guide this pass. Review the house icon and larger tray artwork, illustrated credential/app fallbacks, Inbox summary, installed app → detail flow, and See all → My apps (including when Apps previously had a search/detail open). Data Sharing and Families open native screens. Session activity is explicitly labeled This visit.
 
 The user approved the three generated Account/Data Sharing, Apps and Families boards on October 15. Native layouts now use this direction with actual account/catalog/permission data. Account has grouped drawn icon rows, Data Sharing an illustrated intro and permission tiles, My apps direct Open actions, and Families a constellation/roster plus separate guardian selection and access/PIN review. See [boards, exact prompts and implementation mapping](design/WHIMSY_EXPANSION_BRIEF.md).
@@ -61,6 +63,7 @@ Read-only live checks already confirmed account recovery/resumption, collection/
 ## Remaining work after review
 
 - Apply manual design feedback, including consistent header/chrome behavior across tabs.
+- Extend the builder/SDK contract for full category authoring, including Qualifications; current creation retains its three existing kinds. Category-specific server pagination/search also remains separate.
 - Review the new drawn tray icons, compact typography/rows, search and connection prompt presentation.
 - Validate real staging notification pagination, accepting/dismissing requests and server-created prompts with dedicated accounts. Specialized guardian/device/partner notification actions and push delivery remain separate; ordinary updates are readable/dismissible.
 - Validate real app installation, consent, withdrawal and supported partner actions; physical-device behavior and web sign-in continuity still need review.
@@ -74,6 +77,7 @@ Anonymous/redacted consent, advanced contract flows and deferred partner actions
 
 ## Reference map
 
+- [Credential categories, Qualifications and compatibility rules](CATEGORY_PARITY.md)
 - [Native design system: scale, artwork, color and motion](design/DESIGN_SYSTEM.md)
 - [Home dashboard contracts and web mapping](HOME_INTEGRATION.md)
 - [Home light/dark concept](design/home-drawn-concept-2026-10-15.png)

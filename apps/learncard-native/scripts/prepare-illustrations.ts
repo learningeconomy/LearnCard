@@ -12,6 +12,9 @@ const drawings = (dark: boolean): Record<string, string> => {
     const glyph = (content: string): string =>
         `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#18224E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
     return {
+        CategoryQualification: glyph(
+            `<path d="M12 6H49Q54 6 54 11V43H12Q6 43 6 38V12Q6 6 12 6Z" fill="#FFFFFF"/><path d="M12 6V35Q6 35 6 40M19 17H42M19 25H37"/><path d="M32 43L28 59L39 53L49 59L46 42" fill="#93C5FD"/><path d="M39 29L44 33L50 34L51 40L55 45L50 50L49 55L43 56L39 60L34 56L28 55L27 50L23 45L27 40L28 34L34 33Z" fill="#FDBA74"/><path d="M33 44L37 48L46 39"/>`
+        ),
         CategoryBadge: glyph(
             `<path d="M19 37L15 58L30 49L44 58L42 35" fill="#F9A8D4"/><path d="M32 5L39 10L48 11L51 20L57 27L51 35L48 44L39 45L32 51L24 45L15 44L12 35L6 27L12 20L15 11L24 10Z" fill="#FFFFFF"/><path d="M19 26Q24 18 32 26Q40 18 45 26Q46 33 32 41Q18 33 19 26Z" fill="#22D3EE"/>`
         ),

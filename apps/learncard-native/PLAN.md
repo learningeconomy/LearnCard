@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Category parity update — October 15
+
+Collection now has distinct filters for the web consumer categories, including Portfolio and the newly added Qualifications. Rows, cards and detail metadata use the same localized semantic category rather than the three legacy authoring kinds. Qualifications follows the upstream orange Colorful token and conservative read-only interpretation of historic license/certification records. Families remains in its dedicated native area; unknown partner categories keep their original label under Other. Filtering covers loaded pages, with explicit partial-result guidance. Full-category authoring is a separate builder/SDK update. See [category contracts and sources](CATEGORY_PARITY.md).
+
 ## Home and design system update — October 15
 
 Use [the native design system](design/DESIGN_SYSTEM.md) for scale, color roles, drawn artwork, navigation and motion. The neutral canvas remains the approved direction. Home's graph icon becomes a cute house; tray icon frames respond to logical width (31/36/40 points), and missing credential/app images use bold illustrated fallbacks while supplied artwork stays intact.

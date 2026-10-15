@@ -19,7 +19,7 @@ struct CredentialListRow: View {
                     .lineLimit(textSize.isAccessibilitySize ? nil : 3)
                 Text(credential.issuer).font(.subheadline).foregroundStyle(Palette.secondary)
                     .lineLimit(textSize.isAccessibilitySize ? nil : 2)
-                Text(NativeText.literal(credential.kind.rawValue)).font(.footnote.weight(.medium))
+                Text(credential.categoryTitle).font(.footnote.weight(.medium))
                     .foregroundStyle(Palette.categoryAccent(credential.displayCategory))
             }.frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
             Image(systemName: "chevron.right").font(.caption.weight(.semibold))

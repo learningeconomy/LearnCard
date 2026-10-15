@@ -32,7 +32,7 @@ struct CredentialDetailView: View {
                 }
                 VStack(spacing: 16) {
                     metadata("From", value: credential.issuer)
-                    metadata("Category", value: credential.kind.rawValue)
+                    metadata("Category", value: credential.categoryTitle)
                     metadata("Date", value: credential.date.formatted(date: .abbreviated, time: .omitted))
                     metadata("Status", value: isCreation ? "Reusable creation" : credential.isSample ? "Sample · unsigned" : credential.createdByMe ? "Issued by you · In your collection" : "In your collection")
                 }
@@ -82,6 +82,7 @@ struct CredentialDetailView: View {
             Text(title).foregroundStyle(Palette.secondary)
             Spacer(minLength: 16)
             Text(value).foregroundStyle(Palette.ink).multilineTextAlignment(.trailing)
+                .accessibilityIdentifier("credential-metadata-\(title.lowercased())")
         }.font(.subheadline)
     }
 }

@@ -1,6 +1,6 @@
 # Native regression checks
 
-Latest validation: **181 passing cases**, ten independent iOS output verifications and Release compilation; three final Home checks cover the last navigation refinements. See the October 15 Home section below and [STATUS](STATUS.md) for the installed review build and hosted CI distinction.
+Current configured suite: **191 cases** (89 Bun, 57 Swift, 45 simulator), plus one intentionally skipped live exchange. The preceding Home baseline passed its full 181-case run and hosted CI; category parity validation is recorded in the latest section below. See [STATUS](STATUS.md) for the installed review build and exact hosted-source distinction.
 
 The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -118,7 +118,7 @@ Eight focused checks passed in `artifacts/approved-design-focused.xcresult` befo
 
 ## Home, adaptive tray and illustrated fallbacks — 2026-10-15
 
-Current suite: **181 passing cases** — 84 Bun, 55 Swift (42 XCTest and 13 Swift Testing), and 42 simulator cases. One opt-in live exchange is intentionally skipped. The full run passed in `artifacts/native-regressions-20261015-022805-41537.xcresult`; `artifacts/home-full-ci.log` records the type/source checks, independent verification of ten iOS outputs using the web SDK, and successful Release compilation.
+At the Home checkpoint: **181 passing cases** — 84 Bun, 55 Swift (42 XCTest and 13 Swift Testing), and 42 simulator cases. One opt-in live exchange is intentionally skipped. The full run passed in `artifacts/native-regressions-20261015-022805-41537.xcresult`; `artifacts/home-full-ci.log` records the type/source checks, independent verification of ten iOS outputs using the web SDK, and successful Release compilation.
 
 New coverage checks shared Home/tray unread counts (including duplicate credential arrival notices and read updates), initial installed-app loading versus empty state, lock clearing that state, native plural/name formatting, bounded navigation sizing by logical width, Home → Inbox/Collection/Create, installed app → native listing, My apps selection, and native Data Sharing. French dark mode and Arabic accessibility type screenshots are retained. Navigation labels cap at 18 points after visual review caught mid-word wrapping at large Arabic text sizes; page content continues scaling normally.
 
@@ -126,4 +126,16 @@ After the full run, an explicit Home → Apps entry was refined to clear a previ
 
 Screenshots were inspected for the Home light/dark/RTL layouts and the bold credential category illustrations in Collection/Inbox. Supplied artwork is still preferred; app fallback is a generic illustrated window, not an invented publisher identity. The wider-width sizing contract is tested, but physical-device and iPad layouts are not validated. These are functional checks and visual review, not golden-image baselines.
 
-The preceding pushed parent `c9c0cfbf4` passed [hosted run 38690372140](https://github.com/learningeconomy/LearnCard/actions/runs/38690372140). The new Home commit starts a separate hosted run; do not report the parent result as this update's hosted result.
+The preceding pushed parent `c9c0cfbf4` passed [hosted run 38690372140](https://github.com/learningeconomy/LearnCard/actions/runs/38690372140). The Home commit `4dde77e13383394163bad3ddaa7131d0f6d0adc3` subsequently passed [hosted run 38694796776](https://github.com/learningeconomy/LearnCard/actions/runs/38694796776). The category update gets a separate source-specific run.
+
+## Consumer category parity — 2026-10-15
+
+The configured suite now has **191 cases**: 89 Bun, 57 Swift (42 XCTest and 15 Swift Testing), and 45 simulator cases, plus the intentionally skipped opt-in live exchange. This category change passed all 89 Bun and 57 Swift cases, the native type/source contracts, and **seven focused simulator cases** in `artifacts/category-verified.xcresult`. This is targeted validation, not a new local full 191-case run. The preceding Home baseline passed its full 181-case suite and hosted run linked above.
+
+New protocol cases cover stored/unknown category preservation, explicit issuer-tag precedence, conservative historic Qualifications inference, Certificate versus Certification, first subject/achievement arrays and the standard certified wrapper, with signed proof content unchanged. New core checks keep semantic categories distinct despite the legacy authoring kind and keep Family outside Collection.
+
+Three new UI cases exercise Portfolio and Qualifications independently, category-scoped search/clear, Assistance detail labels, Family filter separation, and French/Arabic dark layouts. Existing creation/action-sheet, claim, Collection search and native sharing cases passed alongside them. Category chips are revealed using native touch-coordinate drags before activation: asking XCTest for an entirely offscreen activation point throws, and the convenience swipe did not reliably move this horizontal nested scroller. The explicit drag passes while retaining assertions on the actual visible controls. Selected pills center after selection.
+
+Portfolio and Qualifications light screenshots and Arabic/French dark screenshots were visually inspected. These are synthetic unsigned fixtures, not account migration or proof reissuance. The suite uses a dedicated simulator and restores private review configuration. Full-category authoring, network-wide category search, physical-device and iPad validation remain outside this change. See [category sources and compatibility rules](CATEGORY_PARITY.md).
+
+Final Release compilation passed in `artifacts/category-release.log`. Debug was rebuilt/installed in Native Lab, and all five installed-build comparisons passed (`artifacts/category-install-proof.json`). The existing staging account resumed with Collection 30+ and Inbox badge 3 during read-only review; no account mutations were performed.

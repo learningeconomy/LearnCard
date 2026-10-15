@@ -14,27 +14,30 @@ public enum CredentialKind: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Original LearnCard category semantics survive the simpler native browsing groups.
-/// Unknown partner categories remain displayable instead of failing account decoding.
-public enum CredentialCategory: Sendable {
-    case badge, achievement, studies, portfolio, assistance, experience, id, family, skill, aiTopic, aiPathway, aiInsight
+/// Presentation categories mirror the consumer Passport; legacy authoring kinds stay wire-compatible.
+public enum CredentialCategory: String, CaseIterable, Sendable {
+    case badge, achievement, qualification, studies, portfolio, assistance, experience, id, family, skill, aiTopic, aiPathway, aiInsight, other
+
+    public static let collectionCategories: [Self] = [.badge, .achievement, .qualification, .studies, .portfolio, .assistance, .experience, .id, .skill, .aiTopic, .aiPathway, .aiInsight]
 
     public static func resolve(_ category: String?, fallback: CredentialKind) -> Self {
         switch category?.lowercased().filter({ $0.isLetter }) {
-        case "socialbadge", "badge", "badges", "boost": .badge
+        case "socialbadge", "meritbadge", "badge", "badges", "boost": .badge
         case "achievement", "achievements": .achievement
-        case "learninghistory", "study", "studies", "learning": .studies
-        case "accomplishment", "portfolio": .portfolio
-        case "accommodation", "assistance": .assistance
-        case "workhistory", "experience", "experiences": .experience
-        case "id", "ids", "membership", "memberships": .id
+        case "qualification", "qualifications": .qualification
+        case "learninghistory", "course", "courses", "study", "studies", "learning": .studies
+        case "accomplishment", "accomplishments", "portfolio": .portfolio
+        case "accommodation", "accommodations", "assistance": .assistance
+        case "workhistory", "resume", "experience", "experiences": .experience
+        case "id", "ids", "membership", "memberships", "globaladminid", "nationalnetworkadminid", "troopleaderid", "scoutid": .id
         case "family": .family
         case "skill", "skills": .skill
-        case "aitopic": .aiTopic
+        case "aitopic", "aisession": .aiTopic
         case "aipathway": .aiPathway
         case "aiinsight": .aiInsight
-        default:
+        case .none, "":
             switch fallback { case .achievement: .achievement; case .membership: .id; case .learning: .studies }
+        default: .other
         }
     }
 
@@ -42,6 +45,7 @@ public enum CredentialCategory: Sendable {
         switch self {
         case .badge: "seal"
         case .achievement: "trophy"
+        case .qualification: "checkmark.seal"
         case .studies: "book.closed"
         case .portfolio: "book.pages"
         case .assistance: "lifepreserver"
@@ -52,6 +56,7 @@ public enum CredentialCategory: Sendable {
         case .aiTopic: "bubble.left.and.bubble.right"
         case .aiPathway: "point.topleft.down.to.point.bottomright.curvepath"
         case .aiInsight: "lightbulb"
+        case .other: "doc.text"
         }
     }
 }
@@ -65,6 +70,7 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
     public let kind: CredentialKind
     public let category: String?
     public var displayCategory: CredentialCategory { .resolve(category, fallback: kind) }
+    public var belongsInCollection: Bool { displayCategory != .family }
     public let date: Date
     public let createdByMe: Bool
     public let isSample: Bool

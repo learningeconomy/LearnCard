@@ -8,7 +8,7 @@ struct CollectionView: View {
     var onScrollStateChange: (Bool) -> Void = { _ in }
     @State private var search = ""
     @State private var appliedQuery = ""
-    @State private var kind: CredentialKind?
+    @State private var category: CredentialCategory?
     @State private var scrolled = false
     @FocusState private var searching: Bool
     @Namespace private var cards
@@ -22,7 +22,7 @@ struct CollectionView: View {
 
     private var credentials: [Credential] {
         (store.snapshot?.credentials ?? []).filter {
-            (kind == nil || $0.kind == kind) &&
+            $0.belongsInCollection && (category == nil || $0.displayCategory == category) &&
             (query.isEmpty || "\($0.title) \($0.issuer) \($0.summary)".localizedCaseInsensitiveContains(appliedQuery))
         }.sorted { $0.date > $1.date }
     }
@@ -48,11 +48,21 @@ struct CollectionView: View {
                 .padding(.horizontal, 16).frame(minHeight: 50)
                 .background(Palette.surface, in: RoundedRectangle(cornerRadius: 18))
                 .overlay(RoundedRectangle(cornerRadius: 18).stroke(searchMode ? Palette.green.opacity(0.6) : .clear, lineWidth: 1.5))
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        filter("All", value: nil)
-                        ForEach(CredentialKind.allCases, id: \.self) { filter($0.rawValue, value: $0) }
-                    }.padding(.vertical, 2).padding(.horizontal, 20)
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            filter("All", value: nil)
+                            ForEach(CredentialCategory.collectionCategories, id: \.self) { filter(NativeText.text("credentialCategory.\($0.rawValue)"), value: $0) }
+                            if store.snapshot?.credentials.contains(where: { $0.displayCategory == .other }) == true {
+                                filter(NativeText.text("credentialCategory.other"), value: .other)
+                            }
+                        }.padding(.vertical, 2).padding(.horizontal, 20)
+                    }.accessibilityIdentifier("collection-categories")
+                        .onChange(of: category) { _, value in
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                                proxy.scrollTo(value?.rawValue ?? "all", anchor: .center)
+                            }
+                        }
                 }
                 .padding(.horizontal, -20)
                 if store.snapshot == nil {
@@ -67,7 +77,7 @@ struct CollectionView: View {
                     }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Palette.surface, in: RoundedRectangle(cornerRadius: 20)).accessibilityIdentifier("collection-filtering")
                 } else if credentials.isEmpty {
-                    if searchMode || kind != nil { searchEmptyState }
+                    if searchMode || category != nil { searchEmptyState }
                     else {
                         EmptyState(symbol: "rectangle.stack", title: "Your next achievement belongs here",
                                    detail: "Receive or create a credential to get started.")
@@ -94,7 +104,7 @@ struct CollectionView: View {
                             if searchMode {
                                 Text(NativeText.count("collection.matches", credentials.count)).font(.caption).foregroundStyle(Palette.secondary)
                             } else {
-                                Text("\(credentials.count)\(store.snapshot?.hasMore == true ? "+" : "")")
+                                Text("\(credentials.count)\(category == nil && store.snapshot?.hasMore == true ? "+" : "")")
                                     .font(.subheadline.monospacedDigit()).foregroundStyle(Palette.secondary)
                             }
                         }
@@ -111,10 +121,11 @@ struct CollectionView: View {
                         }
                     }
                 }
+                if store.snapshot?.hasMore == true, searchMode || category != nil {
+                    Text(NativeText.text(searchMode ? "collection.partialResults" : "collection.partialCategory"))
+                        .font(.caption).foregroundStyle(Palette.secondary)
+                }
                 if searchMode, store.snapshot != nil {
-                    if store.snapshot?.hasMore == true {
-                        Text(NativeText.text("collection.partialResults")).font(.caption).foregroundStyle(Palette.secondary)
-                    }
                     Button(NativeText.text("collection.cancelSearch")) { resetSearch() }
                         .font(.subheadline.weight(.medium)).foregroundStyle(Palette.green).accessibilityIdentifier("collection-search-cancel")
                 }
@@ -173,19 +184,21 @@ struct CollectionView: View {
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
     }
 
-    private func resetSearch() { search = ""; appliedQuery = ""; kind = nil; searching = false }
+    private func resetSearch() { search = ""; appliedQuery = ""; category = nil; searching = false }
 
-    private func filter(_ title: String, value: CredentialKind?) -> some View {
+    private func filter(_ title: String, value: CredentialCategory?) -> some View {
         Button {
-            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { kind = value }
+            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { category = value }
         } label: {
-            Text(title).font(.subheadline.weight(.medium))
-                .foregroundStyle(kind == value ? Palette.selectionInk : Palette.secondary)
+            Text(NativeText.literal(title)).font(.subheadline.weight(.medium))
+                .foregroundStyle(category == value ? Palette.selectionInk : Palette.secondary)
                 .padding(.horizontal, 16).padding(.vertical, 11)
-                .background(kind == value ? Palette.selection : Palette.surface, in: Capsule())
+                .background(category == value ? Palette.selection : Palette.surface, in: Capsule())
 
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(kind == value ? [.isSelected] : [])
+        .id(value?.rawValue ?? "all")
+        .accessibilityAddTraits(category == value ? [.isSelected] : [])
+        .accessibilityIdentifier("collection-category-\(value?.rawValue ?? "all")")
     }
 }
