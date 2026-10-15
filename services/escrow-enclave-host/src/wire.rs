@@ -217,6 +217,9 @@ pub enum Response {
     ConfirmHold {
         confirmed: bool,
         receipt: serde_json::Value,
+        /// Authoritative enclave confirmation time; lca-api derives the
+        /// release deadline from it, so it must survive reserialization.
+        confirmed_hi_ms: u64,
     },
     ResendCode {
         sent: bool,
@@ -225,6 +228,8 @@ pub enum Response {
     SendReleaseWarning {
         sent: bool,
         receipt: serde_json::Value,
+        /// Authoritative enclave warning-sent time (see `confirmed_hi_ms`).
+        release_warning_sent_hi_ms: u64,
     },
     Health {
         ok: bool,
