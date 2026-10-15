@@ -512,7 +512,6 @@ for (const key of [
     'SMART_RESUME_ACCESS_KEY',
     'SMART_RESUME_CONTRACT_URI',
     'LOGIN_PROVIDER_DID',
-    'SKILL_EMBEDDING_GOOGLE_API_KEY',
     'SKILLS_PROVIDER_API_KEY',
     'TWILIO_ACCOUNT_SID',
     'TWILIO_AUTH_TOKEN',
@@ -709,7 +708,6 @@ serviceConfigContract({
         'POSTMARK_API_KEY',
         'MESSAGEBIRD_AUTH_TOKEN',
         'SENTRY_DSN',
-        'SKILL_EMBEDDING_GOOGLE_API_KEY',
         'SMART_RESUME_CLIENT_ID',
         'SMART_RESUME_ACCESS_KEY',
         'SMART_RESUME_CONTRACT_URI',
@@ -744,7 +742,6 @@ serviceConfigContract({
         SMART_RESUME_CONTRACT_URI: 80,
         LOGIN_PROVIDER_DID: 80,
         APP_STORE_ADMIN_PROFILE_IDS: 200,
-        SKILL_EMBEDDING_GOOGLE_API_KEY: 48,
         POSTHOG_API_KEY: 48,
         SENTRY_DSN: 100,
     },
@@ -827,6 +824,32 @@ assertDefaultRoleRuntimeGrant({
     secretPrefix: 'brain-service',
     requireQueueConstructs: true,
 });
+
+// LC-2206: brain's default role may invoke only the reviewed Nova 2 embeddings foundation model
+// in us-east-1 (SigV4). No wildcard model, other Region, or Bedrock API-key permission.
+{
+    const brainService = yaml.load(
+        fs.readFileSync(
+            path.join(root, 'services/learn-card-network/brain-service/serverless.yml'),
+            'utf8'
+        )
+    );
+    const brainStatements = brainService.provider.iam.role.statements;
+    const bedrockGrants = brainStatements.filter(statement =>
+        [statement.Action].flat().some(action => String(action).startsWith('bedrock:'))
+    );
+    assert.deepEqual(bedrockGrants, [
+        {
+            Sid: 'SkillEmbeddingNova2Invoke',
+            Effect: 'Allow',
+            Action: 'bedrock:InvokeModel',
+            Resource: {
+                'Fn::Sub':
+                    'arn:${AWS::Partition}:bedrock:us-east-1::foundation-model/amazon.nova-2-multimodal-embeddings-v1:0',
+            },
+        },
+    ]);
+}
 assertDefaultRoleRuntimeGrant({
     dir: path.join(root, 'services/learn-card-network/learn-cloud-service'),
     secretPrefix: 'learn-cloud-service',

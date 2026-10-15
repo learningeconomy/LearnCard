@@ -103,3 +103,146 @@ describe('credential refresh configuration', () => {
         }
     );
 });
+
+describe('LC-2206 skill embedding configuration', () => {
+    const DEPLOYED_LAMBDA = {
+        ...REQUIRED_ENVIRONMENT,
+        NODE_ENV: 'development',
+        DOMAIN_NAME: 'network.example.com',
+        AWS_LAMBDA_FUNCTION_NAME: 'lcn-brain-service-production-trpc',
+    };
+    const PRODUCTION_CONTAINER = {
+        ...REQUIRED_ENVIRONMENT,
+        NODE_ENV: 'production',
+        DOMAIN_NAME: 'network.example.com',
+    };
+
+    it('defaults to the reviewed Nova 2 model, us-east-1 and 1024 dimensions, disabled', () => {
+        expect(
+            parseBrainServiceEnvironment({ ...REQUIRED_ENVIRONMENT, NODE_ENV: 'test' })
+        ).toMatchObject({
+            SKILL_EMBEDDING_BEDROCK_ENABLED: false,
+            SKILL_EMBEDDING_BEDROCK_MODEL_ID: 'amazon.nova-2-multimodal-embeddings-v1:0',
+            SKILL_EMBEDDING_BEDROCK_REGION: 'us-east-1',
+            SKILL_EMBEDDING_DIMENSION: 1024,
+            SKILL_EMBEDDING_BEDROCK_TIMEOUT_MS: 15_000,
+            SKILL_EMBEDDING_CONCURRENCY: 1,
+        });
+    });
+
+    it.each([
+        ['deployed Lambda', DEPLOYED_LAMBDA],
+        ['production container', PRODUCTION_CONTAINER],
+    ])('accepts the allowlisted model and dimension in a %s', (_name, base) => {
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...base,
+                SKILL_EMBEDDING_BEDROCK_ENABLED: 'true',
+                SKILL_EMBEDDING_BEDROCK_MODEL_ID: 'amazon.nova-2-multimodal-embeddings-v1:0',
+                SKILL_EMBEDDING_DIMENSION: '1024',
+            })
+        ).not.toThrow();
+    });
+
+    it.each([
+        ['deployed Lambda', DEPLOYED_LAMBDA],
+        ['production container', PRODUCTION_CONTAINER],
+    ])('rejects any other model or dimension at startup in a %s', (_name, base) => {
+        // A different Nova 2 revision is valid locally but not allowlisted for deployment.
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...base,
+                SKILL_EMBEDDING_BEDROCK_MODEL_ID: 'amazon.nova-2-multimodal-embeddings-v1:1',
+            })
+        ).toThrow(/SKILL_EMBEDDING_BEDROCK_MODEL_ID/);
+
+        for (const dimension of ['256', '384', '3072']) {
+            expect(() =>
+                parseBrainServiceEnvironment({ ...base, SKILL_EMBEDDING_DIMENSION: dimension })
+            ).toThrow(/SKILL_EMBEDDING_DIMENSION/);
+        }
+
+        expect(() =>
+            parseBrainServiceEnvironment({ ...base, SKILL_EMBEDDING_BEDROCK_REGION: 'us-west-2' })
+        ).toThrow(/SKILL_EMBEDDING_BEDROCK_REGION/);
+    });
+
+    it('rejects the retired Google model and unsupported dimensions everywhere', () => {
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'test',
+                SKILL_EMBEDDING_BEDROCK_MODEL_ID: 'gemini-embedding-001',
+            })
+        ).toThrow(/SKILL_EMBEDDING_BEDROCK_MODEL_ID/);
+
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'test',
+                SKILL_EMBEDDING_DIMENSION: '768',
+            })
+        ).toThrow(/SKILL_EMBEDDING_DIMENSION/);
+    });
+
+    it('allows other Nova 2 dimensions for local experiments', () => {
+        expect(
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'development',
+                IS_OFFLINE: 'true',
+                SKILL_EMBEDDING_DIMENSION: '384',
+            }).SKILL_EMBEDDING_DIMENSION
+        ).toBe(384);
+    });
+
+    it('refuses Bedrock API keys and endpoint overrides in deployed runtimes', () => {
+        const enabled = { ...DEPLOYED_LAMBDA, SKILL_EMBEDDING_BEDROCK_ENABLED: 'true' };
+
+        expect(() =>
+            parseBrainServiceEnvironment({ ...enabled, AWS_BEARER_TOKEN_BEDROCK: 'long-term-key' })
+        ).toThrow(/AWS_BEARER_TOKEN_BEDROCK/);
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...enabled,
+                AWS_ENDPOINT_URL_BEDROCK_RUNTIME: 'https://proxy.example.com',
+            })
+        ).toThrow(/AWS_ENDPOINT_URL_BEDROCK_RUNTIME/);
+    });
+
+    it('requires Bedrock embeddings to be enabled for the startup backfill', () => {
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'test',
+                SKILL_EMBEDDING_BACKFILL_ON_STARTUP: 'true',
+            })
+        ).toThrow(/SKILL_EMBEDDING_BEDROCK_ENABLED/);
+    });
+
+    it.each([
+        'config.dev.json',
+        'config.production.json',
+        'config.scouts.dev.json',
+        'config.scouts.production.json',
+    ])('checked-in %s enables Nova 2 with allowlisted values only', stageFile => {
+        const configPath = fileURLToPath(new URL(`../../config/${stageFile}`, import.meta.url));
+        const config = JSON.parse(readFileSync(configPath, 'utf8'));
+
+        expect(config).toMatchObject({
+            SKILL_EMBEDDING_BEDROCK_ENABLED: 'true',
+            SKILL_EMBEDDING_BEDROCK_MODEL_ID: 'amazon.nova-2-multimodal-embeddings-v1:0',
+            SKILL_EMBEDDING_BEDROCK_REGION: 'us-east-1',
+            SKILL_EMBEDDING_DIMENSION: '1024',
+        });
+        expect(Object.keys(config).some(key => key.includes('GOOGLE'))).toBe(false);
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...DEPLOYED_LAMBDA,
+                ...config,
+                // Credentials come from the runtime-secrets bundle in Lambda.
+                CREDENTIAL_REFRESH_DIGEST_SECRET: 'bundle-secret',
+            })
+        ).not.toThrow();
+    });
+});

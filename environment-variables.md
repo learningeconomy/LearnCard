@@ -358,7 +358,7 @@ using its GitHub secret fallbacks, so services and stages can migrate independen
 
 Brain's bundle holds `SEED`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`,
 `POSTMARK_API_KEY`, `MESSAGEBIRD_AUTH_TOKEN`, `SENTRY_DSN`, `POSTHOG_API_KEY`,
-`SKILL_EMBEDDING_GOOGLE_API_KEY`, `SMART_RESUME_CLIENT_ID`, `SMART_RESUME_ACCESS_KEY`,
+`SMART_RESUME_CLIENT_ID`, `SMART_RESUME_ACCESS_KEY`,
 `SMART_RESUME_CONTRACT_URI`, `CREDENTIAL_REFRESH_DIGEST_SECRET`,
 `SHARE_LINK_REQUEST_HASH_SECRET`, `APP_STORE_ADMIN_PROFILE_IDS`, `LOGIN_PROVIDER_DID`,
 and `NOTIFICATIONS_SERVICE_WEBHOOK_URL` when those integrations are used.
@@ -366,6 +366,10 @@ Optional provider credentials `SKILLS_PROVIDER_API_KEY`, `TWILIO_ACCOUNT_SID`, a
 `TWILIO_AUTH_TOKEN` also belong in the bundle, never stage files.
 Both checked-in Brain stages enable credential refresh, so include its digest secret;
 active share links also require the stable request-hash secret (at least 32 bytes).
+Skill embeddings (LC-2206) need no credential: Brain calls Amazon Nova 2 Multimodal
+Embeddings on Bedrock with its Lambda execution role (SigV4). The retired
+`SKILL_EMBEDDING_GOOGLE_API_KEY` can be deleted from bundles and GitHub secrets once the
+LC-2206 rollback window closes.
 
 LearnCloud's bundle holds `LEARN_CLOUD_SEED`, `LEARN_CLOUD_MONGO_URI`,
 `LEARN_CLOUD_MONGO_DB_NAME`, `RSA_PRIVATE_KEY`, `RSA_PUBLIC_KEY`, `JWT_SIGNING_KEY`,
@@ -481,7 +485,7 @@ The deploy step no longer forwards them (nor `DOMAIN_NAME`, `SENTRY_ENV`,
 `SERVER_URL`, `POSTMARK_FROM_EMAIL`, `MESSAGEBIRD_ORIGINATOR`,
 `CLIENT_APP_DOMAIN_NAME`, `OIDC_TRUSTED_ISSUERS`, `OIDC_EXPECTED_AUDIENCE`,
 `CREDENTIAL_REFRESH_ENABLED` / `_NOTIFICATION_WINDOW_HOURS`,
-`SKILL_EMBEDDING_GOOGLE_MODEL`, and the other captured stage keys). Existing
+`SKILL_EMBEDDING_BEDROCK_*` / `SKILL_EMBEDDING_DIMENSION`, and the other captured stage keys). Existing
 `SEED` / `LEARN_CLOUD_SEED` and the other credential secrets remain unchanged as
 fallbacks used only when `RUNTIME_SECRETS_ID` is unset.
 

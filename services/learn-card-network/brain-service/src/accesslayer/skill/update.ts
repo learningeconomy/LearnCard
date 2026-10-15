@@ -2,6 +2,10 @@ import { TRPCError } from '@trpc/server';
 
 import { neogma } from '@instance';
 import type { FlatSkillType } from 'types/skill';
+import {
+    buildSkillEmbeddingUpdateQuery,
+    type SkillEmbeddingGeneration,
+} from '../../config/skillEmbedding';
 
 export type UpdateSkillInput = Partial<
     Omit<FlatSkillType, 'id' | 'frameworkId' | 'createdAt' | 'updatedAt' | 'parentId'>
@@ -154,27 +158,29 @@ export const deleteSkill = async (
     }
 };
 
-export const updateSkillEmbedding = async (
-    skillId: string,
-    embedding: number[],
-    frameworkId?: string
-): Promise<boolean> => {
-    if (frameworkId) {
-        const result = await neogma.queryRunner.run(
-            `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
-             SET s.embedding = $embedding
-             RETURN count(s) AS count`,
-            { frameworkId, skillId, embedding }
-        );
+export type SkillEmbeddingUpdate = {
+    skillId: string;
+    frameworkId?: string;
+    embedding: number[];
+    /** sha256(identity + text); lets the backfill skip skills already embedded with this generation. */
+    embeddingKey: string;
+    generation: SkillEmbeddingGeneration;
+};
 
-        return Number(result.records[0]?.get('count') ?? 0) > 0;
+export const updateSkillEmbedding = async ({
+    skillId,
+    frameworkId,
+    embedding,
+    embeddingKey,
+    generation,
+}: SkillEmbeddingUpdate): Promise<boolean> => {
+    if (embedding.length !== generation.dimension) {
+        throw new Error('Skill embedding does not match the configured dimension');
     }
 
     const result = await neogma.queryRunner.run(
-        `MATCH (s:Skill {id: $skillId})
-         SET s.embedding = $embedding
-         RETURN count(s) AS count`,
-        { skillId, embedding }
+        buildSkillEmbeddingUpdateQuery(generation, Boolean(frameworkId)),
+        { frameworkId: frameworkId ?? null, skillId, embedding, embeddingKey }
     );
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;

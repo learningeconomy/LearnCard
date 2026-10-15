@@ -12,5 +12,9 @@ export const FlatSkillValidator = SkillValidator.extend({
 export type FlatSkillType = z.infer<typeof FlatSkillValidator>;
 
 export type SkillDbType = FlatSkillType & {
+    /**
+     * Legacy gemini-embedding-001 (768-d) vector, kept only for the LC-2206 rollback window.
+     * Current Nova 2 vectors live in generation-specific properties (see config/skillEmbedding.ts).
+     */
     embedding?: number[];
 };

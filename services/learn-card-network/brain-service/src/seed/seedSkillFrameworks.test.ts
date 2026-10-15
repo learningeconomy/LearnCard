@@ -24,6 +24,9 @@ vi.mock('neogma', () => ({
 }));
 vi.mock('@helpers/skill-embedding.helpers', () => ({
     upsertSkillEmbeddings: mockUpsertSkillEmbeddings,
+    isSkillEmbeddingEnabled: () => false,
+    isSkillEmbeddingError: () => false,
+    getSkillEmbeddingGeneration: vi.fn(),
 }));
 
 describe('seedSkillFrameworks staging env resolution', () => {

@@ -68,8 +68,11 @@ services:
 
             NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
             NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
-            SKILL_EMBEDDING_GOOGLE_API_KEY: ${SKILL_EMBEDDING_GOOGLE_API_KEY:-}
-            SKILL_EMBEDDING_GOOGLE_MODEL: ${SKILL_EMBEDDING_GOOGLE_MODEL:-gemini-embedding-001}
+            # Skill embeddings (Amazon Nova 2 on Bedrock) stay off locally unless you opt in with real
+            # AWS credentials that may call bedrock:InvokeModel in us-east-1 (see LC-2206).
+            SKILL_EMBEDDING_BEDROCK_ENABLED: ${SKILL_EMBEDDING_BEDROCK_ENABLED:-false}
+            SKILL_EMBEDDING_BEDROCK_MODEL_ID: ${SKILL_EMBEDDING_BEDROCK_MODEL_ID:-amazon.nova-2-multimodal-embeddings-v1:0}
+            SKILL_EMBEDDING_DIMENSION: ${SKILL_EMBEDDING_DIMENSION:-1024}
 
             SKILLS_PROVIDER_BASE_URL: ${SKILLS_PROVIDER_BASE_URL:-http://localhost:4000}
             SKILLS_PROVIDER_API_KEY: ${SKILLS_PROVIDER_API_KEY:-notARealKey}

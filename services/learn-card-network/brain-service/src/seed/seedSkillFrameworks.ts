@@ -10,9 +10,13 @@ import {
     type SeedSkillNode,
 } from './skill-frameworks.fixtures';
 import {
+    getSkillEmbeddingGeneration,
+    isSkillEmbeddingEnabled,
+    isSkillEmbeddingError,
     upsertSkillEmbeddings,
     type UpdateSkillEmbeddingFn,
 } from '@helpers/skill-embedding.helpers';
+import { buildSkillEmbeddingUpdateQuery } from '../config/skillEmbedding';
 // Inlined from @helpers/profile.helpers to avoid importing the access/model layer
 // (it transitively pulls in @models, which hits a circular-dependency TDZ under tsx).
 const transformProfileId = (rawInput: string): string =>
@@ -363,24 +367,13 @@ export const addSkillFrameworkAdmin = async (
 };
 
 const buildSeedSkillEmbeddingUpdater = (run: QueryRunnerLike['run']): UpdateSkillEmbeddingFn => {
-    return async (skillId, embedding, frameworkId) => {
-        if (frameworkId) {
-            const result = await run(
-                `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
-                 SET s.embedding = $embedding
-                 RETURN count(s) AS count`,
-                { frameworkId, skillId, embedding }
-            );
-
-            return Number(result.records[0]?.get('count') ?? 0) > 0;
-        }
-
-        const result = await run(
-            `MATCH (s:Skill {id: $skillId})
-             SET s.embedding = $embedding
-             RETURN count(s) AS count`,
-            { skillId, embedding }
-        );
+    return async ({ skillId, frameworkId, embedding, embeddingKey, generation }) => {
+        const result = await run(buildSkillEmbeddingUpdateQuery(generation, Boolean(frameworkId)), {
+            frameworkId: frameworkId ?? null,
+            skillId,
+            embedding,
+            embeddingKey,
+        });
 
         return Number(result.records[0]?.get('count') ?? 0) > 0;
     };
@@ -398,9 +391,11 @@ const getSeedSkillsMissingEmbedding = async (
         code?: string;
     }>
 > => {
+    const generation = getSkillEmbeddingGeneration();
+    // Property names come from resolveSkillEmbeddingGeneration ([a-z0-9_] only).
     const result = await run(
         `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
-         WHERE s.embedding IS NULL
+         WHERE s.${generation.vectorProperty} IS NULL
          OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
          RETURN s AS s, parent.id AS parentId
          ORDER BY s.id`,
@@ -421,19 +416,18 @@ const getSeedSkillsMissingEmbedding = async (
     });
 };
 
-const describeEmbeddingBackfillFailure = (error: unknown): string => {
-    const message = error instanceof Error ? error.message : String(error);
-    const normalized = message.toLowerCase();
+export const describeEmbeddingBackfillFailure = (error: unknown): string => {
+    const code = isSkillEmbeddingError(error) ? error.code : undefined;
 
-    if (normalized.includes('quota exceeded') || normalized.includes('resource_exhausted')) {
-        return '\nEmbedding quota was reached. \nThe frameworks were seeded, but semantic search will stay limited until the Google embedding quota resets or you switch to a paid key.\n';
+    if (code === 'throttled') {
+        return 'Bedrock embedding requests were throttled. The frameworks were seeded, but some semantic search embeddings were skipped for now; the startup backfill will fill them in.';
     }
 
-    if (normalized.includes('rate limits') || normalized.includes('too many requests')) {
-        return 'Google embedding requests were rate-limited. The frameworks were seeded, but some semantic search embeddings were skipped for now.';
+    if (code === 'access_denied') {
+        return 'Bedrock denied the embedding request. Check model access for Nova 2 Multimodal Embeddings and the bedrock:InvokeModel grant for your AWS credentials.';
     }
 
-    return `${message}\nUse \`bun run skill-frameworks add-admin\` to add admins.`;
+    return `Skill embedding failed (${code ?? 'unknown'}).\nUse \`bun run skill-frameworks add-admin\` to add admins.`;
 };
 
 const upsertSkillNode = async (
@@ -589,7 +583,7 @@ export const seedSkillFrameworkFixtures = async (
             await upsertSkillNode(run, framework, rootSkill);
         }
 
-        if (!embeddingBackfillFailureSummary) {
+        if (!embeddingBackfillFailureSummary && isSkillEmbeddingEnabled()) {
             const missingEmbeddingSkills = await getSeedSkillsMissingEmbedding(run, framework.id);
 
             if (missingEmbeddingSkills.length > 0) {
@@ -609,7 +603,7 @@ export const seedSkillFrameworkFixtures = async (
 
     if (embeddingBackfillFailureSummary) {
         options.log?.warn?.(
-            `Embedding backfill was skipped after the first framework because Google rejected the request: ${embeddingBackfillFailureSummary}`
+            `Embedding backfill was skipped for the remaining frameworks: ${embeddingBackfillFailureSummary}`
         );
         options.log?.warn?.(
             'The frameworks were still seeded. Use `bun run skill-frameworks add-admin` to add admins. Semantic search will keep using whichever embeddings already exist.'

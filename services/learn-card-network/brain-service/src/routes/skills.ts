@@ -22,10 +22,13 @@ import {
 import { createSkill } from '@accesslayer/skill/create';
 import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import {
-    generateEmbeddingForText,
-    getCachedEmbeddingForText,
+    generateQueryEmbedding,
+    getCachedQueryEmbedding,
+    getSkillEmbeddingGeneration,
+    isSkillEmbeddingError,
     upsertSkillEmbeddings,
 } from '@helpers/skill-embedding.helpers';
+import { NOVA2_MAX_TEXT_CHARS } from '../config/skillEmbedding';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
 import {
     TagValidator,
@@ -226,7 +229,15 @@ export const skillsRouter = t.router({
         .query(async ({ ctx, input }) => {
             const profileId = ctx.user.profile.profileId;
             const { text, frameworkId, limit } = input;
-            const cachedEmbedding = await getCachedEmbeddingForText(text);
+
+            if (text.trim().length > NOVA2_MAX_TEXT_CHARS) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Semantic search text must be at most ${NOVA2_MAX_TEXT_CHARS} characters`,
+                });
+            }
+
+            const cachedEmbedding = await getCachedQueryEmbedding(text);
 
             if (!cachedEmbedding) {
                 const rateLimitKey = `skill-semantic-search-rate:${profileId}`;
@@ -249,16 +260,37 @@ export const skillsRouter = t.router({
 
             let embedding: number[];
             try {
-                embedding = cachedEmbedding ?? (await generateEmbeddingForText(text));
+                embedding = cachedEmbedding ?? (await generateQueryEmbedding(text));
             } catch (error) {
-                console.error('Failed to generate embedding for skill search:', error);
+                const code = isSkillEmbeddingError(error) ? error.code : 'failed';
+                console.error(`Failed to generate embedding for skill search: ${code}`);
+
+                if (code === 'throttled') {
+                    throw new TRPCError({
+                        code: 'TOO_MANY_REQUESTS',
+                        message: 'Skill search is rate limited. Please try again shortly.',
+                    });
+                }
+
+                if (code === 'unavailable' || code === 'timeout' || code === 'disabled') {
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message: 'Skill search is temporarily unavailable',
+                    });
+                }
+
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to generate embedding for skill search',
                 });
             }
 
-            const results = await searchSkillsByEmbedding(embedding, limit, frameworkId);
+            const results = await searchSkillsByEmbedding(
+                embedding,
+                limit,
+                frameworkId,
+                getSkillEmbeddingGeneration()
+            );
 
             return {
                 records: results.map(({ skill, score }) => ({

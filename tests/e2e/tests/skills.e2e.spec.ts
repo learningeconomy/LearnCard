@@ -269,7 +269,7 @@ describe('Skills & Frameworks E2E', () => {
     });
 
     test('can semantic search skills by description', async ({ skip }) => {
-        if (!process.env.SKILL_EMBEDDING_GOOGLE_API_KEY) {
+        if (process.env.SKILL_EMBEDDING_BEDROCK_ENABLED !== 'true') {
             skip();
             return;
         }
