@@ -2,95 +2,161 @@ import SwiftUI
 import LearnCardNativeSDK
 import LearnCardNativeCore
 
-/// A compact personal dashboard. Counts describe loaded data; activity is session-local.
+/// A personal landing place built from existing account services, not synthetic analytics.
 struct HomeView: View {
     @Environment(\.locale) private var nativeLocale
+    @Environment(\.dynamicTypeSize) private var textSize
     let store: AppStore
     var profileName: String?
     let openInbox: () -> Void
     let create: () -> Void
     let receive: () -> Void
+    let openCollection: () -> Void
+    let openApps: (Bool) -> Void
     var onScrollStateChange: (Bool) -> Void = { _ in }
-    @State private var scrolled = false
-    @Environment(\.dynamicTypeSize) private var textSize
+    private var consumer: ConsumerAppsStore { store.consumer }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                PageHeading(title: "Home")
-                Text(profileName.map { "Welcome back, \($0)." } ?? "A little space for what's next.")
-                    .font(.title3.weight(.medium)).foregroundStyle(Palette.secondary)
-                (textSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))) {
-                    Button(action: openInbox) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Image(systemName: "tray.and.arrow.down").font(.title2)
-                            Text("\(store.snapshot?.offers.count ?? 0)").font(.largeTitle.bold())
-                            Text("To review").font(.subheadline.weight(.medium))
-                        }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
-                            .foregroundStyle(Palette.cardInk).background(Palette.cyanCard, in: RoundedRectangle(cornerRadius: 24))
-                    }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-inbox")
+            VStack(alignment: .leading, spacing: NativeLayout.sectionGap) {
+                VStack(alignment: .leading, spacing: 8) {
+                    PageHeading(title: "Home")
+                    Text(profileName.flatMap { $0.isEmpty ? nil : NativeText.format("home.greetingName", $0) } ?? NativeText.text("home.greeting"))
+                        .font(.title3).foregroundStyle(Palette.secondary)
+                }
+                inboxCard
+                VStack(spacing: 0) {
+                    Button(action: openCollection) {
+                        DrawnSettingsRow(title: NativeText.text("home.collection"), symbol: .collection, tint: Palette.blueCard,
+                                         subtitle: NativeText.text("home.collectionBody"))
+                    }.accessibilityIdentifier("home-collection")
+                    rowDivider
                     Button(action: create) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Image(systemName: "plus").font(.title2)
-                            Text(NativeText.literal("Create")).font(.title2.bold())
-                            Text("Celebrate someone").font(.subheadline.weight(.medium))
-                        }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).padding(20)
-                            .foregroundStyle(Palette.cardInk).background(Palette.pinkCard, in: RoundedRectangle(cornerRadius: 24))
-                    }.buttonStyle(CredentialPressStyle())
-                }.fixedSize(horizontal: false, vertical: true)
-                NavigationLink {
-                    CreationsView(store: store)
-                } label: {
-                    HStack(spacing: 14) {
-                        Image(systemName: "rectangle.stack.badge.plus").font(.title2).foregroundStyle(Palette.green)
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(NativeText.literal("Your creations")).font(.headline).foregroundStyle(Palette.ink)
-                            Text("Credentials you can give again").font(.caption).foregroundStyle(Palette.secondary)
-                        }
-                        Spacer(); Image(systemName: "chevron.right").foregroundStyle(Palette.secondary)
-                    }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
-                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-creations")
-                NavigationLink { FamiliesView(appStore: store) } label: {
-                    HStack(spacing: 14) {
-                        Image(systemName: "person.2").font(.system(size: 22, weight: .regular)).foregroundStyle(Palette.cardInk)
-                            .frame(width: 44, height: 44).background(Palette.familyCard, in: Circle())
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(NativeText.text("family.title")).font(.headline).foregroundStyle(Palette.ink)
-                            Text(NativeText.text("family.subtitle")).font(.caption).foregroundStyle(Palette.secondary)
-                        }.frame(maxWidth: .infinity, alignment: .leading)
-                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.secondary)
-                    }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
-                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-families")
+                        DrawnSettingsRow(title: NativeText.text("home.create"), symbol: .pencil, tint: Palette.pinkCard,
+                                         subtitle: NativeText.text("home.createBody"))
+                    }.accessibilityIdentifier("home-create")
+                    rowDivider
+                    NavigationLink { CreationsView(store: store) } label: {
+                        DrawnSettingsRow(title: "Your creations", symbol: .credential, tint: Palette.studiesCard,
+                                         subtitle: NativeText.text("home.creationsBody"))
+                    }.accessibilityIdentifier("home-creations")
+                }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
+                appsSection
+                VStack(spacing: 0) {
+                    NavigationLink { FamiliesView(appStore: store) } label: {
+                        DrawnSettingsRow(title: NativeText.text("family.title"), symbol: .family, tint: Palette.familyCard,
+                                         subtitle: NativeText.text("family.subtitle"))
+                    }.accessibilityIdentifier("home-families")
+                    rowDivider
+                    NavigationLink { DataSharingView(consumer: consumer) } label: {
+                        DrawnSettingsRow(title: NativeText.text("sharing.title"), symbol: .sharing, tint: Palette.tealCard,
+                                         subtitle: NativeText.text("sharing.intro"))
+                    }.accessibilityIdentifier("home-data-sharing")
+                }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
                 if !store.isLive {
                     Button("Try a sample claim link", action: receive).accessibilityIdentifier("receive")
-                        .font(.subheadline.weight(.medium)).foregroundStyle(Palette.selection)
+                        .font(.subheadline.weight(.medium)).foregroundStyle(Palette.selection).frame(minHeight: 44)
                 }
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Recent activity").font(.title3.bold()).foregroundStyle(Palette.ink)
-                    Text("Created, received, and sent during this session.").font(.subheadline).foregroundStyle(Palette.secondary)
-                    if store.snapshot?.activity.isEmpty != false {
-                        Text("Your next action will appear here.").font(.body).foregroundStyle(Palette.secondary).padding(.vertical, 16)
-                    }
-                    ForEach(store.snapshot?.activity ?? []) { item in
-                        HStack(alignment: .top, spacing: 14) {
-                            Image(systemName: item.symbol).font(.body).foregroundStyle(Palette.green)
-                                .frame(width: 40, height: 40).background(Palette.mint, in: Circle()).accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text(item.title).font(.headline).foregroundStyle(Palette.ink)
-                                Text(item.detail).font(.subheadline).foregroundStyle(Palette.secondary)
-                                Text(item.date, style: .relative).font(.caption).foregroundStyle(Palette.secondary)
-                            }
-                            Spacer(minLength: 0)
-                        }.padding(.vertical, 8)
-                    }
-                }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
-            }.padding(20)
+                HomeSessionActivity(items: store.snapshot?.activity ?? [])
+            }.padding(NativeLayout.pageInset)
         }
         .background(SectionBackground(tint: Palette.homeCanvas))
-        .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value; onScrollStateChange(value) }
+        .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in onScrollStateChange(value) }
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Palette.homeCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
-        .refreshable { await store.refresh() }
+        .task { await consumer.loadInstalled() }
+        .refreshable { await store.refresh(); await store.inbox.load(); await consumer.loadInstalled() }
+    }
+
+    private var rowDivider: some View { Divider().padding(.leading, 74) }
+
+    private var inboxCard: some View {
+        Button(action: openInbox) {
+            (textSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(spacing: 10))) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(NativeText.text("home.ready")).font(.title3.bold()).foregroundStyle(Palette.ink)
+                    if store.snapshot == nil || !store.inbox.loaded {
+                        if store.error != nil || store.inbox.error != nil {
+                            Text(NativeText.text("home.inboxRetry")).font(.subheadline).foregroundStyle(Palette.secondary)
+                        } else { ProgressView(NativeText.text("inbox.loading")).font(.subheadline) }
+                    } else {
+                        Text(NativeText.count("home.offers", store.snapshot?.offers.count ?? 0)).font(.subheadline)
+                            .foregroundStyle(Palette.secondary).accessibilityIdentifier("home-summary-offers")
+                        if store.unreadInboxUpdateCount > 0 {
+                            Text(NativeText.count("home.updates", store.unreadInboxUpdateCount)).font(.subheadline)
+                                .foregroundStyle(Palette.secondary).accessibilityIdentifier("home-summary-updates")
+                        }
+                        if store.inbox.error != nil { Text(NativeText.text("home.inboxRetry")).font(.caption).foregroundStyle(Palette.secondary) }
+                    }
+                    HStack(spacing: 6) {
+                        Text(NativeText.text("home.reviewInbox"))
+                        Image(systemName: "arrow.forward").accessibilityHidden(true)
+                    }.font(.subheadline.weight(.semibold)).foregroundStyle(Palette.green).padding(.top, 6)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+                Image("HomeInboxIllustration").resizable().scaledToFit().frame(width: 98, height: 104).accessibilityHidden(true)
+            }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+                .background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
+        }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-inbox")
+    }
+
+    private var appsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(NativeText.text("home.apps")).font(.title2.bold()).foregroundStyle(Palette.ink)
+                Spacer(minLength: 8)
+                Button(NativeText.text("home.seeAll")) { openApps(false) }.font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Palette.selection).frame(minHeight: 44).accessibilityIdentifier("home-apps")
+            }
+            if consumer.installedApps.isEmpty && (consumer.installedBusy || !consumer.installedLoaded && consumer.error == nil) {
+                ProgressView(NativeText.text("home.loadingApps")).padding(20).frame(maxWidth: .infinity)
+            } else if let error = consumer.error, consumer.installedApps.isEmpty {
+                ConsumerErrorCard(error: error) { Task { consumer.error = nil; await consumer.loadInstalled() } }
+            } else if consumer.installedApps.isEmpty {
+                Button { openApps(true) } label: {
+                    DrawnSettingsRow(title: NativeText.text("home.discover"), symbol: .add, tint: Palette.lilacCard,
+                                     subtitle: NativeText.text("home.discoverBody"))
+                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-discover")
+                    .background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(consumer.installedApps.prefix(3).enumerated()), id: \.element.id) { index, app in
+                        if index > 0 { rowDivider }
+                        NavigationLink { ConsumerAppDetailView(app: app, store: store, openInbox: openInbox) } label: {
+                            HStack(spacing: NativeLayout.rowGap) {
+                                ConsumerAppIcon(url: app.iconURL, title: app.title, size: 48)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(app.title).font(.headline).foregroundStyle(Palette.ink)
+                                    Text(app.tagline).font(.subheadline).foregroundStyle(Palette.secondary)
+                                }.frame(maxWidth: .infinity, alignment: .leading)
+                                Image(systemName: "chevron.forward").font(.subheadline).foregroundStyle(Palette.secondary).accessibilityHidden(true)
+                            }.padding(12).frame(minHeight: 74).contentShape(Rectangle())
+                        }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-app-\(app.id)")
+                    }
+                }.background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
+            }
+        }
+    }
+}
+
+private struct HomeSessionActivity: View {
+    @Environment(\.locale) private var nativeLocale
+    let items: [Activity]
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(NativeText.text("home.activity")).font(.title2.bold()).foregroundStyle(Palette.ink)
+            Text(NativeText.text("home.activityBody")).font(.subheadline).foregroundStyle(Palette.secondary)
+            if items.isEmpty { Text(NativeText.text("home.emptyActivity")).font(.body).foregroundStyle(Palette.secondary) }
+            ForEach(items) { item in
+                HStack(alignment: .top, spacing: NativeLayout.rowGap) {
+                    DrawnTile(symbol: .credential, tint: Palette.blueCard, size: 40)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(item.title).font(.headline).foregroundStyle(Palette.ink)
+                        Text(item.detail).font(.subheadline).foregroundStyle(Palette.secondary)
+                        Text(item.date, style: .relative).font(.caption).foregroundStyle(Palette.secondary)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(.vertical, 4)
+            }
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
     }
 }

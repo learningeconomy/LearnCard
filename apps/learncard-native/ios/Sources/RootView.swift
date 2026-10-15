@@ -16,6 +16,8 @@ struct RootView: View {
     @State private var offer: Credential?
     @State private var receivedOffer: Credential?
     @State private var selectedTab = 0
+    @State private var discoverApps = false
+    @State private var appsEntry = 0
     @State private var compactBrands = Array(repeating: false, count: 4)
     @State private var showFamilyReview = false
 
@@ -35,15 +37,17 @@ struct RootView: View {
                 .badge(inboxCount)
                 .tag(1)
             NavigationStack {
-                AppsView(store: store, create: { showCreate = true }, openInbox: { selectedTab = 1 }, onScrollStateChange: { compactBrands[2] = $0 })
+                AppsView(store: store, create: { showCreate = true }, openInbox: { selectedTab = 1 }, discover: $discoverApps, onScrollStateChange: { compactBrands[2] = $0 })
                     .toolbar { header(tab: 2) }
             }
+                .id(appsEntry)
                 .tabItem { Label { Text(NativeText.literal("Apps")) } icon: { Image(selectedTab == 2 ? "AppsTabActive" : "AppsTab").renderingMode(.original) } }
                 .tag(2)
             NavigationStack {
                 HomeView(store: store, profileName: account?.state?.profileName,
                          openInbox: { selectedTab = 1 }, create: { showCreate = true },
-                         receive: { showReceive = true }, onScrollStateChange: { compactBrands[3] = $0 })
+                         receive: { showReceive = true }, openCollection: { selectedTab = 0 },
+                         openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
                     .toolbar { header(tab: 3) }
             }
                 .tabItem { Label { Text(NativeText.literal("Home")) } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
@@ -101,8 +105,7 @@ struct RootView: View {
     }
 
     private var inboxCount: Int {
-        let offers = store.snapshot?.offers ?? []
-        return offers.count + store.inbox.updates(excluding: Set(offers.map(\.id))).filter { !$0.read }.count
+        store.inboxCount
     }
     private var availablePrompt: InboxItem? {
         guard !showReceive, !showCreate, !showAccount, !showActions, !showExisting, !showShare, !showFamilyReview,

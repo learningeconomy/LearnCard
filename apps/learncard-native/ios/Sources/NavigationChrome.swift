@@ -1,5 +1,6 @@
 import SwiftUI
 import LearnCardNativeSDK
+import LearnCardNativeCore
 
 enum CollectionAction { case create, send, share }
 
@@ -30,16 +31,19 @@ struct NativeTabTray: View {
     @Binding var selection: Int
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var highlight
+    @State private var availableWidth: CGFloat = 0
+    @ScaledMetric(relativeTo: .footnote) private var labelSize = 14.0
     let inboxCount: Int
     private let names = ["Collection", "Inbox", "Apps", "Home"]
     private let icons = ["CollectionTab", "InboxTab", "AppsTab", "HomeTab"]
+    private var metrics: NavigationMetrics { NavigationMetrics(availableWidth: availableWidth) }
     var body: some View {
         HStack(spacing: 0) {
             ForEach(0..<4) { tab in
                 Button { selection = tab } label: {
                     VStack(spacing: 4) {
                         Image(icons[tab] + (selection == tab ? "Active" : ""))
-                            .resizable().scaledToFit().frame(width: 31, height: 31)
+                            .resizable().scaledToFit().frame(width: metrics.iconSize, height: metrics.iconSize)
                             .overlay(alignment: .topTrailing) {
                                 if tab == 1 && inboxCount > 0 {
                                     Text(inboxCount > 99 ? "99+" : "\(inboxCount)").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
@@ -47,9 +51,11 @@ struct NativeTabTray: View {
                                         .background(Color.red, in: Capsule()).offset(x: 8, y: -3).accessibilityHidden(true)
                                 }
                             }.accessibilityHidden(true)
-                        Text(tab == 1 ? NativeText.text("nav.inbox.short") : NativeText.literal(names[tab])).font(.footnote.weight(selection == tab ? .semibold : .medium))
+                        Text(tab == 1 ? NativeText.text("nav.inbox.short") : NativeText.literal(names[tab]))
+                            .font(.system(size: min(labelSize, 18), weight: selection == tab ? .semibold : .medium))
+                            .lineLimit(2).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                             .foregroundStyle(selection == tab ? Palette.selection : Palette.secondary)
-                    }.frame(maxWidth: .infinity, minHeight: 68).contentShape(Rectangle())
+                    }.frame(maxWidth: .infinity, minHeight: metrics.minimumItemHeight).contentShape(Rectangle())
                         .overlay(alignment: .bottom) {
                             if selection == tab {
                                 Capsule().fill(Palette.selection).frame(width: 32, height: 3)
@@ -62,6 +68,7 @@ struct NativeTabTray: View {
                     .accessibilityIdentifier("nav-\(names[tab].lowercased())")
             }
         }.padding(.top, 6).padding(.bottom, 5).padding(.horizontal, 8)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
             .background(Palette.surface.ignoresSafeArea(edges: .bottom))
             .overlay(alignment: .top) { Rectangle().fill(Palette.line.opacity(0.6)).frame(height: 0.5) }
             .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.86), value: selection)

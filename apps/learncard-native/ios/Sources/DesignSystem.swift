@@ -2,6 +2,14 @@ import SwiftUI
 import LearnCardNativeSDK
 import LearnCardNativeCore
 
+/// Shared native rhythm. Typography scales with Dynamic Type, never screenshot pixels.
+enum NativeLayout {
+    static let pageInset: CGFloat = 20
+    static let sectionGap: CGFloat = 24
+    static let rowGap: CGFloat = 14
+    static let surfaceRadius: CGFloat = 24
+}
+
 enum Palette {
     static let ink = Color(light: 0x18224E, dark: 0xEFF0F5)
     static let secondary = Color(light: 0x353E64, dark: 0xC5C8D3)
@@ -133,9 +141,27 @@ struct CredentialArtwork: View {
     }
 
     private var fallback: some View {
-        Image(systemName: credential.displayCategory.symbol)
-            .font(.system(size: size * 0.36, weight: .light))
-            .foregroundStyle(Palette.categoryAccent(credential.displayCategory))
+        Image(credential.displayCategory.illustration).resizable().scaledToFit().padding(size * 0.13)
+            .frame(width: size, height: size).background(Palette.categoryTint(credential.displayCategory))
+    }
+}
+
+private extension CredentialCategory {
+    var illustration: String {
+        switch self {
+        case .badge: "CategoryBadge"
+        case .achievement: "CategoryAchievement"
+        case .studies: "CategoryStudies"
+        case .portfolio: "CategoryPortfolio"
+        case .assistance: "CategoryAssistance"
+        case .experience: "CategoryExperience"
+        case .id: "CategoryID"
+        case .family: "CategoryFamily"
+        case .skill: "CategorySkill"
+        case .aiTopic: "CategoryTopic"
+        case .aiPathway: "CategoryPathway"
+        case .aiInsight: "CategoryInsight"
+        }
     }
 }
 

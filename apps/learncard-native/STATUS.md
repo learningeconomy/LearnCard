@@ -1,12 +1,12 @@
 # Native experiment handoff — 2026-10-15
 
-The approved Account/Data Sharing, Apps and Families designs are implemented with editable drawn SVG icons, compact grouped rows and family smiley illustrations. Credential details now start a visible automatic tilt and sheen on arrival. The header keeps a fixed left logo/label slot, crossfading LearnCard into the section name, with a tighter action/profile pill. Neutral page canvases remain.
+Home now has an illustrated Inbox summary, collection/creation shortcuts, installed apps, Families and native Data Sharing. A cute house replaces the graph icon, and tray icons scale with logical screen width. Bold drawn category/app fallbacks replace thin system icons and initials while supplied images remain. The native design system records scale, Colorful accents, neutral canvases, artwork and motion rules. The earlier Account/Apps/Families layouts, stable header and automatic detail-card tilt/sheen remain.
 
 - Branch: `codex/vesper-73`.
 - Checkout: `/Users/donny/.codex/worktrees/vesper-73/LearnCard`; preserve unrelated primary-checkout work.
-- Baseline `c3db8563b` passed [hosted CI 38638878502](https://github.com/learningeconomy/LearnCard/actions/runs/38638878502), including 171 cases, 10 independent iOS output checks and Release compilation. That baseline is distinct from this implementation's fresh branch CI.
-- Current suite: **174 cases** — 84 Bun, 51 Swift and 39 simulator cases, plus one intentionally skipped live exchange.
-- Full local run passed all 174 cases, source contracts, independent verification of 10 iOS outputs and Release compilation. Result: `artifacts/native-regressions-20261015-014409-23844.xcresult`. A final five-digit PIN input cap and formatting cleanup then passed three focused dark-mode Account/Data Sharing/invitation checks in `artifacts/approved-design-dark-final.xcresult`. See [TESTING.md](TESTING.md) for exact evidence and boundaries.
+- Baseline `c9c0cfbf4` passed [hosted CI 38690372140](https://github.com/learningeconomy/LearnCard/actions/runs/38690372140), including the prior 174-case suite and Release compilation. This Home implementation gets a separate run on push.
+- Current suite: **181 cases** — 84 Bun, 55 Swift and 42 simulator cases, plus one intentionally skipped live exchange.
+- Full local run passed all 181 cases, source contracts, independent verification of 10 iOS outputs and Release compilation. Result: `artifacts/native-regressions-20261015-022805-41537.xcresult`. The final Home → Apps stack/search reset and session-text locale observation then passed all three Home cases in `artifacts/home-final.xcresult`. See [TESTING.md](TESTING.md) for evidence and boundaries.
 - Builds use two jobs at reduced priority; shared DerivedData operations remain sequential. Automated tests use the separate checks simulator, and private review configuration is preserved/restored around the CI script.
 
 ## What is ready to review
@@ -27,9 +27,9 @@ The app browser is separate from the account SDK. Embedded partner apps support 
 
 ## Installed simulator build
 
-The approved Account/Apps/Families and automatic-motion build is installed and running on **LearnCard Native Lab**. The executable, Debug dylib, asset catalog, account SDK and private review configuration match the final Debug build by SHA-256 comparisons. The existing account/profile resumed; live credential loading is read-only. The agent did not claim/send credentials or act on live connections, family invitations, consent or shared links. Those real-account mutations remain manual validation items. Tests use the separate checks simulator, which is shut down after checks; private review configuration was preserved/restored around the CI script.
+The Home/adaptive-tray/illustrated-fallback build is installed and running on **LearnCard Native Lab**. The executable, Debug dylib, asset catalog, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/home-install-proof.json`). The existing account/profile resumed; Collection displayed 30+ with an Inbox badge of 3 during read-only review. Final Release and Debug/install logs are `artifacts/home-final-release.log` and `artifacts/home-review-install.log`. The agent did not claim/send credentials or act on live connections, family invitations, consent or shared links. Those real-account mutations remain manual validation items. Tests use the separate checks simulator, which is shut down after checks; private review configuration was preserved/restored around the CI script.
 
-The full 174-case local run, independent verification of 10 iOS outputs and Release compilation passed. Final PIN/contrast refinements have focused dark-mode evidence. New hosted CI runs on push; verify its source SHA before reporting final hosted results.
+The full 181-case local run, independent verification of 10 iOS outputs and Release compilation passed; final navigation refinements have three additional Home checks. New hosted CI runs on push; verify its source SHA before reporting final hosted results.
 
 Open Simulator, select **LearnCard Native Lab**, and open **LearnCard Lab**. This is the review simulator (`ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E`); the automated UI checks use a separate simulator.
 
@@ -45,6 +45,8 @@ For a DEBUG review starting directly at Families, append `--review-families`. It
 The existing ignored local configuration retains the approved test email. A fresh checkout requires its own test-login configuration; see [README](README.md). The CI build configuration uses a non-deliverable test address and should not replace the live review configuration.
 
 ## Manual review focus
+
+Home’s new [reference](design/home-drawn-concept-2026-10-15.png) and [design rules](design/DESIGN_SYSTEM.md) guide this pass. Review the house icon and larger tray artwork, illustrated credential/app fallbacks, Inbox summary, installed app → detail flow, and See all → My apps (including when Apps previously had a search/detail open). Data Sharing and Families open native screens. Session activity is explicitly labeled This visit.
 
 The user approved the three generated Account/Data Sharing, Apps and Families boards on October 15. Native layouts now use this direction with actual account/catalog/permission data. Account has grouped drawn icon rows, Data Sharing an illustrated intro and permission tiles, My apps direct Open actions, and Families a constellation/roster plus separate guardian selection and access/PIN review. See [boards, exact prompts and implementation mapping](design/WHIMSY_EXPANSION_BRIEF.md).
 
@@ -72,6 +74,9 @@ Anonymous/redacted consent, advanced contract flows and deferred partner actions
 
 ## Reference map
 
+- [Native design system: scale, artwork, color and motion](design/DESIGN_SYSTEM.md)
+- [Home dashboard contracts and web mapping](HOME_INTEGRATION.md)
+- [Home light/dark concept](design/home-drawn-concept-2026-10-15.png)
 - [Product and implementation plan](PLAN.md)
 - [Consumer Apps contracts and limitations](APPS_INTEGRATION.md)
 - [Inbox connections and prompt contracts](INBOX_INTEGRATION.md)

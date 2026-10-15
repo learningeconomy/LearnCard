@@ -32,6 +32,16 @@ import LearnCardNativeCore
 }
 
 @MainActor final class ConsumerAppsTests: XCTestCase {
+    func testHomeInstalledLoadingStartsUnknownAndLockClearsItsLoadedState() async {
+        let store = ConsumerAppsStore(service: DemoConsumerAppService())
+        XCTAssertFalse(store.installedLoaded)
+        store.error = .connection
+        await store.loadInstalled()
+        XCTAssertTrue(store.installedLoaded); XCTAssertNil(store.error)
+        XCTAssertEqual(store.installedApps.map(\.id), ["sample-earth"])
+        store.lock()
+        XCTAssertFalse(store.installedLoaded); XCTAssertTrue(store.installedApps.isEmpty)
+    }
     func testLockDiscardsLateCatalogRead() async {
         let service = DelayedConsumer(), store = ConsumerAppsStore(service: service)
         let task = Task { await store.browse() }; await service.gate.started(); store.lock(); service.gate.release(); await task.value

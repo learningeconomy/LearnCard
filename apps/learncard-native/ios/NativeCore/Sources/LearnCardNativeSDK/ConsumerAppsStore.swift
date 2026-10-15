@@ -10,6 +10,7 @@ import LearnCardNativeCore
     public private(set) var links: [ManagedCredentialLink] = []
     public private(set) var browseBusy = false
     public private(set) var installedBusy = false
+    public private(set) var installedLoaded = false
     public private(set) var privacyBusy = false
     public private(set) var actionBusy = false
     public private(set) var hasMoreApps = false
@@ -51,7 +52,7 @@ import LearnCardNativeCore
     }
     public func loadInstalled(more: Bool = false) async {
         guard !installedBusy, !more || hasMoreInstalled else { return }
-        let expected = generation; installedBusy = true
+        let expected = generation; installedBusy = true; error = nil
         defer { if expected == generation { installedBusy = false } }
         do {
             var page = try await service.installed(cursor: more ? installedCursor : nil)
@@ -66,6 +67,7 @@ import LearnCardNativeCore
                 installedApps = merged(installedApps, page.records)
             }
             installedCursor = page.cursor; hasMoreInstalled = page.hasMore
+            installedLoaded = true
         } catch { if expected == generation && !Task.isCancelled { self.error = friendly(error) } }
     }
     public func loadPrivacy(more: Bool = false) async {
@@ -129,6 +131,7 @@ import LearnCardNativeCore
     public func lock() {
         generation += 1; browseRequest += 1
         apps = []; installedApps = []; connections = []; links = []
+        installedLoaded = false
         error = nil; notice = nil
         browseBusy = false; installedBusy = false; privacyBusy = false; actionBusy = false
         appsCursor = nil; installedCursor = nil; connectionsCursor = nil; linksCursor = nil

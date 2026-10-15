@@ -1,5 +1,7 @@
 # Native regression checks
 
+Latest validation: **181 passing cases**, ten independent iOS output verifications and Release compilation; three final Home checks cover the last navigation refinements. See the October 15 Home section below and [STATUS](STATUS.md) for the installed review build and hosted CI distinction.
+
 The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
 The same suite can run locally:
@@ -106,10 +108,22 @@ A final protocol follow-up handles legacy sender strings: a staging did:web user
 
 ## Approved screens, stable header and rendered motion — 2026-10-15
 
-The current suite has **174 cases**: 84 Bun, 51 Swift and 39 simulator cases, plus the opt-in live exchange intentionally skipped. The full local suite passed in `artifacts/native-regressions-20261015-014409-23844.xcresult`, independently verified 10 iOS outputs with the web SDK, and compiled Release. The preceding pushed baseline `c3db8563b` separately passed [hosted run 38638878502](https://github.com/learningeconomy/LearnCard/actions/runs/38638878502) at 171 cases. Check the new source SHA/run before claiming hosted success for this implementation.
+At this checkpoint the suite had **174 cases**: 84 Bun, 51 Swift and 39 simulator cases, plus the opt-in live exchange intentionally skipped. The full local suite passed in `artifacts/native-regressions-20261015-014409-23844.xcresult`, independently verified 10 iOS outputs with the web SDK, and compiled Release. The preceding pushed baseline `c3db8563b` separately passed [hosted run 38638878502](https://github.com/learningeconomy/LearnCard/actions/runs/38638878502) at 171 cases. Check the new source SHA/run before claiming hosted success for this implementation.
 
 Two new simulator cases compare actual cropped card pixels two seconds apart after navigation without touching the card: motion changes the rendering, while Reduce Motion leaves it identical. These verify rendered behavior rather than a Boolean alone. Existing large-text swipe/claim cases remain. The scroll regression now checks a fixed-width, fixed-position left brand/section label and tightly adjacent action/profile hit areas; the user rejected the old shrinking-width/centered-title transition.
 
 A third new case opens an installed app directly from My apps and checks the real bundled partner SDK handshake through the existing sample browser. Account/Apps/privacy/Families screenshots are retained. The guardian case requires recipient selection then an explicit Review invitation step before a secure PIN field or Send action appears. It still checks incorrect-PIN errors, immediate input clearing and that an invite does not immediately add a guardian.
 
 Eight focused checks passed in `artifacts/approved-design-focused.xcresult` before the final masked-PIN/disabled-contrast refinements. The full 174-case run includes those refinements. After that run, a five-digit cap prevents a sixth hidden character from disabling the five-indicator input; the strengthened guardian case and Account/Data Sharing checks passed on a dark simulator in `artifacts/approved-design-dark-final.xcresult` (three cases). Appearance was restored afterward. Screenshots were inspected in light/dark modes, including French/Arabic Apps and dark Families. These are dynamic frame comparisons and visual review, not golden-image snapshot testing or physical-device/iPad validation.
+
+## Home, adaptive tray and illustrated fallbacks — 2026-10-15
+
+Current suite: **181 passing cases** — 84 Bun, 55 Swift (42 XCTest and 13 Swift Testing), and 42 simulator cases. One opt-in live exchange is intentionally skipped. The full run passed in `artifacts/native-regressions-20261015-022805-41537.xcresult`; `artifacts/home-full-ci.log` records the type/source checks, independent verification of ten iOS outputs using the web SDK, and successful Release compilation.
+
+New coverage checks shared Home/tray unread counts (including duplicate credential arrival notices and read updates), initial installed-app loading versus empty state, lock clearing that state, native plural/name formatting, bounded navigation sizing by logical width, Home → Inbox/Collection/Create, installed app → native listing, My apps selection, and native Data Sharing. French dark mode and Arabic accessibility type screenshots are retained. Navigation labels cap at 18 points after visual review caught mid-word wrapping at large Arabic text sizes; page content continues scaling normally.
+
+After the full run, an explicit Home → Apps entry was refined to clear a previous Apps search/detail stack while preserving normal tab state and reusing the account-owned store. Session activity also observes locale changes. All three Home cases passed again against these changes in `artifacts/home-final.xcresult`; the strengthened navigation case verifies both a prior search filter and a prior listing detail cannot intercept See all. Final compilation/install evidence is recorded in STATUS.
+
+Screenshots were inspected for the Home light/dark/RTL layouts and the bold credential category illustrations in Collection/Inbox. Supplied artwork is still preferred; app fallback is a generic illustrated window, not an invented publisher identity. The wider-width sizing contract is tested, but physical-device and iPad layouts are not validated. These are functional checks and visual review, not golden-image baselines.
+
+The preceding pushed parent `c9c0cfbf4` passed [hosted run 38690372140](https://github.com/learningeconomy/LearnCard/actions/runs/38690372140). The new Home commit starts a separate hosted run; do not report the parent result as this update's hosted result.

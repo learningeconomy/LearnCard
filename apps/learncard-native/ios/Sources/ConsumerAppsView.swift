@@ -7,8 +7,8 @@ struct AppsView: View {
     let store: AppStore
     let create: () -> Void
     let openInbox: () -> Void
+    @Binding var discover: Bool
     var onScrollStateChange: (Bool) -> Void = { _ in }
-    @State private var discover = false
     @State private var category = "all"
     @State private var query = ""
     @State private var selected: ConsumerApp?
@@ -297,16 +297,15 @@ struct ConsumerAppIcon: View {
             if let url {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image { image.resizable().scaledToFill() }
-                    else if phase.error != nil { initials }
-                    else { ProgressView() }
+                    else if phase.error != nil { placeholder }
+                    else { placeholder.opacity(0.35).overlay { ProgressView().controlSize(.small).tint(Palette.cardInk) } }
                 }
-            } else { initials }
+            } else { placeholder }
         }.frame(width: size, height: size).background(Palette.blueCard)
             .clipShape(RoundedRectangle(cornerRadius: size * 0.25)).accessibilityHidden(true)
     }
-    private var initials: some View {
-        Text(title.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined())
-            .font(.system(size: size * 0.3, weight: .bold)).foregroundStyle(Palette.cardInk)
+    private var placeholder: some View {
+        Image("AppPlaceholder").resizable().scaledToFit().padding(size * 0.12)
     }
 }
 

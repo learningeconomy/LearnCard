@@ -8,7 +8,58 @@ const drawings = (dark: boolean): Record<string, string> => {
     const paper = dark ? '#202732' : '#FFFFFF';
     const wrap = (content: string): string =>
         `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150" fill="none">${content}</svg>`;
+    // Category drawings sit on opaque Colorful circles in both appearances.
+    const glyph = (content: string): string =>
+        `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#18224E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
     return {
+        CategoryBadge: glyph(
+            `<path d="M19 37L15 58L30 49L44 58L42 35" fill="#F9A8D4"/><path d="M32 5L39 10L48 11L51 20L57 27L51 35L48 44L39 45L32 51L24 45L15 44L12 35L6 27L12 20L15 11L24 10Z" fill="#FFFFFF"/><path d="M19 26Q24 18 32 26Q40 18 45 26Q46 33 32 41Q18 33 19 26Z" fill="#22D3EE"/>`
+        ),
+        CategoryAchievement: glyph(
+            `<path d="M18 13H7V22Q7 35 24 36M46 13H57V22Q57 35 40 36" fill="#FFFFFF"/><path d="M17 7H47V23Q47 41 32 42Q17 41 17 23Z" fill="#FDE047"/><path d="M29 42V51H35V42M20 58V51H44V58Z" fill="#FDE047"/><path d="M32 14L35 21L42 22L37 28L38 35L32 31L26 35L27 28L22 22L29 21Z" fill="#F9A8D4"/><path d="M23 12V21" stroke="#FFFFFF"/>`
+        ),
+        CategoryStudies: glyph(
+            `<path d="M32 20Q22 10 12 23Q5 37 17 53Q23 61 32 55Q42 61 48 53Q60 36 52 23Q43 12 32 20Z" fill="#FFFFFF"/><path d="M32 19Q29 10 23 7M32 17Q31 4 46 5Q46 17 32 17Z" fill="#34D399"/><path d="M18 28Q13 33 17 42" stroke="#22D3EE"/>`
+        ),
+        CategoryPortfolio: glyph(
+            `<path d="M7 12Q20 9 32 21Q44 9 57 12V47Q43 45 32 57Q21 45 7 47Z" fill="#FFFFFF"/><path d="M32 21Q35 8 48 5V37Q37 39 32 57Z" fill="#34D399"/><path d="M32 21V57M12 18Q22 19 27 26"/>`
+        ),
+        CategoryAssistance: glyph(
+            `<circle cx="32" cy="32" r="26" fill="#FFFFFF"/><path d="M13 14L23 23M41 41L51 50M14 51L23 41M41 23L50 14" stroke="#F9A8D4" stroke-width="15"/><circle cx="32" cy="32" r="12" fill="#C4B5FD"/><circle cx="32" cy="32" r="26"/>`
+        ),
+        CategoryExperience: glyph(
+            `<path d="M5 53L22 24L32 38L43 18L59 53Z" fill="#FFFFFF"/><path d="M16 34L22 24L29 34L23 39Z" fill="#93C5FD"/><path d="M37 29L43 18L50 31L44 36Z" fill="#93C5FD"/><path d="M43 18V5L57 10L43 15" fill="#FDE047"/><path d="M10 53H55"/>`
+        ),
+        CategoryID: glyph(
+            `<rect x="5" y="10" width="54" height="44" rx="8" fill="#FFFFFF"/><circle cx="21" cy="26" r="7" fill="#F9A8D4"/><path d="M11 45V41Q11 32 21 32Q31 32 31 41V45Z" fill="#F9A8D4"/><path d="M39 24H51M39 32H51M39 40H47"/>`
+        ),
+        CategoryFamily: glyph(
+            `<path d="M32 20L13 44H51Z"/><circle cx="32" cy="18" r="13" fill="#FDE047"/><circle cx="14" cy="45" r="13" fill="#93C5FD"/><circle cx="50" cy="45" r="13" fill="#F9A8D4"/><path d="M27 16h1M36 16h1M27 22Q32 27 37 22M9 43h1M18 43h1M9 49Q14 54 19 49M45 43h1M54 43h1M45 49Q50 54 55 49" stroke-width="2.4"/>`
+        ),
+        CategorySkill: glyph(
+            `<path d="M32 6L39 23L57 25L43 37L47 56L32 46L17 56L21 37L7 25L25 23Z" fill="#FDE047"/><path d="M46 9L50 4M55 16L60 14M5 43L1 45" stroke="#FFFFFF"/>`
+        ),
+        CategoryTopic: glyph(
+            `<path d="M25 26H54Q59 26 59 31V49Q59 54 54 54H46L39 60V54H25Q20 54 20 49V31Q20 26 25 26Z" fill="#F9A8D4"/><path d="M9 5H40Q45 5 45 10V31Q45 36 40 36H22L12 44V36H9Q4 36 4 31V10Q4 5 9 5Z" fill="#FFFFFF"/><path d="M13 16H35M13 24H28"/>`
+        ),
+        CategoryPathway: glyph(
+            `<path d="M11 56H37Q49 56 49 45Q49 35 31 35Q13 35 13 24Q13 13 32 13" stroke="#FFFFFF" stroke-width="12"/><path d="M11 56H37Q49 56 49 45Q49 35 31 35Q13 35 13 24Q13 13 32 13" stroke-dasharray="3 6"/><path d="M35 26V4L56 11L35 18" fill="#F9A8D4"/><circle cx="10" cy="56" r="4" fill="#FDE047"/>`
+        ),
+        CategoryInsight: glyph(
+            `<path d="M21 43Q21 36 16 30Q6 9 28 5Q49 2 51 21Q52 31 43 38V43Z" fill="#FDE047"/><path d="M24 44H41V51H24ZM28 52V58H37V52" fill="#FFFFFF"/><path d="M32 41V28M25 22L32 29L39 22"/><path d="M6 9L2 5M55 9L60 4M5 36L1 38M55 35L61 37" stroke="#FFFFFF"/>`
+        ),
+        AppPlaceholder: glyph(
+            `<rect x="6" y="8" width="52" height="48" rx="9" fill="#FFFFFF"/><path d="M7 21H57"/><path d="M14 15H15M22 15H23" stroke="#F9A8D4" stroke-width="4"/><path d="M20 30L29 27L35 35L26 39Z" fill="#FDE047"/><circle cx="42" cy="40" r="8" fill="#34D399"/>`
+        ),
+        DrawnCollection: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12V9Q5 6 8 6H17L21 11H32Q35 11 35 14V32Q35 35 32 35H8Q5 35 5 32Z" fill="#FDE047"/><path d="M10 17V29" stroke="#FFFFFF"/><path d="M27 6L29 2M34 9L38 7" stroke="#22D3EE"/></svg>`,
+        DrawnPencil: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 25L25 6Q29 2 33 6L35 8Q38 11 34 15L15 34L4 37Z" fill="#22D3EE"/><path d="M25 6L34 15M8 25L15 32M7 26L4 37L15 34Z" fill="#FDE047"/><path d="M25 6L28 3Q30 2 33 5L36 8Q38 11 34 15Z" fill="#F9A8D4"/><path d="M12 24L24 12" stroke="#FFFFFF"/></svg>`,
+        HomeInboxIllustration: wrap(`
+            <path d="M36 75L98 34L166 75V127H36Z" fill="#F9A8D4" stroke="${ink}" stroke-width="4" stroke-linejoin="round"/>
+            <g transform="rotate(4 101 67)"><rect x="64" y="28" width="74" height="74" rx="10" fill="#FDE047" stroke="${ink}" stroke-width="4"/><path d="M78 45H122M78 58H122M78 71H105" stroke="#18224E" stroke-width="4" stroke-linecap="round"/><path d="M72 37V81" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/></g>
+            <path d="M36 75L99 109L166 75V127H36Z" fill="#F9A8D4" stroke="${ink}" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M36 127L83 95M166 127L118 96" stroke="${ink}" stroke-width="4" stroke-linecap="round"/>
+            <path d="M42 40L32 28M101 15L99 4M161 43L171 29" stroke="#22D3EE" stroke-width="6" stroke-linecap="round"/>
+        `),
         LearnCardPaintedMark: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
             <defs>
                 <linearGradient id="mint" x2="1" y2="1"><stop stop-color="#78F5DD"/><stop offset="1" stop-color="#36DCC5"/></linearGradient>

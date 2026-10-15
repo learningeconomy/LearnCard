@@ -24,6 +24,35 @@ import LearnCardNativeCore
 }
 
 @MainActor final class InboxTests: XCTestCase {
+    func testHomeAndTrayUseTheSameDeduplicatedUnreadSummary() async throws {
+        let source = DelayedInbox(), app = NativeAppStore(inboxService: source)
+        XCTAssertEqual(app.inboxCount, 0)
+        await app.refresh()
+        let offers = try XCTUnwrap(app.snapshot?.offers)
+        let offer = try XCTUnwrap(offers.first)
+        var arrival = InboxItem(id: "arrival", kind: .notice, type: "CREDENTIAL_RECEIVED", name: "Issuer")
+        arrival.credentialURIs = [offer.id]
+        var read = InboxItem(id: "seen", kind: .notice, name: "Seen update"); read.read = true
+        source.value = InboxPage(items: [arrival, read, InboxItem(id: "request", kind: .request, name: "Person")])
+        await app.inbox.load()
+        XCTAssertEqual(app.unreadInboxUpdateCount, 1)
+        XCTAssertEqual(app.inboxCount, offers.count + 1)
+        app.inbox.lock()
+        XCTAssertEqual(app.unreadInboxUpdateCount, 0)
+    }
+    func testHomeStringsCoverPluralsAndKeepNamesOutOfTranslationKeys() {
+        XCTAssertEqual(NativeText.count("home.offers", 1, language: .en), "1 credential to review")
+        XCTAssertEqual(NativeText.count("home.updates", 2, language: .en), "2 new updates")
+        XCTAssertEqual(NativeText.format("home.greetingName", "A%lex", language: .en), "Good to have you here, A%lex.")
+        for language in [NativeLanguage.en, .fr, .es, .ar] {
+            for count in [0, 1, 2, 3, 11, 100] {
+                for key in ["home.offers", "home.updates"] {
+                    let value = NativeText.count(key, count, language: language)
+                    XCTAssertFalse(value.contains("%")); XCTAssertNotEqual(value, key)
+                }
+            }
+        }
+    }
     func testLateInboxReadCannotRepopulateLockedAccount() async {
         let service = DelayedInbox(); service.holdRead = true; let store = InboxStore(service: service)
         let read = Task { await store.load() }; await service.gate.started(); store.lock(); service.gate.finish(); await read.value

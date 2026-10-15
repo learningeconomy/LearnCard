@@ -13,6 +13,11 @@ public final class NativeAppStore {
     public let consumer: ConsumerAppsStore
     public let families: FamiliesStore
     public let inbox: InboxStore
+    /// Matches the tray and Home; credential arrival notices must not count twice.
+    public var unreadInboxUpdateCount: Int {
+        inbox.updates(excluding: Set((snapshot?.offers ?? []).map(\.id))).filter { !$0.read }.count
+    }
+    public var inboxCount: Int { (snapshot?.offers.count ?? 0) + unreadInboxUpdateCount }
 
     public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil) {
         self.service = service

@@ -45,10 +45,12 @@ const icon = (name: string, active: boolean, dark: boolean): string => {
         </g>`;
     if (name === 'HomeTab')
         drawing = `
-        <path d="M8 32l12-12L32 8" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx="8" cy="32" r="4.5" fill="#FDE047" stroke="${ink}" stroke-width="2.5"/>
-        <circle cx="20" cy="20" r="4.5" fill="#FDE047" stroke="${ink}" stroke-width="2.5"/>
-        <circle cx="32" cy="8" r="4.5" fill="#FDE047" stroke="${ink}" stroke-width="2.5"/>`;
+        <path d="M27 12V5h5v12" fill="#34D399" stroke="${ink}" stroke-width="2.3" stroke-linejoin="round"/>
+        <path d="M8 18v16q0 3 3 3h18q3 0 3-3V18" fill="#FDE047" stroke="${ink}" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M3 19L18 4q2-2 4 0l15 15Z" fill="#F9A8D4" stroke="${ink}" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M17 37V28a4 4 0 0 1 8 0v9" fill="#93C5FD" stroke="${ink}" stroke-width="2.3" stroke-linecap="round"/>
+        <rect x="11" y="22" width="4" height="5" rx="1" fill="${paper}"/>
+        <path d="M9 15l9-9" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>`;
     return `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><g opacity="${active ? 1 : 0.78}">${drawing}</g></svg>`;
 };
 for (const active of [false, true]) {

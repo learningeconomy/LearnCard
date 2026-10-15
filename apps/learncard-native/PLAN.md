@@ -1,5 +1,11 @@
 # LearnCard native client plan
 
+## Home and design system update — October 15
+
+Use [the native design system](design/DESIGN_SYSTEM.md) for scale, color roles, drawn artwork, navigation and motion. The neutral canvas remains the approved direction. Home's graph icon becomes a cute house; tray icon frames respond to logical width (31/36/40 points), and missing credential/app images use bold illustrated fallbacks while supplied artwork stays intact.
+
+[Home's web dashboard audit and implementation](HOME_INTEGRATION.md) covers a useful first slice: pending Inbox items and unread updates, collection/creation shortcuts, installed apps, Families and native Data Sharing. The [light/dark reference](design/home-drawn-concept-2026-10-15.png) records the intended composition. Persistent activity, AI learning/goal cards and consent analytics still need account contracts; do not present session events as a full history or invent summary statistics. Regression evidence and the current installed build are tracked in [STATUS](STATUS.md) and [TESTING](TESTING.md).
+
 Build an independent personal credential app with SwiftUI for iOS, followed by Kotlin and Jetpack Compose for Android. Keep LearnCard account identity and credential interoperability while using a simpler interface shaped around phone tasks. This is a greenfield client experiment, approved October 12, 2026; the existing Ionic and Capacitor applications continue to serve their current audiences.
 
 ## Product scope
