@@ -142,6 +142,9 @@ export interface AuthCoordinatorProviderProps {
     /** Optional: retrieve a cached private key for private-key-first init */
     getCachedPrivateKey?: () => Promise<string | null>;
 
+    /** App locale for vault-sent recovery emails (`en`/`es`/`fr`/`ar`); required for Nitro enrollment. */
+    getRecoveryLanguage?: () => string | undefined;
+
     /** Called after the coordinator finishes its own logout cleanup. Use for app-specific store/DB clearing. */
     onLogout?: () => Promise<void>;
 
@@ -199,6 +202,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     didFromPrivateKey,
     signDidAuthVp,
     getCachedPrivateKey,
+    getRecoveryLanguage,
     onLogout,
     clearPendingEscrowRecovery,
     onDebugEvent,
@@ -363,6 +367,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             didFromPrivateKey,
             signDidAuthVp,
             getCachedPrivateKey,
+            getRecoveryLanguage,
             onLogout,
             clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
@@ -402,6 +407,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         didFromPrivateKey,
         signDidAuthVp,
         getCachedPrivateKey,
+        getRecoveryLanguage,
         onLogout,
         clearPendingEscrowRecovery,
         onDebugEvent,
