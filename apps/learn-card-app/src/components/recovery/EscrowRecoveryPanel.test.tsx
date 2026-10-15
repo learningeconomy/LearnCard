@@ -974,6 +974,216 @@ describe('EscrowRecoveryPanel', () => {
         expect(clearPendingEscrowRecovery).toHaveBeenCalledWith(holdId, 'default');
         expect(mockOnStatus).not.toHaveBeenCalled();
     });
+
+    it('shows honest fallback error and hides raw error when confirm code fails', async () => {
+        const holdId = 'hold-123';
+        const resumeToken = 'token-123';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'priv-123',
+            releaseAfter: new Date(Date.now() + 100000).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        const rawErrorText = 'RAW_BACKEND_ERROR_TEXT_DO_NOT_SHOW';
+        const onConfirmCode = vi
+            .fn()
+            .mockRejectedValue(Object.assign(new Error(rawErrorText), { status: 403 }));
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={vi.fn()}
+                onStatus={vi.fn().mockResolvedValue({
+                    holdId,
+                    status: 'pending',
+                    releasePolicy: 'hold',
+                    requestedAt: new Date().toISOString(),
+                    releaseAfter: new Date(Date.now() + 100000).toISOString(),
+                    confirmed: false,
+                })}
+                onRecover={vi.fn()}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        await waitFor(() => {
+            expect(onConfirmCode).toHaveBeenCalled();
+        });
+
+        expect(
+            await screen.findByText(
+                "That code didn't work or expired. Check it and try again, or tap Resend code for a new one."
+            )
+        ).toBeInTheDocument();
+        expect(screen.queryByText(rawErrorText)).not.toBeInTheDocument();
+    });
+
+    it('shows network error and hides raw error when confirm code fails with non-403', async () => {
+        const holdId = 'hold-123';
+        const resumeToken = 'token-123';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'priv-123',
+            releaseAfter: new Date(Date.now() + 100000).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        const rawErrorText = 'RAW_BACKEND_ERROR_TEXT_DO_NOT_SHOW';
+        const onConfirmCode = vi.fn().mockRejectedValue(new Error(rawErrorText));
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={vi.fn()}
+                onStatus={vi.fn().mockResolvedValue({
+                    holdId,
+                    status: 'pending',
+                    releasePolicy: 'hold',
+                    requestedAt: new Date().toISOString(),
+                    releaseAfter: new Date(Date.now() + 100000).toISOString(),
+                    confirmed: false,
+                })}
+                onRecover={vi.fn()}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        await waitFor(() => {
+            expect(onConfirmCode).toHaveBeenCalled();
+        });
+
+        expect(
+            await screen.findByText('Something went wrong. Check your connection and try again.')
+        ).toBeInTheDocument();
+        expect(screen.queryByText(rawErrorText)).not.toBeInTheDocument();
+    });
+
+    it('shows honest fallback error and hides raw error when resend code fails', async () => {
+        const holdId = 'hold-123';
+        const resumeToken = 'token-123';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'priv-123',
+            releaseAfter: new Date(Date.now() + 100000).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        const rawErrorText = 'RAW_BACKEND_ERROR_TEXT_DO_NOT_SHOW';
+        const onResendCode = vi
+            .fn()
+            .mockRejectedValue(Object.assign(new Error(rawErrorText), { status: 403 }));
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={vi.fn()}
+                onStatus={vi.fn().mockResolvedValue({
+                    holdId,
+                    status: 'pending',
+                    releasePolicy: 'hold',
+                    requestedAt: new Date().toISOString(),
+                    releaseAfter: new Date(Date.now() + 100000).toISOString(),
+                    confirmed: false,
+                })}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={onResendCode}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Resend code'));
+
+        await waitFor(() => {
+            expect(onResendCode).toHaveBeenCalled();
+        });
+
+        expect(
+            await screen.findByText(
+                "You've asked for several codes recently. Please wait a bit and try again."
+            )
+        ).toBeInTheDocument();
+        expect(screen.queryByText(rawErrorText)).not.toBeInTheDocument();
+    });
+
+    it('shows network error and hides raw error when resend code fails with non-403', async () => {
+        const holdId = 'hold-123';
+        const resumeToken = 'token-123';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'priv-123',
+            releaseAfter: new Date(Date.now() + 100000).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        const rawErrorText = 'RAW_BACKEND_ERROR_TEXT_DO_NOT_SHOW';
+        const onResendCode = vi.fn().mockRejectedValue(new Error(rawErrorText));
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={vi.fn()}
+                onStatus={vi.fn().mockResolvedValue({
+                    holdId,
+                    status: 'pending',
+                    releasePolicy: 'hold',
+                    requestedAt: new Date().toISOString(),
+                    releaseAfter: new Date(Date.now() + 100000).toISOString(),
+                    confirmed: false,
+                })}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={onResendCode}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Resend code'));
+
+        await waitFor(() => {
+            expect(onResendCode).toHaveBeenCalled();
+        });
+
+        expect(
+            await screen.findByText(
+                "We couldn't send a new code. Check your connection and try again."
+            )
+        ).toBeInTheDocument();
+        expect(screen.queryByText(rawErrorText)).not.toBeInTheDocument();
+    });
 });
 
 describe('formatTimeRemaining', () => {

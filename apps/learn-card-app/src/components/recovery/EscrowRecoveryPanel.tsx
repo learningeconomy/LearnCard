@@ -70,6 +70,13 @@ export interface EscrowRecoveryPanelProps {
     onResendCode: (params: { holdId: string; resumeToken: string }) => Promise<{ success: true }>;
 }
 
+/** lca-api answers 403 when the code or resend was refused; anything else is transport/service. */
+const isEscrowRefusal = (error: unknown): boolean =>
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error as { status: unknown }).status === 403;
+
 export const EscrowRecoveryPanel = ({
     scope = 'default',
     available,
@@ -193,7 +200,7 @@ export const EscrowRecoveryPanel = ({
                 if (value?.requiresConfirmation !== undefined && !value.expectations) {
                     setPending(undefined);
                     setLoaded(true);
-                    setError('This recovery request is no longer valid. Start a new one.');
+                    setError(m['recovery.invalidRequest']());
                     void clearPendingEscrowRecovery(value.holdId, scope).catch(() => {});
                     return;
                 }
@@ -423,8 +430,11 @@ export const EscrowRecoveryPanel = ({
                 );
             }
             await checkStatus().catch(() => {});
-        } catch {
-            setCodeError(m['recovery.confirmCode.error']());
+        } catch (e) {
+            const isRefusal = isEscrowRefusal(e);
+            setCodeError(
+                isRefusal ? m['recovery.confirmCode.error']() : m['recovery.confirmCode.failed']()
+            );
             setCodeInput('');
         } finally {
             setConfirming(false);
@@ -439,8 +449,13 @@ export const EscrowRecoveryPanel = ({
         try {
             await onResendCode({ holdId: pending.holdId, resumeToken: pending.resumeToken });
             setResendNotice(m['recovery.confirmCode.resent']());
-        } catch {
-            setCodeError(m['recovery.confirmCode.resendError']());
+        } catch (e) {
+            const isRefusal = isEscrowRefusal(e);
+            setCodeError(
+                isRefusal
+                    ? m['recovery.confirmCode.resendError']()
+                    : m['recovery.confirmCode.resendFailed']()
+            );
         } finally {
             setResending(false);
         }
