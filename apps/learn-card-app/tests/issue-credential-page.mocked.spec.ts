@@ -476,10 +476,10 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
     }) => {
         test.setTimeout(180000);
         await page
-            .getByRole('button', { name: 'Start from a link, file, or ID', exact: true })
+            .getByRole('button', { name: 'Start from a link, file, or spreadsheet', exact: true })
             .click();
         const csv =
-            'Email,Name,Quiz Score,Final Grade,Hours,Completed Date,Proof URL,Student Code\nada@test.com,Ada,95%,A-,12,03/04/2024,https://proof.test/ada,0012\nbob@test.com,Bob,85%,B+,8,04/04/2024,https://proof.test/bob,0009\ncarol@test.com,Carol,75%,C,10,05/04/2024,https://proof.test/carol,0007\ndan@test.com,Dan,100%,A,5,06/04/2024,https://proof.test/dan,0005';
+            'Email,Name,Quiz Score,Final Grade,Hours,Completed Date,Evidence,Portfolio,Student Code\nada@test.com,Ada,95%,A-,12,03/04/2024,https://proof.test/ada,https://portfolio.test/ada,0012\nbob@test.com,Bob,85%,B+,8,04/04/2024,https://proof.test/bob,https://portfolio.test/bob,0009\ncarol@test.com,Carol,75%,C,10,05/04/2024,https://proof.test/carol,https://portfolio.test/carol,0007\ndan@test.com,Dan,100%,A,5,06/04/2024,https://proof.test/dan,https://portfolio.test/dan,0005';
         await page
             .getByTestId('issue-import-file')
             .setInputFiles({ name: 'grades.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
@@ -503,7 +503,8 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await page.getByRole('button', { name: 'Hours', exact: true }).click();
         await page.getByRole('combobox', { name: /Spreadsheet date format/ }).selectOption('dmy');
         await page.getByRole('button', { name: 'Completed Date', exact: true }).click();
-        await page.getByRole('button', { name: 'Proof URL', exact: true }).click();
+        await page.getByRole('button', { name: 'Evidence', exact: true }).click();
+        await page.getByRole('button', { name: 'Portfolio', exact: true }).click();
         await page.getByRole('button', { name: 'Student Code', exact: true }).click();
         await expect(
             page.getByRole('textbox', { name: 'Ada Student Code', exact: true })
@@ -525,7 +526,10 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await page.getByRole('button', { name: 'JSON', exact: true }).click();
         const json = JSON.parse(await page.locator('textarea.font-mono').inputValue());
         expect(json.credentialSubject.result).toHaveLength(2);
-        expect(json.evidence[0].type).toEqual(['Evidence']);
+        expect(json.evidence).toHaveLength(2);
+        expect(json.evidence.every((item: { type: string[] }) => item.type[0] === 'Evidence')).toBe(
+            true
+        );
         expect(json.awardedDate).toMatch(/sheet_completed_date/);
         expect(JSON.stringify(json['@context'])).not.toContain('ctx.learncard');
         await page.screenshot({ path: '/tmp/lc2249-mapped-roster.png', fullPage: true });
@@ -535,7 +539,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         page,
     }) => {
         await page
-            .getByRole('button', { name: 'Start from a link, file, or ID', exact: true })
+            .getByRole('button', { name: 'Start from a link, file, or spreadsheet', exact: true })
             .click();
         await page
             .locator('textarea')

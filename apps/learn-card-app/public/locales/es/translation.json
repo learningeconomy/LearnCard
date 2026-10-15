@@ -8980,7 +8980,7 @@
         "addByHint": "Añade por nombre, @usuario o correo",
         "linkOnIssue": "Crearemos un enlace para compartir cuando emitas.",
         "alreadyHave": "¿Ya tienes algo?",
-        "startFromLink": "Empieza desde un enlace, archivo o ID",
+        "startFromLink": "Comenzar desde un enlace, archivo u hoja de cálculo",
         "sendExisting": "Envía una que hayas creado",
         "startFromSomething": "Empieza desde algo",
         "importIntro": "Pega un enlace, datos de credencial o filas de una hoja, o sube un archivo JSON, CSV, TSV o XLSX.",

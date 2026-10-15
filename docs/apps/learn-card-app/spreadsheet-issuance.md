@@ -62,3 +62,5 @@ Open **Review delivery issues** to search failed or unconfirmed sends in pages o
 Choose **View delivery status** in the batch card to search every recipient and filter by Not sent, Queued, Sent, Failed, or Unconfirmed. The viewer updates as the active run receives results. The card comes into view once when sending starts; later updates leave your scroll position alone. The compact, full-width scene of colorful credential sheets moving through drifting clouds and the initial scroll respect your device’s reduced-motion setting.
 
 Date fields use a calendar picker and a readable date. Timestamps are shown in UTC; changing the calendar date preserves the time. New dates use midnight UTC. Opening the workspace leaves the saved timestamp unchanged. Invalid source values stay visible until corrected.
+
+Column mapping currently supports Open Badges credentials. Choose each Evidence or Portfolio column separately to include its links; importing the sheet alone does not add these fields. Selected columns stay visible with a checkmark so they can be removed. Exported CSVs distinguish mapped columns from the table’s separate Evidence link and preserve both on re-import.

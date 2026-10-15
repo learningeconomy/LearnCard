@@ -1,5 +1,5 @@
 import { addSubmissionAttempts, canReplaceIssuanceRecipients } from './issuance';
-import { mergeSpreadsheet } from './roster';
+import { mergeSpreadsheet, exportRosterCsv } from './roster';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
@@ -71,6 +71,22 @@ describe('IndexedDB issuance recovery', () => {
         const changed = structuredClone(queued);
         changed.attempts[0].rowIds[0] = 'foreign-row';
         await expect(saveIssuanceRun(changed)).rejects.toThrow('corrupt');
+    });
+
+    it('retains the reserved table evidence column across CSV import and native recovery', async () => {
+        const run = makeRun();
+        run.draft.evidence['row-0'] = 'https://proof.test/extra';
+        const csv = exportRosterCsv(run.draft, [], {}, {});
+        run.draft = mergeSpreadsheet(
+            run.draft,
+            parseSpreadsheet(readSpreadsheetText(csv)),
+            []
+        ).draft;
+        expect(run.draft.source!.rowEvidenceColumn).toBe('column-2');
+        await saveIssuanceRun(run);
+        const restored = await readIssuanceRun(run.id, run.scope);
+        expect(restored!.draft.source!.rowEvidenceColumn).toBe('column-2');
+        expect(restored!.draft.evidence).toEqual(run.draft.evidence);
     });
 
     it('rejects corrupt records instead of substituting a fresh run', async () => {

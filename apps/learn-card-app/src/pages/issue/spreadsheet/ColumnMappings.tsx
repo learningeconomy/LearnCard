@@ -11,6 +11,7 @@ import {
     type ParsedSpreadsheet,
 } from './types';
 import { suggestMapping } from './columnMapping';
+import { rosterCsvFieldNames } from './roster';
 import type { OBv3CredentialTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { extractVariablesByType } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 
@@ -42,16 +43,23 @@ export const ColumnMappings: React.FC<{
     const [choices, setChoices] = useState<Record<string, Partial<ColumnMapping>>>({});
     const [error, setError] = useState('');
     const active = template ? extractVariablesByType(template).dynamic : [];
+    const exportedNames = rosterCsvFieldNames({ mappings }, active);
     const columns = source.columns.filter(
         column =>
             column.index !== source.emailColumn &&
+            column.id !== source.rowEvidenceColumn &&
             ![...RESERVED_COLUMNS].some(
                 value => normalizeColumn(value) === normalizeColumn(column.label)
             ) &&
-            !/^(name|recipientname|fullname|displayname|studentname|firstname|lastname|first|last|evidence|evidencelink|portfolio|portfoliolink)$/.test(
+            !/^(name|recipientname|fullname|displayname|studentname|firstname|lastname|first|last)$/.test(
                 normalizeColumn(column.label)
             ) &&
-            !active.some(name => normalizeColumn(name) === normalizeColumn(column.label))
+            !active.some(
+                name =>
+                    normalizeColumn(name) === normalizeColumn(column.label) ||
+                    (source.rowEvidenceColumn !== undefined &&
+                        normalizeColumn(exportedNames[name]!) === normalizeColumn(column.label))
+            )
     );
     if (!columns.length) return null;
     const choose = (columnId: string, patch: Partial<ColumnMapping>): void =>

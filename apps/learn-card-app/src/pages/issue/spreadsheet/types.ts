@@ -38,6 +38,8 @@ export interface ParsedSpreadsheet {
     rows: SpreadsheetRow[];
     emailColumn?: number;
     emailCandidates: number[];
+    /** Column reserved for the editable evidence link in a verified app CSV export. */
+    rowEvidenceColumn?: string;
     headerRow?: number;
     skipped: number;
 }
