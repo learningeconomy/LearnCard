@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **273 cases** (110 Bun, 102 Swift, 61 simulator), plus one intentionally skipped live exchange. Account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
+Current configured suite: **276 cases** (110 Bun, 102 Swift, 64 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
 
 The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -11,6 +11,16 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Credential creator — October 15
+
+All **102 Swift** cases passed (`artifacts/builder-core.log`: 77 XCTest and 25 Swift Testing). Account-runtime/Bun code remains unchanged from the preceding 110-case pass; no new Bun run is claimed. Native source contracts also passed. The canonical String Catalog adds 61 creator/recipient keys in en/es/fr/ar; resource preparation checks complete translations and placeholder parity.
+
+All **six unique focused simulator cases** passed across `builder-ui-viewport.xcresult` and `builder-ui-accessibility.xcresult`. The first bundle passed existing self-creation/sample-send, creation-for-someone/template separation, native format/category action sheets and system photo-picker cancellation. The second passed required-field gating, criteria/back/draft preservation, cancelled-recipient gating and actual Arabic/accessibility-size/dark nested recipient selection and review. These three new cases are discovered automatically by branch CI. This is targeted validation, not a new full local 276-case run.
+
+Initial targeted runs exposed keyboard/viewport interactions, a DisclosureGroup identifier overriding its descendants, a nested Search label that had not been localized, and ambiguous Cancel/covered-stack title queries. The final creator gives the ScrollView a bounded viewport above the action tray and scrolls focused field groups into view. Tests reveal full targets and identify the intended sheet/active credential rather than weakening assertions. Results and exported screenshots remain in `artifacts/builder-*`; selected actual screens are saved in `design/credential-builder-native-*.png` alongside the generated reference.
+
+Debug and Release builds pass. Automated runs preserve/restore private review configuration and use the separate checks simulator with unsigned sample data. No real credential or artwork was sent/uploaded. Live staging authoring, image-service failure/retry and a human VoiceOver/physical-device review remain manual validation. See [flow contracts](CREDENTIAL_BUILDER.md).
 
 ## Account motion — October 15
 

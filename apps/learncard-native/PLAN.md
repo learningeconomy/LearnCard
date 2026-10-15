@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Illustrated credential creator — October 15
+
+The post-motion design pass replaces the plain Form with an artwork-led draft, persistent labels and character limits, colored format/category action sheets, illustrated recipient choices and a precise review before creating. A fixed action tray, focused-field scrolling and explicit nested-modal locale/RTL/text-size inheritance support native editing. Existing issuance, artwork upload and delivery contracts remain. See [flow contracts](CREDENTIAL_BUILDER.md) and [concept/prompts and native screenshots](design/CREDENTIAL_BUILDER_BRIEF.md). Full semantic-category authoring stays a separate SDK builder update.
+
 ## Expressive account transitions — October 15
 
 Replace the spinner/form startup with native watercolor blocks assembling into the LearnCard mosaic and quiet edge drift. The surface covers launch, reconnect, lock and account operations; readiness and authentication remain authoritative. Preserve accessible calm variants and normal neutral app pages. See [motion contracts](ACCOUNT_MOTION.md) and [storyboard/prompts](design/ACCOUNT_MOTION_BRIEF.md).

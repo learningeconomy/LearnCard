@@ -88,7 +88,7 @@ final class ExperimentUITests: XCTestCase {
         app.buttons["create-confirm"].tap()
         XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5))
         app.alerts["Done"].buttons["Done"].tap()
-        app.staticTexts["A thoughtful teammate"].tap()
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "credential-", "A thoughtful teammate")).firstMatch.tap()
         app.swipeUp()
         app.buttons["send"].tap()
         app.buttons["send-confirm"].tap()
