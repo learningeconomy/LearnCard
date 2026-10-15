@@ -2605,6 +2605,81 @@ describe('AuthCoordinator', () => {
             });
         });
 
+        // Regression for the P1 finding: a verified no-provider identity-recovery
+        // session must still carry the account's DID into a Nitro escrow hold
+        // start/restart, since the server guard rejects every Nitro start without it.
+        it('forwards the verified DID to startEscrowRecovery on start and restart without a provider session', async () => {
+            const recoveryMethods = [{ type: 'escrow', createdAt: new Date() }];
+            const verifyIdentityRecovery = vi.fn().mockResolvedValue({
+                recoverySessionToken: 'recovery-session-token',
+                recoveryMethods,
+                primaryDid: 'did:key:zRecovered',
+            });
+            const startEscrowRecovery = vi.fn().mockResolvedValue({ holdId: 'hold' });
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                    verifyIdentityRecovery,
+                    startEscrowRecovery,
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            await coordinator.verifyIdentityRecoveryCode('123456');
+            expect(coordinator.getState()).toMatchObject({
+                status: 'identity_recovery',
+                phase: 'choose_method',
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+            });
+
+            await coordinator.startEscrowRecovery();
+            expect(startEscrowRecovery).toHaveBeenNthCalledWith(1, {
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+                options: undefined,
+            });
+
+            await coordinator.startEscrowRecovery({ restart: true });
+            expect(startEscrowRecovery).toHaveBeenNthCalledWith(2, {
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+                options: { restart: true },
+            });
+        });
+
+        it('normalizes a null verified DID to undefined rather than forwarding null', async () => {
+            const recoveryMethods = [{ type: 'escrow', createdAt: new Date() }];
+            const startEscrowRecovery = vi.fn().mockResolvedValue({ holdId: 'hold' });
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                    verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                        recoverySessionToken: 'recovery-session-token',
+                        recoveryMethods,
+                        primaryDid: null,
+                    }),
+                    startEscrowRecovery,
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            await coordinator.verifyIdentityRecoveryCode('123456');
+            expect(coordinator.getState().status).toBe('identity_recovery');
+            expect(
+                (coordinator.getState() as { expectedDid?: string }).expectedDid
+            ).toBeUndefined();
+
+            await coordinator.startEscrowRecovery();
+            expect(startEscrowRecovery).toHaveBeenCalledWith({
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: undefined,
+                options: undefined,
+            });
+        });
+
         it('binds the replacement login and exposes the recovered key only after rotation', async () => {
             const completeIdentityRecovery = vi.fn().mockResolvedValue({
                 privateKey: 'rotated-private-key',

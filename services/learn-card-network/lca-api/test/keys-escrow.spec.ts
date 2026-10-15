@@ -2516,6 +2516,8 @@ describe('escrow PIN release', () => {
             attemptsRemaining: 10,
             salt: pinSalt,
         });
+        // Required for a no-provider Nitro escrow start/restart to bind to this account.
+        expect(result.primaryDid).toBe(did);
     });
 
     it('does not reserve on invalid tokens, and permits retrying missing-proof refusals', async () => {

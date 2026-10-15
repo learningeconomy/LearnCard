@@ -271,6 +271,8 @@ export interface RecoveryResult {
 export interface IdentityRecoverySession {
     recoverySessionToken: string;
     recoveryMethods: RecoveryMethodInfo[];
+    /** The verified account's DID (same source as `ServerKeyStatus.primaryDid`). */
+    primaryDid: string | null;
 }
 
 // ---------------------------------------------------------------------------

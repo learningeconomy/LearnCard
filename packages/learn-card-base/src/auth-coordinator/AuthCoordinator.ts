@@ -411,7 +411,13 @@ export class AuthCoordinator {
         const start = this.keyDerivation.startEscrowRecovery.bind(this.keyDerivation);
         const result = await this.runEscrowOperation(async () => {
             if (this.state.status === 'identity_recovery' && this.state.recoverySessionToken) {
-                return start({ recoverySessionToken: this.state.recoverySessionToken, options });
+                // Independently known from the verify-recovery-session response
+                // above, never from an escrow response -- see EscrowRecoveryExpectations.
+                return start({
+                    recoverySessionToken: this.state.recoverySessionToken,
+                    expectedDid: this.state.expectedDid,
+                    options,
+                });
             }
             if (this.state.status !== 'needs_recovery') throw new Error('Recovery is not ready');
             // Independently known from the server key-status lookup above, never
@@ -905,7 +911,7 @@ export class AuthCoordinator {
                     escrowPin: serverStatus.escrowPin,
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                     sssActivationState: serverStatus.sssActivationState ?? null,
-                    expectedDid: serverStatus.primaryDid,
+                    expectedDid: serverStatus.primaryDid ?? undefined,
                 });
                 return this.state;
             }
@@ -924,7 +930,7 @@ export class AuthCoordinator {
                     escrowPin: serverStatus.escrowPin,
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                     sssActivationState: serverStatus.sssActivationState ?? null,
-                    expectedDid: serverStatus.primaryDid,
+                    expectedDid: serverStatus.primaryDid ?? undefined,
                 });
                 return this.state;
             }
@@ -1384,6 +1390,7 @@ export class AuthCoordinator {
             email: this.state.email,
             recoverySessionToken: session.recoverySessionToken,
             recoveryMethods: session.recoveryMethods,
+            expectedDid: session.primaryDid ?? undefined,
         });
         return this.state;
     }
@@ -1401,6 +1408,7 @@ export class AuthCoordinator {
 
         const email = this.state.email;
         const recoveryMethods = this.state.recoveryMethods;
+        const expectedDid = this.state.expectedDid;
 
         try {
             const result = await this.keyDerivation.prepareIdentityRecovery({
@@ -1437,6 +1445,7 @@ export class AuthCoordinator {
                     recoverySessionToken: this.state.recoverySessionToken,
                     recoveryMethods,
                     error: errorMessage,
+                    expectedDid,
                 });
             }
             // Recovery forms await this call to surface errors and release their loading state.

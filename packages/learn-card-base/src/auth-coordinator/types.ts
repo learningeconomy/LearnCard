@@ -97,6 +97,14 @@ export type UnifiedAuthState =
           recoveryMethods: RecoveryMethodInfo[];
           recoveredDid?: string;
           error?: string;
+          /**
+           * The verified account's DID, independently known from the
+           * verify-recovery-session response (never from an escrow response).
+           * Required by Nitro escrow recovery (hold start/restart) to bind the
+           * request to this account when no provider session exists yet; see
+           * `expectedDid` on the `needs_recovery` state above.
+           */
+          expectedDid?: string;
       }
     | { status: 'awaiting_rebind'; did: string }
     | {

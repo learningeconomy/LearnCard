@@ -368,6 +368,7 @@ interface IdentityRecoverySessionResponse {
         credentialId?: string;
         shareVersion?: number;
     }>;
+    primaryDid: string | null;
 }
 
 interface IdentityRecoveryMaterialResponse {

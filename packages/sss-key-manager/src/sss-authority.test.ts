@@ -844,6 +844,26 @@ describe('Nitro owner enrollment flow', () => {
         expect(f.intents).toHaveLength(0);
         expect(f.calls).toContain('POST:/keys/escrow/recover');
     });
+    // Regression for the P1 finding: the no-provider identity-recovery flow
+    // (email verification, no signed-in device) authenticates to /recover with
+    // a recoverySessionToken instead of token/providerType, but Nitro mode
+    // still requires the independently-known expectedDid binding.
+    it('rejects a no-provider recovery-session start missing the independently-known DID', async () => {
+        const f = await setup();
+        await expect(
+            f.strategy.startEscrowRecovery!({ recoverySessionToken: 'session-token' })
+        ).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).toHaveLength(0);
+    });
+    it('starts a Nitro hold via a no-provider recovery-session token bound to the verified DID', async () => {
+        const f = await setup();
+        const result = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'session-token',
+            expectedDid: owner.intent.did,
+        });
+        expect(f.calls).toContain('POST:/keys/escrow/recover');
+        expect(result.expectations).toMatchObject({ did: owner.intent.did, holdId: 'hold' });
+    });
     it('aborts before mutation when the device is forgotten during state verification', async () => {
         const f = await setup();
         let entered!: () => void;
