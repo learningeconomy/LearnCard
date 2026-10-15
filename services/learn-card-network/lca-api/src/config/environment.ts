@@ -33,7 +33,7 @@ export const lcaApiEnvironmentShape = {
     OPENAI_API_KEY: optionalEnvironmentString,
     BEDROCK_BASE_URL: optionalEnvironmentString,
     IMAGE_PROVIDER: optionalEnvironmentString
-        .transform(value => value ?? 'openai')
+        .transform(value => value ?? 'bedrock')
         .pipe(z.enum(['openai', 'bedrock'])),
     BEDROCK_IMAGE_REGION: optionalEnvironmentString
         .transform(value => value ?? 'us-west-2')

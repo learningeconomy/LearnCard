@@ -2,4 +2,4 @@
 "@learncard/lca-api-service": patch
 ---
 
-Add an opt-in Bedrock Stable Image Core image adapter while retaining DALL-E as the default and preserving the image URL API.
+Generate images with Amazon Bedrock Stable Image Core by default, preserving the image URL API. DALL-E remains available as an explicit IMAGE_PROVIDER=openai fallback, which is now the only use of OPENAI_API_KEY.

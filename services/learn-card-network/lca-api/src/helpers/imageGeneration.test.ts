@@ -87,7 +87,7 @@ describe('image adapter', () => {
         expect(storage.storeURL).not.toHaveBeenCalled();
         expect(destroy).toHaveBeenCalledOnce();
     });
-    it('preserves DALL-E URL upload and does not invoke Bedrock', async () => {
+    it('keeps the explicit DALL-E fallback: URL upload, no Bedrock call', async () => {
         const generate = vi.fn().mockResolvedValue({ data: [{ url: 'https://openai/image' }] });
         storage.storeURL.mockResolvedValue({ url: 'https://stored/image' });
         await expect(
@@ -220,12 +220,18 @@ describe('image adapter', () => {
             generateStoredImage('badge', 'did', config, undefined, storage)
         ).rejects.toMatchObject({ message: 'Image generation failed. Please try again later.' });
     });
-    it('defaults to OpenAI and validates explicit image configuration', () => {
+    it('defaults to Bedrock and validates explicit image configuration', () => {
         expect(parseLcaApiEnvironment({ NODE_ENV: 'test' })).toMatchObject({
             ...config,
-            IMAGE_PROVIDER: 'openai',
+            IMAGE_PROVIDER: 'bedrock',
             IMAGE_TIMEOUT_MS: 25000,
         });
+        expect(parseLcaApiEnvironment({ NODE_ENV: 'test', IMAGE_PROVIDER: '' })).toMatchObject({
+            IMAGE_PROVIDER: 'bedrock',
+        });
+        expect(
+            parseLcaApiEnvironment({ NODE_ENV: 'test', IMAGE_PROVIDER: 'openai' })
+        ).toMatchObject({ IMAGE_PROVIDER: 'openai' });
         expect(
             parseLcaApiEnvironment({ NODE_ENV: 'test', IMAGE_TIMEOUT_MS: '25000' })
         ).toMatchObject({ IMAGE_TIMEOUT_MS: 25000 });
