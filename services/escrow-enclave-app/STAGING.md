@@ -143,6 +143,22 @@ Operational notes:
   `webpki-roots`, not `SSL_CERT_FILE`; root updates require a new measured image.
   This does not enable enrollment or email, and the delayed-delivery time caveat
   in SECURITY.md still applies. Live staging verification remains outstanding.
+- **Time quorum is a boot and rollback check.** From this build on, boot cannot
+  unseal the escrow key without a Roughtime quorum: 2 of the 3 pinned servers
+  (`roughtime.cloudflare.com:2003`, `roughtime.int08h.com:2002`,
+  `time.txryan.com:2002`) must answer with authenticated, overlapping times via
+  the host relay on vsock 5001. Include it in every roll, forward **or back**:
+    1. Before rolling, on a machine whose UDP egress matches the host's, run
+       `cargo test --lib time::live_tests -- --ignored --nocapture` in this crate and
+       confirm at least two servers verify. One failure is tolerated; two is a stop.
+    2. After boot, confirm the host journal has no `enclave_boot_failed` line and
+       CloudTrail shows the expected attested `Decrypt`. A `kms_unseal_or_generate` /
+       `kms_unseal_previous` failure with KMS reachable usually means no quorum: check
+       relay port 5001 and UDP egress to the three servers.
+    3. Rolling back to another image built from this branch or later does **not**
+       bypass a time outage: it needs the same quorum to boot. Only an image from
+       before authority foundations boots without it, and that image must still be
+       in the KMS measurement list.
 - **Dormant direct clients:** `build-eif.sh` forwards optional measured settings:
   `ESCROW_AUTHORITY_{REGION,ACCOUNT_ID,TABLE,WRITER_USER,TENANT,ENVIRONMENT,GENERATION}`
   and `ESCROW_EMAIL_{REGION,ACCOUNT_ID,SENDER_USER,FROM,IDENTITY,CONFIGURATION_SET}`.
@@ -312,13 +328,11 @@ The production enclave currently wires in `UnavailableEnrollment`, so every muta
 ### Second production-grade Roughtime source (blocks steps 6 and 7)
 
 The enclave's 7-day hold requires **at least 2 independent, overlapping signed time sources**
-(D2/D3) and fails closed otherwise. Today only Cloudflare's Roughtime server
-(`roughtime.cloudflare.com:2003`) is realistically reachable, and Cloudflare's own documentation
-says "DO NOT USE IN PRODUCTION"; Google's server is a historical sandbox key with no uptime
-guarantee. With `min_sources=2` enforced in `RoughtimeTimeSource::production()`, **every real release
-attempt today would fail closed with `InsufficientSources`.** This needs an explicit
-product/security decision before any real user can complete a hold-based release in production or
-staging:
+(D2/D3) and fails closed otherwise. The enclave pins three public servers
+(Cloudflare, int08h, txryan) and require 2, so staging can complete releases while two answer.
+None of the three offers a production uptime guarantee (Cloudflare's documentation says "DO NOT
+USE IN PRODUCTION"), so losing two of them blocks boot and every release with
+`InsufficientSources`. A production decision is still needed:
 
 - (a) add more independent, verified Roughtime operators and pin ≥3, requiring 2, or
 - (b) run LearnCard-operated Roughtime servers in two separate AWS accounts/regions with keys held
