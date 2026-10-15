@@ -1,5 +1,6 @@
 import XCTest
 import JavaScriptCore
+import UIKit
 
 final class ExperimentUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
@@ -12,16 +13,20 @@ final class ExperimentUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(app.staticTexts["page-title-collection"].isHittable)
         XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-full"].exists)
-        let expandedBrandWidth = app.descendants(matching: .any).matching(identifier: "learncard-brand-full").firstMatch.frame.width
+        let expandedBrand = app.descendants(matching: .any).matching(identifier: "learncard-brand-full").firstMatch.frame
+        let actions = app.buttons["create"].frame
+        let profile = app.buttons["account"].frame
+        XCTAssertLessThanOrEqual(profile.minX - actions.maxX, 4, "Header controls should be grouped tightly")
         app.swipeUp()
-        XCTAssertTrue(app.navigationBars.staticTexts["Collection"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-compact"].waitForExistence(timeout: 5), app.debugDescription)
         let compactBrand = app.descendants(matching: .any).matching(identifier: "learncard-brand-compact").firstMatch
-        let collapsed = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            compactBrand.exists && compactBrand.frame.width < expandedBrandWidth * 0.6
-        }, object: nil)
-        XCTAssertEqual(XCTWaiter.wait(for: [collapsed], timeout: 5), .completed,
-                       "Scrolling should remove the wordmark after its transition")
+        XCTAssertTrue(compactBrand.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertEqual(compactBrand.label, "Collection")
+        XCTAssertEqual(compactBrand.frame.minX, expandedBrand.minX, accuracy: 1)
+        XCTAssertEqual(compactBrand.frame.width, expandedBrand.width, accuracy: 1,
+                       "The header label should crossfade in place without a width jump")
+        XCTAssertEqual(app.buttons["create"].frame.minX, actions.minX, accuracy: 1)
+        XCTAssertEqual(app.buttons["account"].frame.minX, profile.minX, accuracy: 1)
+        let compactShot = XCTAttachment(screenshot: app.screenshot()); compactShot.name = "Stable left section title after scrolling"; compactShot.lifetime = .keepAlways; add(compactShot)
         app.swipeDown()
         XCTAssertTrue(app.staticTexts["page-title-collection"].isHittable)
         XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-full"].waitForExistence(timeout: 5), app.debugDescription)
@@ -101,6 +106,7 @@ final class ExperimentUITests: XCTestCase {
         app.buttons["Account"].tap()
         XCTAssertTrue(app.buttons["account-edit-profile"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["account-security"].exists)
+        let accountShot = XCTAttachment(screenshot: app.screenshot()); accountShot.name = "Drawn native Account sheet"; accountShot.lifetime = .keepAlways; add(accountShot)
         app.buttons["account-security"].tap()
         XCTAssertTrue(app.navigationBars["Recovery & security"].waitForExistence(timeout: 5))
     }
@@ -193,6 +199,46 @@ final class ExperimentUITests: XCTestCase {
         screenshot.name = "Native share sheet in dark mode"
         screenshot.lifetime = .keepAlways
         add(screenshot)
+    }
+
+    @MainActor func testDetailCardAnimatesOnArrivalWithoutTouch() throws {
+        try checkDetailMotion(reduceMotion: false)
+    }
+
+    @MainActor func testReducedMotionCardRemainsStill() throws {
+        try checkDetailMotion(reduceMotion: true)
+    }
+
+    @MainActor private func checkDetailMotion(reduceMotion: Bool) throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "--locale", "en"]
+        if reduceMotion { app.launchArguments.append("--card-reduce-motion") }
+        app.launch()
+        XCTAssertTrue(app.buttons["credential-design"].waitForExistence(timeout: 10))
+        app.buttons["credential-design"].tap()
+        let card = app.descendants(matching: .any).matching(identifier: "credential-detail-card").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertEqual(card.value as? String, reduceMotion ? "Still preview" : "Animated preview")
+        // The actual rendered card must change without a drag; crop out the clock and chrome.
+        let bounds = card.frame.insetBy(dx: 16, dy: 16)
+        func pixels() throws -> Data {
+            let shot = app.screenshot().image
+            let cg = try XCTUnwrap(shot.cgImage)
+            let scale = CGFloat(cg.width) / app.frame.width
+            let crop = try XCTUnwrap(cg.cropping(to: CGRect(x: bounds.minX * scale, y: bounds.minY * scale,
+                                                           width: bounds.width * scale, height: bounds.height * scale)))
+            return try XCTUnwrap(UIImage(cgImage: crop).pngData())
+        }
+        let before = try pixels()
+        let elapsed = expectation(description: "Observe automatic card motion")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { elapsed.fulfill() }
+        wait(for: [elapsed], timeout: 3)
+        let after = try pixels()
+        if reduceMotion { XCTAssertEqual(before, after, "Reduce Motion should keep the preview still") }
+        else { XCTAssertNotEqual(before, after, "The detail preview did not animate automatically") }
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = reduceMotion ? "Still detail with Reduce Motion" : "Automatic single-card tilt and sheen"
+        attachment.lifetime = .keepAlways; add(attachment)
     }
 
     @MainActor

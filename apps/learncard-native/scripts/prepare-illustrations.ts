@@ -31,6 +31,44 @@ const drawings = (dark: boolean): Record<string, string> => {
             <path d="M48 45L59 45Q62 44 62 49L62 59Q63 63 58 62L47 62Q44 62 44 58L45 49Q44 45 48 45Z" fill="url(#violet)"/>
             <path d="M29 27L33 27L33 36L38 36L38 39L29 39Z" fill="#18224E"/>
         </svg>`,
+        DrawnFamily: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 26Q16 16 23 26M20 26Q27 16 33 26"/><circle cx="13" cy="12" r="6"/><circle cx="28" cy="12" r="6"/><path d="M8 35V29Q8 23 14 23H16Q22 23 22 29V35ZM23 35V29Q23 23 29 23H30Q36 23 36 29V35Z"/></svg>`,
+        DrawnSharing: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20L29 9M12 20L29 32"/><circle cx="9" cy="20" r="5" fill="#F9A8D4"/><circle cx="31" cy="8" r="5" fill="#FDE047"/><circle cx="31" cy="33" r="5" fill="#93C5FD"/></svg>`,
+        DrawnSecurity: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4L34 10V22Q32 32 20 38Q8 32 6 22V10Z" fill="#FFFFFF"/><path d="M13 20L18 25L27 15"/></svg>`,
+        DrawnLanguage: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="16"/><ellipse cx="20" cy="20" rx="7" ry="16"/><path d="M5 15H35M5 25H35M20 4V36"/></svg>`,
+        DrawnBell: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 29L11 23V15Q11 5 20 5Q29 5 29 15L30 23L34 29Z" fill="#FFFFFF"/><path d="M16 34Q20 39 24 34M20 3V5"/></svg>`,
+        DrawnHelp: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="16" fill="#FFFFFF"/><path d="M15 15Q15 8 22 11Q29 15 21 20L20 24"/><circle cx="20" cy="30" r="1.4" fill="#18224E" stroke="none"/></svg>`,
+        DrawnSignOut: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6H9Q6 6 6 10V31Q6 35 10 35H18M18 20H36M29 13L36 20L29 27"/></svg>`,
+        DrawnForget: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10H34M16 10V5H25V10M10 10L12 35H29L31 10M17 16V29M24 16V29"/></svg>`,
+        DrawnExternal: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 8H8Q5 8 5 12V32Q5 36 9 36H30Q34 36 34 32V22M23 5H37V19M36 6L18 24"/></svg>`,
+        DrawnCredential: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H25L34 13V34Q34 37 31 37H9Q6 37 6 34V7Q6 4 9 4Z" fill="#FFFFFF"/><path d="M25 4V13H34M13 25H27M13 31H23"/><circle cx="15" cy="15" r="3"/></svg>`,
+        DrawnAdd: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="16" fill="#FFFFFF"/><path d="M20 11V29M11 20H29"/></svg>`,
+        DrawnKey: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 24L10 36L4 30L9 25L13 26L14 21L17 19"/><circle cx="26" cy="14" r="11" fill="#FFFFFF"/><circle cx="27" cy="13" r="4"/></svg>`,
+        PrivacyIllustration: wrap(`
+            <path d="M30 35L87 20V126L30 111Z" fill="#93C5FD" stroke="${ink}" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M87 20H100V126H87" stroke="${ink}" stroke-width="3"/>
+            <circle cx="68" cy="80" r="4" fill="${ink}"/>
+            <rect x="115" y="81" width="45" height="41" rx="7" fill="#FDE047" stroke="${ink}" stroke-width="3"/>
+            <path d="M124 80V68C124 49 151 49 151 68V80M138 97V107" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>
+            <path d="M126 30L130 21M156 42L166 37M18 64L9 60" stroke="#F9A8D4" stroke-width="6" stroke-linecap="round"/>
+        `),
+        FamilyConstellation: wrap(`
+            <path d="M99 38L48 104H150Z" stroke="#18224E" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="99" cy="39" r="31" fill="#FDE047" stroke="#18224E" stroke-width="3"/>
+            <circle cx="48" cy="105" r="30" fill="#93C5FD" stroke="#18224E" stroke-width="3"/>
+            <circle cx="150" cy="105" r="30" fill="#F9A8D4" stroke="#18224E" stroke-width="3"/>
+            <g fill="#18224E"><circle cx="89" cy="34" r="3"/><circle cx="109" cy="34" r="3"/><circle cx="38" cy="100" r="3"/><circle cx="58" cy="100" r="3"/><circle cx="140" cy="100" r="3"/><circle cx="160" cy="100" r="3"/></g>
+            <path d="M89 45Q99 58 110 45M38 111Q48 123 59 111M140 111Q150 123 161 111" stroke="#18224E" stroke-width="3" stroke-linecap="round"/>
+            <path d="M81 26L87 21M29 92L35 87M131 92L137 87" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+            <path d="M149 28L155 20M170 48L181 46" stroke="#22D3EE" stroke-width="5" stroke-linecap="round"/>
+        `),
+        FamilyInviteIllustration: wrap(`
+            <circle cx="61" cy="49" r="30" fill="#FDE047" stroke="${ink}" stroke-width="3"/>
+            <circle cx="139" cy="49" r="30" fill="#93C5FD" stroke="${ink}" stroke-width="3"/>
+            <g fill="#18224E"><circle cx="51" cy="44" r="3"/><circle cx="71" cy="44" r="3"/><circle cx="129" cy="44" r="3"/><circle cx="149" cy="44" r="3"/></g>
+            <path d="M51 55Q61 67 72 55M129 55Q139 67 150 55" stroke="#18224E" stroke-width="3" stroke-linecap="round"/>
+            <path d="M68 89H132V137H68ZM68 89L100 112L132 89" fill="${paper}" stroke="${ink}" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M24 90L15 85M170 91L181 85" stroke="#22D3EE" stroke-width="5" stroke-linecap="round"/>
+        `),
         ConnectionsIllustration: wrap(`
             <path d="M24 128v-16c0-24 18-38 39-38s39 14 39 38v16" fill="#C4B5FD" stroke="${ink}" stroke-width="3" stroke-linejoin="round"/>
             <ellipse cx="63" cy="57" rx="24" ry="29" fill="#5EEAD4" stroke="${ink}" stroke-width="3"/>

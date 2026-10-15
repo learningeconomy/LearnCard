@@ -89,7 +89,7 @@ struct HomeView: View {
         }
         .background(SectionBackground(tint: Palette.homeCanvas))
         .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value; onScrollStateChange(value) }
-        .navigationTitle(scrolled ? "Home" : "").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Palette.homeCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
         .refreshable { await store.refresh() }
     }

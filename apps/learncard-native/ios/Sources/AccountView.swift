@@ -10,62 +10,61 @@ struct AccountView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 18) {
-                    HStack(spacing: 14) {
-                        ProfileArtwork(url: account?.state?.profileImage, size: 64)
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(account?.state?.profileName ?? "Native Lab").font(.title3.bold()).foregroundStyle(Palette.ink)
-                            Text(account?.state?.profileId.map { "@\($0)" } ?? "Unsigned samples").font(.subheadline).foregroundStyle(Palette.secondary)
-                        }
-                        Spacer()
-                    }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                VStack(alignment: .leading, spacing: 20) {
+                    PageHeading(title: NativeText.literal("Your account"), identifier: "account")
+                    NavigationLink { EditAccountProfileView(account: account) } label: {
+                        HStack(spacing: 16) {
+                            ProfileArtwork(url: account?.state?.profileImage, size: 68)
+                                .padding(7).background(Palette.portfolioCard, in: RoundedRectangle(cornerRadius: 18))
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(account?.state?.profileName ?? "Native Lab").font(.title3.bold()).foregroundStyle(Palette.ink)
+                                Text(account?.state?.profileId.map { "@\($0)" } ?? NativeText.literal("Unsigned samples"))
+                                    .font(.subheadline).foregroundStyle(Palette.secondary)
+                                Text(NativeText.literal("Edit profile")).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.green)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                            Image(systemName: "chevron.forward").font(.subheadline).foregroundStyle(Palette.secondary)
+                        }.padding(16).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                    }.accessibilityIdentifier("account-edit-profile")
                     VStack(spacing: 0) {
-                        NavigationLink { EditAccountProfileView(account: account) } label: { row("Edit profile", symbol: "person.crop.circle", tint: Palette.blueCard) }
-                            .accessibilityIdentifier("account-edit-profile")
+                        NavigationLink { FamiliesView(appStore: store) } label: { DrawnSettingsRow(title: NativeText.text("family.title"), symbol: .family, tint: Palette.blueCard) }.accessibilityIdentifier("account-families")
                         divider
-                        NavigationLink { FamiliesView(appStore: store) } label: { row(NativeText.text("family.title"), symbol: "person.2", tint: Palette.familyCard) }.accessibilityIdentifier("account-families")
+                        NavigationLink { DataSharingView(consumer: store.consumer) } label: { DrawnSettingsRow(title: "Data Sharing", symbol: .sharing, tint: Palette.studiesCard) }.accessibilityIdentifier("account-data-sharing")
                         divider
-                        NavigationLink { DataSharingView(consumer: store.consumer) } label: { row("Data Sharing", symbol: "lock", tint: Palette.cyanCard) }.accessibilityIdentifier("account-data-sharing")
+                        NavigationLink { AccountSecurityView(account: account) } label: { DrawnSettingsRow(title: "Recovery & security", symbol: .security, tint: Palette.pinkCard) }.accessibilityIdentifier("account-security")
                         divider
-                        NavigationLink { AccountSecurityView(account: account) } label: { row("Recovery & security", symbol: "shield", tint: Palette.pinkCard) }
-                            .accessibilityIdentifier("account-security")
-                    }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
-                    VStack(spacing: 0) {
-                        NavigationLink { NativeLanguageView() } label: { row("App language", symbol: "globe", tint: Palette.pinkCard) }.accessibilityIdentifier("account-language")
+                        NavigationLink { NativeLanguageView() } label: { DrawnSettingsRow(title: "App language", symbol: .language, tint: Palette.lilacCard) }.accessibilityIdentifier("account-language")
                         divider
-                        Link(destination: URL(string: "https://staging.learncard.app/notifications")!) { row("Notifications", symbol: "bell", tint: Palette.blueCard, web: true) }
+                        Link(destination: URL(string: "https://staging.learncard.app/notifications")!) { DrawnSettingsRow(title: "Notifications", symbol: .notifications, tint: Palette.portfolioCard, web: true) }
                         divider
-                        Link(destination: URL(string: "https://docs.learncard.com")!) { row("Help", symbol: "questionmark", tint: Palette.cyanCard, web: true) }
-                    }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                        Link(destination: URL(string: "https://docs.learncard.com")!) { DrawnSettingsRow(title: "Help", symbol: .help, tint: Palette.cyanCard, web: true) }
+                    }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
                     if let account {
                         VStack(spacing: 0) {
-                            Button { dismiss(); Task { await account.signOut(forget: false) } } label: { row("Sign out", symbol: "rectangle.portrait.and.arrow.right", tint: Palette.paper) }.accessibilityIdentifier("account-sign-out")
+                            Button { dismiss(); Task { await account.signOut(forget: false) } } label: {
+                                DrawnSettingsRow(title: "Sign out", symbol: .signOut, tint: Palette.pinkCard)
+                            }.accessibilityIdentifier("account-sign-out")
                             divider
-                            Button { showForget = true } label: { row("Forget this device", symbol: "trash", tint: Palette.pinkCard, destructive: true) }.accessibilityIdentifier("account-forget-device")
-                        }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
-                    }
-                    Text(account == nil ? "Sample mode" : "Staging account · Some settings open on web")
-                        .font(.caption).foregroundStyle(Palette.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 6)
-                }.padding(20)
-            }.background(Palette.paper).navigationTitle(NativeText.literal("Your account")).navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(NativeText.literal("Done")) { dismiss() } } }
+                            Button { showForget = true } label: {
+                                DrawnSettingsRow(title: "Forget this device", symbol: .forget, tint: Palette.pinkCard,
+                                                 subtitle: NativeText.text("account.forget.caption"), destructive: true)
+                            }.accessibilityIdentifier("account-forget-device")
+                        }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                    } else { Text(NativeText.literal("Sample mode")).font(.footnote).foregroundStyle(Palette.secondary) }
+                }.padding(20).buttonStyle(CredentialPressStyle())
+            }.background(Palette.paper).navigationTitle("").navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    if #available(iOS 26.0, *) {
+                        ToolbarItem(placement: .topBarLeading) { LearnCardBrand() }.sharedBackgroundVisibility(.hidden)
+                    } else { ToolbarItem(placement: .topBarLeading) { LearnCardBrand() } }
+                    ToolbarItem(placement: .confirmationAction) { Button(NativeText.literal("Done")) { dismiss() } }
+                }
                 .confirmationDialog("Forget this device?", isPresented: $showForget, titleVisibility: .visible) {
                     Button("Sign Out & Forget Device", role: .destructive) { dismiss(); Task { await account?.signOut(forget: true) } }
                     Button(NativeText.literal("Cancel"), role: .cancel) {}
                 } message: { Text("You'll need your recovery method when signing in again on this iPhone.") }
         }.presentationDetents([.large]).presentationDragIndicator(.visible).presentationBackground(Palette.paper)
     }
-    private var divider: some View { Divider().padding(.leading, 64) }
-    private func row(_ title: String, symbol: String, tint: Color, web: Bool = false, destructive: Bool = false) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 16, weight: .medium)).foregroundStyle(Palette.cardInk)
-                .frame(width: 34, height: 34).background(tint, in: Circle()).accessibilityHidden(true)
-            Text(NativeText.literal(title)).font(.body.weight(.medium)).foregroundStyle(destructive ? .red : Palette.ink)
-            Spacer(minLength: 0)
-            Image(systemName: web ? "arrow.up.right" : "chevron.right").font(.caption.weight(.medium)).foregroundStyle(Palette.secondary).accessibilityHidden(true)
-        }.padding(.horizontal, 16).frame(minHeight: 60).contentShape(Rectangle())
-    }
+    private var divider: some View { Divider().padding(.leading, 74) }
 }
 
 private struct NativeLanguageView: View {

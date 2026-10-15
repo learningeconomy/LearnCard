@@ -1,6 +1,6 @@
 # Drawn shell, Inbox and search — 2026-10-14
 
-The user approved the drawn quality of `inbox-search-concept-2026-10-14.png`: outlined illustrations, playful silhouettes and intentional list accents. They requested a clearer plus button than the small overlapping blocks in the concept. Use a large familiar navy plus on one blue tile. The latest direction uses an experimental painted-square mosaic and a left-aligned LearnCard wordmark, which recedes on scroll. This supersedes the earlier logo-only preference; there is no enclosing white circle.
+The user approved the drawn quality of `inbox-search-concept-2026-10-14.png`: outlined illustrations, playful silhouettes and intentional list accents. They requested a clearer plus button than the small overlapping blocks in the concept. Use a large familiar navy plus on one blue tile. The latest direction uses an experimental painted-square mosaic and a left-aligned LearnCard wordmark, which crossfades to the section name in a stable slot on scroll. This supersedes the earlier logo-only preference; there is no enclosing white circle.
 
 All four primary tabs share the logo, create/send/share action menu and account control. Each tab owns its active popover anchor so hidden tabs cannot present the menu. iOS 26's [toolbar shared-background visibility](https://developer.apple.com/documentation/swiftui/toolbarcontent/sharedbackgroundvisibility%28_%3A%29) removes the automatic glass circle behind the logo; older systems keep the plain logo item. Existing profile photos load normally; missing/failed images use the round yellow winking face. Neutral light/dark page canvases remain the current decision.
 
@@ -16,7 +16,7 @@ The tray uses new navy-outlined blue passport, pink envelope, green/cyan diagona
 
 Prompts use existing server UUIDs and state, never issuer heuristics. Native actions revalidate requests/prompts and preserve successful terminal receipts if notification metadata is delayed. Validation uses synthetic boundaries; no real connection request is sent automatically.
 
-Detail/review cards are isolated single cards, without the Collection stack illusion or disclosure arrow. An eight-second sine wave rotates by at most 2.6° horizontally and 0.65° vertically, with a faint surface reflection. There is no touch recognizer or hold hint. The animation pauses offscreen, in background, with Reduce Motion and with VoiceOver. Collection's existing stacked featured card stays separate.
+Detail/review cards are isolated single cards, without the Collection stack illusion or disclosure arrow. A nine-second loop rotates by at most 4.5° horizontally and 1.8° vertically, with a diagonal reflection that sweeps across the surface. Motion starts on appearance; parent scroll geometry pauses the card once it leaves the viewport. There is no touch recognizer or hold hint. The animation pauses offscreen, in background, with Reduce Motion and with VoiceOver. Collection's existing stacked featured card stays separate.
 
 ## Editable vector assets
 
@@ -30,7 +30,7 @@ Use case: ui-mockup. Design a polished high-fidelity three-screen iPhone UI boar
 
 ## Latest brand/scale correction — 2026-10-14
 
-The user explicitly approved experimenting with the concept's colored-square mark as an imagined native rebrand, then clarified that it should look like soft watercolor patches, without outlines. `LearnCardPaintedMark` is an editable SVG with rounded irregular patches and gentle color washes. The ink-outlined sketch version is rejected. It has no enclosing circle. A left-aligned **LearnCard** wordmark appears beside it at the top of each main section and fades/slides out over 240 ms when scrolling; the mark contracts modestly. Reduce Motion makes the change immediate, and accessibility-size text keeps the mark without squeezing the wordmark into navigation controls.
+The user explicitly approved experimenting with the concept's colored-square mark as an imagined native rebrand, then clarified that it should look like soft watercolor patches, without outlines. `LearnCardPaintedMark` is an editable SVG with rounded irregular patches and gentle color washes. The ink-outlined sketch version is rejected. It has no enclosing circle. A left-aligned **LearnCard** wordmark appears beside it at the top of each main section and crossfades over 220 ms to the section title on scroll. The mark and text slot keep fixed geometry. This October 15 correction replaces the shrinking mark/wordmark and competing centered UIKit title after the user found that transition awkward. Reduce Motion makes the change immediate, and accessibility-size text keeps the mark without squeezing the wordmark into navigation controls.
 
 Keep the heading, row, icon and artwork scales deliberate at native point sizes, with Dynamic Type for reading. Do not uniformly shrink the composition to preserve mockup pixel density. Intro/loading logo animation remains a later exploration, as requested.
 
@@ -38,4 +38,10 @@ The overall direction needs a touch of whimsy. Missing photos use a round winkin
 
 ## Additional section references — 2026-10-14
 
-At the user's request, three further boards explore Account/Data Sharing, Apps discovery/listing/My apps, and Families roster/guardian selection/review. See [the expansion brief](WHIMSY_EXPANSION_BRIEF.md) for all images, exact built-in generation prompts and the mapping to existing native functionality. These layouts and new drawings remain concepts for manual review, not implemented page compositions.
+At the user's request, three further boards explore Account/Data Sharing, Apps discovery/listing/My apps, and Families roster/guardian selection/review. See [the expansion brief](WHIMSY_EXPANSION_BRIEF.md) for all images, exact built-in generation prompts and the mapping to existing native functionality. The user approved their implementation on October 15. Native Account/Data Sharing, Apps and Families now use this direction with live metadata and editable SVGs. The boards remain composition references; they do not supply production account data.
+
+## Header and automatic-motion regression gate — 2026-10-15
+
+The action/profile pair uses adjacent 44-point hit targets inside one 96-point surface; UIKit no longer inserts its own group spacing/background. The scroll regression checks a stable logo/label width and x position, a localized section label and unchanged control positions. The section name replaces the wordmark on the left instead of jumping into the center.
+
+Two new tests open a personal credential without dragging, crop the rendered card from screenshots taken at different times, and verify changed pixels under automatic motion versus identical pixels with Reduce Motion. Existing large-text swipe/claim checks remain. Account, Apps, Data Sharing and Families screenshots cover the approved drawn components; disabled buttons retain legible foreground/background contrast.

@@ -10,6 +10,8 @@ struct CredentialDetailView: View {
     var isOffer = false
     var isCreation = false
     @State private var showSend = false
+    @State private var cardHeight: CGFloat = 240
+    @State private var cardVisible = true
 
     var body: some View {
         Group {
@@ -22,7 +24,8 @@ struct CredentialDetailView: View {
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                CredentialDetailCard(credential: credential)
+                CredentialDetailCard(credential: credential, isVisible: cardVisible)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
                 VStack(alignment: .leading, spacing: 10) {
                     Text("About this credential").font(.headline).foregroundStyle(Palette.ink)
                     Text(credential.summary).foregroundStyle(Palette.secondary).lineSpacing(4)
@@ -58,6 +61,10 @@ struct CredentialDetailView: View {
             }.padding(24)
         }
         .background(SectionBackground(tint: Palette.paper))
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            let offset = geometry.contentOffset.y + geometry.contentInsets.top
+            return offset < cardHeight + 24 && offset + geometry.containerSize.height > 24
+        } action: { _, value in cardVisible = value }
         #if DEBUG
         .modifier(NativeReviewPreferences())
         #endif

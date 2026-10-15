@@ -1,0 +1,26 @@
+{
+    "images": [
+        {
+            "filename": "DrawnAdd.svg",
+            "idiom": "universal"
+        },
+        {
+            "filename": "DrawnAdd-dark.svg",
+            "idiom": "universal",
+            "appearances": [
+                {
+                    "appearance": "luminosity",
+                    "value": "dark"
+                }
+            ]
+        }
+    ],
+    "info": {
+        "author": "xcode",
+        "version": 1
+    },
+    "properties": {
+        "preserves-vector-representation": true,
+        "template-rendering-intent": "original"
+    }
+}

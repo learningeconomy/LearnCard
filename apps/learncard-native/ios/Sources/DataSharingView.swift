@@ -13,7 +13,7 @@ struct DataSharingView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 PageHeading(title: NativeText.text("sharing.title"), identifier: "sharing")
-                Text(NativeText.text("sharing.subtitle")).foregroundStyle(Palette.secondary)
+                IllustratedIntro(image: "PrivacyIllustration", title: NativeText.text("sharing.intro"))
                 if let error = consumer.error { ConsumerErrorCard(error: error) { Task { await consumer.loadPrivacy() } } }
                 if consumer.privacyBusy && consumer.connections.isEmpty && consumer.links.isEmpty { ConsumerLoadingRows() }
                 Text(NativeText.text("sharing.connections")).font(.title3.bold())
@@ -22,7 +22,7 @@ struct DataSharingView: View {
                     NavigationLink { DataConnectionView(connection: connection, consumer: consumer) } label: {
                         HStack(spacing: 14) {
                             ConsumerAppIcon(url: connection.imageURL, title: connection.title)
-                            VStack(alignment: .leading, spacing: 5) { Text(connection.title).font(.headline); Text(sharingStatus(connection.status)).font(.caption).foregroundStyle(Palette.secondary) }
+                            VStack(alignment: .leading, spacing: 5) { Text(connection.title).font(.system(size: 18, weight: .semibold)); Text(sharingStatus(connection.status)).font(.caption).foregroundStyle(Palette.secondary) }
                             Spacer(minLength: 0)
                             Image(systemName: "chevron.forward").font(.caption).foregroundStyle(Palette.secondary)
                         }.padding(16).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
@@ -33,7 +33,7 @@ struct DataSharingView: View {
                 ForEach(consumer.links) { link in
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(alignment: .top, spacing: 12) {
-                            Image(systemName: "link").font(.title3).foregroundStyle(Palette.cardInk).frame(width: 44, height: 44).background(Palette.cyanCard, in: Circle())
+                            DrawnTile(symbol: .sharing, tint: Palette.cyanCard)
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(link.title).font(.headline)
                                 Text(NativeText.count("sharing.count", link.selectedCount)).font(.caption).foregroundStyle(Palette.secondary)
@@ -95,19 +95,27 @@ private struct DataConnectionView: View {
                 HStack(spacing: 16) { ConsumerAppIcon(url: current.imageURL, title: current.title, size: 64); VStack(alignment: .leading, spacing: 6) { Text(current.title).font(.title2.bold()); Text(sharingStatus(withdrew ? "withdrawn" : current.status)).font(.subheadline).foregroundStyle(Palette.secondary) } }
                 ConsentRecipients(recipients: current.recipients)
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(NativeText.text("sharing.access")).font(.headline)
+                    Text(NativeText.text("sharing.access")).font(.title2.bold())
                     ForEach(current.disclosures) { disclosure in
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(consentLabel(disclosure.label)).font(.subheadline.weight(.medium))
-                            Text(NativeText.text(directionKey(disclosure.direction))).font(.caption).foregroundStyle(Palette.secondary)
-                            if let count = disclosure.count { Text(disclosure.detail == "all" ? NativeText.text("sharing.all") : NativeText.count("sharing.count", count)).font(.caption).foregroundStyle(Palette.secondary) }
-                            else if let detail = disclosure.detail { Text(detail).font(.subheadline).foregroundStyle(Palette.secondary) }
+                        HStack(alignment: .top, spacing: 14) {
+                            DrawnTile(symbol: disclosure.direction == "read" ? .credential : .add,
+                                      tint: disclosure.direction == "read" ? Palette.pinkCard : Palette.blueCard)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(consentLabel(disclosure.label)).font(.subheadline.weight(.medium))
+                                Text(NativeText.text(directionKey(disclosure.direction))).font(.caption).foregroundStyle(Palette.secondary)
+                                if let count = disclosure.count { Text(disclosure.detail == "all" ? NativeText.text("sharing.all") : NativeText.count("sharing.count", count)).font(.caption).foregroundStyle(Palette.secondary) }
+                                else if let detail = disclosure.detail { Text(detail).font(.subheadline).foregroundStyle(Palette.secondary) }
+                            }.frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                     if let date = current.expiresAt { LabeledContent(NativeText.text("sharing.expires")) { Text(date, style: .date) }.font(.caption) }
                 }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
                 if let error = consumer.error { ConsumerErrorCard(error: error) { consumer.error = nil } }
-                if current.status != "withdrawn" && !withdrew { Button(NativeText.text("sharing.stop"), role: .destructive) { confirm = true }.disabled(consumer.actionBusy).accessibilityIdentifier("connection-stop"); if consumer.actionBusy { ProgressView() } }
+                if current.status != "withdrawn" && !withdrew { Button(role: .destructive) { confirm = true } label: {
+                    Text(NativeText.text("sharing.stop")).font(.body.weight(.semibold)).foregroundStyle(Palette.errorInk)
+                        .frame(maxWidth: .infinity, minHeight: 52).background(Palette.pinkCard.opacity(0.18), in: RoundedRectangle(cornerRadius: 18))
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Palette.errorInk.opacity(0.3)))
+                }.buttonStyle(CredentialPressStyle()).disabled(consumer.actionBusy).accessibilityIdentifier("connection-stop"); if consumer.actionBusy { ProgressView() } }
             }.padding(20).foregroundStyle(Palette.ink)
         }.background(Palette.paper).navigationTitle(current.title).navigationBarTitleDisplayMode(.inline)
             .confirmationDialog(NativeText.text("sharing.stopTitle"), isPresented: $confirm, titleVisibility: .visible) {

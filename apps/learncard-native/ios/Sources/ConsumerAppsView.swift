@@ -14,6 +14,8 @@ struct AppsView: View {
     @State private var selected: ConsumerApp?
     @State private var scrolled = false
     @State private var webTool: WebTool?
+    @State private var appLaunch: ConsumerAppLaunch?
+    @State private var launchingApp: String?
     private var consumer: ConsumerAppsStore { store.consumer }
     private let categories = ["all", "learning", "ai", "games", "tools", "employment", "credentials", "plugin", "other"]
     private var visibleApps: [ConsumerApp] {
@@ -52,22 +54,19 @@ struct AppsView: View {
                 } else {
                     Text(NativeText.text("apps.tools")).font(.title3.bold()).foregroundStyle(Palette.ink)
                     VStack(spacing: 0) {
-                        NavigationLink { DataSharingView(consumer: consumer) } label: {
-                            ConsumerToolRow(title: NativeText.text("sharing.title"), subtitle: NativeText.text("sharing.subtitle"), symbol: "lock.open", tint: Palette.pinkCard)
-                        }.accessibilityIdentifier("apps-data-sharing")
-                        Divider().padding(.leading, 74)
                         NavigationLink { FamiliesView(appStore: store) } label: {
-                            ConsumerToolRow(title: NativeText.text("family.title"), subtitle: NativeText.text("family.subtitle"), symbol: "person.2", tint: Palette.familyCard)
+                            ConsumerToolRow(title: NativeText.text("family.title"), subtitle: NativeText.text("family.subtitle"), symbol: .family, tint: Palette.familyCard)
                         }.accessibilityIdentifier("apps-families")
-                        Divider().padding(.leading, 74)
-                        Button(action: create) {
-                            ConsumerToolRow(title: NativeText.text("apps.recognize"), subtitle: NativeText.text("apps.recognizeBody"), symbol: "person.2", tint: Palette.cyanCard)
-                        }.accessibilityIdentifier("apps-recognize")
-                        Divider().padding(.leading, 74)
+                        Divider().padding(.leading, 78)
+                        NavigationLink { DataSharingView(consumer: consumer) } label: {
+                            ConsumerToolRow(title: NativeText.text("sharing.title"), subtitle: NativeText.text("sharing.subtitle"), symbol: .sharing, tint: Palette.pinkCard)
+                        }.accessibilityIdentifier("apps-data-sharing")
+                        Divider().padding(.leading, 78)
                         Button { webTool = WebTool() } label: {
-                            ConsumerToolRow(title: NativeText.text("apps.resume"), subtitle: NativeText.text("apps.resumeBody"), symbol: "doc.text", tint: Palette.blueCard, web: true)
+                            ConsumerToolRow(title: NativeText.text("apps.resume"), subtitle: NativeText.text("apps.resumeBody"), symbol: .external, tint: Palette.blueCard, web: true)
                         }.accessibilityIdentifier("apps-resume")
-                    }.buttonStyle(.plain).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                    }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+
                     HStack {
                         Text(NativeText.text("apps.installed")).font(.title3.bold()).foregroundStyle(Palette.ink)
                         Spacer()
@@ -87,22 +86,24 @@ struct AppsView: View {
                     if discover, let featured = visibleApps.first(where: \.featured) {
                         Text(NativeText.text("apps.featured")).font(.title3.bold()).foregroundStyle(Palette.ink)
                         Button { selected = featured } label: {
-                            HStack(spacing: 18) {
+                            HStack(spacing: 16) {
+                                ConsumerAppIcon(url: featured.iconURL, title: featured.title, size: 96)
                                 VStack(alignment: .leading, spacing: 10) {
-                                    Text(featured.title).font(.title2.bold())
-                                    Text(featured.tagline).font(.subheadline).lineLimit(3)
-                                    Text(NativeText.text(consumer.isInstalled(featured.id) ? "apps.open" : "apps.get"))
-                                        .font(.subheadline.weight(.semibold)).padding(.horizontal, 20).padding(.vertical, 10)
-                                        .foregroundStyle(Palette.selectionInk).background(Palette.selection, in: Capsule())
+                                    Text(featured.title).font(.title2.bold()).foregroundStyle(Palette.ink)
+                                    Text(featured.tagline).font(.subheadline).foregroundStyle(Palette.secondary).lineLimit(3)
+                                    Text(NativeText.text("apps.view"))
+                                        .font(.subheadline.weight(.semibold)).padding(.horizontal, 20).padding(.vertical, 11)
+                                        .foregroundStyle(Palette.selectionInk).background(Palette.selection, in: RoundedRectangle(cornerRadius: 14))
                                 }.frame(maxWidth: .infinity, alignment: .leading)
-                                ConsumerAppIcon(url: featured.iconURL, title: featured.title, size: 84)
-                            }.padding(22).foregroundStyle(Palette.cardInk).background(Palette.cyanCard, in: RoundedRectangle(cornerRadius: 26))
+                            }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+
                         }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("app-\(featured.id)")
                     }
                     LazyVStack(spacing: 12) {
                         ForEach(visibleApps.filter { !discover || !$0.featured || $0.id != visibleApps.first(where: \.featured)?.id }) { app in
-                            Button { selected = app } label: { ConsumerAppRow(app: app, installed: consumer.isInstalled(app.id)) }
-                                .buttonStyle(CredentialPressStyle()).accessibilityIdentifier("app-\(app.id)")
+                            ConsumerAppRow(app: app, installed: consumer.isInstalled(app.id), busy: consumer.actionBusy || launchingApp != nil, opening: launchingApp == app.id,
+                                           detail: { selected = app }, open: { Task { await open(app) } })
                         }
                     }
                 }
@@ -114,7 +115,7 @@ struct AppsView: View {
                 }
             }.padding(20)
         }.background(Palette.appsCanvas)
-            .navigationTitle(scrolled ? NativeText.text("apps.title") : "").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("").navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Palette.appsCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
             .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value; onScrollStateChange(value) }
             .task { await consumer.loadInstalled() }
@@ -126,9 +127,29 @@ struct AppsView: View {
             }
             .refreshable { await reload() }
             .navigationDestination(item: $selected) { app in ConsumerAppDetailView(app: app, store: store, openInbox: openInbox) }
+            .fullScreenCover(item: $appLaunch) { next in
+                ConsumerBrowserView(launch: next, consumer: consumer, isSample: sampleBrowser, onCredential: { Task { await store.refresh() } }, openInbox: openInbox)
+            }
             .fullScreenCover(item: $webTool) { _ in
                 ConsumerBrowserView(launch: WebTool.launch, consumer: consumer, isSample: false, onCredential: {}, openInbox: openInbox)
             }
+    }
+    private func open(_ app: ConsumerApp) async {
+        guard launchingApp == nil else { return }
+        launchingApp = app.id
+        defer { launchingApp = nil }
+        do { consumer.error = nil; appLaunch = try await consumer.launch(app) }
+        catch {
+            guard consumer.installedApps.contains(where: { $0.id == app.id }) else { return }
+            consumer.fail(error); selected = app
+        }
+    }
+    private var sampleBrowser: Bool {
+        #if DEBUG
+        !store.isLive || ProcessInfo.processInfo.arguments.contains("--account-fixture")
+        #else
+        !store.isLive
+        #endif
     }
     private func reload() async {
         await consumer.loadInstalled()
@@ -159,7 +180,7 @@ struct ConsumerAppDetailView: View {
                 HStack(alignment: .top, spacing: 18) {
                     ConsumerAppIcon(url: app.iconURL, title: app.title, size: 84)
                     VStack(alignment: .leading, spacing: 7) {
-                        Text(app.title).font(.title2.bold()).foregroundStyle(Palette.ink)
+                        Text(app.title).font(.system(.title, weight: .bold)).foregroundStyle(Palette.ink)
                         Text(app.tagline).font(.subheadline).foregroundStyle(Palette.secondary)
                         Text(consumerCategory(app.category)).font(.caption.weight(.medium)).foregroundStyle(Palette.selection)
                     }
@@ -201,8 +222,11 @@ struct ConsumerAppDetailView: View {
                         Text(NativeText.text("apps.access")).font(.headline)
                         Text(NativeText.text("apps.requestsBody")).font(.subheadline).foregroundStyle(Palette.secondary)
                         ForEach(app.permissions, id: \.self) { permission in
-                            Label(NativeText.text(permissionKey(permission)), systemImage: permission == "request_identity" ? "person.crop.circle" : "checkmark.shield")
-                                .font(.subheadline).foregroundStyle(Palette.ink)
+                            HStack(spacing: 14) {
+                                DrawnTile(symbol: permission == "request_identity" ? .family : .credential,
+                                          tint: permission == "request_identity" ? Palette.portfolioCard : Palette.cyanCard)
+                                Text(NativeText.text(permissionKey(permission))).font(.body.weight(.medium)).foregroundStyle(Palette.ink)
+                            }
                         }
                     }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
                 }
@@ -256,10 +280,10 @@ struct ConsumerActionButton: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) { if busy { ProgressView().tint(Palette.selectionInk) }; Text(title).font(.body.weight(.semibold)) }
+            HStack(spacing: 10) { if busy { ProgressView().tint(disabled ? Palette.secondary : Palette.selectionInk) }; Text(title).font(.body.weight(.semibold)) }
                 .padding(.horizontal, 20).padding(.vertical, 16).frame(maxWidth: .infinity, minHeight: 54)
-                .foregroundStyle(Palette.selectionInk).background(Palette.selection, in: RoundedRectangle(cornerRadius: 20))
-        }.buttonStyle(.plain).disabled(busy || disabled).opacity(disabled ? 0.45 : 1)
+                .foregroundStyle(disabled ? Palette.secondary : Palette.selectionInk).background(disabled ? Palette.line : Palette.selection, in: RoundedRectangle(cornerRadius: 20))
+        }.buttonStyle(CredentialPressStyle()).disabled(busy || disabled)
     }
 }
 
@@ -290,39 +314,47 @@ private struct ConsumerAppRow: View {
     @Environment(\.locale) private var nativeLocale
     let app: ConsumerApp
     let installed: Bool
+    let busy: Bool
+    let opening: Bool
+    let detail: () -> Void
+    let open: () -> Void
+    @ScaledMetric(relativeTo: .headline) private var titleSize = 18.0
     var body: some View {
-        HStack(spacing: 14) {
-            ConsumerAppIcon(url: app.iconURL, title: app.title)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(app.title).font(.headline).foregroundStyle(Palette.ink).lineLimit(2)
-                Text(app.tagline).font(.subheadline).foregroundStyle(Palette.secondary).lineLimit(2)
-            }.frame(maxWidth: .infinity, alignment: .leading)
-            Text(NativeText.text(installed ? "apps.open" : "apps.get")).font(.caption.weight(.semibold))
-                .padding(.horizontal, 14).padding(.vertical, 9).foregroundStyle(Palette.selection)
-                .background(Palette.selection.opacity(0.10), in: Capsule())
-        }.padding(16).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+        HStack(spacing: 10) {
+            Button(action: detail) {
+                HStack(spacing: 14) {
+                    ConsumerAppIcon(url: app.iconURL, title: app.title, size: 62)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(app.title).font(.system(size: titleSize, weight: .semibold)).foregroundStyle(Palette.ink)
+                        Text(app.tagline).font(.subheadline).foregroundStyle(Palette.secondary).lineLimit(3)
+                    }.frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
+                    if !installed { Image(systemName: "chevron.forward").font(.subheadline).foregroundStyle(Palette.secondary) }
+                }.contentShape(Rectangle())
+            }.accessibilityIdentifier("app-\(app.id)")
+            if installed {
+                Button(action: open) {
+                    HStack(spacing: 6) {
+                        if opening { ProgressView().tint(Palette.selection) }
+                        Text(NativeText.text(opening ? "apps.opening" : "apps.open"))
+                    }.font(.subheadline.weight(.semibold)).foregroundStyle(Palette.selection)
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(Palette.blueCard.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Palette.blueCard.opacity(0.6)))
+                }.disabled(busy).accessibilityIdentifier("app-open-\(app.id)")
+                    .accessibilityLabel(NativeText.format("apps.openNamed", app.title))
+            }
+        }.padding(12).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22)).buttonStyle(CredentialPressStyle())
     }
 }
 
 private struct ConsumerToolRow: View {
-    @Environment(\.locale) private var nativeLocale
     let title: String
     let subtitle: String
-    let symbol: String
+    let symbol: DrawnSymbol
     let tint: Color
     var web = false
-    @Environment(\.layoutDirection) private var direction
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: symbol).font(.system(size: 21, weight: .medium)).foregroundStyle(Palette.cardInk)
-                .frame(width: 44, height: 44).background(tint, in: Circle()).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title).font(.headline).foregroundStyle(Palette.ink)
-                Text(subtitle).font(.caption).foregroundStyle(Palette.secondary).lineLimit(2)
-            }.frame(maxWidth: .infinity, alignment: .leading)
-            if web { Text(NativeText.text("apps.web")).font(.caption.weight(.medium)).foregroundStyle(Palette.selection) }
-            Image(systemName: direction == .rightToLeft ? "chevron.left" : "chevron.right").font(.caption).foregroundStyle(Palette.secondary).accessibilityHidden(true)
-        }.padding(16).frame(minHeight: 82)
+        DrawnSettingsRow(title: title, symbol: symbol, tint: tint, subtitle: subtitle, web: web)
     }
 }
 

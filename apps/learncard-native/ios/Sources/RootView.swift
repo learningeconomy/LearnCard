@@ -112,12 +112,20 @@ struct RootView: View {
 
     @ToolbarContentBuilder private func header(tab: Int) -> some ToolbarContent {
         if #available(iOS 26.0, *) {
-            ToolbarItem(placement: .topBarLeading) { LearnCardBrand(compact: compactBrands[tab]) }
-                .sharedBackgroundVisibility(.hidden)
+            ToolbarItem(placement: .topBarLeading) { brand(tab: tab) }.sharedBackgroundVisibility(.hidden)
+            ToolbarItem(placement: .topBarTrailing) { headerControls(tab: tab) }.sharedBackgroundVisibility(.hidden)
         } else {
-            ToolbarItem(placement: .topBarLeading) { LearnCardBrand(compact: compactBrands[tab]) }
+            ToolbarItem(placement: .topBarLeading) { brand(tab: tab) }
+            ToolbarItem(placement: .topBarTrailing) { headerControls(tab: tab) }
         }
-        ToolbarItemGroup(placement: .topBarTrailing) {
+    }
+
+    private func brand(tab: Int) -> some View {
+        LearnCardBrand(compact: compactBrands[tab], section: ["Collection", "Inbox", "Apps", "Home"][tab])
+    }
+
+    private func headerControls(tab: Int) -> some View {
+        HStack(spacing: 0) {
             Button { showActions = true } label: {
                 Image(systemName: "plus").font(.system(size: 21, weight: .semibold))
                     .foregroundStyle(Palette.cardInk).frame(width: 34, height: 34)
@@ -141,6 +149,7 @@ struct RootView: View {
                 ProfileArtwork(url: account?.state?.profileImage)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel(NativeText.literal("Account")).accessibilityIdentifier("account")
-        }
+        }.padding(4).background(Palette.surface, in: Capsule())
+            .shadow(color: .black.opacity(0.035), radius: 10, y: 5)
     }
 }

@@ -98,8 +98,8 @@ struct PrimaryButton: View {
                 Text(title).font(.body.weight(.semibold))
             }
             .frame(maxWidth: .infinity, minHeight: 54)
-            .foregroundStyle(Palette.selectionInk)
-            .background(Palette.green, in: RoundedRectangle(cornerRadius: 20))
+            .foregroundStyle(disabled ? Palette.secondary : Palette.selectionInk)
+            .background(disabled ? Palette.line : Palette.green, in: RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(CredentialPressStyle())
         .disabled(disabled || loading)
@@ -289,21 +289,25 @@ struct LearnCardBrand: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var textSize
     var compact = false
-    private var showsWordmark: Bool { !compact && !textSize.isAccessibilitySize }
+    var section = "Collection"
+    private var sectionTitle: String { section == "Inbox" ? NativeText.text("nav.inbox.short") : NativeText.literal(section) }
     var body: some View {
-        HStack(spacing: showsWordmark ? 8 : 0) {
-            Image("LearnCardPaintedMark").resizable().scaledToFit()
-                .frame(width: compact ? 34 : 40, height: compact ? 34 : 40)
-            Text("LearnCard").font(.system(size: 20, weight: .bold)).tracking(-0.6)
-                .foregroundStyle(Palette.ink).fixedSize().opacity(showsWordmark ? 1 : 0)
-                .offset(x: showsWordmark ? 0 : -6)
-                .frame(width: showsWordmark ? 106 : 0, alignment: .leading).clipped()
-                .accessibilityHidden(!showsWordmark)
-        }.frame(width: showsWordmark ? 154 : compact ? 34 : 40, height: 44, alignment: .leading)
+        HStack(spacing: 8) {
+            Image("LearnCardPaintedMark").resizable().scaledToFit().frame(width: 36, height: 36)
+                .accessibilityHidden(true)
+            if !textSize.isAccessibilitySize {
+                ZStack(alignment: .leading) {
+                    Text("LearnCard").font(.system(size: 20, weight: .bold)).tracking(-0.6)
+                        .opacity(compact ? 0 : 1).accessibilityHidden(compact)
+                    Text(sectionTitle).font(.system(size: 18, weight: .semibold))
+                        .opacity(compact ? 1 : 0).accessibilityHidden(!compact)
+                }.foregroundStyle(Palette.ink).lineLimit(1).frame(width: 110, alignment: .leading)
+            }
+        }.frame(width: textSize.isAccessibilitySize ? 36 : 154, height: 44, alignment: .leading)
             .fixedSize(horizontal: true, vertical: false)
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.24), value: compact)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: compact)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("LearnCard")
+            .accessibilityLabel(compact ? NativeText.literal(section) : "LearnCard")
             .accessibilityIdentifier(compact ? "learncard-brand-compact" : "learncard-brand-full")
     }
 }

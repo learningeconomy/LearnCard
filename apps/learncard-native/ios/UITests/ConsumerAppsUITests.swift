@@ -10,6 +10,7 @@ import XCTest
     func testDiscoverConsentInstallAndNativeDataSharing() {
         let app = launch()
         app.buttons["Discover"].tap()
+        let discoverShot = XCTAttachment(screenshot: app.screenshot()); discoverShot.name = "Drawn Apps discovery with actual sample metadata"; discoverShot.lifetime = .keepAlways; add(discoverShot)
         let studio = app.buttons["app-sample-studio"]
         XCTAssertTrue(studio.waitForExistence(timeout: 5), app.debugDescription); studio.tap()
         app.buttons["app-detail-action"].tap()
@@ -30,6 +31,16 @@ import XCTest
         XCTAssertTrue(app.staticTexts["Sharing stopped"].waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertFalse(app.buttons["connection-stop"].exists)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Native agreement recipients and withdrawal"; shot.lifetime = .keepAlways; add(shot)
+    }
+    func testInstalledAppOpensDirectlyFromMyApps() {
+        let app = launch()
+        let appsShot = XCTAttachment(screenshot: app.screenshot()); appsShot.name = "Drawn My apps tools and app rows"; appsShot.lifetime = .keepAlways; add(appsShot)
+        let open = app.buttons["app-open-sample-earth"]
+        for _ in 0..<3 where !open.isHittable { app.swipeUp() }
+        XCTAssertTrue(open.waitForExistence(timeout: 5)); open.tap()
+        XCTAssertTrue(app.webViews.staticTexts["Partner SDK connected"].waitForExistence(timeout: 15), app.debugDescription)
+        app.buttons["browser-close"].tap()
+        XCTAssertTrue(app.buttons["app-open-sample-earth"].waitForExistence(timeout: 5))
     }
     func testRealPartnerSDKHandshakeIdentityCancelAcceptAndUnsupportedRequest() {
         let app = launch()
@@ -73,6 +84,7 @@ import XCTest
         app.buttons["Account"].tap(); app.buttons["account-data-sharing"].tap()
         XCTAssertTrue(app.staticTexts["page-title-sharing"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Your shared links"].exists)
+        let privacyShot = XCTAttachment(screenshot: app.screenshot()); privacyShot.name = "Drawn native Data Sharing overview"; privacyShot.lifetime = .keepAlways; add(privacyShot)
         XCTAssertFalse(app.webViews.firstMatch.exists)
     }
     func testLanguageChangeKeepsAccountAndPersistsAfterRelaunch() {

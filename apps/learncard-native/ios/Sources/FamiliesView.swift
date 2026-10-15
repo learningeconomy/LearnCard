@@ -85,26 +85,21 @@ struct FamilyDetailView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(family.title).font(.largeTitle.bold()).foregroundStyle(Palette.cardInk).accessibilityAddTraits(.isHeader)
                             if !family.motto.isEmpty { Text(family.motto).font(.subheadline).foregroundStyle(Palette.cardSecondary) }
+                            if family.canEdit {
+                                Button(NativeText.text("family.edit")) { edit = true }
+                                    .font(.subheadline.weight(.semibold)).foregroundStyle(Palette.cardInk)
+                                    .padding(.top, 10).accessibilityIdentifier("family-edit")
+                            }
                         }.frame(maxWidth: .infinity, alignment: .leading)
-                        FamilyArtwork(family: family.summary, size: 76)
-                    }.padding(20).background(Palette.familyCard, in: RoundedRectangle(cornerRadius: 24))
+                        FamilyArtwork(family: family.summary, size: 100)
+                    }.padding(20).background(Palette.familyTint(family.color), in: RoundedRectangle(cornerRadius: 24))
                     if !appStore.isLive { FamilySampleNotice() }
                     roster("family.guardians", members: family.guardians)
                     roster("family.children", members: family.children)
-                    if family.canInvite || family.canEdit {
-                        VStack(spacing: 0) {
-                            if family.canInvite {
-                                Button { invite = true } label: {
-                                    FamilyActionRow(title: NativeText.text("family.invite"), subtitle: NativeText.text("family.inviteBody"), symbol: "person.badge.plus", tint: Palette.limeCard, background: false)
-                                }.accessibilityIdentifier("family-invite")
-                            }
-                            if family.canInvite && family.canEdit { Divider().padding(.leading, 70) }
-                            if family.canEdit {
-                                Button { edit = true } label: {
-                                    FamilyActionRow(title: NativeText.text("family.edit"), subtitle: NativeText.text("family.editBody"), symbol: "pencil", tint: Palette.lilacCard, background: false)
-                                }.accessibilityIdentifier("family-edit")
-                            }
-                        }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                    if family.canInvite {
+                        Button { invite = true } label: {
+                            FamilyActionRow(title: NativeText.text("family.invite"), subtitle: NativeText.text("family.inviteBody"), symbol: "person.badge.plus", tint: Palette.studiesCard)
+                        }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("family-invite")
                     }
                     Text(NativeText.text("family.childBoundary")).font(.caption).foregroundStyle(Palette.secondary).padding(.horizontal, 4)
                     Button { openWeb = true } label: {
@@ -259,6 +254,7 @@ private struct FamilyEditorView: View {
 private struct FamilyInviteView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var phase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let appStore: AppStore
     let family: FamilyDetail
     @State private var query = ""
@@ -266,50 +262,107 @@ private struct FamilyInviteView: View {
     @State private var selected: AccountRecipient?
     @State private var searching = false
     @State private var searchError = false
+    @State private var reviewing = false
     @State private var pin = ""
     @State private var requestID = UUID().uuidString
+    @FocusState private var searchFocused: Bool
     private var store: FamiliesStore { appStore.families }
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text(family.title).font(.title2.bold()).foregroundStyle(Palette.ink)
-                    Text(NativeText.text("family.invite.explanation")).font(.subheadline).foregroundStyle(Palette.secondary)
-                    TextField(NativeText.text("family.invite.search"), text: $query).autocorrectionDisabled().textInputAutocapitalization(.never)
-                        .padding(18).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20)).accessibilityIdentifier("family-recipient-search")
-                    if searching { ProgressView(NativeText.text("family.invite.searching")) }
-                    if searchError { Text(NativeText.text("family.error.connection")).font(.subheadline).foregroundStyle(Palette.errorInk) }
-                    ForEach(recipients.filter { value in !family.guardians.contains { $0.profileID == value.id } }) { recipient in
-                        Button { if selected?.id != recipient.id { requestID = UUID().uuidString; selected = recipient; pin = "" } } label: {
-                            HStack(spacing: 12) {
-                                FamilyAvatar(member: FamilyMember(id: recipient.id, name: recipient.name, role: "guardian"))
-                                VStack(alignment: .leading, spacing: 4) { Text(recipient.name).font(.headline); Text("@\(recipient.id)").font(.caption).foregroundStyle(Palette.secondary) }
-                                Spacer(); Image(systemName: selected?.id == recipient.id ? "checkmark.circle.fill" : "circle").foregroundStyle(Palette.selection)
-                            }.foregroundStyle(Palette.ink).padding(16).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))
-                        }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("family-recipient-\(recipient.id)")
-                    }
-                    if let selected {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(NativeText.format("family.invite.review", selected.name)).font(.headline).foregroundStyle(Palette.ink)
-                            Text(NativeText.text("family.invite.access")).font(.subheadline).foregroundStyle(Palette.secondary)
-                            Divider()
-                            Text(NativeText.text("family.pin.enter")).font(.caption.weight(.semibold)).foregroundStyle(Palette.secondary)
-                            SecureField(NativeText.text("family.pin.placeholder"), text: $pin).keyboardType(.asciiCapableNumberPad).textContentType(.password).accessibilityIdentifier("family-invite-pin")
-                            if !appStore.isLive { Text(NativeText.text("family.pin.sample")).font(.caption).foregroundStyle(Palette.secondary) }
-                        }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                VStack(alignment: .leading, spacing: 22) {
+                    PageHeading(title: NativeText.text(reviewing ? "family.invite.reviewTitle" : "family.invite"))
+                    Text(family.title).font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary)
+                    if reviewing, let selected {
+                        HStack(spacing: 14) {
+                            FamilyAvatar(member: FamilyMember(id: selected.id, name: selected.name, role: "guardian"), size: 62)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(selected.name).font(.title3.bold())
+                                Text("@\(selected.id)").font(.subheadline).foregroundStyle(Palette.secondary)
+                            }
+                        }.frame(maxWidth: .infinity, alignment: .leading).padding(18).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                        HStack(alignment: .top, spacing: 14) {
+                            DrawnTile(symbol: .key, tint: Palette.pinkCard, size: 62)
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(NativeText.format("family.invite.review", selected.name)).font(.title2.bold())
+                                Text(NativeText.text("family.invite.access")).font(.body).foregroundStyle(Palette.secondary)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                        }.padding(18).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text(NativeText.text("family.pin.enter")).font(.headline)
+                            SecureField(text: $pin, prompt: Text(NativeText.text("family.pin.placeholder")).foregroundStyle(.clear)) {
+                                Text(NativeText.text("family.pin.placeholder"))
+                            }.keyboardType(.asciiCapableNumberPad).textContentType(.password)
+                                .font(.title2.monospaced()).foregroundStyle(.clear).tint(.clear)
+                                .padding(.horizontal, 18).frame(minHeight: 64)
+                                .overlay {
+                                    HStack {
+                                        ForEach(0..<5) { index in
+                                            Circle().fill(index < pin.count ? Palette.ink : Palette.line).frame(width: 9, height: 9).frame(maxWidth: .infinity)
+                                        }
+                                    }.padding(.horizontal, 20).allowsHitTesting(false).accessibilityHidden(true)
+                                }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 16))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.line))
+                                .accessibilityIdentifier("family-invite-pin")
+                                .onChange(of: pin) { _, value in
+                                    let digits = String(value.filter { $0.isASCII && $0.isNumber }.prefix(5))
+                                    if digits != value { pin = digits }
+                                }
+                            if !appStore.isLive { Text(NativeText.text("family.pin.sample")).font(.footnote).foregroundStyle(Palette.secondary) }
+                        }
+                    } else {
+                        Text(NativeText.text("family.invite.findAccount")).font(.body).foregroundStyle(Palette.secondary)
+                        Image("FamilyInviteIllustration").resizable().scaledToFit().frame(height: 132)
+                            .frame(maxWidth: .infinity).accessibilityHidden(true)
+                        HStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass").foregroundStyle(Palette.secondary)
+                            TextField(NativeText.text("family.invite.search"), text: $query).focused($searchFocused)
+                                .autocorrectionDisabled().textInputAutocapitalization(.never).accessibilityIdentifier("family-recipient-search")
+                        }.padding(16).background(Palette.surface, in: RoundedRectangle(cornerRadius: 18))
+                        Text(NativeText.text("family.invite.choose")).font(.title3.bold())
+                        if searching { ProgressView(NativeText.text("family.invite.searching")) }
+                        if searchError { Text(NativeText.text("family.error.connection")).font(.subheadline).foregroundStyle(Palette.errorInk) }
+                        ForEach(recipients.filter { value in !family.guardians.contains { $0.profileID == value.id } }) { recipient in
+                            Button {
+                                if selected?.id != recipient.id { requestID = UUID().uuidString; selected = recipient; pin = "" }
+                            } label: {
+                                HStack(spacing: 14) {
+                                    FamilyAvatar(member: FamilyMember(id: recipient.id, name: recipient.name, role: "guardian"))
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text(recipient.name).font(.headline)
+                                        Text("@\(recipient.id)").font(.subheadline).foregroundStyle(Palette.secondary)
+                                    }.frame(maxWidth: .infinity, alignment: .leading)
+                                    Image(systemName: selected?.id == recipient.id ? "checkmark.circle.fill" : "circle").font(.title2).foregroundStyle(Palette.selection)
+                                }.padding(16).background(selected?.id == recipient.id ? Palette.blueCard.opacity(0.25) : Palette.surface, in: RoundedRectangle(cornerRadius: 20))
+                            }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("family-recipient-\(recipient.id)")
+                        }
                     }
                     if let error = store.error { Text(error).font(.subheadline).foregroundStyle(Palette.errorInk).padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20)).accessibilityIdentifier("family-invite-error") }
-                }.padding(20).disabled(store.busy)
-            }.background(Palette.familyDetailCanvas)
-                .navigationTitle(NativeText.text("family.invite")).navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.text("common.cancel")) { dismiss() }.disabled(store.busy) } }
+                }.padding(20).foregroundStyle(Palette.ink).disabled(store.busy)
+            }.background(Palette.familyDetailCanvas).scrollDismissesKeyboard(.interactively)
+                .navigationTitle("").navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(NativeText.text(reviewing ? "common.back" : "common.cancel")) {
+                            if reviewing { pin = ""; reviewing = false; store.error = nil } else { dismiss() }
+                        }.disabled(store.busy)
+                    }
+                }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    PrimaryButton(title: NativeText.text(store.busy ? "family.invite.sending" : "family.invite.send"), loading: store.busy,
-                                  disabled: selected == nil || pin.count != 5 || !pin.allSatisfy(\.isASCII) || !pin.allSatisfy(\.isNumber)) {
-                        guard let selected else { return }
-                        let submitted = pin; pin = ""
-                        Task { if await store.invite(family.id, recipient: selected.id, requestID: requestID, pin: submitted) { dismiss() } }
-                    }.accessibilityIdentifier("family-invite-send").padding(20).background(Palette.surface)
+                    VStack(spacing: 10) {
+                        ConsumerActionButton(title: NativeText.text(reviewing ? store.busy ? "family.invite.sending" : "family.invite.send" : "family.invite.reviewAction"), busy: store.busy,
+                                             disabled: selected == nil || reviewing && (pin.count != 5 || !pin.allSatisfy(\.isASCII) || !pin.allSatisfy(\.isNumber))) {
+                            guard let selected else { return }
+                            if !reviewing {
+                                searchFocused = false
+                                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { reviewing = true }
+                            } else {
+                                let submitted = pin; pin = ""
+                                Task { if await store.invite(family.id, recipient: selected.id, requestID: requestID, pin: submitted) { dismiss() } }
+                            }
+                        }.accessibilityIdentifier(reviewing ? "family-invite-send" : "family-invite-review")
+                        if reviewing { Text(NativeText.text("family.invite.confirmNote")).font(.footnote).foregroundStyle(Palette.secondary).multilineTextAlignment(.center) }
+                    }.padding(20).background(Palette.surface)
                 }
                 .task(id: query) {
                     recipients = []; searching = false; searchError = false
@@ -319,8 +372,9 @@ private struct FamilyInviteView: View {
                         let values = try await appStore.searchRecipients(query); try Task.checkCancellation(); recipients = values; searching = false
                     } catch is CancellationError {} catch { if !Task.isCancelled { searchError = true; searching = false } }
                 }
+                .onChange(of: query) { _, _ in selected = nil; pin = "" }
                 .onAppear { store.error = nil }
-                .onChange(of: phase) { _, phase in if phase == .background { pin = "" } }
+                .onChange(of: phase) { _, phase in if phase == .background { pin = ""; reviewing = false } }
         }.presentationDetents([.large]).presentationDragIndicator(.visible).interactiveDismissDisabled(store.busy)
     }
 }
@@ -328,13 +382,13 @@ private struct FamilyInviteView: View {
 private struct FamilyAvatar: View {
     let member: FamilyMember
     var size: CGFloat = 50
-    private var fallback: some View { Text(member.name.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined()).font(.system(size: size * 0.32, weight: .medium)).foregroundStyle(Palette.cardInk) }
+    private var fallback: some View { Image("AccountAvatar").resizable().scaledToFit().padding(size * 0.08) }
     var body: some View {
         Group {
             if let url = member.imageURL {
                 AsyncImage(url: url) { phase in if let image = phase.image { image.resizable().scaledToFill() } else if phase.error != nil { fallback } else { ProgressView().tint(Palette.cardInk) } }
             } else { fallback }
-        }.frame(width: size, height: size).background(member.role == "child" ? Palette.studiesCard : Palette.blueCard).clipShape(Circle()).accessibilityHidden(true)
+        }.frame(width: size, height: size).background(member.role == "child" ? Palette.studiesCard : Palette.blueCard).clipShape(RoundedRectangle(cornerRadius: size * 0.25)).accessibilityHidden(true)
     }
 }
 
@@ -343,12 +397,9 @@ private struct FamilyEmblem: View {
     let color: FamilyColor
     let size: CGFloat
     var body: some View {
-        ZStack {
-            Circle().fill(Palette.familyTint(color)).frame(width: size * 0.68).overlay(Circle().stroke(Palette.surface, lineWidth: 2)).offset(x: -size * 0.12, y: -size * 0.06)
-            Circle().fill(color == .blue ? Palette.pinkCard : Palette.blueCard).frame(width: size * 0.5).overlay(Circle().stroke(Palette.surface, lineWidth: 2)).offset(x: size * 0.23, y: -size * 0.1)
-            Circle().fill(Palette.studiesCard).frame(width: size * 0.36).overlay(Circle().stroke(Palette.surface, lineWidth: 2)).offset(x: size * 0.08, y: size * 0.27)
-            Text(name.first.map { String($0).uppercased() } ?? "L").font(.system(size: size * 0.28, weight: .medium)).foregroundStyle(Palette.cardInk).offset(x: -size * 0.12, y: -size * 0.06)
-        }.frame(width: size, height: size).accessibilityHidden(true)
+        Image("FamilyConstellation").resizable().scaledToFit().padding(size * 0.05)
+            .frame(width: size, height: size).background(Palette.familyTint(color), in: RoundedRectangle(cornerRadius: size * 0.22))
+            .accessibilityHidden(true)
     }
 }
 
@@ -375,11 +426,8 @@ private struct FamilyActionRow: View {
     let tint: Color
     var background = true
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: symbol).font(.system(size: 20, weight: .regular)).foregroundStyle(Palette.cardInk).frame(width: 40, height: 40).background(tint, in: Circle()).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) { Text(title).font(.body.weight(.semibold)).foregroundStyle(Palette.ink); Text(subtitle).font(.caption).foregroundStyle(Palette.secondary) }.frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: "chevron.forward").font(.caption.weight(.semibold)).foregroundStyle(Palette.secondary).accessibilityHidden(true)
-        }.padding(18).background(background ? Palette.surface : .clear, in: RoundedRectangle(cornerRadius: 24))
+        DrawnSettingsRow(title: title, symbol: .family, tint: tint, subtitle: subtitle)
+            .padding(4).background(background ? Palette.surface : .clear, in: RoundedRectangle(cornerRadius: 22))
     }
 }
 

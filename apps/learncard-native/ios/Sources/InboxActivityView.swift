@@ -60,7 +60,7 @@ struct InboxView: View {
         }
         .background(SectionBackground(tint: Palette.inboxCanvas))
         .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value; onScrollStateChange(value) }
-        .navigationTitle(scrolled ? "Inbox" : "")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Palette.inboxCanvas, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)

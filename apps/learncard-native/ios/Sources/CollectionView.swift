@@ -131,7 +131,7 @@ struct CollectionView: View {
         .onScrollGeometryChange(for: Bool.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top > 60
         } action: { _, compact in scrolled = compact; onScrollStateChange(compact) }
-        .navigationTitle(scrolled ? "Collection" : "")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Palette.collectionCanvas, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
