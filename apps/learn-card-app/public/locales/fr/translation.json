@@ -2995,7 +2995,35 @@
         "readMore": "En savoir plus",
         "connectHandler": "Connecter le gestionnaire",
         "connected": "Gestionnaire de justificatifs connecté",
-        "connFail": "Impossible de connecter le gestionnaire de justificatifs. Votre navigateur l'a peut-être bloqué — vérifiez les autorisations et réessayez."
+        "connFail": "Impossible de connecter le gestionnaire de justificatifs. Votre navigateur l'a peut-être bloqué — vérifiez les autorisations et réessayez.",
+        "receive": {
+            "title": "Ajouter au Passeport",
+            "description": "Vérifiez les justificatifs avant de les enregistrer dans votre compte.",
+            "from": "Demandé par {{origin}}",
+            "loading": "Récupération des justificatifs...",
+            "saved": "Enregistré dans votre Passeport. Vous pouvez retourner sur le site émetteur.",
+            "credential": "Justificatif",
+            "issuerUnavailable": "Nom de l’émetteur indisponible",
+            "details": "Détails",
+            "progress": "{{saved}} justificatifs enregistrés sur {{total}}",
+            "cancel": "Annuler",
+            "saving": "Enregistrement...",
+            "retry": "Réessayer",
+            "accept": "Enregistrer dans le Passeport",
+            "error": {
+                "invalid": "Cette offre n’est pas prise en charge ou contient un justificatif invalide. Retournez sur le site émetteur et lancez une nouvelle demande.",
+                "request": "Impossible de récupérer les justificatifs. Retournez sur le site émetteur et réessayez.",
+                "save": "L’enregistrement n’a pas pu se terminer. Réessayez pour reprendre là où vous en étiez.",
+                "response": "Vos justificatifs ont été enregistrés, mais le site émetteur n’a pas pu être informé.",
+                "account": "Votre compte a changé. Retournez au site émetteur et lancez une nouvelle demande.",
+                "cancel": "Nous n’avons pas pu informer le site émetteur de votre annulation. Retournez sur ce site et lancez une nouvelle demande."
+            },
+            "cancelled": "Demande annulée. Retournez sur le site émetteur.",
+            "connectTitle": "Connexion de votre compte",
+            "connectDescription": "Préparation de la demande de ce site.",
+            "connecting": "Connexion...",
+            "savedBeforeCancel": "Les justificatifs déjà enregistrés restent dans votre Passeport ({{saved}})."
+        }
     },
     "legal": {
         "connectionsEncrypted": "Toutes les connexions sont chiffrées.",
