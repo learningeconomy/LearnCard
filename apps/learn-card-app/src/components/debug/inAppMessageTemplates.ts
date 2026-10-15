@@ -19,11 +19,7 @@
  */
 
 export type InAppMessageTemplateCategory =
-    | 'Basics'
-    | 'Announcements'
-    | 'Updates'
-    | 'Targeting'
-    | 'Operational';
+    'Basics' | 'Announcements' | 'Updates' | 'Targeting' | 'Operational';
 
 export interface InAppMessageTemplate {
     key: string;
@@ -389,6 +385,49 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                         ],
                     },
                 ],
+            },
+        },
+    },
+    {
+        key: 'clr-claim-celebration-example',
+        label: 'CLR claim trigger',
+        description: 'Test-only modal triggered by claiming a CLR from the configured issuer.',
+        category: 'Targeting',
+        json: {
+            id: 'clr-claim-celebration-example',
+            frequency: 'always',
+            presentation: 'modal',
+            title: 'Learning record added',
+            body: 'This test message confirms CLR claim targeting.',
+            actions: [{ label: 'Done', style: 'primary', action: { type: 'dismiss' } }],
+            trigger: {
+                event: 'credential.claimed',
+                where: {
+                    issuers: ['did:example:pilot-issuer'],
+                    vcTypes: ['ClrCredential'],
+                },
+                windowMinutes: 10,
+            },
+        },
+    },
+    {
+        key: 'clr-holder-nudge-example',
+        label: 'CLR holder targeting',
+        description: 'Test-only banner for devices holding a matching CLR.',
+        category: 'Targeting',
+        json: {
+            id: 'clr-holder-nudge-example',
+            frequency: 'once',
+            presentation: 'banner',
+            title: 'Your learning record is ready',
+            body: 'This test message confirms on-device credential targeting.',
+            actions: [{ label: 'Dismiss', style: 'dismiss', action: { type: 'dismiss' } }],
+            targeting: {
+                credential: {
+                    issuers: ['did:example:pilot-issuer'],
+                    vcTypes: ['ClrCredential'],
+                    minCount: 1,
+                },
             },
         },
     },
