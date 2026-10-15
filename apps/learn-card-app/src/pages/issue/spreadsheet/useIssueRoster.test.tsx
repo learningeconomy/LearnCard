@@ -37,7 +37,7 @@ afterEach(() => {
 });
 
 describe('roster autosave and sending', () => {
-    it('waits for an in-progress autosave before capturing the send revision', async () => {
+    it.each(['send', 'reset'] as const)('%s during autosave', async action => {
         vi.useFakeTimers();
         let stored: IssuanceRun | undefined;
         let finishSave!: () => void;
@@ -111,6 +111,17 @@ describe('roster autosave and sending', () => {
             await vi.advanceTimersByTimeAsync(600);
         });
         expect(store.save).toHaveBeenCalledTimes(1);
+        if (action === 'reset') {
+            const previousId = result.current.id;
+            act(() => result.current.reset());
+            await act(async () => {
+                finishSave();
+                await pending;
+            });
+            expect(result.current.id).not.toBe(previousId);
+            expect(result.current.run).toBeNull();
+            return;
+        }
         let sending!: Promise<void>;
         await act(async () => {
             sending = result.current.execute();
