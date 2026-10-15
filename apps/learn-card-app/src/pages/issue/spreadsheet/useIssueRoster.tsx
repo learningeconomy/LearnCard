@@ -74,6 +74,11 @@ export const useIssueRoster = (options: RosterOptions) => {
         tenant: networkStore.get.tenantId(),
     });
     const [id, setId] = useState<string>(() => crypto.randomUUID());
+    const activeDraftId = useRef(id);
+    const changeDraftId = (nextId: string): void => {
+        activeDraftId.current = nextId;
+        setId(nextId);
+    };
     const [source, setSource] = useState<ParsedSpreadsheet>();
     const [scopes, setScopes] = useState<ColumnScopes>({});
     const [formulaCells, setFormulaCells] = useState<RosterDraft['formulaCells']>({});
@@ -147,7 +152,7 @@ export const useIssueRoster = (options: RosterOptions) => {
     const apply = (saved: IssuanceRun): void => {
         if (issuanceScopeKey(saved.scope) !== issuanceScopeKey(currentScope()))
             throw new IssuanceRecoveryError('context');
-        setId(saved.id);
+        changeDraftId(saved.id);
         setSource(saved.draft.source);
         setScopes(saved.scopes);
         setEvidence(saved.draft.evidence);
@@ -164,7 +169,7 @@ export const useIssueRoster = (options: RosterOptions) => {
     };
     const reset = (): void => {
         abort.current?.abort();
-        setId(crypto.randomUUID());
+        changeDraftId(crypto.randomUUID());
         setSource(undefined);
         setFormulaCells({});
         setScopes({});
@@ -184,7 +189,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 setRun(null);
                 runRef.current = null;
                 setRecoverable(null);
-                setId(crypto.randomUUID());
+                changeDraftId(crypto.randomUUID());
                 setSource(undefined);
                 setFormulaCells({});
                 setEvidence({});
@@ -262,7 +267,12 @@ export const useIssueRoster = (options: RosterOptions) => {
                 await saveIssuanceRun(saved);
             }
         );
-        if (mounted.current && issuanceScopeKey(saved.scope) === issuanceScopeKey(currentScope())) {
+        // A late write may preserve the previous run, but must not resurrect its UI.
+        if (
+            mounted.current &&
+            activeDraftId.current === saved.id &&
+            issuanceScopeKey(saved.scope) === issuanceScopeKey(currentScope())
+        ) {
             setRun(saved);
             runRef.current = saved;
         }
