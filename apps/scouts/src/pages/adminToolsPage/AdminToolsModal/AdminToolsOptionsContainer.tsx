@@ -1,4 +1,6 @@
 import React from 'react';
+import { useCanManageCompetencies } from '../../../hooks/useCanManageCompetencies';
+import { useDismissCompetencyAdminModal } from '../../SkillFrameworks/withCompetencyAdmin';
 
 import AdminToolsModalFooter from './AdminToolsModalFooter';
 // import AdminToolsNetworkOption from '../AdminToolsNetwork/AdminToolsNetwork';
@@ -15,9 +17,19 @@ import ViewSkillFramework from '../../SkillFrameworks/ViewSkillFramework';
 import { AdminToolOption, AdminToolOptionsEnum } from './admin-tools.helpers';
 
 export const AdminToolsOptionsContainer: React.FC<{ option: AdminToolOption }> = ({ option }) => {
-    let activeAdminToolOption: AdminToolOptionsEnum = option.type;
+    const canManageCompetencies = useCanManageCompetencies();
+    const isFrameworkTool =
+        option.type === AdminToolOptionsEnum.SKILL_FRAMEWORKS ||
+        option.type === AdminToolOptionsEnum.IMPORT_SKILL_FRAMEWORKS;
 
-    let adminToolContent: React.ReactNode = null;
+    const canOpenTool = !isFrameworkTool || canManageCompetencies;
+    useDismissCompetencyAdminModal(canOpenTool);
+
+    if (!canOpenTool) return null;
+
+    const activeAdminToolOption: AdminToolOptionsEnum = option.type;
+
+    let adminToolContent: React.ReactNode;
 
     switch (activeAdminToolOption) {
         // case AdminToolOptionsEnum.API_TOKENS:

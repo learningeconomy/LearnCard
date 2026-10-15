@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 
 import * as m from '../../paraglide/messages.js';
 import { IonInput, IonSpinner } from '@ionic/react';
@@ -56,7 +57,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     changesExist,
     useShortText,
     openManageJsonModal,
-    isEdit,
+    isEdit: editRequested,
     setIsEdit,
     handleDisableEdit,
     frameworkInfo,
@@ -69,6 +70,8 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     handleSaveSkills,
     disableSave,
 }) => {
+    const canManageCompetencies = useCanManageCompetencies();
+    const isEdit = canManageCompetencies && editRequested;
     const inputRef = useRef<HTMLIonInputElement>(null);
     const [showResults, setShowResults] = useState(false);
 
@@ -220,7 +223,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                     </button>
                                 </>
                             )}
-                            {!isEdit && !isSelectSkillsFlow && (
+                            {canManageCompetencies && !isEdit && !isSelectSkillsFlow && (
                                 <>
                                     <button
                                         onClick={() => setIsEdit(true)}

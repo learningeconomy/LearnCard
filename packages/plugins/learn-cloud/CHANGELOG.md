@@ -1,5 +1,12 @@
 # learn-card-core
 
+## 2.3.45
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/learn-cloud-client@1.6.45
+
 ## 2.3.44
 
 ### Patch Changes

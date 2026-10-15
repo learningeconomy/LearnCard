@@ -1,5 +1,14 @@
 # @welibraryos/lca-api-service
 
+## 1.5.1
+
+### Patch Changes
+
+- [#1711](https://github.com/learningeconomy/LearnCard/pull/1711) [`63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae`](https://github.com/learningeconomy/LearnCard/commit/63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae) Thanks [@goblincore](https://github.com/goblincore)! - Exclude bundled service configuration from published service dependencies so public packages do not require the private service-config workspace package during installation. Keep runtime workspace dependencies for source-based service deployments.
+
+- Updated dependencies []:
+    - @learncard/init@2.5.3
+
 ## 1.5.0
 
 ### Minor Changes

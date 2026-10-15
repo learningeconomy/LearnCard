@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
@@ -25,7 +26,7 @@ type Network = {
  * Full CRUD interface for Skill Frameworks
  * Includes network attachment capabilities
  */
-export const FrameworkCRUD: React.FC = () => {
+const FrameworkCRUDContent: React.FC = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();
@@ -50,9 +51,7 @@ export const FrameworkCRUD: React.FC = () => {
             const wallet = await initWallet();
             const boosts = await wallet.invoke.getPaginatedBoosts({ limit: 100 });
             // Filter for membership/ID boosts (networks)
-            return boosts.records.filter(
-                (b: any) => b.category === 'membership' || b.category === 'id'
-            );
+            return boosts.records.filter(b => b.category === 'membership' || b.category === 'id');
         },
     });
 
@@ -85,7 +84,7 @@ export const FrameworkCRUD: React.FC = () => {
             });
             setShowCreateForm(false);
         },
-        onError: (error: any) => {
+        onError: error => {
             presentToast(m['skillFrameworks.toasts.error']({ message: error.message }), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -111,7 +110,7 @@ export const FrameworkCRUD: React.FC = () => {
                 hasDismissButton: true,
             });
         },
-        onError: (error: any) => {
+        onError: error => {
             presentToast(m['skillFrameworks.toasts.error']({ message: error.message }), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -329,5 +328,7 @@ export const FrameworkCRUD: React.FC = () => {
         </div>
     );
 };
+
+export const FrameworkCRUD = withCompetencyAdmin(FrameworkCRUDContent);
 
 export default FrameworkCRUD;

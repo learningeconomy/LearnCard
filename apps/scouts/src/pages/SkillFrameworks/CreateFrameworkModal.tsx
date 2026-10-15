@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 
 import {
     ModalTypes,
@@ -476,4 +477,4 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
     );
 };
 
-export default CreateFrameworkModal;
+export default withCompetencyAdmin(CreateFrameworkModal);
