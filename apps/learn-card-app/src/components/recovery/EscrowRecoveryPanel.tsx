@@ -84,6 +84,21 @@ export const EscrowRecoveryPanel = ({
 }: EscrowRecoveryPanelProps) => {
     const active = useRef(true);
     const [pending, setPending] = useState<PendingEscrowRecovery>();
+    // [P2] Status reads (mount effect, checkStatus, and the confirmation
+    // flow) are async and can resolve out of order. `statusGenerationRef`
+    // increments on every new read -- and when confirmation starts -- so a
+    // response that's been superseded can be detected and ignored instead of
+    // clobbering fresher state (e.g. reverting `confirmed` back to false).
+    // `activeHoldIdRef` mirrors `pending?.holdId` on every render so even a
+    // stale closure can tell whether it's still talking about the hold
+    // currently on screen.
+    const statusGenerationRef = useRef(0);
+    const activeHoldIdRef = useRef(pending?.holdId);
+    activeHoldIdRef.current = pending?.holdId;
+    const beginStatusRead = () => {
+        statusGenerationRef.current += 1;
+        return statusGenerationRef.current;
+    };
     const [existingHold, setExistingHold] = useState<{
         holdId: string;
         requestedAt: string;
@@ -205,10 +220,23 @@ export const EscrowRecoveryPanel = ({
     // never carries `expectations`, so spreading `...pending` below always
     // preserves the initiating-client bindings captured at start.
     const refreshHoldStatus = async (
-        hold: { confirmed?: boolean; releaseAfter?: string } | null | undefined
+        hold: { confirmed?: boolean; releaseAfter?: string } | null | undefined,
+        { generation, holdId }: { generation: number; holdId: string }
     ): Promise<void> => {
         if (!hold) return;
-        setConfirmed(Boolean(hold.confirmed));
+        // [P2] Ignore a read superseded by a newer one (or by a confirmation
+        // that started after this read began): the mount-time status read
+        // stays alive for the whole life of a hold (it only re-runs if
+        // `holdId` changes), so a slow response can otherwise land after
+        // confirmation already moved the UI forward and drag it back.
+        if (generation !== statusGenerationRef.current || holdId !== activeHoldIdRef.current) {
+            return;
+        }
+        // Monotonic for a given hold: once confirmed locally, never let a
+        // stale confirmed: false revert it. Independent of the generation
+        // check above as a second guard on the field a race would most
+        // visibly break.
+        setConfirmed(prev => prev || Boolean(hold.confirmed));
         // Guard against a missing/malformed value (e.g. a terminal-status
         // response that omits it): never adopt a releaseAfter that would
         // render as an invalid date.
@@ -230,13 +258,15 @@ export const EscrowRecoveryPanel = ({
     useEffect(() => {
         if (!pending?.requiresConfirmation) return;
         let cancelled = false;
+        const holdId = pending.holdId;
+        const generation = beginStatusRead();
         onStatus({
             holdId: pending.holdId,
             resumeToken: pending.resumeToken,
             expectations: pending.expectations,
         })
             .then(hold => {
-                if (!cancelled) void refreshHoldStatus(hold);
+                if (!cancelled) void refreshHoldStatus(hold, { generation, holdId });
             })
             .catch(() => {});
         return () => {
@@ -318,18 +348,27 @@ export const EscrowRecoveryPanel = ({
     // separate state update that hasn't flushed into this closure yet.
     const checkStatus = async (): Promise<{ ok: boolean; ready: boolean }> => {
         if (!pending) return { ok: false, ready: false };
+        const holdId = pending.holdId;
+        const generation = beginStatusRead();
         const hold = await onStatus({
             holdId: pending.holdId,
             resumeToken: pending.resumeToken,
             expectations: pending.expectations,
         });
+        // [P2] A newer read (or a confirmation) may have started, and even
+        // finished, while this one was in flight. Report not-ready instead
+        // of acting on it: acting here could mean clearing a hold (below)
+        // that a newer read has already moved past.
+        if (generation !== statusGenerationRef.current || holdId !== activeHoldIdRef.current) {
+            return { ok: false, ready: false };
+        }
         if (
             !hold ||
             hold.status === 'cancelled' ||
             hold.status === 'expired' ||
             (hold.status === 'completed' && !canResumeCompleted?.())
         ) {
-            await clearPendingEscrowRecovery(pending.holdId, scope);
+            await clearPendingEscrowRecovery(holdId, scope);
             setPending(undefined);
             setError(
                 hold?.status === 'cancelled'
@@ -340,7 +379,7 @@ export const EscrowRecoveryPanel = ({
             );
             return { ok: false, ready: false };
         }
-        await refreshHoldStatus(hold);
+        await refreshHoldStatus(hold, { generation, holdId });
         const effectiveReleaseAfter =
             hold.releaseAfter && !Number.isNaN(Date.parse(hold.releaseAfter))
                 ? hold.releaseAfter
@@ -352,6 +391,13 @@ export const EscrowRecoveryPanel = ({
         if (!pending) return;
         setConfirming(true);
         setCodeError('');
+        // [P2] Confirmation is about to become authoritative for this hold's
+        // confirmed/releaseAfter. Bump the generation before awaiting
+        // anything so a status read already in flight (e.g. the mount-time
+        // check above) is treated as superseded even if it resolves after
+        // this whole flow completes.
+        const holdId = pending.holdId;
+        const generation = beginStatusRead();
         try {
             const result = await onConfirmCode({
                 holdId: pending.holdId,
@@ -371,7 +417,10 @@ export const EscrowRecoveryPanel = ({
             // a transient refresh failure doesn't surface as a confirmation
             // error the user can't act on.
             if (result.releaseAfter) {
-                await refreshHoldStatus({ confirmed: true, releaseAfter: result.releaseAfter });
+                await refreshHoldStatus(
+                    { confirmed: true, releaseAfter: result.releaseAfter },
+                    { generation, holdId }
+                );
             }
             await checkStatus().catch(() => {});
         } catch {

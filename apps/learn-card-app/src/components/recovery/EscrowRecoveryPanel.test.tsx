@@ -495,6 +495,186 @@ describe('EscrowRecoveryPanel', () => {
         expect(mockOnStatus).toHaveBeenCalledTimes(2);
     });
 
+    // [P2] The mount-time status effect is never cancelled by a successful
+    // confirmation (it only re-runs if `holdId` changes, and it never does
+    // here), so a slow mount-time response can resolve after confirmation
+    // and its own post-confirm refresh have already landed. Its stale
+    // confirmed: false must not drag the UI back to the code-entry screen.
+    it('[P2] ignores a deferred mount-time status response that resolves after confirmation already completed', async () => {
+        const holdId = 'hold-confirm-race-1';
+        const resumeToken = 'resume-token-race-1';
+        const requestedAt = new Date(Date.now() - 1000).toISOString();
+        const creationEstimate = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+        const confirmedReleaseAfter = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: creationEstimate,
+            requestedAt,
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        let resolveMountStatus!: (value: unknown) => void;
+        mockOnStatus
+            .mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        resolveMountStatus = resolve;
+                    })
+            )
+            .mockResolvedValueOnce({
+                holdId,
+                status: 'pending' as const,
+                releasePolicy: 'hold' as const,
+                requestedAt,
+                releaseAfter: confirmedReleaseAfter,
+                confirmed: true,
+            });
+        const onConfirmCode = vi.fn().mockResolvedValue({ success: true });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+        await waitFor(() => expect(mockOnStatus).toHaveBeenCalledTimes(1));
+
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        const confirmedFormatted = new Intl.DateTimeFormat(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        }).format(new Date(confirmedReleaseAfter));
+
+        // Confirmation and its post-confirm refresh have both landed.
+        await waitFor(() => {
+            expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+            expect(screen.getByText(confirmedFormatted)).toBeInTheDocument();
+        });
+
+        // The mount-time read -- started before confirmation, never
+        // cancelled -- finally resolves with its stale, pre-confirmation
+        // answer.
+        resolveMountStatus({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: creationEstimate,
+            requiresConfirmation: true,
+            confirmed: false,
+        });
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+        expect(screen.getByText(confirmedFormatted)).toBeInTheDocument();
+    });
+
+    // [P2] The generation guard protects `releaseAfter`, not just
+    // `confirmed`: a stale response can report confirmed: true (e.g. the
+    // user confirmed from another tab) while still carrying an outdated
+    // deadline, so staleness must be judged independently of the confirmed
+    // flag.
+    it('[P2] ignores a deferred status response whose releaseAfter is older than a newer refresh', async () => {
+        const holdId = 'hold-confirm-race-2';
+        const resumeToken = 'resume-token-race-2';
+        const requestedAt = new Date(Date.now() - 1000).toISOString();
+        const creationEstimate = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+        const olderReleaseAfter = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+        const newerReleaseAfter = new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: creationEstimate,
+            requestedAt,
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        let resolveMountStatus!: (value: unknown) => void;
+        mockOnStatus
+            .mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        resolveMountStatus = resolve;
+                    })
+            )
+            .mockResolvedValueOnce({
+                holdId,
+                status: 'pending' as const,
+                releasePolicy: 'hold' as const,
+                requestedAt,
+                releaseAfter: newerReleaseAfter,
+                confirmed: true,
+            });
+        const onConfirmCode = vi.fn().mockResolvedValue({ success: true });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+        await waitFor(() => expect(mockOnStatus).toHaveBeenCalledTimes(1));
+
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        const newerFormatted = new Intl.DateTimeFormat(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        }).format(new Date(newerReleaseAfter));
+        const olderFormatted = new Intl.DateTimeFormat(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        }).format(new Date(olderReleaseAfter));
+
+        await waitFor(() => {
+            expect(screen.getByText(newerFormatted)).toBeInTheDocument();
+        });
+
+        // A second, independent read -- started before this one and also
+        // reporting confirmed: true -- resolves after it with an older
+        // deadline (e.g. the mount-time check started before the user even
+        // entered the code). The newer deadline must win.
+        resolveMountStatus({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: olderReleaseAfter,
+            requiresConfirmation: true,
+            confirmed: true,
+        });
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(screen.getByText(newerFormatted)).toBeInTheDocument();
+        expect(screen.queryByText(olderFormatted)).not.toBeInTheDocument();
+    });
+
     // [P2] checkStatus previously reported "ok to continue" from hold status
     // alone (pending/cancelled/expired/completed), ignoring whether the
     // *refreshed* releaseAfter had moved into the future — an already-open
