@@ -15,6 +15,7 @@ import { notificationCardStyles } from './types';
 import NotificationBoostCard from './NotificationBoostCard';
 import ConnectionRequestCard from './ConnectionRequestCard';
 import NotificationConsentFlowCard from './NotificationConsentFlowCard';
+import NotificationContractUpdateCard from './NotificationContractUpdateCard';
 import NotificationProfileApprovalCard from './NotificationProfileApprovalCard';
 import NotificationAppStoreCard from './NotificationAppStoreCard';
 import NotificationGuardianApprovalCard from './NotificationGuardianApprovalCard';
@@ -46,6 +47,7 @@ export const NOTIFICATION_TYPES = {
     BOOST_RECEIVED: 'BOOST_RECEIVED',
     BOOST_ACCEPTED: 'BOOST_ACCEPTED',
     CONSENT_FLOW_TRANSACTION: 'CONSENT_FLOW_TRANSACTION',
+    CONSENT_FLOW_CONTRACT_UPDATED: 'CONSENT_FLOW_CONTRACT_UPDATED',
     CREDENTIAL_RECEIVED: 'CREDENTIAL_RECEIVED',
     PROFILE_PARENT_APPROVED: 'PROFILE_PARENT_APPROVED',
     APP_LISTING_SUBMITTED: 'APP_LISTING_SUBMITTED',
@@ -316,6 +318,14 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                 handleArchive={handleArchiveNotification}
                 issueDate={displayDate}
                 cardLoading={isLoading}
+            />
+        );
+    }
+    if (type === NOTIFICATION_TYPES.CONSENT_FLOW_CONTRACT_UPDATED) {
+        return (
+            <NotificationContractUpdateCard
+                notification={notification}
+                handleArchive={handleArchiveNotification}
             />
         );
     }

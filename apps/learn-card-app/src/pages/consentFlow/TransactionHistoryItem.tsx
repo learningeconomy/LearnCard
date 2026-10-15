@@ -11,6 +11,7 @@ type TransactionHistoryItemProps = {
 
 const ACTION_COLOR: Record<ConsentFlowTransactionAction, string> = {
     consent: 'text-emerald-700',
+    reconsent: 'text-emerald-700',
     sync: 'text-cyan-700',
     update: 'text-indigo-700',
     withdraw: 'text-rose-700',
@@ -19,6 +20,7 @@ const ACTION_COLOR: Record<ConsentFlowTransactionAction, string> = {
 
 const getActionText = (): Record<ConsentFlowTransactionAction, string> => ({
     consent: 'Consent',
+    reconsent: 'Approved update',
     sync: 'Sync',
     update: m['common.update'](),
     withdraw: m['consentFlow.withdraw'](),
@@ -35,6 +37,10 @@ const getDescriptiveText = (
         }
 
         return `You have consented and are actively sharing your data with ${contractOwner?.displayName}.`;
+    }
+
+    if (transaction.action === 'reconsent') {
+        return `You approved the updated request from ${contractOwner?.displayName ?? 'this app'}.`;
     }
 
     if (transaction.action === 'sync') {
@@ -73,7 +79,7 @@ const TransactionHistoryItem: React.FC<TransactionHistoryItemProps> = ({
             {(transaction.action === 'write' || transaction.action === 'sync') && (
                 <section className="text-xs font-poppins text-grayscale-700">
                     {(transaction.action === 'write'
-                        ? transaction.uris ?? []
+                        ? (transaction.uris ?? [])
                         : Object.values(
                               transaction.terms?.read?.credentials?.categories ?? {}
                           ).flatMap(category => category.shared ?? [])

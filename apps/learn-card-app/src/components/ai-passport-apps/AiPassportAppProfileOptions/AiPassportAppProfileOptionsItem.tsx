@@ -63,7 +63,7 @@ export const AiPassportAppProfileOptionsItem: React.FC<{
                 { className: '!bg-transparent' },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
-        } else if (type === AiAppProfileOptionsEnum.privacy) {
+        } else if (type === AiAppProfileOptionsEnum.privacy && contractDetails) {
             newModal(
                 <ConsentFlowPrivacyAndData
                     contractDetails={contractDetails}

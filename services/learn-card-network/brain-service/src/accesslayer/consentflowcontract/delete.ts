@@ -36,6 +36,7 @@ export const deleteConsentFlowContract = async (
     const eventId = `${contractId}:version:${nextVersion}`;
     const notificationData = {
         contractUri: constructUri('contract', contractId, domain),
+        contractName: snapshot.name,
         fromVersion: currentVersion,
         toVersion: nextVersion,
         kind,

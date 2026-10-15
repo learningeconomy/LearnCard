@@ -320,7 +320,8 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
     const hasLearnCardAiConsent = consentedContracts.some(
         (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
             consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-            consent?.status !== 'withdrawn'
+            consent?.status !== 'withdrawn' &&
+            consent?.status !== 'consumed'
     );
     const refreshStatus = aiInsightRefreshStore.use.status();
     const requestedAt = aiInsightRefreshStore.use.requestedAt();
@@ -611,7 +612,8 @@ export const useAiInsightCredentialMutation = () => {
     const hasLearnCardAiConsent = consentedContracts.some(
         (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
             consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-            consent?.status !== 'withdrawn'
+            consent?.status !== 'withdrawn' &&
+            consent?.status !== 'consumed'
     );
     const hasWalletCredentials = Number(resolvedCredentials?.length ?? 0) > 0;
     const hasCachedAiInsightCredential = Boolean(

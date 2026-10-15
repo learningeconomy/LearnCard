@@ -7,11 +7,11 @@ import AnonymousIcon from '../../components/svgs/AnonymousIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import Mail from 'learn-card-base/svgs/Mail';
 import { ProfilePicture } from 'learn-card-base';
+import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 import {
     contractAnonImageSrc,
-    getInfoFromContractKey,
     isSupportedPersonalField,
-} from '../../helpers/contract.helpers';
+} from '../../helpers/consentPersonalFields';
 import * as m from '../../paraglide/messages.js';
 import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 
@@ -44,9 +44,14 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
     infoText,
     onClickOverride,
 }) => {
-    let { IconComponent, iconSrc, title, iconClassName, iconCircleClass } = category
-        ? getInfoFromContractKey(category)
-        : {};
+    const {
+        IconComponent,
+        iconSrc,
+        title: categoryTitle,
+        iconClassName,
+        iconCircleClass,
+    } = category ? getInfoFromContractKey(category) : {};
+    let title = categoryTitle;
 
     const isName = category?.toLowerCase() === 'name'; // special case
     const isEmail = category?.toLowerCase() === 'email'; // special case

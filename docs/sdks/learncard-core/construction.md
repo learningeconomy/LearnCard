@@ -396,28 +396,32 @@ Expected output: `draft: true`, `live: true`, `recipient: found`. The live templ
 
 **Stack: `{ seed, network: true }`.** Contracts define requested access; terms record what a participant actually consented to. Keep contract URIs and terms URIs distinct, particularly for updates, withdrawal, synchronization, and transaction queries.
 
-| Method                         | Signature summary                                                 | Returns                        |
-| ------------------------------ | ----------------------------------------------------------------- | ------------------------------ |
-| `createContract`               | `({ name, contract, ...metadata })`                               | Contract URI                   |
-| `getContract`                  | `(contractUri)`                                                   | Contract details               |
-| `getContracts`                 | `({ limit?, cursor?, query? }?)`                                  | Paginated contracts            |
-| `deleteContract`               | `(contractUri)`                                                   | Boolean                        |
-| `consentToContract`            | `(contractUri, { terms, expiresAt?, oneTime? }, recipientToken?)` | `{ termsUri, redirectUrl? }`   |
-| `getConsentedContracts`        | `(options?)`                                                      | Paginated terms                |
-| `updateContractTerms`          | `(termsUri, { terms, expiresAt?, oneTime? })`                     | Boolean                        |
-| `withdrawConsent`              | `(termsUri)`                                                      | Boolean                        |
-| `verifyConsent`                | `(contractUri, profileId)`                                        | Boolean                        |
-| `getConsentFlowData`           | `(contractUri, options?)`                                         | Paginated consent data         |
-| `getConsentFlowDataForDid`     | `(did, options?)`                                                 | Paginated data for DID         |
-| `getAllConsentFlowData`        | `(query?, paginationOptions?)`                                    | Paginated consent data         |
-| `getConsentFlowTransactions`   | `(termsUri, options?)`                                            | Paginated transactions         |
-| `writeCredentialToContract`    | `(did, contractUri, credentialOrJwe, boostUri)`                   | String                         |
-| `syncCredentialsToContract`    | `(termsUri, categories)`; category → URI array                    | Boolean                        |
-| `getCredentialsForContract`    | `(termsUri, options?)`                                            | Paginated contract credentials |
-| `addAutoBoostsToContract`      | `(contractUri, autoboosts)`                                       | Boolean                        |
-| `removeAutoBoostsFromContract` | `(contractUri, boostUris)`                                        | Boolean                        |
+| Method                       | Signature summary                                                   | Returns                                |
+| ---------------------------- | ------------------------------------------------------------------- | -------------------------------------- |
+| `createContract`             | `({ name, contract, ...metadata })`                                 | Contract URI                           |
+| `getContract`                | `(contractUri)`                                                     | Contract details                       |
+| `getContracts`               | `({ limit?, cursor?, query? }?)`                                    | Paginated contracts                    |
+| `deleteContract`             | `(contractUri)`                                                     | Boolean                                |
+| `consentToContract`          | `(contractUri, { terms, expiresAt?, oneTime? }, recipientToken?)`   | `{ termsUri, redirectUrl? }`           |
+| `getConsentedContracts`      | `(options?)`                                                        | Paginated terms                        |
+| `updateContractTerms`        | `(termsUri, { terms, expiresAt?, oneTime? })`                       | Boolean                                |
+| `withdrawConsent`            | `(termsUri)`                                                        | Boolean                                |
+| `verifyConsent`              | `(contractUri, profileId)`                                          | Boolean                                |
+| `getConsentFlowData`         | `(contractUri, options?)`                                           | Paginated consent data                 |
+| `getConsentFlowDataForDid`   | `(did, options?)`                                                   | Paginated data for DID                 |
+| `getAllConsentFlowData`      | `(query?, paginationOptions?)`                                      | Paginated consent data                 |
+| `getConsentFlowTransactions` | `(termsUri, options?)`                                              | Paginated transactions                 |
+| `writeCredentialToContract`  | `(did, contractUri, credentialOrJwe, boostUri)`                     | String                                 |
+| `syncCredentialsToContract`  | `(termsUri, categories)`; category → URI array                      | Boolean                                |
+| `getCredentialsForContract`  | `(termsUri, options?)`                                              | Paginated contract credentials         |
+| `updateContract`             | `(contractUri, changes, { reason?, reconsentDeadline?, dryRun? }?)` | Version, kind, affected users, preview |
+| `getContractVersions`        | `(contractUri)`                                                     | Saved version summaries                |
+| `getConsentStatus`           | `(contractUri, profileId)`                                          | Status, versions, review URL           |
+| `acceptContractUpdate`       | `(termsUri, { version, terms })`                                    | Boolean                                |
 
 AutoBoost entries must identify real templates and configured signing authorities. A contract's requested access is not permission to read every credential; use the participant's current terms and consented data. Start with the tested [ConsentFlow tutorial](../../tutorials/create-a-consentflow.md), then [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) and [Writing Consented Data](../../core-concepts/consent-and-permissions/writing-consented-data.md).
+
+Use [Updating a Contract](../../core-concepts/consent-and-permissions/updating-a-contract.md) to change requested access, writers, or the complete AutoBoost configuration without replacing the URI. Optional additions start off for existing users. Changes requiring approval pause writes until reviewed; retirement preserves holder history.
 
 ## Claim Hooks
 

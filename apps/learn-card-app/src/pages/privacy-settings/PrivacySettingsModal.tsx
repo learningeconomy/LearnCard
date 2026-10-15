@@ -69,7 +69,8 @@ const PrivacySettingsModal: React.FC = () => {
         return consentedContracts?.some(
             consent =>
                 consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-                consent?.status !== 'withdrawn'
+                consent?.status !== 'withdrawn' &&
+                consent?.status !== 'consumed'
         );
     }, [consentedContracts]);
     const showAiConsentWarning =

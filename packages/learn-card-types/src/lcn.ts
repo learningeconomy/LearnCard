@@ -723,6 +723,7 @@ export type ConsentFlowConsentStatus = z.infer<typeof ConsentFlowConsentStatusVa
 
 export const ConsentFlowContractNotificationDataValidator = z.object({
     contractUri: z.string(),
+    contractName: z.string().optional(),
     fromVersion: z.number().int().positive(),
     toVersion: z.number().int().positive(),
     kind: ConsentFlowContractChangeKindValidator,
@@ -1364,6 +1365,7 @@ export const LCNNotificationDataValidator = z
         vpUris: z.array(z.string()).optional(),
         transaction: ConsentFlowTransactionValidator.optional(),
         contractUri: z.string().optional(),
+        contractName: z.string().optional(),
         fromVersion: z.number().int().positive().optional(),
         toVersion: z.number().int().positive().optional(),
         kind: ConsentFlowContractChangeKindValidator.optional(),

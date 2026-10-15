@@ -13,7 +13,7 @@ import {
     CredentialCategoryEnum,
     contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
-import { ConsentFlowContractDetails } from '@learncard/types';
+import { ConsentFlowContract, ConsentFlowContractDetails } from '@learncard/types';
 import { SetState } from 'packages/shared-types/dist';
 import {
     CONTRACT_CATEGORIES,
@@ -21,10 +21,8 @@ import {
 } from '../../helpers/contract.helpers';
 
 type ContractCategoryMultiSelectProps = {
-    values: Record<CredentialCategoryEnum, { required?: boolean; defaultEnabled?: boolean }>;
-    onChange: (
-        value: Record<CredentialCategoryEnum, { required?: boolean; defaultEnabled?: boolean }>
-    ) => void;
+    values: ConsentFlowContract['read']['credentials']['categories'];
+    onChange: (value: ConsentFlowContract['read']['credentials']['categories']) => void;
     label?: string;
     className?: string;
     setContract?: SetState<ConsentFlowContractDetails>;
@@ -124,8 +122,8 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         const settingsDisplayText = settings.required
             ? 'Required'
             : settings.defaultEnabled
-            ? 'Opt-out'
-            : 'Opt-in';
+              ? 'Opt-out'
+              : 'Opt-in';
 
         return (
             <div

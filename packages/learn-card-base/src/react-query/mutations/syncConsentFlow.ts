@@ -14,7 +14,11 @@ import { loadContractAudience } from '../../hooks/consentAudience';
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useAcceptCredentialMutation } from './mutations';
-import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import {
+    ConsentFlowContractDetails,
+    ConsentFlowTerms,
+    ConsentFlowTermsStatus,
+} from '@learncard/types';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 
@@ -31,7 +35,7 @@ export type ConsentedContract = {
     uri: string;
     expiresAt?: string;
     oneTime?: boolean;
-    status?: 'live' | 'stale' | 'withdrawn';
+    status?: ConsentFlowTermsStatus;
 };
 
 // Retained historical copies still belong to credentials in the personal index.

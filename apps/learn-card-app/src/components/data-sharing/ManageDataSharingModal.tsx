@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { PendingContractRequests } from '../contract-requests/ContractRequest';
 import { ContractAudience } from '../contract-requests/ContractAudience';
 import { getLogger } from 'learn-card-base';
@@ -159,7 +160,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
     }
 
     const contracts = [...(consentedContracts ?? [])]
-        .filter(contract => contract?.status !== 'withdrawn')
+        .filter(contract => contract?.status !== 'withdrawn' && contract?.status !== 'consumed')
         .sort((a, b) => {
             const aUpdatedAt = new Date(a.terms?.updatedAt ?? a.contract?.updatedAt ?? 0).getTime();
             const bUpdatedAt = new Date(b.terms?.updatedAt ?? b.contract?.updatedAt ?? 0).getTime();
@@ -242,10 +243,13 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
     contract,
     onUpdate,
 }) => {
-    const { newModal, closeModal } = useModal();
+    const { closeModal, newModal } = useModal();
+    const history = useHistory();
     // Contract details are already in the record
     const contractDetails = contract.contract;
 
+    const hasPendingUpdate =
+        contract.status === 'needs_reconsent' || contract.status === 'suspended';
     const handleOpenDetails = () => {
         void (async () => {
             try {
@@ -256,6 +260,11 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
             }
         })();
 
+        if (hasPendingUpdate) {
+            closeModal();
+            history.push(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
+            return;
+        }
         newModal(
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
             {
@@ -286,7 +295,22 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
 
             <div className="flex-1 min-w-0">
                 <p className="font-medium text-grayscale-900 truncate">{name}</p>
-                <p className="text-sm text-grayscale-500 truncate">{permissionText}</p>
+                <p
+                    className={`flex items-center gap-2 text-sm truncate ${hasPendingUpdate ? 'font-medium text-amber-700' : 'text-grayscale-500'}`}
+                >
+                    {hasPendingUpdate && (
+                        <span
+                            aria-label="Needs your review"
+                            className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
+                        />
+                    )}
+                    {hasPendingUpdate
+                        ? 'Needs your review'
+                        : contract.newOptionsUntil &&
+                            new Date(contract.newOptionsUntil).getTime() > Date.now()
+                          ? 'New option · added within the last 14 days'
+                          : permissionText}
+                </p>
             </div>
 
             <ChevronRight className="w-5 h-5 text-grayscale-400 shrink-0" />

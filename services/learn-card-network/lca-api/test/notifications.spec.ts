@@ -83,7 +83,8 @@ describe('Notifications', () => {
                         toVersion: 2,
                         kind,
                         diff: { added: [], removed: [], changed: [] },
-                        reviewUrl: 'https://learncard.app/contract-update-review',
+                        reviewUrl:
+                            'https://learncard.app/consent-flow/review?uri=lc%3Anetwork%3Acontract%3Apolicy-test',
                     }
                 );
 

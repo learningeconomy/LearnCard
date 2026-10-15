@@ -90,7 +90,8 @@ const DemoSchoolBox: React.FC = () => {
                 consent =>
                     consent?.contract?.uri &&
                     demoContractUriSet.has(consent.contract.uri) &&
-                    consent.status !== 'withdrawn'
+                    consent.status !== 'withdrawn' &&
+                    consent.status !== 'consumed'
             ) ?? []
         );
     }, [consentedContracts, demoContractUris]);

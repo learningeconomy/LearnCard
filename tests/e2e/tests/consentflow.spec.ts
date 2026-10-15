@@ -11,6 +11,7 @@ import {
     contractWithDefaults,
 } from './helpers/contract.helpers';
 import { VC } from '@learncard/types';
+import { updateTutorialContract } from '../../../docs/snippets/consentflow/update-contract.mjs';
 
 let a: LearnCard;
 let b: LearnCard;
@@ -87,15 +88,9 @@ describe('ConsentFlow E2E Tests', () => {
             const deleteResult = await a.invoke.deleteContract(contractUri);
             expect(deleteResult).toBe(true);
 
-            // Try to get the deleted contract (should fail or return null/undefined)
-            try {
-                await a.invoke.getContract(contractUri);
-                // If we don't get an error, fail the test
-                expect(false).toBe(true); // This should never execute
-            } catch (error) {
-                // Expected to fail
-                expect(error).toBeDefined();
-            }
+            const retired = await a.invoke.getContract(contractUri);
+            expect(retired.status).toBe('retired');
+            expect(await a.invoke.verifyConsent(contractUri, USERS.b.profileId)).toBe(false);
         });
 
         it('should allow creating and retrieving a contract with defaultEnabled fields', async () => {
@@ -250,6 +245,95 @@ describe('ConsentFlow E2E Tests', () => {
             );
 
             expect(withdrawnTermsRecord!.status).toBe('withdrawn');
+        });
+    });
+
+    describe('Live request updates', () => {
+        it('pauses writes until the holder reviews and accepts a required addition', async () => {
+            const uri = await a.invoke.createContract({
+                contract: normalContract,
+                name: 'Acme',
+                recipients: [USERS.c.profileId],
+            });
+            const { termsUri } = await b.invoke.consentToContract(uri, {
+                terms: normalFullTerms,
+                audienceVersion: (await a.invoke.getContract(uri)).audienceVersion,
+            });
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Acme achievement',
+            });
+            const credential = await a.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: a.id.did(),
+                credentialSubject: { ...testUnsignedBoost.credentialSubject, id: b.id.did() },
+            });
+
+            const preview = await updateTutorialContract(a, uri);
+            expect(preview.kind).toBe('requires_consent');
+            expect((await a.invoke.getContract(uri)).version).toBe(1);
+            expect(await a.invoke.verifyConsent(uri, USERS.b.profileId)).toBe(true);
+            const update = await updateTutorialContract(a, uri, { apply: true });
+            expect(update.preview).toEqual(preview.preview);
+            const status = await a.invoke.getConsentStatus(uri, USERS.b.profileId);
+            expect(status).toMatchObject({
+                status: 'needs_reconsent',
+                consentedVersion: 1,
+                currentVersion: 2,
+                needsReconsent: true,
+            });
+            expect(
+                new URL(status.reviewUrl!, 'https://learncard.app').searchParams.get('uri')
+            ).toBe(uri);
+            expect(await a.invoke.verifyConsent(uri, USERS.b.profileId)).toBe(false);
+            await expect(
+                a.invoke.writeCredentialToContract(b.id.did(), uri, credential, boostUri)
+            ).rejects.toThrow('User has not yet approved the latest version of this contract');
+
+            await expect(
+                b.invoke.acceptContractUpdate(termsUri, {
+                    version: 1,
+                    terms: normalFullTerms,
+                })
+            ).rejects.toThrow();
+            await b.invoke.acceptContractUpdate(termsUri, {
+                version: update.version,
+                audienceVersion: (await a.invoke.getContract(uri)).audienceVersion,
+                terms: {
+                    ...normalFullTerms,
+                    read: {
+                        ...normalFullTerms.read,
+                        credentials: {
+                            ...normalFullTerms.read.credentials,
+                            categories: {
+                                ...normalFullTerms.read.credentials.categories,
+                                Transcript: { sharing: true, shareAll: true },
+                            },
+                        },
+                    },
+                },
+            });
+            expect(await a.invoke.verifyConsent(uri, USERS.b.profileId)).toBe(true);
+            expect(await a.invoke.getConsentStatus(uri, USERS.b.profileId)).toMatchObject({
+                status: 'live',
+                consentedVersion: 2,
+                currentVersion: 2,
+                needsReconsent: false,
+            });
+            const writtenUri = await a.invoke.writeCredentialToContract(
+                b.id.did(),
+                uri,
+                credential,
+                boostUri
+            );
+            expect((await b.invoke.getCredentialsForContract(termsUri)).records).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ credentialUri: writtenUri, category: 'Achievement' }),
+                ])
+            );
+            expect((await b.invoke.getConsentFlowTransactions(termsUri)).records).toEqual(
+                expect.arrayContaining([expect.objectContaining({ action: 'reconsent' })])
+            );
         });
     });
 
@@ -634,12 +718,10 @@ describe('ConsentFlow E2E Tests', () => {
                     },
                 ],
             });
-            await c.invoke.addAutoBoostsToContract(contractUri, [
-                {
-                    boostUri: boostC_Uri,
-                    signingAuthority: saC_Details,
-                },
-            ]);
+            await c.invoke.getLCNClient().contracts.addAutoBoostsToContract.mutate({
+                contractUri,
+                autoboosts: [{ boostUri: boostC_Uri, signingAuthority: saC_Details }],
+            });
 
             // 1. Initial consent by User B (no denied writers)
             const { termsUri: initialTermsUri } = await b.invoke.consentToContract(contractUri, {
@@ -670,12 +752,12 @@ describe('ConsentFlow E2E Tests', () => {
             const credentialsAfterReconsent =
                 await b.invoke.getCredentialsForContract(reconsentTermsUri);
 
-            expect(credentialsAfterReconsent.records).toHaveLength(3); // Only User A's boost for this new terms instance
+            expect(credentialsAfterReconsent.records).toHaveLength(2);
             expect(
                 credentialsAfterReconsent.records.filter(cred =>
                     cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
                 ).length
-            ).toBe(2);
+            ).toBe(1);
             expect(
                 credentialsAfterReconsent.records.filter(cred =>
                     cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
@@ -745,12 +827,10 @@ describe('ConsentFlow E2E Tests', () => {
                     },
                 ],
             });
-            await c.invoke.addAutoBoostsToContract(contractUri, [
-                {
-                    boostUri: boostC_Uri,
-                    signingAuthority: saC_Details,
-                },
-            ]);
+            await c.invoke.getLCNClient().contracts.addAutoBoostsToContract.mutate({
+                contractUri,
+                autoboosts: [{ boostUri: boostC_Uri, signingAuthority: saC_Details }],
+            });
 
             // 1. Initial consent by User B (no denied writers)
             const { termsUri } = await b.invoke.consentToContract(contractUri, {
@@ -766,14 +846,13 @@ describe('ConsentFlow E2E Tests', () => {
 
             const credentialsAfterUpdate = await b.invoke.getCredentialsForContract(termsUri);
 
-            // After update, existing credentials for these terms are re-evaluated.
-            // Boost from C should be revoked/not re-issued, boost from A remains/re-issued.
-            expect(credentialsAfterUpdate.records).toHaveLength(3);
+            // Editing access does not issue another copy of either existing AutoBoost.
+            expect(credentialsAfterUpdate.records).toHaveLength(2);
             expect(
                 credentialsAfterUpdate.records.filter(cred =>
                     cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
                 ).length
-            ).toBe(2);
+            ).toBe(1);
             expect(
                 credentialsAfterUpdate.records.filter(cred =>
                     cred.boostUri?.includes(boostC_Uri.split(':').pop()!)

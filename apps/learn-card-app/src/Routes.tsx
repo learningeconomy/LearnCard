@@ -82,6 +82,9 @@ const ShareCredentialsWithApp = lazyWithRetry(
 const ExternalConsentFlowDoor = lazyWithRetry(
     () => import('./pages/consentFlow/ExternalConsentFlowDoor')
 );
+const ContractUpdateReviewRoute = lazyWithRetry(
+    () => import('./pages/consentFlow/ContractUpdateReviewRoute')
+);
 const WalletServiceWorker = lazyWithRetry(
     () => import('./pages/walletServiceWorker/WalletServiceWorker')
 );
@@ -381,6 +384,11 @@ export const Routes: React.FC = () => {
                             render={() => <ExternalConsentFlowDoor login />}
                         />
                         <SentryRoute exact path="/consent-flow-sync-data" component={LaunchPad} />
+                        <PrivateRoute
+                            exact
+                            path="/consent-flow/review"
+                            component={ContractUpdateReviewRoute}
+                        />
 
                         <PrivateRoute
                             exact

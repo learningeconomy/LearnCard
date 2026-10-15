@@ -899,12 +899,17 @@ describe('generic contract requests and correlated events', () => {
         const history = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
             uri: termsUri,
         });
-        expect(history.records.filter(t => t.action === 'consent')).toHaveLength(2);
+        expect(
+            history.records.filter(transaction => transaction.action === 'consent')
+        ).toHaveLength(1);
+        expect(
+            history.records.filter(transaction => transaction.action === 'reconsent')
+        ).toHaveLength(1);
         expect(history.records.every(t => t.referral?.requestId === original.requestId)).toBe(true);
         expect(
             delivered.find(n => n.to.profileId === owner.profileId)?.data?.metadata
         ).toMatchObject({
-            event: 'consent_created',
+            event: 'consent_updated',
             requestId: original.requestId,
             externalReferenceId: original.externalReferenceId,
         });
@@ -979,8 +984,8 @@ describe('generic contract requests and correlated events', () => {
         expect((await getContractTermsByUri(termsUri))!.terms.referral).toBeUndefined();
         expect(await status(uri)).toMatchObject({ status: 'pending' });
         delivered.length = 0;
-        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
-            uri: termsUri,
+        await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri: uri,
             terms: normalFullTerms,
             expiresAt: '',
             audienceVersion: 2,

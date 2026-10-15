@@ -76,7 +76,8 @@ export const useAutoConsentLearnCardAi = () => {
                     const alreadyConsented = consentedContracts.some(
                         (consent: { contract?: { uri?: string }; status?: string | null }) =>
                             consent?.contract?.uri === learnCardAiContractUri &&
-                            consent?.status !== 'withdrawn'
+                            consent?.status !== 'withdrawn' &&
+                            consent?.status !== 'consumed'
                     );
 
                     if (alreadyConsented) {
@@ -166,7 +167,8 @@ export const useAutoConsentLearnCardAi = () => {
                         const recoveredConsent = refreshedConsents.some(
                             (consent: { contract?: { uri?: string }; status?: string | null }) =>
                                 consent?.contract?.uri === learnCardAiContractUri &&
-                                consent?.status !== 'withdrawn'
+                                consent?.status !== 'withdrawn' &&
+                                consent?.status !== 'consumed'
                         );
 
                         if (recoveredConsent) {
@@ -207,7 +209,8 @@ export const useAutoConsentLearnCardAi = () => {
                         status?: string | null;
                     }) =>
                         consent?.contract?.uri === learnCardAiContractUri &&
-                        consent?.status !== 'withdrawn'
+                        consent?.status !== 'withdrawn' &&
+                        consent?.status !== 'consumed'
                 );
 
                 if (!consentedContract?.uri) return true;

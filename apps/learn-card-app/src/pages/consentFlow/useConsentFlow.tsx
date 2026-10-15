@@ -33,7 +33,10 @@ export const useConsentFlow = (
     const { data: consentedContracts, isLoading: consentedContractLoading } =
         useConsentedContracts();
     const consentedContract = consentedContracts?.find(
-        c => c?.contract?.uri === contract?.uri && c?.status !== 'withdrawn'
+        c =>
+            c?.contract?.uri === contract?.uri &&
+            c?.status !== 'withdrawn' &&
+            c?.status !== 'consumed'
     );
     const hasConsented = !!consentedContract;
 

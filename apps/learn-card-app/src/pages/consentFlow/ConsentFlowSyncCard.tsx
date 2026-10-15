@@ -81,7 +81,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
 
     const contractDetails = _contractDetails || contract;
 
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { mutateAsync: consentToContract, isPending } = useConsentToContract(
@@ -179,6 +179,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     )}
                     <button
                         onClick={() => {
+                            if (!contractDetails) return;
                             newModal(
                                 <ConsentFlowEditAccess
                                     contractDetails={contractDetails}

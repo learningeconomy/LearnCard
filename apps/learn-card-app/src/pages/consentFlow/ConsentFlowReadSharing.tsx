@@ -17,8 +17,8 @@ import { sidemenuLinks } from 'learn-card-base/components/sidemenu/sidemenuHelpe
 import {
     AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
     getInfoFromContractKey,
-    getPersonalEntry,
 } from '../../helpers/contract.helpers';
+import { getPersonalEntry } from '../../helpers/consentPersonalFields';
 
 type ConsentFlowReadSharingProps = {
     contract: ConsentFlowContract['read'];
@@ -66,7 +66,7 @@ const ConsentFlowReadSharing: React.FC<ConsentFlowReadSharingProps> = ({
         })
         .sort((a, b) => a.order - b.order);
 
-    let aiSessionCategories: {
+    const aiSessionCategories: {
         [key: string]: {
             required: boolean;
             term: ConsentFlowTerms['read']['credentials']['categories'][string];

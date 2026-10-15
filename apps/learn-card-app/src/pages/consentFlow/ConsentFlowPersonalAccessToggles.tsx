@@ -8,7 +8,7 @@ import BrokenLink from '../../components/svgs/BrokenLink';
 
 import { curriedStateSlice } from '@learncard/helpers';
 import { useCurrentUser } from 'learn-card-base';
-import { getPersonalEntry } from '../../helpers/contract.helpers';
+import { getPersonalEntry } from '../../helpers/consentPersonalFields';
 
 const getInfoFromContractKey = (key: string) => {
     const vcTypeOptions = boostVCTypeOptions?.someone;
@@ -39,7 +39,7 @@ const ConsentFlowPersonalAccessToggles = ({
     setState: Updater<Record<string, string>>;
     iconOverride?: React.ReactNode;
 }) => {
-    const currentUser = useCurrentUser()!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const updateSlice = curriedStateSlice(setState);
 
@@ -48,12 +48,15 @@ const ConsentFlowPersonalAccessToggles = ({
             {Object.entries(contract).map(([key, value]) => {
                 const { IconComponent, title, iconClassName, iconCircleClass } =
                     getInfoFromContractKey(key);
-                const toggleState = terms[key as any];
+                const toggleState = terms[key];
 
                 const isAnonymousName = anonymize && key === 'Name';
 
                 return (
-                    <div className="flex items-center justify-between pb-2 pt-2 border-b-2 border-solid border-grayscale-100 last:border-none">
+                    <div
+                        key={key}
+                        className="flex items-center justify-between pb-2 pt-2 border-b-2 border-solid border-grayscale-100 last:border-none"
+                    >
                         <div className="flex">
                             <div
                                 className={`flex items-center justify-center h-[40px] w-[40px] left-1 rounded-full ${iconCircleClass}`}

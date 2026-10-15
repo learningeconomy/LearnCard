@@ -394,4 +394,72 @@ describe('getOrCreateSharedUriForWallet', () => {
             'did:web:network.learncard.com',
         ]);
     });
+    it('materializes every credential only in explicitly selected enabled full-share categories', async () => {
+        const categoryPages: Record<
+            string,
+            { records: { id: string; uri: string }[]; hasMore: boolean; cursor?: string }[]
+        > = {
+            Achievement: [
+                { records: [{ id: 'a1', uri: 'cred:a1' }], hasMore: true, cursor: 'a-next' },
+                { records: [{ id: 'a2', uri: 'cred:a2' }], hasMore: false },
+            ],
+            Course: [{ records: [{ id: 'c1', uri: 'cred:c1' }], hasMore: false }],
+            Disabled: [{ records: [{ id: 'd1', uri: 'cred:d1' }], hasMore: false }],
+        };
+        const getPage = vi.fn(async (query: { category: string }, options: { cursor?: string }) => {
+            const pages = categoryPages[query.category] ?? [];
+            return pages[options.cursor === 'a-next' ? 1 : 0];
+        });
+        const wallet = {
+            id: { did: () => 'did:web:test-user' },
+            read: { get: vi.fn(async (uri: string) => ({ id: uri })) },
+            store: {
+                LearnCloud: {
+                    uploadEncrypted: vi.fn(
+                        async (credential: { id: string }) => `shared:${credential.id}`
+                    ),
+                },
+            },
+            index: { LearnCloud: { getPage, update: vi.fn().mockResolvedValue(undefined) } },
+        } as unknown as TestWallet;
+        const terms = {
+            terms: {
+                write: { personal: {}, credentials: { categories: {} } },
+                read: {
+                    personal: {},
+                    credentials: {
+                        categories: {
+                            Achievement: { sharing: true, shareAll: true, shared: ['cred:a1'] },
+                            Course: { sharing: true, shareAll: true, shared: ['cred:c1'] },
+                            Disabled: { sharing: false, shareAll: true, shared: ['cred:d1'] },
+                        },
+                    },
+                },
+            },
+        } as Parameters<typeof getTermsWithSharedUrisForWallet>[3];
+
+        const result = await getTermsWithSharedUrisForWallet(
+            wallet,
+            contractOwnerDid,
+            queryClient,
+            terms,
+            ['Achievement']
+        );
+
+        expect(getPage.mock.calls.map(([query]) => query.category)).toEqual([
+            'Achievement',
+            'Achievement',
+            'Course',
+        ]);
+        expect(
+            wallet.store.LearnCloud.uploadEncrypted.mock.calls.map(([credential]) => credential.id)
+        ).toEqual(['cred:a1', 'cred:a2', 'cred:c1']);
+        expect(result.terms.read.credentials.categories.Achievement.shared).toEqual([
+            'shared:cred:a1',
+            'shared:cred:a2',
+        ]);
+        expect(result.terms.read.credentials.categories.Course.shared).toEqual(['shared:cred:c1']);
+        expect(result.terms.read.credentials.categories.Disabled.shared).toEqual([]);
+        expect(terms.terms.read.credentials.categories.Achievement.shared).toEqual(['cred:a1']);
+    });
 });

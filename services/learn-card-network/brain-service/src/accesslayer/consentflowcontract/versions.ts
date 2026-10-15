@@ -388,6 +388,7 @@ export const updateConsentFlowContractVersion = async (
     const eventId = `${contractId}:version:${currentVersion + 1}`;
     const notificationData = {
         contractUri: uri,
+        contractName: next.name,
         fromVersion: currentVersion,
         toVersion: currentVersion + 1,
         kind,

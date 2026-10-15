@@ -266,10 +266,12 @@ export const getTermsWithSharedUrisForWallet = async (
         terms: ConsentFlowTerms;
         expiresAt?: string;
         oneTime?: boolean;
-    }
+    },
+    shareAllCategories: readonly string[] = []
 ) => {
     const terms = cloneDeep(_terms);
     const categories = Object.keys(terms.terms.read.credentials.categories);
+    const explicitlyFullCategories = new Set(shareAllCategories);
     const totalCredentialUris = categories.reduce(
         (count, category) =>
             count + (terms.terms.read.credentials.categories[category].shared?.length ?? 0),
@@ -282,22 +284,31 @@ export const getTermsWithSharedUrisForWallet = async (
     });
 
     for (const category of categories) {
-        const requestedCredUris = Array.from(
-            new Set(terms.terms.read.credentials.categories[category].shared ?? [])
-        );
+        const categoryGrant = terms.terms.read.credentials.categories[category];
+        if (terms.terms.read.credentials.sharing === false || categoryGrant.sharing === false) {
+            categoryGrant.shared = [];
+            continue;
+        }
+        const materializeAll =
+            explicitlyFullCategories.has(category) && categoryGrant.shareAll === true;
+        const requestedCredUris = materializeAll
+            ? undefined
+            : Array.from(new Set(categoryGrant.shared ?? []));
 
-        if (requestedCredUris.length === 0) {
-            terms.terms.read.credentials.categories[category].shared = [];
+        if (requestedCredUris?.length === 0) {
+            categoryGrant.shared = [];
             continue;
         }
 
         const { records, pageCount } = await loadCategoryRecordsForWallet(wallet, category);
+        const urisToMaterialize =
+            requestedCredUris ?? Array.from(new Set(records.map(record => record.uri)));
         let reusedCount = 0;
         let createdCount = 0;
         let missingCount = 0;
         const newCredUris: string[] = [];
 
-        for (const credUri of requestedCredUris) {
+        for (const credUri of urisToMaterialize) {
             const result = await getOrCreateSharedUriFromCategoryRecords(
                 wallet,
                 contractOwnerDid,
@@ -321,7 +332,7 @@ export const getTermsWithSharedUrisForWallet = async (
 
         log.debug('Prepared shared URIs for category', {
             category,
-            requestedCount: requestedCredUris.length,
+            requestedCount: urisToMaterialize.length,
             matchedRecordCount: records.length,
             pageCount,
             reusedCount,
