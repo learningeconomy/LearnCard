@@ -31,6 +31,11 @@ import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
+import {
+    addCredentialSummary,
+    getCredentialFactsEpoch,
+} from '../in-app-messages/credentialFactsStore';
+import { emitInAppMessageEvent } from '../in-app-messages/inAppMessageEvents';
 const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
@@ -317,6 +322,37 @@ export const useWallet = () => {
         return true;
     };
 
+    const recordCredentialClaim = async (
+        wallet: BespokeLearnCard,
+        uri: string,
+        vc: VC,
+        category: CredentialCategory
+    ): Promise<void> => {
+        try {
+            const accountDid = wallet.id.did();
+            const activeDid =
+                switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did();
+            if (activeDid !== accountDid) return;
+            const epoch = getCredentialFactsEpoch();
+            const summary = await addCredentialSummary(accountDid, uri, vc, category);
+            if (epoch !== getCredentialFactsEpoch()) return;
+            if (
+                (switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did()) !==
+                accountDid
+            )
+                return;
+
+            // Emit only after the wallet index and local facts are updated, so
+            // trigger.where can evaluate the claimed credential immediately.
+            emitInAppMessageEvent('credential.claimed', {
+                credential: summary,
+                accountDid,
+            });
+        } catch {
+            // Facts and trigger bookkeeping must never break a successful claim or log credential data.
+        }
+    };
+
     const resolveCredential = async (uri: string) => {
         if (!uri) throw new Error('URI is required');
 
@@ -458,6 +494,7 @@ export const useWallet = () => {
                 stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
+                if (result) await recordCredentialClaim(wallet, uri2, vc, category);
             }
 
             if (!skipLCNUser) {
@@ -478,6 +515,7 @@ export const useWallet = () => {
                 stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri;
+                if (result) await recordCredentialClaim(wallet, uri, vc, category);
 
                 stage = 'cache';
                 const didWeb = switchedProfileStore.get.switchedDid();
@@ -608,6 +646,7 @@ export const useWallet = () => {
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (result) {
+                await recordCredentialClaim(wallet, uri, vc as VC, category);
                 await queryClient.cancelQueries({
                     queryKey: ['useGetCredentialList', didWeb ?? '', category],
                 });
