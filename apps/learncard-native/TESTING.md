@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **237 cases** (105 Bun, 80 Swift, 52 simulator), plus one intentionally skipped live exchange. Sharing-picker validation is recorded below; historical QR/category runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
+Current configured suite: **245 cases** (105 Bun, 85 Swift, 55 simulator), plus one intentionally skipped live exchange. Recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
 
 The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -11,6 +11,14 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Recent-stack browsing — October 15
+
+All **85 Swift** cases passed (`artifacts/recent-stack-core.log`: 60 XCTest and 25 Swift Testing). Four new domain cases cover selection of five distinct recent records, category/date boundaries, unchanged payloads, bounded/reconciled position, gesture thresholds, vertical intent and RTL; one new SDK case validates four-locale copy.
+
+Five focused simulator cases passed (`artifacts/recent-stack-ui.xcresult`): all three new stack cases plus existing category/detail parity and Collection search/reset. They exercise actual horizontal gestures, five-card limits, reverse browsing, the active card’s detail destination and retained position on Back, a short cancelled drag, vertical scrolling, search reset, single-card category reset and Arabic Reduce Motion. Synthetic screenshots are exported in `artifacts/recent-stack-attachments/`.
+
+The final input-cap/partial-caption refinement passed another traversal/navigation test plus the existing automatic detail-card animation test (`artifacts/recent-stack-final-ui.xcresult`, two passed). The last cancelled-reverse-drag sleeve reset passed its expanded short-drag/vertical-scroll/search-reset case (`artifacts/recent-stack-cancel-final.xcresult`, one passed). Final Release/Debug install succeeded; all five artifact hashes match (`artifacts/recent-stack-install-proof.json`). The live Collection displays the new controls with real account records; no live credential mutation was performed. Bun/runtime transport code is unchanged from the prior 105-case sharing validation. This is focused UI validation, not a new local full 245-case run. See [stack contracts](RECENT_STACK.md).
 
 ## Larger-collection sharing — October 15
 

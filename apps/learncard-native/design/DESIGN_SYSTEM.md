@@ -88,6 +88,8 @@ Interactions use a brief press response and selection feedback. Navigation/label
 
 Credential **detail** has one isolated card with a gentle automatic 9-second loop: about ±4.5° yaw, ±1.8° pitch and a restrained diagonal sheen. No stack or drag instruction. Pause when offscreen, inactive, using Reduce Motion or VoiceOver. Collection's featured stack is a different presentation. Avoid additional perpetual motion throughout lists and dashboards.
 
+Collection’s recent stack is deliberate browsing: up to five actual records, a horizontal toss/settlement, contrasting covered sleeves, position dots and bounded Newer/Older controls. Keep vertical scrolling intact and tap navigation tied to the active record. At most two covered layers are visible; one-record categories have no fake stack. Reduce Motion changes position immediately. This replaces ambient featured-card drift; the detail animation remains independent. See [the recent-stack contract](../RECENT_STACK.md).
+
 ## Content and states
 
 - Name the next action: Review Inbox, Create a credential, See all. Give destructive actions distinct styling and confirmation.

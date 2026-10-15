@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Recent credential stack — October 15
+
+Latest issued is now a bounded, swipeable stack of five actual recent credentials in the selected category. A committed horizontal swipe tosses the current card aside; the next one settles forward. Newer/Older controls, a position indicator, category/search reset and active-card navigation make the interaction understandable. Vertical scrolling, VoiceOver actions, RTL and Reduce Motion are part of the interaction contract. This changes no credential data and preserves the separate automatic detail-card animation. See [stack behavior and lifecycle](RECENT_STACK.md).
+
 ## Larger-collection sharing — October 15
 
 Share credentials now has a purpose-built picker: multi-category and inclusive issue-date filters, title/issuer/description search, sorting, progressive paging and a persistent selection footer. Selected is an audit of every explicit choice, including items hidden by filters; filters and newly loaded pages cannot add disclosures. See [the paging, date and disclosure contract](SHARING_PICKER.md). Keep the current 50-item publication limit and original signed payloads. Search loads later personal-index pages rather than treating the first thirty items as the whole account. A future metadata search/index optimization can reduce remote content reads; this change does not modify backend storage.

@@ -9,6 +9,7 @@ struct CollectionView: View {
     @State private var search = ""
     @State private var appliedQuery = ""
     @State private var category: CredentialCategory?
+    @State private var latestActiveID: String?
     @State private var scrolled = false
     @FocusState private var searching: Bool
     @Namespace private var cards
@@ -25,6 +26,10 @@ struct CollectionView: View {
             $0.belongsInCollection && (category == nil || $0.displayCategory == category) &&
             (query.isEmpty || "\($0.title) \($0.issuer) \($0.summary)".localizedCaseInsensitiveContains(appliedQuery))
         }.sorted { $0.date > $1.date }
+    }
+    private var featuredID: String? {
+        let latest = RecentCredentialDeck.latest(in: credentials)
+        return latest.contains(where: { $0.id == latestActiveID }) ? latestActiveID : latest.first?.id
     }
 
     var body: some View {
@@ -83,18 +88,10 @@ struct CollectionView: View {
                                    detail: "Receive or create a credential to get started.")
                     }
                 } else {
-                    if !searchMode, let first = credentials.first {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("Latest issued").font(.headline).foregroundStyle(Palette.ink)
-                                Spacer()
-                                if first.date.timeIntervalSince1970 > 0 {
-                                    Text(first.date, format: .dateTime.month(.abbreviated).day().year())
-                                        .font(.caption).foregroundStyle(Palette.secondary)
-                                }
-                            }
-                            link(first, featured: true, row: false)
-                        }
+                    if !searchMode {
+                        LatestCredentialStack(credentials: RecentCredentialDeck.latest(in: credentials), store: store, namespace: cards,
+                                              partial: store.snapshot?.hasMore == true, activeID: $latestActiveID)
+                            .id(category?.rawValue ?? "all")
                     }
                     if searchMode || credentials.count > 1 {
                         HStack(alignment: .firstTextBaseline) {
@@ -110,11 +107,11 @@ struct CollectionView: View {
                         }
                         if sizeClass == .regular && !textSize.isAccessibilitySize && !searchMode {
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 2), spacing: 14) {
-                                ForEach(credentials.dropFirst()) { credential in link(credential, featured: false, row: false) }
+                                ForEach(credentials.filter { $0.id != featuredID }) { credential in link(credential, featured: false, row: false) }
                             }
                         } else {
                             LazyVStack(spacing: 12) {
-                                ForEach(searchMode ? credentials : Array(credentials.dropFirst())) { credential in
+                                ForEach(searchMode ? credentials : credentials.filter { $0.id != featuredID }) { credential in
                                     link(credential, featured: false, row: true)
                                 }
                             }
@@ -188,7 +185,7 @@ struct CollectionView: View {
 
     private func filter(_ title: String, value: CredentialCategory?) -> some View {
         Button {
-            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { category = value }
+            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { category = value; latestActiveID = nil }
         } label: {
             Text(NativeText.literal(title)).font(.subheadline.weight(.medium))
                 .foregroundStyle(category == value ? Palette.selectionInk : Palette.secondary)

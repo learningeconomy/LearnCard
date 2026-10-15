@@ -23,7 +23,7 @@ public actor DemoCredentialService: CredentialService {
     private var templates: [Credential] = []
     private var loadedCount: Int?
 
-    public init(includeCategorySamples: Bool = false, includeSharingSamples: Bool = false) {
+    public init(includeCategorySamples: Bool = false, includeSharingSamples: Bool = false, includeStackSamples: Bool = false) {
         let date = Date(timeIntervalSince1970: 1_791_763_200)
         credentials = [
             Credential(id: "design", title: "Design for people", issuer: "Open Learning Studio",
@@ -54,6 +54,17 @@ public actor DemoCredentialService: CredentialService {
                 Credential(id: "category-\(id)", title: title, issuer: "Sample Learning Studio", summary: "Unsigned category regression sample.",
                            kind: .achievement, date: date.addingTimeInterval(-600), category: category)
             }
+        }
+        if includeStackSamples {
+            credentials += (1...7).map { index in
+                Credential(id: "stack-\(index)", title: "Learning moment \(index)", issuer: "Sample Learning Studio",
+                           summary: "Unsigned recent stack browsing sample.", kind: .achievement,
+                           date: Date.now.addingTimeInterval(-Double(index) * 3600), category: "Achievement")
+            }
+            credentials += [
+                Credential(id: "stack-portfolio", title: "A recent portfolio", issuer: "Sample Learning Studio", summary: "Unsigned category stack sample.", kind: .achievement, date: Date.now.addingTimeInterval(-3 * 86_400), category: "Accomplishment"),
+                Credential(id: "stack-family", title: "Separate family record", issuer: "Sample Learning Studio", summary: "Must not appear in the collection stack.", kind: .membership, date: .now, category: "Family")
+            ]
         }
         if includeSharingSamples {
             loadedCount = credentials.count
