@@ -24,6 +24,27 @@ flowchart LR
     Results --> Retry[Retry definite failures]
 ```
 
+## Start with a spreadsheet
+
+You can also choose **Start from a link, file, or ID** before selecting a credential type. Upload a spreadsheet or paste its rows, review the recipient column, and choose **Add People**. The people and original cells remain available when choosing or changing the credential type.
+
+Under **Add spreadsheet columns**, choose how to use each column, then click its chip. Click a selected chip again to remove its mapping; the original cells remain available.
+
+| Column         | Credential field                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Score or grade | An independent result linked to its scale; several grade columns can coexist.                                         |
+| Credits        | A numeric credits-earned value, including zero.                                                                       |
+| Hours          | Description text by default. To count hours as credits, choose **Credits earned** and enter the intended credit unit. |
+| Evidence URL   | Standard Open Badges Evidence.                                                                                        |
+| Awarded date   | When the achievement was awarded; issuance time remains separate.                                                     |
+| Other text     | A personalized description field, preserving leading-zero identifiers.                                                |
+
+Choose the spreadsheet's decimal format before adding numeric columns. Reviewed numeric values use a decimal point and no grouping separators. A percentage cell displayed as `95%` becomes a Percent result of `95`.
+
+Choose an explicit date format for day/month or month/day text. An ISO calendar date keeps its day; a timestamp must include its timezone. Invalid dates and numbers stay visible for correction or skipping.
+
+These mappings use the [Open Badges 3.0 fields](https://www.imsglobal.org/spec/ob/v3p0): standard Evidence, linked results, numeric credits, and awardedDate. Files and links do not require LearnCard-specific credential terms.
+
 ## Resume an interrupted run
 
 Recovery data is saved in this browser's IndexedDB for the issuing account, network, and organization. Return to **Issue Credentials**, then choose **Restore Saved Run** and **Resume**. Stay on the original device and browser; clearing browser data removes recovery records. Recovery must save successfully before a send starts.
@@ -35,3 +56,5 @@ Email issuance continues on the server after leaving the page. Resume observes a
 Settled recovery records are removed after 30 days. Unresolved records remain available for review. Use **Start Another Run** only when you intend a separate issuance.
 
 Duplicate protection applies when restoring the same saved run or re-importing its exported CSV on this browser. Starting a new run from an original spreadsheet creates a new issuance and can send another credential to the same person.
+
+Column mapping currently supports Open Badges credentials. Choose each Evidence or Portfolio column separately to include its links; importing the sheet alone does not add these fields. Selected columns stay visible with a checkmark so they can be removed. Exported CSVs distinguish mapped columns from the table’s separate Evidence link and preserve both on re-import.

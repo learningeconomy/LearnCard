@@ -1,3 +1,4 @@
+import type { IssueImportResult } from '../import/issueImport';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 
@@ -29,7 +30,6 @@ import { TemplatableField } from './TemplatableField';
 import type { SpreadsheetView } from '../spreadsheet/viewTypes';
 import type { CredentialTypeEntry } from './credentialTypeCatalog';
 import type { ResolvedSkill } from './skillAlignment';
-import type { NormalizedImport } from '../import/normalizeToObv3';
 import type { SelectedSkill } from '../../skills/skillTypes';
 import { staticField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type {
@@ -195,7 +195,7 @@ interface IssuePaletteProps {
     template: OBv3CredentialTemplate | null;
     onSelectType: (entry: CredentialTypeEntry) => void;
     onChangeTemplate: (template: OBv3CredentialTemplate) => void;
-    onImport: (result: NormalizedImport) => void;
+    onImport: (result: IssueImportResult) => void | Promise<void>;
     recipientMode: RecipientMode;
     recipients: Recipient[];
     linkOptions: LinkOptions;

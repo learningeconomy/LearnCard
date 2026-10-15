@@ -1,3 +1,4 @@
+import canvasGradebook from './fixtures/canvas-gradebook.csv?raw';
 import { describe, it, expect } from 'vitest';
 import { utils, write } from 'xlsx';
 import {
@@ -12,6 +13,27 @@ import { makeRun } from './fixtures.test-support';
 
 const parse = (text: string) => parseSpreadsheet(readSpreadsheetText(text));
 describe('spreadsheet parsing and editable roster', () => {
+    it('handles the upstream Canvas gradebook header and metadata without guessing login IDs are emails', () => {
+        const source = readSpreadsheetText(canvasGradebook, 'canvas.csv');
+        const withoutEmails = parseSpreadsheet(source);
+        expect(withoutEmails.emailColumn).toBeUndefined();
+        expect(withoutEmails.rows).toEqual([]);
+        expect(withoutEmails.columns[2].label).toBe('SIS Login ID');
+        const withEmails = structuredClone(source);
+        withEmails.sheets.Sheet1.slice(2).forEach((row, index) => {
+            if (!row.some(cell => cell.text.trim())) return;
+            row[2] = { text: `person${index}@example.test` };
+            row[6] = { text: String(90 + index) };
+        });
+        const parsed = parseSpreadsheet(withEmails);
+        expect(parsed.rows).toHaveLength(7);
+        expect(parsed.rows[0]).toMatchObject({
+            displayName: 'Blend, Bill',
+            email: 'person0@example.test',
+        });
+        expect(parsed.rows[0].cells['column-6'].text).toBe('90');
+        expect(parsed.rows.some(row => row.displayName === 'Points Possible')).toBe(false);
+    });
     it('reads 250 quoted rows, BOM, preamble, normalized emails and trailing Total', () => {
         const sheet = parse(
             '\uFEFFClass roster\n\nFirst Name,Last Name,Student Email,Final Score\n' +
@@ -80,7 +102,29 @@ describe('spreadsheet parsing and editable roster', () => {
         expect(cells[2].date).toBe('2023-03-15');
         expect(cells[3].problem).toBe('formula');
     });
-    it('normalizes placeholder headers, preserves duplicates and validates evidence', () => {
+    it('bounds expanded cells across visible XLSX worksheets', () => {
+        const workbook = utils.book_new();
+        for (const name of ['One', 'Two'])
+            utils.book_append_sheet(
+                workbook,
+                utils.aoa_to_sheet([
+                    ['Email', 'Name'],
+                    ['a@test.com', 'Ada'],
+                ]),
+                name
+            );
+        const limit = SPREADSHEET_LIMITS.cells;
+        try {
+            SPREADSHEET_LIMITS.cells = 6;
+            expect(() =>
+                readXlsx(write(workbook, { type: 'array', bookType: 'xlsx' }), 'many.xlsx')
+            ).toThrow('limit');
+        } finally {
+            SPREADSHEET_LIMITS.cells = limit;
+        }
+    });
+
+    it('normalizes placeholder headers, preserves duplicates and leaves evidence opt-in', () => {
         const run = makeRun(0);
         const { draft, mapped } = mergeSpreadsheet(
             run.draft,
@@ -99,7 +143,9 @@ describe('spreadsheet parsing and editable roster', () => {
             draft.values,
             draft.evidence
         );
-        expect(Object.values(problems)).toEqual([['duplicate'], ['duplicate', 'evidence']]);
+        expect(Object.values(problems)).toEqual([['duplicate'], ['duplicate']]);
+        expect(draft.evidence).toEqual({});
+        expect(draft.source!.rows[1].cells['column-2'].text).toBe('https://');
     });
     it('round-trips stable row IDs after email correction and formula escaping', () => {
         const run = makeRun();

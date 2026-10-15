@@ -58,15 +58,20 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     onChangeTemplate,
     canMakeDynamic,
 }) => {
-    const state = readResultState(template);
+    const [selectedResult, setSelectedResult] = useState(0);
+    const resultIndex = Math.min(
+        selectedResult,
+        Math.max(0, (template.credentialSubject.result?.length ?? 1) - 1)
+    );
+    const state = readResultState(template, resultIndex);
     const isDynamic = Boolean(state.valueField?.isDynamic);
-    const validationError = getResultValidationError(template);
+    const validationError = getResultValidationError(template, undefined, resultIndex);
 
     // Keep an empty selection locally until there is enough result data to store.
     const [selectedType, setSelectedType] = useState<ResultType>(state.resultType);
 
     const hasStoredResult = Boolean(
-        template.credentialSubject.result?.[0] || state.resultDescription
+        template.credentialSubject.result?.[resultIndex] || state.resultDescription
     );
     useEffect(() => {
         if (hasStoredResult && !state.isLegacyUntyped) setSelectedType(state.resultType);
@@ -87,7 +92,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     });
 
     const commitUpdate = (patch: Partial<ResultUpdate>) => {
-        onChangeTemplate(writeResult(template, currentUpdate(patch)));
+        onChangeTemplate(writeResult(template, currentUpdate(patch), resultIndex));
     };
 
     const setResultType = (resultType: ResultType) => {
@@ -105,22 +110,32 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                     : [createRubricLevel()]
                 : undefined;
         onChangeTemplate(
-            writeResult(template, {
-                ...currentUpdate({
-                    resultType,
-                    value,
-                    valueMin: '',
-                    valueMax: '',
-                    rubricCriterionLevel,
-                    achievedLevel: '',
-                }),
-            })
+            writeResult(
+                template,
+                {
+                    ...currentUpdate({
+                        resultType,
+                        value,
+                        valueMin: '',
+                        valueMax: '',
+                        rubricCriterionLevel,
+                        achievedLevel: '',
+                    }),
+                },
+                resultIndex
+            )
         );
     };
 
     const setValue = (value: string) => commitUpdate({ value });
 
-    const makeDynamic = () => commitUpdate({ value: dynamicField(RESULT_VARIABLE_NAME) });
+    const makeDynamic = () =>
+        commitUpdate({
+            value: dynamicField(
+                state.valueField?.variableName ||
+                    (resultIndex ? `grade_${resultIndex + 1}` : RESULT_VARIABLE_NAME)
+            ),
+        });
 
     const makeStatic = () => commitUpdate({ value: staticField('') });
 
@@ -154,6 +169,23 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
 
     return (
         <div className="sm:col-span-2 space-y-3">
+            {(template.credentialSubject.result?.length ?? 0) > 1 && (
+                <label className={LABEL_CLASS}>
+                    {m['issueFlow.sheet.resultField']()}
+                    <select
+                        className={INPUT_CLASS}
+                        value={resultIndex}
+                        onChange={event => setSelectedResult(Number(event.target.value))}
+                    >
+                        {template.credentialSubject.result?.map((result, index) => (
+                            <option key={result.id} value={index}>
+                                {readResultState(template, index).resultDescription?.name.value ||
+                                    index + 1}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            )}
             <div>
                 <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-grayscale-700">

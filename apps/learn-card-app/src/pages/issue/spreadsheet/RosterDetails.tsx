@@ -17,6 +17,7 @@ export interface RosterDetailsProps {
     attachments: Record<string, SimpleMediaAttachment[]>;
     onAttachmentsChange: (rowId: string, attachments: SimpleMediaAttachment[]) => void;
     variables: string[];
+    labels?: Record<string, string>;
     scopes: ColumnScopes;
     shared: Record<string, string>;
     values: Record<string, Record<string, string>>;
@@ -46,9 +47,10 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
     const pageSize = 50;
     const currentPage = Math.min(page, Math.max(0, Math.ceil(sorted.length / pageSize) - 1));
     const visible = sorted.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+    const fieldLabel = (name: string): string => props.labels?.[name] ?? humanizeVariable(name);
     const input = (recipient: Recipient, name: string): React.ReactNode => (
         <input
-            aria-label={`${recipientDisplayName(recipient)} ${humanizeVariable(name)}`}
+            aria-label={`${recipientDisplayName(recipient)} ${fieldLabel(name)}`}
             className={INPUT}
             value={values[recipientKey(recipient)]?.[name] ?? ''}
             disabled={
@@ -175,7 +177,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                             className="text-xs font-medium text-grayscale-700"
                             htmlFor={`scope-${name}`}
                         >
-                            {humanizeVariable(name)}
+                            {fieldLabel(name)}
                         </label>
                         <select
                             id={`scope-${name}`}
@@ -197,7 +199,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                     </div>
                     {scopes[name] !== 'perRecipient' && (
                         <input
-                            aria-label={humanizeVariable(name)}
+                            aria-label={fieldLabel(name)}
                             className={INPUT}
                             value={shared[name] ?? ''}
                             disabled={disabled}
@@ -240,7 +242,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                             <tr>
                                 {[
                                     m['issueFlow.sheet.recipient'](),
-                                    ...variables.map(humanizeVariable),
+                                    ...variables.map(fieldLabel),
                                     m['issueFlow.sheet.evidence'](),
                                     '',
                                 ].map((label, index) => (
@@ -289,7 +291,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                                         key={name}
                                         className="block text-xs font-medium text-grayscale-700 space-y-1.5"
                                     >
-                                        <span>{humanizeVariable(name)}</span>
+                                        <span>{fieldLabel(name)}</span>
                                         {input(recipient, name)}
                                     </label>
                                 ))}

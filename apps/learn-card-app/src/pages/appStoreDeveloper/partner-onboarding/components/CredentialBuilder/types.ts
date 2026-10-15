@@ -219,6 +219,7 @@ export interface OBv3CredentialTemplate {
     clrSubject?: ClrSubjectTemplate;
 
     // Dates (VC v2 syntax)
+    awardedDate?: TemplateFieldValue;
     validFrom: TemplateFieldValue;
     validUntil?: TemplateFieldValue;
 

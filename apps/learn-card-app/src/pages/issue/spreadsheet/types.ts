@@ -38,15 +38,38 @@ export interface ParsedSpreadsheet {
     rows: SpreadsheetRow[];
     emailColumn?: number;
     emailCandidates: number[];
+    /** Column reserved for the editable evidence link in a verified app CSV export. */
+    rowEvidenceColumn?: string;
     headerRow?: number;
     skipped: number;
 }
 
-export type RowProblem = 'email' | 'duplicate' | 'required' | 'evidence' | 'formula';
+export type RowProblem =
+    'email' | 'duplicate' | 'required' | 'evidence' | 'formula' | 'number' | 'date' | 'result';
+
+export type MappingTarget =
+    | 'description'
+    | 'Percent'
+    | 'RawScore'
+    | 'LetterGrade'
+    | 'GradePointAverage'
+    | 'credits'
+    | 'evidence'
+    | 'awardedDate';
+export interface ColumnMapping {
+    columnId: string;
+    label: string;
+    variable: string;
+    target: MappingTarget;
+    dateFormat: 'iso' | 'dmy' | 'mdy';
+    numericFormat: 'dot' | 'comma';
+    creditUnit?: string;
+}
 
 export interface RosterDraft {
     id: string;
     sourceName?: string;
+    mappings?: ColumnMapping[];
     recipients: Recipient[];
     values: Record<string, Record<string, string>>;
     evidence: Record<string, string>;

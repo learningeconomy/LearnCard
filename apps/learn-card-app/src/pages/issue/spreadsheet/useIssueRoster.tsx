@@ -1,3 +1,10 @@
+import { materializeCredentialFields } from '@learncard/helpers';
+import {
+    mapSpreadsheetColumn,
+    credentialRowProblems,
+    removeSpreadsheetMapping,
+} from './columnMapping';
+import type { ColumnMapping, MappingTarget } from './types';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -81,6 +88,7 @@ export const useIssueRoster = (options: RosterOptions) => {
     };
     const [source, setSource] = useState<ParsedSpreadsheet>();
     const [scopes, setScopes] = useState<ColumnScopes>({});
+    const [mappings, setMappings] = useState<ColumnMapping[]>([]);
     const [formulaCells, setFormulaCells] = useState<RosterDraft['formulaCells']>({});
     const [evidence, setEvidence] = useState<Record<string, string>>({});
     const [run, setRun] = useState<IssuanceRun | null>(null);
@@ -113,6 +121,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         values: options.values,
         evidence,
         formulaCells,
+        mappings,
         attachments: options.attachments,
         source,
         sourceName: source?.source.name,
@@ -157,6 +166,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         setScopes(saved.scopes);
         setEvidence(saved.draft.evidence);
         setFormulaCells(saved.draft.formulaCells ?? {});
+        setMappings(saved.draft.mappings ?? []);
         options.setRecipients(saved.draft.recipients);
         options.setValues(saved.draft.values);
         options.setShared(saved.shared);
@@ -171,6 +181,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         abort.current?.abort();
         changeDraftId(crypto.randomUUID());
         setSource(undefined);
+        setMappings([]);
         setFormulaCells({});
         setScopes({});
         setEvidence({});
@@ -191,6 +202,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 setRecoverable(null);
                 changeDraftId(crypto.randomUUID());
                 setSource(undefined);
+                setMappings([]);
                 setFormulaCells({});
                 setEvidence({});
                 setScopes({});
@@ -287,7 +299,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         return saving;
     };
     useEffect(() => {
-        if (busy || !scope.issuer || !options.template || !options.recipients.length) return;
+        if (busy || !scope.issuer || !options.recipients.length) return;
         const timer = setTimeout(() => {
             if (executing.current) return;
             void saveDraft(capture()).catch(reason => {
@@ -304,6 +316,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         scopes,
         evidence,
         formulaCells,
+        mappings,
         options.template,
         options.recipients,
         options.shared,
@@ -320,6 +333,8 @@ export const useIssueRoster = (options: RosterOptions) => {
         );
     };
     const importSheet = async (sheet: ParsedSpreadsheet): Promise<void> => {
+        if (issuanceScopeKey(scope) !== issuanceScopeKey(currentScope()))
+            throw new IssuanceRecoveryError('context');
         if (busy) throw new IssuanceRecoveryError('busy');
         const ids = new Set(sheet.rows.map(row => row.exportedRunId).filter(Boolean));
         if (ids.size > 1) throw new SpreadsheetError('run');
@@ -390,11 +405,12 @@ export const useIssueRoster = (options: RosterOptions) => {
             await saveDraft(next);
             apply(next);
         } else {
-            setSource(sheet);
+            setSource(merged.draft.source);
             options.setRecipients(merged.draft.recipients);
             options.setValues(merged.draft.values);
             setEvidence(merged.draft.evidence);
             setFormulaCells(merged.draft.formulaCells ?? {});
+            setMappings(merged.draft.mappings ?? []);
             setScopes(nextScopes);
             options.onPeople();
         }
@@ -430,18 +446,35 @@ export const useIssueRoster = (options: RosterOptions) => {
                     saved.draft.evidence,
                     saved.draft.formulaCells
                 );
-                if (candidates.some(row => issues[recipientKey(row)]?.length))
+                if (
+                    candidates.some(
+                        row =>
+                            issues[recipientKey(row)]?.length ||
+                            credentialRowProblems(
+                                saved.template,
+                                effectiveRowValues(
+                                    row,
+                                    variables,
+                                    saved.scopes,
+                                    saved.shared,
+                                    saved.draft.values
+                                )
+                            ).length
+                    )
+                )
                     throw new SpreadsheetError('mapping');
                 const checked = new Set<string>();
                 for (const row of candidates) {
-                    const filled = applyVariableValues(
-                        templateToJson(saved.template),
-                        effectiveRowValues(
-                            row,
-                            variables,
-                            saved.scopes,
-                            saved.shared,
-                            saved.draft.values
+                    const filled = materializeCredentialFields(
+                        applyVariableValues(
+                            templateToJson(saved.template),
+                            effectiveRowValues(
+                                row,
+                                variables,
+                                saved.scopes,
+                                saved.shared,
+                                saved.draft.values
+                            )
                         )
                     );
                     const identity = JSON.stringify(filled);
@@ -560,8 +593,43 @@ export const useIssueRoster = (options: RosterOptions) => {
         formulaCells
     );
     const problems = Object.fromEntries(
-        Object.entries(allProblems).filter(([key]) => !locked(key))
+        options.recipients
+            .filter(row => !locked(recipientKey(row)))
+            .map(row => {
+                const key = recipientKey(row);
+                return [
+                    key,
+                    [
+                        ...(allProblems[key] ?? []),
+                        ...(options.template
+                            ? credentialRowProblems(options.template, valuesForRow(row))
+                            : []),
+                    ],
+                ];
+            })
     );
+    const addColumn = (
+        columnId: string,
+        target: MappingTarget,
+        config: Pick<ColumnMapping, 'dateFormat' | 'numericFormat' | 'creditUnit'>
+    ): void => {
+        if (busy || run?.templateUri) throw new IssuanceRecoveryError('busy');
+        const column = source?.columns.find(item => item.id === columnId);
+        if (!options.template || !column) throw new SpreadsheetError('mapping');
+        const result = mapSpreadsheetColumn(options.template, draft, column, target, config);
+        options.onRestoreTemplate(result.template);
+        options.setValues(result.draft.values);
+        setFormulaCells(result.draft.formulaCells ?? {});
+        setMappings(result.draft.mappings ?? []);
+        setScopes(previous => ({ ...previous, [result.variable]: 'perRecipient' }));
+    };
+    const removeColumn = (variable: string): void => {
+        if (busy || run?.templateUri) throw new IssuanceRecoveryError('busy');
+        if (!options.template) return;
+        const result = removeSpreadsheetMapping(options.template, draft, variable);
+        options.onRestoreTemplate(result.template);
+        setMappings(result.draft.mappings ?? []);
+    };
     const previewRecipient =
         options.recipients[Math.min(previewIndex, Math.max(0, options.recipients.length - 1))];
     const changeScope = (name: string, value: 'shared' | 'perRecipient'): void => {
@@ -589,6 +657,9 @@ export const useIssueRoster = (options: RosterOptions) => {
     return {
         id,
         source,
+        mappings,
+        addColumn,
+        removeColumn,
         draft,
         scopes: effectiveScopes,
         evidence,

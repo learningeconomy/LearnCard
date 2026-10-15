@@ -1,7 +1,9 @@
+import { normalizeMappedCell, assertMappingFormat } from './columnMapping';
 import Papa from 'papaparse';
 import { recipientKey, recipientDisplayName, type Recipient } from '../components/recipientTypes';
 import { isValidRosterEmail, SpreadsheetError } from './parseSpreadsheet';
 import {
+    RESERVED_COLUMNS,
     EXPORT_RUN_COLUMN,
     EXPORT_ROW_COLUMN,
     EXPORT_EXAMPLE_COLUMN,
@@ -67,7 +69,11 @@ export const getRowProblems = (
             if (evidence[key]?.trim()) {
                 try {
                     const url = new URL(evidence[key]!.trim());
-                    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname)
+                    if (
+                        /\s/.test(evidence[key]!.trim()) ||
+                        !['http:', 'https:'].includes(url.protocol) ||
+                        !url.hostname
+                    )
                         problems.push('evidence');
                 } catch {
                     problems.push('evidence');
@@ -91,6 +97,26 @@ export const getRowProblems = (
     );
 };
 
+/** Keep mapped headers distinct from the recipient/evidence/recovery CSV columns. */
+export const rosterCsvFieldNames = (
+    draft: Pick<RosterDraft, 'mappings'>,
+    variables: string[]
+): Record<string, string> => {
+    const used = new Set(
+        ['Recipient Email', 'Recipient Name', 'Evidence', ...RESERVED_COLUMNS].map(normalizeColumn)
+    );
+    return Object.fromEntries(
+        variables.map(name => {
+            const base = draft.mappings?.find(mapping => mapping.variable === name)?.label ?? name;
+            let label = base;
+            for (let suffix = 2; used.has(normalizeColumn(label)); suffix++)
+                label = `${base} [${suffix}]`;
+            used.add(normalizeColumn(label));
+            return [name, label];
+        })
+    );
+};
+
 /** Exported identities are accepted only within the saved run; email is a fallback. */
 export const mergeSpreadsheet = (
     draft: RosterDraft,
@@ -98,11 +124,26 @@ export const mergeSpreadsheet = (
     variables: string[]
 ): { draft: RosterDraft; mapped: string[] } => {
     if (sheet.emailColumn === undefined) throw new SpreadsheetError('emailColumn');
+    // Only verified same-run exports restore the table's standalone Evidence cell.
+    // Source Evidence/Portfolio columns remain independent, explicit mappings.
+    const canonical = sheet.rows.some(row => row.exportedRunId === draft.id && row.exportedRowId);
+    const evidenceColumn = canonical
+        ? sheet.columns.find(column => normalizeColumn(column.label) === 'evidence')
+        : undefined;
+    const exportedNames = rosterCsvFieldNames(draft, variables);
     const matches = Object.fromEntries(
         variables.map(name => {
+            const binding = draft.mappings?.find(mapping => mapping.variable === name);
             const columns = sheet.columns.filter(
-                column => normalizeColumn(column.label) === normalizeColumn(name)
+                column =>
+                    column.id !== evidenceColumn?.id &&
+                    (canonical
+                        ? normalizeColumn(column.label) === normalizeColumn(exportedNames[name]!)
+                        : normalizeColumn(column.label) === normalizeColumn(name) ||
+                          (binding &&
+                              normalizeColumn(column.label) === normalizeColumn(binding.label)))
             );
+
             if (columns.length > 1) throw new SpreadsheetError('mapping');
             return [name, columns[0]];
         })
@@ -113,12 +154,10 @@ export const mergeSpreadsheet = (
     const formulaCells = { ...draft.formulaCells };
     const recipients = [...draft.recipients];
     const assigned = new Set<string>();
+    const sourceRows: ParsedSpreadsheet['rows'] = [];
     const incomingCounts = new Map<string, number>();
     for (const row of sheet.rows)
         incomingCounts.set(row.email, (incomingCounts.get(row.email) ?? 0) + 1);
-    const evidenceColumn = sheet.columns.find(column =>
-        /^(evidence|evidencelink|portfolio|portfoliolink)$/.test(normalizeColumn(column.label))
-    );
     for (const row of sheet.rows) {
         if (row.example && row.email === 'person@example.com') continue;
         if (row.exportedRunId && row.exportedRunId !== draft.id) throw new SpreadsheetError('run');
@@ -138,6 +177,7 @@ export const mergeSpreadsheet = (
         const key = existing ? recipientKey(existing) : row.rowId;
         if (assigned.has(key)) throw new SpreadsheetError('mapping');
         assigned.add(key);
+        sourceRows.push({ ...row, rowId: key });
         const recipient: Recipient =
             existing?.kind === 'profile'
                 ? existing
@@ -158,7 +198,18 @@ export const mergeSpreadsheet = (
         else delete cellProblems['Recipient Email'];
         const imported = Object.fromEntries(
             mapped.map(name => {
-                let value = row.cells[matches[name]!.id]?.text ?? '';
+                const cell = row.cells[matches[name]!.id] ?? { text: '' };
+                const binding = draft.mappings?.find(mapping => mapping.variable === name);
+                const canonical = row.exportedRunId === draft.id;
+                if (binding && !canonical) assertMappingFormat(cell, binding);
+                let value = binding
+                    ? normalizeMappedCell(
+                          cell,
+                          canonical
+                              ? { ...binding, numericFormat: 'dot', dateFormat: 'iso' }
+                              : binding
+                      )
+                    : cell.text;
                 if (row.cells[matches[name]!.id]?.problem) cellProblems[name] = value;
                 else delete cellProblems[name];
                 // Undo our CSV formula-escape only for verified, same-run app exports.
@@ -182,7 +233,7 @@ export const mergeSpreadsheet = (
             recipients,
             values,
             evidence,
-            source: sheet,
+            source: { ...sheet, rows: sourceRows, rowEvidenceColumn: evidenceColumn?.id },
         },
         mapped,
     };
@@ -198,10 +249,16 @@ export const exportRosterCsv = (
     const recipients = problems
         ? draft.recipients.filter(recipient => recipientKey(recipient) in problems)
         : draft.recipients;
+    const labels = rosterCsvFieldNames(draft, variables);
+    const fieldLabel = (name: string): string => labels[name]!;
     const rows = recipients.map(recipient => ({
         'Recipient Email': recipient.kind === 'email' ? recipient.email : '',
         'Recipient Name': recipientDisplayName(recipient),
-        ...effectiveRowValues(recipient, variables, scopes, shared, draft.values),
+        ...Object.fromEntries(
+            Object.entries(
+                effectiveRowValues(recipient, variables, scopes, shared, draft.values)
+            ).map(([name, value]) => [fieldLabel(name), value])
+        ),
         Evidence: draft.evidence[recipientKey(recipient)] ?? '',
         [EXPORT_RUN_COLUMN]: draft.id,
         [EXPORT_ROW_COLUMN]: recipientKey(recipient),
@@ -212,7 +269,7 @@ export const exportRosterCsv = (
         rows.push({
             'Recipient Email': 'person@example.com',
             'Recipient Name': 'Example person',
-            ...Object.fromEntries(variables.map(name => [name, shared[name] ?? ''])),
+            ...Object.fromEntries(variables.map(name => [fieldLabel(name), shared[name] ?? ''])),
             Evidence: '',
             [EXPORT_RUN_COLUMN]: '',
             [EXPORT_ROW_COLUMN]: '',
@@ -223,7 +280,7 @@ export const exportRosterCsv = (
             fields: [
                 'Recipient Email',
                 'Recipient Name',
-                ...variables,
+                ...variables.map(fieldLabel),
                 'Evidence',
                 EXPORT_RUN_COLUMN,
                 EXPORT_ROW_COLUMN,
