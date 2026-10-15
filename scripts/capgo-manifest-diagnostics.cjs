@@ -14,15 +14,20 @@ globalThis.fetch = async (...args) => {
                 if (token) text = text.split(token).join('[redacted]');
                 return text.slice(0, 12000);
             };
-            console.error('[capgo-manifest-response] ' + redact({
-                status: response.status,
-                requestId: response.headers.get('x-request-id'),
-                error: body.error,
-                message: body.message,
-                moreInfo: body.moreInfo,
-            }));
+            console.error(
+                '[capgo-manifest-response] ' +
+                    redact({
+                        status: response.status,
+                        requestId: response.headers.get('x-request-id'),
+                        error: body.error,
+                        message: body.message,
+                        moreInfo: body.moreInfo,
+                    })
+            );
         } catch {
-            console.error('[capgo-manifest-response] Could not decode error response; HTTP ' + response.status);
+            console.error(
+                '[capgo-manifest-response] Could not decode error response; HTTP ' + response.status
+            );
         }
     }
     return response;
