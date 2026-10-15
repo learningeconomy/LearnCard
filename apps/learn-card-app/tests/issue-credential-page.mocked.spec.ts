@@ -135,7 +135,8 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
     test('issues 250 people through queued chunks and retries only the failed row after reload', async ({
         page,
     }) => {
-        test.setTimeout(180000);
+        // Includes cold app startup, 250-row validation, reload and a second seed sign-in.
+        test.setTimeout(300000);
         network.on('profile.signingAuthorities', () => [
             {
                 relationship: { name: 'lca-sa' },
