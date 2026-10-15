@@ -55,7 +55,8 @@ describe('managed encrypted PDF chunks', () => {
             expect(JSON.stringify(envelope)).not.toContain(String(prepared.descriptor.key));
         }
         const blob = await loadProtectedResumePdf(vc, reader(prepared));
-        expect(new Uint8Array(await blob.arrayBuffer())).toEqual(large);
+        // Compare every byte without the cost of deep-matching a large typed array.
+        expect(Buffer.from(await blob.arrayBuffer()).equals(Buffer.from(large))).toBe(true);
         expect(blob.type).toBe('application/pdf');
         expect(prepared.descriptor.url).toMatch(/^urn:learncard:resume-pdf:/);
     });
@@ -182,7 +183,8 @@ describe('managed encrypted PDF chunks', () => {
             accessToken: `renewed-${request.chunkIndex}`,
         }));
         const blob = await loadProtectedResumePdf(array, fetchChunk);
-        expect(new Uint8Array(await blob.arrayBuffer())).toEqual(large);
+        // Compare every byte without the cost of deep-matching a large typed array.
+        expect(Buffer.from(await blob.arrayBuffer()).equals(Buffer.from(large))).toBe(true);
         expect(fetchChunk.mock.calls[0][0].accessToken).toBeUndefined();
         expect(fetchChunk.mock.calls[1][0].accessToken).toBe('renewed-0');
         expect(fetchChunk.mock.calls[2][0].accessToken).toBe('renewed-1');
