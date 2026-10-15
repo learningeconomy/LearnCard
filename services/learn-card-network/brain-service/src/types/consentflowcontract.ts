@@ -5,6 +5,7 @@ import {
     ConsentFlowTransactionActionValidator,
     ConsentFlowGuardianApprovalValidator,
     ConsentFlowReferralValidator,
+    ConsentFlowContractDetailsValidator,
 } from '@learncard/types';
 import { z } from 'zod';
 
@@ -22,6 +23,27 @@ type FlatReferral = {
 
 type FlatConsentTerms = Partial<Record<`terms.${string}`, string | boolean | string[]>>;
 
+export const DbContractVersionValidator = z.object({
+    id: z.string(),
+    version: z.coerce.number().int().positive(),
+    contract: ConsentFlowContractValidator,
+    name: z.string(),
+    subtitle: z.string().optional(),
+    description: z.string().optional(),
+    reasonForAccessing: z.string().optional(),
+    image: z.string().optional(),
+    needsGuardianConsent: z.boolean().optional(),
+    redirectUrl: z.string().optional(),
+    frontDoorBoostUri: z.string().optional(),
+    expiresAt: z.string().optional(),
+    autoboosts: z.array(z.unknown()).default([]),
+    writers: z.array(z.string()).default([]),
+    reason: z.string().optional(),
+    createdAt: z.string(),
+    kind: z.enum(['relaxed', 'expanded_optional', 'requires_consent']).optional(),
+});
+export type DbContractVersionType = z.infer<typeof DbContractVersionValidator>;
+
 export const DbContractValidator = z.object({
     id: z.string(),
     name: z.string(),
@@ -38,10 +60,24 @@ export const DbContractValidator = z.object({
     expiresAt: z.string().optional(),
     audienceVersion: z.coerce.number().int().nonnegative().optional(),
     hasConsented: z.boolean().optional(),
+    currentVersion: z.coerce.number().int().positive().optional(),
+    status: z.enum(['active', 'retired']).optional(),
+    version: z.coerce.number().int().positive().optional(),
+    latestUpdate: z.preprocess(value => {
+        if (typeof value !== 'string') return value;
+        try {
+            return JSON.parse(value);
+        } catch {
+            return value;
+        }
+    }, ConsentFlowContractDetailsValidator.shape.latestUpdate.optional()),
 });
 
 export type DbContractType = z.infer<typeof DbContractValidator>;
-export type FlatDbContractType = DbContractType & { contract: any };
+export type FlatDbContractType = Omit<DbContractType, 'contract' | 'latestUpdate'> &
+    Partial<Record<`contract.${string}`, string | boolean>> & {
+        latestUpdate?: string;
+    };
 
 export const DbTransactionValidator = z.object({
     id: z.string(),
@@ -73,6 +109,9 @@ export const DbTermsValidator = z.object({
     mutationVersion: z.coerce.number().int().nonnegative().optional(),
     id: z.string(),
     status: ConsentFlowTermsStatusValidator,
+    consentedVersion: z.coerce.number().int().positive().optional(),
+    reconsentDeadline: z.string().optional(),
+    newOptionsUntil: z.string().optional(),
     // Neo4j has no properties to store for entirely empty permission objects.
     terms: ConsentFlowTermsValidator.prefault({}),
     guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),

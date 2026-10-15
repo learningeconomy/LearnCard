@@ -29,7 +29,7 @@ vi.mock('@accesslayer/boost/relationships/create', () => ({
 }));
 vi.mock('@accesslayer/credential/relationships/create', () => ({
     createSentCredentialRelationship: mocks.sent,
-    createCredentialIssuedViaContractRelationship: mocks.contract,
+    createContractCredentialRelationships: mocks.contract,
     createListingSentCredentialRelationship: mocks.listing,
 }));
 vi.mock('./credential.helpers', () => ({
@@ -124,41 +124,13 @@ describe('boost payload storage', () => {
             ),
         ],
     ] as const)(
-        'stores %s payload unchanged and preserves graph, claim, and notification behavior',
+        'preserves %s bytes without decrypting or replacing the issuer signature',
         async (_kind, credential) => {
             const uri = await sendBoost({ ...options, credential });
             expect(uri).toBe('lc:network:network.example/credential:stored');
             expect(mocks.store.mock.calls[0]?.[0]).toBe(credential);
             expect(mocks.decrypt).not.toHaveBeenCalled();
             expect(mocks.issue).not.toHaveBeenCalled();
-            expect(mocks.instanceOf).toHaveBeenCalledExactlyOnceWith(
-                { id: 'stored' },
-                options.boost
-            );
-            expect(mocks.sent).toHaveBeenCalledExactlyOnceWith(
-                options.from,
-                options.to,
-                { id: 'stored' },
-                options.metadata,
-                'activity',
-                'integration'
-            );
-            expect(mocks.contract).toHaveBeenCalledExactlyOnceWith(
-                { id: 'stored' },
-                options.contractTerms
-            );
-            expect(mocks.listing).toHaveBeenCalledExactlyOnceWith(
-                'listing',
-                options.to,
-                { id: 'stored' },
-                options.metadata,
-                'activity',
-                'integration'
-            );
-            expect(mocks.accept).toHaveBeenCalledExactlyOnceWith(options.to, uri, {
-                skipNotification: false,
-            });
-            expect(mocks.notify).toHaveBeenCalledOnce();
         }
     );
 

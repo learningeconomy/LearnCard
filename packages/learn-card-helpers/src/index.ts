@@ -108,3 +108,4 @@ export const isAppDidWeb = (did?: string): boolean => {
 };
 
 export * from './share-content-canonical';
+export * from './consent-flow-contract-updates';

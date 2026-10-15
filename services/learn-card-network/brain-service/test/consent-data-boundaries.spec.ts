@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import type { ConsentFlowDataQuery, ConsentFlowTermsInput } from '@learncard/types';
-import { ConsentFlowTerms, ConsentFlowContract } from '@models';
+import { ConsentFlowTerms } from '@models';
+import { neogma } from '@instance';
 import { getUser } from './helpers/getClient';
+import { suspendExpiredConsentFlowTerms } from '@helpers/consentflow-deadline.helpers';
 import { minimalContract, minimalTerms, normalContract, normalFullTerms } from './helpers/contract';
 
 describe('consented data boundaries', () => {
@@ -48,6 +50,27 @@ describe('consented data boundaries', () => {
             oneTime,
         });
         return { contractUri, termsUri };
+    };
+
+    const seedLegacyExpiry = async (
+        kind: 'terms' | 'contract',
+        contractUri: string,
+        termsUri: string,
+        expiresAt: string
+    ) => {
+        if (kind === 'terms') {
+            await ConsentFlowTerms.update(
+                { expiresAt },
+                { where: { id: termsUri.split(':').at(-1)! } }
+            );
+            return;
+        }
+        // Legacy fixtures seed the accepted snapshot as well as the current request.
+        await neogma.queryRunner.run(
+            `MATCH (contract:ConsentFlowContract {id:$id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion {version:1})
+             SET contract.expiresAt = $expiresAt, version.expiresAt = $expiresAt`,
+            { id: contractUri.split(':').at(-1)!, expiresAt }
+        );
     };
 
     const readAll = async (
@@ -148,9 +171,7 @@ describe('consented data boundaries', () => {
         'allows locked sync when %s expiry contains only whitespace',
         async kind => {
             const { contractUri, termsUri } = await consent();
-            const model = kind === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
-            const uri = kind === 'terms' ? termsUri : contractUri;
-            await model.update({ expiresAt: '   ' }, { where: { id: uri.split(':').at(-1)! } });
+            await seedLegacyExpiry(kind, contractUri, termsUri, '   ');
             await expect(
                 learner.clients.fullAuth.contracts.syncCredentialsToContract({
                     termsUri,
@@ -170,22 +191,18 @@ describe('consented data boundaries', () => {
 
     it.each(['terms', 'contract'] as const)('excludes expired %s on every route', async kind => {
         const past = '2000-01-01T00:00:00.000Z';
-        const { contractUri } = await consent({
+        const { contractUri, termsUri } = await consent({
             expiresAt: kind === 'terms' ? past : undefined,
         });
         // Seed an existing consent that subsequently expires, rather than consent to an expired contract.
-        if (kind === 'contract')
-            await ConsentFlowContract.update(
-                { expiresAt: past },
-                { where: { id: contractUri.split(':').at(-1)! } }
-            );
+        if (kind === 'contract') await seedLegacyExpiry(kind, contractUri, termsUri, past);
         for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
     });
 
     it('preserves one-time snapshots without permitting ongoing sync, then honors withdrawal', async () => {
         const { contractUri, termsUri } = await consent({ oneTime: true });
         const history = await learner.clients.fullAuth.contracts.getConsentedContracts();
-        expect(history.records.find(record => record.uri === termsUri)?.status).toBe('stale');
+        expect(history.records.find(record => record.uri === termsUri)?.status).toBe('consumed');
         for (const response of await readAll(contractUri)) {
             expect(response.records).toHaveLength(1);
             expect(JSON.stringify(response)).toContain('achievement1');
@@ -200,10 +217,28 @@ describe('consented data boundaries', () => {
         for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
     });
 
-    it('excludes stale consent without the explicit one-time flag', async () => {
+    it('persists suspension when a re-consent deadline has passed', async () => {
+        const { termsUri } = await consent();
+        const termsId = termsUri.split(':').at(-1)!;
+        await ConsentFlowTerms.update(
+            { status: 'needs_reconsent', reconsentDeadline: '2026-10-14T00:00:00.000Z' },
+            { where: { id: termsId } }
+        );
+
+        await expect(suspendExpiredConsentFlowTerms('2026-10-15T00:00:00.000Z')).resolves.toEqual({
+            suspended: 1,
+        });
+        const terms = await ConsentFlowTerms.findOne({ where: { id: termsId } });
+        expect(terms?.dataValues.status).toBe('suspended');
+        expect(terms?.dataValues.updatedAt).toBe('2026-10-15T00:00:00.000Z');
+        await expect(suspendExpiredConsentFlowTerms('2026-10-15T00:00:00.000Z')).resolves.toEqual({
+            suspended: 0,
+        });
+    });
+    it('excludes consumed access without the explicit one-time flag', async () => {
         const { contractUri, termsUri } = await consent();
         await ConsentFlowTerms.update(
-            { status: 'stale' },
+            { status: 'consumed' },
             { where: { id: termsUri.split(':').at(-1)! } }
         );
         for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
@@ -278,11 +313,7 @@ describe('consented data boundaries', () => {
         'excludes malformed legacy %s expiry without failing the query',
         async kind => {
             const { contractUri, termsUri } = await consent();
-            const model = kind === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
-            await model.update(
-                { expiresAt: 'invalid-legacy-date' },
-                { where: { id: (kind === 'terms' ? termsUri : contractUri).split(':').at(-1)! } }
-            );
+            await seedLegacyExpiry(kind, contractUri, termsUri, 'invalid-legacy-date');
             for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
         }
     );

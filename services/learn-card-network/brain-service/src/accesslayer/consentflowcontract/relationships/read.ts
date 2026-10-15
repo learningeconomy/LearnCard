@@ -1,4 +1,7 @@
-import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
+import {
+    getConsentFlowContractVersionRecord,
+    getCumulativeContractUpdateById,
+} from '@accesslayer/consentflowcontract/versions';
 import { QueryBuilder, BindParam } from 'neogma';
 import mapValues from 'lodash/mapValues';
 import {
@@ -39,7 +42,8 @@ import { ConsentFlowGuardianApprovalValidator } from '@learncard/types';
 import { FlatBoostType } from 'types/boost';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
-import { shouldIncludeCategory } from '@helpers/contract.helpers';
+import { areTermsValid, shouldIncludeCategory } from '@helpers/contract.helpers';
+import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { ProfileType } from 'types/profile';
 import { CredentialType } from 'types/credential';
 import { getBoostUri } from '@helpers/boost.helpers';
@@ -123,9 +127,25 @@ export const getContractDetailsById = async (
         profile: LCNProfile;
     }>(await query.return('contract, profile').run());
 
-    return result.length > 0
-        ? { contract: inflateObject(result[0]!.contract), contractOwner: result[0]!.profile }
-        : null;
+    if (!result.length) return null;
+    const rawContract = inflateObject(result[0]!.contract);
+    const latestUpdate = rawContract.latestUpdate;
+    return {
+        contract: {
+            ...rawContract,
+            version: Number(rawContract.currentVersion ?? 1),
+            status: rawContract.status ?? 'active',
+            ...(latestUpdate
+                ? {
+                      latestUpdate:
+                          typeof latestUpdate === 'string'
+                              ? JSON.parse(latestUpdate)
+                              : latestUpdate,
+                  }
+                : {}),
+        },
+        contractOwner: result[0]!.profile,
+    };
 };
 
 export const getContractDetailsByUri = async (
@@ -172,6 +192,7 @@ export const getContractTermsById = async (
     consenter: LCNProfile;
     contract: DbContractType;
     contractOwner: LCNProfile;
+    cumulativeUpdate?: DbContractType['latestUpdate'];
 } | null> => {
     const result = convertQueryResultToPropertiesObjectArray<{
         consenter: LCNProfile;
@@ -195,14 +216,25 @@ export const getContractTermsById = async (
             .run()
     );
 
-    return result.length > 0
-        ? {
-              consenter: result[0]!.consenter,
-              terms: inflateObject(result[0]!.terms),
-              contract: inflateObject(result[0]!.contract),
-              contractOwner: result[0]!.contractOwner,
-          }
-        : null;
+    if (!result.length) return null;
+    const terms = inflateObject(result[0]!.terms);
+    const contract = inflateObject(result[0]!.contract);
+    const cumulativeUpdate =
+        terms.status === 'needs_reconsent' || terms.status === 'suspended'
+            ? await getCumulativeContractUpdateById(
+                  contract.id,
+                  Number(terms.consentedVersion ?? 1),
+                  terms.status,
+                  terms.reconsentDeadline
+              )
+            : undefined;
+    return {
+        consenter: result[0]!.consenter,
+        terms,
+        contract,
+        contractOwner: result[0]!.contractOwner,
+        ...(cumulativeUpdate ? { cumulativeUpdate } : {}),
+    };
 };
 
 export const getContractTermsByUri = async (
@@ -212,6 +244,7 @@ export const getContractTermsByUri = async (
     consenter: LCNProfile;
     contract: DbContractType;
     contractOwner: LCNProfile;
+    cumulativeUpdate?: DbContractType['latestUpdate'];
 } | null> => {
     return getContractTermsById(getIdFromUri(uri));
 };
@@ -262,10 +295,25 @@ export const getConsentFlowContractsForProfile = async (
             .run()
     );
 
-    return results.map(({ contract, boost }) => ({
-        contract: inflateObject(contract),
-        autoBoosts: boost.map(boost => getBoostUri(boost.properties.id, domain)),
-    }));
+    return results.map(({ contract, boost }) => {
+        const details = inflateObject(contract);
+        return {
+            contract: {
+                ...details,
+                version: Number(details.currentVersion ?? 1),
+                status: details.status ?? 'active',
+                ...(details.latestUpdate
+                    ? {
+                          latestUpdate:
+                              typeof details.latestUpdate === 'string'
+                                  ? JSON.parse(details.latestUpdate)
+                                  : details.latestUpdate,
+                      }
+                    : {}),
+            },
+            autoBoosts: boost.map(boost => getBoostUri(boost.properties.id, domain)),
+        };
+    });
 };
 
 export const getConsentedContractsForProfile = async (
@@ -335,13 +383,41 @@ export const getConsentedContractsForProfile = async (
             .run()
     );
 
-    return results.map(result => ({
-        ...result,
-        recipients: result.recipients.map(recipient => recipient.properties),
-        contract: inflateObject(result.contract),
-        terms: inflateObject(result.terms),
-        autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
-    }));
+    return Promise.all(
+        results.map(async result => {
+            const details = inflateObject(result.contract);
+            const terms = inflateObject(result.terms);
+            const cumulativeUpdate =
+                terms.status === 'needs_reconsent' || terms.status === 'suspended'
+                    ? await getCumulativeContractUpdateById(
+                          details.id,
+                          Number(terms.consentedVersion ?? 1),
+                          terms.status,
+                          terms.reconsentDeadline
+                      )
+                    : undefined;
+            return {
+                ...result,
+                recipients: result.recipients.map(recipient => recipient.properties),
+                contract: {
+                    ...details,
+                    version: Number(details.currentVersion ?? 1),
+                    status: details.status ?? 'active',
+                    ...(details.latestUpdate
+                        ? {
+                              latestUpdate:
+                                  typeof details.latestUpdate === 'string'
+                                      ? JSON.parse(details.latestUpdate)
+                                      : details.latestUpdate,
+                          }
+                        : {}),
+                },
+                terms,
+                ...(cumulativeUpdate ? { cumulativeUpdate } : {}),
+                autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
+            };
+        })
+    );
 };
 
 const HOLDER_EXPORT_PAGE_SIZE = 100;
@@ -411,11 +487,29 @@ export const getHolderExportMetadataForProfile = async (
                 );
             }
 
+            const cumulativeUpdate =
+                record.terms.status === 'needs_reconsent' || record.terms.status === 'suspended'
+                    ? await getCumulativeContractUpdateById(
+                          record.contract.id,
+                          Number(record.terms.consentedVersion ?? 1),
+                          record.terms.status,
+                          record.terms.reconsentDeadline
+                      )
+                    : undefined;
             consentRecords.push({
+                ...(cumulativeUpdate ? { cumulativeUpdate } : {}),
                 termsUri: constructUri('terms', record.terms.id, domain),
                 status: record.terms.status,
+                consentedVersion: record.terms.consentedVersion!,
+                ...(record.terms.reconsentDeadline
+                    ? { reconsentDeadline: record.terms.reconsentDeadline }
+                    : {}),
+                ...(record.terms.newOptionsUntil
+                    ? { newOptionsUntil: record.terms.newOptionsUntil }
+                    : {}),
                 contract: {
                     contract: record.contract.contract,
+                    version: Number(record.contract.currentVersion ?? 1),
                     name: record.contract.name,
                     subtitle: record.contract.subtitle,
                     description: record.contract.description,
@@ -548,7 +642,8 @@ const getPermittedContractData = async (
                 ],
             })
             .where(
-                "(terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))" +
+                "(coalesce(contract.status, 'active') <> 'retired') AND " +
+                    "(terms.status IN ['live', 'needs_reconsent', 'suspended'] OR (terms.status = 'consumed' AND terms.oneTime = true))" +
                     (cursor ? ' AND terms.updatedAt < $cursor' : '') +
                     ' AND all(filter IN $personalFilters WHERE filter.required = (terms[filter.key] IS NOT NULL))' +
                     ' AND (size($sharedCategories) = 0 OR coalesce(terms.`terms.read.credentials.sharing`, true) = true)' +
@@ -573,8 +668,17 @@ const getPermittedContractData = async (
                 !term.success ||
                 !contract.success ||
                 !isConsentExpiryActive(term.data.expiresAt, now) ||
-                !isConsentExpiryActive(contract.data.expiresAt, now) ||
                 !matchesConsentedDataQuery(term.data, query, now)
+            )
+                continue;
+            const acceptedVersion = await getConsentFlowContractVersionRecord(
+                contract.data.id,
+                Number(term.data.consentedVersion ?? 1)
+            );
+            if (
+                !acceptedVersion ||
+                !isConsentExpiryActive(acceptedVersion.expiresAt, now) ||
+                !areTermsValid(term.data.terms, acceptedVersion.contract)
             )
                 continue;
             records.push(projectConsentedData(term.data, query, now));
@@ -657,7 +761,8 @@ export const getConsentedDataBetweenProfiles = async (
             // If query key is false, ensure no resulting terms have that key
             // If query key is not present, return all terms whether they have it or not
         }).where(`
-(terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))
+(coalesce(contract.status, 'active') <> 'retired') AND
+(terms.status IN ['live', 'needs_reconsent', 'suspended'] OR (terms.status = 'consumed' AND terms.oneTime = true))
 AND ${contractWhereClause}
 `);
 
@@ -700,13 +805,19 @@ AND ${contractWhereClause}
             }
             const term = parsedTerm.data;
             const contract = parsedContract.data;
+            if (!isConsentExpiryActive(term.expiresAt, now)) continue;
+
+            const acceptedVersion = await getConsentFlowContractVersionRecord(
+                contract.id,
+                Number(term.consentedVersion ?? 1)
+            );
             if (
-                !isConsentExpiryActive(term.expiresAt, now) ||
-                !isConsentExpiryActive(contract.expiresAt, now)
+                !acceptedVersion ||
+                !isConsentExpiryActive(acceptedVersion.expiresAt, now) ||
+                !areTermsValid(term.terms, acceptedVersion.contract) ||
+                !matchesConsentedDataQuery(term, params, now)
             )
                 continue;
-
-            if (!matchesConsentedDataQuery(term, params, now)) continue;
 
             const parsedApproval = ConsentFlowGuardianApprovalValidator.safeParse(
                 term.guardianApproval
@@ -716,7 +827,7 @@ AND ${contractWhereClause}
                 requiresManagerApproval || !!term.guardianApproval || result.hadGuardianApproval;
             const approved =
                 !!approval &&
-                approval.contractUpdatedAt === contract.updatedAt &&
+                approval.contractUpdatedAt === acceptedVersion.createdAt &&
                 managers.some(
                     manager =>
                         manager.profileId === approval.guardianProfileId &&
@@ -728,10 +839,12 @@ AND ${contractWhereClause}
             records.push({
                 date: result.date,
                 ...(result.createdAt ? { createdAt: result.createdAt } : {}),
-                contractUpdatedAt: contract.updatedAt,
-                ...(contract.expiresAt?.trim() ? { contractExpiresAt: contract.expiresAt } : {}),
-                ...(contract.reasonForAccessing !== undefined
-                    ? { reasonForAccessing: contract.reasonForAccessing }
+                contractUpdatedAt: acceptedVersion.createdAt,
+                ...(acceptedVersion.expiresAt?.trim()
+                    ? { contractExpiresAt: acceptedVersion.expiresAt }
+                    : {}),
+                ...(acceptedVersion.reasonForAccessing !== undefined
+                    ? { reasonForAccessing: acceptedVersion.reasonForAccessing }
                     : {}),
                 guardian: { required, approved, ...(approval ? { approval } : {}) },
                 contractUri: constructUri('contract', contract.id, domain),

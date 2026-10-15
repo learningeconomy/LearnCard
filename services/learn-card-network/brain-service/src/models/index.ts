@@ -269,6 +269,7 @@ export * from './DidMetadata';
 export * from './SigningAuthority';
 export * from './ConsentFlowTerms';
 export * from './ConsentFlowContract';
+export * from './ConsentFlowContractVersion';
 export * from './ConsentFlowTransaction';
 export * from './ContactMethod';
 export * from './InboxCredential';

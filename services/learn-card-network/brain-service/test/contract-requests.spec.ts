@@ -122,6 +122,46 @@ describe('generic contract requests and correlated events', () => {
         } as unknown as Awaited<ReturnType<typeof learnCardHelpers.getDidWebLearnCard>>);
     };
 
+    it('delivers required-update alert copy without exposing the owner’s private profile fields', async () => {
+        const uri = await create();
+        await accept(uri);
+        await neogma.queryRunner.run(
+            `MATCH (owner:Profile {profileId:$profileId})
+             SET owner.email = 'owner-private@example.com', owner.dob = '1990-01-01',
+                 owner.country = 'US', owner.notificationsWebhook = 'https://owner.example/private-hook'`,
+            { profileId: owner.profileId }
+        );
+        delivered = [];
+        const reason = 'We need transcripts to personalize your progress report.';
+        const result = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    read: {
+                        credentials: {
+                            categories: {
+                                ...normalContract.read.credentials.categories,
+                                Transcript: { required: true },
+                            },
+                        },
+                    },
+                },
+            },
+            reason,
+        });
+        await flush(uri);
+        const notice = delivered.find(
+            notification =>
+                notification.type === 'CONSENT_FLOW_CONTRACT_UPDATED' &&
+                notification.to.profileId === learner.profileId
+        );
+        expect(notice?.message).toEqual({ title: result.preview.headline, body: reason });
+        expect(notice?.from.profileId).toBe(owner.profileId);
+        for (const key of ['email', 'dob', 'country', 'notificationsWebhook']) {
+            expect(notice!.from).not.toHaveProperty(key);
+        }
+    });
+
     it.each(['owner', 'writer', 'recipient'] as const)(
         'allows %s requests without granting writer data access',
         async role => {

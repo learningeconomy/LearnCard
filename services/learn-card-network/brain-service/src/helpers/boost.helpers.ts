@@ -31,7 +31,7 @@ import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
-    createCredentialIssuedViaContractRelationship,
+    createContractCredentialRelationships,
     createListingSentCredentialRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
@@ -109,6 +109,8 @@ export const sendBoost = async ({
     skipNotification = false,
     autoAcceptCredential = false,
     contractTerms,
+    contractWriterProfileId,
+    allowConsumedOneTime = false,
     metadata,
     activityId,
     integrationId,
@@ -122,6 +124,8 @@ export const sendBoost = async ({
     skipNotification?: boolean;
     autoAcceptCredential?: boolean;
     contractTerms?: DbTermsType;
+    contractWriterProfileId?: string;
+    allowConsumedOneTime?: boolean;
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
@@ -154,38 +158,48 @@ export const sendBoost = async ({
                 storeCredential(credential)
             );
 
-            const tasks = [
-                createBoostInstanceOfRelationship(credentialInstance, boost),
-                createSentCredentialRelationship(
-                    from,
-                    to,
-                    credentialInstance,
-                    metadata,
-                    activityId,
-                    integrationId
-                ),
-            ];
-
-            if (listingId) {
-                tasks.push(
-                    createListingSentCredentialRelationship(
+            if (contractTerms) {
+                await traceDb('createRelationships', () =>
+                    createContractCredentialRelationships({
+                        issuer: from,
+                        writerProfileId: contractWriterProfileId ?? fromProfile.profileId,
+                        recipient: to,
+                        credential: credentialInstance,
+                        boost,
+                        terms: contractTerms,
+                        metadata,
+                        activityId,
+                        integrationId,
                         listingId,
+                        allowConsumedOneTime,
+                    })
+                );
+            } else {
+                const tasks = [
+                    createBoostInstanceOfRelationship(credentialInstance, boost),
+                    createSentCredentialRelationship(
+                        from,
                         to,
                         credentialInstance,
                         metadata,
                         activityId,
                         integrationId
-                    )
-                );
+                    ),
+                ];
+                if (listingId) {
+                    tasks.push(
+                        createListingSentCredentialRelationship(
+                            listingId,
+                            to,
+                            credentialInstance,
+                            metadata,
+                            activityId,
+                            integrationId
+                        )
+                    );
+                }
+                await traceDb('createRelationships', () => Promise.all(tasks));
             }
-
-            if (contractTerms) {
-                tasks.push(
-                    createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
-                );
-            }
-
-            await traceDb('createRelationships', () => Promise.all(tasks));
 
             if (autoAcceptCredential) {
                 await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {

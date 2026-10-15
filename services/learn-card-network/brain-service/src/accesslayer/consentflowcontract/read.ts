@@ -4,20 +4,37 @@ import { QueryBuilder, BindParam } from 'neogma';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { ConsentFlowContract, ConsentFlowInstance, Profile } from '@models';
 import { DbContractType } from 'types/consentflowcontract';
+import { ConsentFlowContractDetailsValidator } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
 import type { ContractRequestFields } from '@learncard/types';
 import { ProfileType } from 'types/profile';
 
 export const getContractById = async (id: string): Promise<DbContractType | null> => {
-    return inflateObject<DbContractType>(
-        (
-            await new QueryBuilder()
-                .match({ model: ConsentFlowContract, where: { id }, identifier: 'contract' })
-                .return('contract')
-                .limit(1)
-                .run()
-        ).records[0]?.toObject().contract.properties
+    const result = await neogma.queryRunner.run(
+        `MATCH (contract:ConsentFlowContract {id:$id})
+         OPTIONAL MATCH (contract)-[:HAS_VERSION]->(version:ConsentFlowContractVersion)
+         WITH contract, version ORDER BY version.version DESC
+         WITH contract, collect(version)[0] AS latest
+         RETURN properties(contract) AS contract, properties(latest) AS latest`,
+        { id }
     );
+    const record = result.records[0];
+    if (!record) return null;
+    const contract = inflateObject<DbContractType>(record.get('contract'));
+    const contractProperties = contract as unknown as Record<string, unknown>;
+    if (typeof contractProperties.latestUpdate === 'string') {
+        try {
+            contract.latestUpdate = ConsentFlowContractDetailsValidator.shape.latestUpdate.parse(
+                JSON.parse(contractProperties.latestUpdate)
+            );
+        } catch {
+            delete contract.latestUpdate;
+        }
+    }
+    const latest = record.get('latest') as Record<string, unknown> | null;
+    contract.currentVersion = Number(contract.currentVersion ?? latest?.version ?? 1);
+    contract.version = Number(latest?.version ?? contract.currentVersion);
+    return contract;
 };
 
 export const getContractByUri = async (uri: string): Promise<DbContractType | null> => {
