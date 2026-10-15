@@ -1,3 +1,4 @@
+import { RecipientPreviewControls } from './spreadsheet/RecipientPreviewControls';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UnsignedVC } from '@learncard/types';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -1005,33 +1006,11 @@ const IssueCredentialPage: React.FC = () => {
         ),
         previewControls:
             recipientMode === 'people' && recipients.length > 0 ? (
-                <div className="flex items-center justify-between gap-2 mb-3 font-poppins">
-                    <button
-                        type="button"
-                        aria-label={m['issueFlow.sheet.previous']()}
-                        disabled={roster.previewIndex === 0}
-                        onClick={() => roster.setPreviewIndex(index => index - 1)}
-                        className="py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 disabled:opacity-40"
-                    >
-                        ‹
-                    </button>
-                    <span className="text-xs text-grayscale-700 text-center">
-                        {m['issueFlow.sheet.previewPosition']({
-                            name: roster.previewLabel,
-                            index: Math.min(roster.previewIndex + 1, recipients.length),
-                            total: recipients.length,
-                        })}
-                    </span>
-                    <button
-                        type="button"
-                        aria-label={m['issueFlow.sheet.next']()}
-                        disabled={roster.previewIndex >= recipients.length - 1}
-                        onClick={() => roster.setPreviewIndex(index => index + 1)}
-                        className="py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 disabled:opacity-40"
-                    >
-                        ›
-                    </button>
-                </div>
+                <RecipientPreviewControls
+                    recipients={recipients}
+                    index={roster.previewIndex}
+                    onChange={roster.setPreviewIndex}
+                />
             ) : null,
     };
 
