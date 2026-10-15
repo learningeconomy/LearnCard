@@ -91,6 +91,16 @@ const blank = (row: SpreadsheetCell[]): boolean => row.every(cell => !cell.text.
 const headerWords =
     /^(email|emailaddress|studentemail|recipientemail|recipient|name|fullname|firstname|lastname|score|grade|hours|credits|evidence|portfolio)$/;
 
+const isCanvasHeader = (row: SpreadsheetCell[]): boolean => {
+    const labels = new Set(row.map(cell => normalizeColumn(cell.text)));
+    return (
+        labels.has('id') &&
+        labels.has('section') &&
+        (labels.has('student') || (labels.has('firstname') && labels.has('lastname'))) &&
+        [...labels].some(label => /^sis.*id$/.test(label))
+    );
+};
+
 export const parseSpreadsheet = (
     source: SpreadsheetSource,
     options: { sheetName?: string; emailColumn?: number; headerRow?: number } = {}
@@ -122,6 +132,7 @@ export const parseSpreadsheet = (
     const inferredHeader = lastIndex(
         matrix.slice(0, firstEmailRow < 0 ? 25 : firstEmailRow),
         row =>
+            isCanvasHeader(row) ||
             row.filter(cell => headerWords.test(normalizeColumn(cell.text))).length >= 2 ||
             (emailColumn !== undefined &&
                 /^(email|emailaddress|studentemail|recipientemail|recipient)$/.test(
@@ -137,7 +148,14 @@ export const parseSpreadsheet = (
     }));
     const named = (name: string): number =>
         columns.findIndex(column => normalizeColumn(column.label) === normalizeColumn(name));
-    const fullName = ['recipient name', 'name', 'full name', 'display name', 'student name']
+    const fullName = [
+        'recipient name',
+        'name',
+        'full name',
+        'display name',
+        'student name',
+        'student',
+    ]
         .map(named)
         .find(i => i >= 0);
     const firstName = ['first name', 'first'].map(named).find(i => i >= 0);
@@ -154,6 +172,11 @@ export const parseSpreadsheet = (
             const row = matrix[index]!;
             if (
                 blank(row) ||
+                (header &&
+                    isCanvasHeader(header) &&
+                    index === (headerRow ?? -1) + 1 &&
+                    /^points possible$/i.test(row[0]?.text.trim() ?? '') &&
+                    !isValidRosterEmail(row[emailColumn]?.text ?? '')) ||
                 (index === lastNonblank &&
                     !isValidRosterEmail(row[emailColumn]?.text ?? '') &&
                     row.some(cell => /^totals?$/i.test(cell.text.trim())))

@@ -8935,7 +8935,7 @@
         "addByHint": "Add by name, @username, or email",
         "linkOnIssue": "We'll create a shareable link when you issue.",
         "alreadyHave": "Already have something?",
-        "startFromLink": "Start from a link, file, or ID",
+        "startFromLink": "Start from a link, file, or spreadsheet",
         "sendExisting": "Send one you've made",
         "startFromSomething": "Start from something",
         "importIntro": "Paste a link, credential data, or spreadsheet rows, or upload a JSON, CSV, TSV, or XLSX file.",
