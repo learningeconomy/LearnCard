@@ -21,10 +21,10 @@ import {
     effectiveRowValues,
     getRowProblems,
     mergeSpreadsheet,
-    exportRosterCsv,
     downloadRosterCsv,
     type ColumnScopes,
 } from './roster';
+import { exportIssuanceCsv } from './exportIssuance';
 import { executeIssuance, canRemoveIssuanceRow, canReplaceIssuanceRecipients } from './issuance';
 import {
     listIssuanceRuns,
@@ -83,6 +83,9 @@ export const useIssueRoster = (options: RosterOptions) => {
     runRef.current = run;
     const [recoverable, setRecoverable] = useState<IssuanceRun | null>(null);
     const [busy, setBusy] = useState(false);
+    const executing = useRef(false);
+    const draftSaveTimer = useRef<ReturnType<typeof setTimeout>>();
+    const pendingDraftSaves = useRef(new Set<Promise<void>>());
     const [error, setError] = useState('');
     const [pastedText, setPastedText] = useState('');
     const [previewIndex, setPreviewIndex] = useState(0);
@@ -241,7 +244,7 @@ export const useIssueRoster = (options: RosterOptions) => {
             attempts: base?.attempts ?? [],
         };
     };
-    const saveDraft = async (saved: IssuanceRun): Promise<void> => {
+    const persistDraft = async (saved: IssuanceRun): Promise<void> => {
         if (issuanceScopeKey(saved.scope) !== issuanceScopeKey(currentScope()))
             throw new IssuanceRecoveryError('context');
         if (!navigator.locks) throw new IssuanceRecoveryError('storage');
@@ -264,13 +267,24 @@ export const useIssueRoster = (options: RosterOptions) => {
             runRef.current = saved;
         }
     };
+    const saveDraft = (saved: IssuanceRun): Promise<void> => {
+        const saving = persistDraft(saved);
+        pendingDraftSaves.current.add(saving);
+        void saving.then(
+            () => pendingDraftSaves.current.delete(saving),
+            () => pendingDraftSaves.current.delete(saving)
+        );
+        return saving;
+    };
     useEffect(() => {
         if (busy || !scope.issuer || !options.template || !options.recipients.length) return;
         const timer = setTimeout(() => {
+            if (executing.current) return;
             void saveDraft(capture()).catch(reason => {
                 if (mounted.current) setError(spreadsheetErrorMessage(reason));
             });
         }, 600);
+        draftSaveTimer.current = timer;
         return () => clearTimeout(timer);
     }, [
         id,
@@ -290,30 +304,8 @@ export const useIssueRoster = (options: RosterOptions) => {
     const download = async (failuresOnly = false): Promise<void> => {
         const saved = capture();
         if (saved.draft.recipients.length) await saveDraft(saved);
-        const failures = failuresOnly
-            ? Object.fromEntries(
-                  Object.entries(saved.outcomes)
-                      .filter(([, value]) => value.state === 'failed')
-                      .map(([rowId, value]) => [
-                          rowId,
-                          getFriendlyIssueError({ message: value.error?.message }, 'people')
-                              .message,
-                      ])
-              )
-            : undefined;
         downloadRosterCsv(
-            exportRosterCsv(
-                {
-                    ...saved.draft,
-                    values: Object.fromEntries(
-                        saved.draft.recipients.map(row => [recipientKey(row), valuesForRow(row)])
-                    ),
-                },
-                options.variables,
-                Object.fromEntries(options.variables.map(name => [name, 'perRecipient' as const])),
-                {},
-                failures
-            ),
+            exportIssuanceCsv(saved, options.variables, failuresOnly),
             failuresOnly ? 'people-to-retry.csv' : 'credential-recipients.csv'
         );
     };
@@ -398,11 +390,16 @@ export const useIssueRoster = (options: RosterOptions) => {
         }
     };
     const execute = async (retryFailed = false, restore?: IssuanceRun): Promise<void> => {
-        if (busy) return;
+        if (busy || executing.current) return;
+        executing.current = true;
+        clearTimeout(draftSaveTimer.current);
         setBusy(true);
         setError('');
         abort.current = new AbortController();
         try {
+            // Finish this tab's autosave before capturing its revision. Other tabs
+            // still fail the controller's lock/revision checks rather than overwrite it.
+            await Promise.all([...pendingDraftSaves.current]);
             const saved = restore ?? capture();
             if (restore) apply(restore);
             const variables = extractVariablesByType(saved.template).dynamic;
@@ -501,6 +498,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                         : getFriendlyIssueError(reason, 'people').message
                 );
         } finally {
+            executing.current = false;
             if (mounted.current) setBusy(false);
         }
     };
