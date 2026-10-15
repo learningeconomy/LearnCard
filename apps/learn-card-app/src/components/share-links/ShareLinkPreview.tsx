@@ -7,6 +7,7 @@ import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import type { SharePayload, VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { credentialText, type ProofState } from './shareLinkFlow';
+import { getCredentialName } from 'learn-card-base/helpers/credentialHelpers';
 
 /**
  * Display-only projection of the exact manifest that will be encrypted and
@@ -210,7 +211,9 @@ export const ShareLinkPreview = ({
                             <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
                                 <h2 className="break-words text-lg font-semibold text-grayscale-900">
-                                    {text.name || m['shareLinks.credential']()}
+                                    {getCredentialName(credential) ||
+                                        text.name ||
+                                        m['shareLinks.credential']()}
                                 </h2>
                                 <ShareCredentialMetadata credential={credential} />
                             </div>
