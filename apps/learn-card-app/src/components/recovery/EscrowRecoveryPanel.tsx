@@ -10,6 +10,7 @@ import {
 import type { KeyDerivationStrategy } from '@learncard/types';
 import {
     EscrowHoldRestartThrottledError,
+    type EscrowRecoveryExpectations,
     type EscrowRecoveryStart,
 } from '@learncard/sss-key-manager';
 import { escrowPinMismatchMessage } from '@learncard/types';
@@ -46,18 +47,26 @@ export interface EscrowRecoveryPanelProps {
     onStatus: (proof: {
         holdId: string;
         resumeToken: string;
+        /** Retained from the hold's start response; required for a Nitro hold. */
+        expectations?: EscrowRecoveryExpectations;
     }) => ReturnType<NonNullable<KeyDerivationStrategy['getEscrowRecoveryStatus']>>;
     onRecover: (
         input:
             | (Omit<PendingEscrowRecovery, 'releaseAfter'> & { method: 'escrow' })
             | { method: 'escrow-pin'; pin: string }
     ) => Promise<void>;
-    /** Only meaningful when a hold's status reports `requiresConfirmation: true`. */
+    /**
+     * Only meaningful when a hold's status reports `requiresConfirmation: true`.
+     * An optional `releaseAfter` is an immediate hint; the panel always
+     * follows up with an authoritative status fetch regardless.
+     */
     onConfirmCode: (params: {
         holdId: string;
         resumeToken: string;
         code: string;
-    }) => Promise<{ success: true }>;
+        /** Retained from the hold's start response; required for a Nitro hold. */
+        expectations?: EscrowRecoveryExpectations;
+    }) => Promise<{ success: true; releaseAfter?: string }>;
     onResendCode: (params: { holdId: string; resumeToken: string }) => Promise<{ success: true }>;
 }
 
@@ -121,6 +130,7 @@ export const EscrowRecoveryPanel = ({
             releaseAfter: result.releaseAfter,
             requestedAt: result.requestedAt,
             requiresConfirmation: result.requiresConfirmation,
+            expectations: result.expectations,
         };
         if (active.current) {
             setPending(record);
@@ -157,11 +167,24 @@ export const EscrowRecoveryPanel = ({
         setLoaded(false);
         loadPendingEscrowRecovery(scope)
             .then(value => {
-                if (!cancelled) {
-                    setPending(value);
+                if (cancelled) return;
+                // A hold awaiting email confirmation only ever comes from
+                // authority (Nitro) mode, which always returns `expectations`
+                // alongside it (see EscrowRecoveryStart) -- status/confirm calls
+                // cannot prove this client started the hold without them. A
+                // record missing them predates this requirement and can never
+                // be completed: drop it and let the start view take over,
+                // rather than reconstructing bindings from a status response.
+                if (value?.requiresConfirmation !== undefined && !value.expectations) {
+                    setPending(undefined);
                     setLoaded(true);
-                    setError('');
+                    setError('This recovery request is no longer valid. Start a new one.');
+                    void clearPendingEscrowRecovery(value.holdId, scope).catch(() => {});
+                    return;
                 }
+                setPending(value);
+                setLoaded(true);
+                setError('');
             })
             .catch(() => {
                 if (!cancelled) setError('Recovery details could not be loaded. Please try again.');
@@ -178,7 +201,9 @@ export const EscrowRecoveryPanel = ({
     // EscrowHold.ts's `computeEffectiveReleaseAfter`) or move earlier (hold
     // confirmation replaces the creation-time estimate) — both callers below
     // must adopt the server's current value instead of keeping the one
-    // captured when the hold was started.
+    // captured when the hold was started. `hold` is a status response and
+    // never carries `expectations`, so spreading `...pending` below always
+    // preserves the initiating-client bindings captured at start.
     const refreshHoldStatus = async (
         hold: { confirmed?: boolean; releaseAfter?: string } | null | undefined
     ): Promise<void> => {
@@ -205,7 +230,11 @@ export const EscrowRecoveryPanel = ({
     useEffect(() => {
         if (!pending?.requiresConfirmation) return;
         let cancelled = false;
-        onStatus({ holdId: pending.holdId, resumeToken: pending.resumeToken })
+        onStatus({
+            holdId: pending.holdId,
+            resumeToken: pending.resumeToken,
+            expectations: pending.expectations,
+        })
             .then(hold => {
                 if (!cancelled) void refreshHoldStatus(hold);
             })
@@ -282,9 +311,18 @@ export const EscrowRecoveryPanel = ({
             {text}
         </span>
     );
-    const checkStatus = async (): Promise<boolean> => {
-        if (!pending) return false;
-        const hold = await onStatus({ holdId: pending.holdId, resumeToken: pending.resumeToken });
+    // [P2] `ok` mirrors the old boolean (hold still valid / UI should keep
+    // showing it); `ready` is the *refreshed* availability. Restore must gate
+    // on the `hold` object's own releaseAfter here rather than re-read
+    // `pending` after this resolves: `refreshHoldStatus`'s `setPending` is a
+    // separate state update that hasn't flushed into this closure yet.
+    const checkStatus = async (): Promise<{ ok: boolean; ready: boolean }> => {
+        if (!pending) return { ok: false, ready: false };
+        const hold = await onStatus({
+            holdId: pending.holdId,
+            resumeToken: pending.resumeToken,
+            expectations: pending.expectations,
+        });
         if (
             !hold ||
             hold.status === 'cancelled' ||
@@ -300,10 +338,14 @@ export const EscrowRecoveryPanel = ({
                       ? 'This recovery request has already finished. Start a new one.'
                       : 'This recovery request expired. Start a new one.'
             );
-            return false;
+            return { ok: false, ready: false };
         }
         await refreshHoldStatus(hold);
-        return true;
+        const effectiveReleaseAfter =
+            hold.releaseAfter && !Number.isNaN(Date.parse(hold.releaseAfter))
+                ? hold.releaseAfter
+                : pending.releaseAfter;
+        return { ok: true, ready: Date.parse(effectiveReleaseAfter) <= Date.now() };
     };
 
     const handleConfirmCode = async (code: string) => {
@@ -311,9 +353,27 @@ export const EscrowRecoveryPanel = ({
         setConfirming(true);
         setCodeError('');
         try {
-            await onConfirmCode({ holdId: pending.holdId, resumeToken: pending.resumeToken, code });
+            const result = await onConfirmCode({
+                holdId: pending.holdId,
+                resumeToken: pending.resumeToken,
+                code,
+                expectations: pending.expectations,
+            });
             setConfirmed(true);
             setCodeInput('');
+            // [P2] Confirmation recomputes the deadline server-side, but the
+            // load effect above only re-runs when `holdId` changes (it never
+            // does here), so without this a delayed confirmation would keep
+            // showing the creation-time countdown until a manual "Check
+            // status" click or a remount. Adopt an immediate value if the
+            // confirm response carries one, then treat a status refresh as
+            // authoritative -- best-effort (like the load effect above), so
+            // a transient refresh failure doesn't surface as a confirmation
+            // error the user can't act on.
+            if (result.releaseAfter) {
+                await refreshHoldStatus({ confirmed: true, releaseAfter: result.releaseAfter });
+            }
+            await checkStatus().catch(() => {});
         } catch {
             setCodeError(m['recovery.confirmCode.error']());
             setCodeInput('');
@@ -648,7 +708,13 @@ export const EscrowRecoveryPanel = ({
                                               disabled={loading}
                                               onClick={() =>
                                                   void run(async () => {
-                                                      if (!(await checkStatus())) return;
+                                                      // [P2] Gate on the freshly refreshed
+                                                      // availability, not the pre-click one:
+                                                      // confirmation or a release-warning send
+                                                      // can push releaseAfter into the future
+                                                      // between render and this click.
+                                                      const { ok, ready } = await checkStatus();
+                                                      if (!ok || !ready) return;
                                                       setFinishing(true);
                                                       try {
                                                           await onRecover({
@@ -657,6 +723,7 @@ export const EscrowRecoveryPanel = ({
                                                               resumeToken: pending.resumeToken,
                                                               clientEphemeralPrivateKey:
                                                                   pending.clientEphemeralPrivateKey,
+                                                              expectations: pending.expectations,
                                                           });
                                                       } finally {
                                                           setFinishing(false);
@@ -692,8 +759,8 @@ export const EscrowRecoveryPanel = ({
                                       disabled={loading}
                                       onClick={() =>
                                           void run(async () => {
-                                              if (await checkStatus())
-                                                  setNotice('Your request is on track.');
+                                              const { ok } = await checkStatus();
+                                              if (ok) setNotice('Your request is on track.');
                                           })
                                       }
                                   >

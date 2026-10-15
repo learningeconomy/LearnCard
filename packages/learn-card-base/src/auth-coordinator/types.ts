@@ -32,6 +32,7 @@ export type {
     EscrowEnrollmentState,
     EscrowEnrollmentOptions,
     EscrowPinStatus,
+    EscrowRecoveryExpectations,
 } from '@learncard/types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---
@@ -80,6 +81,13 @@ export type UnifiedAuthState =
           recoveryReason: RecoveryReason;
           maskedRecoveryEmail?: string | null;
           sssActivationState?: SssActivationState | null;
+          /**
+           * The account's DID as independently known from the server key-status
+           * lookup (never from an escrow status response). Required by Nitro
+           * escrow recovery (hold start and PIN release) to bind the request to
+           * this account; see `EscrowRecoveryExpectations`.
+           */
+          expectedDid?: string;
       }
     | {
           status: 'identity_recovery';

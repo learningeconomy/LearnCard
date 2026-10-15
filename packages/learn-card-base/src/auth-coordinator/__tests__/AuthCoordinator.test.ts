@@ -577,7 +577,9 @@ describe('AuthCoordinator', () => {
             expect(executeRecovery).toHaveBeenCalledWith({
                 token: 'mock-token',
                 providerType: 'firebase',
-                input,
+                // The DID independently known from needs_recovery fills in for
+                // PIN release, which has no persisted hold of its own to carry it.
+                input: { ...input, expectedDid: 'did:key:z123' },
                 didFromPrivateKey: expect.any(Function),
             });
         });
@@ -888,10 +890,60 @@ describe('AuthCoordinator', () => {
                 expect(startEscrowRecovery).toHaveBeenCalledWith({
                     token: 'mock-token',
                     providerType: 'firebase',
+                    // Independently known from the key-status lookup in initialize(),
+                    // not from any escrow response.
+                    expectedDid: 'did:key:z123',
                     options,
                 });
             }
         );
+        // The hold-start response's `expectations` (initiating-client bindings,
+        // persisted by the app alongside the resume token) are opaque to the
+        // coordinator -- it must pass them through to the strategy unchanged
+        // rather than deriving or stripping anything.
+        it('forwards expectations unchanged to getEscrowRecoveryStatus and confirmEscrowRecovery', async () => {
+            const expectations = {
+                tenant: 'learncard',
+                did: 'did:key:z123',
+                holdId: 'hold',
+                clientEphemeralPublicKey: 'ephemeral-pub',
+                blobHash: 'blob-hash',
+                authorityGeneration: 'generation-1',
+                holdDigest: 'hold-digest',
+                ledgerPublicKey: 'ledger-pub',
+                keyId: 'key-1',
+            };
+            const getEscrowRecoveryStatus = vi.fn().mockResolvedValue(null);
+            const confirmEscrowRecovery = vi.fn().mockResolvedValue({ success: true });
+            const { coordinator } = setup({
+                keyDerivation: { getEscrowRecoveryStatus, confirmEscrowRecovery },
+            });
+            await coordinator.initialize();
+
+            await coordinator.getEscrowRecoveryStatus({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                expectations,
+            });
+            expect(getEscrowRecoveryStatus).toHaveBeenCalledWith({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                expectations,
+            });
+
+            await coordinator.confirmEscrowRecovery({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                code: '12345678',
+                expectations,
+            });
+            expect(confirmEscrowRecovery).toHaveBeenCalledWith({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                code: '12345678',
+                expectations,
+            });
+        });
     });
     describe('initial state', () => {
         it('starts in idle state', () => {
@@ -1338,6 +1390,9 @@ describe('AuthCoordinator', () => {
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryMethods).toEqual(recoveryMethods);
                 expect(result.recoveryReason).toBe('new_device');
+                // Independently known from this key-status lookup -- required by
+                // Nitro escrow recovery (startEscrowRecovery, PIN release).
+                expect(result.expectedDid).toBe('did:key:z123');
             }
         });
 
@@ -1361,6 +1416,7 @@ describe('AuthCoordinator', () => {
 
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryReason).toBe('missing_server_data');
+                expect(result.expectedDid).toBe('did:key:z123');
             }
         });
 
@@ -1485,6 +1541,7 @@ describe('AuthCoordinator', () => {
 
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryReason).toBe('stale_local_key');
+                expect(result.expectedDid).toBe('did:key:zExpected');
             }
         });
 
@@ -2124,6 +2181,10 @@ describe('AuthCoordinator', () => {
             if (result.status === 'error') {
                 expect(result.error).toBe('No auth share found on server');
                 expect(result.previousState?.status).toBe('needs_recovery');
+                // retry() restores this previousState -- a cleared expectedDid
+                // would permanently strand Nitro escrow recovery after one
+                // unrelated failed attempt.
+                expect(result.previousState).toMatchObject({ expectedDid: 'did:key:z123' });
             }
         });
     });
