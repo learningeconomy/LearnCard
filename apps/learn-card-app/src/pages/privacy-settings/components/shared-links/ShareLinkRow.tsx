@@ -102,8 +102,9 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
             )}
             <IonIcon
                 icon={chevronForward}
+                onClick={() => onOpen(share)}
                 aria-hidden="true"
-                className="shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
+                className="shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5 cursor-pointer"
             />
         </li>
     );
