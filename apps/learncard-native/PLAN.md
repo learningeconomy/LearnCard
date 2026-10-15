@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Fork development — October 15
+
+Publish the experiment to `goblincore/LearnCard2` on `codex/vesper-73`, keeping original LearnCard backend services and local configuration. Fork `main` follows upstream with non-destructive fast-forward sync. Keep the current native feature history; integrating newer upstream SDK/backend contracts is a separate reviewed and tested change. Reuse the current worktree and branch-specific fork push destination so unrelated upstream development is unaffected. See [fork operations and CI](FORK_WORKFLOW.md).
+
 ## Mockup fidelity and richer optional details — October 15
 
 The creator now includes the approved plane/rays/card marks, integrated artwork/title preview, connected step indicator and side-by-side recipient choices. Format and Category use custom illustrated bottom selection sheets; the iOS confirmation-dialog bubble was explicitly rejected. More details now carries criteria links, supporting evidence, study/role/term, activity dates and expiry into the real signed credential, with portable dates and stable retry matching. See [web-field mapping](CREDENTIAL_BUILDER.md) and [refined native screenshots](design/CREDENTIAL_BUILDER_BRIEF.md).

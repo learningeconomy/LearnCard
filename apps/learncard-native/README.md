@@ -2,6 +2,8 @@
 
 An independent personal credential app: SwiftUI on iOS first, Kotlin and Jetpack Compose on Android after the credential and account contracts are proven. It focuses on collecting, receiving, creating, claiming, sending, and sharing credentials. The user approved fully native clients on October 12, 2026.
 
+**Development home:** [goblincore/LearnCard2](https://github.com/goblincore/LearnCard2/tree/codex/vesper-73), branch `codex/vesper-73`. Native pushes go to the fork; the original monorepo supplies upstream updates and the existing staging services. See [fork workflow](FORK_WORKFLOW.md) for branch defaults, sync, CI and local configuration.
+
 **Current handoff:** [STATUS.md](STATUS.md) records the review build, validation, manual review areas and remaining scope. Native Families and default Colorful theme/motion refinement are the current slice. The October 14 review keeps neutral page backgrounds and introduces a [drawn shell, compact lists and illustrated search](design/DRAWN_SHELL_BRIEF.md), with a shared header on all tabs and gentle automatic detail-card motion. See [FAMILIES_INTEGRATION.md](FAMILIES_INTEGRATION.md) for supported flows and child-account follow-ups.
 
 The default app now connects to the approved staging test account through native Firebase email-code sign-in, the existing SSS recovery flow, and device-bound Keychain storage. Existing-account recovery, profile loading, the first 30 encrypted collection records, incoming offers, and relaunch have been confirmed live. See [account integration](ACCOUNT_INTEGRATION.md) for evidence and remaining cases.

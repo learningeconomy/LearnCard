@@ -2,7 +2,7 @@
 
 Current configured suite: **285 cases** (114 Bun, 106 Swift, 65 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
 
-The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
+The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Current native development publishes to [goblincore/LearnCard2](https://github.com/goblincore/LearnCard2/actions?query=branch%3Acodex%2Fvesper-73); use explicit `--repo goblincore/LearnCard2` for GitHub CLI checks. The last upstream creator run was cancelled, rather than passed. See [fork workflow](FORK_WORKFLOW.md). Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
 The same suite can run locally:
 
