@@ -90,6 +90,8 @@ Credential **detail** has one isolated card with a gentle automatic 9-second loo
 
 Collection’s recent stack is deliberate browsing: up to five actual records, a horizontal toss/settlement, contrasting covered sleeves, position dots and bounded Newer/Older controls. Keep vertical scrolling intact and tap navigation tied to the active record. At most two covered layers are visible; one-record categories have no fake stack. Reduce Motion changes position immediately. This replaces ambient featured-card drift; the detail animation remains independent. See [the recent-stack contract](../RECENT_STACK.md).
 
+Account transitions are the expressive exception to quiet in-app motion. Launch, reconnect, locked and account-operation waiting states use the original watercolor mosaic assembling in roughly 1.9 seconds, then small held stop-motion shifts in each tile, with colored pigment floating on broader smooth paths at the canvas edges. The neutral canvas and clear central copy remain. Use a paused, fully formed mark for Reduce Motion/VoiceOver and never hold real readiness for a splash animation. No percent progress without real progress data. Inline buttons and list refreshes keep compact contextual feedback; do not replay the full launch sequence on every action. See [motion contracts](../ACCOUNT_MOTION.md) and [the generated board/prompts](ACCOUNT_MOTION_BRIEF.md).
+
 ## Content and states
 
 - Name the next action: Review Inbox, Create a credential, See all. Give destructive actions distinct styling and confirmation.

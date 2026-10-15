@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **263 cases** (110 Bun, 95 Swift, 58 simulator), plus one intentionally skipped live exchange. Recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
+Current configured suite: **273 cases** (110 Bun, 102 Swift, 61 simulator), plus one intentionally skipped live exchange. Account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
 
 The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -11,6 +11,16 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Account motion — October 15
+
+The first motion pass passed all **100 Swift** cases (`artifacts/account-motion-core.log`: 75 XCTest and 25 Swift Testing). Four new motion-domain cases cover gathering/settlement, stable Reduce Motion, offscreen/inactive/VoiceOver gating and finite transforms. A new SDK case verifies the 15 localized transition strings in four languages. Account-runtime/Bun source is unchanged from the preceding passing 110-case photo run; no new Bun suite run is claimed here.
+
+All **nine unique focused simulator** cases passed (`account-motion-ui-final.xcresult`): three new motion cases, all five existing account lifecycle cases and the pending-code recovery/background claim case. The three motion cases check actual pixel changes, a still Reduce Motion mark in dark appearance, and Arabic accessibility Continue geometry. The finish pass (`account-motion-finish-ui.xcresult`) passed the same three visual cases and pending-claim case after adding the watercolor material and stable caption spacing. Palette refinement passed all three motion cases in `account-motion-color-ui.xcresult`, and the final native-texture-only artwork passed them in `account-motion-pigment-ui.xcresult`. The user then requested continuing stop-motion life and broader floating paths after assembly; the final stop-motion pass passed all **102 Swift** cases (`account-motion-stop-core.log`: 77 XCTest and 25 Swift Testing) and all three current motion UI cases (`account-motion-stop-ui.xcresult`). New checks require held poses within each frame, differing later poses, bounded jitter, visible background travel outside the copy, actual settled-logo pixel changes and actual background-region pixel changes. This is targeted verification, not a full local 273-case run.
+
+The first motion app build failed before running tests because a large SwiftUI result builder obscured an unsupported modifier. Splitting the scene into a focused view helper and using supported accessibility traits resolved it (`account-motion-ui.log`). Final appearance checks use the stronger, user-requested Colorful palette and lighter pigment overlay. Screenshots and a ten-second native recording are in `artifacts/`; they use DEBUG previews/disposable fixtures, never a real-account mutation.
+
+Physical-device energy/frame pacing, cold-launch OS imagery and a human VoiceOver review remain manual gates. See [motion contracts](ACCOUNT_MOTION.md).
 
 ## Profile photo editing — October 15
 

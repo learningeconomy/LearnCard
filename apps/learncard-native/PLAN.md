@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Expressive account transitions — October 15
+
+Replace the spinner/form startup with native watercolor blocks assembling into the LearnCard mosaic and quiet edge drift. The surface covers launch, reconnect, lock and account operations; readiness and authentication remain authoritative. Preserve accessible calm variants and normal neutral app pages. See [motion contracts](ACCOUNT_MOTION.md) and [storyboard/prompts](design/ACCOUNT_MOTION_BRIEF.md).
+
 ## Profile photo editing — October 15
 
 Account → Edit profile now includes native photo selection, local preview, replacement and removal. Saving uses the existing public image provider and LearnCard profile field; name/bio-only saves preserve the current picture. Retry and background/sign-out races are covered without mutating the real review account. See [draft, upload and lifecycle contracts](PROFILE_PHOTOS.md).
