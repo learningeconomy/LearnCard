@@ -61,13 +61,20 @@ installPathwaysDevGlobals();
 import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
-import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import { FeedbackProvider } from './feedback/reporting';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+import type { LearnCardAppEnvironment } from './config/buildEnvironment';
+
+declare const __APP_BUILD_ENV__: LearnCardAppEnvironment;
 
 const log = getLogger('cache');
+
+const DevDebugPanel =
+    __APP_BUILD_ENV__.DEV || __APP_BUILD_ENV__.VITE_ENABLE_AUTH_DEBUG_WIDGET
+        ? React.lazy(() => import('./components/debug/DevDebugPanel'))
+        : null;
 
 const history = createBrowserHistory();
 
@@ -370,7 +377,11 @@ const FullApp: React.FC = () => {
                                             />
                                         )}
 
-                                        <DevDebugPanel />
+                                        {DevDebugPanel && (
+                                            <Suspense fallback={null}>
+                                                <DevDebugPanel />
+                                            </Suspense>
+                                        )}
                                     </IonApp>
                                 </ModalsProvider>
                             </ExternalAuthServiceProvider>

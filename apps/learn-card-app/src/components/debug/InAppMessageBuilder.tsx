@@ -26,77 +26,18 @@ import {
     IN_APP_MESSAGE_TEMPLATE_CATEGORIES,
 } from './inAppMessageTemplates';
 
-type BuilderActionType = 'internalLink' | 'externalLink' | 'appStore' | 'capgoUpdate' | 'dismiss';
-
-interface BuilderAction {
-    label: string;
-    style: 'primary' | 'secondary' | 'positive' | 'dismiss';
-    type: BuilderActionType;
-    path: string;
-    url: string;
-}
-
-type BuilderConditionKind = 'platform' | 'role' | 'version';
-
-interface BuilderCondition {
-    kind: BuilderConditionKind;
-    platforms: string;
-    roles: string;
-    source: 'native' | 'web' | 'capgo';
-    op: 'lt' | 'lte' | 'eq' | 'gte' | 'gt';
-    value: string;
-}
-
-interface BuilderState {
-    id: string;
-    title: string;
-    body: string;
-    presentation: 'modal' | 'banner' | 'toast';
-    frequency: 'once' | 'session' | 'always' | 'everyDays';
-    everyDays: string;
-    priority: string;
-    dismissible: boolean;
-    mediaType: '' | 'youtube' | 'image' | 'gif';
-    mediaUrl: string;
-    emoji: string;
-    combinator: 'all' | 'any';
-    conditions: BuilderCondition[];
-    actions: BuilderAction[];
-}
-
-const emptyCondition = (): BuilderCondition => ({
-    kind: 'platform',
-    platforms: 'ios, android',
-    roles: 'learner',
-    source: 'native',
-    op: 'lt',
-    value: '1.0.0',
-});
-
-const emptyAction = (): BuilderAction => ({
-    label: 'OK',
-    style: 'primary',
-    type: 'dismiss',
-    path: '/',
-    url: 'https://',
-});
-
-const initialState: BuilderState = {
-    id: `message-${new Date().toISOString().slice(0, 10)}`,
-    title: '',
-    body: '',
-    presentation: 'modal',
-    frequency: 'once',
-    everyDays: '3',
-    priority: '0',
-    dismissible: true,
-    mediaType: '',
-    mediaUrl: '',
-    emoji: '',
-    combinator: 'all',
-    conditions: [],
-    actions: [emptyAction()],
-};
+import {
+    buildDraftJson,
+    messageToBuilderState,
+    initialState,
+    emptyAction,
+    emptyCondition,
+    type BuilderState,
+    type BuilderAction,
+    type BuilderActionType,
+    type BuilderCondition,
+    type BuilderConditionKind,
+} from './inAppMessageBuilderState';
 
 const EMOJI_PRESETS = [
     '🎉',
@@ -114,66 +55,6 @@ const EMOJI_PRESETS = [
     '🎓',
     '❤️',
 ] as const;
-
-const csvToList = (csv: string): string[] =>
-    csv
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
-
-const conditionToPredicate = (c: BuilderCondition): Record<string, unknown> | null => {
-    if (c.kind === 'platform') {
-        const platforms = csvToList(c.platforms);
-
-        return platforms.length > 0 ? { platform: platforms } : null;
-    }
-
-    if (c.kind === 'role') {
-        const roles = csvToList(c.roles);
-
-        return roles.length > 0 ? { role: roles } : null;
-    }
-
-    return { version: { source: c.source, op: c.op, value: c.value.trim() } };
-};
-
-const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
-    const predicates = s.conditions
-        .map(conditionToPredicate)
-        .filter((p): p is Record<string, unknown> => p !== null);
-
-    const targeting =
-        predicates.length === 0
-            ? undefined
-            : predicates.length === 1
-            ? predicates[0]
-            : { [s.combinator]: predicates };
-
-    const actions = s.actions.map(a => ({
-        label: a.label,
-        style: a.style,
-        action:
-            a.type === 'internalLink'
-                ? { type: a.type, path: a.path }
-                : a.type === 'externalLink'
-                ? { type: a.type, url: a.url }
-                : { type: a.type },
-    }));
-
-    return {
-        id: s.id,
-        title: s.title,
-        ...(s.body ? { body: s.body } : {}),
-        presentation: s.presentation,
-        frequency: s.frequency === 'everyDays' ? { everyDays: Number(s.everyDays) } : s.frequency,
-        priority: Number(s.priority),
-        dismissible: s.dismissible,
-        ...(s.mediaType && s.mediaUrl ? { media: { type: s.mediaType, url: s.mediaUrl } } : {}),
-        ...(s.emoji.trim() ? { emoji: s.emoji.trim() } : {}),
-        actions,
-        ...(targeting ? { targeting } : {}),
-    };
-};
 
 const fieldInputClass =
     'flex-1 min-w-0 text-[10px] font-mono rounded px-1.5 py-1 placeholder:!text-gray-500 caret-sky-400 focus:outline-none focus:!border-sky-500 focus:ring-1 focus:ring-sky-500/40';
@@ -228,81 +109,7 @@ export const InAppMessageBuilder: React.FC<{
 
         if (!result.success) return;
 
-        const m = result.data;
-        const targeting = m.targeting as Record<string, unknown> | undefined;
-
-        const rawPredicates: Record<string, unknown>[] = !targeting
-            ? []
-            : 'all' in targeting
-            ? (targeting.all as Record<string, unknown>[])
-            : 'any' in targeting
-            ? (targeting.any as Record<string, unknown>[])
-            : [targeting];
-
-        const conditions: BuilderCondition[] = rawPredicates.flatMap(p => {
-            if ('platform' in p) {
-                return [
-                    {
-                        ...emptyCondition(),
-                        kind: 'platform' as const,
-                        platforms: (p.platform as string[]).join(', '),
-                    },
-                ];
-            }
-
-            if ('role' in p) {
-                return [
-                    {
-                        ...emptyCondition(),
-                        kind: 'role' as const,
-                        roles: (p.role as string[]).join(', '),
-                    },
-                ];
-            }
-
-            if ('version' in p) {
-                const v = p.version as {
-                    source: BuilderCondition['source'];
-                    op: BuilderCondition['op'];
-                    value: string;
-                };
-
-                return [
-                    {
-                        ...emptyCondition(),
-                        kind: 'version' as const,
-                        source: v.source,
-                        op: v.op,
-                        value: v.value,
-                    },
-                ];
-            }
-
-            return [];
-        });
-
-        setState({
-            id: m.id,
-            title: m.title,
-            body: m.body ?? '',
-            presentation: m.presentation,
-            frequency: typeof m.frequency === 'object' ? 'everyDays' : m.frequency,
-            everyDays: typeof m.frequency === 'object' ? String(m.frequency.everyDays) : '3',
-            priority: String(m.priority),
-            dismissible: m.dismissible,
-            mediaType: m.media?.type ?? '',
-            mediaUrl: m.media?.url ?? '',
-            emoji: m.emoji ?? '',
-            combinator: targeting && 'any' in targeting ? 'any' : 'all',
-            conditions,
-            actions: m.actions.map(a => ({
-                label: a.label,
-                style: a.style,
-                type: a.action.type,
-                path: 'path' in a.action ? String(a.action.path) : '/',
-                url: 'url' in a.action ? String(a.action.url) : 'https://',
-            })),
-        });
+        setState(messageToBuilderState(result.data));
     }, []);
 
     const handlePreview = useCallback(() => {
@@ -424,6 +231,16 @@ export const InAppMessageBuilder: React.FC<{
                     />
                     dismissible
                 </label>
+
+                <label className="flex items-center gap-1 text-[9px] text-gray-500 ml-1">
+                    <input
+                        type="checkbox"
+                        checked={state.bypassFatigue}
+                        onChange={e => set('bypassFatigue', e.target.checked)}
+                        className="w-3 h-3"
+                    />
+                    bypass cap
+                </label>
             </FieldRow>
 
             <FieldRow label="frequency">
@@ -459,6 +276,75 @@ export const InAppMessageBuilder: React.FC<{
                     className={`${fieldInputClass} max-w-[50px]`}
                 />
             </FieldRow>
+
+            <FieldRow label="trigger">
+                <select
+                    value={state.triggerEvent}
+                    onChange={e =>
+                        set('triggerEvent', e.target.value as BuilderState['triggerEvent'])
+                    }
+                    className={fieldSelectClass}
+                >
+                    <option value="">none</option>
+                    <option value="credential.claimed">credential.claimed</option>
+                    <option value="app.opened">app.opened</option>
+                </select>
+
+                {state.triggerEvent && (
+                    <input
+                        type="number"
+                        min={1}
+                        value={state.triggerWindowMinutes}
+                        onChange={e => set('triggerWindowMinutes', e.target.value)}
+                        title="Window in minutes"
+                        style={debugFieldInputStyle}
+                        className={`${fieldInputClass} max-w-[50px]`}
+                    />
+                )}
+            </FieldRow>
+
+            {state.triggerEvent === 'credential.claimed' && (
+                <FieldRow label="trigger where">
+                    <input
+                        type="text"
+                        value={state.triggerIssuers}
+                        onChange={e => set('triggerIssuers', e.target.value)}
+                        placeholder="issuer DIDs"
+                        style={debugFieldInputStyle}
+                        className={fieldInputClass}
+                    />
+                    <input
+                        type="text"
+                        value={state.triggerVcTypes}
+                        onChange={e => set('triggerVcTypes', e.target.value)}
+                        placeholder="VC types"
+                        style={debugFieldInputStyle}
+                        className={fieldInputClass}
+                    />
+                </FieldRow>
+            )}
+            {state.triggerEvent === 'credential.claimed' && (
+                <div className="space-y-2 p-3 bg-white rounded-xl font-poppins">
+                    {(
+                        [
+                            ['triggerNestedIssuers', 'Nested issuers'],
+                            ['triggerCategories', 'Categories'],
+                            ['triggerAchievementTypes', 'Achievement types'],
+                            ['triggerIssuedWithinDays', 'Issued within days'],
+                        ] as const
+                    ).map(([key, label]) => (
+                        <label key={key} className="block text-xs text-grayscale-700">
+                            {label}
+                            <input
+                                value={state[key]}
+                                onChange={e => set(key, e.target.value)}
+                                placeholder="Optional"
+                                className="w-full p-2 bg-white text-grayscale-900 placeholder:text-grayscale-400 border border-grayscale-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                            />
+                        </label>
+                    ))}
+                </div>
+            )}
 
             <FieldRow label="media">
                 <select
@@ -660,7 +546,26 @@ export const InAppMessageBuilder: React.FC<{
                             <option value="platform">platform</option>
                             <option value="role">role</option>
                             <option value="version">version</option>
+                            <option value="credential">credential</option>
+                            <option value="raw">JSON tree</option>
                         </select>
+
+                        <label className="flex gap-1 text-xs text-grayscale-400">
+                            <input
+                                type="checkbox"
+                                checked={c.negate}
+                                onChange={e => updateCondition(i, { negate: e.target.checked })}
+                            />
+                            not
+                        </label>
+                        {c.kind === 'raw' && (
+                            <textarea
+                                aria-label="Targeting JSON"
+                                value={c.value}
+                                onChange={e => updateCondition(i, { value: e.target.value })}
+                                className="w-full p-2 bg-white text-grayscale-900 border border-grayscale-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500"
+                            />
+                        )}
 
                         {c.kind === 'platform' && (
                             <input
@@ -723,6 +628,83 @@ export const InAppMessageBuilder: React.FC<{
                                     placeholder="1.2.3"
                                     style={debugFieldInputStyle}
                                     className={`${fieldInputClass} max-w-[70px]`}
+                                />
+                            </React.Fragment>
+                        )}
+
+                        {c.kind === 'credential' && (
+                            <React.Fragment>
+                                <input
+                                    type="text"
+                                    value={c.issuers}
+                                    onChange={e => updateCondition(i, { issuers: e.target.value })}
+                                    placeholder="issuer DIDs"
+                                    title="Issuers (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="text"
+                                    value={c.vcTypes}
+                                    onChange={e => updateCondition(i, { vcTypes: e.target.value })}
+                                    placeholder="VC types"
+                                    title="VC types (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="text"
+                                    value={c.categories}
+                                    onChange={e =>
+                                        updateCondition(i, { categories: e.target.value })
+                                    }
+                                    placeholder="categories"
+                                    title="Categories (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="text"
+                                    value={c.nestedIssuers}
+                                    onChange={e =>
+                                        updateCondition(i, { nestedIssuers: e.target.value })
+                                    }
+                                    placeholder="nested issuers"
+                                    title="Nested issuers (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="text"
+                                    value={c.achievementTypes}
+                                    onChange={e =>
+                                        updateCondition(i, { achievementTypes: e.target.value })
+                                    }
+                                    placeholder="achievement types"
+                                    title="Achievement types (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="number"
+                                    min={0.01}
+                                    value={c.issuedWithinDays}
+                                    onChange={e =>
+                                        updateCondition(i, { issuedWithinDays: e.target.value })
+                                    }
+                                    placeholder="days"
+                                    title="Issued within days"
+                                    style={debugFieldInputStyle}
+                                    className={`${fieldInputClass} max-w-[50px]`}
+                                />
+                                <input
+                                    type="number"
+                                    min={1}
+                                    value={c.minCount}
+                                    onChange={e => updateCondition(i, { minCount: e.target.value })}
+                                    title="Minimum count"
+                                    style={debugFieldInputStyle}
+                                    className={`${fieldInputClass} max-w-[45px]`}
                                 />
                             </React.Fragment>
                         )}

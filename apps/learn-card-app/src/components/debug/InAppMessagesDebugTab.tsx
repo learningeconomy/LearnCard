@@ -37,8 +37,13 @@ import {
 import { inAppMessageValidator, type InAppMessage } from '@learncard/types';
 import {
     getLastInAppMessages,
+    getMessageLastSeen,
+    getInAppMessageFatigueState,
     isInAppMessagesDebug,
+    clearInAppMessageEvents,
+    emitInAppMessageEvent,
     messageMatches,
+    resetInAppMessageFatigue,
     resetInAppMessageDismissals,
     setInAppMessageOverride,
     setInAppMessagesDebug,
@@ -48,6 +53,7 @@ import {
     type InAppMessageDiagnostic,
     type InAppMessageRuntimeContext,
     type PredicateTrace,
+    summarizeCredential,
 } from 'learn-card-base';
 
 import { KVRow, Section, useCopyToClipboard } from './debugComponents';
@@ -56,18 +62,12 @@ import {
     IN_APP_MESSAGE_TEMPLATE_CATEGORIES,
 } from './inAppMessageTemplates';
 import { InAppMessageBuilder, debugFieldInputStyle } from './InAppMessageBuilder';
-
-const SEEN_STORAGE_KEY = 'lcb-in-app-messages-seen';
-
-const readSeenMap = (): Record<string, string> => {
-    try {
-        const raw = globalThis.localStorage?.getItem(SEEN_STORAGE_KEY);
-
-        return raw ? (JSON.parse(raw) as Record<string, string>) : {};
-    } catch {
-        return {};
-    }
-};
+import {
+    CREDENTIAL_PRESETS,
+    PILOT_ISSUER,
+    buildCredentialDryRunContext,
+    explainDryRunFailure,
+} from './inAppMessageDryRun';
 
 const frequencyLabel = (message: InAppMessage | undefined): string => {
     if (!message) return '—';
@@ -106,6 +106,8 @@ const diagnosticDot = (d: InAppMessageDiagnostic): string => {
 const diagnosticStatus = (d: InAppMessageDiagnostic): string => {
     if (!d.enabled) return 'disabled';
     if (d.willShow) return 'will show';
+    if (!d.triggerSatisfied) return 'trigger waiting';
+    if (d.fatigueSuppressed) return 'fatigue suppressed';
     if (d.matched && d.suppressed) return 'suppressed';
 
     return 'no match';
@@ -235,7 +237,7 @@ const NEW_VERSION = '999.0.0';
 
 interface DryRunScenario {
     label: string;
-    context: Omit<InAppMessageRuntimeContext, 'role'>;
+    context: Pick<InAppMessageRuntimeContext, 'platform' | 'versions'>;
 }
 
 const DRY_RUN_SCENARIOS: DryRunScenario[] = [
@@ -273,17 +275,21 @@ const DRY_RUN_SCENARIOS: DryRunScenario[] = [
 
 const DRAFT_OPTION = '__builder_draft__';
 
-const DryRunRow: React.FC<{ label: string; matches: boolean; highlight?: boolean }> = ({
-    label,
-    matches,
-    highlight = false,
-}) => (
+const DryRunRow: React.FC<{
+    label: string;
+    matches: boolean;
+    highlight?: boolean;
+    failure?: string | null;
+}> = ({ label, matches, highlight = false, failure }) => (
     <div
         className={`flex items-center justify-between px-2 py-1 rounded text-[10px] ${
             highlight ? 'bg-gray-900/90 border border-gray-800' : 'bg-gray-900/50'
         }`}
     >
-        <span className={highlight ? 'text-gray-200' : 'text-gray-400'}>{label}</span>
+        <span className={highlight ? 'text-gray-200' : 'text-gray-400'}>
+            {label}
+            {failure && <span className="block text-[9px] text-red-400 break-all">{failure}</span>}
+        </span>
 
         <span className={matches ? 'text-emerald-400' : 'text-red-400'}>
             {matches ? '✓ matches' : '✗ no match'}
@@ -298,6 +304,8 @@ const TargetingDryRun: React.FC<{
 }> = ({ flagMessages, draft, currentContext }) => {
     const [selectedId, setSelectedId] = useState<string>('');
     const [role, setRole] = useState<string>('learner');
+    const [simulateClaim, setSimulateClaim] = useState(false);
+    const [pilotIssuer, setPilotIssuer] = useState(PILOT_ISSUER);
 
     const selected = useMemo(() => {
         if (selectedId === DRAFT_OPTION) return draft;
@@ -347,14 +355,46 @@ const TargetingDryRun: React.FC<{
 
             {selected && (
                 <div className="space-y-0.5">
-                    {currentContext && (
-                        <DryRunRow
-                            label="This device"
-                            matches={messageMatches(selected, currentContext)}
-                            highlight
+                    <div className="p-3 bg-white rounded-xl space-y-2 font-poppins">
+                        <label
+                            className="block text-xs text-grayscale-700"
+                            htmlFor="iam-pilot-issuer"
+                        >
+                            Pilot issuer
+                        </label>
+                        <input
+                            id="iam-pilot-issuer"
+                            value={pilotIssuer}
+                            onChange={e => setPilotIssuer(e.target.value)}
+                            className="w-full p-2 bg-white text-grayscale-900 border border-grayscale-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500"
                         />
-                    )}
-
+                        <label className="flex items-center gap-2 text-xs text-grayscale-700">
+                            <input
+                                type="checkbox"
+                                checked={simulateClaim}
+                                onChange={e => setSimulateClaim(e.target.checked)}
+                            />
+                            Simulate recent claim
+                        </label>
+                    </div>
+                    {currentContext &&
+                        CREDENTIAL_PRESETS.map(preset => {
+                            const simulated = buildCredentialDryRunContext(
+                                currentContext,
+                                preset,
+                                simulateClaim,
+                                pilotIssuer
+                            );
+                            return (
+                                <DryRunRow
+                                    key={preset}
+                                    label={preset}
+                                    highlight={preset === 'This device'}
+                                    matches={messageMatches(selected, simulated)}
+                                    failure={explainDryRunFailure(selected, simulated)}
+                                />
+                            );
+                        })}
                     {DRY_RUN_SCENARIOS.map(scenario => (
                         <DryRunRow
                             key={scenario.label}
@@ -362,6 +402,10 @@ const TargetingDryRun: React.FC<{
                             matches={messageMatches(selected, {
                                 ...scenario.context,
                                 role: role.trim() || null,
+                                now: Date.now(),
+                                credentials: [],
+                                credentialsComplete: true,
+                                recentEvents: [],
                             })}
                         />
                     ))}
@@ -384,7 +428,7 @@ const TargetingDryRun: React.FC<{
 export const InAppMessagesDebugTab: React.FC = () => {
     const [copied, copyToClipboard] = useCopyToClipboard();
 
-    const { report, ready, context } = useInAppMessages();
+    const { report, ready, context, credentialFacts } = useInAppMessages();
     const gate = useInAppMessagePresentationGate();
     const override = useInAppMessageOverride();
 
@@ -393,10 +437,25 @@ export const InAppMessagesDebugTab: React.FC = () => {
     const [jsonInput, setJsonInput] = useState('');
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [draft, setDraft] = useState<InAppMessage | null>(null);
+    const [factsBusy, setFactsBusy] = useState<'backfill' | 'clear' | null>(null);
+    const [credentialFilter, setCredentialFilter] = useState('');
+    const [simulatedIssuer, setSimulatedIssuer] = useState(PILOT_ISSUER);
+    const [simulatedType, setSimulatedType] = useState('ClrCredential');
 
-    const [resetCount, setResetCount] = useState(0);
+    const [, setResetCount] = useState(0);
     const flagMessages = getLastInAppMessages();
-    const seenMap = useMemo(() => readSeenMap(), [report, resetCount]);
+    const fatigueState = getInAppMessageFatigueState(credentialFacts.accountDid ?? undefined);
+    const visibleSummaries = useMemo(() => {
+        const needle = credentialFilter.trim().toLowerCase();
+
+        if (!needle) return credentialFacts.summaries ?? [];
+
+        return (credentialFacts.summaries ?? []).filter(summary =>
+            [summary.issuer, ...summary.types, ...summary.nestedIssuers]
+                .filter(Boolean)
+                .some(value => value?.toLowerCase().includes(needle))
+        );
+    }, [credentialFacts.summaries, credentialFilter]);
 
     const handleToggleTracing = useCallback(() => {
         setTracing(prev => {
@@ -445,6 +504,20 @@ export const InAppMessagesDebugTab: React.FC = () => {
 
         setInAppMessageOverride(result.data);
     }, [jsonInput]);
+
+    const handleFactsAction = useCallback(
+        async (action: 'backfill' | 'clear') => {
+            setFactsBusy(action);
+
+            try {
+                if (action === 'backfill') await credentialFacts.backfillNow();
+                else await credentialFacts.clearFacts();
+            } finally {
+                setFactsBusy(null);
+            }
+        },
+        [credentialFacts]
+    );
 
     return (
         <div className="space-y-2">
@@ -520,6 +593,38 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         onCopy={copyToClipboard}
                     />
                     <KVRow
+                        label="Credential facts"
+                        value={`${credentialFacts.summaries?.length ?? 0}/${credentialFacts.total} (${
+                            credentialFacts.complete ? 'complete' : 'incomplete'
+                        })`}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Decrypt reads"
+                        value={`${credentialFacts.readsUsed}/200`}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Recent events"
+                        value={context?.recentEvents.length ?? 0}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Blocking shown"
+                        value={fatigueState.blockingShownThisSession}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Last blocking shown"
+                        value={fatigueState.lastBlockingShown}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
                         label="Override active"
                         value={override ? override.id : false}
                         copied={copied}
@@ -538,6 +643,35 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         }`}
                     >
                         Tracing {tracing ? 'ON' : 'OFF'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => void handleFactsAction('backfill')}
+                        disabled={factsBusy !== null}
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 disabled:opacity-40 text-white px-3 py-2 rounded-[20px] transition-colors"
+                    >
+                        {factsBusy === 'backfill' ? 'Backfilling…' : 'Backfill now'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => void handleFactsAction('clear')}
+                        disabled={factsBusy !== null}
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 disabled:opacity-40 text-white px-3 py-2 rounded-[20px] transition-colors"
+                    >
+                        {factsBusy === 'clear' ? 'Clearing…' : 'Clear facts'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            resetInAppMessageFatigue();
+                            setResetCount(count => count + 1);
+                        }}
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 text-white px-3 py-2 rounded-[20px] transition-colors"
+                    >
+                        Reset cap
                     </button>
 
                     <button
@@ -571,6 +705,160 @@ export const InAppMessagesDebugTab: React.FC = () => {
             </Section>
 
             <Section
+                title="Credential facts & events"
+                icon={<FlaskConical className="w-3 h-3 text-grayscale-400" />}
+            >
+                <p className="text-xs text-grayscale-400 leading-relaxed">
+                    Credential data shown here never leaves this device.
+                </p>
+
+                <input
+                    aria-label="Filter credential facts by issuer or type"
+                    type="text"
+                    value={credentialFilter}
+                    onChange={event => setCredentialFilter(event.target.value)}
+                    placeholder="Filter by issuer or type"
+                    className="w-full text-xs rounded-xl px-3 py-2 bg-white text-grayscale-900 placeholder:text-grayscale-400 border border-grayscale-300 focus:ring-2 focus:ring-emerald-500"
+                />
+
+                <div className="space-y-1 max-h-36 overflow-y-auto">
+                    <p className="text-xs text-grayscale-400">
+                        {visibleSummaries.length} matching summaries
+                    </p>
+                    {visibleSummaries.map(summary => (
+                        <div key={summary.uri} className="bg-white rounded-xl p-3 font-poppins">
+                            <p className="text-xs text-grayscale-900 font-mono truncate">
+                                {summary.uri}
+                            </p>
+                            <p className="text-xs text-grayscale-600 truncate">
+                                {summary.issuer ?? 'unknown issuer'} ·{' '}
+                                {summary.types.join(', ') || 'unknown type'}
+                            </p>
+                            <div className="flex gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        copyToClipboard('credential-rule', {
+                                            credential: {
+                                                ...(summary.issuer
+                                                    ? { issuers: [summary.issuer] }
+                                                    : {}),
+                                                ...(summary.types.length > 0
+                                                    ? { vcTypes: [summary.types.at(-1)] }
+                                                    : {}),
+                                            },
+                                        })
+                                    }
+                                    className="text-xs text-grayscale-700 hover:bg-grayscale-100 rounded-[20px] px-2 py-1"
+                                >
+                                    {copied === 'credential-rule' ? 'Copied!' : 'Copy as rule'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        emitInAppMessageEvent('credential.claimed', {
+                                            credential: summary,
+                                            ...(credentialFacts.accountDid
+                                                ? { accountDid: credentialFacts.accountDid }
+                                                : {}),
+                                        })
+                                    }
+                                    className="text-xs text-grayscale-700 hover:bg-grayscale-100 rounded-[20px] px-2 py-1"
+                                >
+                                    Simulate claim
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() =>
+                            emitInAppMessageEvent('app.opened', {
+                                ...(credentialFacts.accountDid
+                                    ? { accountDid: credentialFacts.accountDid }
+                                    : {}),
+                            })
+                        }
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 text-white px-3 py-2 rounded-[20px]"
+                    >
+                        Emit app.opened
+                    </button>
+                    <button
+                        type="button"
+                        onClick={clearInAppMessageEvents}
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 text-white px-3 py-2 rounded-[20px]"
+                    >
+                        Clear events
+                    </button>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl space-y-3 font-poppins">
+                    <p className="text-xs text-grayscale-700">
+                        Simulate a claim without adding a credential.
+                    </p>
+                    <label className="block text-xs text-grayscale-700" htmlFor="iam-event-issuer">
+                        Issuer
+                    </label>
+                    <input
+                        id="iam-event-issuer"
+                        value={simulatedIssuer}
+                        onChange={e => setSimulatedIssuer(e.target.value)}
+                        className="w-full p-2 rounded-xl bg-white text-grayscale-900 border border-grayscale-300 focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <label className="block text-xs text-grayscale-700" htmlFor="iam-event-type">
+                        Credential type
+                    </label>
+                    <input
+                        id="iam-event-type"
+                        value={simulatedType}
+                        onChange={e => setSimulatedType(e.target.value)}
+                        className="w-full p-2 rounded-xl bg-white text-grayscale-900 border border-grayscale-300 focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <button
+                        type="button"
+                        onClick={() =>
+                            emitInAppMessageEvent('credential.claimed', {
+                                accountDid: credentialFacts.accountDid ?? undefined,
+                                credential: summarizeCredential(
+                                    'debug:claim',
+                                    {
+                                        issuer: simulatedIssuer,
+                                        type: [simulatedType],
+                                        validFrom: new Date().toISOString(),
+                                    },
+                                    'Learning History'
+                                ),
+                            })
+                        }
+                        className="py-2 px-3 rounded-[20px] text-xs bg-grayscale-900 text-white hover:opacity-90"
+                    >
+                        Emit credential.claimed
+                    </button>
+                </div>
+
+                {(context?.recentEvents ?? []).slice(-10).map((event, index) => (
+                    <p
+                        key={`${event.occurredAt}-${index}`}
+                        className="text-xs text-grayscale-400 font-mono"
+                    >
+                        {event.event} · {new Date(event.occurredAt).toLocaleTimeString()}
+                    </p>
+                ))}
+
+                {report.invalid.map((invalid, index) => (
+                    <p
+                        key={`${invalid.id ?? 'unknown'}-${index}`}
+                        className="text-[9px] text-red-400"
+                    >
+                        Invalid {invalid.id ?? 'message'}: {invalid.error}
+                    </p>
+                ))}
+            </Section>
+
+            <Section
                 title="Flag messages"
                 icon={<ListChecks className="w-3 h-3 text-gray-500" />}
                 defaultOpen
@@ -595,7 +883,10 @@ export const InAppMessagesDebugTab: React.FC = () => {
                                 key={d.id}
                                 diagnostic={d}
                                 message={flagMessages.find(m => m.id === d.id)}
-                                lastSeen={seenMap[d.id]}
+                                lastSeen={getMessageLastSeen(
+                                    d.id,
+                                    credentialFacts.accountDid ?? undefined
+                                )}
                                 copied={copied}
                                 onCopy={copyToClipboard}
                                 onForceShow={m => setInAppMessageOverride(m)}
