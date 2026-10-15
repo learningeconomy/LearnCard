@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 import { ModalTypes, useDeviceTypeByWidth, useGetSkillChildren, useModal } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
@@ -92,7 +93,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
     isTopLevel,
     columnNode,
     isNodeInSelectedPath,
-    isEdit = false,
+    isEdit: editRequested = false,
     selectedPath = [],
     handleAdd,
     handleEdit,
@@ -124,6 +125,8 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
     handleSaveSkills,
     disableSave,
 }) => {
+    const canManageCompetencies = useCanManageCompetencies();
+    const isEdit = canManageCompetencies && editRequested;
     const { newModal, closeModal } = useModal();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
     const inputRef = useRef<HTMLIonInputElement>(null);
@@ -235,7 +238,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
         let truncatedSecondLast = secondLast;
         const lastItemWidth = getTextWidth(lastItem);
         const ellipsisWidth = getTextWidth('... > ');
-        let maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
+        const maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
 
         if (getTextWidth(secondLast) > maxSecondLastWidth) {
             // Binary search for optimal truncation
@@ -272,7 +275,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
     const navPathTitle = selectedPath.map(n => n.targetName).join(' > ');
     let countOverride = undefined;
-    let countAdjustment = countAdjustments?.[columnNode?.id ?? 'root'] || 0;
+    const countAdjustment = countAdjustments?.[columnNode?.id ?? 'root'] || 0;
     if (isFullSkillFramework) {
         if (columnNode) {
             countOverride = countCompetenciesInNode(columnNode);
@@ -343,20 +346,24 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         <InfoIcon className="ml-auto w-[24px] h-[24px] text-grayscale-600" />
                     )}
 
-                    {isTopLevel && !isApproveFlow && !isEdit && !isSelectSkillsFlow && (
-                        <button
-                            onClick={() =>
-                                newModal(
-                                    <FrameworkOptionsModal frameworkInfo={frameworkInfo} />,
-                                    undefined,
-                                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-                                )
-                            }
-                            className="ml-auto"
-                        >
-                            <ThreeDots className="w-[24px] h-[24px] text-grayscale-500" />
-                        </button>
-                    )}
+                    {canManageCompetencies &&
+                        isTopLevel &&
+                        !isApproveFlow &&
+                        !isEdit &&
+                        !isSelectSkillsFlow && (
+                            <button
+                                onClick={() =>
+                                    newModal(
+                                        <FrameworkOptionsModal frameworkInfo={frameworkInfo} />,
+                                        undefined,
+                                        { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                                    )
+                                }
+                                className="ml-auto"
+                            >
+                                <ThreeDots className="w-[24px] h-[24px] text-grayscale-500" />
+                            </button>
+                        )}
                 </div>
 
                 {isSingleColumnView && selectedPath.length > 0 && (
@@ -595,7 +602,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             </>
                         )}
 
-                        {!isEdit && !isSelectSkillsFlow && (
+                        {canManageCompetencies && !isEdit && !isSelectSkillsFlow && (
                             <>
                                 <button
                                     onClick={() => setIsEdit?.(true)}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { formatLocaleDate } from '../../i18n/formatters';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
@@ -161,4 +162,4 @@ const SkillFrameworks: React.FC = () => {
     );
 };
 
-export default SkillFrameworks;
+export default withCompetencyAdmin(SkillFrameworks);

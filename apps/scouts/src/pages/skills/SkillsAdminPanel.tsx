@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from '../SkillFrameworks/withCompetencyAdmin';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import Pencil from '../../components/svgs/Pencil';
@@ -79,7 +80,6 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
 
                     {frameworksExist && (
                         <div className="flex flex-col gap-[15px] border-t-[1px] border-violet-300 border-solid pt-[15px]">
-                            {/* @ts-ignore */}
                             {frameworks?.map((framework, index) => (
                                 <SkillsAdminPanelFramework
                                     key={index}
@@ -109,4 +109,4 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
     );
 };
 
-export default SkillsAdminPanel;
+export default withCompetencyAdmin(SkillsAdminPanel);
