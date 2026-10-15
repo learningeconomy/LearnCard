@@ -83,8 +83,8 @@ const render = (value, account) => {
 };
 for (const account of ['206533012615', '111122223333']) {
     const statements = render(policy.Properties.PolicyDocument, account).Statement;
-    assert.equal(statements.length, 5);
-    const [bearer, profiles, project, sol, luna] = statements;
+    assert.equal(statements.length, 6);
+    const [bearer, profiles, project, sol, luna, image] = statements;
     assert.deepEqual(bearer.Condition, {
         StringEquals: { 'bedrock:bearerTokenType': 'SHORT_TERM' },
     });
@@ -115,11 +115,30 @@ for (const account of ['206533012615', '111122223333']) {
             StringEquals: { 'bedrock:InferenceProfileArn': profile },
         });
     }
+    // Default image provider: exactly one model in us-west-2, InvokeModel only.
+    assert.deepEqual(image, {
+        Sid: 'StableImageCoreUsWest2',
+        Effect: 'Allow',
+        Action: 'bedrock:InvokeModel',
+        Resource: 'arn:aws:bedrock:us-west-2::foundation-model/stability.stable-image-core-v1:1',
+    });
+    const actions = statements.flatMap(statement => [statement.Action].flat());
+    assert.ok(
+        !actions.some(action => /Stream|\*/.test(action)),
+        'no streaming or wildcard actions'
+    );
+    for (const statement of statements.slice(1)) {
+        for (const resource of [statement.Resource].flat()) {
+            assert.ok(!resource.includes('*'), `no wildcard resource: ${resource}`);
+        }
+    }
 }
 const { verifyLayer } = require(path.join(service, 'scripts/verify-node24-layer.cjs'));
 assert.throws(() => verifyLayer('/missing', 20), /Node 24/);
 assert.throws(() => verifyLayer('/missing', 24), /Missing Lambda/);
-console.log('LCA Node 24 runtime, native preflight and dev Bedrock policy contracts passed');
+console.log(
+    'LCA Node 24 runtime, native preflight and dev Bedrock text/image policy contracts passed'
+);
 
 // Exercise actual Serverless plugin loading and strict schema validation without
 // packaging, credentials, deployment, or telemetry network access.

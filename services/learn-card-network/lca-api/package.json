@@ -55,9 +55,11 @@
         "serverless-offline": "^14.4.0",
         "serverless-prune-plugin": "^2.1.0",
         "shx": "^0.3.4",
-        "@playwright/test": "^1.42.0"
+        "@playwright/test": "^1.42.0",
+        "@types/pngjs": "^6.0.5"
     },
     "dependencies": {
+        "@aws-sdk/client-bedrock-runtime": "^3.1139.0",
         "@aws-sdk/client-kms": "^3.1139.0",
         "@aws-sdk/client-secrets-manager": "^3.1139.0",
         "@fastify/cors": "^11.2.0",
@@ -102,6 +104,7 @@
         "trpc-to-openapi": "^3.1.0",
         "uuid": "^14.0.0",
         "zod": "4.4.3",
+        "pngjs": "^7.0.0",
         "@aws/bedrock-token-generator": "1.1.0"
     },
     "repository": {
