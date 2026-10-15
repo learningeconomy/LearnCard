@@ -70,6 +70,9 @@ test('Yarn Classic retries a missing published version with a fresh metadata cac
     assert.equal(attempts, 2);
     assert.equal(caches[0], join(cwd, '.registry-cache', '1', 'yarn-cache'));
     assert.equal(caches[1], join(cwd, '.registry-cache', '2', 'yarn-cache'));
+});
+
+test('Yarn Classic authentication and engine errors are not pending publication', () => {
     for (const data of [
         'Request failed "401 Unauthorized"',
         'Request failed "403 Forbidden"',

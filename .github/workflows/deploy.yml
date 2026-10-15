@@ -39,7 +39,7 @@ on:
                 default: false
                 type: boolean
             capgo-bundle-version:
-                description: 'Optional LearnCard OTA version for recovery after an occupied/deleted bundle'
+                description: 'LearnCard production frontend recovery only: <current package version>-recovery.N (unused N). Preserves future release versions; must satisfy native/channel update rules.'
                 required: false
                 default: ''
                 type: string
@@ -96,7 +96,23 @@ jobs:
             frontend_deployment_matrix: ${{ steps.set-env.outputs.frontend_deployment_matrix }}
             frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
         steps:
-            # Check these first - no dependencies needed
+            # Recovery validation needs only the checkout; ordinary manual runs still skip it.
+            - name: Checkout Repo
+              if: github.event_name != 'workflow_dispatch' || inputs.capgo-bundle-version != ''
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            # Validate before any service or frontend deployment can start.
+            - name: Validate CapGo recovery input
+              if: inputs.capgo-bundle-version != ''
+              env:
+                  RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
+                  TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
+                  DEPLOY_FRONTEND: ${{ inputs.deploy-frontend }}
+              run: node scripts/validate-capgo-recovery-version.mjs
+
+            # Set deployment flags only after recovery input validation succeeds.
             - name: Check if this is a manual dispatch
               id: check_manual
               run: |
@@ -119,13 +135,6 @@ jobs:
                   else
                     echo "is_release=false" >> $GITHUB_OUTPUT
                   fi
-
-            # Skip heavy steps for manual dispatch - we already know what to deploy
-            - name: Checkout Repo
-              if: github.event_name != 'workflow_dispatch'
-              uses: actions/checkout@v7
-              with:
-                  fetch-depth: 0
 
             - name: Fetch main for NX comparison
               if: github.event_name != 'workflow_dispatch'
@@ -988,10 +997,7 @@ jobs:
                   RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
               run: |
                   if [[ -n "$RECOVERY_VERSION" ]]; then
-                    if [[ "$PROJECT_NAME" != "learn-card-app" ]] || ! [[ "$RECOVERY_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                      echo "::error::Recovery version requires LearnCard and an explicit major.minor.patch version."
-                      exit 1
-                    fi
+                    # determine-affected already validated the target and version.
                     APP_VERSION="$RECOVERY_VERSION"
                   fi
                   VERSION_ARGS=(--bundle "$APP_VERSION")

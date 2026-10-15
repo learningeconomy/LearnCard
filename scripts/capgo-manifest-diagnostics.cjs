@@ -1,13 +1,31 @@
 // The CLI prints only the top-level manifest error. Capture the response's
 // diagnostic fields without logging request bodies, URLs, or authorization.
 const originalFetch = globalThis.fetch;
+try {
+    console.error('[capgo-manifest-diagnostics] installed');
+} catch {
+    // Diagnostics must never affect CLI behavior, including when stderr is unavailable.
+}
 globalThis.fetch = async (...args) => {
     const response = await originalFetch(...args);
-    const input = args[0];
-    const url = typeof input === 'string' || input instanceof URL ? String(input) : input?.url;
-    if (url && new URL(url).pathname.endsWith('/private/set_manifest') && !response.ok) {
+    try {
+        const input = args[0];
+        const url = typeof input === 'string' || input instanceof URL ? String(input) : input?.url;
+        if (!url || !new URL(url).pathname.endsWith('/private/set_manifest')) return response;
+
+        let body;
         try {
-            const body = await response.clone().json();
+            body = await response.clone().json();
+        } catch {
+            if (!response.ok) {
+                console.error(
+                    '[capgo-manifest-response] Could not decode error response; HTTP ' +
+                        response.status
+                );
+            }
+            return response;
+        }
+        if (!response.ok || body?.error) {
             const redact = value => {
                 let text = JSON.stringify(value);
                 const token = process.env.CAPGO_TOKEN;
@@ -19,16 +37,14 @@ globalThis.fetch = async (...args) => {
                     redact({
                         status: response.status,
                         requestId: response.headers.get('x-request-id'),
-                        error: body.error,
-                        message: body.message,
-                        moreInfo: body.moreInfo,
+                        error: body?.error,
+                        message: body?.message,
+                        moreInfo: body?.moreInfo,
                     })
             );
-        } catch {
-            console.error(
-                '[capgo-manifest-response] Could not decode error response; HTTP ' + response.status
-            );
         }
+    } catch {
+        // URL parsing, response inspection, and logging must leave fetch results intact.
     }
     return response;
 };

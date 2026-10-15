@@ -13,6 +13,17 @@ on:
                 default: 'changeset-release/main'
 
 jobs:
+    deployment-tools:
+        name: Deployment recovery tools
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24.12.0'
+            - name: Test recovery validation, manifest diagnostics, and registry retries
+              run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs
+
     Test:
         runs-on: ubuntu-latest
         environment: ci-tests
