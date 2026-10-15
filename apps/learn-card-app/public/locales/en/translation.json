@@ -9502,7 +9502,8 @@
         "savedToLearnCard": "Saved to LearnCard",
         "saveError": "Could not save these credentials. Please try again.",
         "signInToSave": "Sign in to save",
-        "saveHint": "Keep this signed collection with your received items."
+        "saveHint": "Keep this signed collection with your received items.",
+        "viewCredential": "View credential"
     },
     "resumePublishing": {
         "linkReady": "Your private link is ready.",

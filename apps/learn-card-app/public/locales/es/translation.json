@@ -9451,7 +9451,8 @@
         "savedToLearnCard": "Guardado en LearnCard",
         "saveError": "No se pudieron guardar estas credenciales. Inténtalo de nuevo.",
         "signInToSave": "Inicia sesión para guardar",
-        "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
+        "saveHint": "Guarda esta colección firmada con tus elementos recibidos.",
+        "viewCredential": "Ver credencial"
     },
     "resumePublishing": {
         "linkReady": "Tu enlace privado está listo.",
