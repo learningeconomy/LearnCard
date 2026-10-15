@@ -38,9 +38,9 @@
             ],
             "escrowEnclaveMeasurements": [
                 {
-                    "pcr0": "cbdd46695a85e929baeee9990d9b1f8c247809f50bef106684945db44aeca9e9f19619ca7e61aa72eb9760533063aa95",
+                    "pcr0": "c91ac037a879afd1bd103e8a7433cc4d314676c203b143665e9e512217cbdbeb4d46879a1bae823b70422672dd2c57a6",
                     "pcr1": "4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493",
-                    "pcr2": "639bfc92d03cf0d37a0d9545577693022a9e881bd26204f3b86730e2b906e03cd298d174f099206a461e3e3cf1b76775"
+                    "pcr2": "682bd2dae49b3be11b1b015f8b8034e4eaedb416590d2857fa19b6ef5842674f04b81f88e25b94c3b6cbf9c28e3c0875"
                 }
             ]
         }
