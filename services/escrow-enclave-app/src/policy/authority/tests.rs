@@ -51,6 +51,16 @@ struct Hooks {
     calls: AtomicUsize,
     fault: Mutex<Option<(usize, Fault)>>,
     gate: Mutex<Option<Gate>>,
+    network_time: Mutex<Option<Arc<BudgetTime>>>,
+}
+impl Hooks {
+    async fn aws_round(&self) {
+        let time = self.network_time.lock().unwrap().clone();
+        if let Some(time) = time {
+            time.now(None).await.unwrap();
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+    }
 }
 impl AuthorityStore for Hooks {
     fn load<'a>(
@@ -60,6 +70,7 @@ impl AuthorityStore for Hooks {
         h: Option<&'a str>,
     ) -> StoreFuture<'a, Snapshot> {
         Box::pin(async move {
+            self.aws_round().await;
             let result = self.inner.load(b, r, h).await;
             tokio::task::yield_now().await;
             result
@@ -67,6 +78,7 @@ impl AuthorityStore for Hooks {
     }
     fn commit(&self, transition: Transition) -> StoreFuture<'_, CommitOutcome> {
         Box::pin(async move {
+            self.aws_round().await; // conditional AWS transaction
             let call = self.calls.fetch_add(1, Ordering::SeqCst) + 1;
             let gate = {
                 let mut gate = self.gate.lock().unwrap();
@@ -95,6 +107,7 @@ impl AuthorityStore for Hooks {
                 None => {}
             }
             let outcome = self.inner.commit(transition).await;
+            self.aws_round().await; // receipt readback
             if let Some(gate) = gate.as_ref().filter(|g| g.after_commit) {
                 gate.entered.notify_one();
                 gate.resume.notified().await;
@@ -110,7 +123,10 @@ impl AuthorityStore for Hooks {
         b: &'a Binding,
         id: [u8; 16],
     ) -> StoreFuture<'a, Option<CommitReceipt>> {
-        self.inner.receipt(b, id)
+        Box::pin(async move {
+            self.aws_round().await;
+            self.inner.receipt(b, id).await
+        })
     }
 }
 struct Fixture {
@@ -139,6 +155,7 @@ impl Fixture {
             calls: AtomicUsize::new(0),
             fault: Mutex::new(None),
             gate: Mutex::new(None),
+            network_time: Mutex::new(None),
         });
         let signer = SigningKey::from_bytes(&[8; 32]);
         let mut key = vec![0xed, 1];
@@ -310,6 +327,76 @@ impl Fixture {
         });
         (entered, resume)
     }
+}
+
+struct BudgetTime {
+    source: crate::time::RoughtimeTimeSource,
+    rounds: AtomicUsize,
+}
+impl TimeSource for BudgetTime {
+    fn now(&self, floor: Option<u64>) -> TimeFuture<'_, TimeEvidence> {
+        self.rounds.fetch_add(1, Ordering::SeqCst);
+        self.source.now(floor)
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn authority_operations_finish_with_one_time_server_unavailable() {
+    use std::time::Duration;
+    use tokio::time::{timeout, Instant};
+
+    let f = Fixture::new();
+    let time = Arc::new(BudgetTime {
+        source: crate::time::tests::one_unavailable_source(),
+        rounds: AtomicUsize::new(0),
+    });
+    let mut p = f.policy(false);
+    let envelope = f.enroll(&mut p, true).await;
+    p.time = time.as_ref();
+    *f.store.network_time.lock().unwrap() = Some(time.clone());
+    // Real authority policy and real authenticated Roughtime quorum. The fake
+    // store models each AWS call's fresh TLS/signing acquisition plus 100ms I/O.
+    let start = Instant::now();
+    let hold = timeout(
+        crate::server::IO_TIMEOUT / 2,
+        p.create_hold(CreateHoldRequest {
+            envelope: &envelope,
+            hold_id: "hold",
+            request_id: "create",
+            expected_did: &f.did,
+            expected_share_version: 1,
+            enrollment_epoch: 1,
+            release_policy: ReleasePolicy::Pin,
+            client_ephemeral_public_key: &f.client.public_key,
+        }),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(time.rounds.load(Ordering::SeqCst), 4);
+    assert_eq!(start.elapsed(), Duration::from_millis(1100));
+    // Previously five sequential rounds each waited 2s for the missing source;
+    // even before response writing, 100ms per AWS call exceeded the outer limit.
+    assert!(Duration::from_secs(5 * 2) + Duration::from_millis(300) > crate::server::IO_TIMEOUT);
+
+    time.rounds.store(0, Ordering::SeqCst);
+    let start = Instant::now();
+    let proof = "11".repeat(32);
+    timeout(
+        crate::server::IO_TIMEOUT / 2,
+        p.release(f.release(&envelope, &hold, "pin", Some(&proof))),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    let rounds = time.rounds.load(Ordering::SeqCst);
+    assert_eq!(
+        rounds, 9,
+        "reservation/result and readbacks must be modelled"
+    );
+    assert_eq!(start.elapsed(), Duration::from_millis(2400));
+    assert!(start.elapsed() < crate::server::IO_TIMEOUT / 2);
+    assert!(Duration::from_secs(2 * rounds as u64) > crate::server::IO_TIMEOUT);
 }
 
 #[tokio::test]

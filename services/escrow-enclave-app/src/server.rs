@@ -39,7 +39,7 @@ mod tests;
 
 pub const MAX_FRAME: usize = 256 * 1024;
 const CONNECTIONS: usize = 32;
-const IO_TIMEOUT: Duration = Duration::from_secs(10);
+pub(crate) const IO_TIMEOUT: Duration = Duration::from_secs(10);
 fn unavailable() -> io::Error {
     io::Error::other("Enclave service unavailable")
 }

@@ -435,7 +435,7 @@ impl<'a> Policy<'a> {
             status: HoldStatus::Pending,
         };
         let (receipt, _) = self
-            .authority_commit(
+            .authority_commit_at(
                 binding,
                 before,
                 after,
@@ -444,6 +444,7 @@ impl<'a> Policy<'a> {
                 OperationOutcome::Committed,
                 hash,
                 Some(hold),
+                time,
             )
             .await?;
         signed.hold.signature =
@@ -818,6 +819,36 @@ impl<'a> Policy<'a> {
         request_digest: Hash,
         hold: Option<HoldItem>,
     ) -> Result<(SignedAuthorityRecord, bool), ErrorCode> {
+        let time = self.authority_time().await?;
+        self.authority_commit_at(
+            binding,
+            before,
+            after,
+            request,
+            kind,
+            outcome,
+            request_digest,
+            hold,
+            time,
+        )
+        .await
+    }
+
+    // Only create-hold supplies an already acquired sample: no await separates
+    // its policy timestamp from this event. Other callers acquire fresh evidence.
+    #[allow(clippy::too_many_arguments)]
+    async fn authority_commit_at(
+        &self,
+        binding: Binding,
+        before: Snapshot,
+        after: EnrollmentItem,
+        request: &str,
+        kind: OperationKind,
+        outcome: OperationOutcome,
+        request_digest: Hash,
+        hold: Option<HoldItem>,
+        time: TimeEvidence,
+    ) -> Result<(SignedAuthorityRecord, bool), ErrorCode> {
         let event = AuthorityEvent {
             binding: binding.clone(),
             request_id: request.into(),
@@ -839,7 +870,7 @@ impl<'a> Policy<'a> {
             hold_id: hold.as_ref().map(|h| h.hold_id.clone()),
             hold_status: hold.as_ref().map(|h| h.status),
             request_digest,
-            time: self.authority_time().await?,
+            time,
         };
         let proposal = self
             .ledger
