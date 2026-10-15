@@ -38,6 +38,11 @@ on:
                 required: false
                 default: false
                 type: boolean
+            capgo-bundle-version:
+                description: 'Optional LearnCard OTA version for recovery after an occupied/deleted bundle'
+                required: false
+                default: ''
+                type: string
             deploy-ai-agent:
                 description: 'Deploy AI Agent (ECS + Trigger.dev)'
                 required: false
@@ -980,7 +985,15 @@ jobs:
                   CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
                   PROJECT_NAME: ${{ steps.vars.outputs.project_name }}
                   APP_VERSION: ${{ steps.app-version.outputs.version }}
+                  RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
               run: |
+                  if [[ -n "$RECOVERY_VERSION" ]]; then
+                    if [[ "$PROJECT_NAME" != "learn-card-app" ]] || ! [[ "$RECOVERY_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                      echo "::error::Recovery version requires LearnCard and an explicit major.minor.patch version."
+                      exit 1
+                    fi
+                    APP_VERSION="$RECOVERY_VERSION"
+                  fi
                   VERSION_ARGS=(--bundle "$APP_VERSION")
                   if [[ "$PROJECT_NAME" == "scouts" ]]; then
                     # OTA versions advance independently of package/store versions.
@@ -988,6 +1001,7 @@ jobs:
                     VERSION_ARGS=(--auto-bump patch --auto-set-bundle --capacitor-config capacitor.config.ts)
                   fi
 
+                  NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=${{ github.workspace }}/scripts/capgo-manifest-diagnostics.cjs" \
                   bunx --package @capgo/cli@8.50.3 capgo bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
                     --delta \

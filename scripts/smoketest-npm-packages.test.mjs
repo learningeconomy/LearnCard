@@ -43,6 +43,45 @@ const pending = {
     },
 };
 
+const classicMissingVersion = {
+    status: 1,
+    stderr: JSON.stringify({
+        type: 'error',
+        data: 'Couldn\'t find any versions for "@learncard/cli" that matches "3.6.3"',
+    }),
+};
+
+test('Yarn Classic retries a missing published version with a fresh metadata cache', async t => {
+    const cwd = fixture(t);
+    let attempts = 0;
+    const caches = [];
+    await installPackages({
+        manager: 'yarn',
+        group: 'consumers',
+        versions,
+        cwd,
+        wait: async () => {},
+        run: (_command, _args, options) => {
+            caches.push(options.env.YARN_CACHE_FOLDER);
+            return ++attempts === 1 ? classicMissingVersion : { status: 0 };
+        },
+        verify: () => {},
+    });
+    assert.equal(attempts, 2);
+    assert.equal(caches[0], join(cwd, '.registry-cache', '1', 'yarn-cache'));
+    assert.equal(caches[1], join(cwd, '.registry-cache', '2', 'yarn-cache'));
+    for (const data of [
+        'Request failed "401 Unauthorized"',
+        'Request failed "403 Forbidden"',
+        'The engine "node" is incompatible with this module.',
+    ]) {
+        assert.equal(
+            publicationPending('yarn', { stderr: JSON.stringify({ type: 'error', data }) }),
+            false
+        );
+    }
+});
+
 test('uses the release snapshot without consulting possibly stale latest tags', async () => {
     const result = await resolveVersions({
         releaseVersions: versions,
