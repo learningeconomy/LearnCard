@@ -68,7 +68,11 @@ describe('image adapter', () => {
         await expect(
             generateStoredImage('badge', 'did:example:1', config, undefined, storage)
         ).resolves.toEqual({ url: 'https://stored/image' });
-        expect(constructor).toHaveBeenCalledWith({ region: 'us-west-2', maxAttempts: 1 });
+        expect(constructor).toHaveBeenCalledWith({
+            region: 'us-west-2',
+            maxAttempts: 1,
+            authSchemePreference: ['sigv4'],
+        });
         expect(send).toHaveBeenCalledTimes(1);
         expect(JSON.parse(send.mock.calls[0]![0].input.body)).toEqual({
             prompt: 'badge',
@@ -149,6 +153,47 @@ describe('image adapter', () => {
         expect(send).toHaveBeenCalledOnce();
         expect(storage.upload).not.toHaveBeenCalled();
     });
+    it.each([
+        [429, 'TOO_MANY_REQUESTS', 'AI generation rate limited'],
+        [503, 'SERVICE_UNAVAILABLE', 'Image generation unavailable. Please try again later.'],
+        [504, 'SERVICE_UNAVAILABLE', 'Image generation unavailable. Please try again later.'],
+        [400, 'INTERNAL_SERVER_ERROR', 'Image generation failed. Please try again later.'],
+    ])('maps Bedrock HTTP %i to a sanitized %s', async (status, code, message) => {
+        send.mockRejectedValue(
+            Object.assign(new Error('secret provider body'), {
+                $metadata: { httpStatusCode: status },
+            })
+        );
+        const error = await generateStoredImage('badge', 'did', config, undefined, storage).catch(
+            (e: unknown) => e
+        );
+        expect(error).toMatchObject({ code, message });
+        expect(JSON.stringify(error)).not.toContain('secret');
+        expect(send).toHaveBeenCalledOnce();
+        expect(storage.upload).not.toHaveBeenCalled();
+    });
+    it('maps DALL-E rate limits without retrying', async () => {
+        const generate = vi
+            .fn()
+            .mockRejectedValue(Object.assign(new Error('secret body'), { status: 429 }));
+        await expect(
+            generateStoredImage(
+                'badge',
+                'did',
+                { ...config, IMAGE_PROVIDER: 'openai' },
+                { images: { generate } } as unknown as OpenAI,
+                storage
+            )
+        ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(generate).toHaveBeenCalledOnce();
+        expect(storage.storeURL).not.toHaveBeenCalled();
+    });
+    it('does not map storage failures as provider throttling', async () => {
+        storage.upload.mockRejectedValue(Object.assign(new Error('x'), { status: 429 }));
+        await expect(
+            generateStoredImage('badge', 'did', config, undefined, storage)
+        ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+    });
     it('bounds the request timeout and aborts the invocation', async () => {
         vi.useFakeTimers();
         send.mockImplementation(() => new Promise(() => {}));
@@ -179,13 +224,18 @@ describe('image adapter', () => {
         expect(parseLcaApiEnvironment({ NODE_ENV: 'test' })).toMatchObject({
             ...config,
             IMAGE_PROVIDER: 'openai',
-            IMAGE_TIMEOUT_MS: 90000,
+            IMAGE_TIMEOUT_MS: 25000,
         });
+        expect(
+            parseLcaApiEnvironment({ NODE_ENV: 'test', IMAGE_TIMEOUT_MS: '25000' })
+        ).toMatchObject({ IMAGE_TIMEOUT_MS: 25000 });
         for (const bad of [
             { IMAGE_PROVIDER: 'typo' },
             { BEDROCK_IMAGE_REGION: 'us-east-1' },
             { BEDROCK_IMAGE_MODEL_ID: 'amazon.nova-canvas-v1:0' },
             { IMAGE_TIMEOUT_MS: '0' },
+            { IMAGE_TIMEOUT_MS: '25001' },
+            { IMAGE_TIMEOUT_MS: '90000' },
         ])
             expect(() => parseLcaApiEnvironment({ NODE_ENV: 'test', ...bad })).toThrow();
     });

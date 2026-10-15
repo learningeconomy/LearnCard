@@ -41,9 +41,10 @@ export const lcaApiEnvironmentShape = {
     BEDROCK_IMAGE_MODEL_ID: optionalEnvironmentString
         .transform(value => value ?? 'stability.stable-image-core-v1:1')
         .pipe(z.literal('stability.stable-image-core-v1:1')),
+    // Must finish inside the 29-second Lambda timeout (same 25-second ceiling as text generation).
     IMAGE_TIMEOUT_MS: optionalEnvironmentString
-        .transform(value => (value === undefined ? 90_000 : Number(value)))
-        .pipe(z.number().int().min(1_000).max(120_000)),
+        .transform(value => (value === undefined ? 25_000 : Number(value)))
+        .pipe(z.number().int().min(1_000).max(25_000)),
     METABASE_SECRET_KEY: optionalEnvironmentString,
     SCOUTS_SSO_CLIENT_SECRET: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,

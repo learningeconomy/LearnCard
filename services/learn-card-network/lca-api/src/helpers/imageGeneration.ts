@@ -28,6 +28,34 @@ const failure = (): TRPCError =>
         message: 'Image generation failed. Please try again later.',
     });
 
+/** HTTP status from an OpenAI SDK APIError or an AWS SDK service exception, if any. */
+const providerStatus = (error: unknown): number | undefined => {
+    if (!error || typeof error !== 'object') return undefined;
+    const { status, $metadata: metadata } = error as {
+        status?: unknown;
+        $metadata?: { httpStatusCode?: unknown };
+    };
+    if (typeof status === 'number') return status;
+    return typeof metadata?.httpStatusCode === 'number' ? metadata.httpStatusCode : undefined;
+};
+
+/** Same status mapping as text generation (LC-2271); provider bodies are never retained. */
+const providerFailure = (error: unknown): TRPCError => {
+    if (error instanceof TRPCError) return error;
+    const status = providerStatus(error);
+    if (status === 429) {
+        return new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'AI generation rate limited' });
+    }
+    if (status === 503 || status === 504) {
+        return new TRPCError({
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Image generation unavailable. Please try again later.',
+        });
+    }
+    return failure();
+};
+const PASSTHROUGH_CODES = new Set(['BAD_REQUEST', 'TOO_MANY_REQUESTS', 'SERVICE_UNAVAILABLE']);
+
 /** Validate a single unfiltered, bounded square PNG before handing bytes to storage. */
 export const decodeBedrockImage = (body: Uint8Array): Buffer => {
     if (body.byteLength > MAX_RESPONSE_BYTES) throw failure();
@@ -103,20 +131,31 @@ export const generateStoredImage = async (
     const work = async (): Promise<{ url: string }> => {
         let stored: { url?: string };
         if (config.IMAGE_PROVIDER === 'bedrock') {
+            // SigV4 with the execution role's rotating credentials only: never a long-term
+            // AWS_BEARER_TOKEN_BEDROCK API key, matching the text adapter's credential policy.
             const client = new BedrockRuntimeClient({
                 region: config.BEDROCK_IMAGE_REGION,
                 maxAttempts: 1,
+                authSchemePreference: ['sigv4'],
             });
             try {
-                const response = await client.send(
-                    new InvokeModelCommand({
-                        modelId: config.BEDROCK_IMAGE_MODEL_ID,
-                        contentType: 'application/json',
-                        accept: 'application/json',
-                        body: JSON.stringify({ prompt, aspect_ratio: '1:1', output_format: 'png' }),
-                    }),
-                    { abortSignal: controller.signal }
-                );
+                const response = await client
+                    .send(
+                        new InvokeModelCommand({
+                            modelId: config.BEDROCK_IMAGE_MODEL_ID,
+                            contentType: 'application/json',
+                            accept: 'application/json',
+                            body: JSON.stringify({
+                                prompt,
+                                aspect_ratio: '1:1',
+                                output_format: 'png',
+                            }),
+                        }),
+                        { abortSignal: controller.signal }
+                    )
+                    .catch((error: unknown) => {
+                        throw providerFailure(error);
+                    });
                 const bytes = decodeBedrockImage(response.body);
                 if (controller.signal.aborted) throw failure();
                 stored = await storage.upload(
@@ -129,10 +168,14 @@ export const generateStoredImage = async (
             }
         } else {
             if (!openai) throw failure();
-            const response = await openai.images.generate(
-                { prompt, model: 'dall-e-3', size: '1024x1024', n: 1, user: did },
-                { signal: controller.signal, timeout: config.IMAGE_TIMEOUT_MS, maxRetries: 0 }
-            );
+            const response = await openai.images
+                .generate(
+                    { prompt, model: 'dall-e-3', size: '1024x1024', n: 1, user: did },
+                    { signal: controller.signal, timeout: config.IMAGE_TIMEOUT_MS, maxRetries: 0 }
+                )
+                .catch((error: unknown) => {
+                    throw providerFailure(error);
+                });
             if (!response.data?.[0]?.url || controller.signal.aborted) throw failure();
             stored = await storage.storeURL(response.data[0].url);
         }
@@ -150,7 +193,7 @@ export const generateStoredImage = async (
             }),
         ]);
     } catch (error) {
-        if (error instanceof TRPCError && error.code === 'BAD_REQUEST') throw error;
+        if (error instanceof TRPCError && PASSTHROUGH_CODES.has(error.code)) throw error;
         // Do not expose provider messages, prompts, credentials, URLs, or image payloads.
         throw failure();
     } finally {
