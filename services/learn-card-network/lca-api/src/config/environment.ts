@@ -31,6 +31,7 @@ export const lcaApiEnvironmentShape = {
     NETWORK_BRAIN_SERVICE_URL: optionalEnvironmentUrl,
     GOOGLE_APPLICATION_CREDENTIAL: optionalEnvironmentString,
     OPENAI_API_KEY: optionalEnvironmentString,
+    BEDROCK_BASE_URL: optionalEnvironmentString,
     IMAGE_PROVIDER: optionalEnvironmentString
         .transform(value => value ?? 'openai')
         .pipe(z.enum(['openai', 'bedrock'])),

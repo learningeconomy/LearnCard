@@ -7,6 +7,7 @@ frameworkVersion: '3'
 useDotenv: true
 
 plugins:
+    - ./scripts/node24-runtime.cjs
     - serverless-esbuild
     - serverless-offline
 
@@ -19,6 +20,7 @@ custom:
         packager: pnpm
         plugins: esbuildPlugins.cjs
         external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
+        target: node24
         sourcemap: external
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
@@ -30,7 +32,7 @@ package:
 
 provider:
     name: aws
-    runtime: nodejs20.x
+    runtime: nodejs24.x
     memorySize: 2048
     timeout: 29
     stage: ${opt:stage, "dev"}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
@@ -159,7 +160,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
             <div className="p-2">
                 <Picker
                     data={data}
-                    onEmojiSelect={(emoji: any) => {
+                    onEmojiSelect={(emoji: { native: string }) => {
                         setNode(prev => ({
                             ...prev,
                             icon: emoji.native,
@@ -401,4 +402,4 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
     );
 };
 
-export default EditAlignmentModal;
+export default withCompetencyAdmin(EditAlignmentModal);

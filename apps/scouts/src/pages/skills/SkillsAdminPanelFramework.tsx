@@ -7,7 +7,7 @@ import FrameworkSkillsCount from '../SkillFrameworks/FrameworkSkillsCount';
 import { SkillFramework } from '../../components/boost/boost';
 
 type SkillsAdminPanelFrameworkProps = {
-    framework: SkillFramework;
+    framework: Pick<SkillFramework, 'id' | 'name' | 'image'>;
     buttonClassName?: string;
     onClick?: () => void;
 };

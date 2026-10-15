@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.90.41
+
+### Patch Changes
+
+- [#1716](https://github.com/learningeconomy/LearnCard/pull/1716) [`9cbeeb916a77d787be9a31e755269daf498478a1`](https://github.com/learningeconomy/LearnCard/commit/9cbeeb916a77d787be9a31e755269daf498478a1) Thanks [@goblincore](https://github.com/goblincore)! - Restrict ScoutPass competency framework administration to accounts with a Global Admin ID. Hide the Admin Panel and management actions for other users, guard editor entry points, and preserve competency selection when creating badges. Document the remaining shared API authorization gap.
+
+    Provide modal instance ownership to modal content so revoked competency access closes only the affected modal, including its fullscreen shell, without closing unrelated overlays or invoking save callbacks.
+
+- Updated dependencies []:
+    - @learncard/lca-api-plugin@2.0.9
+    - @learncard/react@2.12.10
+
 ## 1.90.40
 
 ### Patch Changes
