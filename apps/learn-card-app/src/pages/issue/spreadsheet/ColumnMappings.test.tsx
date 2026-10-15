@@ -61,8 +61,8 @@ const Editor = () => {
 describe('spreadsheet mapping chips', () => {
     it('offers both evidence columns independently and removes one without removing the other', () => {
         render(<Editor />);
-        const evidence = screen.getByRole('button', { name: 'Evidence', exact: true });
-        const portfolio = screen.getByRole('button', { name: 'Portfolio', exact: true });
+        const evidence = screen.getByRole('button', { name: 'Evidence' });
+        const portfolio = screen.getByRole('button', { name: 'Portfolio' });
         expect(JSON.parse(screen.getByRole('status').textContent!).evidence).toBeUndefined();
         expect(screen.getByRole('combobox', { name: 'Use Evidence as' })).toHaveValue('evidence');
         fireEvent.click(evidence);
@@ -91,7 +91,7 @@ describe('spreadsheet mapping chips', () => {
                     onRemove={vi.fn()}
                 />
             );
-            const evidence = screen.getByRole('button', { name: 'Evidence', exact: true });
+            const evidence = screen.getByRole('button', { name: 'Evidence' });
             expect(evidence).toBeDisabled();
             fireEvent.click(evidence);
             expect(onAdd).not.toHaveBeenCalled();
@@ -137,6 +137,6 @@ describe('spreadsheet mapping chips', () => {
             />
         );
         expect(screen.queryByRole('button', { name: /^Evidence/ })).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Portfolio', exact: true })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Portfolio' })).toBeNull();
     });
 });
