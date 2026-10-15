@@ -512,6 +512,7 @@ for (const key of [
     'SMART_RESUME_ACCESS_KEY',
     'SMART_RESUME_CONTRACT_URI',
     'LOGIN_PROVIDER_DID',
+    'SKILL_EMBEDDING_GOOGLE_API_KEY',
     'SKILLS_PROVIDER_API_KEY',
     'TWILIO_ACCOUNT_SID',
     'TWILIO_AUTH_TOKEN',
@@ -708,6 +709,7 @@ serviceConfigContract({
         'POSTMARK_API_KEY',
         'MESSAGEBIRD_AUTH_TOKEN',
         'SENTRY_DSN',
+        'SKILL_EMBEDDING_GOOGLE_API_KEY',
         'SMART_RESUME_CLIENT_ID',
         'SMART_RESUME_ACCESS_KEY',
         'SMART_RESUME_CONTRACT_URI',
@@ -742,6 +744,7 @@ serviceConfigContract({
         SMART_RESUME_CONTRACT_URI: 80,
         LOGIN_PROVIDER_DID: 80,
         APP_STORE_ADMIN_PROFILE_IDS: 200,
+        SKILL_EMBEDDING_GOOGLE_API_KEY: 48,
         POSTHOG_API_KEY: 48,
         SENTRY_DSN: 100,
     },
@@ -849,6 +852,34 @@ assertDefaultRoleRuntimeGrant({
             },
         },
     ]);
+}
+
+// LC-2206 rollout: every deployed brain stage writes Nova vectors (Bedrock enabled) but keeps
+// semantic search on the legacy Google index until SKILL_EMBEDDING_BEDROCK_READ_ENABLED is
+// flipped after the backfill and quality check. Flipping it back to "false" is the rollback.
+for (const stageFile of [
+    'config.dev.json',
+    'config.production.json',
+    'config.scouts.dev.json',
+    'config.scouts.production.json',
+]) {
+    const config = JSON.parse(
+        fs.readFileSync(
+            path.join(root, 'services/learn-card-network/brain-service/config', stageFile),
+            'utf8'
+        )
+    );
+    assert.equal(config.SKILL_EMBEDDING_BEDROCK_ENABLED, 'true', `brain ${stageFile} Nova writes`);
+    assert.equal(
+        config.SKILL_EMBEDDING_BEDROCK_READ_ENABLED,
+        'false',
+        `brain ${stageFile} Nova reads stay off until the read flag is flipped`
+    );
+    assert.equal(
+        config.SKILL_EMBEDDING_GOOGLE_MODEL,
+        'gemini-embedding-001',
+        `brain ${stageFile} legacy read model`
+    );
 }
 assertDefaultRoleRuntimeGrant({
     dir: path.join(root, 'services/learn-card-network/learn-cloud-service'),

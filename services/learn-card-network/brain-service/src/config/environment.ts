@@ -83,8 +83,16 @@ export const brainServiceEnvironmentShape = {
     GIT_SHA: optionalEnvironmentString,
     SENTRY_DSN: optionalEnvironmentUrl,
     SENTRY_ENV: optionalEnvironmentString,
+    // LC-2206 legacy path: Google gemini-embedding-001 (768-d). Semantic search reads the legacy
+    // index with Google query embeddings while SKILL_EMBEDDING_BEDROCK_READ_ENABLED is off, and
+    // skill writes keep the legacy vectors current. Removed by the post-rollback cleanup.
+    SKILL_EMBEDDING_GOOGLE_API_KEY: optionalEnvironmentString,
+    SKILL_EMBEDDING_GOOGLE_MODEL: optionalEnvironmentString,
     // LC-2206: Amazon Nova 2 embeddings on Bedrock, SigV4 with the execution role only.
+    // ENABLED turns on Nova writes (new/updated skills, backfill); READ_ENABLED switches semantic
+    // search to the Nova index. Reads default off; flipping READ_ENABLED back off is the rollback.
     SKILL_EMBEDDING_BEDROCK_ENABLED: optionalEnvironmentBoolean.default(false),
+    SKILL_EMBEDDING_BEDROCK_READ_ENABLED: optionalEnvironmentBoolean.default(false),
     SKILL_EMBEDDING_BEDROCK_MODEL_ID: optionalEnvironmentString,
     SKILL_EMBEDDING_BEDROCK_REGION: optionalEnvironmentString,
     SKILL_EMBEDDING_DIMENSION: optionalPositiveInteger,
@@ -129,6 +137,7 @@ type SkillEmbeddingEnvironment = {
     IS_OFFLINE: boolean;
     AWS_LAMBDA_FUNCTION_NAME?: string;
     SKILL_EMBEDDING_BEDROCK_ENABLED: boolean;
+    SKILL_EMBEDDING_BEDROCK_READ_ENABLED: boolean;
     SKILL_EMBEDDING_BACKFILL_ON_STARTUP: boolean;
     SKILL_EMBEDDING_BEDROCK_MODEL_ID: string;
     SKILL_EMBEDDING_BEDROCK_REGION: string;
@@ -175,6 +184,18 @@ export const refineSkillEmbeddingEnvironment = (
             code: 'custom',
             path: ['SKILL_EMBEDDING_BEDROCK_ENABLED'],
             message: 'Required when SKILL_EMBEDDING_BACKFILL_ON_STARTUP=true',
+        });
+    }
+
+    // Nova query embeddings need Bedrock; reading the Nova index without it would fail every search.
+    if (
+        environment.SKILL_EMBEDDING_BEDROCK_READ_ENABLED &&
+        !environment.SKILL_EMBEDDING_BEDROCK_ENABLED
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['SKILL_EMBEDDING_BEDROCK_ENABLED'],
+            message: 'Required when SKILL_EMBEDDING_BEDROCK_READ_ENABLED=true',
         });
     }
 

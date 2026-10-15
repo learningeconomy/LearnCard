@@ -2,6 +2,7 @@ import { environment } from '@environment';
 import { neogma } from '@instance';
 import { contractEventMaintenanceSchema } from '@helpers/contract-event-maintenance.helpers';
 import {
+    LEGACY_GOOGLE_SKILL_EMBEDDING_VECTOR_INDEX_QUERY,
     buildSkillEmbeddingVectorIndexQuery,
     resolveSkillEmbeddingGeneration,
 } from '../config/skillEmbedding';
@@ -182,9 +183,12 @@ const indexQueries = [
     'CREATE TEXT INDEX skill_framework_name_text_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.name)',
     'CREATE INDEX skill_id_idx IF NOT EXISTS FOR (s:Skill) ON (s.id)',
     'CREATE TEXT INDEX skill_statement_text_idx IF NOT EXISTS FOR (s:Skill) ON (s.statement)',
-    // LC-2206: one vector index per embedding generation (Nova 2, 1024 dims by default). The
-    // legacy Google 768-dim `skill_embedding_vector_idx` is no longer created or queried; it
-    // stays in place for rollback until the cleanup step in the LC-2206 cutover plan drops it.
+    // LC-2206: the legacy Google 768-dim index (main's DDL, unchanged) stays because semantic
+    // search reads it until SKILL_EMBEDDING_BEDROCK_READ_ENABLED is on, and flipping the flag
+    // back off is the rollback. The post-rollback-window cleanup drops it.
+    LEGACY_GOOGLE_SKILL_EMBEDDING_VECTOR_INDEX_QUERY,
+    // One vector index per Nova embedding generation (1024 dims by default), written regardless
+    // of the read flag.
     buildSkillEmbeddingVectorIndexQuery(
         resolveSkillEmbeddingGeneration({
             modelId: environment.SKILL_EMBEDDING_BEDROCK_MODEL_ID,

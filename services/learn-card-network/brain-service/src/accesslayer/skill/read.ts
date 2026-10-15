@@ -3,7 +3,10 @@ import { int } from 'neo4j-driver';
 import { convertObjectRegExpToNeo4j, buildWhereClause } from '@helpers/neo4j.helpers';
 import type { FlatSkillType, SkillType } from 'types/skill';
 import type { SkillQuery } from '@learncard/types';
-import type { SkillEmbeddingGeneration } from '../../config/skillEmbedding';
+import type {
+    SkillEmbeddingGeneration,
+    SkillEmbeddingSearchIndex,
+} from '../../config/skillEmbedding';
 
 export const doesProfileManageSkill = async (
     profileId: string,
@@ -454,17 +457,18 @@ const withoutEmbeddingProperties = (props: Record<string, unknown>): Record<stri
     Object.fromEntries(Object.entries(props).filter(([key]) => !key.startsWith('embedding')));
 
 /**
- * LC-2206: query the generation's own vector index. Vectors from other models or dimensions
- * live in other properties and indexes, so one query never mixes embedding spaces.
+ * LC-2206: query one vector index (the Nova generation's, or the legacy Google one while
+ * SKILL_EMBEDDING_BEDROCK_READ_ENABLED is off). Vectors from other models or dimensions live
+ * in other properties and indexes, so one query never mixes embedding spaces.
  */
 export const searchSkillsByEmbedding = async (
     embedding: number[],
     limit: number,
     frameworkId: string | undefined,
-    generation: SkillEmbeddingGeneration
+    index: Pick<SkillEmbeddingSearchIndex, 'indexName' | 'dimension'>
 ): Promise<SkillEmbeddingSearchResult[]> => {
-    if (embedding.length !== generation.dimension) {
-        throw new Error('Skill search embedding does not match the configured dimension');
+    if (embedding.length !== index.dimension) {
+        throw new Error('Skill search embedding does not match the index dimension');
     }
 
     const normalizedLimit = Math.min(Math.max(limit, 1), 200);
@@ -477,7 +481,7 @@ export const searchSkillsByEmbedding = async (
          RETURN node AS s, score AS score
          ORDER BY score DESC`,
         {
-            indexName: generation.indexName,
+            indexName: index.indexName,
             limit: int(queryLimit),
             embedding,
             frameworkId: frameworkId ?? null,

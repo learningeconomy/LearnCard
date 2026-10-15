@@ -106,9 +106,43 @@ export const buildSkillEmbeddingUpdateQuery = (
              RETURN count(s) AS count`;
 };
 
-/** Legacy Google gemini-embedding-001 (768-dim) index; kept read-only for rollback, never queried. */
+/** A vector index semantic search can query, with the vector size it accepts. */
+export type SkillEmbeddingSearchIndex = {
+    /** `nova` = the configured Nova 2 generation; `legacy` = the pre-LC-2206 Google index. */
+    source: 'nova' | 'legacy';
+    indexName: string;
+    dimension: number;
+};
+
+/**
+ * Legacy Google gemini-embedding-001 (768-dim) property and index, exactly as on main before
+ * LC-2206. Semantic search keeps reading it (with Google query embeddings) until
+ * SKILL_EMBEDDING_BEDROCK_READ_ENABLED is flipped on, and skill writes keep it current while
+ * a Google key is configured, so flipping the flag back off is the rollback. A follow-up
+ * cleanup drops it after the rollback window.
+ */
 export const LEGACY_GOOGLE_SKILL_EMBEDDING_INDEX = 'skill_embedding_vector_idx';
 export const LEGACY_GOOGLE_SKILL_EMBEDDING_PROPERTY = 'embedding';
+export const LEGACY_GOOGLE_SKILL_EMBEDDING_DIMENSION = 768;
+export const LEGACY_GOOGLE_SKILL_EMBEDDING_MODEL = 'gemini-embedding-001';
+
+export const LEGACY_GOOGLE_SKILL_EMBEDDING_SEARCH_INDEX: SkillEmbeddingSearchIndex = {
+    source: 'legacy',
+    indexName: LEGACY_GOOGLE_SKILL_EMBEDDING_INDEX,
+    dimension: LEGACY_GOOGLE_SKILL_EMBEDDING_DIMENSION,
+};
+
+/** Main's legacy index DDL, unchanged; idempotent so fresh local and e2e databases have it. */
+export const LEGACY_GOOGLE_SKILL_EMBEDDING_VECTOR_INDEX_QUERY = `CREATE VECTOR INDEX ${LEGACY_GOOGLE_SKILL_EMBEDDING_INDEX} IF NOT EXISTS FOR (s:Skill) ON (s.${LEGACY_GOOGLE_SKILL_EMBEDDING_PROPERTY}) OPTIONS {indexConfig: {\`vector.dimensions\`: ${LEGACY_GOOGLE_SKILL_EMBEDDING_DIMENSION}, \`vector.similarity_function\`: 'cosine'}}`;
+
+/** Search index for the configured Nova 2 generation. */
+export const toSkillEmbeddingSearchIndex = (
+    generation: SkillEmbeddingGeneration
+): SkillEmbeddingSearchIndex => ({
+    source: 'nova',
+    indexName: generation.indexName,
+    dimension: generation.dimension,
+});
 
 /**
  * Staging and production Lambdas do not set NODE_ENV, so a Lambda that is not running under

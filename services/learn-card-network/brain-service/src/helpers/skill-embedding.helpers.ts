@@ -1,19 +1,24 @@
 import { environment } from '@environment';
 import { z } from 'zod';
 import { createHash, randomUUID } from 'crypto';
+import { GoogleGenAI } from '@google/genai';
 import cache from '@cache';
 
 import { getSkillEmbeddingCandidates } from '@accesslayer/skill/read';
 import type { SkillEmbeddingCandidate } from '@accesslayer/skill/read';
-import { updateSkillEmbedding } from '@accesslayer/skill/update';
+import { updateLegacySkillEmbedding, updateSkillEmbedding } from '@accesslayer/skill/update';
 import type { SkillEmbeddingUpdate } from '@accesslayer/skill/update';
 
 import {
+    LEGACY_GOOGLE_SKILL_EMBEDDING_DIMENSION,
+    LEGACY_GOOGLE_SKILL_EMBEDDING_MODEL,
+    LEGACY_GOOGLE_SKILL_EMBEDDING_SEARCH_INDEX,
     NOVA2_MAX_TEXT_CHARS,
     SKILL_EMBEDDING_SCHEME_VERSION,
     resolveSkillEmbeddingGeneration,
+    toSkillEmbeddingSearchIndex,
 } from '../config/skillEmbedding';
-import type { SkillEmbeddingGeneration } from '../config/skillEmbedding';
+import type { SkillEmbeddingGeneration, SkillEmbeddingSearchIndex } from '../config/skillEmbedding';
 import {
     SkillEmbeddingError,
     createDefaultBedrockInvoke,
@@ -38,6 +43,13 @@ export type SkillEmbeddingTarget = {
 
 export type UpdateSkillEmbeddingFn = (update: SkillEmbeddingUpdate) => Promise<boolean>;
 
+/** Writes the legacy Google `s.embedding` vector (main's pre-LC-2206 signature). */
+export type UpdateLegacySkillEmbeddingFn = (
+    skillId: string,
+    embedding: number[],
+    frameworkId?: string
+) => Promise<boolean>;
+
 // ---------------------------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------------------------
@@ -55,7 +67,29 @@ export const getSkillEmbeddingGeneration = (): SkillEmbeddingGeneration => {
     return cachedGeneration;
 };
 
+/** Nova writes (new/updated skills, seed, backfill). Independent of the read flag. */
 export const isSkillEmbeddingEnabled = (): boolean => environment.SKILL_EMBEDDING_BEDROCK_ENABLED;
+
+/**
+ * LC-2206 read switch. Off (default): semantic search queries the legacy Google 768-d index
+ * with Google query embeddings, exactly as before LC-2206. On: it queries the Nova index with
+ * Nova TEXT_RETRIEVAL query embeddings. Flipping it back off is the rollback.
+ */
+export const isSkillEmbeddingNovaReadEnabled = (): boolean =>
+    environment.SKILL_EMBEDDING_BEDROCK_READ_ENABLED;
+
+/** The vector index semantic search queries in this process. */
+export const getSkillEmbeddingSearchIndex = (): SkillEmbeddingSearchIndex =>
+    isSkillEmbeddingNovaReadEnabled()
+        ? toSkillEmbeddingSearchIndex(getSkillEmbeddingGeneration())
+        : LEGACY_GOOGLE_SKILL_EMBEDDING_SEARCH_INDEX;
+
+/** Legacy Google writes and legacy reads run only while the Google key is configured (as on main). */
+export const isLegacySkillEmbeddingEnabled = (): boolean =>
+    Boolean(environment.SKILL_EMBEDDING_GOOGLE_API_KEY);
+
+const getLegacyGoogleModel = (): string =>
+    environment.SKILL_EMBEDDING_GOOGLE_MODEL ?? LEGACY_GOOGLE_SKILL_EMBEDDING_MODEL;
 
 const getBedrockConfig = (): BedrockEmbeddingConfig => {
     const generation = getSkillEmbeddingGeneration();
@@ -73,6 +107,43 @@ let invokeOverride: BedrockInvoke | undefined;
 /** Unit tests inject a fake InvokeModel transport; production always uses the SDK client. */
 export const setSkillEmbeddingInvokeForTests = (invoke: BedrockInvoke | undefined): void => {
     invokeOverride = invoke;
+};
+
+// ---------------------------------------------------------------------------------------------
+// Legacy Google gemini-embedding-001 (768-d): kept only for the LC-2206 transition
+// ---------------------------------------------------------------------------------------------
+
+export type LegacyGoogleEmbed = (texts: string[]) => Promise<number[][]>;
+
+let legacyEmbedOverride: LegacyGoogleEmbed | undefined;
+
+/** Unit tests inject a fake Google transport; production always uses @google/genai. */
+export const setLegacySkillEmbeddingForTests = (
+    embedTexts: LegacyGoogleEmbed | undefined
+): void => {
+    legacyEmbedOverride = embedTexts;
+};
+
+const legacyEmbeddingsResponseValidator = z.array(z.object({ values: z.array(z.number()) }));
+
+let googleClient: GoogleGenAI | undefined;
+
+/** Same request main sends: gemini-embedding-001, no task type, 768 output dimensions. */
+const embedWithLegacyGoogle: LegacyGoogleEmbed = async texts => {
+    if (!isLegacySkillEmbeddingEnabled()) throw new SkillEmbeddingError('disabled');
+    if (texts.length === 0) return [];
+    if (legacyEmbedOverride) return legacyEmbedOverride(texts);
+
+    googleClient ??= new GoogleGenAI({ apiKey: environment.SKILL_EMBEDDING_GOOGLE_API_KEY });
+
+    const response = await googleClient.models.embedContent({
+        model: getLegacyGoogleModel(),
+        contents: texts,
+        config: { outputDimensionality: LEGACY_GOOGLE_SKILL_EMBEDDING_DIMENSION },
+    });
+
+    const parsed = await legacyEmbeddingsResponseValidator.parseAsync(response.embeddings);
+    return parsed.map(embedding => embedding.values);
 };
 
 const embed = async (text: string, purpose: EmbeddingPurpose): Promise<number[]> => {
@@ -100,6 +171,13 @@ export const buildSkillEmbeddingText = (skill: SkillEmbeddingTarget): string => 
     return parts.join('\n').slice(0, NOVA2_MAX_TEXT_CHARS).trim();
 };
 
+/** Main's legacy text (no Nova clipping), so legacy vectors match what main writes. */
+export const buildLegacySkillEmbeddingText = (skill: SkillEmbeddingTarget): string =>
+    [skill.statement, skill.description]
+        .map(part => (typeof part === 'string' ? part.trim() : ''))
+        .filter(Boolean)
+        .join('\n');
+
 /** Stored with each vector; equal keys mean "already embedded with this generation and text". */
 export const computeSkillEmbeddingKey = (
     generation: SkillEmbeddingGeneration,
@@ -120,7 +198,7 @@ export const skillNeedsEmbedding = (
 };
 
 // ---------------------------------------------------------------------------------------------
-// Query embeddings (TEXT_RETRIEVAL) with a model/dimension-scoped Redis cache
+// Query embeddings with a model/dimension-scoped Redis cache, routed by the read flag
 // ---------------------------------------------------------------------------------------------
 
 const getEmbeddingCacheTtlSeconds = (): number => {
@@ -128,16 +206,49 @@ const getEmbeddingCacheTtlSeconds = (): number => {
     return Math.min(Math.max(raw, 60), 60 * 60 * 24 * 7);
 };
 
+const digestQueryText = (text: string): string =>
+    createHash('sha256').update(text.trim()).digest('hex');
+
 /**
- * The model ID, dimension and scheme are part of the key, so vectors cached for the old
- * Google model (`skill-embedding:query:gemini-embedding-001:<digest>`) are never read back.
+ * Nova query cache key. The model ID, dimension and scheme are part of the key, so it can
+ * never collide with the legacy Google key below (or a future Nova generation's).
  */
 export const getQueryEmbeddingCacheKey = (text: string): string => {
     const generation = getSkillEmbeddingGeneration();
-    const digest = createHash('sha256').update(text.trim()).digest('hex');
 
-    return `skill-embedding:query:${generation.modelId}:${generation.dimension}:${SKILL_EMBEDDING_SCHEME_VERSION}:${digest}`;
+    return `skill-embedding:query:${generation.modelId}:${generation.dimension}:${SKILL_EMBEDDING_SCHEME_VERSION}:${digestQueryText(text)}`;
 };
+
+/**
+ * Legacy Google query cache key, byte-for-byte main's format, so entries main already cached
+ * (same model, same 768-d vectors) stay valid. Cached vectors are also length-checked on read.
+ */
+export const getLegacyQueryEmbeddingCacheKey = (text: string): string =>
+    `skill-embedding:query:${getLegacyGoogleModel()}:${digestQueryText(text)}`;
+
+type QueryEmbeddingRoute = {
+    index: SkillEmbeddingSearchIndex;
+    cacheKey: (text: string) => string;
+    embed: (text: string) => Promise<number[]>;
+};
+
+const embedLegacyQuery = async (text: string): Promise<number[]> => {
+    const [embedding] = await embedWithLegacyGoogle([text]);
+    if (!embedding) throw new SkillEmbeddingError('invalid_response');
+    return embedding;
+};
+
+const getQueryEmbeddingRoute = (): QueryEmbeddingRoute => {
+    const index = getSkillEmbeddingSearchIndex();
+
+    return index.source === 'nova'
+        ? { index, cacheKey: getQueryEmbeddingCacheKey, embed: text => embed(text, 'query') }
+        : { index, cacheKey: getLegacyQueryEmbeddingCacheKey, embed: embedLegacyQuery };
+};
+
+/** Cache key semantic search uses for `text` under the current read flag. */
+export const getSearchQueryEmbeddingCacheKey = (text: string): string =>
+    getQueryEmbeddingRoute().cacheKey(text);
 
 const cachedEmbeddingValidator = z.object({ values: z.array(z.number()) });
 
@@ -146,12 +257,13 @@ export const getCachedQueryEmbedding = async (text: string): Promise<number[] | 
     if (!normalizedText) return null;
 
     try {
-        const cached = await cache.get(getQueryEmbeddingCacheKey(normalizedText));
+        const route = getQueryEmbeddingRoute();
+        const cached = await cache.get(route.cacheKey(normalizedText));
         if (!cached) return null;
 
         const parsed = cachedEmbeddingValidator.parse(JSON.parse(cached));
         // Belt and braces: never return a vector of the wrong size to the vector index.
-        if (parsed.values.length !== getSkillEmbeddingGeneration().dimension) return null;
+        if (parsed.values.length !== route.index.dimension) return null;
 
         return parsed.values;
     } catch (error) {
@@ -160,6 +272,10 @@ export const getCachedQueryEmbedding = async (text: string): Promise<number[] | 
     }
 };
 
+/**
+ * Query embedding for semantic search: Nova TEXT_RETRIEVAL when the read flag is on, otherwise
+ * Google gemini-embedding-001 (768-d) as on main. Pair it with getSkillEmbeddingSearchIndex().
+ */
 export const generateQueryEmbedding = async (text: string): Promise<number[]> => {
     const normalizedText = text.trim();
     if (!normalizedText) return [];
@@ -167,11 +283,12 @@ export const generateQueryEmbedding = async (text: string): Promise<number[]> =>
     const cached = await getCachedQueryEmbedding(normalizedText);
     if (cached) return cached;
 
-    const embedding = await embed(normalizedText, 'query');
+    const route = getQueryEmbeddingRoute();
+    const embedding = await route.embed(normalizedText);
 
     try {
         await cache.set(
-            getQueryEmbeddingCacheKey(normalizedText),
+            route.cacheKey(normalizedText),
             JSON.stringify({ values: embedding }),
             getEmbeddingCacheTtlSeconds()
         );
@@ -224,11 +341,18 @@ export const generateIndexEmbeddings = async (texts: string[]): Promise<number[]
 
 const defaultUpdateSkillEmbedding: UpdateSkillEmbeddingFn = update => updateSkillEmbedding(update);
 
+const defaultUpdateLegacySkillEmbedding: UpdateLegacySkillEmbeddingFn = (
+    skillId,
+    embedding,
+    frameworkId
+) => updateLegacySkillEmbedding(skillId, embedding, frameworkId);
+
 /**
- * Embed and store skills with the current generation. No-op while embeddings are disabled, so
- * skill CRUD keeps working locally without AWS credentials (the backfill fills gaps later).
+ * Embed and store skills with the current Nova generation. Runs whenever Nova embeddings are
+ * enabled, regardless of the read flag, so skills created during the backfill window already
+ * have Nova vectors. No-op while disabled, so skill CRUD keeps working locally without AWS.
  */
-export const upsertSkillEmbeddings = async (
+export const upsertNovaSkillEmbeddings = async (
     skills: SkillEmbeddingTarget[],
     updateSkillEmbeddingFn: UpdateSkillEmbeddingFn = defaultUpdateSkillEmbedding
 ): Promise<void> => {
@@ -263,10 +387,65 @@ export const upsertSkillEmbeddings = async (
     }
 };
 
+/**
+ * Keep the legacy Google `s.embedding` current exactly as main does (batched embedContent,
+ * 768-d), while semantic search can still read it. No-op without a Google key, as on main.
+ */
+export const upsertLegacySkillEmbeddings = async (
+    skills: SkillEmbeddingTarget[],
+    updateLegacySkillEmbeddingFn: UpdateLegacySkillEmbeddingFn = defaultUpdateLegacySkillEmbedding
+): Promise<void> => {
+    if (!isLegacySkillEmbeddingEnabled()) return;
+
+    const candidates = skills
+        .map(skill => ({ skill, text: buildLegacySkillEmbeddingText(skill) }))
+        .filter(item => Boolean(item.text));
+
+    if (candidates.length === 0) return;
+
+    const batchSize = getEmbeddingBatchSize();
+
+    for (let i = 0; i < candidates.length; i += batchSize) {
+        const batch = candidates.slice(i, i + batchSize);
+        const embeddings = await embedWithLegacyGoogle(batch.map(item => item.text));
+
+        for (let j = 0; j < batch.length; j += 1) {
+            const item = batch[j];
+            const embedding = embeddings[j];
+            if (!item || !embedding) continue;
+
+            await updateLegacySkillEmbeddingFn(item.skill.id, embedding, item.skill.frameworkId);
+        }
+    }
+};
+
+/**
+ * Skill create/update/sync write path: Nova and legacy Google writes run independently of
+ * each other and of the read flag. A failure in one never skips the other; the first error
+ * is rethrown afterwards so callers still log it.
+ */
+export const upsertSkillEmbeddings = async (
+    skills: SkillEmbeddingTarget[],
+    updateSkillEmbeddingFn: UpdateSkillEmbeddingFn = defaultUpdateSkillEmbedding,
+    updateLegacySkillEmbeddingFn: UpdateLegacySkillEmbeddingFn = defaultUpdateLegacySkillEmbedding
+): Promise<void> => {
+    const results = await Promise.allSettled([
+        upsertNovaSkillEmbeddings(skills, updateSkillEmbeddingFn),
+        upsertLegacySkillEmbeddings(skills, updateLegacySkillEmbeddingFn),
+    ]);
+
+    const failure = results.find(
+        (result): result is PromiseRejectedResult => result.status === 'rejected'
+    );
+    if (failure) throw failure.reason;
+};
+
 export const upsertSkillEmbedding = async (
     skill: SkillEmbeddingTarget,
-    updateSkillEmbeddingFn: UpdateSkillEmbeddingFn = defaultUpdateSkillEmbedding
-): Promise<void> => upsertSkillEmbeddings([skill], updateSkillEmbeddingFn);
+    updateSkillEmbeddingFn: UpdateSkillEmbeddingFn = defaultUpdateSkillEmbedding,
+    updateLegacySkillEmbeddingFn: UpdateLegacySkillEmbeddingFn = defaultUpdateLegacySkillEmbedding
+): Promise<void> =>
+    upsertSkillEmbeddings([skill], updateSkillEmbeddingFn, updateLegacySkillEmbeddingFn);
 
 /** Log-safe description: our sanitised code, never a provider message or input text. */
 export const describeEmbeddingError = (error: unknown): string => {

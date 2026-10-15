@@ -8,6 +8,10 @@ import {
     getCredentialRefreshRuntimeEnvironment,
     parseBrainServiceEnvironment,
 } from './environment';
+import {
+    LEGACY_GOOGLE_SKILL_EMBEDDING_SEARCH_INDEX,
+    LEGACY_GOOGLE_SKILL_EMBEDDING_VECTOR_INDEX_QUERY,
+} from './skillEmbedding';
 
 const REQUIRED_ENVIRONMENT = {
     SEED: 'a'.repeat(64),
@@ -122,6 +126,8 @@ describe('LC-2206 skill embedding configuration', () => {
             parseBrainServiceEnvironment({ ...REQUIRED_ENVIRONMENT, NODE_ENV: 'test' })
         ).toMatchObject({
             SKILL_EMBEDDING_BEDROCK_ENABLED: false,
+            // Reads stay on the legacy Google index unless explicitly switched.
+            SKILL_EMBEDDING_BEDROCK_READ_ENABLED: false,
             SKILL_EMBEDDING_BEDROCK_MODEL_ID: 'amazon.nova-2-multimodal-embeddings-v1:0',
             SKILL_EMBEDDING_BEDROCK_REGION: 'us-east-1',
             SKILL_EMBEDDING_DIMENSION: 1024,
@@ -167,7 +173,7 @@ describe('LC-2206 skill embedding configuration', () => {
         ).toThrow(/SKILL_EMBEDDING_BEDROCK_REGION/);
     });
 
-    it('rejects the retired Google model and unsupported dimensions everywhere', () => {
+    it('rejects the Google model as a Bedrock model ID and unsupported Nova dimensions everywhere', () => {
         expect(() =>
             parseBrainServiceEnvironment({
                 ...REQUIRED_ENVIRONMENT,
@@ -210,6 +216,59 @@ describe('LC-2206 skill embedding configuration', () => {
         ).toThrow(/AWS_ENDPOINT_URL_BEDROCK_RUNTIME/);
     });
 
+    it('read flag defaults off even when Nova writes are enabled in a deployed runtime', () => {
+        const parsed = parseBrainServiceEnvironment({
+            ...DEPLOYED_LAMBDA,
+            SKILL_EMBEDDING_BEDROCK_ENABLED: 'true',
+        });
+
+        expect(parsed.SKILL_EMBEDDING_BEDROCK_ENABLED).toBe(true);
+        expect(parsed.SKILL_EMBEDDING_BEDROCK_READ_ENABLED).toBe(false);
+    });
+
+    it('accepts the read flag with Nova enabled and rejects it with Nova disabled', () => {
+        expect(
+            parseBrainServiceEnvironment({
+                ...DEPLOYED_LAMBDA,
+                SKILL_EMBEDDING_BEDROCK_ENABLED: 'true',
+                SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'true',
+            }).SKILL_EMBEDDING_BEDROCK_READ_ENABLED
+        ).toBe(true);
+
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'test',
+                SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'true',
+            })
+        ).toThrow(/SKILL_EMBEDDING_BEDROCK_READ_ENABLED=true/);
+    });
+
+    it('keeps the legacy Google settings for the flag-off read path', () => {
+        expect(
+            parseBrainServiceEnvironment({
+                ...DEPLOYED_LAMBDA,
+                SKILL_EMBEDDING_BEDROCK_ENABLED: 'true',
+                SKILL_EMBEDDING_GOOGLE_API_KEY: 'legacy-google-key',
+                SKILL_EMBEDDING_GOOGLE_MODEL: 'gemini-embedding-001',
+            })
+        ).toMatchObject({
+            SKILL_EMBEDDING_GOOGLE_API_KEY: 'legacy-google-key',
+            SKILL_EMBEDDING_GOOGLE_MODEL: 'gemini-embedding-001',
+        });
+    });
+
+    it("keeps main's legacy 768-d index definition for the flag-off read path", () => {
+        expect(LEGACY_GOOGLE_SKILL_EMBEDDING_VECTOR_INDEX_QUERY).toBe(
+            "CREATE VECTOR INDEX skill_embedding_vector_idx IF NOT EXISTS FOR (s:Skill) ON (s.embedding) OPTIONS {indexConfig: {`vector.dimensions`: 768, `vector.similarity_function`: 'cosine'}}"
+        );
+        expect(LEGACY_GOOGLE_SKILL_EMBEDDING_SEARCH_INDEX).toEqual({
+            source: 'legacy',
+            indexName: 'skill_embedding_vector_idx',
+            dimension: 768,
+        });
+    });
+
     it('requires Bedrock embeddings to be enabled for the startup backfill', () => {
         expect(() =>
             parseBrainServiceEnvironment({
@@ -225,24 +284,30 @@ describe('LC-2206 skill embedding configuration', () => {
         'config.production.json',
         'config.scouts.dev.json',
         'config.scouts.production.json',
-    ])('checked-in %s enables Nova 2 with allowlisted values only', stageFile => {
-        const configPath = fileURLToPath(new URL(`../../config/${stageFile}`, import.meta.url));
-        const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    ])(
+        'checked-in %s enables Nova writes, keeps reads on legacy, allowlisted values only',
+        stageFile => {
+            const configPath = fileURLToPath(new URL(`../../config/${stageFile}`, import.meta.url));
+            const config = JSON.parse(readFileSync(configPath, 'utf8'));
 
-        expect(config).toMatchObject({
-            SKILL_EMBEDDING_BEDROCK_ENABLED: 'true',
-            SKILL_EMBEDDING_BEDROCK_MODEL_ID: 'amazon.nova-2-multimodal-embeddings-v1:0',
-            SKILL_EMBEDDING_BEDROCK_REGION: 'us-east-1',
-            SKILL_EMBEDDING_DIMENSION: '1024',
-        });
-        expect(Object.keys(config).some(key => key.includes('GOOGLE'))).toBe(false);
-        expect(() =>
-            parseBrainServiceEnvironment({
-                ...DEPLOYED_LAMBDA,
-                ...config,
-                // Credentials come from the runtime-secrets bundle in Lambda.
-                CREDENTIAL_REFRESH_DIGEST_SECRET: 'bundle-secret',
-            })
-        ).not.toThrow();
-    });
+            expect(config).toMatchObject({
+                SKILL_EMBEDDING_BEDROCK_ENABLED: 'true',
+                SKILL_EMBEDDING_BEDROCK_MODEL_ID: 'amazon.nova-2-multimodal-embeddings-v1:0',
+                SKILL_EMBEDDING_BEDROCK_REGION: 'us-east-1',
+                SKILL_EMBEDDING_DIMENSION: '1024',
+                SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'false',
+                SKILL_EMBEDDING_GOOGLE_MODEL: 'gemini-embedding-001',
+            });
+            // Only the non-secret model name is checked in; the key comes from the secrets bundle.
+            expect(config).not.toHaveProperty('SKILL_EMBEDDING_GOOGLE_API_KEY');
+            expect(() =>
+                parseBrainServiceEnvironment({
+                    ...DEPLOYED_LAMBDA,
+                    ...config,
+                    // Credentials come from the runtime-secrets bundle in Lambda.
+                    CREDENTIAL_REFRESH_DIGEST_SECRET: 'bundle-secret',
+                })
+            ).not.toThrow();
+        }
+    );
 });

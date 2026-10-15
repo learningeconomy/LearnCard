@@ -11,12 +11,18 @@ import {
 } from './skill-frameworks.fixtures';
 import {
     getSkillEmbeddingGeneration,
+    isLegacySkillEmbeddingEnabled,
     isSkillEmbeddingEnabled,
     isSkillEmbeddingError,
-    upsertSkillEmbeddings,
+    upsertLegacySkillEmbeddings,
+    upsertNovaSkillEmbeddings,
+    type UpdateLegacySkillEmbeddingFn,
     type UpdateSkillEmbeddingFn,
 } from '@helpers/skill-embedding.helpers';
-import { buildSkillEmbeddingUpdateQuery } from '../config/skillEmbedding';
+import {
+    LEGACY_GOOGLE_SKILL_EMBEDDING_PROPERTY,
+    buildSkillEmbeddingUpdateQuery,
+} from '../config/skillEmbedding';
 // Inlined from @helpers/profile.helpers to avoid importing the access/model layer
 // (it transitively pulls in @models, which hits a circular-dependency TDZ under tsx).
 const transformProfileId = (rawInput: string): string =>
@@ -379,9 +385,37 @@ const buildSeedSkillEmbeddingUpdater = (run: QueryRunnerLike['run']): UpdateSkil
     };
 };
 
+/** LC-2206 legacy write (main's Cypher), kept while search can still read the legacy index. */
+const buildSeedLegacySkillEmbeddingUpdater = (
+    run: QueryRunnerLike['run']
+): UpdateLegacySkillEmbeddingFn => {
+    return async (skillId, embedding, frameworkId) => {
+        if (frameworkId) {
+            const result = await run(
+                `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+                 SET s.embedding = $embedding
+                 RETURN count(s) AS count`,
+                { frameworkId, skillId, embedding }
+            );
+
+            return Number(result.records[0]?.get('count') ?? 0) > 0;
+        }
+
+        const result = await run(
+            `MATCH (s:Skill {id: $skillId})
+             SET s.embedding = $embedding
+             RETURN count(s) AS count`,
+            { skillId, embedding }
+        );
+
+        return Number(result.records[0]?.get('count') ?? 0) > 0;
+    };
+};
+
 const getSeedSkillsMissingEmbedding = async (
     run: QueryRunnerLike['run'],
-    frameworkId: string
+    frameworkId: string,
+    vectorProperty: string
 ): Promise<
     Array<{
         id: string;
@@ -391,11 +425,10 @@ const getSeedSkillsMissingEmbedding = async (
         code?: string;
     }>
 > => {
-    const generation = getSkillEmbeddingGeneration();
-    // Property names come from resolveSkillEmbeddingGeneration ([a-z0-9_] only).
+    // Property names come from resolveSkillEmbeddingGeneration or the legacy constant ([a-z0-9_] only).
     const result = await run(
         `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
-         WHERE s.${generation.vectorProperty} IS NULL
+         WHERE s.${vectorProperty} IS NULL
          OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
          RETURN s AS s, parent.id AS parentId
          ORDER BY s.id`,
@@ -583,14 +616,39 @@ export const seedSkillFrameworkFixtures = async (
             await upsertSkillNode(run, framework, rootSkill);
         }
 
+        // LC-2206: Nova vectors whenever Nova is enabled (independent of the read flag), plus
+        // the legacy Google vectors main writes while a Google key is configured.
         if (!embeddingBackfillFailureSummary && isSkillEmbeddingEnabled()) {
-            const missingEmbeddingSkills = await getSeedSkillsMissingEmbedding(run, framework.id);
+            const missingEmbeddingSkills = await getSeedSkillsMissingEmbedding(
+                run,
+                framework.id,
+                getSkillEmbeddingGeneration().vectorProperty
+            );
 
             if (missingEmbeddingSkills.length > 0) {
                 try {
-                    await upsertSkillEmbeddings(
+                    await upsertNovaSkillEmbeddings(
                         missingEmbeddingSkills,
                         buildSeedSkillEmbeddingUpdater(run)
+                    );
+                } catch (error) {
+                    embeddingBackfillFailureSummary = describeEmbeddingBackfillFailure(error);
+                }
+            }
+        }
+
+        if (!embeddingBackfillFailureSummary && isLegacySkillEmbeddingEnabled()) {
+            const missingLegacySkills = await getSeedSkillsMissingEmbedding(
+                run,
+                framework.id,
+                LEGACY_GOOGLE_SKILL_EMBEDDING_PROPERTY
+            );
+
+            if (missingLegacySkills.length > 0) {
+                try {
+                    await upsertLegacySkillEmbeddings(
+                        missingLegacySkills,
+                        buildSeedLegacySkillEmbeddingUpdater(run)
                     );
                 } catch (error) {
                     embeddingBackfillFailureSummary = describeEmbeddingBackfillFailure(error);

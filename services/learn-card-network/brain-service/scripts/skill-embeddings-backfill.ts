@@ -12,6 +12,9 @@
  * - Idempotent and resumable: skills whose stored key matches sha256(identity + text) are
  *   skipped; on early stop it prints the cursor to resume from.
  *
+ * Writes only the Nova property; the legacy Google `s.embedding` and the read flag
+ * (SKILL_EMBEDDING_BEDROCK_READ_ENABLED) are untouched, so it is safe while search reads legacy.
+ *
  * Uses the normal AWS credential chain (SigV4). Paid: each embedded skill is one InvokeModel.
  */
 import { environment } from '@environment';

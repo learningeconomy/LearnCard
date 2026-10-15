@@ -22,6 +22,8 @@
     "SIGNING_AUTHORITY_ENDPOINT": "https://staging.api.scoutnetwork.org/api",
     "SKILL_EMBEDDING_BEDROCK_ENABLED": "true",
     "SKILL_EMBEDDING_BEDROCK_MODEL_ID": "amazon.nova-2-multimodal-embeddings-v1:0",
+    "SKILL_EMBEDDING_BEDROCK_READ_ENABLED": "false",
     "SKILL_EMBEDDING_BEDROCK_REGION": "us-east-1",
-    "SKILL_EMBEDDING_DIMENSION": "1024"
+    "SKILL_EMBEDDING_DIMENSION": "1024",
+    "SKILL_EMBEDDING_GOOGLE_MODEL": "gemini-embedding-001"
 }

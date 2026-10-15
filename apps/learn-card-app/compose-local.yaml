@@ -146,6 +146,11 @@ services:
             SKILL_EMBEDDING_BEDROCK_ENABLED: ${SKILL_EMBEDDING_BEDROCK_ENABLED:-false}
             SKILL_EMBEDDING_BEDROCK_MODEL_ID: ${SKILL_EMBEDDING_BEDROCK_MODEL_ID:-amazon.nova-2-multimodal-embeddings-v1:0}
             SKILL_EMBEDDING_DIMENSION: ${SKILL_EMBEDDING_DIMENSION:-1024}
+            # Semantic search reads the Nova index only when this is true (default: legacy Google index).
+            SKILL_EMBEDDING_BEDROCK_READ_ENABLED: ${SKILL_EMBEDDING_BEDROCK_READ_ENABLED:-false}
+            # Legacy Google embeddings (LC-2206 transition): legacy search reads and legacy vector writes.
+            SKILL_EMBEDDING_GOOGLE_API_KEY: ${SKILL_EMBEDDING_GOOGLE_API_KEY:-}
+            SKILL_EMBEDDING_GOOGLE_MODEL: ${SKILL_EMBEDDING_GOOGLE_MODEL:-gemini-embedding-001}
             SMART_RESUME_CLIENT_ID: ${SMART_RESUME_CLIENT_ID:-5B5AE2CE}
             SMART_RESUME_ACCESS_KEY: ${SMART_RESUME_ACCESS_KEY:-BACF7EF16263}
             SMART_RESUME_CONTRACT_URI: ${SMART_RESUME_CONTRACT_URI:-lc:network:localhost%3A4000/trpc:contract:a1087887-88ac-4eea-9a70-71b88b728719}

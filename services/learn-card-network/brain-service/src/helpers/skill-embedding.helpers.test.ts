@@ -54,6 +54,9 @@ const loadHelpers = async (env: Record<string, string> = {}): Promise<Helpers> =
 
 const ENV_KEYS = [
     'SKILL_EMBEDDING_BEDROCK_ENABLED',
+    'SKILL_EMBEDDING_BEDROCK_READ_ENABLED',
+    'SKILL_EMBEDDING_GOOGLE_API_KEY',
+    'SKILL_EMBEDDING_GOOGLE_MODEL',
     'SKILL_EMBEDDING_BEDROCK_MODEL_ID',
     'SKILL_EMBEDDING_DIMENSION',
     'SKILL_EMBEDDING_CONCURRENCY',
@@ -76,9 +79,12 @@ describe('skill embedding helpers (Nova 2, mocked Bedrock)', () => {
         for (const key of ENV_KEYS) delete process.env[key];
     });
 
+    // Nova query path (read flag on).
     describe('query embeddings and cache', () => {
+        const NOVA_READ = { SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'true' };
+
         it('puts the model ID and dimension in the Redis key, never the legacy Google key', async () => {
-            const helpers = await loadHelpers();
+            const helpers = await loadHelpers(NOVA_READ);
             const key = helpers.getQueryEmbeddingCacheKey('data analysis');
             const digest = createHash('sha256').update('data analysis').digest('hex');
 
@@ -89,7 +95,7 @@ describe('skill embedding helpers (Nova 2, mocked Bedrock)', () => {
         });
 
         it('never reuses a vector cached under the old Google key', async () => {
-            const helpers = await loadHelpers();
+            const helpers = await loadHelpers(NOVA_READ);
             helpers.setSkillEmbeddingInvokeForTests(invoke as never);
             const digest = createHash('sha256').update('data analysis').digest('hex');
             store.set(
@@ -105,7 +111,7 @@ describe('skill embedding helpers (Nova 2, mocked Bedrock)', () => {
         });
 
         it('serves repeat queries from the cache and ignores wrong-size cached vectors', async () => {
-            const helpers = await loadHelpers();
+            const helpers = await loadHelpers(NOVA_READ);
             helpers.setSkillEmbeddingInvokeForTests(invoke as never);
 
             await helpers.generateQueryEmbedding('teamwork');
@@ -120,10 +126,12 @@ describe('skill embedding helpers (Nova 2, mocked Bedrock)', () => {
         });
 
         it('fails closed with a sanitised error when embeddings are disabled', async () => {
+            // The read flag cannot be on with Nova disabled (startup rejects it), so exercise the
+            // shared Nova embed call directly.
             const helpers = await loadHelpers({ SKILL_EMBEDDING_BEDROCK_ENABLED: 'false' });
             helpers.setSkillEmbeddingInvokeForTests(invoke as never);
 
-            await expect(helpers.generateQueryEmbedding('teamwork')).rejects.toMatchObject({
+            await expect(helpers.generateIndexEmbeddings(['teamwork'])).rejects.toMatchObject({
                 code: 'disabled',
             });
             expect(invoke).not.toHaveBeenCalled();
@@ -186,6 +194,235 @@ describe('skill embedding helpers (Nova 2, mocked Bedrock)', () => {
 
             expect(b.computeSkillEmbeddingKey(generationB, 'Python')).not.toBe(keyA);
             expect(generationB.vectorProperty).toBe('embedding_nova2_v1_0_d384');
+        });
+    });
+
+    describe('read routing (SKILL_EMBEDDING_BEDROCK_READ_ENABLED)', () => {
+        const LEGACY_DIMENSION = 768;
+        const legacyVector = () => Array(LEGACY_DIMENSION).fill(0.05);
+        const GOOGLE = { SKILL_EMBEDDING_GOOGLE_API_KEY: 'legacy-google-key' };
+
+        const withFakes = (helpers: Helpers) => {
+            const legacyEmbed = vi.fn(async (texts: string[]) => texts.map(() => legacyVector()));
+            helpers.setSkillEmbeddingInvokeForTests(invoke as never);
+            helpers.setLegacySkillEmbeddingForTests(legacyEmbed);
+            return legacyEmbed;
+        };
+
+        it("defaults off: legacy index, Google query embeddings, main's cache key", async () => {
+            const helpers = await loadHelpers(GOOGLE);
+            const legacyEmbed = withFakes(helpers);
+            const digest = createHash('sha256').update('data analysis').digest('hex');
+
+            expect(helpers.isSkillEmbeddingNovaReadEnabled()).toBe(false);
+            expect(helpers.getSkillEmbeddingSearchIndex()).toEqual({
+                source: 'legacy',
+                indexName: 'skill_embedding_vector_idx',
+                dimension: LEGACY_DIMENSION,
+            });
+
+            const vector = await helpers.generateQueryEmbedding('  data analysis ');
+            await helpers.generateQueryEmbedding('data analysis');
+
+            expect(vector).toHaveLength(LEGACY_DIMENSION);
+            expect(legacyEmbed).toHaveBeenCalledTimes(1);
+            expect(legacyEmbed).toHaveBeenCalledWith(['data analysis']);
+            expect(invoke).not.toHaveBeenCalled();
+            expect(helpers.getSearchQueryEmbeddingCacheKey('data analysis')).toBe(
+                `skill-embedding:query:gemini-embedding-001:${digest}`
+            );
+            expect([...store.keys()]).toEqual([
+                `skill-embedding:query:gemini-embedding-001:${digest}`,
+            ]);
+        });
+
+        it('on: Nova index with TEXT_RETRIEVAL query embeddings and the Nova cache key', async () => {
+            const helpers = await loadHelpers({
+                ...GOOGLE,
+                SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'true',
+            });
+            const legacyEmbed = withFakes(helpers);
+
+            expect(helpers.getSkillEmbeddingSearchIndex()).toEqual({
+                source: 'nova',
+                indexName: 'skill_embedding_nova2_v1_0_d1024_idx',
+                dimension: DIMENSION,
+            });
+
+            const vector = await helpers.generateQueryEmbedding('data analysis');
+
+            expect(vector).toHaveLength(DIMENSION);
+            expect(legacyEmbed).not.toHaveBeenCalled();
+            expect(purposeOf(invoke.mock.calls[0]![0].body)).toBe('TEXT_RETRIEVAL');
+            expect(helpers.getSearchQueryEmbeddingCacheKey('data analysis')).toBe(
+                helpers.getQueryEmbeddingCacheKey('data analysis')
+            );
+        });
+
+        it("flag-off and flag-on cache keys never collide, and neither reads the other's vector", async () => {
+            const off = await loadHelpers(GOOGLE);
+            const legacyKey = off.getSearchQueryEmbeddingCacheKey('teamwork');
+            const on = await loadHelpers({
+                ...GOOGLE,
+                SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'true',
+            });
+            const novaKey = on.getSearchQueryEmbeddingCacheKey('teamwork');
+
+            expect(legacyKey).not.toBe(novaKey);
+            expect(novaKey).toContain(`:${DIMENSION}:`);
+
+            // Even if a wrong-size vector sat under either key, it is never returned.
+            store.set(legacyKey, JSON.stringify({ values: unitVector(3) }));
+            store.set(novaKey, JSON.stringify({ values: legacyVector() }));
+            expect(await off.getCachedQueryEmbedding('teamwork')).toBeNull();
+            expect(await on.getCachedQueryEmbedding('teamwork')).toBeNull();
+        });
+
+        it('flipping the flag back off (rollback) returns to the legacy path', async () => {
+            const on = await loadHelpers({
+                ...GOOGLE,
+                SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'true',
+            });
+            expect(on.getSkillEmbeddingSearchIndex().source).toBe('nova');
+
+            const off = await loadHelpers({
+                ...GOOGLE,
+                SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'false',
+            });
+            const legacyEmbed = withFakes(off);
+            expect(off.getSkillEmbeddingSearchIndex().source).toBe('legacy');
+            expect(await off.generateQueryEmbedding('teamwork')).toHaveLength(LEGACY_DIMENSION);
+            expect(legacyEmbed).toHaveBeenCalledTimes(1);
+            expect(invoke).not.toHaveBeenCalled();
+        });
+
+        it('flag off without a Google key fails closed and never calls Bedrock', async () => {
+            const helpers = await loadHelpers();
+            helpers.setSkillEmbeddingInvokeForTests(invoke as never);
+
+            await expect(helpers.generateQueryEmbedding('teamwork')).rejects.toMatchObject({
+                code: 'disabled',
+            });
+            expect(invoke).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('write path (independent of the read flag)', () => {
+        const GOOGLE = { SKILL_EMBEDDING_GOOGLE_API_KEY: 'legacy-google-key' };
+        const skills = [
+            { id: 's1', frameworkId: 'fw', statement: 'Python', description: 'Writes Python' },
+            { id: 's2', statement: 'SQL' },
+        ];
+
+        it.each(['false', 'true'])(
+            'read flag %s: writes Nova (GENERIC_INDEX) and legacy Google vectors for every skill',
+            async readFlag => {
+                const helpers = await loadHelpers({
+                    ...GOOGLE,
+                    SKILL_EMBEDDING_BEDROCK_READ_ENABLED: readFlag,
+                });
+                const legacyEmbed = vi.fn(async (texts: string[]) =>
+                    texts.map(() => Array(768).fill(0.05))
+                );
+                helpers.setSkillEmbeddingInvokeForTests(invoke as never);
+                helpers.setLegacySkillEmbeddingForTests(legacyEmbed);
+                const novaUpdate = vi.fn(async (_update: SkillEmbeddingUpdate) => true);
+                const legacyUpdate = vi.fn(
+                    async (_skillId: string, _embedding: number[], _frameworkId?: string) => true
+                );
+
+                await helpers.upsertSkillEmbeddings(skills, novaUpdate, legacyUpdate);
+
+                expect(invoke).toHaveBeenCalledTimes(2);
+                for (const call of invoke.mock.calls) {
+                    expect(purposeOf(call[0].body)).toBe('GENERIC_INDEX');
+                }
+                expect(novaUpdate.mock.calls.map(([update]) => update.skillId)).toEqual([
+                    's1',
+                    's2',
+                ]);
+                expect(novaUpdate.mock.calls[0]![0]).toMatchObject({
+                    frameworkId: 'fw',
+                    generation: { vectorProperty: 'embedding_nova2_v1_0_d1024' },
+                });
+
+                // Main's legacy request: one batched Google call with main's text.
+                expect(legacyEmbed).toHaveBeenCalledWith(['Python\nWrites Python', 'SQL']);
+                expect(legacyUpdate.mock.calls.map(call => [call[0], call[2]])).toEqual([
+                    ['s1', 'fw'],
+                    ['s2', undefined],
+                ]);
+                expect(legacyUpdate.mock.calls[0]![1]).toHaveLength(768);
+            }
+        );
+
+        it('without a Google key, only Nova is written (legacy is a quiet no-op)', async () => {
+            const helpers = await loadHelpers();
+            helpers.setSkillEmbeddingInvokeForTests(invoke as never);
+            const novaUpdate = vi.fn(async () => true);
+            const legacyUpdate = vi.fn(async () => true);
+
+            await helpers.upsertSkillEmbeddings(skills, novaUpdate, legacyUpdate);
+
+            expect(novaUpdate).toHaveBeenCalledTimes(2);
+            expect(legacyUpdate).not.toHaveBeenCalled();
+        });
+
+        it('a Nova failure never skips the legacy write (and vice versa); the error still surfaces', async () => {
+            const helpers = await loadHelpers(GOOGLE);
+            helpers.setSkillEmbeddingInvokeForTests(
+                vi.fn(async () => {
+                    throw Object.assign(new Error('denied'), { name: 'AccessDeniedException' });
+                }) as never
+            );
+            helpers.setLegacySkillEmbeddingForTests(async texts =>
+                texts.map(() => Array(768).fill(0.05))
+            );
+            const legacyUpdate = vi.fn(async () => true);
+
+            await expect(
+                helpers.upsertSkillEmbeddings(
+                    skills,
+                    vi.fn(async () => true),
+                    legacyUpdate
+                )
+            ).rejects.toBeDefined();
+            expect(legacyUpdate).toHaveBeenCalledTimes(2);
+
+            const second = await loadHelpers(GOOGLE);
+            second.setSkillEmbeddingInvokeForTests(invoke as never);
+            second.setLegacySkillEmbeddingForTests(async () => {
+                throw new Error('google down');
+            });
+            const novaUpdate = vi.fn(async () => true);
+
+            await expect(
+                second.upsertSkillEmbeddings(
+                    skills,
+                    novaUpdate,
+                    vi.fn(async () => true)
+                )
+            ).rejects.toThrow('google down');
+            expect(novaUpdate).toHaveBeenCalledTimes(2);
+        });
+
+        it('with Nova disabled, legacy writes still happen exactly as on main', async () => {
+            const helpers = await loadHelpers({
+                ...GOOGLE,
+                SKILL_EMBEDDING_BEDROCK_ENABLED: 'false',
+            });
+            helpers.setSkillEmbeddingInvokeForTests(invoke as never);
+            helpers.setLegacySkillEmbeddingForTests(async texts =>
+                texts.map(() => Array(768).fill(0.05))
+            );
+            const novaUpdate = vi.fn(async () => true);
+            const legacyUpdate = vi.fn(async () => true);
+
+            await helpers.upsertSkillEmbeddings(skills, novaUpdate, legacyUpdate);
+
+            expect(invoke).not.toHaveBeenCalled();
+            expect(novaUpdate).not.toHaveBeenCalled();
+            expect(legacyUpdate).toHaveBeenCalledTimes(2);
         });
     });
 

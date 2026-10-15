@@ -269,7 +269,14 @@ describe('Skills & Frameworks E2E', () => {
     });
 
     test('can semantic search skills by description', async ({ skip }) => {
-        if (process.env.SKILL_EMBEDDING_BEDROCK_ENABLED !== 'true') {
+        // LC-2206: search reads the Nova index only with the read flag on (needs Bedrock);
+        // otherwise it reads the legacy Google index (needs the Google key), as on main.
+        const readsNova = process.env.SKILL_EMBEDDING_BEDROCK_READ_ENABLED === 'true';
+        const canSearch = readsNova
+            ? process.env.SKILL_EMBEDDING_BEDROCK_ENABLED === 'true'
+            : Boolean(process.env.SKILL_EMBEDDING_GOOGLE_API_KEY);
+
+        if (!canSearch) {
             skip();
             return;
         }

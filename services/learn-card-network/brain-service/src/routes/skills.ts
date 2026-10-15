@@ -24,7 +24,8 @@ import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import {
     generateQueryEmbedding,
     getCachedQueryEmbedding,
-    getSkillEmbeddingGeneration,
+    getSkillEmbeddingSearchIndex,
+    isSkillEmbeddingNovaReadEnabled,
     isSkillEmbeddingError,
     upsertSkillEmbeddings,
 } from '@helpers/skill-embedding.helpers';
@@ -230,7 +231,8 @@ export const skillsRouter = t.router({
             const profileId = ctx.user.profile.profileId;
             const { text, frameworkId, limit } = input;
 
-            if (text.trim().length > NOVA2_MAX_TEXT_CHARS) {
+            // Nova's synchronous input limit; the legacy Google read path keeps main's behaviour.
+            if (isSkillEmbeddingNovaReadEnabled() && text.trim().length > NOVA2_MAX_TEXT_CHARS) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: `Semantic search text must be at most ${NOVA2_MAX_TEXT_CHARS} characters`,
@@ -285,11 +287,13 @@ export const skillsRouter = t.router({
                 });
             }
 
+            // Legacy Google index unless SKILL_EMBEDDING_BEDROCK_READ_ENABLED (LC-2206); the query
+            // embedding above was produced for the same index.
             const results = await searchSkillsByEmbedding(
                 embedding,
                 limit,
                 frameworkId,
-                getSkillEmbeddingGeneration()
+                getSkillEmbeddingSearchIndex()
             );
 
             return {
