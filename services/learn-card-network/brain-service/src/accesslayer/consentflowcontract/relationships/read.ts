@@ -128,21 +128,12 @@ export const getContractDetailsById = async (
     }>(await query.return('contract, profile').run());
 
     if (!result.length) return null;
-    const rawContract = inflateObject(result[0]!.contract);
-    const latestUpdate = rawContract.latestUpdate;
+    const rawContract = DbContractValidator.parse(inflateObject(result[0]!.contract));
     return {
         contract: {
             ...rawContract,
             version: Number(rawContract.currentVersion ?? 1),
             status: rawContract.status ?? 'active',
-            ...(latestUpdate
-                ? {
-                      latestUpdate:
-                          typeof latestUpdate === 'string'
-                              ? JSON.parse(latestUpdate)
-                              : latestUpdate,
-                  }
-                : {}),
         },
         contractOwner: result[0]!.profile,
     };
@@ -217,8 +208,8 @@ export const getContractTermsById = async (
     );
 
     if (!result.length) return null;
-    const terms = inflateObject(result[0]!.terms);
-    const contract = inflateObject(result[0]!.contract);
+    const terms = DbTermsValidator.parse(inflateObject(result[0]!.terms));
+    const contract = DbContractValidator.parse(inflateObject(result[0]!.contract));
     const cumulativeUpdate =
         terms.status === 'needs_reconsent' || terms.status === 'suspended'
             ? await getCumulativeContractUpdateById(
@@ -296,20 +287,12 @@ export const getConsentFlowContractsForProfile = async (
     );
 
     return results.map(({ contract, boost }) => {
-        const details = inflateObject(contract);
+        const details = DbContractValidator.parse(inflateObject(contract));
         return {
             contract: {
                 ...details,
                 version: Number(details.currentVersion ?? 1),
                 status: details.status ?? 'active',
-                ...(details.latestUpdate
-                    ? {
-                          latestUpdate:
-                              typeof details.latestUpdate === 'string'
-                                  ? JSON.parse(details.latestUpdate)
-                                  : details.latestUpdate,
-                      }
-                    : {}),
             },
             autoBoosts: boost.map(boost => getBoostUri(boost.properties.id, domain)),
         };
@@ -385,8 +368,8 @@ export const getConsentedContractsForProfile = async (
 
     return Promise.all(
         results.map(async result => {
-            const details = inflateObject(result.contract);
-            const terms = inflateObject(result.terms);
+            const details = DbContractValidator.parse(inflateObject(result.contract));
+            const terms = DbTermsValidator.parse(inflateObject(result.terms));
             const cumulativeUpdate =
                 terms.status === 'needs_reconsent' || terms.status === 'suspended'
                     ? await getCumulativeContractUpdateById(
@@ -403,14 +386,6 @@ export const getConsentedContractsForProfile = async (
                     ...details,
                     version: Number(details.currentVersion ?? 1),
                     status: details.status ?? 'active',
-                    ...(details.latestUpdate
-                        ? {
-                              latestUpdate:
-                                  typeof details.latestUpdate === 'string'
-                                      ? JSON.parse(details.latestUpdate)
-                                      : details.latestUpdate,
-                          }
-                        : {}),
                 },
                 terms,
                 ...(cumulativeUpdate ? { cumulativeUpdate } : {}),

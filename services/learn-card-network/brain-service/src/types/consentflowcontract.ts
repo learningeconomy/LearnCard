@@ -54,7 +54,8 @@ export const DbContractValidator = z.object({
     redirectUrl: z.string().optional(),
     frontDoorBoostUri: z.string().optional(),
     image: z.string().optional(),
-    contract: ConsentFlowContractValidator,
+    // An empty request has no flattened contract.* properties in Neo4j.
+    contract: ConsentFlowContractValidator.prefault({}),
     createdAt: z.string(),
     updatedAt: z.string(),
     expiresAt: z.string().optional(),

@@ -3,8 +3,7 @@ import { QueryBuilder, BindParam } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { ConsentFlowContract, ConsentFlowInstance, Profile } from '@models';
-import { DbContractType } from 'types/consentflowcontract';
-import { ConsentFlowContractDetailsValidator } from '@learncard/types';
+import { DbContractType, DbContractValidator } from 'types/consentflowcontract';
 import { inflateObject } from '@helpers/objects.helpers';
 import type { ContractRequestFields } from '@learncard/types';
 import { ProfileType } from 'types/profile';
@@ -20,17 +19,7 @@ export const getContractById = async (id: string): Promise<DbContractType | null
     );
     const record = result.records[0];
     if (!record) return null;
-    const contract = inflateObject<DbContractType>(record.get('contract'));
-    const contractProperties = contract as unknown as Record<string, unknown>;
-    if (typeof contractProperties.latestUpdate === 'string') {
-        try {
-            contract.latestUpdate = ConsentFlowContractDetailsValidator.shape.latestUpdate.parse(
-                JSON.parse(contractProperties.latestUpdate)
-            );
-        } catch {
-            delete contract.latestUpdate;
-        }
-    }
+    const contract = DbContractValidator.parse(inflateObject(record.get('contract')));
     const latest = record.get('latest') as Record<string, unknown> | null;
     contract.currentVersion = Number(contract.currentVersion ?? latest?.version ?? 1);
     contract.version = Number(latest?.version ?? contract.currentVersion);

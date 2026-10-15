@@ -146,5 +146,7 @@ export const createConsentFlowContract = async ({
             message: 'Could not find all contract configuration targets',
         });
     }
-    return inflateObject<DbContractType>(created.properties);
+    const createdContract = inflateObject<DbContractType>(created.properties);
+    createdContract.contract = contract;
+    return createdContract;
 };

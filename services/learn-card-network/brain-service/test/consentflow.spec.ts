@@ -793,6 +793,71 @@ describe('Consent Flow Contracts', () => {
             }));
         });
 
+        it('keeps empty requests readable through optional additions and removal of the last category', async () => {
+            const emptyContract = {
+                read: { personal: {}, credentials: { categories: {} } },
+                write: { personal: {}, credentials: { categories: {} } },
+            };
+            const emptyTerms = {
+                read: { personal: {}, credentials: { categories: {} } },
+                write: { personal: {}, credentials: { categories: {} } },
+            };
+            const emptyUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                name: 'Empty request',
+                contract: emptyContract,
+            });
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri: emptyUri }))
+                    .contract
+            ).toEqual(emptyContract);
+            const { termsUri: emptyTermsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: emptyUri,
+                    terms: emptyTerms,
+                });
+            await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: emptyUri,
+                changes: {
+                    contract: {
+                        write: {
+                            credentials: { categories: { Certificate: { required: false } } },
+                        },
+                    },
+                },
+            });
+            const optional = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            expect(
+                optional.records.find(record => record.uri === emptyTermsUri)?.terms.write
+                    .credentials.categories.Certificate
+            ).toBe(false);
+            const removal = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: emptyUri,
+                changes: { contract: { write: { credentials: { categories: {} } } } },
+            });
+            expect(removal.kind).toBe('relaxed');
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri: emptyUri }))
+                    .contract
+            ).toEqual(emptyContract);
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentFlowContracts()).records
+            ).toEqual(
+                expect.arrayContaining([expect.objectContaining({ uri: emptyUri, version: 3 })])
+            );
+            const records = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            expect(records.records.find(record => record.uri === emptyTermsUri)).toMatchObject({
+                status: 'live',
+                consentedVersion: 3,
+                terms: emptyTerms,
+            });
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: emptyUri,
+                    profileId: 'userb',
+                })
+            ).toBe(true);
+        });
+
         it('previews without writing, requires a reason for expanded access, and blocks stale acceptance', async () => {
             const changedContract = {
                 ...normalContract,
