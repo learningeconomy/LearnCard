@@ -21,8 +21,9 @@ public actor DemoCredentialService: CredentialService {
     private var offers: [Credential]
     private var activity: [Activity] = []
     private var templates: [Credential] = []
+    private var loadedCount: Int?
 
-    public init(includeCategorySamples: Bool = false) {
+    public init(includeCategorySamples: Bool = false, includeSharingSamples: Bool = false) {
         let date = Date(timeIntervalSince1970: 1_791_763_200)
         credentials = [
             Credential(id: "design", title: "Design for people", issuer: "Open Learning Studio",
@@ -54,6 +55,15 @@ public actor DemoCredentialService: CredentialService {
                            kind: .achievement, date: date.addingTimeInterval(-600), category: category)
             }
         }
+        if includeSharingSamples {
+            loadedCount = credentials.count
+            credentials += (0..<240).map { index in
+                Credential(id: "share-fixture-\(index)", title: "Archive milestone \(index)", issuer: "Archive Learning Lab",
+                           summary: "Unsigned paged sharing regression sample.", kind: .achievement,
+                           date: Date.now.addingTimeInterval(-Double(index + 300) * 86_400),
+                           category: index.isMultiple(of: 2) ? "Qualifications" : "Accomplishment")
+            }
+        }
         offers = [
             Credential(id: "first-aid", title: "Ready to help", issuer: "Community Skills Lab",
                        summary: "Completed a hands-on introduction to first aid and everyday emergency preparedness.",
@@ -65,7 +75,15 @@ public actor DemoCredentialService: CredentialService {
     }
 
     public func snapshot() -> CollectionSnapshot {
-        CollectionSnapshot(credentials: credentials, offers: offers, activity: activity)
+        let count = loadedCount ?? credentials.count
+        return CollectionSnapshot(credentials: Array(credentials.prefix(count)), offers: offers, activity: activity, hasMore: count < credentials.count)
+    }
+
+    public func loadMore() async throws -> CollectionSnapshot {
+        guard let count = loadedCount else { return snapshot() }
+        try await Task.sleep(for: .milliseconds(100))
+        loadedCount = min(credentials.count, count + 60)
+        return snapshot()
     }
 
     public func claim(offerID: String) throws -> CollectionSnapshot {

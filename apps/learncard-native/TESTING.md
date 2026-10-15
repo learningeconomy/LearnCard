@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **219 cases** (102 Bun, 68 Swift, 49 simulator), plus one intentionally skipped live exchange. QR/claim validation is recorded in the latest section below. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
+Current configured suite: **237 cases** (105 Bun, 80 Swift, 52 simulator), plus one intentionally skipped live exchange. Sharing-picker validation is recorded below; historical QR/category runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
 
 The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -11,6 +11,17 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Larger-collection sharing — October 15
+
+- All **105 Bun** cases passed (`artifacts/share-picker-bun-final.log`), including three cursor-progress regressions.
+- All **80 Swift** cases passed: 59 XCTest and 21 Swift Testing (`artifacts/share-picker-core-final.log`). Six core picker cases cover 300 records, date boundaries, stable sorting, explicit selection and limits. Six SDK cases cover paging through 243 records, matching the last page, failure/explicit retry, empty display pages, cancellation and a filter applied during an existing read, plus locale/plural coverage within those cases.
+- Source/type contracts passed (`artifacts/share-picker-types.log`); the same 14 dependency diagnostics remain scoped to their existing monorepo packages.
+- Four focused simulator cases passed (`artifacts/share-picker-ui-final.xcresult`): three new picker cases and the existing multiple-credential/system-share case. All four passed again with explicit RTL/actual-large-text assertions (`artifacts/share-picker-accessibility.xcresult`). The final adaptive stacked-row refinement passed the affected Arabic/accessibility case (`artifacts/share-picker-large-row.xcresult`). Visual review caught and corrected a modal environment boundary; screenshots confirm mirrored navigation and full-width text at accessibility sizes.
+- New simulator coverage checks combined categories, retained hidden selections, exact review contents, last-page search, issue-date reset, sorting and sample sharing. Negative review assertions are scoped to the review form, since the presenting Collection can remain in the app accessibility tree behind the sheet.
+- Final Release and Debug review-install builds passed (`artifacts/share-picker-release-final.log`, `artifacts/share-picker-review-install.log`). All five installed artifact hashes match (`artifacts/share-picker-install-proof.json`). The live staging account resumed; opening the picker and searching showed real results and later-page progress without publication. The Design search completed with five matches; clearing it showed 38 available choices and no remaining-page indicator. Synthetic screenshots are exported under `artifacts/share-picker-accessibility-attachments/` and `artifacts/share-picker-large-row-attachments/`.
+
+See [the sharing picker contract](SHARING_PICKER.md). All new cases are included automatically by `test-ci.sh`; this targeted local UI run is not a full 237-case simulator/SDK run. Live publication, actual large-account latency and physical-device review remain manual gates. New picker copy has 41 keys across four locales; legacy review/publication copy is not fully migrated.
 
 ## Coverage
 

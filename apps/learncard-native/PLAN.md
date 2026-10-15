@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Larger-collection sharing — October 15
+
+Share credentials now has a purpose-built picker: multi-category and inclusive issue-date filters, title/issuer/description search, sorting, progressive paging and a persistent selection footer. Selected is an audit of every explicit choice, including items hidden by filters; filters and newly loaded pages cannot add disclosures. See [the paging, date and disclosure contract](SHARING_PICKER.md). Keep the current 50-item publication limit and original signed payloads. Search loads later personal-index pages rather than treating the first thirty items as the whole account. A future metadata search/index optimization can reduce remote content reads; this change does not modify backend storage.
+
 ## QR scanning and claim flow — October 15
 
 Scan from Inbox, Home or the shared action menu, or begin before sign-in. Camera, locally decoded selected photos and pasted staging claim links converge on native review, explicit confirmation and an illustrated success screen. Pending intent survives in-process recovery/background locking. A protected receipt journal separates issuance from saving; uncertain writes are reconciled read-only and never blindly reissued. Existing server gates, signature checks and semantic category indexing remain. See [the complete input/account/retry contract](QR_CLAIM_FLOW.md) and [the generated design reference](design/CLAIM_FLOW_BRIEF.md). Physical camera/live claim validation, associated-domain HTTPS launch and other QR protocols remain explicit follow-ups.

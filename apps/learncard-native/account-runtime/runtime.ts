@@ -9,6 +9,7 @@ import {
 import type { ShareLinkOperationKeyInput } from '@learncard/types';
 import { buildNativeTemplate, type NativeCredentialDraft } from './credential-draft';
 import { credentialCategoryForDisplay } from './credential-category';
+import { validateCollectionCursor } from './collection-pagination';
 import {
     createClaimCommands,
     claimErrorCode,
@@ -68,6 +69,7 @@ const issuerNames = new Map<string, Promise<string>>();
 const original = new Map<string, Record<string, unknown>>();
 let collection: Record<string, unknown>[] = [];
 let cursor: string | undefined;
+const visitedCollectionCursors = new Set<string>();
 let hasMore = false;
 const activity: { id: string; title: string; detail: string; symbol: string; date: string }[] = [];
 const storage = {
@@ -251,15 +253,18 @@ const snapshot = async (more = false) => {
     if (!more) {
         collection = [];
         cursor = undefined;
+        visitedCollectionCursors.clear();
         original.clear();
     }
     const page = await wallet.index.LearnCloud.getPage({}, { limit: 30, cursor });
+    validateCollectionCursor(page.hasMore, page.cursor, visitedCollectionCursors);
     for (const record of page.records) {
         if (string(record.id).startsWith('__verifiable_data_')) continue;
         if (!string(record.uri) || collection.some(item => item.id === record.uri)) continue;
         collection.push(await display(record));
     }
     cursor = page.cursor;
+    if (page.hasMore && page.cursor) visitedCollectionCursors.add(page.cursor);
     hasMore = page.hasMore;
     const incoming = await wallet.invoke.getIncomingCredentials();
     const offers = [];

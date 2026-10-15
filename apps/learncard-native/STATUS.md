@@ -1,11 +1,12 @@
 # Native experiment handoff — 2026-10-15
 
-Native Scan a code now leads through a designed review and explicit confirmation to an illustrated success screen. Camera, selected photos and pasted staging claim links share one flow; it survives sign-in/recovery and background locking. Protected receipt handling prevents blind duplicate issuance and permits safe saving/reconciliation. Inbox, Home and the header menu expose scanning. Portfolio/Qualifications parity, the approved Home/drawn design, neutral canvas and automatic credential detail motion remain. See [scanner and claim contracts](QR_CLAIM_FLOW.md).
+Share credentials now supports larger collections with multi-category and inclusive issue-date filters, sorting, title/issuer/description search, progressive paging and a fixed selection/review footer. Selected audits every explicit choice, including those hidden by filters. See [picker contracts](SHARING_PICKER.md). Native QR scanning, account recovery, Portfolio/Qualifications parity, the approved Home/drawn design, neutral canvas and automatic credential detail motion remain; see [scanner and claim contracts](QR_CLAIM_FLOW.md).
 
 - Branch: `codex/vesper-73`.
 - Checkout: `/Users/donny/.codex/worktrees/vesper-73/LearnCard`; preserve unrelated primary-checkout work.
 - Home baseline `4dde77e13383394163bad3ddaa7131d0f6d0adc3` passed [hosted CI 38694796776](https://github.com/learningeconomy/LearnCard/actions/runs/38694796776). The subsequent category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; timing/gesture assertions are addressed in this follow-up and must pass new source-specific CI.
-- Current configured suite: **219 cases** — 102 Bun, 68 Swift and 49 simulator cases, plus one intentionally skipped live exchange.
+- Current configured suite: **237 cases** — 105 Bun, 80 Swift and 52 simulator cases, plus one intentionally skipped live exchange.
+- Sharing-picker checks passed all 105 Bun and 80 Swift cases, source contracts and four focused simulator cases; actual accessibility/RTL modal inheritance received an additional visual/automated pass. This is targeted UI validation, not a new local full 237-case run. See [TESTING](TESTING.md).
 - QR/claim checks passed all 102 Bun and 68 Swift cases and source/type contracts. Eleven initial simulator checks, a five-case refinement pass and a final ten-case claim/category/CI follow-up passed; exact evidence is in [TESTING.md](TESTING.md). This is targeted validation, not a new local full 219-case run.
 - Builds use two jobs at reduced priority; shared DerivedData operations remain sequential. Automated tests use the separate checks simulator, and private review configuration is preserved/restored around the CI script.
 
@@ -27,9 +28,9 @@ The app browser is separate from the account SDK. Embedded partner apps support 
 
 ## Installed simulator build
 
-The QR/claim build is installed and running on **LearnCard Native Lab**. Executable, Debug dylib, assets, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/claims-install-proof.json`). The staging account resumed with Collection 30+ and Inbox badge 3. A public invalid native claim URL exercised the real URL handoff, account-backed SDK and deployed preview endpoint, displayed the unavailable-link state, and returned to Collection after Cancel. No live credential was claimed, issued, sent or indexed for this check.
+The sharing-picker build is installed and running on **LearnCard Native Lab**. Executable, Debug dylib, assets, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/share-picker-install-proof.json`). The staging account resumed with Collection 30+ and Inbox badge 3. The live picker displayed real title/issuer/category/date rows. A Design search showed later-page progress, completed with five matches, and clearing it showed 38 available choices; no incomplete-result caption remained. The picker is left open with zero selected for review. No link was published, and no live credential was claimed, issued, sent or indexed for this check.
 
-Final Release and Debug/install logs are `artifacts/claims-release-final.log` and `artifacts/claims-review-install.log`. All 102 Bun and 68 Swift cases, source/type contracts, 12 existing web helper cases and focused simulator passes succeeded. The final ten-case pass includes four claim cases, three category cases, recovery, native sharing and Receive cancellation; earlier focused checks also covered all account lifecycle UI cases. These are targeted checks, not a new local full 219-case run. The checks simulator is shut down; private configuration was preserved/restored. New hosted CI must be checked against the pushed source before claiming hosted success.
+Final Release and Debug/install logs are `artifacts/share-picker-release-final.log` and `artifacts/share-picker-review-install.log`. All 105 Bun and 80 Swift cases and source contracts passed. Four focused simulator cases passed, all four passed again with actual RTL/accessibility assertions, and the final adaptive large-row refinement passed its affected case. These are targeted checks, not a new local full 237-case run. The checks simulator is shut down; private configuration was preserved/restored. Confirm the newest commit in [branch CI](https://github.com/learningeconomy/LearnCard/actions?query=branch%3Acodex%2Fvesper-73) before claiming hosted success.
 
 Open Simulator, select **LearnCard Native Lab**, and open **LearnCard Lab**. This is the review simulator (`ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E`); the automated UI checks use a separate simulator.
 
@@ -45,6 +46,8 @@ For a DEBUG review starting directly at Families, append `--review-families`. It
 The existing ignored local configuration retains the approved test email. A fresh checkout requires its own test-login configuration; see [README](README.md). The CI build configuration uses a non-deliverable test address and should not replace the live review configuration.
 
 ## Manual review focus
+
+Start with **+ → Share credentials**. Combine Portfolio/Qualifications with issue-date ranges; try several search words, older-first sorting and a credential beyond the first page. Select across filters, then use Selected and Review to verify exactly what will be disclosed. At accessibility sizes rows stack artwork/checkmark above full-width text. Check live large-account loading time and manual link publication separately; automated fixtures publish no real link. See [sharing picker behavior](SHARING_PICKER.md).
 
 Review Scan a code → photo/paste → review → Add to Collection → success. Cancel must not claim. A pending link should return after sign-in/recovery; background removes private preview/input, and sign-out clears intent. The simulator cannot capture a camera frame, so use a selected QR photo or paste. The [generated concept and source prompt](design/CLAIM_FLOW_BRIEF.md) guide composition; [the contract](QR_CLAIM_FLOW.md) records actual boundaries. A dedicated live claim and physical-camera test remain manual gates. Standard HTTPS system-Camera launching needs the app identity and hosted AASA configuration.
 
@@ -63,6 +66,8 @@ The user approved the three generated Account/Data Sharing, Apps and Families bo
 Read-only live checks already confirmed account recovery/resumption, collection/incoming offers, staging catalog artwork/promotion flags, the empty installed list, and existing agreements/shared-link metadata. The agent has **not** installed an app, published or withdrawn consent, sent a credential, copied a protected link or revoked a link on this live account. Automated mutation tests use synthetic boundaries. Real staging mutations and app-by-app partner compatibility remain to be validated with dedicated test data.
 
 ## Remaining work after review
+
+- Review live sharing-picker latency and real publication/passcode/revocation with explicitly chosen test credentials. Metadata/index optimization for large libraries is a separate backend/performance task; this picker progressively reads existing pages. Legacy review/publication copy still needs complete localization.
 
 - Validate physical camera capture, PhotosPicker behavior and a dedicated live staging claim, including exhausted/expired links and server approval cases. Confirm the exact-head hosted run after the CI timing follow-up. Publish associated-domain/AASA configuration before promising automatic system Camera/Safari HTTPS opening. Other QR protocols remain separate.
 - Apply manual design feedback, including consistent header/chrome behavior across tabs.

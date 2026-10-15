@@ -23,7 +23,7 @@ struct CollectionActionsMenu: View {
                 Text(NativeText.literal(title)).font(.subheadline.weight(.medium)).foregroundStyle(Palette.ink)
                 Spacer(minLength: 0)
             }.padding(.horizontal, 6).frame(minHeight: 52).contentShape(Rectangle())
-        }.buttonStyle(CredentialPressStyle())
+        }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("collection-action-\(action)")
     }
 }
 

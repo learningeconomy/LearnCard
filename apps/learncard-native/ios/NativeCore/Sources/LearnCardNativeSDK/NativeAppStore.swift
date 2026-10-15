@@ -72,7 +72,7 @@ public final class NativeAppStore {
         return try await service.share(credentialIDs: credentialIDs, title: title, requestID: requestID, passcode: passcode)
     }
 
-    public func loadMore() async { _ = await perform { try await self.service.loadMore() } }
+    @discardableResult public func loadMore() async -> Bool { await perform { try await self.service.loadMore() } }
 
     public func recipient(_ profileId: String) async throws -> AccountRecipient {
         guard let service = service as? LiveCredentialService else { throw AccountError.unavailable }

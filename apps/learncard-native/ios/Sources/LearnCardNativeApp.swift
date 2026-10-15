@@ -12,6 +12,9 @@ struct LearnCardNativeApp: App {
         if args.contains("--demo"), args.contains("--category-fixtures") {
             _store = State(initialValue: AppStore(service: DemoCredentialService(includeCategorySamples: true)))
         }
+        if args.contains("--demo"), args.contains("--share-picker-fixtures") {
+            _store = State(initialValue: AppStore(service: DemoCredentialService(includeSharingSamples: true)))
+        }
         if let index = args.firstIndex(of: "--locale"), args.indices.contains(index + 1), NativeLanguage(rawValue: args[index + 1]) != nil {
             UserDefaults.standard.set(args[index + 1], forKey: NativeLanguage.preferenceKey)
         }
