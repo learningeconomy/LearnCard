@@ -349,6 +349,13 @@ resources:
                               StringEquals:
                                   bedrock:InferenceProfileArn:
                                       Fn::Sub: arn:${AWS::Partition}:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.openai.gpt-6-luna
+                        # generateImage default provider (docs/image-generation.md): one model,
+                        # one region, non-streaming InvokeModel only.
+                        - Sid: StableImageCoreUsWest2
+                          Effect: Allow
+                          Action: bedrock:InvokeModel
+                          Resource:
+                              Fn::Sub: arn:${AWS::Partition}:bedrock:us-west-2::foundation-model/stability.stable-image-core-v1:1
         # Only the two signing entry points and the migration worker assume this role.
         # Keep KMS references out of the role itself to avoid a Role -> Key -> Role cycle.
         SigningAuthorityExecutionRole:

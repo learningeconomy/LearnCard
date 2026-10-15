@@ -42,12 +42,11 @@ There is no automatic fallback between providers.
 Because Bedrock is the default, every stage that deploys this code needs the
 following before `generateImage` will work (otherwise it returns the sanitized
 INTERNAL_SERVER_ERROR). No live calls, Marketplace subscriptions/terms acceptance,
-IAM/security changes, deployment, or merge were performed for this PR. An
-authorized operator must verify model availability and entitlement in
-**us-west-2**, approve any required Marketplace subscription/terms, and arrange
-model-scoped runtime access:
+deployment, or merge were performed for this PR. An authorized operator must
+verify model availability and entitlement in **us-west-2** and approve any required
+Marketplace subscription/terms. Runtime access is model-scoped:
 
-- Action: `bedrock:InvokeModel`
+- Action: `bedrock:InvokeModel` (no streaming action, no wildcard)
 - Resource: `arn:aws:bedrock:us-west-2::foundation-model/stability.stable-image-core-v1:1`
 
 Use the workload's normal AWS credential chain and existing execution role. The
@@ -55,21 +54,22 @@ client pins SigV4 (`authSchemePreference: ['sigv4']`), so the rotating execution
 credentials are used and a long-term `AWS_BEARER_TOKEN_BEDROCK` API key is never
 picked up, consistent with the text adapter's short-term-bearer-only policy.
 `generateImage` runs in the `trpc`/`api` functions, which use
-`SigningAuthorityExecutionRole`. #1684's dev-only `LcaDevBedrockGenerationPolicy`
-covers only the two text inference profiles in us-east-1; it does **not** grant this
-us-west-2 Stability model, and production has no Bedrock grant at all. Each stage
-therefore needs an additional reviewed statement on that role, for example:
+`SigningAuthorityExecutionRole`.
 
-```yaml
-- Sid: StableImageCoreUsWest2
-  Effect: Allow
-  Action: bedrock:InvokeModel
-  Resource:
-      Fn::Sub: arn:${AWS::Partition}:bedrock:us-west-2::foundation-model/stability.stable-image-core-v1:1
-```
+**Dev/staging (stage `dev`, us-east-1): managed in `serverless.yml`.** The grant is
+the `StableImageCoreUsWest2` statement in #1684's `LcaDevBedrockGenerationPolicy`,
+under the same `LcaDevBedrockGeneration` condition (stage `dev` in us-east-1), so
+Serverless/CloudFormation applies it with the stack and removes it on rollback. Do
+not add it by hand in the console. `.github/tests/test-lca-node24.test.cjs` pins the
+exact statement and rejects streaming actions and wildcard resources.
 
-No wildcard grant or IAM change is included in this PR; the grant is managed
-separately. Regional network connectivity (NAT egress from the VPC Lambdas to
+**Production still needs a grant.** The condition excludes every other stage,
+so production (and ScoutPass stages) get no Bedrock access from this policy. Before
+deploying this default to production, add a reviewed production grant for the same
+single action/resource (alongside the production text-generation grant), or set
+`IMAGE_PROVIDER=openai` for that stage as a stopgap.
+
+Regional network connectivity (NAT egress from the VPC Lambdas to
 `bedrock-runtime.us-west-2.amazonaws.com`) and existing Filestack storage access
 must also be verified by the operator.
 

@@ -103,6 +103,8 @@ Production receives no new Bedrock grant from this resource. ARNs use the deploy
 account and partition; source profiles/default project stay in us-east-1, and the
 verified backing models are scoped to us-east-1/us-east-2/us-west-2. Short-term bearer
 use, matching model/profile conditions and default-project authorization are explicit.
+The same policy also carries `StableImageCoreUsWest2` (InvokeModel on the us-west-2
+Stable Image Core model only) for image generation; see `image-generation.md`.
 
 Owner workflow: select this branch in Deploy, target environment `staging`, and
 enable only `deploy-lca-api`. The LearnCard staging leg selects GitHub environment
