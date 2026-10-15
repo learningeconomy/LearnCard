@@ -1,5 +1,16 @@
 # @learncard/cli
 
+## 3.6.3
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.60
+    - @learncard/learn-cloud-plugin@2.3.45
+    - @learncard/init@2.5.3
+    - @learncard/holder-continuity@0.2.22
+    - @learncard/lca-api-plugin@2.0.9
+
 ## 3.6.2
 
 ### Patch Changes
