@@ -123,7 +123,7 @@ export const ShareCredentialSelectionRow = ({
             <ShareCredentialThumbnail credential={choice.credential} category={choice.category} />
             <span className="flex-1 min-w-0">
                 <span className="block text-sm font-medium break-words">
-                    {text.name || choice.title || m['shareLinks.credential']()}
+                    {title || text.name || choice.title || m['shareLinks.credential']()}
                 </span>
                 {choice.credential ? (
                     <ShareCredentialMetadata
