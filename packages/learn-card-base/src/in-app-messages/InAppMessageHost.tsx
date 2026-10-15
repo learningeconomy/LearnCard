@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import type { InAppMessage } from '@learncard/types';
 
 import { useInAppMessages } from './useInAppMessages';
 import { markMessageSeen, onDismissalsReset } from './dismissalStore';
@@ -13,13 +14,19 @@ import {
 import { InAppMessageModal } from './InAppMessageModal';
 import { InAppMessageBanner } from './InAppMessageBanner';
 import { InAppMessageToast } from './InAppMessageToast';
+import { emitAppOpenedOnce } from './inAppMessageEvents';
+import { isFatigueControlled, recordBlockingShown } from './fatigueStore';
 
 export type InAppMessageHostProps = PresentationGateOptions;
 
 export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => {
-    const { message } = useInAppMessages();
+    const { message, credentialFacts } = useInAppMessages();
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
+    const [presented, setPresented] = useState<{
+        message: InAppMessage;
+        accountDid?: string;
+    } | null>(null);
 
     const [closedIds, setClosedIds] = useState<Set<string>>(() => new Set());
     const shownRef = useRef<string | null>(null);
@@ -35,6 +42,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     useEffect(() => {
         return onDismissalsReset(() => {
             setClosedIds(new Set());
+            setPresented(null);
             shownRef.current = null;
         });
     }, []);
@@ -46,9 +54,23 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         iamDebug('gate', { canPresent, reason });
     }, [canPresent, reason]);
 
-    const realActive = message && !closedIds.has(message.id) ? message : null;
+    useEffect(() => {
+        const did = credentialFacts.accountDid;
+
+        if (canPresent && did) emitAppOpenedOnce(did);
+    }, [canPresent, credentialFacts.accountDid]);
+
+    const accountDid = credentialFacts.accountDid ?? undefined;
+    const candidate =
+        presented && presented.accountDid === accountDid ? presented.message : message;
+    const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
+    const realActive = candidate && messageKey && !closedIds.has(messageKey) ? candidate : null;
     const active = override ?? (canPresent ? realActive : null);
     const isOverride = Boolean(override);
+
+    // Retain a presented message after its own impression makes it ineligible.
+    if (presented && presented.accountDid !== accountDid) setPresented(null);
+    if (!presented && active && !isOverride) setPresented({ message: active, accountDid });
 
     const close = useCallback(
         (id: string) => {
@@ -60,16 +82,17 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
             }
 
             iamDebug('closed', { id });
+            setPresented(null);
 
             setClosedIds(prev => {
                 const next = new Set(prev);
 
-                next.add(id);
+                next.add(`${accountDid ?? 'anonymous'}:${id}`);
 
                 return next;
             });
         },
-        [override]
+        [accountDid, override]
     );
 
     useEffect(() => {
@@ -82,7 +105,9 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
             return;
         }
 
-        const key = isOverride ? `override:${active.id}:${active.presentation}` : active.id;
+        const key = isOverride
+            ? `override:${active.id}:${active.presentation}`
+            : `${accountDid ?? 'anonymous'}:${active.id}`;
 
         if (shownRef.current === key) return;
 
@@ -98,8 +123,12 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         // stability), so a transient boot/navigation flicker cannot burn a
         // "once" impression. If the gate's settle debounce is ever removed,
         // revisit this.
-        if (!isOverride) markMessageSeen(active.id, active.frequency);
-    }, [active, isOverride]);
+        if (!isOverride) {
+            markMessageSeen(active.id, active.frequency, Date.now(), accountDid);
+
+            if (isFatigueControlled(active)) recordBlockingShown(Date.now(), accountDid);
+        }
+    }, [accountDid, active, isOverride]);
 
     // AnimatePresence must live here, in the always-mounted host: the
     // presented component is removed wholesale on close, so exit animations
