@@ -134,6 +134,10 @@ async fn strong_reads_pin_table_and_each_operation_reacquires_signing_time() {
             request.uri().to_string(),
             "https://dynamodb.us-east-1.amazonaws.com:8001/"
         );
+        assert_eq!(
+            request.headers().get("host"),
+            Some("dynamodb.us-east-1.amazonaws.com")
+        );
     }
 }
 
@@ -231,6 +235,17 @@ async fn ses_uses_fixed_sender_identity_plain_text_and_one_attempt() {
             request.uri().to_string(),
             "https://email.us-east-1.amazonaws.com:8002/v2/email/outbound-emails"
         );
+        // SES rejects a SigV4 signature over `host:8002` (verified live); the
+        // relay port stays in the URL only.
+        assert_eq!(
+            request.headers().get("host"),
+            Some("email.us-east-1.amazonaws.com")
+        );
+        assert!(request
+            .headers()
+            .get("authorization")
+            .unwrap()
+            .contains("SignedHeaders=content-length;content-type;host;"));
         assert!(request
             .headers()
             .get("authorization")
@@ -332,4 +347,42 @@ async fn replayed_transaction_in_progress_preserves_unknown_original_outcome() {
         body(&first.lock().unwrap()[0]),
         body(&replay.lock().unwrap()[0])
     );
+}
+
+#[tokio::test]
+async fn signature_is_computed_over_the_bare_service_host() {
+    let sign = |endpoint: &str| {
+        let email = EmailConfig {
+            region: "us-east-1".into(),
+            account: "123456789012".into(),
+            sender: "sender".into(),
+            from: "recovery@staging.notify.learncard.com".into(),
+            identity: "staging.notify.learncard.com".into(),
+            configuration_set: "recovery".into(),
+        };
+        let creds = credentials(email.sender_arn(), CredentialPurpose::EmailSender);
+        Client::new(
+            creds,
+            clock(),
+            endpoint.into(),
+            "us-east-1".into(),
+            CredentialPurpose::EmailSender,
+            &email.sender_arn(),
+        )
+        .unwrap()
+    };
+    let relay = sign("https://email.us-east-1.amazonaws.com:8002");
+    let direct = sign("https://email.us-east-1.amazonaws.com");
+    let time = RequestTime::acquire(clock().as_ref()).await.unwrap();
+    let auth = |client: &Client| {
+        client
+            .signed(Operation::SendEmail, b"{}".to_vec(), &time)
+            .unwrap()
+            .headers()
+            .get("authorization")
+            .unwrap()
+            .to_owned()
+    };
+    // Same signature as a request AWS sees on the standard :443 host.
+    assert_eq!(auth(&relay), auth(&direct));
 }
