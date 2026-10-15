@@ -39,6 +39,27 @@ production launch approval.** Authority, wire/API, clients and independent audit
 integration are implemented. The ordered staging gates and PR 3 attack-C/email
 confirmation blocker remain; see `STAGING.md` and `SECURITY.md`.
 
+Operation budget: with one time server down, a round now ends at the second
+consistent authenticated response, not the missing server's shared 2s cap.
+Create-hold uses four rounds (three AWS TLS/signing samples and one shared
+back-to-back policy/event sample); PIN release uses nine (six AWS, three policy/event).
+At 200ms per quorum and 100ms per AWS call the paused-time policy regressions take
+1.1s / 2.4s, leaving over half of the enclave's 10s read/queue/execute/write deadline.
+These are latency assumptions, not availability guarantees: at the full 2s cap,
+time acquisition alone can cost 8s / 18s, and each AWS call has a 15s cap; the
+enclave's shared 10s deadline cancels unfinished work fail-closed rather than
+allowing those inner caps to add up. PR #1714 must budget an additional quorum
+and AWS call for SES and a fresh post-acceptance evidence round for warning sends
+(at these latencies, +0.3s and +0.2s respectively); no pre-SES evidence may timestamp
+acceptance. AWS samples stay fresh because they also validate TLS certificate
+intervals: a monotonic-age SigV4 cache cannot replace that evidence. Outer
+deadlines must exceed inner operation deadlines plus transport/response overhead:
+host forwarding and lca-api currently both use 10s, racing the enclave; change
+them to, for example, 12s and 15s respectively, below the SDK's 30s fetch budget.
+The AWS 15s per-call cap is subordinate to the enclave operation deadline, not
+a promise that each call gets 15s. Slow quorum/AWS service or actor queueing can
+still exhaust the operation budget; ambiguous writes must not be retried as releases.
+
 PR 2 item-a checkpoint adds the persistence schema in
 `src/authority/state.rs`. It is available without AWS features for offline tests
 and future independent verification. Account rows bind tenant, generation and DID
