@@ -131,7 +131,7 @@ run "authority_writer_is_only_data_principal" {
     error_message = "Kinesis and future table APIs must not provide a nonwriter/org-admin extraction path."
   }
   assert {
-    condition     = alltrue([for s in jsondecode(aws_iam_user_policy.authority_writer[0].policy).Statement : s.Resource == local.authority_table_arn && alltrue([for a in s.Action : contains(local.authority_item_actions, a)])]) && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8001 dynamodb.us-east-1.amazonaws.com 443") && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8002") && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "CREDENTIAL_OBJECT")
+    condition     = alltrue([for s in jsondecode(aws_iam_user_policy.authority_writer[0].policy).Statement : (s.Resource == local.authority_table_arn && alltrue([for a in s.Action : contains(local.authority_item_actions, a)])) || (s.Resource == aws_kms_key.s3.arn && s.Condition.StringEquals["kms:ViaService"] == "dynamodb.us-east-1.amazonaws.com")]) && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8001 dynamodb.us-east-1.amazonaws.com 443") && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8002") && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "CREDENTIAL_OBJECT")
     error_message = "Writer privileges and disabled-email/delivery proxy settings must be narrow."
   }
   assert {
@@ -184,12 +184,16 @@ run "email_external_dns_and_delivery" {
     sending_domain                = "staging.notify.learncard.com"
   }
   assert {
-    condition     = length(aws_route53_zone.sending) == 0 && length(aws_route53_record.sending) == 0 && length(output.sending_dns_records) == 6 && aws_ses_domain_mail_from.enclave[0].mail_from_domain == "bounce.staging.notify.learncard.com" && aws_ses_domain_mail_from.enclave[0].behavior_on_mx_failure == "RejectMessage" && toset(aws_ses_event_destination.enclave[0].matching_types) == toset(["bounce", "complaint"])
+    condition     = length(aws_route53_zone.sending) == 0 && length(aws_route53_record.sending) == 0 && length(output.sending_dns_records) == 7 && output.sending_dns_records["dmarc"].records == ["v=DMARC1; p=none"] && aws_ses_domain_mail_from.enclave[0].mail_from_domain == "bounce.staging.notify.learncard.com" && aws_ses_domain_mail_from.enclave[0].behavior_on_mx_failure == "RejectMessage" && toset(aws_ses_event_destination.enclave[0].matching_types) == toset(["bounce", "complaint"])
     error_message = "External DNS mode must output all records and configure fail-closed MAIL FROM and feedback."
   }
   assert {
     condition     = jsondecode(aws_iam_user_policy.email_sender[0].policy).Statement[0].Action == ["ses:SendEmail"] && jsondecode(aws_iam_user_policy.email_sender[0].policy).Statement[0].Condition.StringEquals["ses:FromAddress"] == "recovery@staging.notify.learncard.com" && toset(jsondecode(aws_iam_user_policy.email_sender[0].policy).Statement[0].Resource) == toset([local.email_identity_arn, local.email_configuration_set_arn])
     error_message = "Email sender must only SendEmail from the approved identity/address."
+  }
+  assert {
+    condition     = length([for s in jsondecode(aws_iam_user_policy.authority_writer[0].policy).Statement : s if anytrue([for a in flatten([s.Action]) : startswith(a, "kms:")])]) == 1 && alltrue([for s in jsondecode(aws_iam_user_policy.authority_writer[0].policy).Statement : !anytrue([for a in flatten([s.Action]) : startswith(a, "kms:")]) || (toset(flatten([s.Action])) == toset(["kms:Decrypt", "kms:DescribeKey"]) && s.Resource == aws_kms_key.s3.arn && s.Condition.StringEquals["kms:ViaService"] == "dynamodb.us-east-1.amazonaws.com")])
+    error_message = "Authority writer may use only the table key, only through DynamoDB."
   }
   assert {
     condition     = strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8002 email.us-east-1.amazonaws.com 443") && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "ESCROW_AUTHORITY_CREDENTIAL_OBJECT=credentials/authority-writer/g1") && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "ESCROW_EMAIL_CREDENTIAL_OBJECT=credentials/email-sender/g1") && length(aws_cloudwatch_event_rule.authority_governance) == 5 && strcontains(aws_cloudwatch_event_rule.authority_governance["table_control"].event_pattern, "DeleteResourcePolicy")
@@ -209,7 +213,7 @@ run "delegated_sending_zone_and_cross_region_global_events" {
     create_sending_zone           = true
   }
   assert {
-    condition     = length(aws_route53_zone.sending) == 1 && aws_route53_zone.sending[0].name == "staging.notify.learncard.com" && length(aws_route53_record.sending) == 6 && length(output.sending_zone_name_servers) == 2 && alltrue([for r in aws_route53_record.sending : !strcontains(r.name, "_dmarc") && endswith(r.name, "staging.notify.learncard.com")]) && length(aws_cloudwatch_event_target.authority_global) == 1
+    condition     = length(aws_route53_zone.sending) == 1 && aws_route53_zone.sending[0].name == "staging.notify.learncard.com" && length(aws_route53_record.sending) == 7 && length(output.sending_zone_name_servers) == 2 && alltrue([for r in aws_route53_record.sending : endswith(r.name, "staging.notify.learncard.com")]) && aws_route53_record.sending["dmarc"].records == toset(["v=DMARC1; p=none"]) && length(aws_cloudwatch_event_target.authority_global) == 1
     error_message = "Only the delegated child zone/records should be created; global IAM events must be forwarded cross-region."
   }
   assert {
