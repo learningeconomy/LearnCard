@@ -98,8 +98,11 @@ The existing API kill switch cannot stop a host bypassing the API.
    challenges bind online replies to one session/operation. Commit conditions reject
    state changed since the read, even if a valid reply was delayed.
 4. **Monotonicity:** A per-tenant/DID revision increases on every authority change;
-   enrollment epoch increases on user replacement/disable/re-enable. Rewrap keeps
-   epoch/share version but increments revision and replaces blob identity.
+   enrollment epoch increases on enroll (including re-enable after disable), user
+   replacement and carry. Disable keeps the epoch and advances the enrollment
+   revision instead, which fences stale intents and operations just as well.
+   Rewrap keeps epoch/share version but increments revision and replaces blob
+   identity.
 5. **Serialization:** Committed disable, replacement or cancellation wins against
    a later release commit. Concurrent release first may win; client receipt order
    is not the order of authorization. No expiring lease alone grants release.
@@ -257,11 +260,20 @@ not suspension of a still-live enclave. No host-clock timeout proves freshness.
 Roughtime still enforces the existing seven-day comparison; its signed processing
 time is not a receipt-time upper bound (`app/src/time.rs`, SECURITY D2/D13).
 
-Authority stores committed bytes independently and copies them to Object Lock with
-idempotency. The existing host ledger becomes a checked projection,
-not the authority. Synchronous S3 audit gating before success is optional (durable outbox + reconciliation acceptable).
-Failure after a database commit returns unavailable and may burn the operation.
-A persistent outbox repairs audit/projection failures. No cross-service atomicity
+Authority stores committed bytes independently (signed execution rows in the
+authority table). The existing host ledger becomes a checked projection, not the
+authority. Failure after a database commit returns unavailable and may burn the
+operation.
+
+**Retention status (as implemented in this stack):** the authority table has
+deletion protection, point-in-time recovery, SCP-guarded lifecycle/restore/import
+actions and a read-only monitor that verifies execution rows. There is **no**
+authority-to-Object-Lock archiver or persistent audit outbox yet. Long-term
+immutable retention of authority rows therefore remains **in scope as a
+production-enablement gate**, not a delivered control: before production,
+copy exact signed execution bytes to the existing COMPLIANCE Object Lock bucket
+idempotently (synchronous gating optional; durable outbox + reconciliation
+acceptable), and have the monitor check coverage. Staging may run without it. No cross-service atomicity
 with S3 or Mongo is claimed. Stored receipts permit metadata reconciliation, never
 replay of a PIN comparison or release. Enclave high-water marks still never reset
 on failure; losing concurrent signers may require exact-history reconciliation.
@@ -325,7 +337,8 @@ change as independently committed; an API `{success:true}` is insufficient.
 - **Infra:** Add a dedicated IAM writer user whose access key is sealed under a NEW, separate KMS key.
   The escrow CMK policy is NOT touched (it denies Encrypt).
   The new KMS key policy allows Decrypt only with an attested Recipient matching pinned PCRs.
-  Add single-region tables, fixed TLS endpoint, audit outbox, alarms and backup policy.
+  Add single-region tables, fixed TLS endpoint, alarms and backup policy. The audit
+  outbox/Object Lock archiver is a production gate (see section 5), not in this stack.
   Host/API get no table writes, signing grants or cross-account administrator role.
   Update `infra/escrow-enclave/{iam,ledger,kms,storage,monitor}.tf` integration and
   measured endpoint/pin configuration. Preserve existing PCR tuple/KMS denies.
