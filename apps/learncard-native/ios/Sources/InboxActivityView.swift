@@ -5,6 +5,7 @@ import LearnCardNativeSDK
 struct InboxView: View {
     let store: AppStore
     @Binding var selectedOffer: Credential?
+    var scan: () -> Void = {}
     var onScrollStateChange: (Bool) -> Void = { _ in }
     @State private var scrolled = false
     private var updates: [InboxItem] { store.inbox.updates(excluding: Set((store.snapshot?.offers ?? []).map(\.id))) }
@@ -14,6 +15,11 @@ struct InboxView: View {
             VStack(alignment: .leading, spacing: 16) {
                 PageHeading(title: "Inbox")
                 Text(NativeText.text("inbox.subtitle")).font(.subheadline).foregroundStyle(Palette.secondary)
+                Button(action: scan) {
+                    Label(NativeText.text("claims.title"), systemImage: "qrcode.viewfinder").font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 50).foregroundStyle(Palette.ink)
+                        .background(Palette.surface, in: RoundedRectangle(cornerRadius: 18))
+                }.accessibilityIdentifier("inbox-scan")
                 if let offers = store.snapshot?.offers, !offers.isEmpty {
                     HStack(spacing: 12) {
                         Image("InboxIllustration").resizable().scaledToFit().frame(width: 100, height: 82).accessibilityHidden(true)

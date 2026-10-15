@@ -103,6 +103,7 @@ struct PrimaryButton: View {
     let title: String
     var loading = false
     var disabled = false
+    var fill: Color = Palette.green
     let action: () -> Void
 
     var body: some View {
@@ -113,7 +114,7 @@ struct PrimaryButton: View {
             }
             .frame(maxWidth: .infinity, minHeight: 54)
             .foregroundStyle(disabled ? Palette.secondary : Palette.selectionInk)
-            .background(disabled ? Palette.line : Palette.green, in: RoundedRectangle(cornerRadius: 20))
+            .background(disabled ? Palette.line : fill, in: RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(CredentialPressStyle())
         .disabled(disabled || loading)

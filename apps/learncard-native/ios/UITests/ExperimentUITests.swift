@@ -193,8 +193,9 @@ final class ExperimentUITests: XCTestCase {
         app.buttons["credential-design"].tap()
         app.swipeUp()
         app.buttons["share"].tap()
+        XCTAssertTrue(app.otherElements["ShareSheet.RemoteContainerView"].waitForExistence(timeout: 15), app.debugDescription)
         let copyAction = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Copy")).firstMatch
-        XCTAssertTrue(copyAction.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(copyAction.waitForExistence(timeout: 30), app.debugDescription)
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "Native share sheet in dark mode"
         screenshot.lifetime = .keepAlways

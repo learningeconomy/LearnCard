@@ -25,6 +25,7 @@
         "consumer-fixture.ts",
         "families.ts",
         "inbox.ts",
-        "personal-creations.ts"
+        "personal-creations.ts",
+        "claims.ts"
     ]
 }

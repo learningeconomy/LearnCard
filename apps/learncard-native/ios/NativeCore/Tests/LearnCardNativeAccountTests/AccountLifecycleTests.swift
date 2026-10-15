@@ -197,7 +197,10 @@ import LearnCardNativeCore
         let harness = Harness(), account = harness.controller(); await account.resume()
         let previousInbox = account.store?.inbox
         await previousInbox?.load(); XCTAssertEqual(previousInbox?.items.count, 2)
+        await account.claims.receive("https://staging.learncard.app/claim/boost?boostUri=lc%3Anetwork%3Astaging.network.learncard.com%2Ftrpc%3Aboost%3Asample&challenge=synthetic-token")
+        XCTAssertNotNil(account.claims.link)
         await account.signOut(forget: false)
+        XCTAssertNil(account.claims.link); XCTAssertNil(account.claims.credential); XCTAssertFalse(account.claims.isPresented)
         XCTAssertTrue(previousInbox?.items.isEmpty == true)
         await previousInbox?.load(); XCTAssertTrue(previousInbox?.items.isEmpty == true)
         assertSignedOut(account)

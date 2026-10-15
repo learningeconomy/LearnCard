@@ -19,6 +19,7 @@ extension FirebaseSession: AccountSession {}
     var consumerService: any ConsumerAppService { get }
     var familyService: any FamilyService { get }
     var inboxService: any InboxService { get }
+    var claimService: (any ClaimService)? { get }
     func initialize() async throws -> AccountState
     func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async throws -> AccountState
     func updateProfile(name: String, bio: String) async throws -> AccountState
@@ -30,16 +31,19 @@ extension AccountRuntime: AccountHost {
     public var consumerService: any ConsumerAppService { LiveConsumerAppService(runtime: self) }
     public var familyService: any FamilyService { LiveFamilyService(runtime: self) }
     public var inboxService: any InboxService { LiveInboxService(runtime: self) }
+    public var claimService: (any ClaimService)? { LiveClaimService(runtime: self) }
 }
 
 public extension AccountHost { var consumerService: any ConsumerAppService { UnavailableConsumerAppService() } }
 public extension AccountHost { var familyService: any FamilyService { UnavailableFamilyService() } }
 public extension AccountHost { var inboxService: any InboxService { UnavailableInboxService() } }
+public extension AccountHost { var claimService: (any ClaimService)? { nil } }
 
 public enum AccountActivity: Sendable { case active, inactive, background }
 
 @MainActor @Observable
 public final class NativeAccountController {
+    public let claims: NativeClaimStore
     private let session: (any AccountSession)?
     private let makeHost: @MainActor (FirebaseUser) throws -> any AccountHost
     private let forgetAccount: @MainActor (String) async throws -> Void
@@ -69,7 +73,9 @@ public final class NativeAccountController {
 
     public init(session: (any AccountSession)?,
                 makeHost: @escaping @MainActor (FirebaseUser) throws -> any AccountHost,
-                forgetAccount: @escaping @MainActor (String) async throws -> Void) {
+                forgetAccount: @escaping @MainActor (String) async throws -> Void,
+                claims: NativeClaimStore? = nil) {
+        self.claims = claims ?? NativeClaimStore()
         self.session = session; self.makeHost = makeHost; self.forgetAccount = forgetAccount
         email = session?.testEmail ?? ""
     }
@@ -130,12 +136,15 @@ public final class NativeAccountController {
     }
 
     private func apply(_ state: AccountState) async throws {
+        let expected = generation
         self.state = state; phase = state.phase
         if state.error != nil { throw AccountError.recovery }
         if state.phase == "ready", let runtime {
             let store = NativeAppStore(service: runtime.credentialService, isLive: true, consumerService: runtime.consumerService, familyService: runtime.familyService, inboxService: runtime.inboxService)
             self.store = store
             await store.refresh()
+            try check(expected)
+            if let user { claims.connect(service: runtime.claimService, accountID: user.id) }
         }
     }
 
@@ -156,6 +165,7 @@ public final class NativeAccountController {
     public func signOut(forget: Bool) async {
         guard !endingSession else { return }
         endingSession = true; signedOut = true
+        claims.clear()
         lock(); busy = true; phase = "signIn"
         defer { endingSession = false; busy = false; phase = "signIn" }
         do {
@@ -180,6 +190,7 @@ public final class NativeAccountController {
 
     public func lock() {
         generation += 1
+        claims.lock()
         runtime?.dispose(); runtime = nil
         store?.consumer.lock()
         store?.families.lock()

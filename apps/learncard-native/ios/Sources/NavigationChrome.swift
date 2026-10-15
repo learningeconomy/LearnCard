@@ -2,13 +2,14 @@ import SwiftUI
 import LearnCardNativeSDK
 import LearnCardNativeCore
 
-enum CollectionAction { case create, send, share }
+enum CollectionAction { case create, send, share, scan }
 
 struct CollectionActionsMenu: View {
     @Environment(\.locale) private var nativeLocale
     let select: (CollectionAction) -> Void
     var body: some View {
         VStack(spacing: 2) {
+            row(NativeText.text("claims.title"), symbol: "qrcode.viewfinder", tint: Palette.portfolioCard, action: .scan)
             row("Create new", symbol: "plus", tint: Palette.blueCard, action: .create)
             row("Send existing creation", symbol: "paperplane", tint: Palette.cyanCard, action: .send)
             row("Share credentials", symbol: "square.and.arrow.up", tint: Palette.pinkCard, action: .share)

@@ -1,17 +1,17 @@
 # Native experiment handoff — 2026-10-15
 
-Collection now includes the web consumer categories, including independent Portfolio and Qualifications filters. Rows, featured cards and detail labels use the original semantic category instead of the older three native authoring kinds. Qualifications has the upstream orange Colorful accent and drawn certificate/seal artwork; Families remains in its dedicated native area. The Home/dashboard, illustrated fallbacks, neutral canvas, stable header and automatic detail-card motion from the previous update remain. See [category contracts and source audit](CATEGORY_PARITY.md).
+Native Scan a code now leads through a designed review and explicit confirmation to an illustrated success screen. Camera, selected photos and pasted staging claim links share one flow; it survives sign-in/recovery and background locking. Protected receipt handling prevents blind duplicate issuance and permits safe saving/reconciliation. Inbox, Home and the header menu expose scanning. Portfolio/Qualifications parity, the approved Home/drawn design, neutral canvas and automatic credential detail motion remain. See [scanner and claim contracts](QR_CLAIM_FLOW.md).
 
 - Branch: `codex/vesper-73`.
 - Checkout: `/Users/donny/.codex/worktrees/vesper-73/LearnCard`; preserve unrelated primary-checkout work.
-- The preceding Home baseline `4dde77e13383394163bad3ddaa7131d0f6d0adc3` passed [hosted CI 38694796776](https://github.com/learningeconomy/LearnCard/actions/runs/38694796776), including its full 181-case suite, independent verification of ten iOS outputs and Release compilation. This category change gets a separate hosted run on push.
-- Current configured suite: **191 cases** — 89 Bun, 57 Swift and 45 simulator cases, plus one intentionally skipped live exchange.
-- This update passed all 89 Bun and 57 Swift cases, native source/type contracts and seven focused simulator checks in `artifacts/category-verified.xcresult`, including the three new category cases. Final Release compilation passed in `artifacts/category-release.log`. These are focused checks, not a new local full 191-case run; see [TESTING.md](TESTING.md).
+- Home baseline `4dde77e13383394163bad3ddaa7131d0f6d0adc3` passed [hosted CI 38694796776](https://github.com/learningeconomy/LearnCard/actions/runs/38694796776). The subsequent category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; timing/gesture assertions are addressed in this follow-up and must pass new source-specific CI.
+- Current configured suite: **219 cases** — 102 Bun, 68 Swift and 49 simulator cases, plus one intentionally skipped live exchange.
+- QR/claim checks passed all 102 Bun and 68 Swift cases and source/type contracts. Eleven initial simulator checks, a five-case refinement pass and a final ten-case claim/category/CI follow-up passed; exact evidence is in [TESTING.md](TESTING.md). This is targeted validation, not a new local full 219-case run.
 - Builds use two jobs at reduced priority; shared DerivedData operations remain sequential. Automated tests use the separate checks simulator, and private review configuration is preserved/restored around the CI script.
 
 ## What is ready to review
 
-The app connects to the approved staging test account through Firebase email-code sign-in, existing account recovery and Keychain storage. Personal credentials live in Collection; reusable creations live in Home. The plus menu supports creation, sending an existing creation and sharing selected credentials.
+The app connects to the approved staging test account through Firebase email-code sign-in, existing account recovery and Keychain storage. Personal credentials live in Collection; reusable creations live in Home. The header menu supports scanning, creation, sending an existing creation and sharing selected credentials. Scan is also available from Inbox/Home and before sign-in. A scan only opens review; adding requires confirmation. Known Family templates require their web access-review flow. Production links and other QR protocols get explicit explanations rather than arbitrary navigation.
 
 Consumer Apps now includes My apps/Discover, real catalog metadata and artwork, search/category filters, listing details, installation/removal, native agreement review and an in-app browser. Account → Data Sharing opens native agreements and owned shared links. Account → Language supports English, Spanish, French and Arabic, including RTL and pluralization for the new flows.
 
@@ -27,9 +27,9 @@ The app browser is separate from the account SDK. Embedded partner apps support 
 
 ## Installed simulator build
 
-The category-parity build is installed and running on **LearnCard Native Lab**. The executable, Debug dylib, asset catalog, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/category-install-proof.json`). The existing staging account/profile resumed; Collection displayed 30+ and Inbox badge 3 during read-only review. Release and Debug/install logs are `artifacts/category-release.log` and `artifacts/category-review-install.log`. The agent did not claim/send credentials or act on live connections, family invitations, consent or shared links. Tests used the separate checks simulator, which is shut down; private review configuration was preserved/restored.
+The QR/claim build is installed and running on **LearnCard Native Lab**. Executable, Debug dylib, assets, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/claims-install-proof.json`). The staging account resumed with Collection 30+ and Inbox badge 3. A public invalid native claim URL exercised the real URL handoff, account-backed SDK and deployed preview endpoint, displayed the unavailable-link state, and returned to Collection after Cancel. No live credential was claimed, issued, sent or indexed for this check.
 
-The current category update passed 89 Bun, 57 Swift and seven focused simulator cases, source/type contracts and Release compilation. The preceding Home baseline passed its full 181-case suite and ten independent iOS output verifications. A new hosted run checks the category source on push; verify its SHA before reporting hosted success.
+Final Release and Debug/install logs are `artifacts/claims-release-final.log` and `artifacts/claims-review-install.log`. All 102 Bun and 68 Swift cases, source/type contracts, 12 existing web helper cases and focused simulator passes succeeded. The final ten-case pass includes four claim cases, three category cases, recovery, native sharing and Receive cancellation; earlier focused checks also covered all account lifecycle UI cases. These are targeted checks, not a new local full 219-case run. The checks simulator is shut down; private configuration was preserved/restored. New hosted CI must be checked against the pushed source before claiming hosted success.
 
 Open Simulator, select **LearnCard Native Lab**, and open **LearnCard Lab**. This is the review simulator (`ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E`); the automated UI checks use a separate simulator.
 
@@ -45,6 +45,8 @@ For a DEBUG review starting directly at Families, append `--review-families`. It
 The existing ignored local configuration retains the approved test email. A fresh checkout requires its own test-login configuration; see [README](README.md). The CI build configuration uses a non-deliverable test address and should not replace the live review configuration.
 
 ## Manual review focus
+
+Review Scan a code → photo/paste → review → Add to Collection → success. Cancel must not claim. A pending link should return after sign-in/recovery; background removes private preview/input, and sign-out clears intent. The simulator cannot capture a camera frame, so use a selected QR photo or paste. The [generated concept and source prompt](design/CLAIM_FLOW_BRIEF.md) guide composition; [the contract](QR_CLAIM_FLOW.md) records actual boundaries. A dedicated live claim and physical-camera test remain manual gates. Standard HTTPS system-Camera launching needs the app identity and hosted AASA configuration.
 
 First review the separate Portfolio and Qualifications filters, labels in rows/cards/details, category-scoped search and Load more guidance. Families should remain in its dedicated area. The category mapping is read-only; full authoring parity across all categories remains a separate builder/SDK update.
 
@@ -62,6 +64,7 @@ Read-only live checks already confirmed account recovery/resumption, collection/
 
 ## Remaining work after review
 
+- Validate physical camera capture, PhotosPicker behavior and a dedicated live staging claim, including exhausted/expired links and server approval cases. Confirm the exact-head hosted run after the CI timing follow-up. Publish associated-domain/AASA configuration before promising automatic system Camera/Safari HTTPS opening. Other QR protocols remain separate.
 - Apply manual design feedback, including consistent header/chrome behavior across tabs.
 - Extend the builder/SDK contract for full category authoring, including Qualifications; current creation retains its three existing kinds. Category-specific server pagination/search also remains separate.
 - Review the new drawn tray icons, compact typography/rows, search and connection prompt presentation.
@@ -77,6 +80,8 @@ Anonymous/redacted consent, advanced contract flows and deferred partner actions
 
 ## Reference map
 
+- [Native QR capture, claim transaction and retry boundaries](QR_CLAIM_FLOW.md)
+- [Scanner/review/success concept and exact prompt](design/CLAIM_FLOW_BRIEF.md)
 - [Credential categories, Qualifications and compatibility rules](CATEGORY_PARITY.md)
 - [Native design system: scale, artwork, color and motion](design/DESIGN_SYSTEM.md)
 - [Home dashboard contracts and web mapping](HOME_INTEGRATION.md)

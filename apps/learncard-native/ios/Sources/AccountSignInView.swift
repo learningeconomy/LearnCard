@@ -12,6 +12,7 @@ struct AccountRootView: View {
             if let store = account.store { RootView(store: store, account: account) }
             else { AccountSignInView(account: account) }
         }
+        .modifier(ClaimPresentation(flow: account.claims, store: account.store, recipient: account.state?.profileId))
         .task {
             await account.resume()
             if ProcessInfo.processInfo.arguments.contains("--request-test-code"), account.phase == "signIn" { await account.sendCode() }
@@ -50,6 +51,12 @@ struct AccountSignInView: View {
                 }
                 if account.busy {
                     Section { HStack { ProgressView(); Text("Connecting your account…") }.accessibilityIdentifier("account-loading") }
+                }
+                if account.claims.link != nil {
+                    Section { Label(NativeText.text("claims.waitingSignIn"), systemImage: "qrcode") }
+                }
+                if !account.busy {
+                    Section { Button(NativeText.text("claims.title")) { account.claims.open() }.accessibilityIdentifier("signed-out-scan") }
                 }
                 switch account.phase {
                 case "loading", "locked":

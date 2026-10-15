@@ -18,7 +18,7 @@ import XCTest
     func testFailedEmailRecoveryClearsInputThenRetrySurvivesBackgroundAndRelaunch() {
         let app = launch("recovery")
         recover(app, key: "wrong-synthetic-key")
-        XCTAssertTrue(app.descendants(matching: .any)["account-error"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["account-error"].waitForExistence(timeout: 15))
         XCTAssertTrue(app.secureTextFields["email-recovery-key"].exists)
         XCTAssertFalse(app.buttons["recover-account"].isEnabled)
         recover(app)
@@ -104,6 +104,9 @@ import XCTest
     private func recover(_ app: XCUIApplication, key: String = "synthetic-recovery-key") {
         let input = app.secureTextFields["email-recovery-key"]
         XCTAssertTrue(input.waitForExistence(timeout: 10)); input.tap(); input.typeText(key)
-        app.buttons["recover-account"].tap()
+        let button = app.buttons["recover-account"]
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 10), .completed)
+        button.tap()
     }
 }

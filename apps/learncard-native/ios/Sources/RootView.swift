@@ -6,7 +6,8 @@ struct RootView: View {
     @Environment(\.locale) private var nativeLocale
     @Bindable var store: AppStore
     var account: AccountController? = nil
-    @State private var showReceive = false
+    @State private var demoClaims = NativeClaimStore(isDemo: true, journal: MemoryClaimJournal())
+    private var claims: NativeClaimStore { account?.claims ?? demoClaims }
     @State private var showCreate = false
     @State private var showAccount = false
     @State private var showActions = false
@@ -14,7 +15,6 @@ struct RootView: View {
     @State private var showExisting = false
     @State private var showShare = false
     @State private var offer: Credential?
-    @State private var receivedOffer: Credential?
     @State private var selectedTab = 0
     @State private var discoverApps = false
     @State private var appsEntry = 0
@@ -30,7 +30,7 @@ struct RootView: View {
             .tabItem { Label { Text(NativeText.literal("Collection")) } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }
             .tag(0)
             NavigationStack {
-                InboxView(store: store, selectedOffer: $offer, onScrollStateChange: { compactBrands[1] = $0 })
+                InboxView(store: store, selectedOffer: $offer, scan: { claims.open() }, onScrollStateChange: { compactBrands[1] = $0 })
                     .toolbar { header(tab: 1) }
             }
                 .tabItem { Label { Text(NativeText.literal("Inbox")) } icon: { Image(selectedTab == 1 ? "InboxTabActive" : "InboxTab").renderingMode(.original) } }
@@ -46,20 +46,19 @@ struct RootView: View {
             NavigationStack {
                 HomeView(store: store, profileName: account?.state?.profileName,
                          openInbox: { selectedTab = 1 }, create: { showCreate = true },
-                         receive: { showReceive = true }, openCollection: { selectedTab = 0 },
+                         receive: { claims.open() }, openCollection: { selectedTab = 0 },
                          openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
                     .toolbar { header(tab: 3) }
             }
                 .tabItem { Label { Text(NativeText.literal("Home")) } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
                 .tag(3)
         }
+        .onChange(of: store.openInboxRequested) { _, value in if value { selectedTab = 1; store.openInboxRequested = false } }
         .toolbar(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) { NativeTabTray(selection: $selectedTab, inboxCount: inboxCount) }
         .task { if store.snapshot == nil { await store.refresh() }; if !store.inbox.loaded { await store.inbox.load() } }
-        .sheet(isPresented: $showReceive, onDismiss: {
-            offer = receivedOffer
-            receivedOffer = nil
-        }) { ReceiveView(store: store, selectedOffer: $receivedOffer) }
+        .modifier(ClaimPresentation(flow: demoClaims, store: store, enabled: account == nil))
+        .task { if account == nil { demoClaims.connect(service: store.demoClaimService, accountID: "demo") } }
         .sheet(isPresented: $showExisting) {
             NavigationStack { CreationsView(store: store, sendOnSelect: true)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Done")) { showExisting = false } } } }
@@ -88,27 +87,13 @@ struct RootView: View {
             if ProcessInfo.processInfo.arguments.contains("--review-families") { showFamilyReview = true }
             #endif
         }
-        .onOpenURL { url in
-            guard !store.isLive else { store.error = "Open Inbox to review credentials sent to this account."; return }
-            Task {
-                do {
-                    let link = try DemoClaimLink(url: url)
-                    if store.snapshot == nil { await store.refresh() }
-                    guard let match = store.snapshot?.offers.first(where: { $0.id == link.offerID }) else {
-                        store.error = ClientError.offerUnavailable.errorDescription
-                        return
-                    }
-                    offer = match
-                } catch { store.error = ClientError.unsupportedLink.errorDescription }
-            }
-        }
     }
 
     private var inboxCount: Int {
         store.inboxCount
     }
     private var availablePrompt: InboxItem? {
-        guard !showReceive, !showCreate, !showAccount, !showActions, !showExisting, !showShare, !showFamilyReview,
+        guard !claims.isPresented, !showCreate, !showAccount, !showActions, !showExisting, !showShare, !showFamilyReview,
               offer == nil, store.notice == nil, store.error == nil else { return nil }
         return store.inbox.postClaimPrompts.first
     }
@@ -142,6 +127,7 @@ struct RootView: View {
                             guard let action = requestedAction else { return }
                             requestedAction = nil
                             switch action {
+                            case .scan: claims.open()
                             case .create: showCreate = true
                             case .send: showExisting = true
                             case .share: showShare = true

@@ -9,6 +9,13 @@ import {
 import type { ShareLinkOperationKeyInput } from '@learncard/types';
 import { buildNativeTemplate, type NativeCredentialDraft } from './credential-draft';
 import { credentialCategoryForDisplay } from './credential-category';
+import {
+    createClaimCommands,
+    claimErrorCode,
+    ClaimFailure,
+    categoryForClaim,
+    claimPreviewURL,
+} from './claims';
 import { initLearnCard } from '@learncard/init';
 import { createSSSStrategy } from '../../../packages/sss-key-manager/src/sss-strategy';
 import type { RecoveryInput } from '../../../packages/sss-key-manager/src/types';
@@ -188,13 +195,17 @@ const issuerLabel = async (value: unknown): Promise<string> => {
     }
     return profileId ? `@${profileId}` : 'Issuer details inside';
 };
-const display = async (record: Record<string, unknown>, verify = true) => {
+const display = async (
+    record: Record<string, unknown>,
+    verify = true,
+    supplied?: Record<string, unknown>
+) => {
     if (!wallet) throw new Error('Sign in first');
     const uri = string(record.uri);
     let raw: Record<string, unknown> = {};
     let proofChecked = false;
     try {
-        raw = object(await wallet.read.get(uri));
+        raw = supplied ?? object(await wallet.read.get(uri));
         if (Object.keys(raw).length) {
             if (verify) {
                 const result = await wallet.invoke.verifyCredential(raw as never, {
@@ -211,7 +222,9 @@ const display = async (record: Record<string, unknown>, verify = true) => {
         ? raw.credentialSubject
         : [raw.credentialSubject];
     const subject = object(subjects[0]);
-    const achievement = object(subject.achievement);
+    const achievement = object(
+        Array.isArray(subject.achievement) ? subject.achievement[0] : subject.achievement
+    );
     const issuer = object(raw.issuer);
     const category = credentialCategoryForDisplay(record.category, raw);
     return {
@@ -274,6 +287,17 @@ const shares = new Map<
 >();
 
 const commands = {
+    ...createClaimCommands(
+        () => wallet,
+        display,
+        async (uri, challenge) => {
+            const url = claimPreviewURL(uri, challenge);
+            const response = await fetch(url);
+            if (!response.ok)
+                throw new ClaimFailure(response.status >= 500 ? 'connection' : 'unavailable');
+            return response.json();
+        }
+    ),
     ...createConsumerCommands(() => wallet),
     ...createInboxCommands(
         () => wallet,
@@ -382,7 +406,7 @@ const commands = {
                     string(object(object(raw.credentialSubject).achievement).name) ||
                     string(raw.name) ||
                     'Credential',
-                category: 'Achievement',
+                category: categoryForClaim(raw) as never,
             });
         activity.unshift({
             id: crypto.randomUUID(),
@@ -672,17 +696,19 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
             } catch (error) {
                 return JSON.stringify({
                     ok: false,
-                    error: method.startsWith('inbox')
-                        ? inboxErrorCode(error)
-                        : method.startsWith('families')
-                          ? familyErrorCode(error)
-                          : method.startsWith('apps') || method.startsWith('privacy')
-                            ? consumerErrorCode(error)
-                            : method === 'initialize'
-                              ? 'connection'
-                              : method === 'recover'
-                                ? 'recovery'
-                                : 'unavailable',
+                    error: method.startsWith('claims')
+                        ? claimErrorCode(error)
+                        : method.startsWith('inbox')
+                          ? inboxErrorCode(error)
+                          : method.startsWith('families')
+                            ? familyErrorCode(error)
+                            : method.startsWith('apps') || method.startsWith('privacy')
+                              ? consumerErrorCode(error)
+                              : method === 'initialize'
+                                ? 'connection'
+                                : method === 'recover'
+                                  ? 'recovery'
+                                  : 'unavailable',
                 });
             }
         },

@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## QR scanning and claim flow — October 15
+
+Scan from Inbox, Home or the shared action menu, or begin before sign-in. Camera, locally decoded selected photos and pasted staging claim links converge on native review, explicit confirmation and an illustrated success screen. Pending intent survives in-process recovery/background locking. A protected receipt journal separates issuance from saving; uncertain writes are reconciled read-only and never blindly reissued. Existing server gates, signature checks and semantic category indexing remain. See [the complete input/account/retry contract](QR_CLAIM_FLOW.md) and [the generated design reference](design/CLAIM_FLOW_BRIEF.md). Physical camera/live claim validation, associated-domain HTTPS launch and other QR protocols remain explicit follow-ups.
+
 ## Category parity update — October 15
 
 Collection now has distinct filters for the web consumer categories, including Portfolio and the newly added Qualifications. Rows, cards and detail metadata use the same localized semantic category rather than the three legacy authoring kinds. Qualifications follows the upstream orange Colorful token and conservative read-only interpretation of historic license/certification records. Families remains in its dedicated native area; unknown partner categories keep their original label under Other. Filtering covers loaded pages, with explicit partial-result guidance. Full-category authoring is a separate builder/SDK update. See [category contracts and sources](CATEGORY_PARITY.md).

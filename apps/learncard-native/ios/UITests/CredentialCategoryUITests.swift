@@ -11,6 +11,9 @@ import XCTest
     private func select(_ category: String, in app: XCUIApplication) {
         let chip = app.buttons["collection-category-\(category)"]
         let bar = app.scrollViews["collection-categories"]
+        XCTAssertTrue(bar.waitForExistence(timeout: 10), app.debugDescription)
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: bar)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed)
         XCTAssertTrue(chip.exists, app.debugDescription)
         // XCTest can throw while asking an entirely offscreen chip for hittability.
         // Reveal its frame before asking for an activation point.
@@ -19,9 +22,11 @@ import XCTest
             let forward = chip.frame.midX > bar.frame.midX
             let start = bar.coordinate(withNormalizedOffset: CGVector(dx: forward ? 0.85 : 0.15, dy: 0.5))
             let end = bar.coordinate(withNormalizedOffset: CGVector(dx: forward ? 0.15 : 0.85, dy: 0.5))
-            start.press(forDuration: 0.05, thenDragTo: end)
+            start.press(forDuration: 0.15, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
         XCTAssertTrue(chip.isHittable, app.debugDescription); chip.tap()
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"), object: chip)
+        XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 10), .completed, app.debugDescription)
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)

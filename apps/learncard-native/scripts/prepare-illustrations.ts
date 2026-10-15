@@ -12,6 +12,12 @@ const drawings = (dark: boolean): Record<string, string> => {
     const glyph = (content: string): string =>
         `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#18224E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
     return {
+        ClaimScanIllustration: glyph(
+            `<rect x="7" y="7" width="50" height="50" rx="10" fill="#FFFFFF"/><path d="M15 15H25V25H15ZM39 15H49V25H39ZM15 39H25V49H15Z" fill="#93C5FD"/><path d="M39 39H44V44H49V49M31 14V20M31 26V31H23M49 31H44M14 31H18"/><path d="M27 37Q32 43 37 37"/><path d="M27 31V32M37 31V32"/><path d="M2 9V2H9M55 2H62V9M2 55V62H9M55 62H62V55" stroke="#22D3EE"/>`
+        ),
+        ClaimSuccessIllustration: glyph(
+            `<path d="M5 17Q19 12 32 19Q45 12 59 17V55Q45 50 32 57Q19 50 5 55Z" fill="#93C5FD"/><path d="M32 19V57"/><path d="M12 25H24M12 32H21M12 39H24"/><path d="M37 11L57 16L51 43L33 38Z" fill="#F9A8D4"/><path d="M41 20L51 22L50 28Q46 34 42 28Z" fill="#FDE047"/><path d="M45 32L44 36M40 36L47 38"/><path d="M6 5L9 9M22 2V7M58 5L55 9" stroke="#22D3EE"/>`
+        ),
         CategoryQualification: glyph(
             `<path d="M12 6H49Q54 6 54 11V43H12Q6 43 6 38V12Q6 6 12 6Z" fill="#FFFFFF"/><path d="M12 6V35Q6 35 6 40M19 17H42M19 25H37"/><path d="M32 43L28 59L39 53L49 59L46 42" fill="#93C5FD"/><path d="M39 29L44 33L50 34L51 40L55 45L50 50L49 55L43 56L39 60L34 56L28 55L27 50L23 45L27 40L28 34L34 33Z" fill="#FDBA74"/><path d="M33 44L37 48L46 39"/>`
         ),

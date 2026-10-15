@@ -5,6 +5,8 @@ enum AccountReply {
         let data = Data(text.utf8)
         let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
         guard envelope["ok"] as? Bool == true, let value = envelope["value"] else {
+            if let code = envelope["error"] as? String, code.hasPrefix("claims:"),
+               let failure = ClaimError(rawValue: String(code.dropFirst("claims:".count))) { throw failure }
             if let code = envelope["error"] as? String, code.hasPrefix("consumer:"),
                let failure = ConsumerAppError(rawValue: String(code.dropFirst("consumer:".count))) { throw failure }
             if let code = envelope["error"] as? String, code.hasPrefix("family:"),

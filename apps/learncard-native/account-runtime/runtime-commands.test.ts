@@ -162,3 +162,13 @@ test.each(['inboxList', 'inboxAction'])(
         expect(bridgeCalls).toBe(0);
     }
 );
+
+test.each(['claimsPreview', 'claimsIssue', 'claimsFinish', 'claimsReconcile'])(
+    'native %s handler fails signed-out input without transport',
+    async method => {
+        const reply = JSON.parse(await account.call(method, {}));
+        expect(reply.ok).toBe(false);
+        expect(reply.error).toMatch(/^claims:/);
+        expect(bridgeCalls).toBe(0);
+    }
+);

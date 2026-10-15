@@ -13,7 +13,8 @@ import LearnCardNativeSDK
         let vault = KeychainVault(service: "org.learncard.native.account-ui-tests.\(id.uuidString)")
         let session = FixtureSession(vault: vault, scenario: scenario, reset: arguments.contains("--fixture-reset"))
         return AccountController(session: session, makeHost: { _ in FixtureHost(vault: vault) },
-                                 forgetAccount: { _ in try await vault.remove("fixture-remembered") })
+                                 forgetAccount: { _ in try await vault.remove("fixture-remembered") },
+                                 claims: NativeClaimStore(journal: KeychainClaimJournal(vault: vault)))
     }
 }
 
@@ -47,6 +48,7 @@ import LearnCardNativeSDK
 @MainActor private final class FixtureHost: AccountHost {
     let vault: KeychainVault
     let credentialService: any CredentialService = DemoCredentialService()
+    var claimService: (any ClaimService)? { FixtureClaimService(service: credentialService) }
     let consumerService: any ConsumerAppService = DemoConsumerAppService()
     let familyService: any FamilyService = DemoFamilyService()
     private var disposed = false
@@ -67,5 +69,12 @@ import LearnCardNativeSDK
         AccountState(phase: "ready", profileName: name, profileId: "fixture", profileBio: bio)
     }
     func dispose() { disposed = true }
+}
+private actor FixtureClaimService: ClaimService {
+    let demo: DemoClaimService
+    init(service: any CredentialService) { demo = DemoClaimService(service: service) }
+    func preview(_ link: NativeClaimLink) async throws -> Credential { try await demo.preview(NativeClaimLink("learncard-native-demo://claim/first-aid", allowDemo: true)) }
+    func issue(_ link: NativeClaimLink) async throws -> ClaimReceipt { try await demo.issue(NativeClaimLink("learncard-native-demo://claim/first-aid", allowDemo: true)) }
+    func finish(_ receipt: ClaimReceipt) async throws -> Credential { try await demo.finish(receipt) }
 }
 #endif

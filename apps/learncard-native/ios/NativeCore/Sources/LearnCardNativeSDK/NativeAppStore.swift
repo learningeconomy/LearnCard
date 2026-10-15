@@ -9,10 +9,12 @@ public final class NativeAppStore {
     public var isBusy = false
     public var error: String?
     public var notice: String?
+    public var openInboxRequested = false
     public let isLive: Bool
     public let consumer: ConsumerAppsStore
     public let families: FamiliesStore
     public let inbox: InboxStore
+    public var demoClaimService: any ClaimService { DemoClaimService(service: service) }
     /// Matches the tray and Home; credential arrival notices must not count twice.
     public var unreadInboxUpdateCount: Int {
         inbox.updates(excluding: Set((snapshot?.offers ?? []).map(\.id))).filter { !$0.read }.count

@@ -53,10 +53,8 @@ struct HomeView: View {
                                          subtitle: NativeText.text("sharing.intro"))
                     }.accessibilityIdentifier("home-data-sharing")
                 }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
-                if !store.isLive {
-                    Button("Try a sample claim link", action: receive).accessibilityIdentifier("receive")
+                Button(NativeText.text("claims.title"), action: receive).accessibilityIdentifier("receive")
                         .font(.subheadline.weight(.medium)).foregroundStyle(Palette.selection).frame(minHeight: 44)
-                }
                 HomeSessionActivity(items: store.snapshot?.activity ?? [])
             }.padding(NativeLayout.pageInset)
         }

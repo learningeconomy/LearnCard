@@ -1,0 +1,15 @@
+# Scan and claim design brief
+
+Built-in `image_gen` produced [the selected board](claim-flow-concept-2026-10-15.png) on October 15. No external image API or CLI fallback was used. It informs composition; it is not an assertion that production matches a bitmap exactly.
+
+## Implementation
+
+The scanner gets one purpose, a clear local photo/paste alternative and an explicit review promise. Unsupported/denied capture remains usable. Review uses existing credential artwork, actual issuer/category/account metadata and a template disclosure, with a navy primary action. Completion uses a new drawn open passport SVG and direct View credential / Scan another actions. No generic green success wall, fake trust badge or invented account/credential data. Neutral canvas and Colorful illustration accents remain current.
+
+The board's decorative slogans and made-up category were omitted. Native strings/RTL and accessibility sizes determine actual spacing. PhotosPicker and VisionKit provide system capture/privacy behavior. The simulator's honest camera-unavailable panel replaces the mock camera preview. Drawings in `scripts/prepare-illustrations.ts` remain editable: a smiling code and an open passport with a trophy card.
+
+## Exact generation prompt
+
+```text
+Create a polished product UI design board for LearnCard iOS native app with THREE iPhone screen layouts side by side, no device hardware. Calm neutral background #EFF0F5, navy #18224E text, confident native SF typography, 38pt bold page titles, white 24pt rounded grouped surfaces, substantial 44pt+ tap targets. Fun original outlined vector-like illustrations with round navy strokes and simple pink #F9A8D4, yellow #FDE047, cyan #22D3EE, blue #93C5FD fills. No gradients, glass, floating neon. Whimsical but clear like a learning passport. Screen1 title 'Scan a code', subtext 'A new part of your story.' Camera scan window dark charcoal with four rounded cyan corner brackets and a small outlined smiling square QR illustration in the center. Bottom white tray buttons 'Choose a photo' and 'Paste a link', quiet explanation 'You’ll review before adding anything.' Screen2 title 'Review credential', illustrated pink trophy card with 'Community first aid' and 'Community Skills Lab'; below grouped metadata 'From', 'Category', 'About this credential', a neutral note 'The signed credential is checked after you confirm.' Bottom strong navy button 'Add to Collection' and quiet 'Not now'. Show explicit signed-in recipient @alex in a small blue identity row. No trust checkmark implying guaranteed identity. Screen3 title 'A new part of your story', large drawn open passport with a pink trophy card slipping inside, tiny yellow/cyan confetti accents; text 'Added to your collection', secondary 'Community first aid is ready when you need it.' navy button 'View credential', secondary 'Scan another'. Keep screens realistic and implementable in SwiftUI. Do not add wallets, recovery jargon, fake credential trust badges, app bottom nav inside scanner, admin features, or dense tiny copy. This is design inspiration, not actual account data.
+```
