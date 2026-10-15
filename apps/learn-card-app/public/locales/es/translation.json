@@ -2995,7 +2995,35 @@
         "readMore": "Leer más",
         "connectHandler": "Conectar gestor",
         "connected": "Manejador de credenciales conectado",
-        "connFail": "No se pudo conectar el manejador de credenciales. Tu navegador puede haberlo bloqueado — revisa los permisos e inténtalo de nuevo."
+        "connFail": "No se pudo conectar el manejador de credenciales. Tu navegador puede haberlo bloqueado — revisa los permisos e inténtalo de nuevo.",
+        "receive": {
+            "title": "Añadir al Pasaporte",
+            "description": "Revisa las credenciales antes de guardarlas en tu cuenta.",
+            "from": "Solicitado por {{origin}}",
+            "loading": "Obteniendo credenciales...",
+            "saved": "Guardado en tu Pasaporte. Puedes volver al sitio emisor.",
+            "credential": "Credencial",
+            "issuerUnavailable": "Nombre del emisor no disponible",
+            "details": "Detalles",
+            "progress": "Guardadas {{saved}} de {{total}} credenciales",
+            "cancel": "Cancelar",
+            "saving": "Guardando...",
+            "retry": "Intentar de nuevo",
+            "accept": "Guardar en el Pasaporte",
+            "error": {
+                "invalid": "Esta oferta no es compatible o contiene una credencial inválida. Vuelve al sitio emisor e inicia una nueva solicitud.",
+                "request": "No pudimos obtener las credenciales. Vuelve al sitio emisor e inténtalo de nuevo.",
+                "save": "No pudimos terminar de guardar. Inténtalo de nuevo para continuar desde donde quedaste.",
+                "response": "Tus credenciales se guardaron, pero no pudimos notificar al sitio emisor.",
+                "account": "Tu cuenta ha cambiado. Vuelve al sitio emisor e inicia una nueva solicitud.",
+                "cancel": "No pudimos notificar al sitio emisor que cancelaste. Vuelve a ese sitio e inicia una nueva solicitud."
+            },
+            "cancelled": "Solicitud cancelada. Vuelve al sitio emisor.",
+            "connectTitle": "Conectando tu cuenta",
+            "connectDescription": "Preparando la solicitud de este sitio.",
+            "connecting": "Conectando...",
+            "savedBeforeCancel": "Las credenciales ya guardadas permanecen en tu Pasaporte ({{saved}})."
+        }
     },
     "legal": {
         "connectionsEncrypted": "Todas las conexiones están cifradas.",

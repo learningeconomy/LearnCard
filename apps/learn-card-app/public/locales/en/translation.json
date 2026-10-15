@@ -2732,7 +2732,35 @@
         "readMore": "Read More",
         "connectHandler": "Connect Handler",
         "connected": "Credential handler connected",
-        "connFail": "Couldn’t connect the credential handler. Your browser may have blocked it — check permissions and try again."
+        "connFail": "Couldn’t connect the credential handler. Your browser may have blocked it — check permissions and try again.",
+        "receive": {
+            "title": "Add to Passport",
+            "description": "Review the credentials before saving them to your account.",
+            "from": "Requested by {{origin}}",
+            "loading": "Getting credentials...",
+            "saved": "Saved to your Passport. You can return to the issuing website.",
+            "credential": "Credential",
+            "issuerUnavailable": "Issuer name unavailable",
+            "details": "Details",
+            "progress": "Saved {{saved}} of {{total}} credentials",
+            "cancel": "Cancel",
+            "saving": "Saving...",
+            "retry": "Try Again",
+            "accept": "Save to Passport",
+            "error": {
+                "invalid": "This offer is not supported or contains an invalid credential. Return to the issuing website and start a new request.",
+                "request": "We could not get the credentials. Return to the issuing website and try again.",
+                "save": "We could not finish saving. Try again to continue from where you left off.",
+                "response": "Your credentials were saved, but we could not notify the issuing website.",
+                "account": "Your account changed. Return to the issuing website and start a new request.",
+                "cancel": "We could not notify the issuing website that you cancelled. Return to that website and start a new request."
+            },
+            "cancelled": "Request cancelled. Return to the issuing website.",
+            "connectTitle": "Connecting your account",
+            "connectDescription": "Preparing this website’s request.",
+            "connecting": "Connecting...",
+            "savedBeforeCancel": "Credentials already saved remain in your Passport ({{saved}})."
+        }
     },
     "legal": {
         "connectionsEncrypted": "All connections are encrypted.",
