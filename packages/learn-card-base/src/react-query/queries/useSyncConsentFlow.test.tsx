@@ -413,6 +413,35 @@ describe('useSyncConsentFlow', () => {
         expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
     });
 
+    it('rolls back a lost-response write even when localStorage rejects the marker write', async () => {
+        // goblincore's hook-level repro on #1737: storage is readable but setItem throws.
+        const setItem = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+            throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+        });
+        try {
+            const uri = 'urn:test:n:quota-lost-response';
+            host.pending = [uri];
+            host.lifecycle.set(uri, 'suspended');
+            const normalStore = host.addVCtoWallet.getMockImplementation()!;
+            host.addVCtoWallet.mockImplementationOnce(async (args: Record<string, string>) => {
+                await normalStore(args);
+                throw new TypeError('Failed to fetch');
+            });
+            const hook = renderSync();
+            await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+            expect(host.stored.has(uri)).toBe(true);
+
+            await act(async () => {
+                await hook.result.current.refetch();
+            });
+            await waitFor(() => expect(host.accept).toHaveBeenCalledWith({ uri }));
+            await waitFor(() => expect(host.stored.has(uri)).toBe(false));
+            expect(listedUris()).not.toContain(uri);
+        } finally {
+            setItem.mockRestore();
+        }
+    });
+
     it('treats rolling back a write that never landed as a no-op and keeps records it did not create', async () => {
         const uri = 'urn:test:m:write-never-landed';
         host.pending = [uri];
