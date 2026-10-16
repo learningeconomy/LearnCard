@@ -189,6 +189,8 @@ $LCV down --dir /tmp/lcv
 
 `down` validates ownership, saves container logs into the directory, removes only token-owned Docker resources, and stops only the recorded frontend and registered auxiliary process identities. Evidence stays. Fresh `run`s clean up after themselves, even on failure (`--keep` retains a successful non-fresh run). The `app-store` journey normally stops its own Astro server; registered ownership lets teardown recover it after a crash. Never kill by process name or run `docker compose down -v` on someone else's project. After a crash use `down --dir /tmp/lcv`; for a hung startup use `down --force --dir /tmp/lcv`. **Force does not bypass ownership checks** or authorize stopping active workers; coordinate first. `/tmp` evidence will not survive a reboot.
 
+Teardown signals a verified detached session's process group atomically, not just a previously captured PID list. This includes Docker/buildx children forked during shutdown; mismatched process birth identities are never signaled.
+
 If execution and teardown both fail, the command fails with both errors preserved in an `AggregateError`; `cleanup.json` records teardown errors separately. Do not treat failed cleanup as a passing run or discard the original execution failure.
 
 ## Helpers

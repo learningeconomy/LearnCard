@@ -129,7 +129,7 @@ export const waitForChildIdentity = async (
     );
 };
 
-/** Snapshot group members while the verified leader is alive, then check each birth before signalling. */
+/** Signal owned detached sessions atomically; keep verified members for leader-exit recovery. */
 export const terminateProcess = async (saved: ProcessIdentity, graceMs = 3000): Promise<void> => {
     const owned: ProcessIdentity[] = [saved];
     if (saved.group === saved.pid && matchesProcess(saved)) {
@@ -146,6 +146,21 @@ export const terminateProcess = async (saved: ProcessIdentity, graceMs = 3000): 
         }
     }
     const signal = (name: NodeJS.Signals) => {
+        if (saved.group === saved.pid && matchesProcess(saved)) {
+            try {
+                const stat = readFileSync(`/proc/${saved.pid}/stat`, 'utf8');
+                const session = Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[3]);
+                // Only our detached session can own this group. A per-PID snapshot misses
+                // children forked by wrappers (notably docker/buildx) before the signal.
+                if (session === saved.pid && matchesProcess(saved)) {
+                    process.kill(-saved.group, name);
+                    return;
+                }
+            } catch (error) {
+                const code = (error as NodeJS.ErrnoException).code;
+                if (code !== 'ENOENT' && code !== 'ESRCH') throw error;
+            }
+        }
         // Children first: a wrapper exiting early must not leave its existing children untracked.
         for (const member of [...owned].reverse()) {
             if (!matchesProcess(member)) continue;
