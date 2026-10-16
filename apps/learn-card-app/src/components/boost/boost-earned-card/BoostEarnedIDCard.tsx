@@ -22,7 +22,7 @@ import {
     useWallet,
     useGetVCInfo,
     CredentialCategory,
-    categoryMetadata,
+    getCategoryMetadata,
 } from 'learn-card-base';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
@@ -126,7 +126,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         menuType: BoostMenuType.earned,
     });
 
-    const type = categoryMetadata[categoryType].walletSubtype;
+    const type = getCategoryMetadata(categoryType).walletSubtype;
     const isID = categoryType === BoostCategoryOptionsEnum.id;
     const isMembership = categoryType === BoostCategoryOptionsEnum.membership;
 
