@@ -9,6 +9,7 @@ import { summarizeCredential } from '../credentialFacts';
 const state = vi.hoisted(() => ({
     flags: {} as Record<string, unknown>,
     facts: {} as CredentialFactsState,
+    factsRequired: false,
 }));
 vi.mock('launchdarkly-react-client-sdk', () => ({ useFlags: () => state.flags }));
 vi.mock('../useRuntimeContext', () => ({
@@ -22,7 +23,13 @@ vi.mock('../useRuntimeContext', () => ({
         },
     }),
 }));
-vi.mock('../useCredentialFacts', () => ({ useCredentialFacts: () => state.facts }));
+vi.mock('../useCredentialFacts', () => ({
+    useCredentialFacts: (required: boolean) => {
+        state.factsRequired = required;
+
+        return state.facts;
+    },
+}));
 vi.mock('../debug', () => ({ isInAppMessagesDebug: () => false, iamDebug: vi.fn() }));
 
 describe('message evaluation lifecycle', () => {
@@ -41,6 +48,7 @@ describe('message evaluation lifecycle', () => {
             backfillNow: vi.fn(),
             clearFacts: vi.fn(),
         };
+        state.factsRequired = false;
     });
     afterEach(() => {
         cleanup();
@@ -122,5 +130,19 @@ describe('message evaluation lifecycle', () => {
             })
         );
         expect(result.current.message).toBeNull();
+    });
+
+    it('can force credential facts for debug tooling without a credential-aware flag', () => {
+        state.flags = { inAppMessages: { messages: [] } };
+        state.facts.summaries = [];
+        state.facts.complete = true;
+
+        const { result } = renderHook(() =>
+            useInAppMessages(undefined, { forceCredentialFacts: true })
+        );
+
+        expect(state.factsRequired).toBe(true);
+        expect(result.current.context?.credentials).toEqual([]);
+        expect(result.current.context?.credentialsComplete).toBe(true);
     });
 });

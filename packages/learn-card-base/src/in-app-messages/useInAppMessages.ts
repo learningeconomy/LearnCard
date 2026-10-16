@@ -60,6 +60,11 @@ export interface UseInAppMessagesResult {
     settings: InAppMessageSettings;
 }
 
+export interface UseInAppMessagesOptions {
+    /** Load credential facts even when no active flag message currently requires them. */
+    forceCredentialFacts?: boolean;
+}
+
 const EMPTY_REPORT: InAppMessagesReport = {
     ready: false,
     context: null,
@@ -100,7 +105,8 @@ export const getLastInAppMessageCredentialFacts = (): CredentialFactsState | nul
     lastCredentialFacts;
 
 export const useInAppMessages = (
-    flagKey: string = IN_APP_MESSAGES_FLAG_KEY
+    flagKey: string = IN_APP_MESSAGES_FLAG_KEY,
+    options: UseInAppMessagesOptions = {}
 ): UseInAppMessagesResult => {
     const flags = useFlags();
     const { context: baseContext, ready: baseReady } = useInAppMessageRuntimeContext();
@@ -110,9 +116,9 @@ export const useInAppMessages = (
         [flags, flagKey]
     );
     const flag = parsed.flag;
-    const needsCredentialFacts = flag.messages.some(
-        message => message.enabled && messageUsesCredentialFacts(message)
-    );
+    const needsCredentialFacts =
+        options.forceCredentialFacts ||
+        flag.messages.some(message => message.enabled && messageUsesCredentialFacts(message));
     const credentialFacts = useCredentialFacts(needsCredentialFacts);
     const recentEvents = useRecentInAppMessageEvents(credentialFacts.accountDid ?? undefined);
     const factsWaitKey = `${credentialFacts.accountDid ?? 'none'}:${flag.messages
