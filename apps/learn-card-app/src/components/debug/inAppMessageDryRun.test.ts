@@ -4,8 +4,9 @@ import {
     type InAppMessageRuntimeContext,
 } from 'learn-card-base/in-app-messages/predicates';
 import {
+    CREDENTIAL_LIBRARY_CLR_CONDITION,
+    CREDENTIAL_LIBRARY_CLR_ISSUER,
     buildCredentialDryRunContext,
-    PILOT_ISSUER,
     explainDryRunFailure,
 } from './inAppMessageDryRun';
 
@@ -18,37 +19,74 @@ const base: InAppMessageRuntimeContext = {
     credentialsComplete: false,
     recentEvents: [],
 };
-const message = inAppMessageValidator.parse({
-    id: 'pilot',
-    title: 'Pilot',
-    targeting: { credential: { issuers: [PILOT_ISSUER], vcTypes: ['ClrCredential'] } },
+const libraryFixtureMessage = inAppMessageValidator.parse({
+    id: 'credential-library-clr',
+    title: 'Credential Library CLR',
+    targeting: { credential: CREDENTIAL_LIBRARY_CLR_CONDITION },
     trigger: {
         event: 'credential.claimed',
-        where: { issuers: [PILOT_ISSUER], vcTypes: ['ClrCredential'] },
+        where: CREDENTIAL_LIBRARY_CLR_CONDITION,
     },
 });
 
-it('distinguishes pilot CLRs from other issuers, other types, and absent facts', () => {
-    expect(messageMatches(message, buildCredentialDryRunContext(base, 'Pilot CLR', true))).toBe(
-        true
-    );
-    for (const preset of [
-        'None',
-        'Other-issuer CLR',
-        'Pilot non-CLR',
-        'Incomplete facts',
-    ] as const) {
+it('uses the credential-library clr/minimal fixture for portable CLR targeting', () => {
+    expect(
+        messageMatches(
+            libraryFixtureMessage,
+            buildCredentialDryRunContext(base, 'Library CLR (clr/minimal)', true)
+        )
+    ).toBe(true);
+    expect(
+        messageMatches(
+            libraryFixtureMessage,
+            buildCredentialDryRunContext(base, 'Other-issuer library CLR', true)
+        )
+    ).toBe(true);
+    for (const preset of ['None', 'Library fixture non-CLR', 'Incomplete facts'] as const) {
         const context = buildCredentialDryRunContext(base, preset, true);
-        expect(messageMatches(message, context)).toBe(false);
-        expect(explainDryRunFailure(message, context)).toBeTruthy();
+        expect(messageMatches(libraryFixtureMessage, context)).toBe(false);
+        expect(explainDryRunFailure(libraryFixtureMessage, context)).toBeTruthy();
     }
-    expect(messageMatches(message, buildCredentialDryRunContext(base, 'Pilot CLR', false))).toBe(
-        false
-    );
+    expect(
+        messageMatches(
+            libraryFixtureMessage,
+            buildCredentialDryRunContext(base, 'Library CLR (clr/minimal)', false)
+        )
+    ).toBe(false);
+});
+
+it('still supports issuer-specific dry runs when the signing DID matters', () => {
+    const issuerSpecific = inAppMessageValidator.parse({
+        ...libraryFixtureMessage,
+        trigger: undefined,
+        targeting: {
+            credential: {
+                issuers: [CREDENTIAL_LIBRARY_CLR_ISSUER],
+                ...CREDENTIAL_LIBRARY_CLR_CONDITION,
+            },
+        },
+    });
+
+    expect(
+        messageMatches(
+            issuerSpecific,
+            buildCredentialDryRunContext(base, 'Library CLR (clr/minimal)', false)
+        )
+    ).toBe(true);
+    expect(
+        messageMatches(
+            issuerSpecific,
+            buildCredentialDryRunContext(base, 'Other-issuer library CLR', false)
+        )
+    ).toBe(false);
 });
 
 it('keeps negation false for incomplete facts and true for a complete empty index', () => {
-    const negative = { ...message, trigger: undefined, targeting: { not: message.targeting! } };
+    const negative = {
+        ...libraryFixtureMessage,
+        trigger: undefined,
+        targeting: { not: libraryFixtureMessage.targeting! },
+    };
     expect(
         messageMatches(negative, buildCredentialDryRunContext(base, 'Incomplete facts', false))
     ).toBe(false);
