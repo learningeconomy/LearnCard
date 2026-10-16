@@ -1,4 +1,4 @@
-import type { InAppMessage } from '@learncard/types';
+import { inAppMessagePredicateValidator, type InAppMessage } from '@learncard/types';
 
 export type BuilderActionType =
     'internalLink' | 'externalLink' | 'appStore' | 'capgoUpdate' | 'dismiss';
@@ -116,7 +116,7 @@ const csvToList = (csv: string): string[] =>
 const conditionToPredicate = (c: BuilderCondition): Record<string, unknown> | null => {
     if (c.kind === 'raw') {
         try {
-            return JSON.parse(c.value) as Record<string, unknown>;
+            return inAppMessagePredicateValidator.parse(JSON.parse(c.value));
         } catch {
             return { invalid: 'Invalid targeting JSON' };
         }
