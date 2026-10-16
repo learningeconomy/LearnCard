@@ -70,6 +70,12 @@ const setup = async (
         () => ({ records: [], hasMore: false }) satisfies CloudOutputs['index']['get']
     );
     mock.on('index.count', () => 0 satisfies CloudOutputs['index']['count']);
+    // Verifier history loads beside connected apps. An unhandled procedure aborts
+    // the entire tRPC batch and shifts the app row when its error banner appears.
+    mock.on(
+        'customStorage.read',
+        () => ({ records: [], hasMore: false }) satisfies CloudOutputs['customStorage']['read']
+    );
     mock.on('utilities.getChallenges', () => Array.from({ length: 100 }, () => randomUUID()));
     mock.on('utilities.getEncryptionKey', () => 'a'.repeat(64));
     mock.on(
@@ -333,7 +339,17 @@ test.describe('Generic referrals @mocked', () => {
         }, testInfo) => {
             await setup(page, { connected: true, recipients });
             await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
-            await page.getByText('Partner services', { exact: true }).click();
+            // Wait for the independent history panel to settle before clicking a
+            // row below it; its loading placeholder has a different height.
+            const history = page.getByRole('region', { name: 'Shared with verifiers' });
+            await expect(history.getByRole('checkbox')).toBeVisible({ timeout: 30_000 });
+            await expect(history.getByRole('alert')).toHaveCount(0);
+            await page
+                .getByRole('button', { name: 'Partner services No permissions', exact: true })
+                .click();
+            await expect(
+                page.getByRole('heading', { name: 'App details', exact: true })
+            ).toBeVisible();
             const detailsAudience = page.getByTestId('contract-shared-with');
             if (recipients) {
                 await expect(detailsAudience).toContainText('Partner Org');

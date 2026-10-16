@@ -50,6 +50,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/signingAuthority.helpers.test.ts',
             'src/helpers/status-list.helpers.test.ts',
             'src/helpers/boost-storage.helpers.test.ts',
+            'src/helpers/credential-delivery.helpers.test.ts',
             'src/accesslayer/credential/create.test.ts',
             'src/helpers/inbox-encryption.helpers.test.ts',
             'src/helpers/send-inbox-config.helpers.test.ts',
