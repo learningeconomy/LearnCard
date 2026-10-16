@@ -911,8 +911,10 @@ export const useSyncConsentFlow = (enabled = true) => {
                                 allRecords: filteredRecords,
                             });
 
-                            // Release failed credentials so the next sync retries them, and
-                            // don't share them to contracts since they weren't stored.
+                            // Release failed credentials so the next sync can retry them, and
+                            // don't share them to contracts since they weren't stored. This only
+                            // retries failed accepts: if accept succeeded but storing failed, the
+                            // credential is already received and won't be listed as pending again.
                             const failedUris = new Set(failed.map(r => r.credentialUri));
                             failedUris.forEach(uri => globalProcessedCredentials.delete(uri));
 
