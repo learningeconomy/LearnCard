@@ -374,10 +374,17 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            # Same as test.yml: install the escrow crates' pinned toolchain once, so
+            # nx's parallel `cargo test` runs don't race to install it (rustfmt conflict).
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
-                  timeout_minutes: 10
+                  # Matches test.yml; a large squash can make most projects affected.
+                  timeout_minutes: 20
                   max_attempts: 3
                   command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
               env:
