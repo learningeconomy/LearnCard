@@ -109,6 +109,7 @@ final class ExperimentUITests: XCTestCase {
         let accountShot = XCTAttachment(screenshot: app.screenshot()); accountShot.name = "Drawn native Account sheet"; accountShot.lifetime = .keepAlways; add(accountShot)
         app.buttons["account-security"].tap()
         XCTAssertTrue(app.navigationBars["Recovery & security"].waitForExistence(timeout: 5))
+        let securityShot = XCTAttachment(screenshot: app.screenshot()); securityShot.name = "Account recovery and security"; securityShot.lifetime = .keepAlways; add(securityShot)
     }
 
     @MainActor

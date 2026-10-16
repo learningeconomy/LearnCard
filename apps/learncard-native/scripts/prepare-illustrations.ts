@@ -12,6 +12,47 @@ const drawings = (dark: boolean): Record<string, string> => {
     const glyph = (content: string): string =>
         `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#18224E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
     return {
+        AccessPassportIllustration: wrap(`
+            <g fill="none" stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                <g transform="rotate(-8 100 76)">
+                    <path d="M58 23L132 17Q143 16 145 27L147 123L63 128Q52 128 52 117V34Q52 25 58 23Z" fill="#C4B5FD"/>
+                    <rect x="57" y="28" width="91" height="102" rx="10" fill="#60A5FA"/>
+                    <path d="M67 34V122"/><path d="M81 43H128" stroke="#FFFFFF"/>
+                    <circle cx="105" cy="78" r="25" fill="#FDE047"/>
+                    <path d="M94 72V75M115 71L111 75L116 77M95 86Q105 98 116 86"/>
+                    <path d="M83 113H117M83 120H106" stroke="#FFFFFF"/>
+                    <path d="M137 91L140 99L149 101L142 107L143 116L136 112L128 116L129 107L123 101L132 99Z" fill="#F9A8D4"/>
+                </g>
+                <path d="M34 53L24 47M30 75H17M36 96L24 102M165 45L176 35M168 64L185 63" stroke="#FDE047" stroke-width="5"/>
+            </g>
+        `),
+        AccessEmailIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M140 42Q143 14 170 29" fill="none" stroke-dasharray="3 7"/>
+                <path d="M155 19L190 8L177 36L169 24Z" fill="#22D3EE"/><path d="M169 24L190 8" fill="none"/>
+                <g transform="rotate(5 96 87)">
+                    <path d="M34 70L96 26L158 70V127H34Z" fill="#F9A8D4"/>
+                    <rect x="57" y="38" width="82" height="73" rx="9" fill="#93C5FD"/>
+                    <path d="M70 59V66M81 59V66M92 59V66M103 59V66M114 59V66M125 59V66" stroke="#18224E" stroke-width="4"/>
+                    <path d="M34 70L96 105L158 70V127H34Z" fill="#F9A8D4"/>
+                    <path d="M34 127L80 96M158 127L113 96" fill="none"/>
+                </g>
+                <path d="M37 34L28 23M27 49L13 46" stroke="#F472B6" stroke-width="5"/>
+                <path d="M160 116L166 106L172 116L166 122Z" fill="#FDE047"/>
+            </g>
+        `),
+        AccessRecoveryIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M115 97L69 124L57 112L47 119L37 109L25 115L15 98L91 54" fill="#FDE047"/>
+                <circle cx="127" cy="57" r="39" fill="#FDE047"/>
+                <path d="M112 50Q116 40 120 50M134 50Q138 40 142 50M117 65Q127 77 138 65" fill="none"/>
+                <circle cx="109" cy="61" r="4" fill="#F9A8D4" stroke="none"/><circle cx="145" cy="61" r="4" fill="#F9A8D4" stroke="none"/>
+                <path d="M29 92L68 70" stroke="#FFFFFF"/>
+                <path d="M72 28L67 16M57 44L44 39M57 62H41" stroke="#FDE047" stroke-width="5"/>
+                <path d="M160 106L172 115M169 89L184 92" stroke="#22D3EE" stroke-width="5"/>
+                <path d="M175 40Q164 22 174 23Q180 25 180 32Q190 21 193 31Q193 40 176 49Z" fill="#F9A8D4" stroke="none"/>
+            </g>
+        `),
         BuilderPlane: `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="90" viewBox="0 0 120 90" fill="none" stroke="${ink}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 65Q24 43 43 59Q60 75 70 44" stroke-dasharray="3 8"/><path d="M42 28L105 7L80 53L69 34L42 28Z" fill="#22D3EE"/><path d="M69 34L105 7L60 27M69 34L65 49L80 41" fill="#93C5FD"/><path d="M93 62L99 70M106 49L116 52M37 14L30 8" stroke="#F9A8D4"/></svg>`,
         BuilderPinkRays: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#EC4899" stroke-width="4" stroke-linecap="round"><path d="M10 17L17 5M20 24L34 20M8 29L17 34"/></svg>`,
         BuilderYellowRays: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#FACC15" stroke-width="4" stroke-linecap="round"><path d="M6 7L16 17M4 24L15 25M10 38L19 31"/></svg>`,

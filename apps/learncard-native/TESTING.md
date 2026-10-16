@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **285 cases** (114 Bun, 106 Swift, 65 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
+Current configured suite: **290 cases** (114 Bun, 106 Swift, 70 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -22,6 +22,18 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Account access and recovery — October 16
+
+- All **106 Swift** cases pass (`artifacts/account-access-core.log`: 77 XCTest + 29 Swift Testing). SDK/runtime source is unchanged; the preceding 114-case Bun result remains applicable, and no new Bun run is claimed.
+- **Fifteen unique focused simulator cases pass** across `account-access-ui.xcresult` and `account-access-final-ui.xcresult`. The first run passed four new access cases, all five existing lifecycle cases and Account/security navigation. The final ten-case run passed all five access cases (including the added backup-password check), three motion cases, pending-scan recovery/background and Account/security navigation.
+- Coverage includes six-digit gating/capping, resend clearing and recovery destination; method selection/cancel/private-input clearing; background clearing of unsubmitted code, email key and backup password; failure/retry and relaunch; remembered sign-out versus forgetting; actual Arabic accessibility/dark nested-sheet presentation; animated/still motion; and returning to a pending claim after recovery. DEBUG fixtures use isolated Keychain accounts and no deliverable email.
+- Actual screenshots were exported in `artifacts/account-access-final-attachments/` and visually reviewed for light/keyboard layouts, the recovery method sheet, security overview and Arabic accessibility/dark presentation. Six representative screenshots and the generated composition are in [the brief](design/ACCOUNT_ACCESS_BRIEF.md). Manual synthetic review opened and cancelled the system backup-file picker: the form returned without an error and Restore remained disabled.
+- String Catalog preparation validates 42 new keys in en/es/fr/ar and placeholder parity. All original catalog entries are unchanged. Three original SVG compositions generate light/dark assets reproducibly. The final refinement clips scrolled art below the status area, distinguishes resend feedback, and invalidates pending file imports on lock/method changes; affected access and integration checks pass on that source.
+- A final presentation-only correction keeps the Scan glyph navy on its opaque blue tile in dark mode. Debug/Release were rebuilt after that color-token change; no account behavior changed.
+- Final Release compilation and Debug review installation pass (`artifacts/account-access-release.log`, `artifacts/account-access-review-install.log`). Six installed hashes match (`artifacts/account-access-install-proof.json`), including the unchanged DIDKit WASM. Read-only live review reconnected to the existing staging account, loaded Collection and opened the new Recovery & security overview. The separate checks simulator is shut down.
+
+This is targeted validation, not a full local 290-case run. Private review configuration is preserved/restored and the real staging account is not signed out for automated review. A new live Firebase/recovery exchange, genuine backup recovery, physical-device keyboard/VoiceOver and human translation review remain manual gates. No hosted CI was dispatched. See [account contracts](ACCOUNT_ACCESS.md).
 
 ## Mockup fidelity and optional creator details — October 15
 

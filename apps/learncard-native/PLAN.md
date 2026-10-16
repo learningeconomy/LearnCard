@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Account, sign-in and recovery — October 16
+
+The user selected account access as the next UI priority after the separate DIDKit investigation finished. Sign-in, code entry, recovery and the security overview now follow the drawn design system: passport/envelope/smiling-key SVGs, substantial type, labeled inputs, a keyboard-aware fixed action tray and a designed recovery-method bottom sheet. Existing Firebase/recovery/Keychain behavior and painted waiting states remain. New copy distinguishes email recovery keys from sign-in codes and covers four languages. This pass does not integrate new DIDKit artifacts or add backend/account-management capabilities. See [account behavior](ACCOUNT_ACCESS.md), [reference and native screens](design/ACCOUNT_ACCESS_BRIEF.md) and [validation](TESTING.md).
+
 ## Development home and opt-in CI — October 15
 
 Keep the experiment in the original `learningeconomy/LearnCard` repository on `codex/vesper-73`. The user reconsidered fork migration: the actual goal is to avoid running native CI on every push. `Vesper checks` now uses manual dispatch only, while the full local/hosted regression script remains available. The brief fork snapshot and synced fork `main` are retained, but native development and normal pushes stay upstream. Existing staging services, local environment and account setup remain. See [manual CI commands](TESTING.md).

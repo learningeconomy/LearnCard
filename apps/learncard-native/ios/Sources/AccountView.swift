@@ -88,21 +88,43 @@ private struct AccountSecurityView: View {
     @Environment(\.locale) private var nativeLocale
     let account: AccountController?
     var body: some View {
-        List {
-            Section("Sign-in") { LabeledContent("Email", value: account?.email ?? "Sample mode") }
-            Section("This iPhone") {
-                Label(account == nil ? "Samples stay in memory" : "Account access is saved on this device", systemImage: "iphone.gen3")
-                Text("Sign out keeps it ready for next time. Forget this device removes its saved access.").font(.subheadline).foregroundStyle(Palette.secondary)
-            }
-            Section("Recovery methods") {
-                Link("Manage recovery in LearnCard web", destination: URL(string: "https://staging.learncard.app/wallet")!)
-                Text("Open your profile there for recovery options, account export, and account deletion. Web may ask you to sign in.").font(.subheadline).foregroundStyle(Palette.secondary)
-            }
-            Section {
-                Link("Privacy policy", destination: URL(string: "https://www.learncard.com/learncard-privacy-policy")!)
-                Link("Terms of service", destination: URL(string: "https://www.learncard.com/learncard-terms-of-service")!)
-            }
-        }.scrollContentBackground(.hidden).background(Palette.paper).foregroundStyle(Palette.ink)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                PageHeading(title: NativeText.text("access.securityIntro"), identifier: "account-security")
+                Image("AccessRecoveryIllustration").resizable().scaledToFit().frame(maxWidth: .infinity).frame(height: 120).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NativeText.text("access.email")).font(.subheadline.weight(.semibold))
+                    Text(account?.email ?? NativeText.literal("Sample mode")).font(.body).textSelection(.enabled)
+                        .environment(\.layoutDirection, .leftToRight)
+                }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "iphone").font(.title2).frame(width: 44, height: 44)
+                            .foregroundStyle(Palette.cardInk).background(Palette.blueCard, in: RoundedRectangle(cornerRadius: 13)).accessibilityHidden(true)
+                        Text(NativeText.text("access.thisDevice")).font(.title3.bold())
+                    }
+                    Text(NativeText.text(account == nil ? "access.deviceSample" : "access.deviceSaved")).font(.body)
+                    Text(NativeText.text("access.deviceDetail")).font(.subheadline).foregroundStyle(Palette.secondary)
+                }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                VStack(alignment: .leading, spacing: 14) {
+                    Link(destination: URL(string: "https://staging.learncard.app/wallet")!) {
+                        DrawnSettingsRow(title: NativeText.text("access.manageRecovery"), symbol: .security, tint: Palette.portfolioCard, web: true)
+                    }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                    Text(NativeText.text("access.manageRecovery.detail")).font(.subheadline).foregroundStyle(Palette.secondary).padding(.horizontal, 4)
+                }
+                VStack(spacing: 0) {
+                    Link(destination: URL(string: "https://www.learncard.com/learncard-privacy-policy")!) {
+                        DrawnSettingsRow(title: NativeText.text("access.privacy"), symbol: .security, tint: Palette.pinkCard, web: true)
+                    }
+                    Divider().padding(.leading, 74)
+                    Link(destination: URL(string: "https://www.learncard.com/learncard-terms-of-service")!) {
+                        DrawnSettingsRow(title: NativeText.text("access.terms"), symbol: .help, tint: Palette.lilacCard, web: true)
+                    }
+                }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+            }.padding(20).frame(maxWidth: 620).frame(maxWidth: .infinity)
+        }.background(Palette.paper).foregroundStyle(Palette.ink).buttonStyle(CredentialPressStyle())
             .navigationTitle(NativeText.literal("Recovery & security")).navigationBarTitleDisplayMode(.inline)
     }
 }
