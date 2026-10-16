@@ -52,6 +52,7 @@ export interface InAppMessagesReport {
 }
 
 export interface UseInAppMessagesResult {
+    messages: InAppMessage[];
     message: InAppMessage | null;
     context: InAppMessageRuntimeContext | null;
     ready: boolean;
@@ -294,5 +295,13 @@ export const useInAppMessages = (
         });
     }, [report]);
 
-    return { message, context, ready, report, credentialFacts, settings: flag.settings };
+    return {
+        message,
+        messages: flag.messages,
+        context,
+        ready,
+        report,
+        credentialFacts,
+        settings: flag.settings,
+    };
 };

@@ -20,7 +20,7 @@ import { isFatigueControlled, recordBlockingShown } from './fatigueStore';
 export type InAppMessageHostProps = PresentationGateOptions;
 
 export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => {
-    const { message, credentialFacts } = useInAppMessages();
+    const { message, messages, credentialFacts } = useInAppMessages();
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
     const [opening, setOpening] = useState({
@@ -78,8 +78,11 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     }, [canPresent, credentialFacts.accountDid]);
 
     const accountDid = credentialFacts.accountDid ?? undefined;
-    const candidate =
-        presented && presented.accountDid === accountDid ? presented.message : message;
+    const retained =
+        presented?.accountDid === accountDid
+            ? messages.find(current => current.id === presented?.message.id && current.enabled)
+            : undefined;
+    const candidate = retained ?? message;
     const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
     const realActive = candidate && messageKey && !closedIds.has(messageKey) ? candidate : null;
     const openingReady = !accountDid || (opening.accountDid === accountDid && opening.ready);
@@ -87,7 +90,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     const isOverride = Boolean(override);
 
     // Retain a presented message after its own impression makes it ineligible.
-    if (presented && presented.accountDid !== accountDid) setPresented(null);
+    if (presented && !retained) setPresented(null);
     if (!presented && active && !isOverride) setPresented({ message: active, accountDid });
 
     const close = useCallback(
