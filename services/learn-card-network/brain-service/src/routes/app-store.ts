@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import {
     PendingListingUpdateValidator,
@@ -48,6 +47,7 @@ import {
     invalidateConsentContractForListingByScopeHashCache,
 } from '@cache/app-store.caches';
 import { logCredentialSent } from '@helpers/activity.helpers';
+import { sendBoostWithActivity } from '@helpers/credential-delivery.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { constructUri, resolveUri } from '@helpers/uri.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
@@ -947,15 +947,8 @@ export const handleSendCredentialEvent = async (
 
     perf.mark('saIssue');
 
-    // LC-1644 Phase 1d: run logCredentialSent + sendBoost in parallel. They previously
-    // ran serially because sendBoost needed activityId as a foreign key on the
-    // SentCredential relationship. We now pre-generate the activityId upfront (matching
-    // the uuid the activity log would have chosen itself) and pass it to both calls.
-    // Both writes produce the same Neo4j linkage as before; we just fan them out.
-    // At staging this saves ~40ms on the serial sum (logActivity 40ms + sendBoost 50ms).
-    const activityId = uuid();
-    const [, credentialUri] = await Promise.all([
-        logCredentialSent({
+    const credentialUri = await sendBoostWithActivity(
+        {
             actorProfileId: integrationOwner.profileId,
             recipientType: 'profile',
             recipientIdentifier: target.profileId,
@@ -965,20 +958,18 @@ export const handleSendCredentialEvent = async (
             listingId,
             source: 'appEvent',
             metadata: { listingId, templateAlias },
-            activityId,
-        }),
-        sendBoost({
+        },
+        {
             from: issuer,
             to: target,
             boost,
             credential,
             domain: ctx.domain,
             skipNotification: false,
-            activityId,
             integrationId: integration.id,
             listingId,
-        }),
-    ]);
+        }
+    );
 
     perf.mark('logActivityAndSendBoost');
 

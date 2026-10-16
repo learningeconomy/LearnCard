@@ -2,10 +2,12 @@ import { vi } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 import { testVc } from './helpers/send';
-import { Profile, Credential, CredentialActivity, AppStoreListing } from '@models';
+import { Profile, Credential, CredentialActivity, AppStoreListing, Boost } from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
 import { createCredentialActivity } from '@accesslayer/credential-activity/create';
+import { neogma } from '@instance';
+import { sendBoostWithActivity } from '@helpers/credential-delivery.helpers';
 import {
     getActivitiesForProfile,
     getActivityStatsForProfile,
@@ -43,6 +45,76 @@ describe('Credential Activity', () => {
         await Credential.delete({ detach: true, where: {} });
         await CredentialActivity.delete({ detach: true, where: {} });
         await AppStoreListing.delete({ detach: true, where: {} });
+    });
+
+    it('keeps repeated app deliveries linked to completed listing activity', async () => {
+        const listingId = 'activity-delivery-listing';
+        const listing = await AppStoreListing.createOne({
+            listing_id: listingId,
+            display_name: 'Activity delivery test',
+            tagline: 'Test',
+            full_description: 'Test',
+            icon_url: 'https://example.com/icon.png',
+            app_listing_status: 'LISTED',
+            launch_type: 'EMBEDDED_IFRAME',
+            launch_config_json: '{}',
+            promotion_level: 'STANDARD',
+        });
+        const boost = await Boost.createOne({
+            id: crypto.randomUUID(),
+            boost: JSON.stringify(testVc),
+        });
+        const owner = (await Profile.findOne({ where: { profileId: 'usera' } }))!;
+        const recipient = (await Profile.findOne({ where: { profileId: 'userb' } }))!;
+        const boostUri = `lc:network:localhost%3A3000/trpc:boost:${boost.id}`;
+        const delivered: string[] = [];
+
+        try {
+            for (let index = 0; index < 12; index++) {
+                delivered.push(
+                    await sendBoostWithActivity(
+                        {
+                            actorProfileId: owner.profileId,
+                            recipientType: 'profile',
+                            recipientIdentifier: recipient.profileId,
+                            recipientProfileId: recipient.profileId,
+                            boostUri,
+                            listingId,
+                            source: 'appEvent',
+                        },
+                        {
+                            from: {
+                                type: 'appStoreListing',
+                                listing: listing.dataValues,
+                                ownerProfile: owner.dataValues,
+                            },
+                            to: recipient.dataValues,
+                            boost,
+                            credential: testVc,
+                            domain: 'localhost%3A3000',
+                            listingId,
+                            skipNotification: true,
+                        }
+                    )
+                );
+            }
+
+            const result = await neogma.queryRunner.run(
+                `MATCH (listing:AppStoreListing {listing_id: $listingId})
+                    -[:PERFORMED_BY_LISTING]->(activity:CredentialActivity)
+                 MATCH (listing)-[sent:CREDENTIAL_SENT]->(credential:Credential)
+                 WHERE sent.activityId = activity.activityId
+                 RETURN DISTINCT credential.id AS id, activity.activityId AS activityId`,
+                { listingId }
+            );
+            expect(result.records).toHaveLength(delivered.length);
+            expect(new Set(result.records.map(record => record.get('activityId'))).size).toBe(12);
+            expect(result.records.map(record => record.get('id')).sort()).toEqual(
+                delivered.map(uri => uri.split(':').at(-1)).sort()
+            );
+        } finally {
+            await Boost.delete({ detach: true, where: { id: boost.id } });
+        }
     });
 
     describe('createCredentialActivity', () => {
