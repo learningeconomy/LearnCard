@@ -11,7 +11,8 @@ public actor DemoConsumerAppService: ConsumerAppService {
     private var stopped = false
     private var reviews: Set<String> = []
 
-    public init() {
+    public init(emptyInstalled: Bool = false) {
+        if emptyInstalled { installedIDs = [] }
         apps = try! Self.decode("""
         [
           {"id":"sample-earth","title":"Earth Explorers","tagline":"Small steps. A brighter tomorrow.","description":"Learn about the world around you and celebrate what you discover.","category":"learning","screenshots":[],"launchType":"EMBEDDED_IFRAME","host":"staging.learncard.app","permissions":["request_identity","send_credential"],"featured":true,"launchable":true},

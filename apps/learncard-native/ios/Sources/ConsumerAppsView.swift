@@ -16,115 +16,64 @@ struct AppsView: View {
     @State private var webTool: WebTool?
     @State private var appLaunch: ConsumerAppLaunch?
     @State private var launchingApp: String?
+    @State private var catalogRequested = false
+    @State private var searchPending = false
+    @FocusState private var searchFocused: Bool
     private var consumer: ConsumerAppsStore { store.consumer }
     private let categories = ["all", "learning", "ai", "games", "tools", "employment", "credentials", "plugin", "other"]
     private var visibleApps: [ConsumerApp] {
         (discover ? consumer.apps : consumer.installedApps).filter {
-            query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || $0.tagline.localizedCaseInsensitiveContains(query)
+            searchQuery.isEmpty || $0.title.localizedCaseInsensitiveContains(searchQuery) || $0.tagline.localizedCaseInsensitiveContains(searchQuery)
         }
+    }
+
+    private var searchQuery: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var loading: Bool {
+        discover ? !catalogRequested || searchPending || consumer.browseBusy : consumer.installedBusy || !consumer.installedLoaded && consumer.error == nil
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: NativeLayout.sectionGap) {
                 PageHeading(title: NativeText.text("apps.title"), identifier: "apps", accent: Palette.flairTeal)
                 Picker(NativeText.text("apps.title"), selection: $discover) {
                     Text(NativeText.text("apps.mine")).tag(false)
                     Text(NativeText.text("apps.discover")).tag(true)
                 }.pickerStyle(.segmented).accessibilityIdentifier("apps-segment")
-                HStack(spacing: 10) {
-                    Image(systemName: "magnifyingglass").foregroundStyle(Palette.secondary)
-                    TextField(text: $query, prompt: Text(NativeText.text("apps.search")).foregroundStyle(Palette.secondary)) { Text(NativeText.text("apps.search")) }.autocorrectionDisabled()
-                        .accessibilityIdentifier("apps-search")
-                }.padding(14).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))
-                if discover {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) {
-                            ForEach(categories, id: \.self) { value in
-                                Button { category = value } label: {
-                                    Text(NativeText.text("category.\(value)")).font(.subheadline.weight(.medium))
-                                        .padding(.horizontal, 16).padding(.vertical, 12)
-                                        .foregroundStyle(category == value ? Palette.selectionInk : Palette.secondary)
-                                        .background(category == value ? Palette.selection : Palette.surface, in: Capsule())
-                                }.buttonStyle(.plain).accessibilityIdentifier("apps-category-\(value)")
-                                    .accessibilityAddTraits(category == value ? .isSelected : [])
-                            }
-                        }.padding(.horizontal, 20)
-                    }.scrollIndicators(.hidden).padding(.horizontal, -20)
-                } else {
-                    Text(NativeText.text("apps.tools")).font(.title3.bold()).foregroundStyle(Palette.ink)
-                    VStack(spacing: 0) {
-                        NavigationLink { FamiliesView(appStore: store) } label: {
-                            ConsumerToolRow(title: NativeText.text("family.title"), subtitle: NativeText.text("family.subtitle"), symbol: .family, tint: Palette.familyCard)
-                        }.accessibilityIdentifier("apps-families")
-                        Divider().padding(.leading, 78)
-                        NavigationLink { DataSharingView(consumer: consumer) } label: {
-                            ConsumerToolRow(title: NativeText.text("sharing.title"), subtitle: NativeText.text("sharing.subtitle"), symbol: .sharing, tint: Palette.pinkCard)
-                        }.accessibilityIdentifier("apps-data-sharing")
-                        Divider().padding(.leading, 78)
-                        Button { webTool = WebTool() } label: {
-                            ConsumerToolRow(title: NativeText.text("apps.resume"), subtitle: NativeText.text("apps.resumeBody"), symbol: .external, tint: Palette.blueCard, web: true)
-                        }.accessibilityIdentifier("apps-resume")
-                    }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
-
-                    HStack {
-                        Text(NativeText.text("apps.installed")).font(.title3.bold()).foregroundStyle(Palette.ink)
-                            .accessibilityAddTraits(.isHeader).headingFlair(Palette.flairPink)
-                        Spacer()
-                        Text(NativeText.count("apps.count", consumer.installedApps.count)).font(.caption).foregroundStyle(Palette.secondary)
-                    }
-                }
+                searchField
+                if discover { categoryPicker }
+                if !discover, !consumer.installedApps.isEmpty { installedHeading }
                 if let error = consumer.error { ConsumerErrorCard(error: error) { Task { await reload() } } }
-                if (discover ? consumer.browseBusy : consumer.installedBusy) && visibleApps.isEmpty {
-                    ConsumerLoadingRows()
-                } else if visibleApps.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(NativeText.text(query.isEmpty && !discover ? "apps.empty" : "apps.noResults")).font(.headline)
-                        Text(NativeText.text(query.isEmpty && !discover ? "apps.emptyBody" : "apps.noResultsBody")).font(.subheadline).foregroundStyle(Palette.secondary)
-                        if !discover { Button(NativeText.text("apps.discover")) { discover = true }.font(.body.weight(.semibold)).foregroundStyle(Palette.selection) }
-                    }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
-                } else {
-                    if discover, let featured = visibleApps.first(where: \.featured) {
-                        Text(NativeText.text("apps.featured")).font(.title3.bold()).foregroundStyle(Palette.ink)
-                        Button { selected = featured } label: {
-                            HStack(spacing: 16) {
-                                ConsumerAppIcon(url: featured.iconURL, title: featured.title, size: 96)
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Text(featured.title).font(.title2.bold()).foregroundStyle(Palette.ink)
-                                    Text(featured.tagline).font(.subheadline).foregroundStyle(Palette.secondary).lineLimit(3)
-                                    Text(NativeText.text("apps.view"))
-                                        .font(.subheadline.weight(.semibold)).padding(.horizontal, 20).padding(.vertical, 11)
-                                        .foregroundStyle(Palette.selectionInk).background(Palette.selection, in: RoundedRectangle(cornerRadius: 14))
-                                }.frame(maxWidth: .infinity, alignment: .leading)
-                            }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
-
-                        }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("app-\(featured.id)")
-                    }
-                    LazyVStack(spacing: 12) {
-                        ForEach(visibleApps.filter { !discover || !$0.featured || $0.id != visibleApps.first(where: \.featured)?.id }) { app in
-                            ConsumerAppRow(app: app, installed: consumer.isInstalled(app.id), busy: consumer.actionBusy || launchingApp != nil, opening: launchingApp == app.id,
-                                           detail: { selected = app }, open: { Task { await open(app) } })
-                        }
-                    }
-                }
+                appContent
                 if discover ? consumer.hasMoreApps : consumer.hasMoreInstalled {
-                    Button(NativeText.text("common.more")) {
-                        Task { if discover { await consumer.browse(category: category == "all" ? nil : category, more: true) } else { await consumer.loadInstalled(more: true) } }
-                    }.font(.body.weight(.semibold)).foregroundStyle(Palette.selection)
-                        .disabled(consumer.browseBusy || consumer.installedBusy)
+                    Button {
+                        Task {
+                            if discover { await consumer.browse(category: category == "all" ? nil : category, more: true) }
+                            else { await consumer.loadInstalled(more: true) }
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            if consumer.browseBusy || consumer.installedBusy { ProgressView() }
+                            Text(NativeText.text("common.more"))
+                        }.font(.body.weight(.semibold)).frame(minHeight: 44)
+                    }.foregroundStyle(Palette.selection).disabled(consumer.browseBusy || consumer.installedBusy)
                 }
-            }.padding(20)
-        }.background(Palette.appsCanvas)
+                if !discover {
+                    if !consumer.installedApps.isEmpty { AppsDiscoverRow(action: showDiscover) }
+                    learnCardTools
+                }
+            }.padding(NativeLayout.pageInset)
+        }.background(Palette.appsCanvas).scrollDismissesKeyboard(.interactively)
             .navigationTitle("").navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Palette.appsCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
             .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value; onScrollStateChange(value) }
             .task { await consumer.loadInstalled() }
-            .task(id: "\(discover):\(category):\(query)") {
-                if discover {
-                    if !query.isEmpty { do { try await Task.sleep(for: .milliseconds(300)) } catch { return } }
-                    await consumer.browse(category: category == "all" ? nil : category, allPages: !query.isEmpty)
-                }
+            .task(id: "\(discover):\(category):\(searchQuery)") {
+                guard discover else { searchPending = false; return }
+                catalogRequested = true; searchPending = true
+                if !searchQuery.isEmpty { do { try await Task.sleep(for: .milliseconds(300)) } catch { return } }
+                await consumer.browse(category: category == "all" ? nil : category, allPages: !searchQuery.isEmpty)
+                if !Task.isCancelled { searchPending = false }
             }
             .refreshable { await reload() }
             .navigationDestination(item: $selected) { app in ConsumerAppDetailView(app: app, store: store, openInbox: openInbox) }
@@ -135,6 +84,92 @@ struct AppsView: View {
                 ConsumerBrowserView(launch: WebTool.launch, consumer: consumer, isSample: false, onCredential: {}, openInbox: openInbox)
             }
     }
+    private var searchField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass").foregroundStyle(Palette.secondary).accessibilityHidden(true)
+            TextField(text: $query, prompt: Text(NativeText.text("apps.search")).foregroundStyle(Palette.secondary)) { Text(NativeText.text("apps.search")) }
+                .autocorrectionDisabled().textInputAutocapitalization(.never).focused($searchFocused)
+                .submitLabel(.search).onSubmit { searchFocused = false }.accessibilityIdentifier("apps-search")
+            if !query.isEmpty {
+                Button { clearSearch() } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Palette.secondary).frame(width: 44, height: 44) }
+                    .accessibilityLabel(NativeText.text("apps.clearSearch")).accessibilityIdentifier("apps-search-clear")
+            }
+        }.padding(.leading, 16).padding(.trailing, query.isEmpty ? 16 : 4).padding(.vertical, 10)
+            .frame(minHeight: 58).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))
+    }
+    private var categoryPicker: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                ForEach(categories, id: \.self) { value in
+                    Button { searchFocused = false; category = value } label: {
+                        Text(NativeText.text("category.\(value)")).font(.subheadline.weight(.medium))
+                            .padding(.horizontal, 16).padding(.vertical, 12)
+                            .foregroundStyle(category == value ? Palette.selectionInk : Palette.secondary)
+                            .background(category == value ? Palette.selection : Palette.surface, in: Capsule())
+                    }.buttonStyle(.plain).accessibilityIdentifier("apps-category-\(value)")
+                        .accessibilityAddTraits(category == value ? .isSelected : [])
+                }
+            }.padding(.horizontal, NativeLayout.pageInset)
+        }.scrollIndicators(.hidden).padding(.horizontal, -NativeLayout.pageInset)
+    }
+    private var installedHeading: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(NativeText.text("apps.installed")).font(.title2.bold()).foregroundStyle(Palette.ink)
+                .accessibilityAddTraits(.isHeader).accessibilityIdentifier("apps-installed-heading").headingFlair(Palette.flairPink)
+            Spacer(minLength: 8)
+            if consumer.installedLoaded {
+                Text(NativeText.count("apps.count", consumer.installedApps.count)).font(.caption).foregroundStyle(Palette.secondary)
+            }
+        }
+    }
+    @ViewBuilder private var appContent: some View {
+        if loading && visibleApps.isEmpty {
+            ConsumerLoadingRows().accessibilityIdentifier("apps-loading")
+        } else if visibleApps.isEmpty {
+            if consumer.error == nil {
+                if !discover && searchQuery.isEmpty && consumer.installedLoaded {
+                    AppsEmptyCard(discover: showDiscover)
+                } else {
+                    AppsNoResultsCard(canClear: !searchQuery.isEmpty || category != "all") { clearSearch(); category = "all" }
+                }
+            }
+        } else {
+            if loading { ProgressView(NativeText.text("apps.searching")).font(.subheadline).accessibilityIdentifier("apps-searching") }
+            if discover, let featured = visibleApps.first(where: \.featured) {
+                Text(NativeText.text("apps.featured")).font(.title3.bold()).foregroundStyle(Palette.ink).accessibilityAddTraits(.isHeader)
+                Button { selected = featured } label: {
+                    ConsumerFeaturedApp(app: featured)
+                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("app-\(featured.id)")
+            }
+            LazyVStack(spacing: 16) {
+                ForEach(visibleApps.filter { !discover || !$0.featured || $0.id != visibleApps.first(where: \.featured)?.id }) { app in
+                    ConsumerAppRow(app: app, installed: consumer.isInstalled(app.id), busy: consumer.actionBusy || launchingApp != nil, opening: launchingApp == app.id,
+                                   detail: { selected = app }, open: { Task { await open(app) } })
+                }
+            }
+        }
+    }
+    private var learnCardTools: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(NativeText.text("apps.tools")).font(.title3.bold()).foregroundStyle(Palette.ink)
+                .accessibilityAddTraits(.isHeader).accessibilityIdentifier("apps-tools-heading")
+            VStack(spacing: 0) {
+                NavigationLink { FamiliesView(appStore: store) } label: {
+                    ConsumerToolRow(title: NativeText.text("family.title"), subtitle: NativeText.text("family.subtitle"), symbol: .family, tint: Palette.familyCard)
+                }.accessibilityIdentifier("apps-families")
+                Divider().padding(.leading, 78)
+                NavigationLink { DataSharingView(consumer: consumer) } label: {
+                    ConsumerToolRow(title: NativeText.text("sharing.title"), subtitle: NativeText.text("sharing.subtitle"), symbol: .sharing, tint: Palette.pinkCard)
+                }.accessibilityIdentifier("apps-data-sharing")
+                Divider().padding(.leading, 78)
+                Button { webTool = WebTool() } label: {
+                    ConsumerToolRow(title: NativeText.text("apps.resume"), subtitle: NativeText.text("apps.resumeBody"), symbol: .external, tint: Palette.blueCard, web: true)
+                }.accessibilityIdentifier("apps-resume")
+            }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+        }
+    }
+    private func clearSearch() { query = ""; searchFocused = false }
+    private func showDiscover() { clearSearch(); discover = true }
     private func open(_ app: ConsumerApp) async {
         guard launchingApp == nil else { return }
         launchingApp = app.id
@@ -154,7 +189,7 @@ struct AppsView: View {
     }
     private func reload() async {
         await consumer.loadInstalled()
-        if discover { await consumer.browse(category: category == "all" ? nil : category, allPages: !query.isEmpty) }
+        if discover { await consumer.browse(category: category == "all" ? nil : category, allPages: !searchQuery.isEmpty) }
     }
     private struct WebTool: Identifiable {
         let id = UUID()
@@ -167,6 +202,8 @@ struct AppsView: View {
 
 struct ConsumerAppDetailView: View {
     @Environment(\.locale) private var nativeLocale
+    @Environment(\.dynamicTypeSize) private var textSize
+    @AppStorage(NativeLanguage.preferenceKey) private var language = "system"
     let app: ConsumerApp
     let store: AppStore
     let openInbox: () -> Void
@@ -178,15 +215,18 @@ struct ConsumerAppDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                HStack(alignment: .top, spacing: 18) {
-                    ConsumerAppIcon(url: app.iconURL, title: app.title, size: 84)
+                (textSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16)) : AnyLayout(HStackLayout(alignment: .top, spacing: 18))) {
+                    ConsumerAppIcon(url: app.iconURL, title: app.title, size: textSize.isAccessibilitySize ? 64 : 84)
                     VStack(alignment: .leading, spacing: 7) {
                         Text(app.title).font(.system(.title, weight: .bold)).foregroundStyle(Palette.ink)
                         Text(app.tagline).font(.subheadline).foregroundStyle(Palette.secondary)
-                        Text(consumerCategory(app.category)).font(.caption.weight(.medium)).foregroundStyle(Palette.selection)
+                        Text(consumerCategory(app.category)).font(.caption.weight(.semibold)).foregroundStyle(Palette.ink)
+                            .padding(.horizontal, 10).padding(.vertical, 6)
+                            .background(Palette.surface, in: Capsule())
                     }
                     Spacer(minLength: 0)
-                }
+                }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(AppRaisedPanel(accent: Palette.tealCard)).accessibilityIdentifier("app-detail-identity")
                 if let error = consumer.error { ConsumerErrorCard(error: error) { consumer.error = nil } }
                 if !app.launchable { Text(ConsumerAppError.unsupported.errorDescription ?? "").font(.subheadline).foregroundStyle(Palette.secondary) }
                 ConsumerActionButton(title: NativeText.text(consumer.error == .changed && consumer.isInstalled(app.id) ? "consent.title" : consumer.isInstalled(app.id) ? "apps.open" : "apps.add"), busy: reviewing || consumer.actionBusy, disabled: !app.launchable) {
@@ -202,7 +242,7 @@ struct ConsumerAppDetailView: View {
                 }.accessibilityIdentifier("app-detail-action")
                 if let host = app.host { Text(host).font(.caption).foregroundStyle(Palette.secondary).environment(\.layoutDirection, .leftToRight) }
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(NativeText.text("apps.about")).font(.headline)
+                    Text(NativeText.text("apps.about")).font(.title3.bold()).foregroundStyle(Palette.ink)
                     Text(app.description).font(.body).foregroundStyle(Palette.secondary)
                 }.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
                 if !app.screenshots.isEmpty {
@@ -220,7 +260,7 @@ struct ConsumerAppDetailView: View {
                 }
                 if !app.permissions.isEmpty || app.contractURI != nil {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text(NativeText.text("apps.access")).font(.headline)
+                        Text(NativeText.text("apps.access")).font(.title3.bold()).foregroundStyle(Palette.ink)
                         Text(NativeText.text("apps.requestsBody")).font(.subheadline).foregroundStyle(Palette.secondary)
                         ForEach(app.permissions, id: \.self) { permission in
                             HStack(spacing: 14) {
@@ -245,6 +285,8 @@ struct ConsumerAppDetailView: View {
         }.background(Palette.paper).navigationTitle(app.title).navigationBarTitleDisplayMode(.inline)
             .sheet(item: $review) { next in
                 NativeConsentView(appTitle: app.title, iconURL: app.iconURL, review: next, consumer: consumer, addApp: true) { review = nil }
+                    .environment(\.locale, (NativeLanguage(rawValue: language) ?? .system).locale)
+                    .environment(\.layoutDirection, (NativeLanguage(rawValue: language) ?? .system).isRightToLeft ? .rightToLeft : .leftToRight)
             }
             .fullScreenCover(item: $launch) { next in
                 ConsumerBrowserView(launch: next, consumer: consumer, isSample: sampleBrowser, onCredential: { Task { await store.refresh() } }, openInbox: openInbox)
@@ -297,53 +339,19 @@ struct ConsumerAppIcon: View {
         Group {
             if let url {
                 AsyncImage(url: url) { phase in
-                    if let image = phase.image { image.resizable().scaledToFill() }
+                    if let image = phase.image { image.resizable().scaledToFit() }
                     else if phase.error != nil { placeholder }
                     else { placeholder.opacity(0.35).overlay { ProgressView().controlSize(.small).tint(Palette.cardInk) } }
                 }
             } else { placeholder }
-        }.frame(width: size, height: size).background(Palette.blueCard)
-            .clipShape(RoundedRectangle(cornerRadius: size * 0.25)).accessibilityHidden(true)
+        }.frame(width: size, height: size).background(url == nil ? Palette.blueCard : Palette.surface)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.25))
+            .overlay(RoundedRectangle(cornerRadius: size * 0.25).strokeBorder(Palette.line.opacity(0.7), lineWidth: 0.7))
+            .background(RoundedRectangle(cornerRadius: size * 0.25).fill(Palette.line).offset(y: 2))
+            .shadow(color: .black.opacity(0.10), radius: 3, x: 0, y: 3).accessibilityHidden(true)
     }
     private var placeholder: some View {
         Image("AppPlaceholder").resizable().scaledToFit().padding(size * 0.12)
-    }
-}
-
-private struct ConsumerAppRow: View {
-    @Environment(\.locale) private var nativeLocale
-    let app: ConsumerApp
-    let installed: Bool
-    let busy: Bool
-    let opening: Bool
-    let detail: () -> Void
-    let open: () -> Void
-    @ScaledMetric(relativeTo: .headline) private var titleSize = 18.0
-    var body: some View {
-        HStack(spacing: 10) {
-            Button(action: detail) {
-                HStack(spacing: 14) {
-                    ConsumerAppIcon(url: app.iconURL, title: app.title, size: 62)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(app.title).font(.system(size: titleSize, weight: .semibold)).foregroundStyle(Palette.ink)
-                        Text(app.tagline).font(.subheadline).foregroundStyle(Palette.secondary).lineLimit(3)
-                    }.frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
-                    if !installed { Image(systemName: "chevron.forward").font(.subheadline).foregroundStyle(Palette.secondary) }
-                }.contentShape(Rectangle())
-            }.accessibilityIdentifier("app-\(app.id)")
-            if installed {
-                Button(action: open) {
-                    HStack(spacing: 6) {
-                        if opening { ProgressView().tint(Palette.selection) }
-                        Text(NativeText.text(opening ? "apps.opening" : "apps.open"))
-                    }.font(.subheadline.weight(.semibold)).foregroundStyle(Palette.selection)
-                        .padding(.horizontal, 14).frame(minHeight: 44)
-                        .background(Palette.blueCard.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Palette.blueCard.opacity(0.6)))
-                }.disabled(busy).accessibilityIdentifier("app-open-\(app.id)")
-                    .accessibilityLabel(NativeText.format("apps.openNamed", app.title))
-            }
-        }.padding(12).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22)).buttonStyle(CredentialPressStyle())
     }
 }
 
@@ -365,8 +373,9 @@ struct ConsumerErrorCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label(error.errorDescription ?? "", systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(Palette.ink)
-            Button(NativeText.text("common.retry"), action: retry).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.selection)
+            Button(NativeText.text("common.retry"), action: retry).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.selection).frame(minHeight: 44)
         }.padding(18).frame(maxWidth: .infinity, alignment: .leading).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("consumer-error")
     }
 }

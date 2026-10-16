@@ -6,15 +6,15 @@ The user clarified that sending should be secondary while remaining easy to find
 
 ## Shared heading flair — October 16
 
-The user-approved builder ray strokes now extend to the four main pane titles and one selected supporting section per pane. The reusable native modifier preserves title identities, mirrors in RTL and hides decoration at accessibility text sizes. See [placement rules and native captures](design/HEADING_ACCENTS.md). The broader Apps composition below remains a separate queued pass.
+The user-approved builder ray strokes now extend to the four main pane titles and one selected supporting section per pane. The reusable native modifier preserves title identities, mirrors in RTL and hides decoration at accessibility text sizes. See [placement rules and native captures](design/HEADING_ACCENTS.md). The subsequent rendered Apps pass below retains those shared accents.
 
-## Current design checkpoint: rendered Apps — October 16
+## Rendered Apps implementation — October 16
 
 - [x] Generate fresh mockups using the approved [rendered credential-card material](design/CREDENTIAL_DEPTH_BRIEF.md). [Two new boards](design/APPS_RENDERED_BRIEF.md) cover My apps empty/populated, Discover, listing detail and access review. Earlier October 13/14 boards remain historical references.
-- [x] Explore an inviting rocket-led empty state, direct Discover action and installed-first hierarchy with quieter LearnCard utilities below. Names/art/permissions are synthetic design content; the boards are not yet accepted or implemented.
-- [ ] Implement the chosen composition through existing Apps/store/browser/consent boundaries, then review actual native captures. Preserve publisher art, catalog categories/order/promotion facts, partial/error/search states and explicit access decisions. The [brief](design/APPS_RENDERED_BRIEF.md) records generated details that must not be copied literally and the focused regression plan.
+- [x] Explore an inviting rocket-led empty state, direct Discover action and installed-first hierarchy with quieter LearnCard utilities below. The user approved trying the direction. Names/art/permissions remain synthetic design content.
+- [x] Implement the chosen composition through existing Apps/store/browser/consent boundaries and review actual native captures at 402/375-point phone widths and enlarged Arabic dark text. Publisher art, catalog categories/order/promotion facts, partial/error/search states and explicit access decisions remain. See [the behavior contract](APPS_REDESIGN.md), [native captures](design/APPS_RENDERED_BRIEF.md#implemented-native-screens) and [focused verification](TESTING.md#rendered-apps--october-16-2026).
 
-This checkpoint changes designs/planning only. The installed app and its real account remain unchanged; no build, install or hosted CI ran.
+Nine core and twelve distinct focused UI checks pass. The full suite and hosted CI were not run. Real account/partner writes, physical-device review and iPad remain separate gates.
 
 ## Queued: learner Pathways, Journeys and related features — October 16
 
@@ -24,7 +24,7 @@ The user explicitly asked to queue the missing learning experiences. [The native
 
 The user rejected the small/separated-to-large logo intro because short app openings often end before the complete mark appears. Static splash, initial loading and reconnect now start with the full-size formed mark, keeping only the slight stop-motion jiggle and floating background pieces. There is no artificial launch delay. Build 3 refreshes cached system artwork; account readiness and accessibility/lifecycle guards remain authoritative. See [motion contract](ACCOUNT_MOTION.md).
 
-## Current priority: learner document and credential-file intake — October 16
+## Learner document and credential-file intake — October 16
 
 The user selected a learner-first personal experience and approved the [generated Home/welcome direction](design/LEARNER_HOME_BRIEF.md). The new/returning Home and optional activation after existing required setup are implemented; pending claims resume explicit review directly. Receive, understand, organize and share personal achievements take precedence over creation/issuance management. Keep existing creator capabilities available through secondary tools. Home now uses actual incoming items, two recent personal achievements, clear Scan/Share actions, People and Data Sharing. The labeled Add header opens a designed native intake sheet. Create/send tools are secondary. Account-scoped welcome state survives resume, can be skipped and revisited, and never bypasses required setup. The next product checkpoint is manual review of this implemented learner slice, then choosing a focused follow-up from document intake, richer achievement understanding or learner sharing.
 

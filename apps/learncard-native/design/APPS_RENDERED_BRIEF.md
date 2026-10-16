@@ -1,6 +1,6 @@
 # Apps in the rendered style — October 16, 2026
 
-The user selected Apps as the next redesign and requested new mockups using the [approved credential material](CREDENTIAL_DEPTH_BRIEF.md). This is a design checkpoint: two new generated boards, five screen states, and a bounded implementation plan. The installed app still has the earlier Apps layout. These boards have not yet been accepted as the final composition or implemented.
+The user selected Apps as the next redesign and requested new mockups using the [approved credential material](CREDENTIAL_DEPTH_BRIEF.md), then approved trying this direction. The native implementation now carries the app-first hierarchy and rendered material through My apps, Discover, listing detail and access review. Generated names/art/scopes remain illustrative; actual native captures below are separate evidence. See [the implementation contract](../APPS_REDESIGN.md).
 
 ## New boards
 
@@ -50,4 +50,21 @@ Keep stable route/control identifiers where behavior remains equivalent. Existin
 
 [Learner Pathways, Journeys and related features](../LEARNER_LEARNING_PLAN.md) are now explicitly queued. They should become native first-party experiences, separate from third-party apps in the in-app browser. Do not place nonfunctional “coming soon” tiles into this Apps visual slice.
 
-No runtime, account configuration, live installation/consent, build, simulator install or hosted CI changed in this design checkpoint.
+## Implemented native screens
+
+![Native empty My apps, standard English](apps-rendered-empty-native.png)
+
+These captures exercise production SwiftUI with isolated sample services. Both sample listings lack publisher artwork, so they intentionally show the same generic app-window fallback. The generated globe/palette/screenshots above are not installed catalog data. The two-app compact capture is scrolled to its installed rows.
+
+| State                                           | Actual capture                                                        |
+| ----------------------------------------------- | --------------------------------------------------------------------- |
+| My apps empty, 402-point phone                  | [Standard English](apps-rendered-empty-native.png)                    |
+| My apps with two installations, 375-point phone | [Compact installed list](apps-rendered-installed-compact-native.png)  |
+| Discover, actual sample promotion flag          | [Catalog](apps-rendered-discover-native.png)                          |
+| Listing with generic missing-art fallback       | [Detail](apps-rendered-detail-native.png)                             |
+| Access review before optional selection         | [Standard review](apps-rendered-access-native.png)                    |
+| Required scope, fixed noninteractive row        | [Compact lower review](apps-rendered-required-compact-native.png)     |
+| Arabic dark, enlarged stress preview            | [My apps](apps-rendered-arabic-accessibility-native.png)              |
+| Arabic dark, enlarged stress preview            | [Access review](apps-rendered-access-arabic-accessibility-native.png) |
+
+Arabic accessibility captures are deliberately enlarged; they are not the default Arabic font size. Existing standard French/Arabic title/direction checks pass separately. Nine core cases and twelve distinct focused UI cases pass across the [recorded runs](../TESTING.md#rendered-apps--october-16-2026), including fixed child-control grouping, empty/search/error separation, direct Open, agreement/cancellation, Home routing and browser background disposal. Live partner/account writes and hosted CI were not performed.

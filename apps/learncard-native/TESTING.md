@@ -1,5 +1,21 @@
 # Native regression checks
 
+## Rendered Apps — October 16, 2026
+
+Nine existing `ConsumerAppsTests` pass in `artifacts/apps-rendered-core-2026-10-16.log`, including account-generation locking, category races, install/removal/withdrawal independence, optional consent defaults and four-language copy. Catalog preparation validates **969 keys** across en/es/fr/ar.
+
+There are **twelve distinct passing focused UI cases** across three runs:
+
+- `apps-rendered-ui-2026-10-16.xcresult`: **9/11 pass**. Existing install/consent/Data Sharing, direct Open, real PartnerConnect fixture identity cancel/accept/unsupported handling, account background browser disposal, language persistence, French/Arabic titles and Home routing pass, along with the new Arabic accessibility/cancel case. The new empty/error checks exposed parent identifiers overriding child controls; failure accessibility snapshots confirm the controls were visible under the wrong identifiers.
+- `apps-rendered-compact-ui-2026-10-16.xcresult`: **4/4 pass** on a 375-point iPhone SE after explicit child containment. Empty Discover/search/reset/native utility routing, unavailable-read honesty, two installed apps/direct Open and Arabic dark accessibility/cancel all pass. Required access has a fixed labeled row; optional read access remains off until chosen.
+- `apps-rendered-final-ui-2026-10-16.xcresult`: **2/2 pass** on the 402-point checks phone after the final 44-point retry/credential-choice target refinement. This repeats the full empty/search/reset/Data Sharing route and discovery/explicit consent/install/withdrawal flow. Final ordinary captures and compact/enlarged stress captures were visually inspected.
+
+The initial Debug compile caught a missing core-module import in the new surface file; that was corrected before the first UI run. No failing run above is presented as a full pass. All account/partner mutations in these checks are isolated synthetic operations; the actual PartnerConnect fixture script still exercises the production browser boundary.
+
+The configured suite is now **503 cases** (193 Bun, 187 Swift, 123 simulator), plus the opt-in live-exchange skip. The full suite and hosted native CI were not run. Runtime/SDK protocol, catalog taxonomy, promotion/permission facts and server gates remain unchanged. See [the implementation contract](APPS_REDESIGN.md) and [actual native screens](design/APPS_RENDERED_BRIEF.md#implemented-native-screens).
+
+Final-source Release and Debug builds pass (`artifacts/apps-rendered-release-final.log`, `apps-rendered-debug-final.log`). The normal review app is installed on Native Lab with **48/48 payload files matching**, private configuration preserved byte-for-byte and build version **3** (`apps-rendered-install-proof.json`, `apps-rendered-review-install.log`). Read-only native UI inspection confirms the signed-in Home and retained test credential, then the new empty My apps screen with working native controls. Native Lab is left on Apps. The standard checks simulator is shut down, and the compact test-only device created for this pass was deleted after successful captures. No real installation/consent/withdrawal, account reset/sign-out or hosted native CI was performed.
+
 ## Discoverable social sending — October 16, 2026
 
 The focused localization case passes (`artifacts/social-entry-localization-2026-10-16.log`), including the two new People action keys in all four languages. Catalog generation validates **962 keys** across en/es/fr/ar. No protocol/core behavior changed, so the full Bun/Swift suites were not rerun.
@@ -12,7 +28,7 @@ There are **nine distinct passing focused UI cases** across these runs:
 
 Tests use production SwiftUI with synthetic service boundaries on the separate checks simulator. Cancellation never creates a template; the selected connection survives new/existing review; successful child completion dismisses its picker before the normal notice. Live existing sends keep explicit recipient lookup/review before confirmation. No real staging send, relationship change, account reset or sign-out was performed. See [behavior and native captures](SOCIAL_SENDING.md).
 
-The configured suite is now **499 cases** (193 Bun, 187 Swift, 119 simulator), plus the opt-in live-exchange skip. This is focused verification, not a complete suite or hosted CI run.
+Before the rendered Apps follow-up, the configured suite was **499 cases** (193 Bun, 187 Swift, 119 simulator), plus the opt-in live-exchange skip. This is focused verification, not a complete suite or hosted CI run.
 
 Final-source Release and Debug builds pass (`artifacts/social-entry-release-2026-10-16.log`, `social-entry-review-install.log`). The normal review app is installed on Native Lab with all **48 payload files matching**, build version **3** and private configuration preserved byte-for-byte (`social-entry-install-proof.json`). Read-only observation confirms the signed-in Passport, retained private test credential and updated Add or send entry. The separate checks simulator is shut down; native hosted CI was not dispatched.
 

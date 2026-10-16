@@ -4,6 +4,7 @@ import LearnCardNativeSDK
 
 struct NativeConsentView: View {
     @Environment(\.locale) private var nativeLocale
+    @Environment(\.dynamicTypeSize) private var textSize
     let appTitle: String
     let iconURL: URL?
     @State private var review: ConsumerConsentReview
@@ -22,13 +23,15 @@ struct NativeConsentView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    HStack(spacing: 16) {
-                        ConsumerAppIcon(url: iconURL, title: appTitle, size: 60)
+                    HStack(alignment: .top, spacing: 16) {
+                        ConsumerAppIcon(url: iconURL, title: appTitle, size: textSize.isAccessibilitySize ? 48 : 60)
                         VStack(alignment: .leading, spacing: 5) {
                             Text(appTitle).font(.title2.bold()).foregroundStyle(Palette.ink)
-                            Text(review.title).font(.subheadline).foregroundStyle(Palette.secondary)
+                            if review.title != appTitle { Text(review.title).font(.subheadline).foregroundStyle(Palette.secondary) }
                         }
                     }
+                    Text(NativeText.text("consent.choiceTitle")).font(.title2.bold()).foregroundStyle(Palette.ink)
+                        .headingFlair(Palette.flairTeal).accessibilityAddTraits(.isHeader)
                     if let description = review.description { Text(description).font(.body).foregroundStyle(Palette.secondary) }
                     ConsentRecipients(recipients: review.recipients)
                     if let reason = review.blockReason {
@@ -50,10 +53,12 @@ struct NativeConsentView: View {
                                                             .foregroundStyle(Palette.selection)
                                                         Text(choice.title).font(.subheadline).foregroundStyle(Palette.ink)
                                                         Spacer(minLength: 0)
-                                                    }.padding(.vertical, 8).contentShape(Rectangle())
+                                                    }.padding(.vertical, 8).frame(minHeight: 44).contentShape(Rectangle())
                                                 }.buttonStyle(.plain).accessibilityIdentifier("consent-choice-\(choice.id)")
                                                     .accessibilityAddTraits(decision.selectedCredentials[permission.id, default: []].contains(choice.id) ? .isSelected : [])
                                             }
+                                        } else {
+                                            Text(NativeText.text("consent.notSelected")).font(.caption).foregroundStyle(Palette.secondary)
                                         }
                                     }
                                     Divider()
@@ -102,16 +107,36 @@ struct NativeConsentView: View {
                 .navigationTitle(NativeText.text("consent.title")).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.text("common.cancel")) { dismiss() } } }
         }.presentationDetents([.large]).presentationDragIndicator(.visible).presentationBackground(Palette.paper)
+        #if DEBUG
+        .modifier(NativeReviewPreferences())
+        #endif
     }
     private func section<Content: View>(_ key: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) { Text(NativeText.text(key)).font(.headline); content() }
+        VStack(alignment: .leading, spacing: 16) {
+            Text(NativeText.text(key)).font(.title3.bold()).accessibilityAddTraits(.isHeader)
+            content()
+        }
             .foregroundStyle(Palette.ink).padding(20).frame(maxWidth: .infinity, alignment: .leading).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
     }
     private func requirement(_ required: Bool) -> some View { Text(NativeText.text(required ? "common.required" : "common.optional")).font(.caption).foregroundStyle(Palette.secondary) }
-    private func permissionToggle(_ permission: ConsentPermission, enabled: Binding<Bool>) -> some View {
-        Toggle(isOn: enabled) {
-            VStack(alignment: .leading, spacing: 4) { Text(consentLabel(permission.id)).font(.subheadline.weight(.medium)); requirement(permission.required) }
-        }.tint(Palette.selection).disabled(permission.required).accessibilityIdentifier("consent-permission-\(permission.id)")
+    @ViewBuilder private func permissionToggle(_ permission: ConsentPermission, enabled: Binding<Bool>) -> some View {
+        if permission.required {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(consentLabel(permission.id)).font(.body.weight(.semibold))
+                    requirement(true)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(Palette.selection)
+                    .font(.title3).accessibilityHidden(true)
+            }.padding(.vertical, 6).accessibilityElement(children: .combine)
+                .accessibilityIdentifier("consent-permission-\(permission.id)")
+        } else {
+            Toggle(isOn: enabled) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(consentLabel(permission.id)).font(.body.weight(.semibold)); requirement(false)
+                }
+            }.tint(Palette.selection).accessibilityIdentifier("consent-permission-\(permission.id)")
+        }
     }
     private func membership(_ id: String, in items: Binding<[String]>, clearCredentials: Bool = false) -> Binding<Bool> {
         Binding(get: { items.wrappedValue.contains(id) }, set: { enabled in

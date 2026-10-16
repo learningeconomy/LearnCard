@@ -102,6 +102,12 @@ import LearnCardNativeCore
         do { try await queue.acquire(); XCTFail("A disposed queue reopened") } catch { XCTAssertEqual(error as? AccountError, .cancelled) }
     }
     func testTranslationsPluralsAndRTLUseNativeResources() {
+        for language in [NativeLanguage.en, .es, .fr, .ar] {
+            for key in ["apps.empty", "apps.emptyBody", "apps.installed", "apps.discoverAction", "apps.clearSearch", "apps.discoverMore", "apps.searching", "consent.choiceTitle", "consent.notSelected"] {
+                XCTAssertNotEqual(NativeText.text(key, language: language), key)
+            }
+            XCTAssertFalse(NativeText.format("apps.viewNamed", "Publisher", language: language).contains("%@"))
+        }
         XCTAssertEqual(NativeText.text("apps.title", language: .es), "Apps")
         XCTAssertEqual(NativeText.text("apps.discover", language: .fr), "Découvrir")
         XCTAssertNotEqual(NativeText.text("apps.discover", language: .ar), "Discover")

@@ -1,6 +1,6 @@
 # Consumer Apps visual reference — 2026-10-13
 
-The [October 16 rendered Apps boards](APPS_RENDERED_BRIEF.md) now lead the next composition pass. This board records the earlier implementation reference; its tab order and utilities-first hierarchy are historical.
+The [October 16 rendered Apps direction and actual native captures](APPS_RENDERED_BRIEF.md) now lead the implemented composition. This board records the earlier reference; its tab order and utilities-first hierarchy are historical.
 
 Reference board: `consumer-apps-concept-2026-10-13.png`. Generated with the built-in imagegen tool against the approved `secondary-concept-2026-10-12.png` reference. The board guides composition, native grouped surfaces, compact left-aligned app artwork, intentional cyan/pink accents, blue actions and the edge-to-edge bottom tray.
 

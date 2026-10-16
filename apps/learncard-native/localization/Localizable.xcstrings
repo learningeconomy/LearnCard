@@ -413,25 +413,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Installed apps"
+            "value": "Your apps"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apps instaladas"
+            "value": "Tus apps"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apps installées"
+            "value": "Vos apps"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "التطبيقات المثبّتة"
+            "value": "تطبيقاتك"
           }
         }
       }
@@ -674,25 +674,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your apps, all together"
+            "value": "A little more possibility"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus apps, en un solo lugar"
+            "value": "Un poco más de posibilidades"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vos apps, au même endroit"
+            "value": "Un peu plus de possibilités"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "تطبيقاتك في مكان واحد"
+            "value": "المزيد من الإمكانات"
           }
         }
       }
@@ -703,25 +703,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Discover an app and add it here."
+            "value": "Find tools for your next step."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Descubre una app y añádela aquí."
+            "value": "Encuentra herramientas para tu próximo paso."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Découvrez une app et ajoutez-la ici."
+            "value": "Trouvez des outils pour votre prochaine étape."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "استكشف تطبيقًا وأضفه هنا."
+            "value": "اعثر على أدوات لخطوتك التالية."
           }
         }
       }
@@ -28422,6 +28422,202 @@
           "stringUnit": {
             "state": "translated",
             "value": "أنشئ شهادة أو اختر من شهاداتك المُنشأة."
+          }
+        }
+      }
+    },
+    "apps.discoverAction": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discover apps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descubrir apps"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Découvrir des apps"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استكشف التطبيقات"
+          }
+        }
+      }
+    },
+    "apps.clearSearch": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear search"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borrar búsqueda"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer la recherche"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح البحث"
+          }
+        }
+      }
+    },
+    "apps.discoverMore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discover something new"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descubre algo nuevo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Découvrez quelque chose de nouveau"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اكتشف شيئًا جديدًا"
+          }
+        }
+      }
+    },
+    "apps.searching": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finding apps…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscando apps…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche d’apps…"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جارٍ البحث عن التطبيقات…"
+          }
+        }
+      }
+    },
+    "apps.viewNamed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir %@"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عرض %@"
+          }
+        }
+      }
+    },
+    "consent.choiceTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your choice, clearly."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu elección, con claridad."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre choix, en toute clarté."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "خيارك، بكل وضوح."
+          }
+        }
+      }
+    },
+    "consent.notSelected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No credentials selected"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay credenciales seleccionadas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun justificatif choisi"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يتم تحديد بيانات اعتماد"
           }
         }
       }
