@@ -36,7 +36,7 @@ const config: CapacitorConfig = {
         CapacitorUpdater: {
             appId: 'org.scoutpass.app',
             autoUpdate: true,
-            defaultChannel: '1.0.7', // https://github.com/learningeconomy/LearnCard/pull/1648
+            defaultChannel: '1.0.8', // LC-2006: Tailwind 4 requires an iOS 16.4+ native build.
         },
     },
 };

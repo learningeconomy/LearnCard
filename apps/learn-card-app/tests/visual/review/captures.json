@@ -1,6 +1,14 @@
 {
-    "baselineCommit": "1955fd40e",
+    "baselineApplicationCommit": "1955fd40e5a1016c3fb494cf140099a7de6b9ed5",
+    "baselineTailwindVersion": "3.4.19",
     "tailwindVersion": "4.3.3",
+    "expandedBaseline": "Additional page references captured from the original application commit with identical page fixtures and pinned local fonts; first twelve references unchanged.",
+    "fixtureSha256": {
+        "main.tsx": "68f50e705e60b2f2ffc7d2dc590464bc3fd2bdbf9f003a775d221f3bcc35b84a",
+        "PageFixtures.tsx": "86e6060a39b12bd269590845c1032c63c9df8795b8ad7de02fdac01e798b22a2",
+        "IssueVisualFixture.tsx": "836419fcfc236bc41e08a52dbd50537f715482c135e483fd25eee7472d552e3b",
+        "tailwind.spec.ts": "6fe7b6fa78aba8061da9df80d73d47b0b2de34575a6a4bcfe93ded8854e4571c"
+    },
     "cases": [
         {
             "project": "chromium-desktop",
@@ -9,7 +17,7 @@
             "after": "chromium-desktop/active-tailwind4.png",
             "beforeSha256": "45b5b07c2bf6bcebc4e980e0220df8435b08a10fd9141eaa045208653a01b4de",
             "afterSha256": "dfba70b5151729436d7d418a87b3a1614245ad74316a4f88e34d23a1b91b8662",
-            "capturedAt": "2026-10-16T18:09:35.287Z"
+            "capturedAt": "2026-10-16T18:48:53.652Z"
         },
         {
             "project": "chromium-desktop",
@@ -17,8 +25,8 @@
             "before": "../baselines/chromium-desktop/pending-darwin.png",
             "after": "chromium-desktop/pending-tailwind4.png",
             "beforeSha256": "6bf990577ad4883d60bd05788546cf72baccf2ef1b4647bdf1ea6dbbe081de67",
-            "afterSha256": "0690ac52ecb42b56a0e75f55d30a4cd0d4752453fe74941fbf5bf9b158c0e3e0",
-            "capturedAt": "2026-10-16T18:09:45.744Z"
+            "afterSha256": "9a3b39db7ad5ede17597bdaac7e78860827e2724978ff8920b1f9fc9d58e8c0b",
+            "capturedAt": "2026-10-16T18:49:01.824Z"
         },
         {
             "project": "chromium-desktop",
@@ -26,8 +34,8 @@
             "before": "../baselines/chromium-desktop/empty-darwin.png",
             "after": "chromium-desktop/empty-tailwind4.png",
             "beforeSha256": "8a733aef91d5fb63795da7ecfe1323eb9e7d8c51fb14432bb3162353c737ef00",
-            "afterSha256": "fd45f37de489dc24d612b176d7dde816d12f7a99c3d3fd5cbc9affeaf92413a1",
-            "capturedAt": "2026-10-16T18:09:56.296Z"
+            "afterSha256": "491927ade2f8aeaa9c97b23b4d229584695c53606ed27f609af14bb6e2cf24b0",
+            "capturedAt": "2026-10-16T18:49:09.253Z"
         },
         {
             "project": "chromium-desktop",
@@ -36,7 +44,61 @@
             "after": "chromium-desktop/shared-tailwind4.png",
             "beforeSha256": "aca66ee5f61ba432ee352cbffe67fce40427a509bada096010d201cb8102d7bb",
             "afterSha256": "aca66ee5f61ba432ee352cbffe67fce40427a509bada096010d201cb8102d7bb",
-            "capturedAt": "2026-10-16T18:10:08.635Z"
+            "capturedAt": "2026-10-16T18:49:18.488Z"
+        },
+        {
+            "project": "chromium-desktop",
+            "state": "credential",
+            "before": "../baselines/chromium-desktop/credential-darwin.png",
+            "after": "chromium-desktop/credential-tailwind4.png",
+            "beforeSha256": "6c93418498d55d9dc41a57379bf21bc8087d9cb092a4041c51a9bbe754256fa9",
+            "afterSha256": "cc8baacbb98ac34e304899b46cbc997f1aaef5060717e90edd0d978325d212c0",
+            "capturedAt": "2026-10-16T18:49:25.653Z"
+        },
+        {
+            "project": "chromium-desktop",
+            "state": "credential-details",
+            "before": "../baselines/chromium-desktop/credential-details-darwin.png",
+            "after": "chromium-desktop/credential-details-tailwind4.png",
+            "beforeSha256": "1455402466ee4ffa8bade623f6ad00fc16177bbb28d914b85498e6b4abaaaf84",
+            "afterSha256": "3a67c50df55d5dacf7f4afe6ff50e9275286a36413b3432ce6d5dd4494c22d90",
+            "capturedAt": "2026-10-16T18:49:31.902Z"
+        },
+        {
+            "project": "chromium-desktop",
+            "state": "issue",
+            "before": "../baselines/chromium-desktop/issue-darwin.png",
+            "after": "chromium-desktop/issue-tailwind4.png",
+            "beforeSha256": "fbd5121a84793d777cd43a03dec78101b678a67cee149ad84e359bd3ceaf0b1a",
+            "afterSha256": "c8cf49df353156904e227f0cff6bb86d2a2a883b549c48990256d86c5721cb3e",
+            "capturedAt": "2026-10-16T18:49:37.278Z"
+        },
+        {
+            "project": "chromium-desktop",
+            "state": "issue-json",
+            "before": "../baselines/chromium-desktop/issue-json-darwin.png",
+            "after": "chromium-desktop/issue-json-tailwind4.png",
+            "beforeSha256": "bc347d33afc42aa008f456cde4a6dba21c8850e75b96224961d7cb1444d23df7",
+            "afterSha256": "bc347d33afc42aa008f456cde4a6dba21c8850e75b96224961d7cb1444d23df7",
+            "capturedAt": "2026-10-16T18:49:41.333Z"
+        },
+        {
+            "project": "chromium-desktop",
+            "state": "apps",
+            "before": "../baselines/chromium-desktop/apps-darwin.png",
+            "after": "chromium-desktop/apps-tailwind4.png",
+            "beforeSha256": "443264a3959d653ea9a539cb5a4dff82f311fb6ba0946b38e3b191e47e1deaae",
+            "afterSha256": "8f3b8050c4996b4ebfc754f30312c2b4ff4daa8627ef45aeefa4b74a14b79519",
+            "capturedAt": "2026-10-16T18:49:45.207Z"
+        },
+        {
+            "project": "chromium-desktop",
+            "state": "app-details",
+            "before": "../baselines/chromium-desktop/app-details-darwin.png",
+            "after": "chromium-desktop/app-details-tailwind4.png",
+            "beforeSha256": "86d41d33ad4706e107ee9d1ea2760605f1f8d095446d3c6e30a17c4500e86b43",
+            "afterSha256": "86d41d33ad4706e107ee9d1ea2760605f1f8d095446d3c6e30a17c4500e86b43",
+            "capturedAt": "2026-10-16T18:49:49.652Z"
         },
         {
             "project": "chromium-mobile",
@@ -45,7 +107,7 @@
             "after": "chromium-mobile/active-tailwind4.png",
             "beforeSha256": "0dd0807cfda790eba2e9198477253c1b40bce846d7bd1106efe365d7529fe027",
             "afterSha256": "5697036691f6d7d219a6dfe2b4a9302cfd370369a6162deeaa1d3ab2e1ab7cd7",
-            "capturedAt": "2026-10-16T18:10:25.345Z"
+            "capturedAt": "2026-10-16T18:48:53.577Z"
         },
         {
             "project": "chromium-mobile",
@@ -54,7 +116,7 @@
             "after": "chromium-mobile/pending-tailwind4.png",
             "beforeSha256": "2b0582c0797583692bc4d1732ab7714cf497fcd5718056eda31df363b217a3d7",
             "afterSha256": "e35aa712739f6bd49257576bffea570f79fb92974f07ed4c406bc24bcd2036e9",
-            "capturedAt": "2026-10-16T18:10:36.314Z"
+            "capturedAt": "2026-10-16T18:49:01.748Z"
         },
         {
             "project": "chromium-mobile",
@@ -63,7 +125,7 @@
             "after": "chromium-mobile/empty-tailwind4.png",
             "beforeSha256": "37d18f3a7f681a63de54b961425571c27118031158b905c8f7a4d09832f1eb8a",
             "afterSha256": "bb031a04b9603c33c407c924fc680d41870953614d5af3008374bd773e5a4988",
-            "capturedAt": "2026-10-16T18:10:49.593Z"
+            "capturedAt": "2026-10-16T18:49:08.860Z"
         },
         {
             "project": "chromium-mobile",
@@ -72,7 +134,61 @@
             "after": "chromium-mobile/shared-tailwind4.png",
             "beforeSha256": "c2a12d890c52ed206cef93a712f4e9a74a673846a6cb7cc65ccc45a97db9d1ac",
             "afterSha256": "c2a12d890c52ed206cef93a712f4e9a74a673846a6cb7cc65ccc45a97db9d1ac",
-            "capturedAt": "2026-10-16T18:10:58.874Z"
+            "capturedAt": "2026-10-16T18:49:17.851Z"
+        },
+        {
+            "project": "chromium-mobile",
+            "state": "credential",
+            "before": "../baselines/chromium-mobile/credential-darwin.png",
+            "after": "chromium-mobile/credential-tailwind4.png",
+            "beforeSha256": "80971b8d87973fad528060debb3072b6af4cd57d8bb255a43819ba6ba4879da2",
+            "afterSha256": "80971b8d87973fad528060debb3072b6af4cd57d8bb255a43819ba6ba4879da2",
+            "capturedAt": "2026-10-16T18:49:25.143Z"
+        },
+        {
+            "project": "chromium-mobile",
+            "state": "credential-details",
+            "before": "../baselines/chromium-mobile/credential-details-darwin.png",
+            "after": "chromium-mobile/credential-details-tailwind4.png",
+            "beforeSha256": "7681d038adfd01b7d24d01b76049e30aec79f98bade36c011f2353b394ed25ce",
+            "afterSha256": "7681d038adfd01b7d24d01b76049e30aec79f98bade36c011f2353b394ed25ce",
+            "capturedAt": "2026-10-16T18:49:31.418Z"
+        },
+        {
+            "project": "chromium-mobile",
+            "state": "issue",
+            "before": "../baselines/chromium-mobile/issue-darwin.png",
+            "after": "chromium-mobile/issue-tailwind4.png",
+            "beforeSha256": "a2e9b1838d6d04ba2ac884dbdff917909e41810d30a7c2796a109da9848eedcd",
+            "afterSha256": "ee0ad487867ca7dace278573e74b2e6b558db18b01956d9ddb13bc400974fa1e",
+            "capturedAt": "2026-10-16T18:49:36.616Z"
+        },
+        {
+            "project": "chromium-mobile",
+            "state": "issue-json",
+            "before": "../baselines/chromium-mobile/issue-json-darwin.png",
+            "after": "chromium-mobile/issue-json-tailwind4.png",
+            "beforeSha256": "e1a9a93886d8edb33dbf46ecd871cedf47b0783e3c36a1fa194ea07e21bad3d7",
+            "afterSha256": "f0bea08a6c61cc32ec826d6f1217893b07284e966fe0019e25be53ba8699bebe",
+            "capturedAt": "2026-10-16T18:49:40.731Z"
+        },
+        {
+            "project": "chromium-mobile",
+            "state": "apps",
+            "before": "../baselines/chromium-mobile/apps-darwin.png",
+            "after": "chromium-mobile/apps-tailwind4.png",
+            "beforeSha256": "72ee65789ecb885dcc9ab4dfda3669f7adaaf00f7dbf7a1ace3b9035da79acd7",
+            "afterSha256": "e3a286e0804dc541474dcceba6ad8ccb140c0334de56af9b46672f10cf121e74",
+            "capturedAt": "2026-10-16T18:49:44.774Z"
+        },
+        {
+            "project": "chromium-mobile",
+            "state": "app-details",
+            "before": "../baselines/chromium-mobile/app-details-darwin.png",
+            "after": "chromium-mobile/app-details-tailwind4.png",
+            "beforeSha256": "b6db4c41e9c7571072836612add4ae0bff0d287e041639c80128b151ec43175d",
+            "afterSha256": "b6db4c41e9c7571072836612add4ae0bff0d287e041639c80128b151ec43175d",
+            "capturedAt": "2026-10-16T18:49:48.032Z"
         },
         {
             "project": "webkit-mobile",
@@ -81,7 +197,7 @@
             "after": "webkit-mobile/active-tailwind4.png",
             "beforeSha256": "69284dadcc2b7b0bc8e3a2c9a8d7f178847fc923a4d7b45b51ce56c2c605337e",
             "afterSha256": "c60010f94bab19fcbff8e0f082e45094efa01e2a62099266df74dbc0ddbeb810",
-            "capturedAt": "2026-10-16T18:11:08.700Z"
+            "capturedAt": "2026-10-16T18:48:53.639Z"
         },
         {
             "project": "webkit-mobile",
@@ -90,7 +206,7 @@
             "after": "webkit-mobile/pending-tailwind4.png",
             "beforeSha256": "3d8abc601d09e56c1520a5b6ed9309b0ab358bfe93fea869a3af2956b6fb240b",
             "afterSha256": "af9d3c0a8c405fdada5724955b1687bfe232a44cf21348f5083eb51f2b3325f9",
-            "capturedAt": "2026-10-16T18:11:23.694Z"
+            "capturedAt": "2026-10-16T18:49:01.603Z"
         },
         {
             "project": "webkit-mobile",
@@ -99,7 +215,7 @@
             "after": "webkit-mobile/empty-tailwind4.png",
             "beforeSha256": "07d36c4c79a165042a6a64c6f03e97a96a772d3eaa3dc552b0fe7706d7e5a74d",
             "afterSha256": "cd040ade41e38fa698ef9e942c8310edf26a168632a4bdeb6abab5bff546873f",
-            "capturedAt": "2026-10-16T18:11:37.134Z"
+            "capturedAt": "2026-10-16T18:49:07.790Z"
         },
         {
             "project": "webkit-mobile",
@@ -108,7 +224,61 @@
             "after": "webkit-mobile/shared-tailwind4.png",
             "beforeSha256": "ecb3a3785e00e4b3ce0d36ea71f48ab360e63903287284e2a62d8c0ee4eed407",
             "afterSha256": "ecb3a3785e00e4b3ce0d36ea71f48ab360e63903287284e2a62d8c0ee4eed407",
-            "capturedAt": "2026-10-16T18:12:06.330Z"
+            "capturedAt": "2026-10-16T18:49:13.441Z"
+        },
+        {
+            "project": "webkit-mobile",
+            "state": "credential",
+            "before": "../baselines/webkit-mobile/credential-darwin.png",
+            "after": "webkit-mobile/credential-tailwind4.png",
+            "beforeSha256": "89fd30256ec55c0a9d2712e7870c5fe59539de8ee80b2a4339acf2f3940ba299",
+            "afterSha256": "89fd30256ec55c0a9d2712e7870c5fe59539de8ee80b2a4339acf2f3940ba299",
+            "capturedAt": "2026-10-16T18:49:19.110Z"
+        },
+        {
+            "project": "webkit-mobile",
+            "state": "credential-details",
+            "before": "../baselines/webkit-mobile/credential-details-darwin.png",
+            "after": "webkit-mobile/credential-details-tailwind4.png",
+            "beforeSha256": "bdea7aaaafc7fa1eb7c79512456b08d360d49d2e0cefc070e1f4f6773f799ea4",
+            "afterSha256": "bdea7aaaafc7fa1eb7c79512456b08d360d49d2e0cefc070e1f4f6773f799ea4",
+            "capturedAt": "2026-10-16T18:49:25.019Z"
+        },
+        {
+            "project": "webkit-mobile",
+            "state": "issue",
+            "before": "../baselines/webkit-mobile/issue-darwin.png",
+            "after": "webkit-mobile/issue-tailwind4.png",
+            "beforeSha256": "40bef16b91b947c0c61d206c1ea83a031e2e43e626276c17f071c0c5829eae0d",
+            "afterSha256": "55a309b5b050506c82c6906a3fe8a657ee7af6158219ff18c7e89e13bd181e7f",
+            "capturedAt": "2026-10-16T18:49:30.064Z"
+        },
+        {
+            "project": "webkit-mobile",
+            "state": "issue-json",
+            "before": "../baselines/webkit-mobile/issue-json-darwin.png",
+            "after": "webkit-mobile/issue-json-tailwind4.png",
+            "beforeSha256": "21e18e96610052bcc80edaeb2add73564a90312a79383e8ee2baa39b82bed41c",
+            "afterSha256": "dff572be8dacf94a536ddc33c1eaebcbdc7266b676d806771a7fd9614e37814d",
+            "capturedAt": "2026-10-16T18:49:33.953Z"
+        },
+        {
+            "project": "webkit-mobile",
+            "state": "apps",
+            "before": "../baselines/webkit-mobile/apps-darwin.png",
+            "after": "webkit-mobile/apps-tailwind4.png",
+            "beforeSha256": "b871d316045718489626009bf9f765d0a167db902b4b47fce4125beb39f84762",
+            "afterSha256": "f685c8734a1309f5598508fb7b8684ca2b3de26e09c6bfce65f76123e8b0bb56",
+            "capturedAt": "2026-10-16T18:49:36.788Z"
+        },
+        {
+            "project": "webkit-mobile",
+            "state": "app-details",
+            "before": "../baselines/webkit-mobile/app-details-darwin.png",
+            "after": "webkit-mobile/app-details-tailwind4.png",
+            "beforeSha256": "593d54fc1a4e5997476280cb9d889bc80d853e3db724796ed653ec821502b515",
+            "afterSha256": "593d54fc1a4e5997476280cb9d889bc80d853e3db724796ed653ec821502b515",
+            "capturedAt": "2026-10-16T18:49:39.570Z"
         }
     ]
 }

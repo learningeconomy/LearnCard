@@ -13,6 +13,7 @@ import { WalletCategoryTypes } from '../../../../packages/react-learn-card/src/t
 import { AnalyticsContextProvider } from '../../src/analytics';
 import { LocaleProvider } from '../../src/i18n';
 import DashboardView from '../../src/pages/dashboard/DashboardView';
+import { additionalStates, PageFixture, seedPageQueries } from './PageFixtures';
 import {
     DASHBOARD_PERSONAS,
     personaCredentials,
@@ -44,6 +45,7 @@ const client = new QueryClient({
 Object.entries(personaCredentials).forEach(([uri, credential]) => {
     client.setQueryData(['useGetResolvedCredential', uri], credential);
 });
+seedPageQueries(client);
 
 const states = {
     active: 'Active learner',
@@ -93,13 +95,23 @@ createRoot(document.getElementById('root')!).render(
         <LocaleProvider>
             <AnalyticsContextProvider>
                 <QueryClientProvider client={client}>
-                    <MemoryRouter>
+                    <MemoryRouter
+                        initialEntries={[
+                            state === 'apps'
+                                ? '/launchpad'
+                                : state.startsWith('issue')
+                                  ? '/issue'
+                                  : '/',
+                        ]}
+                    >
                         <ModalsProvider>
                             <div
                                 data-testid="fixture"
                                 className="min-h-screen bg-grayscale-100 font-poppins"
                             >
-                                {state === 'shared' ? (
+                                {additionalStates.some(name => name === state) ? (
+                                    <PageFixture state={state} />
+                                ) : state === 'shared' ? (
                                     <SharedComponents />
                                 ) : (
                                     <DashboardView

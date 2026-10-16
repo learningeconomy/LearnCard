@@ -29,10 +29,25 @@ source so rebuilding every SDK package is unnecessary. The Paraglide Vite plugin
 is skipped here because the command has already compiled the catalog.
 
 Chromium desktop, Chromium mobile, and WebKit mobile cover populated, pending,
-empty, and shared-card/form states. Every run compares computed CSS against the
+empty, shared-card/form, credential preview/details, credential issuance form/JSON,
+and populated Apps/listing-detail states (30 comparisons). Every run compares computed CSS against the
 Tailwind 3 JSON references and attaches full-page screenshots to the HTML report.
 Locally bundled fonts, fixed dates, and deterministic external images keep the
 captures independent of Google Fonts and image CDNs.
+Expanded cases also bundle Jacques Francois, Sacramento, Mouse Memoirs, and
+Montserrat for the shared credential designs, and assert computed font families.
+
+The additional pages use the production `BoostPreview`, `BoostDetailsSideMenu`,
+`IssueCredentialView`, `LaunchPad`, and `AppStoreDetailModal` components. Issuance
+uses the same template/state composition as its Storybook story, with a fixed
+validity result and no signing action. App-store queries are primed with local
+listings. This exercises real UI rendering and the JSON toggle without changing
+an account or depending on a live backend.
+
+The first twelve references were committed before migration in `1955fd40e`.
+The eighteen expanded references were captured in a temporary checkout of that
+same Tailwind 3 commit, using the additional fixture source and the original
+application styles/dependencies. Existing reference files were not regenerated.
 
 Optional pixel comparisons are scoped to the host OS (font rasterization differs):
 
@@ -82,6 +97,8 @@ The explicit named variants preserve the original mixed breakpoint order.
 Keep these named variants out of `--breakpoint-*` variables: those variables
 preregister the standard screens and change the resulting order. Autoprefixer
 continues to cover legacy Sass; Tailwind itself runs through the Vite plugin.
+Shared card font utilities use `@theme inline` so host app variables with the same
+names cannot retroactively replace the package's original font families.
 
 Existing sibling spacing uses `space-x-v3-*` / `space-y-v3-*` because Tailwind 4
 changes the selector and switches the margin to the preceding child. The class
@@ -95,3 +112,6 @@ rounded pill radii. The original reference values and screenshots remain fixed.
 
 Native builds now require iOS 16.4. When releasing, bound OTA updates to compatible
 native clients; older installed iOS clients must not receive the Tailwind 4 bundle.
+The default OTA channels advance to `1.0.13` for LearnCard and `1.0.8` for ScoutPass
+so this bundle is isolated from existing native clients. Release the matching
+native builds before promoting bundles to those channels.

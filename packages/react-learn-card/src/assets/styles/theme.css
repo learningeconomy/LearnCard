@@ -66,16 +66,21 @@
     --color-orange-500: #ef5d35;
     --color-orange-800: #9a3412;
     --color-red-mastercard: #eb001b;
-    --font-mouse: Mouse Memoirs;
-    --font-montserrat: Montserrat, Helvetica, Serif;
-    --font-poppins: Poppins;
-    --font-jacques: Jacques Francois;
-    --font-sacramento: Sacramento;
     --shadow-bottom: 0px 4px 0px rgba(0, 0, 0, 0.25);
     --shadow-3xl: 0px 0px 8px rgba(0, 0, 0, 0.25);
     --shadow-card-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);
     --spacing-25pct: 25%;
     --text-shadow-DEFAULT: 1px 2px 0px rgb(0 0 0 / 35%);
+}
+
+/* Emit literal card font families, as V3 did. Host app tokens use the same
+   names and must not retroactively change utilities compiled by this package. */
+@theme inline {
+    --font-mouse: 'Mouse Memoirs';
+    --font-montserrat: Montserrat, Helvetica, Serif;
+    --font-poppins: Poppins;
+    --font-jacques: 'Jacques Francois';
+    --font-sacramento: Sacramento;
 }
 
 @custom-variant xxsm (@media (max-width: 240px));
