@@ -141,14 +141,42 @@ not happened by its deadline emits 0 for that step:
 | Released   | effective deadline + 2 hours                                  |
 | Cancelled  | 10 minutes after cancel                                       |
 
-**Expected vs missing.** Only steps a run is due to perform are evaluated. For
-the first 6–7 days after tier 3 starts there are no warnings or releases yet,
-and the cancel check runs weekly; those are "not expected", not missing data.
-The runner emits each step metric only when due; the tier 3 "silent" alarm
-watches `Tier3.Started`, which must arrive daily.
+**Expected vs missing (alarm wiring).** Sparse step outcomes cannot carry the
+"is this step due?" signal by themselves, so tier 3 is wired as two parts:
+
+1. **Deadline evaluator** (every 15 minutes, separate scheduled function). It
+   reads the runner's ledger of in-flight runs (DynamoDB or S3 in the runner's
+   account: account, hold ID, step, due time, observed time) and, for every step
+   whose deadline has passed without the expected event, counts it overdue. Each
+   evaluation emits, continuously:
+    - `Tier3.Overdue` = number of overdue expected steps (0 when healthy);
+    - `Tier3.EvaluatorHeartbeat` = 1, only after it successfully read the whole
+      ledger and checked every in-flight run.
+2. **Step outcomes** (`Tier3.Confirmed`, `Warned`, `Released`, `Cancelled`) are
+   emitted only when a step completes or fails. They drive dashboards and the
+   explicit-failure alarm, with missing data **not breaching**, because their
+   absence is normal between events.
+
+Alarms: `Tier3.Overdue > 0` pages (missing data breaching, since it is emitted
+every 15 minutes); `Tier3.EvaluatorHeartbeat` missing for 45 minutes pages;
+any explicit step value of 0 pages. Expectedness lives only in the ledger: a run
+records "warning due at X" when it confirms, "release due at Y" when it reads the
+effective deadline, and "cancel result due" only on weekly cancel runs. Warm-up
+and the gaps between weekly cancels therefore produce `Overdue = 0`, not missing
+data, and a broken evaluator pages even while daily starts continue.
+
+Validate before production, in staging, with a fake clock in the evaluator:
+
+- warm-up: days 0–7 with starts but no warnings/releases due → no page;
+- weekly cancel gap: six days without a cancel run → no page;
+- overdue warning (suppress the warning email) → `Overdue` pages within one
+  evaluation;
+- evaluator stopped while the runner keeps starting holds → heartbeat pages;
+- evaluator that cannot read the ledger → no heartbeat → pages.
 
 Emit `Tier3.Started`, `Tier3.Confirmed`, `Tier3.Warned`, `Tier3.Released`,
-`Tier3.Cancelled` (0/1 each, when due) and email delivery latency.
+`Tier3.Cancelled` (0/1 each, when the step completes or fails) and email delivery
+latency; overdue detection is the evaluator's job (below).
 
 Detection: start/code/confirm/warning regressions within 24 hours; release
 regressions within 24 hours (next scheduled release); a regression in hold
@@ -205,17 +233,21 @@ and persists it to its secret store between runs. No SDK change is needed.
 
 Namespace `LearnCard/EscrowCanary`, dimension `Tier`.
 
-| Alarm               | Condition                                                    | Missing data | Severity          |
-| ------------------- | ------------------------------------------------------------ | ------------ | ----------------- |
-| Tier 1 failing      | Success < 1 for 2 of 3 one-minute periods                    | Breaching    | Page              |
-| Tier 2 failing      | Success < 1 for 2 consecutive 30-minute runs                 | Breaching    | Page              |
-| Tier 3 pool low     | `Tier3.PoolAvailable` < 2                                    | Breaching    | Ticket            |
-| Tier 3 step failing | Any step 0                                                   | Breaching    | Page              |
-| Tier 3 email slow   | Delivery latency > 5 min                                     | Ignore       | Ticket            |
-| Canary silent       | No `Tier1.Success` for 5 min, or no `Tier3.Started` for 26 h | Breaching    | Page              |
-| Uptime (dashboard)  | Tier 1+2 success ratio, 30-day rolling                       | —            | SLO, target 99.9% |
+| Alarm                   | Condition                                                    | Missing data  | Severity          |
+| ----------------------- | ------------------------------------------------------------ | ------------- | ----------------- |
+| Tier 1 failing          | Success < 1 for 2 of 3 one-minute periods                    | Breaching     | Page              |
+| Tier 2 failing          | Success < 1 for 2 consecutive 30-minute runs                 | Breaching     | Page              |
+| Tier 3 pool low         | `Tier3.PoolAvailable` < 2                                    | Breaching     | Ticket            |
+| Tier 3 step failed      | Any explicit step value 0                                    | Not breaching | Page              |
+| Tier 3 step overdue     | `Tier3.Overdue` > 0                                          | Breaching     | Page              |
+| Tier 3 evaluator silent | No `Tier3.EvaluatorHeartbeat` for 45 min                     | Breaching     | Page              |
+| Tier 3 email slow       | Delivery latency > 5 min                                     | Ignore        | Ticket            |
+| Canary silent           | No `Tier1.Success` for 5 min, or no `Tier3.Started` for 26 h | Breaching     | Page              |
+| Uptime (dashboard)      | Tier 1+2 success ratio, 30-day rolling                       | —             | SLO, target 99.9% |
 
-"Missing data = breaching" is essential: a broken runner must page, not go green.
+"Missing data = breaching" is essential for continuously emitted signals (tier 1,
+tier 2, the tier 3 evaluator): a broken runner must page, not go green. Sparse
+step outcomes are the one exception, covered by the evaluator above.
 
 **Worst-case time to page** (a failure that starts just after a successful run):
 
@@ -266,13 +298,13 @@ These narrow the cause once a canary fails, and catch partial outages:
 
 ## 11. Implementation plan
 
-| Phase | Scope                                                                                           | Effort   |
-| ----- | ----------------------------------------------------------------------------------------------- | -------- |
-| 1     | lca-api reason codes + metrics; DynamoDB/SES/KMS alarms; time-server probe                      | 2–3 days |
-| 2     | Runner (Lambda) with in-memory share storage, tier 1 + tier 2, alarms, dashboard; staging first | 3–5 days |
-| 3     | Canary domain + SES inbound + S3; tier 3 scheduler and pool; cancel path                        | 3–5 days |
-| 4     | Image roll gate + CI consistency check                                                          | 2–3 days |
-| 5     | Production: create canary accounts, enable paging, 2 weeks observation                          | 2 weeks  |
+| Phase | Scope                                                                                                    | Effort   |
+| ----- | -------------------------------------------------------------------------------------------------------- | -------- |
+| 1     | lca-api reason codes + metrics; DynamoDB/SES/KMS alarms; time-server probe                               | 2–3 days |
+| 2     | Runner (Lambda) with in-memory share storage, tier 1 + tier 2, alarms, dashboard; staging first          | 3–5 days |
+| 3     | Canary domain + SES inbound + S3; tier 3 scheduler, pool and run ledger; deadline evaluator; cancel path | 3–5 days |
+| 4     | Image roll gate + CI consistency check                                                                   | 2–3 days |
+| 5     | Production: create canary accounts, enable paging, 2 weeks observation                                   | 2 weeks  |
 
 Tier 3 produces its first release signal 7 days after it starts.
 
