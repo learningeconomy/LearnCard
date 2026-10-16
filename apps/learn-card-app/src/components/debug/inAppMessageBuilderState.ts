@@ -213,7 +213,10 @@ export const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
             ? {
                   trigger: {
                       event: s.triggerEvent,
-                      ...(Object.keys(triggerWhere).length > 0 ? { where: triggerWhere } : {}),
+                      ...(s.triggerEvent === 'credential.claimed' &&
+                      Object.keys(triggerWhere).length > 0
+                          ? { where: triggerWhere }
+                          : {}),
                       windowMinutes: Number(s.triggerWindowMinutes),
                   },
               }
