@@ -27,8 +27,8 @@ const AiSessionPreviewWithClose: React.FC<{ summaryUri: string }> = ({ summaryUr
                 className="absolute top-3 right-3 z-50 w-10 h-10 rounded-full bg-white shadow-md
                            flex items-center justify-center text-grayscale-800
                            hover:bg-grayscale-10 transition-colors
-                           focus:outline-none focus:ring-2 focus:ring-indigo-400
-                           mt-[var(--lc-overlay-inset-top,var(--ion-safe-area-top,0px))]"
+                           focus:outline-hidden focus:ring-2 focus:ring-indigo-400
+                           mt-(--lc-overlay-inset-top,var(--ion-safe-area-top,0px))"
             >
                 <X className="w-5 h-5" aria-hidden="true" />
             </button>
@@ -120,16 +120,12 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ record, isNew, index }) =
             onClick={handleOpenDetails}
             aria-label={`View AI session: ${title}`}
             className={`
-                group relative w-full text-left bg-white rounded-xl shadow-sm overflow-hidden
+                group relative w-full text-left bg-white rounded-xl shadow-xs overflow-hidden
                 border border-indigo-100/70
                 hover:border-indigo-300 hover:shadow-md
                 transition-all duration-300 ease-out
-                focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1
-                ${
-                    isAnimating
-                        ? 'animate-slide-in-right ring-2 ring-indigo-400 ring-opacity-50'
-                        : ''
-                }
+                focus:outline-hidden focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1
+                ${isAnimating ? 'animate-slide-in-right ring-2 ring-indigo-400/50 ' : ''}
             `}
             style={{
                 animationDelay: isNew ? '0ms' : `${index * 50}ms`,
@@ -144,12 +140,12 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ record, isNew, index }) =
             )}
 
             {/* Gradient accent strip */}
-            <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500" />
+            <div className="h-1 w-full bg-linear-to-r/srgb from-indigo-500 via-purple-500 to-fuchsia-500" />
 
             <div className="p-4">
                 <div className="flex items-start gap-3">
                     {/* AI icon badge */}
-                    <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
+                    <div className="shrink-0 w-11 h-11 rounded-xl bg-linear-to-br/srgb from-indigo-500 to-purple-600 flex items-center justify-center shadow-xs">
                         <Sparkles className="w-5 h-5 text-white" />
                     </div>
 

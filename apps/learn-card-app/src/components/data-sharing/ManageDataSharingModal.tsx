@@ -260,7 +260,7 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
             {
                 sectionClassName:
-                    '!bg-transparent !shadow-none !max-w-[450px] !h-[80vh] !max-h-[80vh] !overflow-hidden',
+                    'bg-transparent! shadow-none! max-w-[450px]! h-[80vh]! max-h-[80vh]! overflow-hidden!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -274,7 +274,7 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
     return (
         <button
             onClick={handleOpenDetails}
-            className="flex items-center gap-3 p-3 min-h-[64px] rounded-xl hover:bg-grayscale-10 transition-all duration-100 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-left w-full"
+            className="flex items-center gap-3 p-3 min-h-[64px] rounded-xl hover:bg-grayscale-10 transition-all duration-100 motion-safe:active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 text-left w-full"
         >
             {image ? (
                 <img src={image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
@@ -404,7 +404,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
             />,
             {
                 sectionClassName:
-                    '!bg-transparent !shadow-none !max-w-[400px] !w-[400px] !overflow-hidden',
+                    'bg-transparent! shadow-none! max-w-[400px]! w-[400px]! overflow-hidden!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -423,7 +423,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                 <button
                     onClick={handleBack}
                     aria-label={m['common.back']()}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center -ms-2 rounded-[20px] hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center -ms-2 rounded-[20px] hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <ChevronLeft className="w-6 h-6 text-grayscale-700 rtl:rotate-180" />
                 </button>
@@ -441,10 +441,10 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                 )}
 
                 <div className="min-w-0">
-                    <h2 className="text-base font-semibold text-grayscale-900 leading-snug break-words">
+                    <h2 className="text-base font-semibold text-grayscale-900 leading-snug wrap-break-word">
                         {stepTitle}
                     </h2>
-                    <p className="text-xs text-grayscale-600 break-words">{name}</p>
+                    <p className="text-xs text-grayscale-600 wrap-break-word">{name}</p>
                 </div>
             </div>
 

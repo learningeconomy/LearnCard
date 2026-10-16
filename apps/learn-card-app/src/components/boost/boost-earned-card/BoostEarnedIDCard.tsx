@@ -134,11 +134,11 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     let idSleeveFooterClass = '';
 
     if (isID) {
-        idDisplayContainerClass = '!border-white';
-        idSleeveFooterClass = '!bg-blue-300';
+        idDisplayContainerClass = 'border-white!';
+        idSleeveFooterClass = 'bg-blue-300!';
     } else if (isMembership) {
-        idDisplayContainerClass = '!border-teal-400';
-        idSleeveFooterClass = '!bg-teal-300';
+        idDisplayContainerClass = 'border-teal-400!';
+        idSleeveFooterClass = 'bg-teal-300!';
     }
 
     const issuerThumbStyles = {

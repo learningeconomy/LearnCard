@@ -57,10 +57,7 @@ import { IonIcon } from '@ionic/react';
 import { checkmarkCircleOutline } from 'ionicons/icons';
 
 import { usePathwayProgressForCredential } from './usePathwayProgressForCredential';
-import {
-    resolveCtaCopy,
-    type ProgressTier,
-} from './progressCtaCopy';
+import { resolveCtaCopy, type ProgressTier } from './progressCtaCopy';
 import type { NodeDetailLocationState } from '../node/NodeDetail';
 
 // ---------------------------------------------------------------------------
@@ -133,8 +130,7 @@ const TIER_CONFIG: Record<ProgressTier, TierConfig> = {
         // per AGENTS.md for a terminal celebration. Non-terminal
         // tiers use grayscale-900 (the default primary) so the
         // emerald here reads as "this is special".
-        ctaClasses:
-            'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
+        ctaClasses: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
         headlineClasses: 'text-lg font-semibold',
         autoDismiss: false,
         hapticStyle: 'Medium',
@@ -147,24 +143,21 @@ const TIER_CONFIG: Record<ProgressTier, TierConfig> = {
     // shadow + rounded corners without the legibility cost.
     'cross-pathway': {
         cardClasses: 'bg-emerald-50 border-emerald-100 p-5 gap-3',
-        ctaClasses:
-            'bg-grayscale-900 hover:opacity-90 active:opacity-80 text-white',
+        ctaClasses: 'bg-grayscale-900 hover:opacity-90 active:opacity-80 text-white',
         headlineClasses: 'text-base font-semibold',
         autoDismiss: true,
         hapticStyle: 'Light',
     },
     major: {
         cardClasses: 'bg-emerald-50 border-emerald-100 p-5 gap-3',
-        ctaClasses:
-            'bg-grayscale-900 hover:opacity-90 active:opacity-80 text-white',
+        ctaClasses: 'bg-grayscale-900 hover:opacity-90 active:opacity-80 text-white',
         headlineClasses: 'text-base font-semibold',
         autoDismiss: true,
         hapticStyle: 'Light',
     },
     minor: {
         cardClasses: 'bg-grayscale-10 border-grayscale-200 p-5 gap-3',
-        ctaClasses:
-            'bg-grayscale-900 hover:opacity-90 active:opacity-80 text-white',
+        ctaClasses: 'bg-grayscale-900 hover:opacity-90 active:opacity-80 text-white',
         headlineClasses: 'text-base font-semibold',
         autoDismiss: true,
         hapticStyle: null,
@@ -348,16 +341,11 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
         //
         // `restoreFocusId` always carries the node we just opened
         // so Map re-focuses the correct pin on return.
-        if (
-            tier === 'major'
-            && firstNode
-            && primaryTarget.startsWith('/pathways/node/')
-        ) {
+        if (tier === 'major' && firstNode && primaryTarget.startsWith('/pathways/node/')) {
             const currentPath = location.pathname;
 
             const isPathwayShellPath =
-                currentPath.startsWith('/pathways/')
-                && !currentPath.startsWith('/pathways/node/');
+                currentPath.startsWith('/pathways/') && !currentPath.startsWith('/pathways/node/');
 
             const returnTo = isPathwayShellPath ? currentPath : '/pathways/map';
 
@@ -391,10 +379,18 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
         <div
             role="status"
             aria-live="polite"
-            onMouseEnter={() => { pausedRef.current = true; }}
-            onMouseLeave={() => { pausedRef.current = false; }}
-            onFocus={() => { pausedRef.current = true; }}
-            onBlur={() => { pausedRef.current = false; }}
+            onMouseEnter={() => {
+                pausedRef.current = true;
+            }}
+            onMouseLeave={() => {
+                pausedRef.current = false;
+            }}
+            onFocus={() => {
+                pausedRef.current = true;
+            }}
+            onBlur={() => {
+                pausedRef.current = false;
+            }}
             className={`
                 font-poppins
                 rounded-[24px]
@@ -402,7 +398,7 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
                 flex flex-col
                 backdrop-blur-xl
                 shadow-[0_10px_40px_-8px_rgba(16,185,129,0.18),0_2px_8px_rgba(24,34,78,0.04)]
-                transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]
+                transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
                 ${tierConfig.cardClasses}
                 ${entryClasses}
                 ${className}

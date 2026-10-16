@@ -219,7 +219,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                 formattedDisplayType={formattedDisplayType}
                 textColor={darkColor}
                 credential={cred}
-                mediaTitleContainerClassName="!mt-[14px]"
+                mediaTitleContainerClassName="mt-[14px]!"
             />
         );
     }
@@ -287,7 +287,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                     backgroundImage={boostVC?.display?.backgroundImage}
                                     backgroundColor={cred?.display?.backgroundColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                    badgeCircleCustomClass={`!w-[117px] h-[117px] mt-1 ${
+                                    badgeCircleCustomClass={`w-[117px]! h-[117px] mt-1 ${
                                         isAwardDisplay ? 'mt-[17px] mb-[-10px]' : 'shadow-3xl'
                                     }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"

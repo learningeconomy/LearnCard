@@ -38,6 +38,7 @@ export default defineConfig(async environment => {
         build: {
             ...config.build,
             outDir: 'build-visual',
+            minify: false,
             reportCompressedSize: false,
             rollupOptions: {
                 input: path.resolve(import.meta.dirname, '../../tailwind-regression.html'),

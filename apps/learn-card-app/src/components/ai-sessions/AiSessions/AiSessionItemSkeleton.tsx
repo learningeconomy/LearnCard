@@ -13,7 +13,7 @@ const AiSessionItemSkeleton: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex items-center justify-end space-x-2 mr-2">
+            <div className="flex items-center justify-end space-x-v3-2 mr-2">
                 <IonSkeletonText
                     animated
                     style={{ width: '16px', height: '16px', borderRadius: '50%' }}

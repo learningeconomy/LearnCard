@@ -65,3 +65,33 @@ Compare the same account/content before and after at phone and desktop widths:
 
 The fixtures cover rendering, not real issuance, authentication, or native device
 integration. Keep the existing application E2E checks and a device/browser pass.
+
+## Compatibility decisions
+
+The palettes, safelists, fonts, animations, and breakpoints live in the apps'
+`src/tailwind.css` files. Shared cards use
+`packages/react-learn-card/src/assets/styles/theme.css`. Runtime theme colors are
+static CSS variables so dynamically selected tenant colors remain available.
+
+The utility and preflight imports intentionally remain unlayered to preserve
+their existing cascade with Ionic and Sass. The shared card stylesheet includes
+tokens and utilities; its optional `base.css` export owns the reset. The common
+`tailwind-v3-theme.css` and `tailwind-v3-compat.css` preserve the existing palette,
+heading margins, button border behavior, and font-size/line-height precedence.
+The explicit named variants preserve the original mixed breakpoint order.
+Keep these named variants out of `--breakpoint-*` variables: those variables
+preregister the standard screens and change the resulting order. Autoprefixer
+continues to cover legacy Sass; Tailwind itself runs through the Vite plugin.
+
+Existing sibling spacing uses `space-x-v3-*` / `space-y-v3-*` because Tailwind 4
+changes the selector and switches the margin to the preceding child. The class
+merger recognizes these compatibility utilities so consumer overrides still win.
+Prefer flex/grid `gap` for new layouts. Existing gradients specify `/srgb` to
+retain their original interpolation. Keep explicit pixel sizes where replacing
+them with rem utilities would introduce an unrelated sizing change.
+
+Computed-style comparisons normalize equivalent color serialization and fully
+rounded pill radii. The original reference values and screenshots remain fixed.
+
+Native builds now require iOS 16.4. When releasing, bound OTA updates to compatible
+native clients; older installed iOS clients must not receive the Tailwind 4 bundle.

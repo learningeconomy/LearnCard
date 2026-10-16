@@ -41,7 +41,7 @@ export const ShareCredentialVisual = ({
     return (
         <button
             type="button"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[20px] !bg-grayscale-900 px-5 py-3 text-sm font-medium leading-none !text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[20px] bg-grayscale-900! px-5 py-3 text-sm font-medium leading-none text-white! transition-opacity hover:opacity-90 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             onClick={() =>
                 newModal(
                     <Suspense fallback={<p role="status">{m['shareLinks.loading']()}</p>}>

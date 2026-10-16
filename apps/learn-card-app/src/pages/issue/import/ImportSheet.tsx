@@ -117,7 +117,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                 </p>
             </div>
 
-            <div className="overflow-y-auto px-6 py-5 space-y-4">
+            <div className="overflow-y-auto px-6 py-5 space-y-v3-4">
                 {!result && (
                     <>
                         <div
@@ -141,7 +141,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                 }}
                                 placeholder={m['issueFlow.importPlaceholder']()}
                                 rows={4}
-                                className="w-full py-3 px-4 bg-transparent rounded-2xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none resize-none"
+                                className="w-full py-3 px-4 bg-transparent rounded-2xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden resize-none"
                             />
                             <div className="flex items-center justify-between px-4 pb-3">
                                 {detected.kind !== 'empty' && detected.kind !== 'unknown' ? (
@@ -175,7 +175,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                         {error && (
                             <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
                                 <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                                <div className="space-y-1">
+                                <div className="space-y-v3-1">
                                     <span className="block text-sm text-red-700 leading-relaxed">
                                         {error}
                                     </span>
@@ -210,7 +210,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                 )}
 
                 {result && summary && (
-                    <div className="space-y-4 animate-fade-in-up">
+                    <div className="space-y-v3-4 animate-fade-in-up">
                         <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
                             <Check className="w-4 h-4" />
                             {m['issueFlow.foundIt']()}
@@ -253,7 +253,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                         )}
 
                         {result.warnings.length > 0 && (
-                            <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl space-y-1">
+                            <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl space-y-v3-1">
                                 {result.warnings.map(w => (
                                     <span
                                         key={w}

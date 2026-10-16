@@ -427,10 +427,10 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Info Banner */}
             <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <Building className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <Building className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
 
                 <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">
@@ -443,7 +443,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
             {mode === 'select' ? (
                 <>
                     {/* Current Account Option */}
-                    <div className="space-y-4">
+                    <div className="space-y-v3-4">
                         <h3 className="font-medium text-gray-800">
                             {m['developerPortal.onboarding.organizationSetup.useCurrentAccount']()}
                         </h3>
@@ -494,7 +494,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
                     {/* Root Personal Account Option (when on a service profile) */}
                     {isCurrentUserServiceProfile && isSwitchedProfile && parentUser && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             <h3 className="font-medium text-gray-800">
                                 {m[
                                     'developerPortal.onboarding.organizationSetup.orUsePersonalAccount'
@@ -551,14 +551,14 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
                     {/* Existing Organization Accounts */}
                     {serviceProfiles.length > 0 && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             <h3 className="font-medium text-gray-800">
                                 {m[
                                     'developerPortal.onboarding.organizationSetup.orSwitchToOrganizationAccount'
                                 ]()}
                             </h3>
 
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 {serviceProfiles.map(
                                     ({ profile }: { profile: LCNProfile }, index: number) => (
                                         <button
@@ -624,7 +624,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 </>
             ) : (
                 /* Create Organization Form */
-                <div className="space-y-6">
+                <div className="space-y-v3-6">
                     <button
                         onClick={() => setMode('select')}
                         className="text-sm text-gray-500 hover:text-gray-700"
@@ -633,7 +633,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     </button>
 
                     {/* Organization Name */}
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <label className="block text-sm font-medium text-gray-700">
                             {m['developerPortal.onboarding.organizationSetup.organizationName']()}{' '}
                             <span className="text-red-500">*</span>
@@ -647,7 +647,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                 setNameError('');
                             }}
                             placeholder="e.g., Ascend Learning"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                         />
 
                         {nameError && (
@@ -659,7 +659,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     </div>
 
                     {/* Logo Upload */}
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <label className="block text-sm font-medium text-gray-700">
                             {m['developerPortal.onboarding.organizationSetup.organizationLogo']()}
                         </label>
@@ -707,7 +707,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     </button>
 
                     {showAdvanced && (
-                        <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
+                        <div className="space-y-v3-2 p-4 bg-gray-50 rounded-xl">
                             <label className="block text-sm font-medium text-gray-700">
                                 {m['developerPortal.onboarding.organizationSetup.profileId']()}{' '}
                                 <span className="text-red-500">*</span>
@@ -720,7 +720,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                     value={profileId}
                                     onChange={e => handleProfileIdInput(e.target.value)}
                                     placeholder="organization-id"
-                                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                                 />
                             </div>
 

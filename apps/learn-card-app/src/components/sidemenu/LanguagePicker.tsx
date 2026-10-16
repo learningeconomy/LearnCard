@@ -94,7 +94,7 @@ const LanguagePicker: React.FC = () => {
     const openLanguageModal = () => {
         newModal(
             <LanguageSelectorModal currentLang={currentLang} />,
-            { sectionClassName: '!max-w-[420px]' },
+            { sectionClassName: 'max-w-[420px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -147,7 +147,7 @@ export const LanguagePickerCompact: React.FC<{ className?: string }> = ({ classN
     const openLanguageModal = () => {
         newModal(
             <LanguageSelectorModal currentLang={currentLang} />,
-            { sectionClassName: '!max-w-[420px]' },
+            { sectionClassName: 'max-w-[420px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -157,7 +157,7 @@ export const LanguagePickerCompact: React.FC<{ className?: string }> = ({ classN
             type="button"
             onClick={openLanguageModal}
             aria-label={currentLabel}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-[13px] font-medium hover:bg-white/25 transition-colors ${className}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-xs text-white text-[13px] font-medium hover:bg-white/25 transition-colors ${className}`}
         >
             <GlobeStand className="w-4 h-4" />
             <span className="uppercase">{currentLang}</span>

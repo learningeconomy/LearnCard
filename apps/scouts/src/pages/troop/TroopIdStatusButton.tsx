@@ -3,7 +3,12 @@ import React, { useEffect } from 'react';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
 import useVerifyCredential from 'learn-card-base/hooks/useVerifyCredential';
-import { useGetBoost, useGetBoostRecipients, useGetCurrentLCNUser, useGetIDs } from 'learn-card-base';
+import {
+    useGetBoost,
+    useGetBoostRecipients,
+    useGetCurrentLCNUser,
+    useGetIDs,
+} from 'learn-card-base';
 
 import { isCredentialExpired } from '../../components/boost/boostHelpers';
 import { VC, VerificationStatusEnum } from '@learncard/types';
@@ -45,17 +50,17 @@ export const useTroopIDStatus = (
     const { data: walletIds } = useGetIDs();
 
     // Query 1: Get claimed recipients only (default: includeUnacceptedBoosts=false)
-    const { 
-        data: claimedRecipients, 
-        isLoading: isLoadingClaimed, 
-        isError: isClaimedError 
+    const {
+        data: claimedRecipients,
+        isLoading: isLoadingClaimed,
+        isError: isClaimedError,
     } = useGetBoostRecipients(_boostUri, true, false);
 
     // Query 2: Get all recipients including pending (includeUnacceptedBoosts=true)
-    const { 
-        data: allRecipients, 
-        isLoading: isLoadingAll, 
-        isError: isAllError 
+    const {
+        data: allRecipients,
+        isLoading: isLoadingAll,
+        isError: isAllError,
     } = useGetBoostRecipients(_boostUri, true, true);
 
     // Still loading

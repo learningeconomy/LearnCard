@@ -66,7 +66,9 @@ export default [
     {
         input: ['src/assets/styles/main.css', 'src/assets/styles/base.css'],
         output: [{ dir: 'dist', assetFileNames: '[name][extname]' }],
-        plugins: [styles({ mode: 'extract', minimize: true, modules: false })],
+        // Tailwind's Lightning CSS optimizer handles modern CSS math; the
+        // legacy cssnano minifier cannot parse calc(infinity * 1px).
+        plugins: [styles({ mode: 'extract', minimize: false, modules: false })],
     },
     {
         input: ['src/index.ts'],

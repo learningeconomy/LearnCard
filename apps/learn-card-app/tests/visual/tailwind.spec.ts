@@ -48,10 +48,28 @@ for (const state of ['active', 'pending', 'empty', 'shared']) {
         // Unpin the test host (the real app scrolls inside IonContent) so full-page
         // screenshots include every dashboard card, as in the Storybook host.
         await page.addStyleTag({
-            content: `${fonts}\nhtml, body { position: static !important; overflow: auto !important; height: auto !important; }`,
+            content: `${fonts}\nhtml, body { position: static !important; overflow: auto !important; height: auto !important; scrollbar-width: none; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }`,
         });
         await page.evaluate(() => document.fonts.ready);
         const styles = await fixture.evaluate(root => {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 1;
+            const context = canvas.getContext('2d')!;
+            // Normalize equivalent Tailwind 4 color(srgb ...) serialization to
+            // the original rgb()/rgba() values without changing the references.
+            const normalizeColor = (value: string): string => {
+                if (!/^(color\(|color-mix\(|oklch\(|oklab\()/i.test(value)) return value;
+                const alphaMatch = value.match(/\/\s*([\d.]+)\s*\)$/);
+                const alpha = alphaMatch ? Number(alphaMatch[1]) : 1;
+                context.clearRect(0, 0, 1, 1);
+                // Convert the opaque color to avoid 8-bit premultiplication loss.
+                context.fillStyle = alphaMatch ? value.replace(/\/\s*[\d.]+\s*\)$/, ')') : value;
+                context.fillRect(0, 0, 1, 1);
+                const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+                return alpha === 1
+                    ? `rgb(${r}, ${g}, ${b})`
+                    : `rgba(${r}, ${g}, ${b}, ${Math.round(alpha * 1_000_000) / 1_000_000})`;
+            };
             const properties = [
                 'display',
                 'fontSize',
@@ -99,25 +117,52 @@ for (const state of ['active', 'pending', 'empty', 'shared']) {
                     text: node.textContent?.trim().slice(0, 70),
                     styles: {
                         ...Object.fromEntries(
-                            properties.map(key => [key, style[key as keyof CSSStyleDeclaration]])
+                            properties.map(key => [
+                                key,
+                                key === 'color' || key.endsWith('Color')
+                                    ? normalizeColor(
+                                          String(style[key as keyof CSSStyleDeclaration])
+                                      )
+                                    : key === 'borderRadius' &&
+                                        /^([\d.e+]+)px$/.test(String(style.borderRadius)) &&
+                                        parseFloat(style.borderRadius) > 9999
+                                      ? '9999px'
+                                      : style[key as keyof CSSStyleDeclaration],
+                            ])
                         ),
                         ...size,
                     },
                 };
             });
         });
-        expect(`${JSON.stringify(styles, null, 4)}\n`).toMatchSnapshot(`${state}-styles.json`);
-        expect(errors).toEqual([]);
         await testInfo.attach(`${state}-${testInfo.project.name}`, {
             body: await page.screenshot({ fullPage: true, animations: 'disabled' }),
             contentType: 'image/png',
         });
+        expect(`${JSON.stringify(styles, null, 4)}\n`).toMatchSnapshot(`${state}-styles.json`);
+        expect(errors).toEqual([]);
         if (process.env.VISUAL_SCREENSHOTS === 'true') {
             await expect(page).toHaveScreenshot(`${state}-${process.platform}.png`, {
                 fullPage: true,
                 animations: 'disabled',
                 maxDiffPixelRatio: 0.002,
             });
+        }
+        if (state === 'shared') {
+            // Preserve the public card's existing keyboard-focus contract.
+            const button = page.locator('.boost-generic-card-button');
+            await page.keyboard.press('Tab');
+            // Mobile WebKit's default Tab policy skips buttons. Check the same
+            // focus-visible treatment after keyboard-modality programmatic focus.
+            if (testInfo.project.name === 'webkit-mobile') {
+                await button.focus();
+                await page.keyboard.press('ArrowRight');
+            }
+            await expect(button).toBeFocused();
+            await expect(button).toHaveCSS('outline-style', 'none');
+            const frame = page.locator('.boost-generic-card-wrapper');
+            await expect(frame).toHaveCSS('box-shadow', /rgb\(255, 255, 255\).*2px/);
+            await expect(frame).toHaveCSS('box-shadow', /rgb\(64, 203, 166\).*4px/);
         }
     });
 }

@@ -233,7 +233,7 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         IconComponent: BoostsIcon,
         IconWithShape: ThickBoostsIconWithShape,
         CategoryImage: 'https://cdn.filestackcontent.com/DRPwxXjSWKl6TTkd2OCF',
-        shapeColor: 'text-[#93C5FD] w-[35px] h-[35px] !right-[-50%]',
+        shapeColor: 'text-[#93C5FD] w-[35px] h-[35px] right-[-50%]!',
         iconStyles: 'h-[35px] w-[35px]',
 
         // badge thumbnail
@@ -383,7 +383,7 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         CategoryImage: 'https://cdn.filestackcontent.com/A3cfrOaQ3StXLw7guVKO',
 
         shapeColor: 'text-cyan-400 w-[35px] h-[35px]',
-        iconStyles: 'h-[35px] w-[35px] !top-[46%]',
+        iconStyles: 'h-[35px] w-[35px] top-[46%]!',
 
         // badge thumbnail
         SolidIconComponent: ExperiencesIconSolid,
@@ -465,7 +465,7 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         CategoryImage: 'https://cdn.filestackcontent.com/HRKQyEDZSc2NS01uur0F',
 
         shapeColor: 'text-blue-400 w-[35px] h-[35px]',
-        iconStyles: 'h-[33px] w-[33px] !top-[55%] !left-[50%]',
+        iconStyles: 'h-[33px] w-[33px] top-[55%]! left-[50%]!',
     },
     [BoostCategoryOptionsEnum.skill]: {
         displayName: 'Skill',

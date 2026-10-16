@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { readFileSync } from 'fs';
 
@@ -93,6 +94,7 @@ export default defineConfig(({ mode, command }) => {
     return {
         cacheDir,
         plugins: [
+            tailwindcss(),
             scoutNewsDevServer(),
             i18nImportGuard(),
             react(),
@@ -107,6 +109,7 @@ export default defineConfig(({ mode, command }) => {
         ],
         build: {
             target: 'esnext',
+            cssTarget: ['chrome111', 'safari16.4', 'firefox128'],
             outDir: path.join(__dirname, 'build'),
             // Turn "missing Paraglide message" rollup warnings into hard build
             // failures so a bad m['…'] key can't white-screen a route at runtime.

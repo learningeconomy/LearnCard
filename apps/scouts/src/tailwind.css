@@ -1,0 +1,166 @@
+/* Keep utilities unlayered to preserve the existing Ionic/Sass cascade. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css';
+@import 'tailwindcss/utilities.css' source(none);
+@import '../../../packages/learn-card-base/src/assets/styles/tailwind-v3-compat.css';
+@source "./**/*.{js,jsx,ts,tsx}";
+@source "../../../packages/learn-card-base/src/**/*.{js,jsx,ts,tsx}";
+@plugin "tailwind-gradient-mask-image";
+
+@theme static {
+    --font-*: initial;
+    --breakpoint-*: initial;
+    --color-grayscale-10: #fbfbfc;
+    --color-grayscale-20: #eff0f5;
+    --color-grayscale-30: #e2e3e9;
+    --color-grayscale-50: #fbfbfc;
+    --color-grayscale-70: #6f7590;
+    --color-grayscale-80: #52597a;
+    --color-grayscale-90: #353e64;
+    --color-grayscale-100: #eff0f5;
+    --color-grayscale-200: #e2e3e9;
+    --color-grayscale-300: #c5c8d3;
+    --color-grayscale-400: #a8acbd;
+    --color-grayscale-500: #8b91a7;
+    --color-grayscale-600: #6f7590;
+    --color-grayscale-700: #52597a;
+    --color-grayscale-800: #353e64;
+    --color-grayscale-900: #18224e;
+    --color-gray-100: #f4f4f5;
+    --color-gray-600: #6f7590;
+    --color-emerald-50: #d6faf0;
+    --color-emerald-100: #bfeee1;
+    --color-emerald-200: #9fe5d2;
+    --color-emerald-300: #80e0c6;
+    --color-emerald-400: #34eab9;
+    --color-emerald-500: #40cba6;
+    --color-emerald-501: #10b981;
+    --color-emerald-600: #20c397;
+    --color-emerald-700: #00ba88;
+    --color-emerald-800: #008b66;
+    --color-emerald-900: #004633;
+    --color-cyan-50: #e7f9fd;
+    --color-cyan-100: #d0f3fc;
+    --color-cyan-200: #a0e7f8;
+    --color-cyan-300: #a0e7f8;
+    --color-cyan-400: #88e0f7;
+    --color-cyan-500: #71daf5;
+    --color-cyan-600: #59d4f4;
+    --color-cyan-700: #41cef2;
+    --color-cyan-800: #319bb5;
+    --color-cyan-900: #184d5b;
+    --color-spice-50: #ffede7;
+    --color-spice-100: #ffdbcf;
+    --color-spice-200: #ffb7a0;
+    --color-spice-300: #ff9470;
+    --color-spice-400: #ff7040;
+    --color-spice-500: #ff5820;
+    --color-spice-600: #ff4000;
+    --color-spice-700: #df3800;
+    --color-spice-800: #bf3000;
+    --color-spice-900: #802000;
+    --color-indigo-50: #eef2ff;
+    --color-indigo-100: #e0e7ff;
+    --color-indigo-200: #c7d2fe;
+    --color-indigo-300: #a5b4fc;
+    --color-indigo-400: #818cf8;
+    --color-indigo-500: #6366f1;
+    --color-indigo-600: #4f46e5;
+    --color-indigo-700: #4338ca;
+    --color-indigo-800: #3730a3;
+    --color-indigo-900: #312e81;
+    --color-violet-200: #ddd6fe;
+    --color-violet-300: #c4b5fd;
+    --color-violet-400: #a78bfa;
+    --color-violet-500: #8b5cf6;
+    --color-violet-700: #6d28d9;
+    --color-mv_blue-700: #0a74bc;
+    --color-sp-purple-base: #622599;
+    --color-sp-purple-light: #9969c2;
+    --color-sp-purple-light-medium: #a670d6;
+    --color-sp-purple-lighter: #b895d6;
+    --color-sp-purple-lightest: #f1ebf8;
+    --color-sp-purple-midnight: #4d006e;
+    --color-sp-purple-soft: #9969c2;
+    --color-sp-green-base: #2cc478;
+    --color-sp-green-mid: #16d675;
+    --color-sp-green-dark: #05b65d;
+    --color-sp-green-light: #70daa5;
+    --color-sp-green-highlight: #28f68e;
+    --color-sp-green-forest: #248737;
+    --color-sp-green-forest-light: #4b9f5c;
+    --color-sp-green-forest-extra-light: #7bbf88;
+    --color-sp-green-forest-dark: #0f631d;
+    --color-sp-green-leaf: #9fed8f;
+    --color-sp-red: #ef5d35;
+    --color-sp-fire-red: #ff5655;
+    --color-sp-rose-600: #e11d48;
+    --color-sp-orange-base: #ffa500;
+    --color-sp-orange-light: #ffb42c;
+    --color-sp-orange-lighter: #ffc864;
+    --color-sp-blue-base: #0449ac;
+    --color-sp-blue-light: #026bff;
+    --color-sp-blue-light-ocean: #3fbdd9;
+    --color-sp-blue-mid: #015cdc;
+    --color-sp-blue-dark: #033781;
+    --color-sp-blue-dark-ocean: #03748d;
+    --color-sp-blue-ocean: #0094b4;
+    --color-sp-blue-river: #82e6de;
+    --color-sp-blue-river-light: #ecfbfa;
+    --color-sp-gray-100: #eff0f5;
+    --color-sp-gray-200: #eff0f5;
+    --color-sp-gray-600: #6f7590;
+    --color-sp-gray-900: #18224e;
+    --color-sp-white-opacity-95: rgba(255, 255, 255, 0.95);
+    --font-mouse: Noto Sans, sans-serif;
+    --font-poppins: Noto Sans, Poppins;
+    --font-montserrat: Noto Sans, Poppins;
+    --font-rubik: Rubik, sans-serif;
+    --font-notoSans: Noto Sans, Poppins;
+    --font-jacques: JacquesFrancois, Noto Sans, Poppins;
+    --font-fluentEmoji: Fluent Emoji Flat;
+    --shadow-bottom: 0px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-soft-bottom: 0px 2px 3px 0px rgba(24, 34, 78, 0.3);
+    --shadow-box-bottom: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-bottom-2-4: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-3xl: 0px 0px 8px rgba(0, 0, 0, 0.25);
+    --shadow-button-bottom: 0px 3px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-bottom-3-4: 0px 3px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-bottom-4-4: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-bottom-1-4: 0px 1px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-bottom-2-3: 0px 2px 3px 0px rgba(24, 34, 78, 0.3);
+    --shadow-bottom-1-5: 0px 1px 5px 0px rgba(0, 0, 0, 0.25);
+    --shadow-bottom-0-4: 0px 0px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-bottom-3-8: 0px 3px 8px 0px rgba(0, 0, 0, 0.3);
+    --animate-fade-in: fadeIn 0.5s ease-in-out;
+    --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
+    --background-image-scouts-pattern: url('./assets/images/scout-bg-repeat.png');
+    --background-image-transparent: transparent;
+    @keyframes fadeIn {
+        0% {
+            opacity: 0;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+    @keyframes fade-in-up {
+        0% {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+@custom-variant desktop (@media (min-width: 992px));
+@custom-variant mobile (@media (min-width: 991px));
+@custom-variant sm (@media (min-width: 640px));
+
+/* Named max variants retain the original exclusive upper bound. */
+@custom-variant max-desktop (@media (width < 992px));
+@custom-variant max-mobile (@media (width < 991px));
+@custom-variant max-sm (@media (width < 640px));

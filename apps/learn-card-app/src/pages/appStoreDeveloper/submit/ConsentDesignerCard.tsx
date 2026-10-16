@@ -237,7 +237,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                         </pre>
                         <button
                             onClick={handleCopy}
-                            className="absolute top-2 right-2 py-1.5 px-3 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors flex items-center gap-1.5 shadow-sm"
+                            className="absolute top-2 right-2 py-1.5 px-3 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors flex items-center gap-1.5 shadow-xs"
                         >
                             {copied ? (
                                 <>
@@ -261,7 +261,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
     }
 
     return (
-        <div className="bg-white border border-grayscale-300 rounded-2xl p-5 relative animate-fade-in-up shadow-sm">
+        <div className="bg-white border border-grayscale-300 rounded-2xl p-5 relative animate-fade-in-up shadow-xs">
             <button
                 type="button"
                 onClick={onDismiss}
@@ -295,7 +295,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                 </div>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-v3-6">
                 <div>
                     <h5 className="text-sm font-medium text-grayscale-900 mb-3">
                         What can it see?
@@ -385,7 +385,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                         value={reason}
                         onChange={e => setReason(e.target.value)}
                         placeholder="Personalize your experience"
-                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                 </div>
 

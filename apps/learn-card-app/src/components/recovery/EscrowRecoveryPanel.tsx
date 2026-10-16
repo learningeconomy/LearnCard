@@ -463,7 +463,7 @@ export const EscrowRecoveryPanel = ({
     // Screen 1 only surfaces a recovery already underway; starting one lives on Screen 2.
     if (view === 'status' && !pending && !existingHold && !error && !notice) return null;
     return (
-        <section className="font-poppins space-y-4 my-5" aria-label="Account recovery request">
+        <section className="font-poppins space-y-v3-4 my-5" aria-label="Account recovery request">
             {view === 'start' && !storageAvailable && (
                 <p role="alert" className="text-sm text-grayscale-600 leading-relaxed">
                     Use an up-to-date browser on a personal device, with public-computer mode off,
@@ -489,8 +489,8 @@ export const EscrowRecoveryPanel = ({
             )}
 
             {existingHold && !pending && (
-                <div className="space-y-5 animate-fade-in-up">
-                    <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-4">
+                <div className="space-y-v3-5 animate-fade-in-up">
+                    <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
                                 <IonIcon icon={timeOutline} className="text-xl" />
@@ -521,7 +521,7 @@ export const EscrowRecoveryPanel = ({
 
                         <hr className="border-grayscale-200" />
 
-                        <div className="space-y-1">
+                        <div className="space-y-v3-1">
                             <p className="text-sm font-medium text-grayscale-900">
                                 Lost that browser?
                             </p>
@@ -595,8 +595,8 @@ export const EscrowRecoveryPanel = ({
                 ? (() => {
                       if (pending.requiresConfirmation && !confirmed) {
                           return (
-                              <div className="space-y-5 animate-fade-in-up">
-                                  <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-5">
+                              <div className="space-y-v3-5 animate-fade-in-up">
+                                  <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-5">
                                       <div className="flex items-center gap-3">
                                           <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
                                               <IonIcon icon={mailOutline} className="text-xl" />
@@ -675,8 +675,8 @@ export const EscrowRecoveryPanel = ({
                       }
 
                       return (
-                          <div className="space-y-5 animate-fade-in-up">
-                              <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-5">
+                          <div className="space-y-v3-5 animate-fade-in-up">
+                              <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-5">
                                   <div className="flex items-center gap-3">
                                       <div
                                           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isReady ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}
@@ -701,7 +701,7 @@ export const EscrowRecoveryPanel = ({
                                   </div>
 
                                   {!isReady && (
-                                      <div className="space-y-2" aria-live="polite">
+                                      <div className="space-y-v3-2" aria-live="polite">
                                           <p className="text-lg font-medium text-grayscale-900">
                                               {formatTimeRemaining(timeRemaining)}
                                           </p>
@@ -735,7 +735,7 @@ export const EscrowRecoveryPanel = ({
                                   )}
 
                                   {!saved && (
-                                      <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-3">
+                                      <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-v3-3">
                                           <div className="flex items-start gap-2.5">
                                               <IonIcon
                                                   icon={alertCircleOutline}
@@ -859,7 +859,7 @@ export const EscrowRecoveryPanel = ({
                   view === 'start' && (
                       <>
                           {showPinFlow ? (
-                              <div className="space-y-4">
+                              <div className="space-y-v3-4">
                                   <h3 className="text-xl font-semibold text-grayscale-900">
                                       Enter my recovery PIN
                                   </h3>

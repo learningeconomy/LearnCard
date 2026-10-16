@@ -592,9 +592,8 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
-                            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                                sentBoost
-                            );
+                            const issuedVcUri =
+                                await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
                             await addCredentialToWallet({ uri: issuedVcUri });
                             return issuedVcUri;
                         }
@@ -745,7 +744,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 isEditMode={isEditDisabled}
                 isSaveLoading={isSaveLoading}
             />,
-            { sectionClassName: 'generic-modal show-modal ion-disable-focus-trap !bg-white' }
+            { sectionClassName: 'generic-modal show-modal ion-disable-focus-trap bg-white!' }
         );
 
     let activeBoostCMSStep: null | React.ReactNode = null;

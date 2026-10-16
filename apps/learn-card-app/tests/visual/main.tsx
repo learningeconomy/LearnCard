@@ -32,6 +32,7 @@ import '@ionic/react/css/display.css';
 import '../../src/theme/variables.css';
 import '../../src/theme/floating-tab-bar.css';
 import '@learncard/react/main.css';
+import '../../src/tailwind.css';
 import '../../src/index.scss';
 
 setupIonicReact({ swipeBackEnabled: false });
@@ -66,7 +67,7 @@ const SharedComponents: React.FC = () => (
         </div>
         <section
             data-testid="form"
-            className="rounded-[20px] border border-grayscale-200 bg-white p-6 space-y-4"
+            className="rounded-[20px] border border-grayscale-200 bg-white p-6 space-y-v3-4"
         >
             <h1 className="text-xl font-semibold text-grayscale-900">Account settings</h1>
             <label className="block text-xs font-medium text-grayscale-700">

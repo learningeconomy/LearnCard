@@ -37,7 +37,7 @@ import type {
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
 
@@ -141,7 +141,7 @@ const ColorField: React.FC<{
         <div>
             <label className={LABEL_CLASS}>{label}</label>
             <div className="flex items-center gap-3">
-                <label className="relative h-11 w-11 shrink-0 rounded-xl border border-grayscale-300 overflow-hidden cursor-pointer shadow-sm hover:ring-2 hover:ring-emerald-500 transition-all">
+                <label className="relative h-11 w-11 shrink-0 rounded-xl border border-grayscale-300 overflow-hidden cursor-pointer shadow-xs hover:ring-2 hover:ring-emerald-500 transition-all">
                     <span
                         className="absolute inset-0"
                         style={{ backgroundColor: value ?? '#FFFFFF' }}
@@ -164,7 +164,7 @@ const ColorField: React.FC<{
                         placeholder={placeholder}
                         maxLength={8}
                         spellCheck={false}
-                        className="w-full py-3 pl-8 pr-10 border border-grayscale-300 rounded-xl text-base text-grayscale-900 uppercase tracking-wide placeholder:text-grayscale-400 placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all"
+                        className="w-full py-3 pl-8 pr-10 border border-grayscale-300 rounded-xl text-base text-grayscale-900 uppercase tracking-wide placeholder:text-grayscale-400 placeholder:normal-case focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all"
                     />
                     {text && (
                         <button
@@ -316,7 +316,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     );
 
     return (
-        <div className="space-y-5 animate-fade-in-up">
+        <div className="space-y-v3-5 animate-fade-in-up">
             <section className={CARD_CLASS}>
                 <h2 className="text-base font-semibold text-grayscale-900 mb-1">
                     {m['issueFlow.type.heading']()}
@@ -333,7 +333,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
 
             {template && (
                 <>
-                    <section className={`${CARD_CLASS} space-y-4`}>
+                    <section className={`${CARD_CLASS} space-y-v3-4`}>
                         <RecipientPicker
                             mode={recipientMode}
                             onModeChange={onRecipientModeChange}
@@ -344,7 +344,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                         />
                     </section>
 
-                    <section className={`${CARD_CLASS} space-y-4`}>
+                    <section className={`${CARD_CLASS} space-y-v3-4`}>
                         <h3 className="text-base font-semibold text-grayscale-900">
                             {m['common.details']()}
                         </h3>
@@ -426,7 +426,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                         </button>
 
                         {showAdvanced && (
-                            <div className="pt-5 mt-5 border-t border-grayscale-200 space-y-4 animate-fade-in-up">
+                            <div className="pt-5 mt-5 border-t border-grayscale-200 space-y-v3-4 animate-fade-in-up">
                                 <TemplatableField
                                     label={m['issueFlow.advanced.criteriaLabel']()}
                                     field={ach?.criteria?.narrative}
@@ -473,7 +473,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                     />
                                 </p>
 
-                                <div className="pt-4 mt-4 border-t border-grayscale-200 space-y-4">
+                                <div className="pt-4 mt-4 border-t border-grayscale-200 space-y-v3-4">
                                     <h4 className="text-sm font-semibold text-grayscale-900">
                                         {m['issueFlow.display.heading']()}
                                     </h4>

@@ -79,8 +79,8 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                 returnToParentAfterSave
             />,
             {
-                className: '!p-0',
-                sectionClassName: '!p-0',
+                className: 'p-0!',
+                sectionClassName: 'p-0!',
             }
         );
     };
@@ -168,7 +168,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                                 autocapitalize="on"
                                 placeholder={m['troops.membersList.searchPlaceholder']()}
                                 value={search}
-                                className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
+                                className="bg-white text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
                                 onIonInput={e => setSearch(e?.detail?.value)}
                                 type="text"
                                 clearInput

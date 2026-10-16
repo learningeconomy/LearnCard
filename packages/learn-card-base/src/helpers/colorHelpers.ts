@@ -1,5 +1,14 @@
 import { CredentialCategoryEnum } from 'learn-card-base';
 
+/** Apply opacity to a runtime theme token without constructing an unscannable utility. */
+export const tailwindColorWithOpacity = (
+    color: string | undefined,
+    opacity: number
+): string | undefined => {
+    const token = color?.replace(/^(?:bg|text|border)-/, '');
+    return token ? `color-mix(in srgb, var(--color-${token}) ${opacity}%, transparent)` : undefined;
+};
+
 const baseColors: string[] = [
     'bg-emerald-500',
     'bg-cyan-500',

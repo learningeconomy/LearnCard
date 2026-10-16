@@ -87,7 +87,7 @@ const useBoostMenu = (
                 menuType={menuType}
                 categoryType={categoryType}
             />,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 
