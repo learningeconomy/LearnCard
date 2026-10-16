@@ -12,6 +12,35 @@ All interfaces and record types below marked proposed are new work, not existing
 Paths are repository-relative; `app/` below means `services/escrow-enclave-app/`,
 `api/` means `services/learn-card-network/lca-api/`.
 
+### Implementation status
+
+Foundations include the losing-signer fix: speculative ledger
+proposals are separate from committed high-water marks. A conflict can reconcile
+to a verified winning successor without resetting the committed prefix; ambiguous
+writes still fail closed. Readback remains the legacy host-presented view, not
+proof of durable persistence (D3). Existing KMS boot/unsealing now uses fresh
+Roughtime evidence for TLS validity and SigV4, with compiled roots and no automatic
+retries or cross-operation TLS reuse (see SECURITY.md for delayed-delivery limits).
+Direct DynamoDB/SES data-plane clients are compiled under `kms`, with optional
+measured settings, dedicated credential types, generated execution IDs, and no
+automatic retries. They are not constructed by boot or Policy. Local TLS tests
+cover response conversion, body limits, stalled bodies and cross-operation
+connection isolation. Dormant attested credential unsealing and optional opaque
+host ciphertext delivery are implemented. The unsealer is not called by boot or
+Policy. Gated authority/credential/email infrastructure, optional delegated DNS,
+host proxy allowlists, governance alarms and operator provisioning are implemented
+but off by default. The management-account SCP is a prerequisite to enabling them;
+see `infra/escrow-enclave/README.md`. Public authority/email settings are recorded in local measurements and the
+CI-signed manifest; no plaintext access keys belong in either artifact.
+`UnavailableEnrollment` remains wired; no authority or email client is active.
+
+The client layer is not authorization: enclave policy must build its typed requests
+from validated intent and bind generation/tenant/expected revision in item keys and
+conditions. It is not exposed as a host RPC. `GetItem` sets `ConsistentRead: true`;
+`TransactGetItems` uses AWS's atomic transactional API (which has no `ConsistentRead`
+parameter). Transaction tokens are 128-bit enclave-generated IDs with immutable
+request bytes; AWS's ten-minute token window does not replace durable receipts.
+
 ## 1. Problem and current boundary
 
 The enclave can decrypt a blob and authenticate its contents. It cannot establish

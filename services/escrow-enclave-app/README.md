@@ -172,14 +172,18 @@ The policy layer must canonicalize and bound these request bytes (8192 maximum).
    Same ID with a different hold/payload/event is rejected. Reservation and its
    single result intentionally share the request ID. Non-PIN exact duplicates
    return the existing record without an append, even if the hold is now terminal.
-5. A head is remembered **before** signed bytes leave the enclave. Failed,
-   conflicting, cancelled or lying appends cannot make it sign a local fork.
-   Conflict/Unavailable propagate; there is no automatic retry on an older head.
-   If that signed record was not persisted, the chain stays fail-closed in this
-   process until the exact signed history is restored. Do not restart to clear it.
+5. A speculative proposal is remembered **before** signed bytes leave the enclave,
+   separately from the committed high-water mark. Only authenticated readback
+   advances that mark. Conflict/Unavailable propagate; there is no automatic retry.
+   After Conflict, a subsequent read must contain a valid signed successor at the
+   proposed sequence and preserve the committed prefix. This reconciles a losing
+   signer to the winner and discards its proposal; the winner then fences out the
+   losing fork. A conflict flag alone never permits returning to the old prefix.
+   Unavailable, cancellation and unsuccessful readback retain the exact proposal
+   fence until its signed history is restored. Do not restart to clear it.
    No comparison resumes from a persisted-but-ambiguous reservation.
 
-`observe` checks that the chain contains the previously observed/signed record
+`observe` checks that the chain contains the previously read-back committed record
 at its original sequence, not merely that its new sequence is larger. Therefore
 both truncation and a longer fork are rejected. Pure `verify_chain` has no memory;
 production callers use the stateful APIs, not that pure monitor helper alone.
@@ -514,16 +518,17 @@ signatures, chain, nonce or freshness. It is not a production KMS substitute.
 
 ### KMS transport and credentials
 
-The SDK enables only `rt-tokio` and `default-https-client`, not its legacy
-`rustls` feature: hyper 1.x, rustls 0.23 and AWS-LC handle HTTPS. Certificate
-validation uses rustls-webpki with **native CA roots**, not bundled
-`webpki-roots`. Smithy loads these through `rustls-native-certs`, honoring
-`SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt` in the Dockerfile. Thus the
-Alpine CA bundle baked into the measured image remains the trust store (D11);
-local development uses the platform trust store unless explicitly overridden.
+The SDK enables only `rt-tokio`, with an explicit hyper 1/rustls 0.23/AWS-LC
+transport. `webpki-roots` are compiled into the measured binary; platform trust
+stores and `SSL_CERT_FILE` are not used, including in local development.
+Each KMS operation obtains fresh `TimeSource` evidence before network IO. TLS
+validates at both interval endpoints; SigV4 uses the midpoint. No system clock
+fallback, automatic retry, TLS resumption, or cross-operation connection reuse is
+allowed. Missing evidence fails closed, including at boot. See SECURITY.md's
+"AWS TLS and signing time" section for the Roughtime delayed-delivery limitation.
 
 `AwsKmsClient` (`kms` feature) requires explicit temporary parent STS credentials
-and a region; it never uses IMDS or an environment credential chain. Reconstruct
+and a region plus an enclave `TimeSource`; it never uses IMDS or an environment credential chain. Reconstruct
 the client with refreshed credentials per boot/request; never log these values.
 Its default endpoint is `https://kms.<region>.amazonaws.com:8000`.
 Linux Nitro startup validates the region and writes that exact hostname mapping

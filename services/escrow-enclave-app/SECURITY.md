@@ -83,6 +83,89 @@ We are scrupulously honest about the limits of this system. The following table 
 
 ## KMS Key Policy Summary
 
+### AWS TLS and signing time (authority foundations)
+
+The existing KMS client now obtains fresh enclave-verified `TimeSource` evidence
+before each Decrypt or GenerateDataKey operation. Production supplies the compiled
+Roughtime quorum; unavailable or malformed intervals fail before AWS network IO.
+This hardens existing boot/unsealing, not enrollment authorization:
+`UnavailableEnrollment` remains wired, and authority/email clients are not active.
+Boot now also requires available Roughtime evidence for KMS access.
+
+The previous SDK-default HTTPS transport used rustls's system clock and native
+roots from the Alpine CA bundle baked into the EIF. The replacement uses a narrow
+hyper 1/rustls adapter because the locked Smithy HTTPS builder does not expose a
+custom rustls configuration/time provider. Mozilla roots from `webpki-roots` are
+compiled into the binary and pinned by Cargo.lock; neither host CA files nor
+`SSL_CERT_FILE`/proxy environment variables select trust roots or transport.
+This is WebPKI trust plus the fixed regional AWS hostname, not AWS-only CA pinning.
+
+- Certificate chain/name validation runs at **both authenticated interval bounds**,
+  rounding the lower bound down and the upper bound up to whole seconds. TLS
+  handshake-signature verification remains rustls/WebPKI's standard implementation.
+- An explicit rustls time provider uses the same sample, with no wall-clock fallback.
+  SigV4 uses the interval midpoint through the SDK's explicit time source.
+- Each operation creates a fresh SDK client and connection pool. TLS resumption,
+  early data, idle pooling, Hyper's cancelled-request retries and SDK retries are
+  disabled. SDK response-date clock-skew correction therefore cannot influence a
+  subsequent request. An unknown GenerateDataKey outcome is not automatically retried.
+- Only HTTPS to the configured regional authority is accepted. Redirects are not
+  followed. Responses are bounded to 1 MiB, with a 15-second whole-exchange deadline;
+  local timers bound resource use, not trusted elapsed time.
+
+**Limit:** Roughtime authenticates server processing time, not a receipt-time upper
+bound. A host that delays a live response or suspends execution can make the sample
+old before the handshake or request completes. Fresh nonces, disabled reuse and
+timeouts do not prove real-time freshness against suspension. Certificate checks
+cover the signed interval, not a proven current wall-clock interval; a compromised
+certificate key valid then is not ruled out solely because the certificate has
+expired by receipt. AWS's own SigV4 time window can reject delayed requests, but is
+not an enclave-authenticated elapsed-time guarantee. No revocation/OCSP freshness
+guarantee is added. D2, D3, D11 and D13 remain applicable.
+
+### Dormant direct data-plane clients
+
+The dormant `authority::aws` clients sign only enclave-built GetItem,
+TransactGetItems, conditional TransactWriteItems and SESv2 SendEmail requests.
+They reuse the trusted-time transport above, pin the table/SES identity by full
+account-qualified ARN and do not retry any operation. Each transaction retains an
+immutable token/body pair; each email has a generated execution tag (not an SES
+idempotency guarantee). Unknown mutation outcomes remain errors. Read failures
+must never be interpreted as missing authority state.
+
+Dedicated credentials are a distinct zeroizing type that rejects STS access-key
+IDs and has no session token or conversion from parent boot credentials. Its
+`from_unsealed` constructor accepts material from trusted enclave code only.
+The dormant `CredentialUnsealer` uses a separate measured credential CMK and fresh
+NSM Recipient attestation, then the existing BER/CMS recipient unwrap. Its KMS
+encryption context binds `purpose` (`authority-writer` or `email-sender`), `tenant`,
+`environment`, `authorityGeneration` and `principalArn`. The credential CMK must
+differ from the escrow CMK and use the measured account and existing KMS relay's
+region. It never calls GenerateDataKey or falls back to the escrow CMK.
+
+Decrypted JSON is capped at 4096 bytes; escape bytes are rejected before invoking
+the JSON decoder so it cannot allocate an escape-decoding copy of a secret value.
+Fields are parsed as borrowed strings from a zeroizing buffer; its exact fields are `accessKeyId`, `secretAccessKey`, and
+`principalArn`. Unknown/duplicate fields, session tokens, malformed keys, escaped
+strings requiring allocation, or a principal mismatch fail closed. Owned final
+credentials zeroize on drop; this is not a claim about all SDK/library copies.
+The parent can deliver only optional opaque ciphertexts (6144 bytes each), never
+the dedicated keys. Existing temporary parent STS credentials remain unchanged
+and are used only to authorize attested KMS access, not DynamoDB/SES requests.
+
+Claimed principal metadata is checked against
+measured configuration, but is not independently an AWS identity proof: the
+credential-CMK/provisioning binding and resource IAM policy must enforce that
+contract before activation. Gated Terraform and the operator provisioning script
+now implement that contract; they have not been deployed or adversarially tested
+against AWS. Install the management-account SCP before enabling resources: IAM
+users cannot protect their access keys from other IAM administrators through
+user-attached policies. The SCP receipt variable requires independent verification,
+and organization/key administrators remain trusted (D10). No unsealer, authority client, email client or extra relay is called from
+production boot or Policy in this checkpoint.
+
+### Escrow CMK policy
+
 The AWS KMS Customer Master Key (CMK) policy (`infra/escrow-enclave/kms.tf`) is the primary security boundary enforcing attestation.
 
 - **Per-Tuple PCR Statements:** `kms:GenerateDataKey` and `kms:Decrypt` are granted via individual statements for each approved measurement tuple (PCR0, PCR1, PCR2). Conditions use `StringEqualsIgnoreCase` and require all three PCRs to match simultaneously.

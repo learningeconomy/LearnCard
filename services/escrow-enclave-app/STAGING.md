@@ -136,6 +136,74 @@ Operational notes:
   `127.0.0.1:8000`.
 - **KMS `CiphertextForRecipient` is BER** (indefinite lengths, sometimes chunked
   `encryptedContent`), not DER. `kms/ber.rs` normalises it before the strict CMS checks.
+- **Authority-foundations builds:** KMS boot/unsealing now queries the existing
+  Roughtime relay before every AWS request, failing closed if verified time is
+  unavailable. Check relay port 5001 as well as the KMS byte proxy when diagnosing
+  `kms_unseal_or_generate`/`kms_unseal_previous` failures. TLS roots are compiled
+  `webpki-roots`, not `SSL_CERT_FILE`; root updates require a new measured image.
+  This does not enable enrollment or email, and the delayed-delivery time caveat
+  in SECURITY.md still applies. Live staging verification remains outstanding.
+- **Time quorum is a boot and rollback check.** From this build on, boot cannot
+  unseal the escrow key without a Roughtime quorum: 2 of the 3 pinned servers
+  (`roughtime.cloudflare.com:2003`, `roughtime.int08h.com:2002`,
+  `time.txryan.com:2002`) must answer with authenticated, overlapping times via
+  the host relay on vsock 5001. Include it in every roll, forward **or back**:
+    1. Before rolling, on a machine whose UDP egress matches the host's, run
+       `cargo test --lib time::live_tests -- --ignored --nocapture` in this crate and
+       confirm at least two servers verify. One failure is tolerated; two is a stop.
+    2. After boot, confirm the host journal has no `enclave_boot_failed` line and
+       CloudTrail shows the expected attested `Decrypt`. A `kms_unseal_or_generate` /
+       `kms_unseal_previous` failure with KMS reachable usually means no quorum: check
+       relay port 5001 and UDP egress to the three servers.
+    3. Rolling back to another image built from this branch or later does **not**
+       bypass a time outage: it needs the same quorum to boot. Only an image from
+       before authority foundations boots without it, and that image must still be
+       in the KMS measurement list.
+- **Dormant direct clients:** `build-eif.sh` forwards optional measured settings:
+  `ESCROW_AUTHORITY_{REGION,ACCOUNT_ID,TABLE,WRITER_USER,TENANT,ENVIRONMENT,GENERATION}`
+  and `ESCROW_EMAIL_{REGION,ACCOUNT_ID,SENDER_USER,FROM,IDENTITY,CONFIGURATION_SET}`.
+  Leave each entire group unset until provisioning/activation is implemented;
+  partial groups are rejected by the config loader. These settings contain names,
+  never access keys. No boot path consumes them yet. Dormant enclave relays reserve
+  ports 8001 (regional DynamoDB) and 8002 (regional SES); the gated host proxy
+  services/allowlists are provisioned only by the explicit authority/email flags,
+  not active in current staging.
+- **Dormant credential delivery:** additionally measure
+  `ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN` for a separate credential CMK (never
+  the escrow CMK). After installing the Organizations guardrail and provisioning,
+  the host
+  can read `ESCROW_AUTHORITY_CREDENTIAL_OBJECT=credentials/authority-writer/<generation>`
+  and `ESCROW_EMAIL_CREDENTIAL_OBJECT=credentials/email-sender/<generation>` from
+  the artifacts bucket. Unset paths add no reads or boot-response fields; configured
+  missing/oversized objects fail closed, even with first-boot generation enabled.
+  Objects must contain only KMS ciphertext. The operator-only
+  `infra/escrow-enclave-bootstrap/provision-enclave-credentials.sh` performs the
+  create/encrypt/create-only-upload flow; do not supply dedicated plaintext keys
+  to the host. See the infrastructure README for the MFA session and failure
+  cleanup procedure. `enable_credential_delivery` is a separate, default-false
+  second phase, enabled only after ciphertext upload. No enclave activation path
+  is shipped yet.
+  Rotation must use an approved new generation/path with continuity review, not
+  overwrite an existing object or roll back authority state.
+- **Measurement provenance:** `build-eif.sh` records all fourteen public authority/
+  email settings under `measurements.json.config.authority` and `.email`. The CI
+  workflow forwards the same environment vars to both reproducibility builds,
+  preserves that config in `escrow-measurements.json`, and includes it in signed
+  `manifest.json` alongside the artifact hashes. Empty values remain empty; these
+  fields are not runtime activation flags or proof that the new configuration
+  has passed the dormant runtime loader's validation.
+
+    **Infrastructure gate:** keep `enable_enrollment_authority=false` and
+    `enable_enclave_email=false` in current staging. Enabling requires the separate
+    management-account SCP and reviewed generation/tenant. For email, explicitly
+    set `sending_domain=staging.notify.learncard.com`; optional `create_sending_zone`
+    creates only that child zone and outputs NS for delegation from the separately
+    owned `notify.learncard.com` parent. Otherwise publish the record outputs in the
+    external DNS account. No parent zone/DMARC is managed. Verify SES production-send
+    access, bounce/complaint SNS, denied org-admin key/table operations, credential-CMK
+    attestation enforcement, and relay TLS before any later activation. No staging
+    Terraform plan/apply or AWS adversarial checks were run for this checkpoint.
+
 - **Diagnosing boot without a console.** CloudTrail on the escrow CMK (`GenerateDataKey` /
   `Decrypt` from the host role, with `recipient` in `additionalEventData`) shows whether the
   enclave reached KMS; `strace` on the host process shows whether it connected to vsock 5001/5002.
@@ -260,13 +328,11 @@ The production enclave currently wires in `UnavailableEnrollment`, so every muta
 ### Second production-grade Roughtime source (blocks steps 6 and 7)
 
 The enclave's 7-day hold requires **at least 2 independent, overlapping signed time sources**
-(D2/D3) and fails closed otherwise. Today only Cloudflare's Roughtime server
-(`roughtime.cloudflare.com:2003`) is realistically reachable, and Cloudflare's own documentation
-says "DO NOT USE IN PRODUCTION"; Google's server is a historical sandbox key with no uptime
-guarantee. With `min_sources=2` enforced in `RoughtimeTimeSource::production()`, **every real release
-attempt today would fail closed with `InsufficientSources`.** This needs an explicit
-product/security decision before any real user can complete a hold-based release in production or
-staging:
+(D2/D3) and fails closed otherwise. The enclave pins three public servers
+(Cloudflare, int08h, txryan) and require 2, so staging can complete releases while two answer.
+None of the three offers a production uptime guarantee (Cloudflare's documentation says "DO NOT
+USE IN PRODUCTION"), so losing two of them blocks boot and every release with
+`InsufficientSources`. A production decision is still needed:
 
 - (a) add more independent, verified Roughtime operators and pin ≥3, requiring 2, or
 - (b) run LearnCard-operated Roughtime servers in two separate AWS accounts/regions with keys held

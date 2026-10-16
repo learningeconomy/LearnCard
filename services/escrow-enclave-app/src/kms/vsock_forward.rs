@@ -8,7 +8,35 @@ use tokio_vsock::{VsockAddr, VsockStream};
 /// active connections. Fixed destination, max 16 connections, 60s total lifetime.
 pub async fn run() -> io::Result<()> {
     bring_up_loopback()?;
-    let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 8000)).await?;
+    run_port(8000).await
+}
+
+/// Dormant direct-client relay setup; not called by production boot yet. The
+/// parent must separately enable fixed DynamoDB/SES :443 destinations on these
+/// ports. All TLS, hostname checks and signing remain inside the enclave.
+pub async fn run_data_plane(
+    authority: &crate::authority::config::AuthorityConfig,
+    email: Option<&crate::authority::config::EmailConfig>,
+) -> io::Result<()> {
+    use std::io::Write;
+    let mut hosts = format!("\n127.0.0.1 dynamodb.{}.amazonaws.com\n", authority.region);
+    if let Some(email) = email {
+        hosts.push_str(&format!("127.0.0.1 email.{}.amazonaws.com\n", email.region));
+    }
+    std::fs::OpenOptions::new()
+        .append(true)
+        .open("/etc/hosts")?
+        .write_all(hosts.as_bytes())?;
+    bring_up_loopback()?;
+    if email.is_some() {
+        tokio::select! { result = run_port(8001) => result, result = run_port(8002) => result }
+    } else {
+        run_port(8001).await
+    }
+}
+
+async fn run_port(port: u16) -> io::Result<()> {
+    let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, port)).await?;
     let mut connections = JoinSet::new();
     loop {
         tokio::select! {
@@ -17,7 +45,7 @@ pub async fn run() -> io::Result<()> {
                 let (mut tcp, _) = accepted?;
                 connections.spawn(async move {
                     let _ = timeout(Duration::from_secs(60), async {
-                        let mut vsock = VsockStream::connect(VsockAddr::new(3, 8000)).await?;
+                        let mut vsock = VsockStream::connect(VsockAddr::new(3, u32::from(port))).await?;
                         tokio::io::copy_bidirectional(&mut tcp, &mut vsock).await
                     }).await;
                 });

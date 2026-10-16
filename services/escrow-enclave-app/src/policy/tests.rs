@@ -84,6 +84,86 @@ struct Fixture {
     previous_keys: Vec<(String, EscrowKeyPair)>,
 }
 
+struct RacingStore<'a> {
+    inner: &'a Store,
+    arrivals: std::sync::atomic::AtomicUsize,
+    rejected: Mutex<Option<LedgerRecord>>,
+}
+
+impl HeadStore for RacingStore<'_> {
+    fn get_chain<'a>(&'a self, id: &'a str) -> StoreFuture<'a, Vec<LedgerRecord>> {
+        self.inner.get_chain(id)
+    }
+
+    fn append<'a>(&'a self, id: &'a str, record: &'a LedgerRecord) -> StoreFuture<'a, ()> {
+        Box::pin(async move {
+            // Both policies must sign their reservation against the same head.
+            if record.event == (Event::PinAttemptReserved { attempt_no: 1 }) {
+                use std::sync::atomic::Ordering;
+                self.arrivals.fetch_add(1, Ordering::SeqCst);
+                while self.arrivals.load(Ordering::SeqCst) < 2 {
+                    tokio::task::yield_now().await;
+                }
+            }
+            let result = self.inner.append(id, record).await;
+            if result == Err(AppendError::Conflict) {
+                *self.rejected.lock().unwrap() = Some(record.clone());
+            }
+            result
+        })
+    }
+}
+
+#[tokio::test]
+async fn losing_policy_reconciles_winner_and_rejects_its_speculative_fork() {
+    let f = Fixture::new(true);
+    let mut first = f.policy();
+    let hold = first
+        .create_hold(f.create("race", ReleasePolicy::Pin))
+        .await
+        .unwrap();
+    let prefix = f.records().await;
+    let racing = RacingStore {
+        inner: &f.store,
+        arrivals: std::sync::atomic::AtomicUsize::new(0),
+        rejected: Mutex::new(None),
+    };
+    let mut second = f.policy();
+    first.store = &racing;
+    second.store = &racing;
+    let proof = "ab".repeat(32);
+    let (a, b) = tokio::join!(
+        first.release(f.request(&hold, "first", Some(&proof))),
+        second.release(f.request(&hold, "second", Some(&proof))),
+    );
+    let loser = match (a, b) {
+        (Ok(_), Err(ErrorCode::Unavailable)) => &mut second,
+        (Err(ErrorCode::Unavailable), Ok(_)) => &mut first,
+        _ => panic!("exactly one release must win"),
+    };
+    let winner = f.records().await;
+    let state = loser.ledger.observe(&winner, &f.enrollment()).unwrap();
+    assert_eq!(state.attempts_used, 1);
+    assert!(state.holds["race"].released);
+    assert_eq!(
+        loser.release(f.request(&hold, "retry", Some(&proof))).await,
+        Err(ErrorCode::Policy)
+    );
+    let mut fork = prefix.clone();
+    fork.push(racing.rejected.lock().unwrap().clone().unwrap());
+    for stale in [&prefix, &fork] {
+        assert!(matches!(
+            loser.ledger.observe(stale, &f.enrollment()),
+            Err(LedgerError::Rollback)
+        ));
+    }
+    // No reset/reboot is needed to keep using the winner's actual history.
+    loser
+        .create_hold(f.create("after-race", ReleasePolicy::Hold))
+        .await
+        .unwrap();
+}
+
 #[tokio::test]
 async fn carry_audits_source_head_accumulates_and_fails_closed_on_append() {
     let f = Fixture::new(true);

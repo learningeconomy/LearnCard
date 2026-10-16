@@ -87,6 +87,10 @@ Parent CID3:5002 accepts one u32-BE length-prefixed JSON request, <=32 KiB,
 
 - `{method:"boot",keyId}` -> framed JSON
   `{sealed:base64|null,accessKeyId,secretAccessKey,sessionToken}` (no method tag).
+  When explicitly configured, CURRENT-key responses additionally include
+  `authorityCredentialCiphertext` and/or `emailCredentialCiphertext` (base64 KMS
+  ciphertext only, each 1–6144 decoded bytes). Unset options are omitted, preserving
+  the old response shape. Previous-key responses never include these fields.
 - `{method:"persistKey",keyId,sealed:base64}` -> one byte `0` success / `2` unavailable.
 - `{method:"getChain",chainId}` -> raw u32-BE count, then each raw CBOR record
   individually prefixed by u32-BE length; <=64 records / 8192 each / 524288 total.
@@ -117,6 +121,19 @@ has no IMDS. The current P1.8 KMS adapter is boot-scoped; any future post-boot K
 operation needs an agreed refresh protocol, not a restart to clear ledger state.
 The KMS path remains opaque enclave-to-AWS TLS through the separate port-8000
 proxy; parent code never receives KMS plaintext keys or CMS recipient plaintext.
+
+Optional dedicated-credential delivery is read-only and never invokes KMS on the
+host. `ESCROW_AUTHORITY_CREDENTIAL_OBJECT` must be exactly
+`credentials/authority-writer/<generation>`; `ESCROW_EMAIL_CREDENTIAL_OBJECT` must
+be `credentials/email-sender/<generation>`, with a bounded alphanumeric/underscore/
+hyphen generation. Both use the artifacts bucket. Missing/empty/oversized objects
+fail the boot response, with no first-boot exception or fallback credentials.
+`persistKey` cannot write either path. The enclave's credential unsealer and data
+clients remain unwired. Gated Terraform supplies the proxy units and optional
+ciphertext settings; the existing artifacts read grant covers ciphertext. The
+management-account guardrail and operator provisioning must precede enabling
+`enable_credential_delivery`. Activation and live AWS/Nitro verification are pending.
+Never put dedicated plaintext access keys in host environment variables or files.
 
 ## Persistence / audit ordering
 
