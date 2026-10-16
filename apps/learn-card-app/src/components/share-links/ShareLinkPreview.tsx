@@ -1,6 +1,7 @@
 import { ShareCredentialVisual } from './ShareCredentialVisual';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
+import { CredentialPreviewButton } from './CredentialPreviewButton';
 import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
@@ -202,6 +203,7 @@ export const ShareLinkPreview = ({
                     item => item.targetCredentialIndex === credentialIndex
                 );
                 const proof = proofs?.[credentialIndex];
+                const credentialTitle = getCredentialName(credential);
                 return (
                     <article
                         key={credentialIndex}
@@ -211,12 +213,11 @@ export const ShareLinkPreview = ({
                             <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
                                 <h2 className="break-words text-lg font-semibold text-grayscale-900">
-                                    {getCredentialName(credential) ||
-                                        text.name ||
-                                        m['shareLinks.credential']()}
+                                    {credentialTitle || text.name || m['shareLinks.credential']()}
                                 </h2>
                                 <ShareCredentialMetadata credential={credential} />
                             </div>
+                            <CredentialPreviewButton credential={credential} />
                         </div>
                         {text.description && (
                             <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap break-words">
