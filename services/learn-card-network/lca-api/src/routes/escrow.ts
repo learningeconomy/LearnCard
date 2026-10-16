@@ -1,4 +1,5 @@
 import { timingSafeEqual, randomUUID, randomBytes } from 'crypto';
+import { logEscrowFailure } from '../services/escrow-enclave/logFailure';
 import {
     AuthorityCommitValidator,
     AuthorityHoldReceiptValidator,
@@ -247,6 +248,7 @@ const enclaveOperation = async <T>(
     try {
         return await operation();
     } catch (error) {
+        logEscrowFailure(error);
         if (error instanceof EscrowUnavailableError) {
             throw new TRPCError({
                 code: 'PRECONDITION_FAILED',

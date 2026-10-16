@@ -123,7 +123,7 @@ const errorForCode = (code: z.infer<typeof errorCodeValidator>): Error => {
     if (code === 'policy') return new EscrowPolicyError();
     if (code === 'pinMismatch') return new EscrowPinMismatchError();
     if (code === 'blob') return new EscrowBlobError();
-    return new EscrowUnavailableError(); // 'unavailable' | 'ledger' | 'time'
+    return new EscrowUnavailableError(code); // 'unavailable' | 'ledger' | 'time'
 };
 
 export interface RemoteEnclaveTransportResponse {
@@ -189,15 +189,15 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
             status = response.status;
             data = response.data;
         } catch {
-            throw new EscrowUnavailableError();
+            throw new EscrowUnavailableError('transport');
         }
         if (status < 200 || status >= 300) {
             const parsedError = errorResponseValidator.safeParse(data);
             if (parsedError.success) throw errorForCode(parsedError.data.code);
-            throw new EscrowUnavailableError();
+            throw new EscrowUnavailableError(status === 429 ? 'rate_limit' : 'http_refusal');
         }
         const parsed = validator.safeParse(data);
-        if (!parsed.success) throw new EscrowUnavailableError();
+        if (!parsed.success) throw new EscrowUnavailableError('invalid_response');
         return parsed.data;
     };
 
