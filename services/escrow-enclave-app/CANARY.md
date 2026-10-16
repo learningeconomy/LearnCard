@@ -2,6 +2,7 @@
 
 **Status:** Proposed (2026-10-15). Not implemented.
 **Depends on:** the enrollment-authority stack (#1703 → #1706 → #1710 → #1714).
+**Prerequisites:** The production tenant (`apps/learn-card-app/environments/learncard/config.json`) must move to SSS key derivation with the escrow attestation config before the canary (and any escrow rollout) can run; the PCR gate references `auth.sss.escrowEnclaveMeasurements` once it exists.
 **Paths:** `app/` = `services/escrow-enclave-app/`, `api/` = `services/learn-card-network/lca-api/`,
 `sdk/` = `packages/sss-key-manager/`.
 
@@ -102,8 +103,9 @@ On a PIN-enrolled canary account (two accounts, alternating):
    clean. If the runner crashes between steps 2 and 4, the next run will detect
    the retired PIN state and re-set the PIN before attempting recovery, preventing
    the account from becoming permanently unusable.
-5. Weekly, prepend one deliberately wrong PIN and assert the mismatch response
-   before the correct attempt (exercises the attempt counter).
+5. Weekly, prepend one deliberately wrong PIN attempt, assert the mismatch response,
+   and then start a fresh PIN hold for the correct attempt (exercises the attempt counter
+   and the mismatch cancellation).
 
 Emit `Tier2.Success` and per-step latency.
 
@@ -147,7 +149,7 @@ not happened by its deadline emits 0 for that step:
 "is this step due?" signal by themselves, so tier 3 is wired as two parts:
 
 1. **Deadline evaluator** (every 15 minutes, separate scheduled function). It
-   reads the runner's ledger of in-flight runs (DynamoDB or S3 in the runner's
+   reads the runner's ledger of in-flight runs (DynamoDB or S3 in the monitoring
    account: account, hold ID, step, due time, observed time) and, for every step
    whose deadline has passed without the expected event, counts it overdue. Each
    evaluation emits, continuously:
@@ -191,29 +193,41 @@ That last window is inherent: nobody, including us, can shorten the wait.
   4 spare), 1 read-only account (tier 1). Per-account limits (one code send per
   minute, 3 per day, one active hold) make a pool necessary.
 - **Quarantine:** an account whose start, confirm, release, or post-release
-  re-enrollment fails is quarantined (never reused automatically). A failed code
-  send can leave a hold that nobody can confirm and the app cannot see (§13),
-  and a failed re-enrollment leaves a broken account that would fail its next
-  tier-3 run. The runner emits `Tier3.PoolAvailable` (healthy idle accounts); an alarm fires below 2, so
-  orphans exhaust the buffer loudly instead of stalling tier 3 silently. An
-  operator returns a quarantined account once its hold is cleared.
+  re-enrollment fails is quarantined. A failed code send can leave a hold that
+  nobody can confirm and the app cannot see (§14), and a failed re-enrollment
+  leaves a broken account that would fail its next tier-3 run. The runner emits
+  `Tier3.PoolAvailable` (healthy idle accounts); an alarm fires below 2, so
+  orphans exhaust the buffer loudly instead of stalling tier 3 silently. The runner
+  clears orphaned holds after 24 hours via the user's own supersede path (`startRecovery`
+  with `restart: true`); an operator handles anything else.
 - **Real accounts:** created through normal sign-up in the production tenant,
   with recovery emails on the canary domain. No flags, allowlists or special
   cases anywhere in `api/` or `app/`; the canary must take the user path. They
   are covered by the ledger monitor like any account.
 - **Secrets:** each account's private key (needed to sign intents and to verify
-  the recovered key), PIN, and auth credentials live only in the runner's secret
+  the recovered key), PIN, and auth credentials live only in the monitoring account's secret
   store. After each recovery the runner stores the new device state.
 - **Identifiability:** account emails are `canary+<n>@canary.notify.learncard.com`
   so support and analytics can exclude them by address, without code paths.
 
-## 6. Canary inbox
+## 6. Runner authentication
+
+Each canary account is signed in once by an operator through the normal app flow. The resulting Firebase refresh token is stored in Secrets Manager in the monitoring account (encrypted, runner-only access, rotation/revocation procedure documented). Each run exchanges it at Google's securetoken endpoint (`https://securetoken.googleapis.com/v1/token`, `grant_type=refresh_token`) for a fresh ID token, which lca-api verifies exactly as for real users.
+
+We explicitly reject:
+
+- A Firebase Admin service account or custom tokens: this credential could mint tokens for any user, violating the principle of least privilege.
+- Inbox-based email sign-in: this adds an inbox dependency to tiers 1–2, which should only test reachability and PIN recovery.
+
+Note: A revoked or expired refresh token surfaces as a distinct runner auth failure (not an escrow failure) with its own alert. Keycloak tenants (direct grants off, 5-min access tokens, 10h SSO max) would need an offline-token/dedicated client design, which is out of scope until such a tenant enables escrow.
+
+## 7. Canary inbox
 
 - Subdomain `canary.notify.learncard.com`, MX → SES inbound (us-east-1).
 - Receipt rule recipient: `canary@canary.notify.learncard.com`. SES treats a
   recipient that already contains a plus-label as an exact match, while the base
   address also matches its plus-variants, so this covers every pool address
-  (`canary+<n>@…`). Store the raw message in an S3 bucket in the runner's
+  (`canary+<n>@…`). Store the raw message in an S3 bucket in the monitoring
   account (SSE, 7-day lifecycle); drop everything else.
 - The runner matches messages by recipient and arrival after the request time,
   parses the 8-digit code from the vault's fixed template, and asserts the sender
@@ -224,10 +238,9 @@ That last window is inherent: nobody, including us, can shorten the wait.
   rejecting legitimate deliveries after a rollout.
 - This also proves **delivery**, not just SES acceptance.
 
-## 7. Where it runs
+## 8. Where it runs
 
-Recommended: a scheduled Lambda (EventBridge) in the WeLibrary (organization
-management) account, not the escrow account, so an escrow-account failure cannot
+Recommended: a scheduled Lambda (EventBridge) in a dedicated monitoring account (not the escrow account, and not the organization management account since SCPs do not apply there), so an escrow-account failure cannot
 silence it. CloudWatch Synthetics is an alternative with built-in canary
 dashboards; GitHub Actions cron is acceptable for staging but has unreliable
 scheduling for a paging signal.
@@ -236,7 +249,7 @@ Device shares: the SDK already accepts custom storage through
 `SSSStrategyConfig.storage`, so the runner passes an in-memory implementation
 and persists it to its secret store between runs. No SDK change is needed.
 
-## 8. Metrics and alarms
+## 9. Metrics and alarms
 
 Namespace `LearnCard/EscrowCanary`, dimension `Tier`.
 
@@ -265,9 +278,9 @@ step outcomes are the one exception, covered by the evaluator above.
 | 3    | Daily          | 1               | ~1–2 min         | ~24 hours    |
 
 Requiring two failures for tiers 1 and 2 trades a few minutes of latency for
-fewer pages from a single transient error; the bounds in §2 and §14 include it.
+fewer pages from a single transient error; the bounds in §2 and §15 include it.
 
-## 9. Supporting signals (between canary runs)
+## 10. Supporting signals (between canary runs)
 
 These narrow the cause once a canary fails, and catch partial outages:
 
@@ -293,7 +306,7 @@ These narrow the cause once a canary fails, and catch partial outages:
 - **Ledger monitor:** unchanged (integrity, coverage, sweep heartbeats every 15
   minutes).
 
-## 10. Release gates
+## 11. Release gates
 
 1. **Image roll gate (automates today's manual checklist):** after a new host is
    in service and before the old image is removed from KMS key policies:
@@ -308,7 +321,7 @@ These narrow the cause once a canary fails, and catch partial outages:
 3. **Staging:** run tiers 1 and 2 after every staging lca-api or app deploy,
    including deploys from `main` that overwrite a branch deploy.
 
-## 11. Implementation plan
+## 12. Implementation plan
 
 | Phase | Scope                                                                                                    | Effort   |
 | ----- | -------------------------------------------------------------------------------------------------------- | -------- |
@@ -320,9 +333,9 @@ These narrow the cause once a canary fails, and catch partial outages:
 
 Tier 3 produces its first release signal 7 days after it starts.
 
-## 12. Security considerations
+## 13. Security considerations
 
-- Canary accounts hold real keys in the runner's secret store; compromise of the
+- Canary accounts hold real keys in the monitoring account's secret store; compromise of the
   runner exposes only canary accounts. Keep the runner role unable to read any
   other secret, and alarm on secret access outside the schedule.
 - The canary inbox receives real recovery codes for canary accounts only;
@@ -333,11 +346,11 @@ Tier 3 produces its first release signal 7 days after it starts.
 - The canary must never be granted escrow-account credentials, host access or
   vault bearer tokens.
 
-## 13. Open questions
+## 14. Open questions
 
 1. Resolved: authenticated PIN recovery goes through `completeIdentityRecovery`,
    which rotates shares and re-enrols; tier 2 re-sets the PIN each run (§4).
-2. Resolved: the SDK accepts custom storage via `SSSStrategyConfig.storage` (§7).
+2. Resolved: the SDK accepts custom storage via `SSSStrategyConfig.storage` (§8).
 3. A failed code send currently leaves a confirmable-by-nobody hold that the app
    cannot see (observed in staging). Returned code-send failures can expose the
    durable hold and allow resend, but loss of the entire create response can
@@ -346,7 +359,7 @@ Tier 3 produces its first release signal 7 days after it starts.
 5. SLO target: 99.9% for tiers 1+2 is proposed; confirm with product.
 6. Production SES production-access and inbound receiving for the canary domain.
 
-## 14. Limits
+## 15. Limits
 
 This does not make escrow "100%". It bounds how long a failure can go unnoticed:
 about 5 minutes for reachability, about 1 hour for PIN recovery, about 24 hours
