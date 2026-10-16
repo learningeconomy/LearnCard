@@ -3,6 +3,7 @@ import type { AuthUser, SignInAdapter } from '@learncard/types';
 import { getLogger } from '../logging/logger';
 import { createFirebasePhoneAuth } from './createFirebasePhoneAuth';
 import { loadFirebaseAuth } from './firebaseAuthModule';
+import { verifyFirebaseSignOut } from './verifyFirebaseSignOut';
 import type {
     FirebaseAuthLike,
     FirebaseSignInAdapterConfig,
@@ -300,7 +301,8 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
         },
         signOut: (): Promise<void> =>
             operation('signOut', async () => {
-                await config.getAuth().signOut();
+                const firebaseAuth = auth();
+                await firebaseAuth.signOut();
                 phone.cleanup();
                 if (isNative() && config.getNativeAuth) {
                     try {
@@ -309,6 +311,7 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                         log.warn('Native signOut failed');
                     }
                 }
+                await verifyFirebaseSignOut(firebaseAuth);
             }),
         cleanup: phone.cleanup,
     };

@@ -25,7 +25,9 @@ const sdk = vi.hoisted(() => ({
     ensureRecaptcha: vi.fn(),
     destroyRecaptcha: vi.fn(),
     getPlatform: vi.fn(),
+    verifySignOut: vi.fn(),
 }));
+vi.mock('../verifyFirebaseSignOut', () => ({ verifyFirebaseSignOut: sdk.verifySignOut }));
 vi.mock('firebase/auth', () => ({
     ...sdk,
     OAuthProvider: class {
@@ -86,6 +88,7 @@ const create = (
 beforeEach(() => {
     vi.clearAllMocks();
     auth = { currentUser: user, signOut: vi.fn() };
+    sdk.verifySignOut.mockResolvedValue(undefined);
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
         location: { origin: 'https://app.example.org' },
@@ -127,6 +130,23 @@ beforeEach(() => {
     phoneFailed = undefined;
 });
 afterEach(() => vi.unstubAllGlobals());
+
+describe('Firebase sign-out ordering', () => {
+    it('verifies persistence after SDK sign-out and still signs out native auth', async () => {
+        await create({ isNativePlatform: () => true }).signOut();
+        expect(sdk.verifySignOut).toHaveBeenCalledExactlyOnceWith(auth);
+        expect(vi.mocked(auth.signOut).mock.invocationCallOrder[0]).toBeLessThan(
+            sdk.verifySignOut.mock.invocationCallOrder[0]!
+        );
+        expect(native.signOut).toHaveBeenCalledOnce();
+    });
+
+    it('does not report persisted sign-out when SDK sign-out failed', async () => {
+        vi.mocked(auth.signOut).mockRejectedValueOnce(new Error('sign-out failed'));
+        await expect(create().signOut()).rejects.toThrow('sign-out failed');
+        expect(sdk.verifySignOut).not.toHaveBeenCalled();
+    });
+});
 
 describe('Firebase sign-in adapter', () => {
     it('declares immutable capabilities including server-backed email OTP', () => {
