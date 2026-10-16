@@ -201,7 +201,8 @@
         "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH",
         "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line",
         "i18n:check-markers": "node scripts/check-i18n-markers.mjs",
-        "i18n:check-memos": "eslint --config eslint-i18n-memo.config.mjs src"
+        "i18n:check-memos": "eslint --config eslint-i18n-memo.config.mjs src",
+        "test:visual": "playwright test --config playwright.visual.config.ts"
     },
     "browserslist": {
         "production": [
@@ -221,6 +222,8 @@
         "@capacitor/cli": "8.5.2",
         "@capgo/cli": "^7.2.10",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+        "@fontsource/noto-sans": "5.2.10",
+        "@fontsource/poppins": "5.2.7",
         "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
         "@learncard/learn-cloud-service": "workspace:^",
@@ -233,8 +236,8 @@
         "@storybook/react-vite": "8.6.18",
         "@storybook/test": "8.6.18",
         "@storybook/test-runner": "0.22.0",
-        "@tailwindcss/typography": "^0.5.16",
         "@tailwindcss/line-clamp": "^0.4.4",
+        "@tailwindcss/typography": "^0.5.16",
         "@testing-library/react": "^14.3.1",
         "@types/async": "^3.2.24",
         "@types/lodash": "^4.17.15",
@@ -244,6 +247,7 @@
         "autoprefixer": "^10.4.20",
         "chromatic": "^17.4.1",
         "concurrently": "7.6.0",
+        "esbuild": "^0.27.1",
         "eslint-plugin-i18next": "^6.1.4",
         "http-server": "14.1.1",
         "jeep-sqlite": "2.5.8",
