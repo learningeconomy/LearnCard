@@ -2,6 +2,8 @@ import type { CredentialMatch } from '@learncard/types';
 
 export interface CredentialSummary {
     uri: string;
+    /** Undefined only for summaries persisted before name extraction was introduced. */
+    name?: string | null;
     category: string | null;
     types: string[];
     issuer: string | null;
@@ -33,6 +35,12 @@ const asStrings = (value: unknown): string[] => {
 };
 
 const unique = (values: string[]): string[] => [...new Set(values)];
+
+const firstString = (...values: unknown[]): string | null => {
+    const value = values.find(candidate => typeof candidate === 'string' && candidate.length > 0);
+
+    return typeof value === 'string' ? value : null;
+};
 
 const issuerId = (value: unknown): string | null => {
     if (typeof value === 'string') return value || null;
@@ -90,6 +98,25 @@ const collectAchievementTypes = (credential: UnknownRecord): string[] => {
     ]);
 };
 
+const credentialName = (credential: UnknownRecord, nested: UnknownRecord[]): string | null => {
+    const candidates = [credential, ...nested];
+
+    for (const candidate of candidates) {
+        const subjects = asRecords(candidate.credentialSubject);
+        const name = firstString(
+            candidate.name,
+            ...subjects.map(subject => subject.name),
+            ...subjects.flatMap(subject =>
+                asRecords(subject.achievement).map(achievement => achievement.name)
+            )
+        );
+
+        if (name) return name;
+    }
+
+    return null;
+};
+
 export const summarizeCredential = (
     uri: string,
     vc: unknown,
@@ -104,6 +131,7 @@ export const summarizeCredential = (
             // Preserve the index metadata even when the stored value is malformed or unavailable.
             return {
                 uri,
+                name: null,
                 category: category ?? null,
                 types: [],
                 issuer: null,
@@ -130,6 +158,7 @@ export const summarizeCredential = (
 
         return {
             uri,
+            name: credentialName(credential, nested),
             category: category ?? null,
             types: unique(asStrings(credential.type)),
             issuer: issuerId(credential.issuer),
@@ -144,6 +173,7 @@ export const summarizeCredential = (
         // interrupt loading or accidentally produce a positive match.
         return {
             uri,
+            name: null,
             category: category ?? null,
             types: [],
             issuer: null,

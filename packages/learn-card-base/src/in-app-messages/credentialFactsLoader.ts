@@ -22,6 +22,7 @@ export interface CredentialFactsSnapshot {
 interface CredentialRecord {
     uri: string;
     category?: string | null;
+    title?: string | null;
 }
 
 export interface CredentialFactsSource {
@@ -175,13 +176,26 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                 for (const record of unique.values()) {
                     if (!active()) return;
                     const fact = facts.get(record.uri);
-                    if (fact && fact.category !== (record.category ?? null)) {
-                        const updated = { ...fact, category: record.category ?? null };
+                    const indexedName = record.title?.trim() || null;
+                    if (
+                        fact &&
+                        (fact.category !== (record.category ?? null) ||
+                            (indexedName !== null && fact.name !== indexedName))
+                    ) {
+                        const updated = {
+                            ...fact,
+                            name: indexedName ?? fact.name,
+                            category: record.category ?? null,
+                        };
                         await saveCredentialFact(did, updated);
                         facts.set(record.uri, updated);
                     }
                 }
-                const missing = [...unique.values()].filter(record => !facts.has(record.uri));
+                const missing = [...unique.values()].filter(record => {
+                    const fact = facts.get(record.uri);
+
+                    return !fact || (force && fact.name === undefined);
+                });
                 publishFacts();
                 for (let offset = 0; offset < missing.length; offset += 4) {
                     await idle();
@@ -200,12 +214,16 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                             try {
                                 const vc = resolved ?? (await source.read(record.uri));
                                 if (!active() || !vc) return;
-                                const summary = trySummarizeCredential(
+                                const summarized = trySummarizeCredential(
                                     record.uri,
                                     vc,
                                     record.category
                                 );
-                                if (!summary) return;
+                                if (!summarized) return;
+                                const summary = {
+                                    ...summarized,
+                                    name: record.title?.trim() || summarized.name,
+                                };
                                 await saveCredentialFact(did, summary);
                                 if (active()) facts.set(record.uri, summary);
                             } catch {
