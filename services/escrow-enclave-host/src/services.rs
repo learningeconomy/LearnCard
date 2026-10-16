@@ -24,6 +24,9 @@ pub struct Boot<S = SealedStore> {
     /// key recovery). Never eligible for first-boot generation regardless of
     /// `allow_first_boot`, and never writable via `PersistKey` (see below).
     pub previous: Vec<(String, S)>,
+    /// Read-only KMS ciphertext objects, never dedicated plaintext access keys.
+    pub authority_credentials: Option<S>,
+    pub email_credentials: Option<S>,
 }
 impl<S: SealedStorage> Boot<S> {
     async fn response(&self, key_id: &str) -> io::Result<Vec<u8>> {
@@ -52,7 +55,24 @@ impl<S: SealedStorage> Boot<S> {
             .load_for_boot(allow_first_boot)
             .await
             .map_err(|_| invalid())?;
-        serde_json::to_vec(&json!({"sealed":sealed.map(|b|STANDARD.encode(b)),"accessKeyId":creds.access_key_id(),"secretAccessKey":creds.secret_access_key(),"sessionToken":session})).map_err(|_|invalid())
+        let mut response = json!({"sealed":sealed.map(|b|STANDARD.encode(b)),"accessKeyId":creds.access_key_id(),"secretAccessKey":creds.secret_access_key(),"sessionToken":session});
+        if key_id == self.key_id {
+            for (name, store) in [
+                ("authorityCredentialCiphertext", &self.authority_credentials),
+                ("emailCredentialCiphertext", &self.email_credentials),
+            ] {
+                if let Some(store) = store {
+                    let bytes = store
+                        .load_for_boot(false)
+                        .await
+                        .map_err(|_| invalid())?
+                        .filter(|b| !b.is_empty() && b.len() <= 6144)
+                        .ok_or_else(invalid)?;
+                    response[name] = json!(STANDARD.encode(bytes));
+                }
+            }
+        }
+        serde_json::to_vec(&response).map_err(|_| invalid())
     }
 }
 #[derive(Deserialize)]
@@ -203,6 +223,8 @@ mod tests {
                 key_id: "key".into(),
                 allow_first_boot: false,
                 previous: Vec::new(),
+                authority_credentials: None,
+                email_credentials: None,
             }),
         }
     }

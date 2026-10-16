@@ -110,6 +110,12 @@ jobs:
             - name: cargo test
               run: cargo test
 
+            - name: cargo test (KMS and dormant authority foundations)
+              run: cargo test --locked --features kms
+
+            - name: Public measurement configuration contract
+              run: bash scripts/test-measurement-config.sh
+
             - name: cargo check (nitro,kms)
               run: cargo check --features nitro,kms
 
@@ -184,6 +190,21 @@ jobs:
             ESCROW_KMS_KEY_ARN: ${{ vars.ESCROW_KMS_KEY_ARN }}
             ESCROW_PREVIOUS_KEY_IDS: ${{ vars.ESCROW_PREVIOUS_KEY_IDS }}
             ESCROW_ALLOW_FIRST_BOOT: ${{ vars.ESCROW_ALLOW_FIRST_BOOT || 'false' }}
+            # Optional public settings are measured/reported, not runtime activation flags.
+            ESCROW_AUTHORITY_REGION: ${{ vars.ESCROW_AUTHORITY_REGION }}
+            ESCROW_AUTHORITY_ACCOUNT_ID: ${{ vars.ESCROW_AUTHORITY_ACCOUNT_ID }}
+            ESCROW_AUTHORITY_TABLE: ${{ vars.ESCROW_AUTHORITY_TABLE }}
+            ESCROW_AUTHORITY_WRITER_USER: ${{ vars.ESCROW_AUTHORITY_WRITER_USER }}
+            ESCROW_AUTHORITY_TENANT: ${{ vars.ESCROW_AUTHORITY_TENANT }}
+            ESCROW_AUTHORITY_ENVIRONMENT: ${{ vars.ESCROW_AUTHORITY_ENVIRONMENT }}
+            ESCROW_AUTHORITY_GENERATION: ${{ vars.ESCROW_AUTHORITY_GENERATION }}
+            ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN: ${{ vars.ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN }}
+            ESCROW_EMAIL_REGION: ${{ vars.ESCROW_EMAIL_REGION }}
+            ESCROW_EMAIL_ACCOUNT_ID: ${{ vars.ESCROW_EMAIL_ACCOUNT_ID }}
+            ESCROW_EMAIL_SENDER_USER: ${{ vars.ESCROW_EMAIL_SENDER_USER }}
+            ESCROW_EMAIL_FROM: ${{ vars.ESCROW_EMAIL_FROM }}
+            ESCROW_EMAIL_IDENTITY: ${{ vars.ESCROW_EMAIL_IDENTITY }}
+            ESCROW_EMAIL_CONFIGURATION_SET: ${{ vars.ESCROW_EMAIL_CONFIGURATION_SET }}
         permissions:
             contents: read
             id-token: write # cosign keyless signing (GitHub OIDC -> Fulcio/Rekor); granted on this job only.
@@ -256,7 +277,8 @@ jobs:
                       --arg measurementsSha256 "${measurements_sha256}" \
                       --arg gitSha "${GITHUB_SHA}" \
                       --arg workflowRunId "${GITHUB_RUN_ID}" \
-                      '{eifSha256: $eifSha256, measurementsSha256: $measurementsSha256, gitSha: $gitSha, workflowRunId: $workflowRunId}' \
+                      --slurpfile measurements "${GITHUB_WORKSPACE}/escrow-measurements.json" \
+                      '{eifSha256: $eifSha256, measurementsSha256: $measurementsSha256, gitSha: $gitSha, workflowRunId: $workflowRunId, config: $measurements[0].config}' \
                       >"${GITHUB_WORKSPACE}/manifest.json"
 
             # This job now runs on a plain GitHub-hosted `ubuntu-latest`

@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
 import ExclamationCircle from 'learn-card-base/svgs/ExclamationCircle';
@@ -158,4 +159,4 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
     );
 };
 
-export default ManageSkillsConfirmationModal;
+export default withCompetencyAdmin(ManageSkillsConfirmationModal);

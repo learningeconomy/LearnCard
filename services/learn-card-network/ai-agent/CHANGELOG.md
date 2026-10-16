@@ -1,5 +1,13 @@
 # @learncard/ai-agent-service
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.60
+    - @learncard/init@2.5.3
+
 ## 0.0.7
 
 ### Patch Changes

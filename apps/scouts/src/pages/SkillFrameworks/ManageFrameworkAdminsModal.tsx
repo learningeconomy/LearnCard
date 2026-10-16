@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { useModal, useWallet } from 'learn-card-base';
 import { IonSpinner, IonInput } from '@ionic/react';
@@ -192,4 +193,4 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
     );
 };
 
-export default ManageFrameworkAdminsModal;
+export default withCompetencyAdmin(ManageFrameworkAdminsModal);

@@ -1,5 +1,13 @@
 # consent-referral-demo
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.3
+    - @learncard/lca-api-plugin@2.0.9
+
 ## 0.0.1
 
 ### Patch Changes
