@@ -7,6 +7,7 @@ enum DrawnSymbol: String {
     case signOut = "DrawnSignOut", forget = "DrawnForget", external = "DrawnExternal"
     case credential = "DrawnCredential", add = "DrawnAdd", key = "DrawnKey"
     case collection = "DrawnCollection", pencil = "DrawnPencil"
+    case scan = "DrawnScan", people = "DrawnPeople"
 }
 
 /// Original vector drawings use navy ink on the Colorful theme's opaque tiles.

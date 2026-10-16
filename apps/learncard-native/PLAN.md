@@ -1,16 +1,20 @@
 # LearnCard native client plan
 
+## Home, People and optional intake — October 16
+
+Data Sharing moves directly under the three primary credential actions; Scan a code becomes an illustrated row. People is reachable through Home/Account/Inbox, retaining four tabs. Native connections, requests, sent, blocked and username search use existing graph APIs with account isolation and Inbox synchronization. Build My LearnCard opens a real optional scan/photo/link intake hub. Document extraction/raw JSON, invitation QR and profile-specific send/share remain separate. See [implemented scope and remaining work](PEOPLE_AND_INTAKE.md).
+
 ## Creator category and format parity — October 16
 
 The native creator now separates eight regular web authoring categories, 115 standard category-scoped types and four visual formats. IDs use their dedicated format. The explicit canonical category survives the signed credential, template metadata and Collection index; the selector no longer reuses the coarse three legacy kinds. See [the upstream audit and remaining boundaries](CREDENTIAL_AUTHORING_PARITY.md). Custom types, fuller ID/optional-field layouts and durable uncertain-write handling remain separate.
 
 ## Native first-time setup — October 16
 
-First-time setup is the current priority. The native client now routes verified accounts through birth date/country, name/available username/photo, separate privacy choices and password-protected recovery-backup enrollment before creating a profile. Existing identities are reused; unfinished operations are protected and reconciled. Under-13 signup routes to Families; unapproved profiles wait for real server approval. Shared Ireland thresholds are corrected to 16. Staging email-backup delivery is disabled, so existing email recovery stays available while new setup uses canonical encrypted backup export/confirmation. See [implemented behavior and remaining live gates](FIRST_TIME_SETUP.md).
+First-time setup is implemented. The native client routes verified accounts through birth date/country, name/available username/photo, separate privacy choices and password-protected recovery-backup enrollment before creating a profile. Existing identities are reused; unfinished operations are protected and reconciled. Under-13 signup routes to Families; unapproved profiles wait for real server approval. Shared Ireland thresholds are corrected to 16. Staging email-backup delivery is disabled, so existing email recovery stays available while new setup uses canonical encrypted backup export/confirmation. See [implemented behavior and remaining live gates](FIRST_TIME_SETUP.md).
 
 The authorized staging-only reset and required setup are complete, with the shared Firebase identity retained. Do not reset the recreated account again. The saved private test credential and Home-first relaunch were verified after upgrade/restart. The native reset is staged and retryable, requires verified-email confirmation, preserves interrupted progress in Keychain, and reconnects through a new SDK host before first-time setup. This is not production account erasure. Independent second-device backup recovery, full staging-web parity and real guardian delivery/approval remain separate live paths. See [reset audit and status](ACCOUNT_DELETION_AUDIT.md).
 
-Build My LearnCard and People remain next slices: optional resumable Home intake, then connections reachable from Home/Account/Inbox without adding a side menu. See [remaining roadmap](ONBOARDING_AND_PEOPLE.md).
+People and the first optional Build My LearnCard intake hub are implemented through Home/Account/Inbox without a side menu. Broader document intake and relationship tools remain next slices. See [remaining roadmap](ONBOARDING_AND_PEOPLE.md).
 
 ## Account, sign-in and recovery — October 16
 

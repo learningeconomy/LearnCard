@@ -4,6 +4,8 @@ October 15, 2026. Home is the consumer landing place, using the existing native 
 
 October 16 follow-up: Home is now the initial root destination, including completed first-time setup and account resume. The tray and backing tab view use Home → Collection → Inbox → Apps in reading order. Existing destination IDs remain unchanged, so badges, app handoffs and Home shortcuts preserve their routes. Collection-focused UI checks explicitly navigate to Collection; signup/approval checks require Home and verify private Home content remains absent before readiness.
 
+Home refinement: Data Sharing now sits directly under the other three primary credential actions. People has Home/Account/Inbox entry points. Build My LearnCard opens the optional native intake hub, and Scan a code is a full illustrated action. Families retains its existing route. See [scope and data contracts](PEOPLE_AND_INTAKE.md).
+
 ## Source audit
 
 The consumer dashboard is `apps/learn-card-app/src/pages/dashboard/DashboardPage.tsx`, with presentation in `DashboardView.tsx` and contracts in `DashboardView.types.ts`. The similarly named app-store developer dashboards are administrative tooling and are outside this experiment's scope.
@@ -19,6 +21,8 @@ The web consumer view composes profile/header controls, quick actions, recovery 
 | Installed apps                | Up to three real installed listings, See all | `ConsumerAppsStore.loadInstalled`; native listing detail retains consent and in-app launch      |
 | Discover                      | Empty installed-app state                    | Explicitly opens Apps → Discover; See all opens My apps                                         |
 | Data Trust management         | Data Sharing row                             | Existing native consent/shared-link management, without unsupported aggregate read/write counts |
+| Relationships                 | People from Home/Account/Inbox               | Account-owned graph lists, username search and explicit connect/manage actions                  |
+| Optional intake               | Build My LearnCard                           | Existing native scan, selected QR photo and claim-link review; no fabricated checklist count    |
 | Family tools                  | Families row                                 | Existing native family roster/edit/invitation slice                                             |
 | Session activity              | This visit                                   | Existing session-local created/received/sent events, explicitly labeled                         |
 
@@ -28,7 +32,7 @@ Home and the tray derive counts from one `NativeAppStore` summary. Duplicate cre
 
 ## Deferred native parity
 
-- Required [native first-time setup](FIRST_TIME_SETUP.md) is implemented before account access. Optional Build My LearnCard and a People destination remain in [the onboarding/navigation plan](ONBOARDING_AND_PEOPLE.md): resumable Home intake and People reached from Home/Account/Inbox. Those Home cards are not implemented yet.
+- Required [native first-time setup](FIRST_TIME_SETUP.md), the optional scan/photo/link intake hub and People through Home/Account/Inbox are implemented. Document extraction/raw JSON import, intake counts, contact invitation QR and profile-specific send/share shortcuts remain in [the onboarding/navigation plan](ONBOARDING_AND_PEOPLE.md).
 - Persistent cross-device activity, pending consent-request dashboard summaries and app-specific unread counts need dedicated contracts; session activity and loaded updates are not substitutes for them.
 - Learning profile/insights, onboarding/recovery prompts and goal/review cards need their real account state and feature gates exposed before rendering progress or completion.
 - AI career Pathways and AI Sessions remain separate native slices. The newer Journeys/Pathways graph's scope is still unconfirmed.

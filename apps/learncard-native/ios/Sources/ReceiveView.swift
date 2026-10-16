@@ -36,15 +36,17 @@ struct ReceiveView: View {
     @State private var link = ""
     @State private var photo: PhotosPickerItem?
     @State private var photoError: String?
+    @State private var showPhotoPicker = false
     @State private var photoTask: Task<Void, Never>?
     @State private var readingPhoto = false
     @FocusState private var typing: Bool
     private var busy: Bool { ["resolving", "claiming"].contains(flow.phase) }
+    private var entryTitle: String { NativeText.text(flow.entryMode == .link ? "build.link" : flow.entryMode == .photo ? "build.photo" : "claims.title") }
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    PageHeading(title: NativeText.text(flow.phase == "complete" ? "claims.added" : flow.phase == "review" || flow.phase == "claiming" ? "claims.review" : "claims.title"))
+                    PageHeading(title: flow.phase == "entry" ? entryTitle : NativeText.text(flow.phase == "complete" ? "claims.added" : flow.phase == "review" || flow.phase == "claiming" ? "claims.review" : "claims.title"))
                     switch flow.phase {
                     case "entry": if flow.isPresented { entry }
                     case "signIn":
@@ -67,7 +69,9 @@ struct ReceiveView: View {
         #endif
         .sheet(isPresented: $showWeb) {
             if let url = flow.link?.webURL { ClaimWebBrowser(url: url) }
-        }.onDisappear { photoTask?.cancel(); link = "" }
+        }.photosPicker(isPresented: $showPhotoPicker, selection: $photo, matching: .images)
+            .task { if flow.phase == "entry" { if flow.entryMode == .photo { showPhotoPicker = true }; if flow.entryMode == .link { typing = true } } }
+            .onDisappear { photoTask?.cancel(); link = "" }
             .onChange(of: photo) { _, value in
                 photoTask?.cancel(); photoError = nil
                 guard let value else { return }
@@ -85,9 +89,13 @@ struct ReceiveView: View {
         let photoTitle = NativeText.text(readingPhoto ? "claims.readingPhoto" : "claims.choosePhoto")
         return VStack(alignment: .leading, spacing: 20) {
             Text(NativeText.text("claims.intro")).font(.title3).foregroundStyle(Palette.secondary)
-            QRScannerView { value in typing = false; Task { await flow.receive(value) } }
+            if flow.entryMode == .scan {
+                QRScannerView { value in typing = false; Task { await flow.receive(value) } }
+            } else {
+                Image("ClaimScanIllustration").resizable().scaledToFit().frame(height: 110).frame(maxWidth: .infinity).accessibilityHidden(true)
+            }
             Text(NativeText.text("claims.beforeAdding")).font(.subheadline).foregroundStyle(Palette.secondary)
-            PhotosPicker(selection: $photo, matching: .images) {
+            Button { showPhotoPicker = true } label: {
                 Label(photoTitle, systemImage: "photo")
                     .font(.headline).frame(maxWidth: .infinity, minHeight: 54)
             }.disabled(readingPhoto).background(Palette.surface, in: RoundedRectangle(cornerRadius: 18)).accessibilityIdentifier("claim-photo")
@@ -95,7 +103,7 @@ struct ReceiveView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text(NativeText.text("claims.paste")).font(.headline)
                 TextField(NativeText.text("claims.linkPlaceholder"), text: $link).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .focused($typing).privacySensitive().accessibilityIdentifier("claim-link")
+                    .focused($typing).submitLabel(.done).onSubmit { typing = false }.privacySensitive().accessibilityIdentifier("claim-link")
                 if flow.isDemo { Button("Use Sample Link") { link = "learncard-native-demo://claim/first-aid" }.accessibilityIdentifier("use-sample-link") }
                 PrimaryButton(title: NativeText.text("claims.review"), disabled: link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, fill: Palette.selection) {
                     let value = link; link = ""; typing = false; Task { await flow.receive(value) }

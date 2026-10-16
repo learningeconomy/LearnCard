@@ -14,6 +14,7 @@ public final class NativeAppStore {
     public let consumer: ConsumerAppsStore
     public let families: FamiliesStore
     public let inbox: InboxStore
+    public let people: PeopleStore
     public var demoClaimService: any ClaimService { DemoClaimService(service: service) }
     /// Matches the tray and Home; credential arrival notices must not count twice.
     public var unreadInboxUpdateCount: Int {
@@ -21,12 +22,20 @@ public final class NativeAppStore {
     }
     public var inboxCount: Int { (snapshot?.offers.count ?? 0) + unreadInboxUpdateCount }
 
-    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil) {
+    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil, peopleService: (any PeopleService)? = nil) {
         self.service = service
         self.isLive = isLive
         consumer = ConsumerAppsStore(service: consumerService ?? (isLive ? UnavailableConsumerAppService() : DemoConsumerAppService()))
         families = FamiliesStore(service: familyService ?? (isLive ? UnavailableFamilyService() : DemoFamilyService()))
-        inbox = InboxStore(service: inboxService ?? (isLive ? UnavailableInboxService() : DemoInboxService()))
+        let demoPeople = DemoPeopleService()
+        inbox = InboxStore(service: inboxService ?? (isLive ? UnavailableInboxService() : DemoInboxService(people: demoPeople)))
+        people = PeopleStore(service: peopleService ?? (isLive ? UnavailablePeopleService() : demoPeople))
+        people.didChange = { [weak inbox] person in
+            guard let inbox else { return }
+            await inbox.load()
+            await inbox.markRelationshipRead(profileID: person.id)
+        }
+        inbox.relationshipsChanged = { [weak people] in people?.invalidate() }
     }
 
     public func refresh() async {

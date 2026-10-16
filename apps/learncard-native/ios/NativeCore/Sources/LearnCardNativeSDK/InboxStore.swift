@@ -17,6 +17,7 @@ import LearnCardNativeCore
     public private(set) var busyID: String?
     public var error: String?
     public var metadataPending = false
+    public var relationshipsChanged: (@MainActor () -> Void)?
     public var unreadCount: Int { items.filter { !$0.read }.count }
     public func updates(excluding pendingCredentialIDs: Set<String>) -> [InboxItem] {
         items.filter { item in
@@ -59,8 +60,15 @@ import LearnCardNativeCore
                 if outcome.dismissed { return nil }; var next = value; next.read = true; next.status = outcome.status; return next
             }
             postClaimPrompts.removeAll { $0.id == item.id || (item.promptID != nil && $0.promptID == item.promptID) }
+            if [.accept, .connect, .skip].contains(action) { relationshipsChanged?() }
             return true
         } catch { if expected == generation && !Task.isCancelled { self.error = friendly(error) }; return false }
+    }
+    /// A relationship changed through People. Refresh first; only settled request
+    /// notifications for that person are marked read. Prompt decisions remain explicit.
+    public func markRelationshipRead(profileID: String) async {
+        let settled = items.filter { $0.kind == .request && $0.profileID == profileID && !$0.actionable && !$0.read }
+        for item in settled { guard !locked else { return }; _ = await act(item, .read) }
     }
     public func afterClaim() async {
         if let demo = service as? DemoInboxService { await demo.afterClaim() }

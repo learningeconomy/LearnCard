@@ -51,6 +51,7 @@ import type { NativeGlobal, NativeUser, NativeMessage } from './types';
 import { LCN_DID_WEB_REGEX } from '../../../packages/learn-card-base/src/constants/regexes';
 import { createConsumerCommands, consumerErrorCode } from './consumer-apps';
 import { createInboxCommands, inboxErrorCode } from './inbox';
+import { createPeopleCommands, peopleErrorCode } from './people';
 import { createFamilyCommands, familyErrorCode, type FamilyPinService } from './families';
 import { getClient as getAccountAPI } from '@learncard/lca-api-client';
 import { isFamilyCreation, sendPersonalCreation } from './personal-creations';
@@ -506,6 +507,7 @@ const commands = {
         }
     ),
     ...signupCommands,
+    ...createPeopleCommands(() => wallet),
     ...createConsumerCommands(() => wallet),
     ...createInboxCommands(
         () => wallet,
@@ -924,17 +926,19 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
                           ? signupErrorCode(error)
                           : method.startsWith('claims')
                             ? claimErrorCode(error)
-                            : method.startsWith('inbox')
-                              ? inboxErrorCode(error)
-                              : method.startsWith('families')
-                                ? familyErrorCode(error)
-                                : method.startsWith('apps') || method.startsWith('privacy')
-                                  ? consumerErrorCode(error)
-                                  : method === 'initialize'
-                                    ? 'connection'
-                                    : method === 'recover'
-                                      ? 'recovery'
-                                      : 'unavailable',
+                            : method.startsWith('people')
+                              ? peopleErrorCode(error)
+                              : method.startsWith('inbox')
+                                ? inboxErrorCode(error)
+                                : method.startsWith('families')
+                                  ? familyErrorCode(error)
+                                  : method.startsWith('apps') || method.startsWith('privacy')
+                                    ? consumerErrorCode(error)
+                                    : method === 'initialize'
+                                      ? 'connection'
+                                      : method === 'recover'
+                                        ? 'recovery'
+                                        : 'unavailable',
                 });
             }
         },

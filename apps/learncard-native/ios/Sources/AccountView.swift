@@ -26,6 +26,8 @@ struct AccountView: View {
                         }.padding(16).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
                     }.accessibilityIdentifier("account-edit-profile")
                     VStack(spacing: 0) {
+                        NavigationLink { PeopleView(appStore: store) } label: { DrawnSettingsRow(title: NativeText.text("people.title"), symbol: .people, tint: Palette.lilacCard) }.accessibilityIdentifier("account-people")
+                        divider
                         NavigationLink { FamiliesView(appStore: store) } label: { DrawnSettingsRow(title: NativeText.text("family.title"), symbol: .family, tint: Palette.blueCard) }.accessibilityIdentifier("account-families")
                         divider
                         NavigationLink { DataSharingView(consumer: store.consumer) } label: { DrawnSettingsRow(title: "Data Sharing", symbol: .sharing, tint: Palette.studiesCard) }.accessibilityIdentifier("account-data-sharing")

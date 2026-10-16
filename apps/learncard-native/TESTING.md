@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **390 cases** (159 Bun, 136 Swift, 95 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
+Current configured suite: **416 cases** (171 Bun, 145 Swift, 100 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -22,6 +22,21 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Home actions, People and optional intake — October 16
+
+All **171 Bun**, **145 Swift** (116 XCTest +29 Swift Testing), source contracts and **20 distinct focused UI cases pass**. The configured suite is now 416 cases plus the opt-in live-exchange skip; this was targeted simulator validation, not a full 416-case run. The older full local baseline remains 366. Hosted native CI stays manual and was not dispatched.
+
+- `artifacts/people-bun-confirmed.log`: nine new People protocol cases cover multi-page search beyond the first 50, self exclusion, authoritative find states, short-query gating, stalled/cycling cursors, stale/invalid actions, lost replies, duplicate writes, restricted profiles and account replacement. Three dispatch tests exercise the actual bundled People handlers while signed out. All 171 protocol cases pass; `people-types-final.log` has the same 14 dependency diagnostics and no native feature errors. Scoped ESLint passes.
+- `people-core-confirmed.log`: all 145 Swift cases pass. Nine new cases cover replaced search queries, late list/profile/action replies after lock, duplicate taps, cursor deduplication, shared People/Inbox state, settled-notification read bookkeeping, typed errors/localization and fresh versus pending intake modes.
+- The first two UI build attempts stopped before tests: a query used an unsupported XCUI `lastMatch` member, then a People error card passed text into a consumer-specific error view. Both are corrected with explicit element queries and a focused native error card (`people-ui.log`, `people-ui-verified.log`).
+- `people-working-ui.xcresult`: 13/16 pass, including all five existing account lifecycle cases, three Home cases, both existing Inbox/prompt cases and three new People cases. Two new cases queried the scanner as a specific AX element type rather than its real identifier-bearing element; the existing Home helper only scrolled downward after Data Sharing moved upward. Queries/scroll direction are corrected. Visual inspection also caught cramped Arabic accessibility management controls; they now stack.
+- `people-final-ui.xcresult`: **12/12 pass**, all five new People/Build cases, the corrected Home apps/Data Sharing check, all four existing claim cases and both existing Inbox/prompt cases. Tests cover explicit request/accept/cancel/block/unblock, cross-entry Inbox consistency, real system photo-picker cancellation, mode-specific camera behavior, review before adding, RTL/large text and dark appearance.
+- `people-confirmed-ui.xcresult`: **2/2 pass** after the final QR-photo label refinement, rechecking hub handoff/system picker and actual Arabic accessibility layout. Together with the earlier passing unchanged cases, all 20 distinct focused UI cases pass with no unresolved failure. Screens are exported and inspected in [the native brief](design/PEOPLE_INTAKE_BRIEF.md).
+
+Release and Debug build/install pass (`people-release.log`, `people-review-install.log`). Both compiled launch catalogs pass verification. All **47 files in the complete installed payload match** (`people-install-proof.json`), including localized resources, preserved private configuration, shared authoring catalog and unchanged DIDKit. Builds remain sequential with two jobs at reduced priority; private configuration is restored byte-for-byte and the separate checks simulator is shut down.
+
+Read-only live review confirms Home's reordered group, real empty Connections/Requests/Sent/Blocked lists without errors, the three intake routes and the previously saved private “Native signup check” credential remaining in Collection. The app is relaunched to Home. No live connection request, accept, block, credential issuance, photo/document upload, account reset or sharing publication ran. Dedicated live relationship mutations, contact invitation QR, document intake, physical-camera/device and human translation review remain separate gates; see [scope and API boundaries](PEOPLE_AND_INTAKE.md).
 
 ## Credential category, type and format parity — October 16
 

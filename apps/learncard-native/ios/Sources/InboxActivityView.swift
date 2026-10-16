@@ -20,6 +20,9 @@ struct InboxView: View {
                         .frame(maxWidth: .infinity, minHeight: 50).foregroundStyle(Palette.ink)
                         .background(Palette.surface, in: RoundedRectangle(cornerRadius: 18))
                 }.accessibilityIdentifier("inbox-scan")
+                NavigationLink { PeopleView(appStore: store, initialScope: .requests) } label: {
+                    DrawnSettingsRow(title: NativeText.text("people.title"), symbol: .people, tint: Palette.lilacCard, subtitle: NativeText.text("people.inboxBody"))
+                }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22)).accessibilityIdentifier("inbox-people")
                 if let offers = store.snapshot?.offers, !offers.isEmpty {
                     HStack(spacing: 12) {
                         Image("InboxIllustration").resizable().scaledToFit().frame(width: 100, height: 82).accessibilityHidden(true)

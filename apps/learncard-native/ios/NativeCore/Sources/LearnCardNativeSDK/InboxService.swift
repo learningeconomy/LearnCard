@@ -68,13 +68,24 @@ public actor DemoInboxService: InboxService {
     private var items = [InboxItem(id: "sample-request", kind: .request, name: "Alex Morgan", profileID: "alex"),
         InboxItem(id: "sample-connection", kind: .connection, type: "CONNECTION_ACCEPTED", name: "Jordan Lee", status: .connected)]
     private var prompts: [InboxItem] = []
-    public init() {}
-    public func page(cursor: String?) -> InboxPage { InboxPage(items: items + prompts, postClaimPrompts: prompts.filter { $0.status == .pending }) }
+    private let people: DemoPeopleService?
+    public init(people: DemoPeopleService? = nil) { self.people = people }
+    public func page(cursor: String?) async -> InboxPage {
+        if let people {
+            for index in items.indices where items[index].kind == .request {
+                if let id = items[index].profileID, let person = try? await people.profile(id: id), person.status != .incoming {
+                    items[index].status = person.status == .connected ? .connected : .stale; items[index].read = true
+                }
+            }
+        }
+        return InboxPage(items: items + prompts, postClaimPrompts: prompts.filter { $0.status == .pending })
+    }
     public func afterClaim() {
         if prompts.isEmpty { prompts = [InboxItem(id: "sample-prompt", kind: .prompt, type: "CONNECTION_PROMPT", name: "LearnCard Demo Partner", status: .pending, promptID: "sample-prompt", surface: "POST_CLAIM", dismissible: false)] }
     }
-    public func act(id: String, action: InboxAction) throws -> InboxOutcome {
+    public func act(id: String, action: InboxAction) async throws -> InboxOutcome {
         guard let item = (items + prompts).first(where: { $0.id == id }) else { throw InboxError.changed }
+        if action == .accept, let people, let profileID = item.profileID { _ = try await people.act(id: profileID, action: .accept) }
         let status: InboxItem.Status = action == .accept || action == .connect ? .connected : action == .skip ? .skipped : item.status
         items = items.compactMap { value in
             guard value.id == id else { return value }; if action == .dismiss { return nil }

@@ -10,7 +10,10 @@ import XCTest
         return app
     }
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
-        for _ in 0..<5 where !element.isHittable { app.swipeUp() }
+        for _ in 0..<8 {
+            if element.exists && element.isHittable && element.frame.minY > 110 && element.frame.maxY < app.buttons["nav-home"].frame.minY { return }
+            if element.exists && element.frame.minY < 110 { app.swipeDown() } else { app.swipeUp() }
+        }
         XCTAssertTrue(element.isHittable, app.debugDescription)
     }
     private func capture(_ app: XCUIApplication, _ name: String) {

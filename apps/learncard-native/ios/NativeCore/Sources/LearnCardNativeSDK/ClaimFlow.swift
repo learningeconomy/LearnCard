@@ -103,7 +103,10 @@ public actor DemoClaimService: ClaimService {
     }
 }
 
+public enum ClaimEntryMode: String, Sendable { case scan, link, photo }
+
 @MainActor @Observable public final class NativeClaimStore {
+    public private(set) var entryMode = ClaimEntryMode.scan
     public var isPresented = false
     public private(set) var phase = "entry"
     public private(set) var credential: Credential?
@@ -123,7 +126,7 @@ public actor DemoClaimService: ClaimService {
         self.service = service; self.accountID = accountID
         if link != nil { boundAccount = accountID; isPresented = true; Task { await resolve() } }
     }
-    public func open() { if phase == "complete" { clear() }; isPresented = true }
+    public func open(mode: ClaimEntryMode = .scan) { if phase == "complete" { clear() }; if phase == "entry" { entryMode = mode }; isPresented = true }
     public func receive(_ input: String) async {
         guard phase != "claiming" else { return }
         generation += 1; credential = nil; error = nil; canRetry = false; isPresented = true
@@ -189,7 +192,7 @@ public actor DemoClaimService: ClaimService {
     }
     public func lock() {
         generation += 1; service = nil; accountID = nil; credential = nil; error = nil; canRetry = false
-        phase = link == nil ? "entry" : "signIn"; isPresented = false
+        entryMode = .scan; phase = link == nil ? "entry" : "signIn"; isPresented = false
     }
     public func clear() { generation += 1; link = nil; boundAccount = nil; credential = nil; error = nil; canRetry = false; phase = "entry"; isPresented = false }
     private func fail(_ value: any Error, retry: Bool) { error = value as? ClaimError ?? .connection; canRetry = retry && error != .family && error != .signature; phase = "failed" }

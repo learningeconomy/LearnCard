@@ -11,6 +11,7 @@ struct HomeView: View {
     let openInbox: () -> Void
     let create: () -> Void
     let receive: () -> Void
+    let intake: (ClaimEntryMode) -> Void
     let openCollection: () -> Void
     let openApps: (Bool) -> Void
     var onScrollStateChange: (Bool) -> Void = { _ in }
@@ -40,21 +41,29 @@ struct HomeView: View {
                         DrawnSettingsRow(title: "Your creations", symbol: .credential, tint: Palette.studiesCard,
                                          subtitle: NativeText.text("home.creationsBody"))
                     }.accessibilityIdentifier("home-creations")
-                }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
-                appsSection
-                VStack(spacing: 0) {
-                    NavigationLink { FamiliesView(appStore: store) } label: {
-                        DrawnSettingsRow(title: NativeText.text("family.title"), symbol: .family, tint: Palette.familyCard,
-                                         subtitle: NativeText.text("family.subtitle"))
-                    }.accessibilityIdentifier("home-families")
                     rowDivider
                     NavigationLink { DataSharingView(consumer: consumer) } label: {
                         DrawnSettingsRow(title: NativeText.text("sharing.title"), symbol: .sharing, tint: Palette.tealCard,
                                          subtitle: NativeText.text("sharing.intro"))
                     }.accessibilityIdentifier("home-data-sharing")
                 }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
-                Button(NativeText.text("claims.title"), action: receive).accessibilityIdentifier("receive")
-                        .font(.subheadline.weight(.medium)).foregroundStyle(Palette.selection).frame(minHeight: 44)
+                NavigationLink { BuildLearnCardView(receive: intake) } label: {
+                    DrawnSettingsRow(title: NativeText.text("build.title"), symbol: .credential, tint: Palette.portfolioCard, subtitle: NativeText.text("build.homeBody"))
+                }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius)).accessibilityIdentifier("home-build")
+                NavigationLink { PeopleView(appStore: store) } label: {
+                    DrawnSettingsRow(title: NativeText.text("people.title"), symbol: .people, tint: Palette.lilacCard, subtitle: NativeText.text("people.homeBody"))
+                }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius)).accessibilityIdentifier("home-people")
+                appsSection
+                VStack(spacing: 0) {
+                    NavigationLink { FamiliesView(appStore: store) } label: {
+                        DrawnSettingsRow(title: NativeText.text("family.title"), symbol: .family, tint: Palette.familyCard,
+                                         subtitle: NativeText.text("family.subtitle"))
+                    }.accessibilityIdentifier("home-families")
+
+                }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
+                Button(action: receive) {
+                    DrawnSettingsRow(title: NativeText.text("claims.title"), symbol: .scan, tint: Palette.cyanCard, subtitle: NativeText.text("build.scanBody"))
+                }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius)).accessibilityIdentifier("receive")
                 HomeSessionActivity(items: store.snapshot?.activity ?? [])
             }.padding(NativeLayout.pageInset)
         }

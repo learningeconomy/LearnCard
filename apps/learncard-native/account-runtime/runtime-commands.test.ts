@@ -200,3 +200,18 @@ test.each([
         expect(bridgeCalls).toBe(0);
     }
 );
+
+test.each(['peopleList', 'peopleProfile', 'peopleAction'])(
+    'registered %s refuses signed-out People access',
+    async method => {
+        const input =
+            method === 'peopleList'
+                ? { scope: 'connections' }
+                : method === 'peopleProfile'
+                  ? { id: 'alex' }
+                  : { id: 'alex', action: 'connect' };
+        const reply = JSON.parse(await account.call(method, input));
+        expect(reply).toEqual({ ok: false, error: 'people:signIn' });
+        expect(bridgeCalls).toBe(0);
+    }
+);

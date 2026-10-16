@@ -26,7 +26,7 @@ struct RootView: View {
             NavigationStack {
                 HomeView(store: store, profileName: account?.state?.profileName,
                          openInbox: { selectedTab = 1 }, create: { showCreate = true },
-                         receive: { claims.open() }, openCollection: { selectedTab = 0 },
+                         receive: { claims.open() }, intake: { claims.open(mode: $0) }, openCollection: { selectedTab = 0 },
                          openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
                     .toolbar { header(tab: 3) }
             }
