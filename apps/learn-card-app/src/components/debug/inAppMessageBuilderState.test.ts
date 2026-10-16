@@ -58,6 +58,25 @@ describe('message builder raw targeting validation', () => {
 });
 
 describe('message builder credential round-trip', () => {
+    it('omits claim filters after changing a claim template to app.opened', () => {
+        const template = IN_APP_MESSAGE_TEMPLATES.find(
+            candidate => candidate.key === 'clr-claim-celebration-example'
+        );
+        const message = inAppMessageValidator.parse(template?.json);
+        const state = messageToBuilderState(message);
+        state.triggerEvent = 'app.opened';
+
+        const draft = buildDraftJson(state);
+        expect(draft.trigger).toEqual({
+            event: 'app.opened',
+            windowMinutes: message.trigger?.windowMinutes,
+        });
+        expect(inAppMessageValidator.safeParse(draft).success).toBe(true);
+
+        state.triggerEvent = 'credential.claimed';
+        expect(buildDraftJson(state).trigger).toEqual(message.trigger);
+    });
+
     it.each(IN_APP_MESSAGE_TEMPLATES.filter(template => template.key.startsWith('clr-')))(
         '$key',
         template => {
