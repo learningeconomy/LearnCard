@@ -37,6 +37,7 @@ const isSummary = (value: unknown): value is CredentialSummary => {
 
     return (
         typeof summary.uri === 'string' &&
+        (typeof summary.name === 'string' || summary.name === null || summary.name === undefined) &&
         (typeof summary.category === 'string' || summary.category === null) &&
         Array.isArray(summary.types) &&
         summary.types.every(value => typeof value === 'string') &&

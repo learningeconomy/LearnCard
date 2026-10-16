@@ -16,7 +16,10 @@ describe('summarizeCredential', () => {
                 issuer: { id: 'did:example:university' },
                 validFrom: '2026-10-13T12:00:00Z',
                 credentialSubject: {
-                    achievement: { achievementType: 'Certificate' },
+                    achievement: {
+                        achievementType: 'Certificate',
+                        name: 'Applied Research Certificate',
+                    },
                 },
             },
             'Qualifications'
@@ -24,6 +27,7 @@ describe('summarizeCredential', () => {
 
         expect(summary).toEqual({
             uri: 'lc:obv3',
+            name: 'Applied Research Certificate',
             category: 'Qualifications',
             types: ['VerifiableCredential', 'OpenBadgeCredential'],
             issuer: 'did:example:university',
@@ -41,6 +45,7 @@ describe('summarizeCredential', () => {
                 issuer: 'did:example:wrapper',
                 boostCredential: {
                     type: ['VerifiableCredential', 'ClrCredential'],
+                    name: 'Academic Record — Spring 2024',
                     issuer: 'did:example:clr',
                     issuanceDate: '2026-10-12T12:00:00Z',
                     credentialSubject: {
@@ -67,6 +72,7 @@ describe('summarizeCredential', () => {
         );
 
         expect(summary.types).toContain('ClrCredential');
+        expect(summary.name).toBe('Academic Record — Spring 2024');
         expect(summary.issuer).toBe('did:example:clr');
         expect(summary.nestedIssuers).toEqual([
             'did:example:nested-string',

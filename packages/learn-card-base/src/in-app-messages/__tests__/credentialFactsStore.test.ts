@@ -10,6 +10,7 @@ import type { CredentialSummary } from '../credentialFacts';
 
 const summary = (uri: string, issuer: string): CredentialSummary => ({
     uri,
+    name: null,
     category: 'Learning History',
     types: ['VerifiableCredential', 'ClrCredential'],
     issuer,

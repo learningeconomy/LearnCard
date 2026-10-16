@@ -1,4 +1,5 @@
 import type { CredentialFactsSource } from '../credentialFactsLoader';
+import type { CredentialSummary } from '../credentialFacts';
 
 const did = 'did:example:learner';
 const vc = { type: ['VerifiableCredential', 'ClrCredential'], issuer: 'did:example:pilot' };
@@ -67,6 +68,35 @@ describe('credential facts backfill', () => {
         expect(loader.getSnapshot()).toMatchObject({ complete: true, readsUsed: 0 });
     });
 
+    it('enriches a legacy summary with its name during a forced backfill', async () => {
+        const { createCredentialFactsLoader } = await import('../credentialFactsLoader');
+        const { saveCredentialFact } = await import('../credentialFactsStore');
+        const legacySummary = {
+            uri: 'lc:legacy',
+            category: 'Learning History',
+            types: ['VerifiableCredential'],
+            issuer: 'did:example:pilot',
+            nestedIssuers: [],
+            achievementTypes: [],
+            issuedAt: null,
+        } as CredentialSummary;
+        await saveCredentialFact(did, legacySummary);
+        const loader = createCredentialFactsLoader(did);
+        const source = sourceFor(1);
+        source.list = vi
+            .fn()
+            .mockResolvedValue([{ uri: 'lc:legacy', category: 'Learning History' }]);
+        source.read = vi.fn().mockResolvedValue({
+            ...vc,
+            name: 'Legacy credential name',
+        });
+
+        await loader.refresh(source, true);
+
+        expect(source.read).toHaveBeenCalledOnce();
+        expect(loader.getSnapshot().summaries?.[0]?.name).toBe('Legacy credential name');
+    });
+
     it('enforces the session decrypt budget during a forced backfill', async () => {
         const { createCredentialFactsLoader, MAX_SESSION_DECRYPTS } =
             await import('../credentialFactsLoader');
@@ -92,11 +122,16 @@ describe('credential facts backfill', () => {
         expect(source.read).toHaveBeenCalledTimes(2);
         await loader.refresh(source);
         expect(source.list).toHaveBeenCalledTimes(1);
-        source.list = vi.fn().mockResolvedValue([{ uri: 'lc:1', category: 'Achievement' }]);
+        source.list = vi
+            .fn()
+            .mockResolvedValue([
+                { uri: 'lc:1', category: 'Achievement', title: 'Updated credential name' },
+            ]);
         await loader.refresh(source, true);
         expect(loader.getSnapshot()).toMatchObject({ total: 1, complete: true });
         expect(loader.getSnapshot().summaries?.[0]).toMatchObject({
             uri: 'lc:1',
+            name: 'Updated credential name',
             category: 'Achievement',
         });
         expect(source.read).toHaveBeenCalledTimes(2);
