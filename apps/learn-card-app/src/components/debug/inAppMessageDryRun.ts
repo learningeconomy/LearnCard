@@ -1,36 +1,58 @@
+import { clrMinimal } from '@learncard/credential-library';
 import type { InAppMessage } from '@learncard/types';
 import {
     explainMessage,
     type InAppMessageRuntimeContext,
     type PredicateTrace,
 } from 'learn-card-base/in-app-messages/predicates';
-import { summarizeCredential } from 'learn-card-base/in-app-messages/credentialFacts';
+import {
+    summarizeCredential,
+    type CredentialSummary,
+} from 'learn-card-base/in-app-messages/credentialFacts';
 
 export const CREDENTIAL_PRESETS = [
     'This device',
     'None',
-    'Pilot CLR',
-    'Other-issuer CLR',
-    'Pilot non-CLR',
+    'Library CLR (clr/minimal)',
+    'Other-issuer library CLR',
+    'Library fixture non-CLR',
     'Incomplete facts',
 ] as const;
 export type CredentialPreset = (typeof CREDENTIAL_PRESETS)[number];
-export const PILOT_ISSUER = 'did:example:pilot-issuer';
+export const CREDENTIAL_LIBRARY_CLR_ISSUER = 'did:example:stateuniversity';
+export const CREDENTIAL_LIBRARY_CLR_CONDITION = {
+    vcTypes: ['ClrCredential'],
+    achievementTypes: ['Course'],
+};
+
+export const summarizeCredentialLibraryClr = (
+    uri: string,
+    issuer: string,
+    type: string,
+    issuedAt: string
+): CredentialSummary =>
+    summarizeCredential(
+        uri,
+        {
+            ...clrMinimal.credential,
+            issuer,
+            type: ['VerifiableCredential', type],
+            validFrom: issuedAt,
+        },
+        'Learning History'
+    );
 
 export const buildCredentialDryRunContext = (
     base: InAppMessageRuntimeContext,
     preset: CredentialPreset,
     simulateClaim: boolean,
-    issuer = PILOT_ISSUER
+    issuer = CREDENTIAL_LIBRARY_CLR_ISSUER
 ): InAppMessageRuntimeContext => {
-    const pilot = summarizeCredential(
-        'debug:pilot-clr',
-        {
-            type: ['VerifiableCredential', 'ClrCredential'],
-            issuer,
-            validFrom: new Date(base.now).toISOString(),
-        },
-        'Learning History'
+    const libraryClr = summarizeCredentialLibraryClr(
+        `debug:credential-library:${clrMinimal.id}`,
+        issuer,
+        'ClrCredential',
+        new Date(base.now).toISOString()
     );
     const credentials =
         preset === 'This device'
@@ -39,12 +61,15 @@ export const buildCredentialDryRunContext = (
               ? []
               : [
                     {
-                        ...pilot,
-                        issuer: preset === 'Other-issuer CLR' ? 'did:example:other-issuer' : issuer,
+                        ...libraryClr,
+                        issuer:
+                            preset === 'Other-issuer library CLR'
+                                ? 'did:example:other-issuer'
+                                : issuer,
                         types:
-                            preset === 'Pilot non-CLR'
+                            preset === 'Library fixture non-CLR'
                                 ? ['VerifiableCredential', 'OpenBadgeCredential']
-                                : pilot.types,
+                                : libraryClr.types,
                     },
                 ];
     return {
@@ -57,7 +82,7 @@ export const buildCredentialDryRunContext = (
                   {
                       event: 'credential.claimed',
                       occurredAt: base.now,
-                      credential: credentials?.[0] ?? pilot,
+                      credential: credentials?.[0] ?? libraryClr,
                   },
               ]
             : preset === 'This device'

@@ -53,7 +53,6 @@ import {
     type InAppMessageDiagnostic,
     type InAppMessageRuntimeContext,
     type PredicateTrace,
-    summarizeCredential,
 } from 'learn-card-base';
 
 import { KVRow, Section, useCopyToClipboard } from './debugComponents';
@@ -63,10 +62,11 @@ import {
 } from './inAppMessageTemplates';
 import { InAppMessageBuilder, debugFieldInputStyle } from './InAppMessageBuilder';
 import {
+    CREDENTIAL_LIBRARY_CLR_ISSUER,
     CREDENTIAL_PRESETS,
-    PILOT_ISSUER,
     buildCredentialDryRunContext,
     explainDryRunFailure,
+    summarizeCredentialLibraryClr,
 } from './inAppMessageDryRun';
 
 const frequencyLabel = (message: InAppMessage | undefined): string => {
@@ -305,7 +305,7 @@ const TargetingDryRun: React.FC<{
     const [selectedId, setSelectedId] = useState<string>('');
     const [role, setRole] = useState<string>('learner');
     const [simulateClaim, setSimulateClaim] = useState(false);
-    const [pilotIssuer, setPilotIssuer] = useState(PILOT_ISSUER);
+    const [fixtureIssuer, setFixtureIssuer] = useState(CREDENTIAL_LIBRARY_CLR_ISSUER);
 
     const selected = useMemo(() => {
         if (selectedId === DRAFT_OPTION) return draft;
@@ -358,14 +358,14 @@ const TargetingDryRun: React.FC<{
                     <div className="p-3 bg-white rounded-xl space-y-2 font-poppins">
                         <label
                             className="block text-xs text-grayscale-700"
-                            htmlFor="iam-pilot-issuer"
+                            htmlFor="iam-fixture-issuer"
                         >
-                            Pilot issuer
+                            Fixture issuer
                         </label>
                         <input
-                            id="iam-pilot-issuer"
-                            value={pilotIssuer}
-                            onChange={e => setPilotIssuer(e.target.value)}
+                            id="iam-fixture-issuer"
+                            value={fixtureIssuer}
+                            onChange={e => setFixtureIssuer(e.target.value)}
                             className="w-full p-2 bg-white text-grayscale-900 border border-grayscale-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500"
                         />
                         <label className="flex items-center gap-2 text-xs text-grayscale-700">
@@ -383,7 +383,7 @@ const TargetingDryRun: React.FC<{
                                 currentContext,
                                 preset,
                                 simulateClaim,
-                                pilotIssuer
+                                fixtureIssuer
                             );
                             return (
                                 <DryRunRow
@@ -445,7 +445,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
         message: string;
     } | null>(null);
     const [credentialFilter, setCredentialFilter] = useState('');
-    const [simulatedIssuer, setSimulatedIssuer] = useState(PILOT_ISSUER);
+    const [simulatedIssuer, setSimulatedIssuer] = useState(CREDENTIAL_LIBRARY_CLR_ISSUER);
     const [simulatedType, setSimulatedType] = useState('ClrCredential');
 
     const [, setResetCount] = useState(0);
@@ -866,14 +866,11 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         onClick={() =>
                             emitInAppMessageEvent('credential.claimed', {
                                 accountDid: credentialFacts.accountDid ?? undefined,
-                                credential: summarizeCredential(
+                                credential: summarizeCredentialLibraryClr(
                                     'debug:claim',
-                                    {
-                                        issuer: simulatedIssuer,
-                                        type: [simulatedType],
-                                        validFrom: new Date().toISOString(),
-                                    },
-                                    'Learning History'
+                                    simulatedIssuer,
+                                    simulatedType,
+                                    new Date().toISOString()
                                 ),
                             })
                         }

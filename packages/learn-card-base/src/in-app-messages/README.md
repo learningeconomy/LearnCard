@@ -452,10 +452,13 @@ can see exactly which clause vetoed a message. `getLastInAppMessagesReport()` an
 
 The LearnCard debug panel adds an issuer/type-filtered local facts inspector, copy-as-rule,
 picked/hand-entered claim simulation, the last ten events, and invalid-message diagnostics.
-Dry-run presets are **This device**, **None**, **Pilot CLR**, **Other issuer**, **Pilot non-CLR**,
-and **Incomplete**, with an optional claim event and the first failing rule shown. The builder
-supports credential predicates, negation/nested JSON trees, triggers, and fatigue bypass, and
-includes CLR claim-celebration and holder-nudge templates. Simulations do not add real credentials.
+Dry-run presets are **This device**, **None**, **Library CLR (`clr/minimal`)**, **Other-issuer
+library CLR**, **Library fixture non-CLR**, and **Incomplete**, with an optional claim event and the
+first failing rule shown. The CLR presets summarize the actual `clr/minimal` fixture from
+`@learncard/credential-library`; the ready-made templates match its stable `ClrCredential` and
+`Course` facts rather than its issuer because fixture issuance replaces the issuer with the signing
+wallet's DID. The builder supports credential predicates, negation/nested JSON trees, triggers,
+and fatigue bypass. Simulations do not add real credentials.
 Scouts has the same console APIs without requiring the LearnCard debug panel. The panel is lazy
 loaded only for dev/debug-enabled builds; normal production builds omit it.
 

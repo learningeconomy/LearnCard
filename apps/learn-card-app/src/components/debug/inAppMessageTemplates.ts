@@ -18,6 +18,8 @@
  * applied exactly like a real LaunchDarkly flag value would be.
  */
 
+import { CREDENTIAL_LIBRARY_CLR_CONDITION } from './inAppMessageDryRun';
+
 export type InAppMessageTemplateCategory =
     'Basics' | 'Announcements' | 'Updates' | 'Targeting' | 'Operational';
 
@@ -390,8 +392,8 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
     },
     {
         key: 'clr-claim-celebration-example',
-        label: 'CLR claim trigger',
-        description: 'Test-only modal triggered by claiming a CLR from the configured issuer.',
+        label: 'Credential Library CLR claim',
+        description: 'Triggered by claiming the credential-library clr/minimal fixture.',
         category: 'Targeting',
         json: {
             id: 'clr-claim-celebration-example',
@@ -402,18 +404,15 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
             actions: [{ label: 'Done', style: 'primary', action: { type: 'dismiss' } }],
             trigger: {
                 event: 'credential.claimed',
-                where: {
-                    issuers: ['did:example:pilot-issuer'],
-                    vcTypes: ['ClrCredential'],
-                },
+                where: CREDENTIAL_LIBRARY_CLR_CONDITION,
                 windowMinutes: 10,
             },
         },
     },
     {
         key: 'clr-holder-nudge-example',
-        label: 'CLR holder targeting',
-        description: 'Test-only banner for devices holding a matching CLR.',
+        label: 'Credential Library CLR holder',
+        description: 'Targets holders of the credential-library clr/minimal fixture.',
         category: 'Targeting',
         json: {
             id: 'clr-holder-nudge-example',
@@ -424,8 +423,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
             actions: [{ label: 'Dismiss', style: 'dismiss', action: { type: 'dismiss' } }],
             targeting: {
                 credential: {
-                    issuers: ['did:example:pilot-issuer'],
-                    vcTypes: ['ClrCredential'],
+                    ...CREDENTIAL_LIBRARY_CLR_CONDITION,
                     minCount: 1,
                 },
             },
