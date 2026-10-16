@@ -16,6 +16,22 @@ const DEFAULT_PRESERVED = ['lcb-sss-keys'];
  */
 export const clearAllIndexedDB = async (strategy?: KeyDerivationStrategy): Promise<void> => {
     try {
+        const [
+            { stopCredentialFactsLoaders },
+            { disposeCredentialFacts },
+            { resetInAppMessageEventSession },
+        ] = await Promise.all([
+            import('../in-app-messages/credentialFactsLoader'),
+            import('../in-app-messages/credentialFactsStore'),
+            import('../in-app-messages/inAppMessageEvents'),
+        ]);
+        stopCredentialFactsLoaders();
+        resetInAppMessageEventSession();
+        await disposeCredentialFacts();
+    } catch {
+        // A failed dynamic import must not prevent the general logout database sweep.
+    }
+    try {
         const preserved = new Set(strategy?.getPreservedStorageKeys() ?? DEFAULT_PRESERVED);
 
         const databases = await window.indexedDB.databases();

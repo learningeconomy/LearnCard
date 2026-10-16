@@ -7,6 +7,7 @@ import {
     messageMatches,
     pickHighestPriority,
     tracePredicate,
+    triggerSatisfied,
     type InAppMessageRuntimeContext,
 } from '../predicates';
 
@@ -14,6 +15,10 @@ const ctx = (overrides: Partial<InAppMessageRuntimeContext> = {}): InAppMessageR
     platform: 'ios',
     role: 'learner',
     versions: { native: '1.0.5', web: '2.3.1', capgo: '1.0.7' },
+    now: Date.parse('2026-10-14T12:00:00Z'),
+    credentials: [],
+    credentialsComplete: true,
+    recentEvents: [],
     ...overrides,
 });
 
@@ -104,6 +109,7 @@ describe('messageMatches', () => {
         title: 'Hi',
         actions: [],
         enabled: true,
+        bypassFatigue: false,
     };
 
     it('matches everyone when no targeting is present', () => {
@@ -116,6 +122,176 @@ describe('messageMatches', () => {
 
     it('applies targeting when present', () => {
         expect(messageMatches({ ...base, targeting: { platform: ['android'] } }, ctx())).toBe(
+            false
+        );
+    });
+
+    it('matches a credential leaf using one credential and minCount', () => {
+        const credential = {
+            uri: 'lc:one',
+            category: 'Learning History',
+            types: ['VerifiableCredential', 'ClrCredential'],
+            issuer: 'did:example:pilot',
+            nestedIssuers: ['did:example:nested'],
+            achievementTypes: ['Course'],
+            issuedAt: '2026-10-13T12:00:00Z',
+        };
+        const targeting = {
+            credential: {
+                issuers: ['did:example:pilot'] as [string],
+                vcTypes: ['ClrCredential'] as [string],
+                minCount: 1,
+            },
+        };
+
+        expect(messageMatches({ ...base, targeting }, ctx({ credentials: [credential] }))).toBe(
+            true
+        );
+        expect(
+            messageMatches(
+                { ...base, targeting: { credential: { ...targeting.credential, minCount: 2 } } },
+                ctx({ credentials: [credential] })
+            )
+        ).toBe(false);
+    });
+
+    it('does not combine credential fields across different credentials', () => {
+        const credentials = [
+            {
+                uri: 'lc:issuer',
+                category: 'Achievement',
+                types: ['VerifiableCredential'],
+                issuer: 'did:example:pilot',
+                nestedIssuers: [],
+                achievementTypes: [],
+                issuedAt: null,
+            },
+            {
+                uri: 'lc:clr',
+                category: 'Learning History',
+                types: ['VerifiableCredential', 'ClrCredential'],
+                issuer: 'did:example:other',
+                nestedIssuers: [],
+                achievementTypes: [],
+                issuedAt: null,
+            },
+        ];
+
+        expect(
+            messageMatches(
+                {
+                    ...base,
+                    targeting: {
+                        credential: {
+                            issuers: ['did:example:pilot'],
+                            vcTypes: ['ClrCredential'],
+                            minCount: 1,
+                        },
+                    },
+                },
+                ctx({ credentials })
+            )
+        ).toBe(false);
+    });
+
+    it('fails closed for null facts and a credential leaf under not while incomplete', () => {
+        const targeting = {
+            credential: { issuers: ['did:example:pilot'] as [string], minCount: 1 },
+        };
+
+        expect(messageMatches({ ...base, targeting }, ctx({ credentials: null }))).toBe(false);
+        expect(
+            messageMatches(
+                { ...base, targeting: { not: targeting } },
+                ctx({ credentials: [], credentialsComplete: false })
+            )
+        ).toBe(false);
+        expect(
+            messageMatches(
+                { ...base, targeting: { not: targeting } },
+                ctx({ credentials: [], credentialsComplete: true })
+            )
+        ).toBe(true);
+    });
+
+    it('vetoes the whole message when any negated credential leaf is incomplete', () => {
+        const unknownAbsence = {
+            not: {
+                credential: { issuers: ['did:example:pilot'] as [string], minCount: 1 },
+            },
+        };
+        const incomplete = ctx({ credentials: [], credentialsComplete: false });
+
+        expect(
+            evaluatePredicate({ any: [{ platform: ['ios'] }, unknownAbsence] }, incomplete)
+        ).toBe(false);
+        expect(
+            evaluatePredicate({ all: [{ platform: ['android'] }, unknownAbsence] }, incomplete)
+        ).toBe(false);
+        expect(
+            evaluatePredicate({ any: [{ platform: ['android'] }, unknownAbsence] }, incomplete)
+        ).toBe(false);
+        expect(
+            messageMatches(
+                { ...base, targeting: { any: [{ platform: ['ios'] }, unknownAbsence] } },
+                incomplete
+            )
+        ).toBe(false);
+        expect(
+            evaluatePredicate(
+                { not: { all: [{ platform: ['android'] }, unknownAbsence] } },
+                incomplete
+            )
+        ).toBe(false);
+        expect(
+            tracePredicate({ any: [{ platform: ['ios'] }, unknownAbsence] }, incomplete).result
+        ).toBe(false);
+    });
+});
+
+describe('triggerSatisfied', () => {
+    const summary = {
+        uri: 'lc:claim',
+        category: 'Learning History',
+        types: ['VerifiableCredential', 'ClrCredential'],
+        issuer: 'did:example:pilot',
+        nestedIssuers: [],
+        achievementTypes: [],
+        issuedAt: '2026-10-14T11:58:00Z',
+    };
+
+    it('requires a recent event and applies where to the event credential', () => {
+        const context = ctx({
+            recentEvents: [
+                {
+                    event: 'credential.claimed',
+                    occurredAt: Date.parse('2026-10-14T11:58:00Z'),
+                    credential: summary,
+                },
+            ],
+        });
+
+        expect(
+            triggerSatisfied(
+                {
+                    event: 'credential.claimed',
+                    where: { issuers: ['did:example:pilot'], vcTypes: ['ClrCredential'] },
+                    windowMinutes: 10,
+                },
+                context
+            )
+        ).toBe(true);
+        expect(
+            triggerSatisfied(
+                {
+                    event: 'credential.claimed',
+                    where: { issuers: ['did:example:other'] },
+                    windowMinutes: 10,
+                },
+                context
+            )
+        ).toBe(false);
+        expect(triggerSatisfied({ event: 'credential.claimed', windowMinutes: 1 }, context)).toBe(
             false
         );
     });
@@ -167,6 +343,7 @@ describe('explainMessage', () => {
         title: 'Hi',
         actions: [],
         enabled: true,
+        bypassFatigue: false,
         targeting: { role: ['teacher'] },
     };
 
@@ -219,6 +396,7 @@ describe('pickHighestPriority', () => {
         title: id,
         actions: [],
         enabled: true,
+        bypassFatigue: false,
     });
 
     it('returns null for an empty list', () => {
