@@ -83,7 +83,9 @@ export const UploadFileOutcomeList: React.FC<Props> = ({
                 const retryKind =
                     item.status === 'save_failed'
                         ? 'save'
-                        : item.status === 'stored' || item.status === 'review'
+                        : item.status === 'stored' ||
+                            item.status === 'review' ||
+                            item.status === 'saving_original'
                           ? undefined
                           : 'extraction';
                 return (

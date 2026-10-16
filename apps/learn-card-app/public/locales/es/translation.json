@@ -405,6 +405,7 @@
                 "documentNoSelection": "Tu archivo está guardado. No se seleccionaron credenciales.",
                 "credentialsReady": "Credenciales listas para revisar: {{count}}.",
                 "extractionFailedOriginalSaved": "No se pudieron extraer credenciales. El documento original está guardado.",
+                "extractionFailedSavingOriginal": "No se pudieron extraer credenciales. Guardando el documento original...",
                 "documentAndCredentialsSaved": "Documento guardado. Credenciales guardadas: {{count}}.",
                 "saveOutcomeError": "No pudimos guardar tu archivo. Puedes volver a intentarlo.",
                 "credentialSaveOutcomeError": "Tu archivo está guardado. No se pudieron guardar algunas credenciales seleccionadas.",

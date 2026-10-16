@@ -286,7 +286,7 @@ export const CheckListTranscripts: React.FC = () => {
                 </>
             ) : (
                 <>
-                    {(isSaving || isParsing) && !loaderDismissed && (
+                    {isParsing && !isSaving && !loaderDismissed && (
                         <ChecklistLoader
                             fileType={UploadTypesEnum.Transcript}
                             onDismiss={() => setLoaderDismissed(true)}

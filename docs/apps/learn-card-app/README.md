@@ -120,6 +120,9 @@ An empty result or a file with no readable text does not create a credential or 
 original. Choose another file or retry extraction while the upload step remains open.
 Processing failures still keep the original when its save succeeds. A failed save does
 not claim that the file is saved; retry saving without running extraction again.
+The extraction overlay closes when the original starts saving. An inline message explains
+that extraction failed and saving is in progress; it only says the original is saved after
+the save is confirmed.
 
 Review can be closed and reopened within the same app session. Selecting none still saves
 the original, but does not mean extraction found nothing. Saved counts include only confirmed

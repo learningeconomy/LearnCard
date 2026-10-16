@@ -1,10 +1,11 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
+import type { FileUploadOutcome } from '../../../../hooks/uploadFile.types';
 
 type UploadFileOutcomePanelProps = {
     message?: string;
     retryKind?: 'extraction' | 'save';
-    status?: 'empty' | 'review' | 'extraction_failed' | 'save_failed' | 'stored';
+    status?: FileUploadOutcome['status'];
     fileName?: string;
     extractedCount?: number;
     storedCount?: number;
@@ -28,35 +29,46 @@ export const UploadFileOutcomePanel: React.FC<UploadFileOutcomePanelProps> = ({
 }) => {
     const isFailure = status === 'save_failed' || retryKind === 'save';
     const isReady = status === 'review' || status === 'stored';
+    const isSavingOriginal = status === 'saving_original';
     const panelClass = isFailure
         ? 'border-red-200 bg-red-50 text-red-700'
         : isReady
           ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
           : 'border-amber-200 bg-amber-50 text-amber-900';
-    const defaultMessage =
-        status === 'empty'
-            ? m['passport.buildMyLearnCard.managers.documentNoCredentials']()
-            : status === 'review'
-              ? m['passport.buildMyLearnCard.managers.credentialsReady']({
-                    count: extractedCount ?? 0,
-                })
-              : status === 'stored'
-                ? selectedCount === 0 && (extractedCount ?? 0) > 0
-                    ? m['passport.buildMyLearnCard.managers.documentNoSelection']()
-                    : m['passport.buildMyLearnCard.managers.documentAndCredentialsSaved']({
-                          count: storedCount ?? 0,
-                      })
-                : status === 'extraction_failed'
-                  ? m['passport.buildMyLearnCard.managers.extractionFailedOriginalSaved']()
-                  : m['passport.buildMyLearnCard.managers.saveOutcomeError']();
+    const defaultMessage = isSavingOriginal
+        ? m['passport.buildMyLearnCard.managers.extractionFailedSavingOriginal']()
+        : status === 'empty'
+          ? m['passport.buildMyLearnCard.managers.documentNoCredentials']()
+          : status === 'review'
+            ? m['passport.buildMyLearnCard.managers.credentialsReady']({
+                  count: extractedCount ?? 0,
+              })
+            : status === 'stored'
+              ? selectedCount === 0 && (extractedCount ?? 0) > 0
+                  ? m['passport.buildMyLearnCard.managers.documentNoSelection']()
+                  : m['passport.buildMyLearnCard.managers.documentAndCredentialsSaved']({
+                        count: storedCount ?? 0,
+                    })
+              : status === 'extraction_failed'
+                ? m['passport.buildMyLearnCard.managers.extractionFailedOriginalSaved']()
+                : m['passport.buildMyLearnCard.managers.saveOutcomeError']();
 
     return (
         <div
             role={isFailure ? 'alert' : 'status'}
+            aria-busy={isSavingOriginal || isRetrying}
             className={`w-full rounded-xl border p-3 mb-3 font-poppins ${panelClass}`}
         >
             {fileName && <p className="text-sm font-semibold mb-1">{fileName}</p>}
-            <p className="text-sm mb-2">{message ?? defaultMessage}</p>
+            <p className="text-sm mb-2 flex items-center gap-2">
+                {isSavingOriginal && (
+                    <span
+                        aria-hidden="true"
+                        className="h-4 w-4 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
+                    />
+                )}
+                {message ?? defaultMessage}
+            </p>
             {onRetry && retryKind && (
                 <button
                     type="button"

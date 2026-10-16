@@ -405,6 +405,7 @@
                 "documentNoSelection": "تم حفظ ملفك. لم يتم اختيار أي بيانات اعتماد.",
                 "credentialsReady": "بيانات الاعتماد الجاهزة للمراجعة: {{count}}.",
                 "extractionFailedOriginalSaved": "تعذّر استخراج بيانات الاعتماد. تم حفظ المستند الأصلي.",
+                "extractionFailedSavingOriginal": "تعذّر استخراج بيانات الاعتماد. جارٍ حفظ المستند الأصلي...",
                 "documentAndCredentialsSaved": "تم حفظ المستند. بيانات الاعتماد المحفوظة: {{count}}.",
                 "saveOutcomeError": "تعذّر حفظ ملفك. يمكنك إعادة المحاولة.",
                 "credentialSaveOutcomeError": "تم حفظ ملفك. تعذّر حفظ بعض بيانات الاعتماد المختارة.",

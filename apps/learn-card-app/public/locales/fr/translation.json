@@ -405,6 +405,7 @@
                 "documentNoSelection": "Votre fichier est enregistré. Aucun justificatif n’a été sélectionné.",
                 "credentialsReady": "Justificatifs prêts à vérifier : {{count}}.",
                 "extractionFailedOriginalSaved": "Impossible d’extraire les justificatifs. Le document original est enregistré.",
+                "extractionFailedSavingOriginal": "Impossible d’extraire les justificatifs. Enregistrement du document original...",
                 "documentAndCredentialsSaved": "Document enregistré. Justificatifs enregistrés : {{count}}.",
                 "saveOutcomeError": "Impossible d’enregistrer votre fichier. Vous pouvez réessayer.",
                 "credentialSaveOutcomeError": "Votre fichier est enregistré. Certains justificatifs sélectionnés n’ont pas pu être enregistrés.",

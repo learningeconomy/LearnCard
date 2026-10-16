@@ -852,6 +852,15 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     },
                 };
             }
+            setFileUploadOutcomes(current => [
+                ...current.filter(item => item.artifact.id !== artifact.id),
+                {
+                    artifact,
+                    status: 'saving_original',
+                    extractionStatus,
+                    extractedCount: 0,
+                },
+            ]);
             try {
                 await saveFile(artifact, fileType);
                 return {
@@ -891,8 +900,14 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         checklistStore.set.updateIsParsing(fileType, true);
         try {
             const results: ArtifactProcessingResult[] = [];
-            for (const artifact of artifacts)
-                results.push(await processArtifact(artifact, fileType));
+            for (const artifact of artifacts) {
+                const result = await processArtifact(artifact, fileType);
+                results.push(result);
+                setFileUploadOutcomes(current => [
+                    ...current.filter(item => item.artifact.id !== artifact.id),
+                    result.outcome,
+                ]);
+            }
             const credentials = results.flatMap(result => result.credentials);
             setParsedCredentials(credentials);
             setFileUploadOutcomes(results.map(result => result.outcome));

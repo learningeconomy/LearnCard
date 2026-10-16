@@ -295,7 +295,7 @@ export const CheckListUploadResume: React.FC = () => {
                 </>
             ) : (
                 <>
-                    {(isSaving || isParsing) && !loaderDismissed && (
+                    {isParsing && !isSaving && !loaderDismissed && (
                         <ChecklistLoader
                             fileType={UploadTypesEnum.Resume}
                             onDismiss={() => setLoaderDismissed(true)}
@@ -323,7 +323,7 @@ export const CheckListUploadResume: React.FC = () => {
                                 disabled={isParsing || isSavingSelected || isSaving}
                             />
 
-                            {loaderDismissed && isParsing && (
+                            {loaderDismissed && isParsing && !isSaving && (
                                 <div className="w-full flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2.5 mb-4">
                                     <svg
                                         className="w-4 h-4 text-indigo-500 shrink-0 animate-spin"

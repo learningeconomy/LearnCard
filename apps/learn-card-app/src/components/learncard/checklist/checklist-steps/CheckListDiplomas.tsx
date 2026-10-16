@@ -281,7 +281,7 @@ export const CheckListDiplomas: React.FC = () => {
                 </>
             ) : (
                 <>
-                    {(isSaving || isParsing) && (
+                    {isParsing && !isSaving && (
                         <ChecklistLoader fileType={UploadTypesEnum.Diploma} />
                     )}
                     <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">

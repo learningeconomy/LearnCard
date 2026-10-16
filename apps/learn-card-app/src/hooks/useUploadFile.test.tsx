@@ -125,6 +125,7 @@ import type {
     ParsedFileCredential,
 } from 'learn-card-base/types/file-extraction';
 import type { UnsignedVC } from '@learncard/types';
+import type { ArtifactProcessingResult } from './uploadFile.types';
 
 const rawArtifact = (id: string, fileName = 'document.pdf'): RawArtifactCredential => ({
     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -675,6 +676,39 @@ describe('useUploadFile persistence outcomes', () => {
             expect(retry.outcome.message).not.toContain('PRIVATE_MODEL_ERROR');
         });
         expect(records.has('second')).toBe(true);
+    });
+
+    it('reports extraction failure while the original is still saving', async () => {
+        uploadMutationMock.mockRejectedValue(new Error('PRIVATE_MODEL_ERROR'));
+        const upload = Promise.withResolvers<string>();
+        const uploadStarted = Promise.withResolvers<void>();
+        const processing = Promise.withResolvers<ArtifactProcessingResult>();
+        wallet.store.LearnCloud.uploadEncrypted.mockImplementationOnce(() => {
+            uploadStarted.resolve();
+            return upload.promise;
+        });
+        const artifact = rawArtifact('delayed-original');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            void result.current
+                .retryFileExtraction(artifact, UploadTypesEnum.Certificate)
+                .then(processing.resolve, processing.reject);
+            await uploadStarted.promise;
+        });
+        expect(result.current.fileUploadOutcomes).toMatchObject([
+            { artifact: { id: artifact.id }, status: 'saving_original', extractedCount: 0 },
+        ]);
+        expect(result.current.isSaving).toBe(true);
+        expect(records.has(artifact.id)).toBe(false);
+        await act(async () => {
+            upload.resolve(`original:${artifact.id}`);
+            await processing.promise;
+        });
+        expect(result.current.fileUploadOutcomes).toMatchObject([
+            { artifact: { id: artifact.id }, status: 'extraction_failed', extractedCount: 0 },
+        ]);
+        expect(result.current.isSaving).toBe(false);
+        expect(records.get(artifact.id)?.uri).toBe(`original:${artifact.id}`);
     });
 
     it('clears only the deleted document feedback when files have the same name', async () => {

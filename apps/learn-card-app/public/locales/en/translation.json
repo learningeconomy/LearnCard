@@ -405,6 +405,7 @@
                 "documentNoSelection": "Your file is saved. No credentials were selected.",
                 "credentialsReady": "Credentials ready for review: {{count}}.",
                 "extractionFailedOriginalSaved": "We could not extract credentials. The original document is saved.",
+                "extractionFailedSavingOriginal": "We could not extract credentials. Saving your original document...",
                 "documentAndCredentialsSaved": "Document saved. Credentials saved: {{count}}.",
                 "saveOutcomeError": "We couldn't save your file. You can try again.",
                 "credentialSaveOutcomeError": "Your file is saved. Some selected credentials couldn't be saved.",

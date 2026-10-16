@@ -5,7 +5,7 @@ import type {
 
 export interface FileUploadOutcome {
     artifact: RawArtifactCredential;
-    status: 'review' | 'empty' | 'extraction_failed' | 'save_failed' | 'stored';
+    status: 'review' | 'empty' | 'saving_original' | 'extraction_failed' | 'save_failed' | 'stored';
     extractionStatus?: 'review' | 'empty' | 'extraction_failed';
     failedStage?: 'artifact_save' | 'credential_save';
     extractedCount: number;
