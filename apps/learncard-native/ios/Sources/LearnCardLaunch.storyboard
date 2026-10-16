@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="26000" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="launch-controller">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies><plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="26000"/><capability name="Named colors" minToolsVersion="9.0"/><capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/></dependencies>
+    <scenes><scene sceneID="launch-scene"><objects>
+        <viewController id="launch-controller" sceneMemberID="viewController"><view key="view" contentMode="scaleToFill" id="launch-view">
+            <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews><imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LearnCardLaunchMark" translatesAutoresizingMaskIntoConstraints="NO" id="launch-mark">
+                <rect key="frame" x="84.5" y="198.98" width="224" height="224"/>
+                <constraints><constraint firstAttribute="width" relation="lessThanOrEqual" constant="224" id="mark-maximum"/><constraint firstAttribute="height" secondItem="launch-mark" secondAttribute="width" id="mark-square"/></constraints>
+            </imageView></subviews>
+            <viewLayoutGuide key="safeArea" id="launch-safe"/>
+            <color key="backgroundColor" name="LaunchCanvas"/>
+            <constraints>
+                <constraint firstItem="launch-mark" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" id="mark-center-x"/>
+                <constraint firstItem="launch-mark" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="0.73" id="mark-center-y"/>
+                <constraint firstItem="launch-mark" firstAttribute="width" secondItem="launch-view" secondAttribute="width" multiplier="0.57" priority="750" id="mark-responsive-width"/>
+            </constraints>
+        </view></viewController>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="launch-responder" userLabel="First Responder" sceneMemberID="firstResponder"/>
+    </objects></scene></scenes>
+    <resources><image name="LearnCardLaunchMark" width="224" height="224"/><namedColor name="LaunchCanvas"><color red="0.9372549019607843" green="0.9411764705882353" blue="0.9607843137254902" alpha="1" colorSpace="custom" customColorSpace="sRGB"/></namedColor></resources>
+</document>

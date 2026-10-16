@@ -233,6 +233,31 @@ const drawings = (dark: boolean): Record<string, string> => {
             <rect x="150" y="26" width="11" height="11" rx="3" transform="rotate(20 155 31)" fill="#F9A8D4"/>
             <path d="M170 51l8-6M27 61l-7-4" stroke="#22D3EE" stroke-width="4" stroke-linecap="round"/>
         `),
+        CollectionEmptyIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                <g transform="rotate(-8 103 81)">
+                    <rect x="68" y="12" width="72" height="91" rx="9" fill="${paper}"/>
+                    <path d="M80 30h44M80 41h31" stroke="${dark ? '#8B91A7' : '#C5C8D3'}" stroke-width="5"/>
+                    <path d="M55 47h88q9 0 9 9v72q0 9-9 9H62q-12 0-12-12V59q0-12 5-12Z" fill="#93C5FD"/>
+                    <path d="M62 57v67M76 67h58" stroke="#FFFFFF"/>
+                    <circle cx="106" cy="101" r="24" fill="#22D3EE"/>
+                    <ellipse cx="106" cy="101" rx="10" ry="24"/>
+                    <path d="M82 101h48M86 88q20 9 40 0M86 114q20-9 40 0" fill="none"/>
+                </g>
+                <path d="M31 51l4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1Z" fill="#F9A8D4"/>
+                <path d="M171 95l4 8 9 1-6 6 1 9-8-4-8 4 2-9-7-6 10-1Z" fill="#FDE047"/>
+                <path d="M24 100l-9 8M37 113l-5 12M167 42l10-10M175 56l14-4" stroke="#22D3EE" stroke-width="5"/>
+            </g>
+        `),
+        CollectionCategoryEmptyIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M39 43l17-8 50 9 45-8 14 17v64l-56 11-70-13Z" fill="${paper}"/>
+                <path d="M30 51q42-9 77 11 34-18 64-11v69q-34-7-64 11-35-19-77-11Z" fill="#FDE047"/>
+                <path d="M107 62v69M44 62q28-2 49 9" fill="none"/>
+                <path d="M125 51l17-5v36l-8-6-9 11Z" fill="#F9A8D4"/>
+                <path d="M21 36l-9-10M17 56L5 52M171 29l9-11M181 45l13-5" stroke="#22D3EE" stroke-width="5"/>
+            </g>
+        `),
         SearchEmptyIllustration: wrap(`
             <g transform="rotate(-10 88 81)">
                 <rect x="31" y="41" width="111" height="84" rx="12" fill="${paper}" stroke="${ink}" stroke-width="3"/>

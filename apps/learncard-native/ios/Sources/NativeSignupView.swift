@@ -155,18 +155,20 @@ struct NativeSignupView: View {
         }
     }
     private var profileFields: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 16) {
-                Group {
-                    if let data = model.photo, let image = UIImage(data: data) { Image(uiImage: image).resizable().scaledToFill() }
-                    else { ProfileArtwork(url: nil, size: 74) }
-                }.frame(width: 74, height: 74).clipShape(RoundedRectangle(cornerRadius: 22)).padding(8).background(Palette.portfolioCard, in: RoundedRectangle(cornerRadius: 28)).accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 6) {
-                    PhotosPicker(selection: $photo, matching: .images) { Text(NativeText.text("profile.photo.choose")).font(.headline).frame(minHeight: 44) }.disabled(preparingPhoto || account.busy).accessibilityIdentifier("signup-photo")
-                    Text(signupText("optional")).font(.subheadline).foregroundStyle(Palette.secondary)
-                    if model.photo != nil { Button(NativeText.text("profile.photo.remove")) { model.photo = nil; photo = nil }.font(.subheadline) }
-                    if preparingPhoto { ProgressView(NativeText.text("profile.photo.preparing")) }
-                }
+        // PhotosPicker builds its label in a Sendable closure; pass immutable values.
+        let data = model.photo, working = preparingPhoto, large = textSize.isAccessibilitySize
+        let photoTitle = signupText(model.photo == nil ? "photo.add" : "photo.change")
+        let photoHint = signupText("photo.hint")
+        let preparingTitle = NativeText.text("profile.photo.preparing")
+        return VStack(alignment: .leading, spacing: 16) {
+            PhotosPicker(selection: $photo, matching: .images) {
+                SignupPhotoLabel(data: data, working: working, large: large, title: photoTitle, hint: photoHint, preparingTitle: preparingTitle)
+            }.buttonStyle(CredentialPressStyle()).disabled(preparingPhoto || account.busy)
+                .accessibilityLabel(signupText(model.photo == nil ? "photo.add" : "photo.change")).accessibilityHint(signupText("photo.hint"))
+                .accessibilityIdentifier("signup-photo")
+            if model.photo != nil {
+                Button(NativeText.text("profile.photo.remove")) { model.photo = nil; photo = nil }
+                    .font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("signup-photo-remove")
             }
             field(signupText("name"), value: $model.draft.name, focus: .name, id: "signup-name")
             field(signupText("username"), value: $model.draft.profileId, focus: .handle, id: "signup-username")
@@ -281,4 +283,50 @@ private struct SignupBackupDocument: FileDocument {
     init(contents: String) { self.contents = contents }
     init(configuration: ReadConfiguration) throws { guard let data = configuration.file.regularFileContents, data.count <= 65_536, let value = String(data: data, encoding: .utf8) else { throw AccountError.storage }; contents = value }
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: Data(contents.utf8)) }
+}
+
+private struct SignupPhotoLabel: View {
+    let data: Data?
+    let working: Bool
+    let large: Bool
+    let title: String
+    let hint: String
+    let preparingTitle: String
+    var body: some View {
+        Group {
+            if large {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack { photoThumbnail; Spacer(); Image(systemName: "chevron.forward").font(.headline).accessibilityHidden(true) }
+                    photoPrompt
+                }
+            } else {
+                HStack(spacing: 16) {
+                    photoThumbnail
+                    photoPrompt.frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: "chevron.forward").font(.headline).accessibilityHidden(true)
+                }
+            }
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+            .overlay(RoundedRectangle(cornerRadius: 24).stroke(Palette.line))
+            .contentShape(RoundedRectangle(cornerRadius: 24))
+    }
+    private var photoThumbnail: some View {
+        Group {
+            if let data = data, let image = UIImage(data: data) { Image(uiImage: image).resizable().scaledToFill() }
+            else { ProfileArtwork(url: nil, size: 74) }
+        }.frame(width: 74, height: 74).clipShape(Circle())
+            .overlay(alignment: .bottomTrailing) {
+                Image(systemName: "camera.fill").font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Palette.cardInk).frame(width: 30, height: 30)
+                    .background(Palette.blueCard, in: Circle()).overlay(Circle().stroke(Palette.surface, lineWidth: 3))
+            }.accessibilityHidden(true)
+    }
+    private var photoPrompt: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.headline).foregroundStyle(Palette.ink)
+            if working { ProgressView(preparingTitle) }
+            else { Text(hint).font(.subheadline).foregroundStyle(Palette.secondary).fixedSize(horizontal: false, vertical: true) }
+        }
+    }
 }

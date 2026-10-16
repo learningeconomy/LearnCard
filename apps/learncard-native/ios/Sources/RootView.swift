@@ -33,7 +33,7 @@ struct RootView: View {
                 .tabItem { Label { Text(NativeText.literal("Home")) } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
                 .tag(3)
             NavigationStack {
-                CollectionView(store: store, onScrollStateChange: { compactBrands[0] = $0 })
+                CollectionView(store: store, scan: { claims.open() }, create: { showCreate = true }, onScrollStateChange: { compactBrands[0] = $0 })
                     .toolbar { header(tab: 0) }
             }
             .tabItem { Label { Text(NativeText.literal("Collection")) } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }

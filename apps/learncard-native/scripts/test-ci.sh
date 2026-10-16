@@ -13,8 +13,10 @@ bash "$task_root/scripts/test-core.sh" 2>&1 | tee "$task_root/artifacts/swift-co
 lc_run="$(date +%Y%m%d-%H%M%S)-$$"
 export LC_NATIVE_RESULT_PATH="$task_root/artifacts/native-regressions-$lc_run.xcresult"
 bash "$task_root/scripts/test-ios.sh" -quiet
+bun "$task_root/scripts/verify-launch-assets.ts"
 lc_export="$task_root/artifacts/native-attachments-$lc_run"
 xcrun xcresulttool export attachments --path "$LC_NATIVE_RESULT_PATH" --output-path "$lc_export"
 xcrun xcresulttool get test-results summary --path "$LC_NATIVE_RESULT_PATH" --compact > "$lc_export/native-test-summary.json"
 bun --conditions=development "$task_root/sdk-spike/verify-native.ts" "$lc_export"
 LC_NATIVE_CONFIGURATION=Release bash "$task_root/scripts/build-ios.sh" -quiet
+bun "$task_root/scripts/verify-launch-assets.ts" "$task_root/ios/.derivedData/Build/Products/Release-iphonesimulator/LearnCardNative.app"

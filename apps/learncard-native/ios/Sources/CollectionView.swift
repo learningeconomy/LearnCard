@@ -5,6 +5,8 @@ import LearnCardNativeCore
 struct CollectionView: View {
     @Environment(\.locale) private var nativeLocale
     let store: AppStore
+    let scan: () -> Void
+    let create: () -> Void
     var onScrollStateChange: (Bool) -> Void = { _ in }
     @State private var search = ""
     @State private var appliedQuery = ""
@@ -82,11 +84,8 @@ struct CollectionView: View {
                     }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Palette.surface, in: RoundedRectangle(cornerRadius: 20)).accessibilityIdentifier("collection-filtering")
                 } else if credentials.isEmpty {
-                    if searchMode || category != nil { searchEmptyState }
-                    else {
-                        EmptyState(symbol: "rectangle.stack", title: "Your next achievement belongs here",
-                                   detail: "Receive or create a credential to get started.")
-                    }
+                    if !query.isEmpty { searchEmptyState }
+                    else { collectionEmptyState }
                 } else {
                     if !searchMode {
                         LatestCredentialStack(credentials: RecentCredentialDeck.latest(in: credentials), store: store, namespace: cards,
@@ -172,6 +171,7 @@ struct CollectionView: View {
             Image("SearchEmptyIllustration").resizable().scaledToFit().frame(width: 180, height: 135).accessibilityHidden(true)
             Text(NativeText.text(store.snapshot?.hasMore == true ? "collection.noLoadedMatches" : "collection.noMatches"))
                 .font(.title3.weight(.semibold)).foregroundStyle(Palette.ink)
+                .accessibilityIdentifier("collection-empty-search")
             Text(NativeText.text("collection.noMatchesBody")).font(.subheadline).foregroundStyle(Palette.secondary)
             Button(NativeText.text("collection.resetSearch")) { resetSearch() }
                 .font(.subheadline.weight(.semibold)).foregroundStyle(Palette.green)
@@ -179,6 +179,49 @@ struct CollectionView: View {
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.line)).accessibilityIdentifier("collection-search-reset")
         }.multilineTextAlignment(.center).padding(24).frame(maxWidth: .infinity)
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+    }
+
+    private var collectionEmptyState: some View {
+        let partial = store.snapshot?.hasMore == true
+        return VStack(spacing: 18) {
+            if let category {
+                ZStack {
+                    Image("CollectionCategoryEmptyIllustration").resizable().scaledToFit()
+                    Image(category.illustration).resizable().scaledToFit().frame(width: 58, height: 58)
+                        .padding(12).background(Palette.categoryTint(category), in: RoundedRectangle(cornerRadius: 20))
+                        .rotationEffect(.degrees(8)).offset(x: 64, y: 22)
+                }.frame(width: 224, height: 164).accessibilityHidden(true)
+            } else {
+                Image("CollectionEmptyIllustration").resizable().scaledToFit()
+                    .frame(maxWidth: 250).frame(height: textSize.isAccessibilitySize ? 130 : 190).accessibilityHidden(true)
+            }
+            VStack(spacing: 10) {
+                Text(NativeText.text(partial ? "collection.empty.loadedTitle" : category == nil ? "collection.empty.title" : "collection.empty.categoryTitle"))
+                    .font(.title2.bold()).foregroundStyle(Palette.ink)
+                    .accessibilityIdentifier(category == nil ? "collection-empty-all" : "collection-empty-category")
+                Text(partial ? NativeText.text("collection.empty.loadedBody") : category.map {
+                    NativeText.format("collection.empty.categoryBody", NativeText.text("credentialCategory.\($0.rawValue)"))
+                } ?? NativeText.text("collection.empty.body"))
+                    .font(.subheadline).foregroundStyle(Palette.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            if category != nil {
+                Button { category = nil; latestActiveID = nil } label: {
+                    Text(NativeText.text("collection.empty.viewAll")).font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 50).foregroundStyle(Palette.ink)
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Palette.line, lineWidth: 1.5))
+                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("collection-empty-view-all")
+            } else if !partial {
+                VStack(spacing: 8) {
+                    PrimaryButton(title: NativeText.text("claims.title"), fill: Palette.selection, action: scan)
+                        .accessibilityIdentifier("collection-empty-scan")
+                    Button(NativeText.literal("Create a credential"), action: create)
+                        .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 48)
+                        .foregroundStyle(Palette.ink).buttonStyle(CredentialPressStyle())
+                        .accessibilityIdentifier("collection-empty-create")
+                }
+            }
+        }.multilineTextAlignment(.center).padding(24).frame(maxWidth: .infinity)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 28))
     }
 
     private func resetSearch() { search = ""; appliedQuery = ""; category = nil; searching = false }

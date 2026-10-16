@@ -2,6 +2,11 @@ import XCTest
 @testable import LearnCardNativeCore
 
 final class BrandMotionTests: XCTestCase {
+    func testFirstAnimatedFrameMatchesTheFullyVisibleStaticLaunchMark() {
+        for index in 0..<9 {
+            XCTAssertEqual(BrandMotion.tile(index, elapsed: 0, animated: true), BrandMotion.tile(index, elapsed: 0, animated: false))
+        }
+    }
     func testPiecesGatherIntoRecognizableMosaicWithoutWaitingOnAccountReadiness() {
         for index in 0..<9 {
             let final = BrandMotion.tile(index, elapsed: 2.1, animated: true)

@@ -53,7 +53,7 @@ struct AccountTransitionView: View {
         GeometryReader { bounds in
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !moves)) { tick in
                 let elapsed = max(0, tick.date.timeIntervalSince(began))
-                scene(size: bounds.size, elapsed: elapsed)
+                scene(size: bounds.size, insets: bounds.safeAreaInsets, elapsed: elapsed)
             }
         }.accessibilityIdentifier("account-motion-screen")
             .toolbar(.hidden, for: .navigationBar)
@@ -61,16 +61,18 @@ struct AccountTransitionView: View {
             .onDisappear { appeared = false }
             .onChange(of: scenePhase) { _, phase in if phase == .active { began = .now } }
     }
-    private func scene(size: CGSize, elapsed: Double) -> some View {
-        ZStack {
+    private func scene(size: CGSize, insets: EdgeInsets, elapsed: Double) -> some View {
+        let markSize: CGFloat = textSize.isAccessibilitySize ? 144 : min(CGFloat(BrandMotion.markMaxWidth), size.width * CGFloat(BrandMotion.markWidthFraction))
+        let top: CGFloat = textSize.isAccessibilitySize ? 24 : max(24, (size.height + insets.top + insets.bottom) * CGFloat(BrandMotion.markCenterFraction) - insets.top - markSize / 2)
+        return ZStack {
             Palette.paper.ignoresSafeArea()
             PigmentBackdrop(elapsed: moves ? elapsed : 0, animated: moves)
+                .opacity(moves ? min(1, elapsed / 0.65) : 1)
                 .allowsHitTesting(false).accessibilityHidden(true).ignoresSafeArea()
             ScrollView {
                 VStack(spacing: 24) {
-                    Spacer(minLength: 28)
-                    PaintedMosaic(size: min(224, size.width * 0.57), elapsed: elapsed, animated: drawsMotion)
-                        .frame(height: textSize.isAccessibilitySize ? 250 : min(300, size.height * 0.4))
+                    PaintedMosaic(size: markSize, elapsed: elapsed, animated: drawsMotion)
+                        .frame(height: markSize)
                         .accessibilityElement(children: .ignore).accessibilityLabel("LearnCard")
                         .accessibilityAddTraits(.isImage).accessibilityIdentifier("brand-motion-mark")
                     VStack(spacing: 14) {
@@ -81,7 +83,7 @@ struct AccountTransitionView: View {
                         Text(NativeText.text("motion.longer")).font(.subheadline).foregroundStyle(Palette.secondary)
                             .multilineTextAlignment(.center).opacity(busy && elapsed > 12 ? 1 : 0)
                             .accessibilityHidden(!busy || elapsed <= 12)
-                    }.padding(.horizontal, 8)
+                    }.padding(.horizontal, 8).opacity(moves ? min(1, elapsed / 0.4) : 1)
                     if hasPendingClaim {
                         Label(NativeText.text("claims.waitingSignIn"), systemImage: "qrcode")
                             .font(.subheadline).foregroundStyle(Palette.secondary).multilineTextAlignment(.center)
@@ -103,9 +105,9 @@ struct AccountTransitionView: View {
                         Button(NativeText.literal("Sign out"), action: signOut)
                             .font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary).frame(minHeight: 44)
                             .accessibilityIdentifier("account-sign-out")
-                    }
-                }.frame(maxWidth: 480).padding(.horizontal, 28).padding(.vertical, 24)
-                    .frame(maxWidth: .infinity, minHeight: size.height)
+                    } else { Color.clear.frame(height: 44).accessibilityHidden(true) }
+                }.frame(maxWidth: 480).padding(.horizontal, 28).padding(.top, top).padding(.bottom, 24)
+                    .frame(maxWidth: .infinity, minHeight: size.height, alignment: .top)
             }.scrollBounceBehavior(.basedOnSize)
         }
     }
@@ -120,7 +122,7 @@ struct PaintedMosaic: View {
             ForEach(0..<9) { index in
                 let pose = BrandMotion.tile(index, elapsed: elapsed, animated: animated)
                 PigmentTile(index: index)
-                    .frame(width: size * 0.359, height: size * 0.359)
+                    .frame(width: size * (23.0 / 65.0), height: size * (23.0 / 65.0))
                     .scaleEffect(pose.scale).rotationEffect(.degrees(pose.rotation))
                     .offset(x: pose.x * size, y: pose.y * size).opacity(pose.opacity)
             }

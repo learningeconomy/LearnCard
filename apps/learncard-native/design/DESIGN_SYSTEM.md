@@ -88,6 +88,12 @@ Right: two 44-point controls in a tight 96 × 52 pill. A navy plus on a blue rou
 
 ## Motion
 
+Empty states communicate the actual state: a new collection, an empty category and a failed search are different. Use the drawn passport and Scan/Create for an empty collection, category art and View all for an empty category, and the magnifying glass only for a nonempty search query. A partial page cannot establish whole-account emptiness; retain Load More and truthful loaded-page copy. See [native empty-state compositions](EMPTY_STATES_BRIEF.md).
+
+An illustrated action row is one complete button. Thumbnail, label, whitespace and chevron share the tap target; an optional photo must not require tapping title-like text. Camera badges and forward chevrons clarify intent. Stack the photo row at accessibility text sizes while keeping normal-size rows compact.
+
+System launch and running loading views share their adaptive canvas, painted material and initial mark bounds. Keep the first animated frame visible and assembled, then open/gather into the continuing motion. Static launch cannot animate; it must not introduce a different palette or untextured mark. No animation may delay readiness.
+
 Interactions use a brief press response and selection feedback. Navigation/label transitions are around 220–300 ms. Motion must explain state or preserve continuity and respect Reduce Motion.
 
 Credential **detail** has one isolated card with a gentle automatic 9-second loop: about ±4.5° yaw, ±1.8° pitch and a restrained diagonal sheen. No stack or drag instruction. Pause when offscreen, inactive, using Reduce Motion or VoiceOver. Collection's featured stack is a different presentation. Avoid additional perpetual motion throughout lists and dashboards.

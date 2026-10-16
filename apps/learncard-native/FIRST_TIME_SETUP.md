@@ -27,6 +27,8 @@ Email entry is editable. Firebase still validates the exchange's returned email/
 
 Birth date and country are explicit choices with designed searchable/date sheets. A missing identity is created only after this age decision. An existing identity without a network profile keeps its original key. Name and lowercase username use existing server syntax and a debounced availability check; submission handles a later collision without taking another person's profile. Photo preparation strips metadata and uses the existing public image-upload path.
 
+The entire profile-photo card opens the native library picker, including the round thumbnail, text and whitespace. A camera badge and forward chevron make the action visible; selected-photo removal is separate. Cancellation retains the name/username draft. Larger text can stack the row while preserving one generous tap target.
+
 Optional AI, analytics and bug-report choices begin off and are separate from accepting terms. The shared age policy restricts those options for younger users; mutation validation also clamps them off. No document processing or AI enrollment happens automatically. Preferences are upserted through the existing DID-challenge API **before** profile creation; a failed preference save prevents completion.
 
 ## Recovery enrollment
@@ -55,7 +57,7 @@ Commands serialize profile/recovery mutations. Before retrying an uncertain prof
 
 ## Boundaries and next work
 
-- Live setup on the retained staging Firebase login is complete: the user finished required profile/privacy and encrypted-backup setup, and a private self-issued credential was saved and read. New Firebase identity creation, full staging-web UI parity and saved-backup recovery on another disposable device remain separate validation. Do not send codes, passwords or recovery files through chat.
+- Live setup on the retained staging Firebase login is complete: the user finished required profile/privacy and encrypted-backup setup, and a private self-issued credential was saved and read. Final-build relaunch and that credential’s persistence/opening were verified after upgrade and simulator restart. New Firebase identity creation, full staging-web UI parity and saved-backup recovery on another disposable device remain separate validation. Do not send codes, passwords or recovery files through chat.
 - Exercise real guardian delivery, failed delivery/resend, link approval and foreground recheck using dedicated test identities. Synthetic checks do not prove external delivery.
 - Physical Files/iCloud/third-party provider, keyboard, VoiceOver, energy, tablet and translation review remain.
 - Existing-account Recovery & security still links to web for broader recovery management. This slice adds enrollment during required signup, not full native recovery settings or account deletion.

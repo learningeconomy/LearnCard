@@ -12,11 +12,7 @@
     <key>CFBundleLocalizations</key><array><string>en</string><string>es</string><string>fr</string><string>ar</string></array>
     <key>LSRequiresIPhoneOS</key><true/>
     <key>NSCameraUsageDescription</key><string>Scan a LearnCard code to review a credential before adding it.</string>
-    <key>UILaunchScreen</key><dict>
-        <key>UIColorName</key><string>LaunchCanvas</string>
-        <key>UIImageName</key><string>LearnCardLaunchMark</string>
-        <key>UIImageRespectsSafeAreaInsets</key><true/>
-    </dict>
+    <key>UILaunchStoryboardName</key><string>LearnCardLaunch</string>
     <key>UISupportedInterfaceOrientations</key>
     <array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
     <key>CFBundleURLTypes</key>

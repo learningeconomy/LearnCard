@@ -4,6 +4,47 @@ import XCTest
 @MainActor final class SignupUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
+    func testPhotoThumbnailAndRowBothOpenThePickerWithoutLosingProfileDraft() {
+        let app = launch("signup"); birthday(app); country(app, code: "US", query: "United States")
+        app.buttons["signup-continue"].tap()
+        let name = app.textFields["signup-name"]; XCTAssertTrue(name.waitForExistence(timeout: 10))
+        name.tap(); name.typeText("Photo draft\n")
+        app.keyboards.buttons["Done"].tap()
+        let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        let photo = app.buttons["signup-photo"]; XCTAssertTrue(photo.waitForExistence(timeout: 5))
+        for x in [0.14, 0.83] {
+            for _ in 0..<5 where photo.frame.minY < 80 || photo.frame.maxY > app.frame.maxY - 150 || !photo.isHittable {
+                app.scrollViews["signup-form"].swipeDown()
+            }
+            XCTAssertTrue(photo.isHittable); XCTAssertGreaterThan(photo.frame.minY, 70)
+            capture(app, "Visible signup photo row before tap \(x)")
+            photo.coordinate(withNormalizedOffset: CGVector(dx: x, dy: 0.5)).tap()
+            let cancel = app.buttons["Cancel"].firstMatch; XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap()
+            XCTAssertTrue(photo.waitForExistence(timeout: 5)); XCTAssertEqual(name.value as? String, "Photo draft")
+        }
+        capture(app, "Signup entire photo row with camera affordance")
+    }
+    func testPhotoRowRemainsUsableInArabicAccessibilityDarkLayout() {
+        let app = launch("signup", language: "ar", extra: ["--large-type", "--preview-dark"])
+        birthday(app); country(app, code: "US", query: "United States"); app.buttons["signup-continue"].tap()
+        let photo = app.buttons["signup-photo"]; XCTAssertTrue(photo.waitForExistence(timeout: 10)); reveal(photo, app)
+        XCTAssertEqual(photo.label, "إضافة صورة للملف الشخصي")
+        XCTAssertGreaterThanOrEqual(photo.frame.height, 90); XCTAssertLessThanOrEqual(photo.frame.maxX, app.frame.maxX)
+        let scroll = app.scrollViews["signup-form"]
+        for _ in 0..<5 {
+            let top = scroll.frame.minY + 16, bottom = scroll.frame.maxY - 16
+            if photo.frame.minY >= top && photo.frame.maxY <= bottom { break }
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+            let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: photo.frame.maxY > bottom ? 0.4 : 0.8))
+            start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.2)
+        }
+        XCTAssertTrue(photo.isHittable)
+        XCTAssertGreaterThanOrEqual(photo.frame.minY, scroll.frame.minY)
+        XCTAssertLessThanOrEqual(photo.frame.maxY, scroll.frame.maxY)
+        capture(app, "Signup photo row Arabic accessibility dark")
+    }
+
     func testFreshSetupRequiresExplicitBirthdayCountryAndAvailableUsername() {
         let app = launch("signup")
         XCTAssertTrue(app.buttons["signup-birth-date"].waitForExistence(timeout: 10))

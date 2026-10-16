@@ -18,6 +18,11 @@ struct LearnCardNativeApp: App {
         if args.contains("--demo"), args.contains("--stack-fixtures") {
             _store = State(initialValue: AppStore(service: DemoCredentialService(includeCategorySamples: true, includeStackSamples: true)))
         }
+        if args.contains("--demo"), args.contains("--empty-collection") {
+            _store = State(initialValue: AppStore(service: DemoCredentialService(emptyCollection: true)))
+        } else if args.contains("--demo"), args.contains("--empty-page") {
+            _store = State(initialValue: AppStore(service: DemoCredentialService(emptyFirstPage: true)))
+        }
         if let index = args.firstIndex(of: "--locale"), args.indices.contains(index + 1), NativeLanguage(rawValue: args[index + 1]) != nil {
             UserDefaults.standard.set(args[index + 1], forKey: NativeLanguage.preferenceKey)
         }

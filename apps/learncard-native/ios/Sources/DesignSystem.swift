@@ -153,7 +153,7 @@ struct CredentialArtwork: View {
     }
 }
 
-private extension CredentialCategory {
+extension CredentialCategory {
     var illustration: String {
         switch self {
         case .badge: "CategoryBadge"

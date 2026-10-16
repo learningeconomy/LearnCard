@@ -38,7 +38,7 @@ Independent saved-backup recovery on a second device, staging-web profile parity
 
 ## Live validation still needed
 
-Reset and required setup completed using the retained verified login. Verify final-build relaunch, staging-web identity/profile parity and backup recovery on a separate disposable device. Real guardian delivery/approval is a separate test identity/path. Keep passwords, codes and recovery files out of chat/logs.
+Reset and required setup completed using the retained verified login. Final-build relaunch now opens Home, and the saved private test credential opens with its content and signature-check status intact after app upgrade and simulator restart. No repeat reset ran. Staging-web identity/profile parity and backup recovery on a separate disposable device remain to be checked. Real guardian delivery/approval is a separate test identity/path. Keep passwords, codes and recovery files out of chat/logs.
 
 ## Sources
 

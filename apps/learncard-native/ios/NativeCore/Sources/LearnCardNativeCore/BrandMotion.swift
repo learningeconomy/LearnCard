@@ -2,6 +2,10 @@ import Foundation
 
 /// Normalized transforms for the nine original logo pieces. No timers or account state.
 public enum BrandMotion {
+    // The launch storyboard generator reads these values for the same first frame.
+    public static let markMaxWidth = 224.0
+    public static let markWidthFraction = 0.57
+    public static let markCenterFraction = 0.365
     public struct Tile: Equatable, Sendable {
         public let x: Double, y: Double, rotation: Double, scale: Double, opacity: Double
     }
@@ -10,24 +14,27 @@ public enum BrandMotion {
     }
     public static func tile(_ index: Int, elapsed: Double, animated: Bool) -> Tile {
         let index = min(8, max(0, index))
-        let targetX = Double(index % 3 - 1) * 0.327
-        let targetY = Double(index / 3 - 1) * 0.327
+        let targetX = Double(index % 3 - 1) * (21.0 / 65.0)
+        let targetY = Double(index / 3 - 1) * (21.0 / 65.0)
         guard animated else { return Tile(x: targetX, y: targetY, rotation: 0, scale: 1, opacity: 1) }
         let time = elapsed.isFinite ? max(0, elapsed) : 2.2
         let local = min(1, max(0, (time - Double(index) * 0.045) / 1.55))
         let progress = 1 - pow(1 - local, 3)
+        // Start at the launch screen's assembled pose, open gently, then gather.
+        let opening = min(1, time / 0.28) * (1 - progress)
         let angle = Double(index) * 2.39996 + time * 0.7 * (1 - progress)
-        let radius = index == 4 ? 0 : 0.8 + Double(index % 3) * 0.12
+        // Keep the opening bloom above the status copy beneath the mark.
+        let radius = index == 4 ? 0 : 0.36 + Double(index % 3) * 0.04
         let life = min(1, max(0, (time - 2.2) / 0.4)) * (index == 4 ? 0.4 : 1)
         let frame = floor(max(0, time - 2.2) * 5)
         let jitterX = noise(frame, seed: index * 3) * 0.007 * life
         let jitterY = noise(frame, seed: index * 3 + 1) * 0.006 * life
         let jitterAngle = noise(frame, seed: index * 3 + 2) * 1.15 * life
-        return Tile(x: cos(angle) * radius * (1 - progress) + targetX * progress + jitterX,
-                    y: sin(angle) * radius * (1 - progress) + targetY * progress + jitterY,
-                    rotation: (1 - progress) * (index.isMultiple(of: 2) ? 44 : -42) + jitterAngle,
-                    scale: 0.78 + progress * 0.22,
-                    opacity: min(1, max(0, local * 5)))
+        return Tile(x: targetX + (cos(angle) * radius - targetX) * opening + jitterX,
+                    y: targetY + (sin(angle) * radius - targetY) * opening + jitterY,
+                    rotation: opening * (index.isMultiple(of: 2) ? 44 : -42) + jitterAngle,
+                    scale: 1 - opening * 0.22,
+                    opacity: 1)
     }
 
     /// Stable held poses, rather than smooth shaking or random values on every render.

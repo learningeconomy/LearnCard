@@ -25,6 +25,8 @@ Rows, featured cards and credential detail metadata share the same localized lab
 
 These remain filters over loaded account pages. A selected category's count describes loaded matches; a partial-page caption and Load more remain available. An empty loaded subset is not proof the account has no credentials in that category. AI category filters display existing credential records; they do not implement the deferred native AI apps or change their service permissions.
 
+Empty categories now have their own illustrated state, category-specific copy and View all credentials. A blank focused search field does not imply a failed search. The magnifying-glass/no-matches state requires a nonempty query. A truly empty All view uses the drawn passport and working Scan/Create routes; incomplete pagination instead explains that more pages can be checked. See [the visual and interaction brief](design/EMPTY_STATES_BRIEF.md).
+
 ## Qualifications source and older records
 
 [Web PR #1638](https://github.com/learningeconomy/LearnCard/pull/1638), merged at `aaeca3dad4a899a4ce7e96009ba211b4c27af7a2`, added the canonical category **Qualifications** after this experiment branched. The current upstream shared category metadata, Colorful theme, `credentialHelpers.ts` and `qualificationCategoryBackfill.ts` were audited read-only. The primary checkout was not modified or merged wholesale into the experiment.

@@ -23,7 +23,7 @@ public actor DemoCredentialService: CredentialService {
     private var templates: [Credential] = []
     private var loadedCount: Int?
 
-    public init(includeCategorySamples: Bool = false, includeSharingSamples: Bool = false, includeStackSamples: Bool = false) {
+    public init(includeCategorySamples: Bool = false, includeSharingSamples: Bool = false, includeStackSamples: Bool = false, emptyCollection: Bool = false, emptyFirstPage: Bool = false) {
         let date = Date(timeIntervalSince1970: 1_791_763_200)
         credentials = [
             Credential(id: "design", title: "Design for people", issuer: "Open Learning Studio",
@@ -83,6 +83,8 @@ public actor DemoCredentialService: CredentialService {
                        summary: "Thank you for helping someone find their next step.",
                        kind: .achievement, date: date),
         ]
+        if emptyCollection { credentials = []; offers = []; loadedCount = nil }
+        else if emptyFirstPage { loadedCount = 0 }
     }
 
     public func snapshot() -> CollectionSnapshot {

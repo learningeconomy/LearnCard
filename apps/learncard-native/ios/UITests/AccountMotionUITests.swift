@@ -4,6 +4,17 @@ import UIKit
 @MainActor final class AccountMotionUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
+    func testLaunchAndReconnectKeepTheStaticLaunchMarkPositionAndSize() {
+        for mode in ["launch", "reconnect"] {
+            let app = launch(mode, extra: ["--motion-reduced"])
+            let mark = app.descendants(matching: .any)["brand-motion-mark"].firstMatch
+            XCTAssertTrue(mark.waitForExistence(timeout: 5))
+            XCTAssertEqual(mark.frame.midY, app.frame.height * 0.365, accuracy: 3)
+            XCTAssertEqual(mark.frame.width, min(224, app.frame.width * 0.57), accuracy: 1)
+            capture(app, "Shared launch composition \(mode)"); app.terminate()
+        }
+    }
+
     func testSettledLogoKeepsStopMotionLifeAndBackgroundFloats() {
         let app = launch("launch", extra: ["--motion-settled"])
         let mark = app.descendants(matching: .any)["brand-motion-mark"].firstMatch
