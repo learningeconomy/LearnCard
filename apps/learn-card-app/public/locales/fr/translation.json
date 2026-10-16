@@ -1968,7 +1968,7 @@
             "mismatch": "Ce code est incorrect. Réessayez.",
             "expired": "Ce code a expiré. Envoyez-en un nouveau.",
             "locked": "Trop de tentatives. Envoyez un nouveau code.",
-            "notSent": "Nous n'avons pas pu envoyer votre code. Essayez de le renvoyer.",
+            "notSent": "Nous n'avons pas pu envoyer votre code. Attendez une minute avant de le renvoyer.",
             "title": "Vérifiez votre e-mail",
             "description": "Saisissez le code que nous avons envoyé pour confirmer cette demande.",
             "confirming": "Confirmation...",

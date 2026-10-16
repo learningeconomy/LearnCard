@@ -249,7 +249,7 @@ describe('EscrowRecoveryPanel', () => {
         );
         fireEvent.click(await screen.findByText('Start a 7-day recovery'));
         expect(
-            await screen.findByText("We couldn't send your code. Try resending.")
+            await screen.findByText("We couldn't send your code. Wait a minute before resending.")
         ).toBeInTheDocument();
         expect(screen.getAllByLabelText(/Code digit/)).toHaveLength(8);
         fireEvent.click(screen.getByText('Resend code'));
