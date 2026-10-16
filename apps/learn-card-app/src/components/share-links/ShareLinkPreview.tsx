@@ -203,7 +203,10 @@ export const ShareLinkPreview = ({
                     item => item.targetCredentialIndex === credentialIndex
                 );
                 const proof = proofs?.[credentialIndex];
-                const credentialTitle = getCredentialName(credential);
+
+                const credentialTitle =
+                    text.name || getCredentialName(credential) || m['shareLinks.credential']();
+
                 return (
                     <article
                         key={credentialIndex}
@@ -213,7 +216,7 @@ export const ShareLinkPreview = ({
                             <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
                                 <h2 className="break-words text-lg font-semibold text-grayscale-900">
-                                    {credentialTitle || text.name || m['shareLinks.credential']()}
+                                    {credentialTitle}
                                 </h2>
                                 <ShareCredentialMetadata credential={credential} />
                             </div>
