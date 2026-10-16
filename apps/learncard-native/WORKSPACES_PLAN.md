@@ -37,4 +37,4 @@ Future investigation should map authority and audit behavior end to end, select 
 
 ## Deferred adjacent ideas
 
-Demo account login remains on hold. Resetting a shared writable account on sign-out would interfere with concurrent visitors. An isolated sample-data session or per-visitor sandbox is a later option, with an explicit boundary from real credential/account state. Live Apple/Google registration remains unsubmitted and providers disabled; neither is required for the learner design pass.
+Demo account login remains on hold. Resetting a shared writable account on sign-out would interfere with concurrent visitors. An isolated sample-data session or per-visitor sandbox is a later option, with an explicit boundary from real credential/account state. The user subsequently approved Native Lab Firebase registration and its Google iOS client is ready; live testing and Apple team/grouping checks remain deferred, and installed/committed provider controls stay disabled. Provider activation is not required for the learner design pass.

@@ -1,6 +1,6 @@
 # Native Apple and Google sign-in
 
-Apple and Google now have native sign-in boundaries and branded controls alongside email. Both feed the existing Firebase session and LearnCard setup/recovery controller. **Live providers remain disabled in the committed configuration until Native Lab has its own registration.** Synthetic UI fixtures exercise the implementation without accessing a real Apple/Google account.
+Apple and Google now have native sign-in boundaries and branded controls alongside email. Both feed the existing Firebase session and LearnCard setup/recovery controller. **Native Lab is registered in Firebase and has its own matching Google iOS client.** Live providers remain disabled in committed defaults and in the installed review build; a local Google override is prepared for a deliberate later live test. Synthetic UI fixtures exercise the implementation without accessing a real Apple/Google account.
 
 The user's reported web problems were popup handling and confusing startup-store/Web3Auth state. This implementation keeps authorization in Apple's system sheet or Google's system sign-in browser. It does not import the web sign-in adapter, web startup stores, Capacitor auth, Web3Auth or a second Firebase SDK/session.
 
@@ -41,13 +41,13 @@ A provider collision asks the user to use their original sign-in method. The cli
 
 The code follows [Google's installed iOS flow](https://developers.google.com/identity/protocols/oauth2/native-app), [Firebase's Apple nonce guidance](https://firebase.google.com/docs/auth/ios/apple) and [Firebase's REST identity-provider exchange](https://firebase.google.com/docs/reference/rest/auth). Google recommends its iOS SDK; the documented lower-level installed flow was selected here to retain the current dependency-free native REST session. Android/Chrome custom-scheme restrictions do not apply to this iOS redirect. This is an iOS integration, not an Android implementation.
 
-## Registration required for live use
+## Registration and live activation
 
 The checked-in iOS Firebase plist belongs to **`com.learncard.app`**. Native Lab is **`org.learningeconomy.learncard.native.experiment`**. Do not copy that client ID or change the Lab bundle ID to borrow its registration; the existing review account/container must remain intact.
 
-1. Register the Lab bundle as an iOS app in the existing **`learncard` / `776298253175`** Firebase project. Create/confirm its matching **iOS** Google OAuth client and Firebase's acceptance of that client. Confirm the Google provider is enabled and the staging request domain is allowed. A web OAuth client or the old bundle's client is insufficient. Google's [registration instructions](https://developers.google.com/identity/sign-in/ios/start-integrating) explain the bundle/client relationship.
+1. **Registered October 16 with explicit user approval:** Lab is an iOS app in the existing **`learncard` / `776298253175`** Firebase project. Its downloaded Firebase plist has the matching bundle ID and newly generated iOS Google client. Google was already Enabled in Authentication; no provider switch was changed. Public identifiers are recorded in [firebase-registration.json](firebase-registration.json). Firebase acceptance of an actual provider proof and the complete staging sign-in remain live verification gates. Google's [registration instructions](https://developers.google.com/identity/sign-in/ios/start-integrating) explain the bundle/client relationship.
 2. Confirm which Apple Developer team currently owns LearnCard sign-in. The repository contains a prior team-transfer checklist; it is not evidence that transfer/grouping is complete. Add the Lab App ID with Sign in with Apple, group it with the existing primary web/production identity as appropriate, and verify Firebase's Apple configuration accepts this app's token audience. Update provisioning for the capability. This matters for retaining existing Apple user identities; see [Apple app grouping](https://developer.apple.com/help/account/capabilities/group-apps-for-sign-in-with-apple/) and [Firebase Apple setup](https://firebase.google.com/docs/auth/ios/apple).
-3. Copy `oauth-config.json` to ignored `oauth-config.local.json`. Set `googleClientID` to the registered iOS client. Enable Apple only after setting its confirmed public `appleTeamID` and `appleWebIdentityGrouped: true`. Providers can be enabled independently.
+3. A matching ignored `oauth-config.local.json` is prepared on this Mac. To recreate it, copy `oauth-config.json` and set `googleClientID` from the public registration record. Apple stays false. Enable Apple only after setting its confirmed public `appleTeamID` and `appleWebIdentityGrouped: true`. Providers can be enabled independently. The normal build continues using disabled tracked defaults unless the override environment variable is supplied.
 4. Build with the public override:
 
 ```bash
@@ -57,9 +57,13 @@ LC_NATIVE_OAUTH_CONFIG="$PWD/apps/learncard-native/oauth-config.local.json" \
 
 `prepare-native-sign-in.ts`, called by the normal preparation/build scripts, generates the bundled public resource, callback scheme and signing entitlements. Before opening the project directly in Xcode, run preparation with that same override. The generator rejects unknown fields, foreign bundle/project IDs and Apple enablement without team/grouping confirmation. It cannot remotely prove registration or grouping; console verification is still required. No provider secret, Apple private key, web client secret or `GoogleService-Info.plist` is bundled by this flow.
 
-Read-only console inspection on October 16 confirms the Firebase Apple-app list contains the existing LearnCard, Metaversity and VetPass bundles, with no Native Lab entry. A form for **LearnCard Native Lab / org.learningeconomy.learncard.native.experiment** is prepared but not submitted. Its registration/Google OAuth-client creation requires final approval. Apple’s portal currently selects the old WeLibrary team and blocks membership resources until its Account Holder accepts the latest Program License Agreement; this does not establish which team currently owns the production identity. No agreement was accepted.
+The completed registration is **LearnCard Native Lab / org.learningeconomy.learncard.native.experiment**, Firebase App ID **`1:776298253175:ios:78059b0d3e7addd1a2ef72`**. Its Google client is **`776298253175-q0hdgjk35du8dqgm0ofsarqquogdbt1l.apps.googleusercontent.com`**. The downloaded plist remains in Downloads and an ignored artifacts archive; only public identifiers are recorded in Git. No Firebase/Google SDK dependency or plist was added to the mobile target.
 
-No Firebase/Google/Apple console settings were changed in this pass. No provider registration was silently reused. A real sign-in has not been claimed from the synthetic tests.
+![Completed Firebase registration with the matching Lab bundle](design/native-firebase-registration-complete.png)
+
+The earlier Apple portal inspection selected the old WeLibrary team and blocked membership resources until its Account Holder accepts the latest Program License Agreement. The current production team/grouping remains unverified; no agreement was accepted. Firebase's existing Apple provider being Enabled does not establish Native Lab capability, provisioning or audience acceptance.
+
+This pass created the Lab registration and its generated Google client. Existing production registrations, provider switches, billing, backend settings and the real review account are unchanged. Four existing native-sign-in configuration tests pass, and the exact local client produces the expected callback scheme with Apple disabled. No live provider sign-in, app reinstall or full regression rerun was performed for registration; the installed build remains the Passport naming checkpoint.
 
 ## Visual and manual checks
 

@@ -1,5 +1,9 @@
 # Native regression checks
 
+## Firebase Native Lab registration — October 16
+
+Explicit user approval completed the Firebase app registration and its generated matching Google iOS client. The downloaded plist's project/number/bundle/client/reversed scheme are validated against the public [registration record](firebase-registration.json). The existing Google provider is Enabled; its switch and other production/billing/provider settings were not changed. Four existing `native-sign-in-config.test.ts` cases pass (15 assertions), and the prepared ignored local override validates the exact new client and callback scheme with Apple false. No code change, app rebuild, live sign-in or full-suite rerun was needed for this configuration record. Installed/committed provider controls remain disabled; manual cloud verification is not evidence of a successful Google/Firebase/LearnCard sign-in. See [proof and remaining gates](NATIVE_SIGN_IN.md).
+
 ## Passport naming and learner design — October 16
 
 The learner Home/welcome boards are design references, not running UI. The personal navigation/page, Home shortcut and related personal-record copy are renamed **Passport** across en/es/fr/ar; model/wire/destination/accessibility identifiers remain stable. Shared collection/link semantics are unchanged. See [concepts versus actual naming captures](design/LEARNER_HOME_BRIEF.md).

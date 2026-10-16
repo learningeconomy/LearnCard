@@ -6,11 +6,11 @@ The user selected a learner-first personal experience and approved the [generate
 
 The personal tab/page and related four-language copy are now **Passport**, matching web and avoiding confusion with shared credential collections. Stable collection model/wire/route/test identifiers remain. Shared collections is still a possible clear name for grouped shared records; no rename of that separate feature is included.
 
-Keep the proposed [personal/institution workspaces](WORKSPACES_PLAN.md) in the later backlog. Live Apple/Google activation and demo login are deferred; their configuration remains disabled/unsubmitted. The completed consumer Apps and account work remain part of the product, with existing live/physical-device gates intact.
+Keep the proposed [personal/institution workspaces](WORKSPACES_PLAN.md) in the later backlog. The user subsequently approved Native Lab Firebase registration; the app and matching Google iOS client now exist, with an ignored local override ready. Live provider testing and demo login remain deferred, and installed/committed provider controls stay disabled. The completed consumer Apps and account work remain part of the product, with existing live/physical-device gates intact.
 
 ## Native Apple and Google sign-in — October 16
 
-Native authorization, common Firebase persistence/routing, cancellation/race guards, branded controls and public registration generation are implemented. Live activation remains gated on a matching Lab Google iOS client and confirmed Apple team/identity grouping/capability. Keep the existing review account intact and do not borrow the old app bundle registration. See [the concrete setup and verification plan](NATIVE_SIGN_IN.md).
+Native authorization, common Firebase persistence/routing, cancellation/race guards, branded controls and public registration generation are implemented. Firebase registration and the matching Lab Google iOS client are complete; local live activation/testing and confirmed Apple team/identity grouping/capability remain. Keep the existing review account intact. See [the concrete setup and verification plan](NATIVE_SIGN_IN.md).
 
 ## Home, People and optional intake — October 16
 

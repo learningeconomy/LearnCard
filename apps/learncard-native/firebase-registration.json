@@ -1,0 +1,11 @@
+{
+    "registeredOn": "2026-10-16",
+    "projectID": "learncard",
+    "projectNumber": "776298253175",
+    "appNickname": "LearnCard Native Lab",
+    "bundleID": "org.learningeconomy.learncard.native.experiment",
+    "firebaseAppID": "1:776298253175:ios:78059b0d3e7addd1a2ef72",
+    "googleClientID": "776298253175-q0hdgjk35du8dqgm0ofsarqquogdbt1l.apps.googleusercontent.com",
+    "reversedGoogleClientID": "com.googleusercontent.apps.776298253175-q0hdgjk35du8dqgm0ofsarqquogdbt1l",
+    "consoleURL": "https://console.firebase.google.com/u/0/project/learncard/settings/general/ios:org.learningeconomy.learncard.native.experiment"
+}
