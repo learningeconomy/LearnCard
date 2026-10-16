@@ -154,7 +154,9 @@ export const startVerificationListing = async (
     await mkdir(privateEnvDir, { recursive: true, mode: 0o700 });
     const exampleDir = resolve(REPO_ROOT, 'examples/app-store-apps/1-basic-launchpad-app');
     const issuer = context.newActor('partner-backend');
-    const issuerDid = (await context.sdk(issuer)).id.did();
+    // The example issues immediately after init, before a profile lookup selects did:web.
+    // Compare its signing-key identity, derived independently from the supplied disposable seed.
+    const issuerDid = (await context.sdk(issuer)).id.did('key');
     // Use Astro's real dev server directly, keeping the server and its shutdown handler in one PID.
     // Both the Astro config and this override disable developer .env loading.
     const serverScript = `

@@ -33,6 +33,7 @@ Preconditions:
 
 - `bun.lock` once pinned astro's `zod` to 3.25.76 through a stale `"astro>zod"` override, so Astro 7 crashed with `z.function(...).optional is not a function`. If that error reappears, check root `package.json` overrides.
 - Astro 7 refuses Node < 22.12 with `Node.js v20… is not supported by Astro!`.
+- The example signs immediately after initialization, using its `did:key`. A verifier wallet that already loaded a network profile can default to `did:web`; derive the expected issuer with `id.did('key')` from the supplied disposable seed, then require exact issuer equality and a valid proof.
 - **Immediate reload must not be worked around.** Reproduced: the network recorded the install, but reloading after the detail showed **Open** restored a persisted pre-install list and displayed **Get**. `useInstalledApps` now revalidates on mount even within its 2-minute `staleTime`; this journey passed with immediate reload after that fix. Keep the no-sleep assertion so persistence races cannot masquerade as successful installs.
 - The side modal hides the list from the accessibility tree. Reload dismisses it before the row assertion; reopening uses **More options**.
 - The example app also has a standalone mock-host mode. Never accept its mock banner. Even the real-host banner and `JWT received` text are insufficient: actual correlated messages and cryptographic verification are mandatory.
