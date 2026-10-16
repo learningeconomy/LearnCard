@@ -412,7 +412,20 @@ export const EscrowRecoveryPanel = ({
             hold.status === 'expired' ||
             (hold.status === 'completed' && !canResumeCompleted?.())
         ) {
-            await clearPendingEscrowRecovery(holdId, scope);
+            try {
+                await clearPendingEscrowRecovery(holdId, scope);
+            } catch (cause) {
+                logRecoveryError('recovery.storage.clear.failed', cause);
+                if (
+                    generation === statusGenerationRef.current &&
+                    holdId === activeHoldIdRef.current
+                ) {
+                    setStatusFailed(true);
+                    setVerifiedHoldId(undefined);
+                }
+                // Keep the request so Try Again can retry cleanup, including after confirmation.
+                return { ok: false, ready: false };
+            }
             setPending(undefined);
             setError(
                 hold?.status === 'cancelled'

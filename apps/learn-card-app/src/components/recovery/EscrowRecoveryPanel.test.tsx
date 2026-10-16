@@ -147,6 +147,70 @@ describe('EscrowRecoveryPanel', () => {
         }
     );
 
+    it.each(['cancelled', 'expired', 'completed', 'not found'])(
+        'retries failed local cleanup after a %s status result',
+        async status => {
+            vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+                holdId: 'hold-confirm-1',
+                resumeToken: 'private-resume-token',
+                clientEphemeralPrivateKey: 'private-key',
+                releaseAfter: new Date(Date.now() + 86400000).toISOString(),
+                requiresConfirmation: true,
+                expectations,
+            });
+            const onStatus = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('private status failure'))
+                .mockResolvedValue(status === 'not found' ? null : { status });
+            vi.mocked(clearPendingEscrowRecovery).mockRejectedValueOnce(
+                new TypeError('private@example.com private-resume-token private-key')
+            );
+            render(
+                <EscrowRecoveryPanel
+                    view="status"
+                    available
+                    onStart={vi.fn()}
+                    onStatus={onStatus}
+                    onRecover={vi.fn()}
+                    onConfirmCode={vi.fn()}
+                    onResendCode={vi.fn()}
+                />
+            );
+            fireEvent.click(await screen.findByRole('button', { name: 'Try Again' }));
+            await waitFor(() => expect(clearPendingEscrowRecovery).toHaveBeenCalledTimes(1));
+            const retry = await screen.findByRole('button', { name: 'Try Again' });
+            expect(retry).toBeEnabled();
+            expect(retry).toHaveClass('rounded-[20px]');
+            expect(screen.queryByRole('button', { name: 'Checking...' })).not.toBeInTheDocument();
+            expect(screen.getByRole('alert')).toHaveClass('bg-red-50');
+            expect(screen.getByText("We couldn't check your request right now.")).toHaveClass(
+                'text-red-700'
+            );
+            expect(logError).toHaveBeenCalledWith('recovery.storage.clear.failed', {
+                errorType: 'TypeError',
+            });
+            expect(JSON.stringify(logError.mock.calls)).not.toContain('private');
+            expect(screen.queryByText('Recovery in progress')).not.toBeInTheDocument();
+
+            fireEvent.click(retry);
+            await waitFor(() => expect(clearPendingEscrowRecovery).toHaveBeenCalledTimes(2));
+            expect(clearPendingEscrowRecovery).toHaveBeenLastCalledWith(
+                'hold-confirm-1',
+                'default'
+            );
+            expect(onStatus).toHaveBeenCalledTimes(3);
+            expect(screen.getByRole('alert')).toHaveTextContent(
+                status === 'cancelled'
+                    ? 'This recovery request was cancelled.'
+                    : status === 'completed'
+                      ? 'This recovery request has already finished. Start a new one.'
+                      : 'This recovery request expired. Start a new one.'
+            );
+            expect(screen.queryByRole('button', { name: 'Try Again' })).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: 'Checking...' })).not.toBeInTheDocument();
+        }
+    );
+
     it.each(['failure', 'stale', 'superseded failure'])(
         'preserves authoritative confirmation across a post-confirm %s',
         async scenario => {
