@@ -101,6 +101,14 @@ describe('escrow deployment wiring', () => {
         );
     });
 
+    it('keeps every checked-in enclave timeout above the host forwarding deadline', () => {
+        // enclave 10s < host 12s < lca-api; an equal or shorter value races the response.
+        for (const [stage, config] of Object.entries(stages)) {
+            const value = (config as Record<string, string>).ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS;
+            if (value !== undefined) expect(Number(value), stage).toBeGreaterThan(12_000);
+        }
+    });
+
     it('never checks in escrow credentials', () => {
         for (const [stage, config] of Object.entries(stages)) {
             for (const name of [...SOURCES.bundle, ...SOURCES.toggle]) {

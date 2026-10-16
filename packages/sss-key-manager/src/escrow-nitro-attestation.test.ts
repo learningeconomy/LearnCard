@@ -202,3 +202,75 @@ describe('FakeNsm Nitro attestation', () => {
         });
     });
 });
+
+describe('real AWS Nitro attestation', () => {
+    const real = JSON.parse(
+        readFileSync(
+            new URL(
+                './__fixtures__/nitro-attestation-real/staging-nsm-document.json',
+                import.meta.url
+            ),
+            'utf8'
+        )
+    ) as {
+        nonceHex: string;
+        timestamp: number;
+        keyId: string;
+        measurements: { pcr0: string; pcr1: string; pcr2: string };
+        escrowPublicKeySpkiB64: string;
+        measurementHash: string;
+        document: string;
+    };
+    const realNonce = Uint8Array.from(real.nonceHex.match(/../g)!, byte => parseInt(byte, 16));
+    const realOptions = {
+        expectedNonce: realNonce,
+        policy: { mode: 'nitro' as const, pinnedMeasurements: [real.measurements] },
+        now: real.timestamp,
+    };
+
+    it('uses the indefinite-length payload map the NSM actually emits', () => {
+        const cose = decode(base64ToBuffer(real.document), { useMaps: true }) as unknown[];
+        expect((cose[2] as Uint8Array)[0]).toBe(0xbf);
+    });
+
+    it('verifies against the default AWS root, nonce and pinned measurements', async () => {
+        await expect(
+            verifyNitroAttestationDocument(real.document, realOptions)
+        ).resolves.toMatchObject({
+            keyId: real.keyId,
+            escrowPublicKeySpkiB64: real.escrowPublicKeySpkiB64,
+            measurementHash: real.measurementHash,
+            timestamp: real.timestamp,
+        });
+    });
+
+    it('still rejects a real document with a different nonce or unpinned measurements', async () => {
+        await expect(
+            verifyNitroAttestationDocument(real.document, {
+                ...realOptions,
+                expectedNonce: new Uint8Array(32),
+            })
+        ).rejects.toMatchObject({ reason: 'nonce' });
+        await expect(
+            verifyNitroAttestationDocument(real.document, {
+                ...realOptions,
+                policy: { mode: 'nitro', pinnedMeasurements: [measurement] },
+            })
+        ).rejects.toMatchObject({ reason: 'pcr' });
+    });
+
+    it('keeps rejecting indefinite-length encoding outside the signed payload', async () => {
+        const cose = decode(base64ToBuffer(real.document), { useMaps: true }) as unknown[];
+        const indefiniteEnvelope = new Uint8Array([
+            0x9f,
+            ...encode(cose[0]),
+            ...encode(cose[1]),
+            ...encode(cose[2]),
+            ...encode(cose[3]),
+            0xff,
+        ]);
+        await expect(
+            verifyNitroAttestationDocument(bufferToBase64(indefiniteEnvelope.buffer), realOptions)
+        ).rejects.toMatchObject({ reason: 'cbor' });
+    });
+});

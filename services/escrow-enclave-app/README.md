@@ -172,14 +172,18 @@ The policy layer must canonicalize and bound these request bytes (8192 maximum).
    Same ID with a different hold/payload/event is rejected. Reservation and its
    single result intentionally share the request ID. Non-PIN exact duplicates
    return the existing record without an append, even if the hold is now terminal.
-5. A head is remembered **before** signed bytes leave the enclave. Failed,
-   conflicting, cancelled or lying appends cannot make it sign a local fork.
-   Conflict/Unavailable propagate; there is no automatic retry on an older head.
-   If that signed record was not persisted, the chain stays fail-closed in this
-   process until the exact signed history is restored. Do not restart to clear it.
+5. A speculative proposal is remembered **before** signed bytes leave the enclave,
+   separately from the committed high-water mark. Only authenticated readback
+   advances that mark. Conflict/Unavailable propagate; there is no automatic retry.
+   After Conflict, a subsequent read must contain a valid signed successor at the
+   proposed sequence and preserve the committed prefix. This reconciles a losing
+   signer to the winner and discards its proposal; the winner then fences out the
+   losing fork. A conflict flag alone never permits returning to the old prefix.
+   Unavailable, cancellation and unsuccessful readback retain the exact proposal
+   fence until its signed history is restored. Do not restart to clear it.
    No comparison resumes from a persisted-but-ambiguous reservation.
 
-`observe` checks that the chain contains the previously observed/signed record
+`observe` checks that the chain contains the previously read-back committed record
 at its original sequence, not merely that its new sequence is larger. Therefore
 both truncation and a longer fork are rejected. Pure `verify_chain` has no memory;
 production callers use the stateful APIs, not that pure monitor helper alone.
@@ -357,8 +361,10 @@ durability/audit and independent monitor/kill-switch integration remain required
 `RoughtimeTimeSource::new` requires 2–16 distinct pins, a minimum of two
 successful responses, and an explicit radius cap (`production`: 10 seconds).
 Production uses Cloudflare, int08h and Tanner Ryan with `min_sources = 2`.
-All queries run concurrently against one shared two-second deadline. Every valid
-source participates in the intersection; no majority/outlier exclusion occurs.
+All queries run concurrently against one shared two-second deadline. Return as
+soon as a minimum-source authenticated quorum has mutually intersecting intervals
+that pass the supplied floor, aborting the remaining queries. If initial replies
+disagree, continue collecting to find a consistent quorum before the deadline.
 Missing/invalid replies count as unavailable; insufficient sources, disjoint
 intervals, or an intersection wholly before the supplied ledger floor fail closed.
 The caller supplies the authenticated ledger head floor; this module does not
@@ -392,7 +398,7 @@ proof; later ledger signing authenticates the enclave's verification result.
   Their captured responses are offline golden tests in `src/time/live_tests.rs`.
   Observed radii were 5s and 3s. The unchanged 10s cap accommodates these and
   leap smearing, tiny relative to the seven-day hold. No extra tolerance is added:
-  disjoint signed intervals fail closed, even if two other sources agree.
+  a quorum's signed intervals must intersect; no tolerance is added to bridge gaps.
   Tanner's operator asks for contact before high-volume infrastructure usage;
   obtain approval and rate-limit deployment traffic before launch.
 - Google's unreachable sandbox is removed. [Netnod's public service page](https://www.netnod.se/free-time-services)
@@ -411,7 +417,8 @@ proof; later ledger signing authenticates the enclave's verification result.
 `verified-roughtime-keys` feature gate (that compatibility feature is no longer
 required). Pins are never fetched dynamically or supplied by the host. One
 unavailable/bad-signature source is tolerated; two unavailable sources fail closed.
-All verified replies participate, so no early return at quorum hides dissent.
+The host can already suppress a source; waiting for all cannot constrain that
+adversary. Security rests on the independent authenticated signatures in the quorum.
 Public services offer no uptime guarantee; only two were live-verified here, so
 Cloudflare availability/interoperability must still be checked from staging.
 Custom pins
@@ -514,16 +521,17 @@ signatures, chain, nonce or freshness. It is not a production KMS substitute.
 
 ### KMS transport and credentials
 
-The SDK enables only `rt-tokio` and `default-https-client`, not its legacy
-`rustls` feature: hyper 1.x, rustls 0.23 and AWS-LC handle HTTPS. Certificate
-validation uses rustls-webpki with **native CA roots**, not bundled
-`webpki-roots`. Smithy loads these through `rustls-native-certs`, honoring
-`SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt` in the Dockerfile. Thus the
-Alpine CA bundle baked into the measured image remains the trust store (D11);
-local development uses the platform trust store unless explicitly overridden.
+The SDK enables only `rt-tokio`, with an explicit hyper 1/rustls 0.23/AWS-LC
+transport. `webpki-roots` are compiled into the measured binary; platform trust
+stores and `SSL_CERT_FILE` are not used, including in local development.
+Each KMS operation obtains fresh `TimeSource` evidence before network IO. TLS
+validates at both interval endpoints; SigV4 uses the midpoint. No system clock
+fallback, automatic retry, TLS resumption, or cross-operation connection reuse is
+allowed. Missing evidence fails closed, including at boot. See SECURITY.md's
+"AWS TLS and signing time" section for the Roughtime delayed-delivery limitation.
 
 `AwsKmsClient` (`kms` feature) requires explicit temporary parent STS credentials
-and a region; it never uses IMDS or an environment credential chain. Reconstruct
+and a region plus an enclave `TimeSource`; it never uses IMDS or an environment credential chain. Reconstruct
 the client with refreshed credentials per boot/request; never log these values.
 Its default endpoint is `https://kms.<region>.amazonaws.com:8000`.
 Linux Nitro startup validates the region and writes that exact hostname mapping
@@ -884,8 +892,8 @@ time authorities, and the separately administered audit monitor/KMS policy roles
 The enclave hypervisor clock was considered but not used; reading it locally does not authenticate
 elapsed time. Require fresh nonce-bound signed Roughtime responses from **at least
 two independent pinned sources** out of Cloudflare, int08h and Tanner Ryan,
-verified inside the enclave. One outage is tolerated; two fail closed. Intersect all verified
-intervals: `[max(lows), min(highs)]`; disagreement, missing evidence, or time before
+verified inside the enclave. One outage is tolerated; two fail closed. Intersect the quorum's
+intervals: `[max(lows), min(highs)]`; no consistent quorum, missing evidence, or time before
 the observable ledger head fails closed. Delayed release requires
 `trusted_now.lower >= hold.created.upper + 7 days`. A parent UDP relay is untrusted
 (the KMS vsock proxy is TCP-only). Public time services have production-readiness

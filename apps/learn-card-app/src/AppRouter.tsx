@@ -234,6 +234,10 @@ const AppRouter: React.FC = () => {
             '/claim/from-dashboard/',
             '/chats',
             '/cli',
+            '/wallet-worker',
+            '/store',
+            '/exchange',
+            '/get',
         ].includes(location.pathname) ||
         (collapsed &&
             AI_ROUTES.includes(location.pathname as (typeof AI_ROUTES)[number]) &&

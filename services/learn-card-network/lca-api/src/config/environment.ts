@@ -78,7 +78,7 @@ export const lcaApiEnvironmentShape = {
      *  silently DoS recovery. See services/escrow-ledger-monitor/README.md. */
     ESCROW_RELEASE_KILL_SWITCH: optionalEnvironmentBoolean,
     ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS: optionalEnvironmentString
-        .transform(value => (value === undefined ? 10_000 : Number(value)))
+        .transform(value => (value === undefined ? 15_000 : Number(value)))
         .pipe(z.number().int().positive().max(30_000)),
     ESCROW_HOLD_DURATION_MS: optionalEnvironmentString
         .transform(value => (value === undefined ? 604_800_000 : Number(value)))

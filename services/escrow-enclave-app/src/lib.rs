@@ -1,5 +1,10 @@
 //! Escrow enclave primitives and decision core. Production driver/transport integration is pending.
 
+/// Authority schema, owner intent and direct AWS persistence for configured Policy.
+pub mod authority;
+#[cfg(feature = "kms")]
+mod aws_transport;
+
 /// P-256 ECDH, HKDF-SHA256, and AES-GCM envelope compatibility (P1.2).
 pub mod crypto;
 /// Attested KMS unseal and the future KmsClient abstraction (P1.4).
