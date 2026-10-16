@@ -23,6 +23,80 @@ import type {
 const fail = (): never => {
     throw new EscrowEvidenceError();
 };
+
+/** Verify a fresh hold-state response using an independently retained hold binding
+ * and a newly generated 32-byte nonce. Never reuse the nonce for another read. */
+export const verifyEscrowHoldState = async (
+    response: { proof: unknown },
+    nonce: string,
+    expected: {
+        tenant: string;
+        authorityGeneration: string;
+        did: string;
+        holdId: string;
+        holdDigest: string;
+    },
+    identity: VerifiedEnclaveIdentity
+): Promise<{
+    status: 'awaitingConfirmation' | 'pending' | 'released' | 'cancelled';
+    confirmedHiMs: number | null;
+    releaseWarningSentHiMs: number | null;
+    attemptsRemaining: number;
+    codeSendStatus: 'unknown' | 'notRequired';
+}> => {
+    requireEvidence(/^[0-9a-f]{64}$/.test(nonce));
+    const { payload } = await verifyRecord(response.proof, 'snapshot', identity);
+    requireEvidence(Array.isArray(payload) && payload.length === 12);
+    const p = payload as unknown[];
+    requireEvidence(
+        p[0] === 'learncard-authority-hold-state-v3' &&
+            p[1] === nonce &&
+            p[2] === expected.tenant &&
+            p[3] === expected.authorityGeneration &&
+            p[4] === expected.did &&
+            p[5] === expected.holdId &&
+            p[6] === expected.holdDigest
+    );
+    const status = p[7];
+    if (
+        status !== 'awaitingConfirmation' &&
+        status !== 'pending' &&
+        status !== 'released' &&
+        status !== 'cancelled'
+    )
+        return fail();
+    const confirmedHiMs = p[8] === null ? null : integer(p[8]);
+    const releaseWarningSentHiMs = p[9] === null ? null : integer(p[9]);
+    const attemptsRemaining = integer(p[10], 0, 5);
+    const codeSendStatus = p[11];
+    if (codeSendStatus !== 'unknown' && codeSendStatus !== 'notRequired') return fail();
+    requireEvidence(
+        status !== 'awaitingConfirmation' ||
+            (confirmedHiMs === null && releaseWarningSentHiMs === null)
+    );
+    requireEvidence((status !== 'pending' && status !== 'released') || confirmedHiMs !== null);
+    return { status, confirmedHiMs, releaseWarningSentHiMs, attemptsRemaining, codeSendStatus };
+};
+
+/** Authenticate advisory send acceptance without changing the immutable hold commitment. */
+export const verifyEscrowCodeDelivery = async (
+    delivery: { codeSent: boolean; proof: unknown },
+    expected: { tenant: string; authorityGeneration: string; holdDigest: string },
+    identity: VerifiedEnclaveIdentity
+): Promise<boolean> => {
+    const { payload } = await verifyRecord(delivery.proof, 'snapshot', identity);
+    requireEvidence(Array.isArray(payload) && payload.length === 5);
+    const values = payload as unknown[];
+    requireEvidence(
+        values[0] === 'learncard-authority-code-delivery-v1' &&
+            values[1] === expected.tenant &&
+            values[2] === expected.authorityGeneration &&
+            values[3] === expected.holdDigest &&
+            typeof values[4] === 'boolean' &&
+            values[4] === delivery.codeSent
+    );
+    return delivery.codeSent;
+};
 const requireEvidence = (condition: boolean): void => {
     if (!condition) fail();
 };

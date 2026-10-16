@@ -222,6 +222,80 @@ describe('EscrowRecoveryPanel', () => {
         expect(screen.queryByRole('alert')).not.toBeInTheDocument(); // No error banner
     });
 
+    it('retains the code step and offers resend after a failed initial send', async () => {
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce(undefined);
+        mockOnStart.mockResolvedValueOnce({
+            holdId: expectations.holdId,
+            resumeToken: 'resume',
+            clientEphemeralPrivateKey: 'private',
+            requestedAt: new Date().toISOString(),
+            releaseAfter: new Date(Date.now() + 604800000).toISOString(),
+            requiresConfirmation: true,
+            codeSent: false,
+            expectations,
+        });
+        mockOnStatus.mockResolvedValue(null);
+        const resend = vi.fn().mockResolvedValue({ success: true });
+        render(
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={resend}
+            />
+        );
+        fireEvent.click(await screen.findByText('Start a 7-day recovery'));
+        expect(
+            await screen.findByText("We couldn't send your code. Try resending.")
+        ).toBeInTheDocument();
+        expect(screen.getAllByLabelText(/Code digit/)).toHaveLength(8);
+        fireEvent.click(screen.getByText('Resend code'));
+        await waitFor(() =>
+            expect(resend).toHaveBeenCalledWith({
+                holdId: expectations.holdId,
+                resumeToken: 'resume',
+            })
+        );
+    });
+
+    it.each([
+        ['codeMismatch', "That code isn't right. Try again."],
+        ['codeExpired', 'That code has expired. Send a new one.'],
+        ['codeLocked', 'Too many tries. Send a new code.'],
+    ])('shows actionable copy for %s', async (reason, message) => {
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId: expectations.holdId,
+            resumeToken: 'resume',
+            clientEphemeralPrivateKey: 'private',
+            requestedAt: new Date().toISOString(),
+            releaseAfter: new Date(Date.now() + 604800000).toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+        mockOnStatus.mockResolvedValue(null);
+        const confirm = vi.fn().mockRejectedValue({ status: 403, reason, message: 'secret' });
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={confirm}
+                onResendCode={vi.fn()}
+            />
+        );
+        await screen.findByText('Check your email');
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+        expect(await screen.findByText(message)).toBeInTheDocument();
+        expect(screen.queryByText('secret')).not.toBeInTheDocument();
+    });
+
     it('calls onStart with restart: true when clicking Start over', async () => {
         const requestedAt = new Date().toISOString();
         const releaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();

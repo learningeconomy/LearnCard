@@ -59,6 +59,7 @@ import {
     verifyEscrowAuthorityState,
     verifyEscrowEnrollmentCommit,
     verifyEscrowHoldRecord,
+    verifyEscrowCodeDelivery,
     verifyEscrowHoldConfirmation,
     escrowAuthorityMeasurements,
     type EscrowHoldRecordLike,
@@ -198,7 +199,10 @@ type EscrowEnrollmentResult =
 
 /** HTTP failure metadata without potentially sensitive server response text. */
 export class EscrowRequestError extends Error {
-    constructor(public readonly status: number) {
+    constructor(
+        public readonly status: number,
+        public readonly reason?: 'codeMismatch' | 'codeExpired' | 'codeLocked'
+    ) {
         super('Escrow request failed');
         this.name = 'EscrowRequestError';
     }
@@ -1099,6 +1103,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         });
         // Never propagate response bodies or status text that could contain secrets.
         if (!response.ok) {
+            if (path === '/confirm' && response.status === 403) {
+                const body: unknown = await response.json().catch(() => undefined);
+                const reason =
+                    body && typeof body === 'object' && 'message' in body
+                        ? body.message
+                        : undefined;
+                throw new EscrowRequestError(
+                    response.status,
+                    reason === 'codeMismatch' || reason === 'codeExpired' || reason === 'codeLocked'
+                        ? reason
+                        : undefined
+                );
+            }
             if (!pinAttempt && path === '/recover' && response.status === 429) {
                 const body: unknown = await response.json().catch(() => undefined);
                 const message =
@@ -2334,6 +2351,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     ledgerPublicKey: identity.authority.ledgerPublicKey,
                     keyId: verified.receipt.keyId,
                 };
+                result.codeSent = result.delivery
+                    ? await verifyEscrowCodeDelivery(result.delivery, expectations, identity)
+                    : undefined;
             }
             // Never accept a server-supplied expectations object, even in software mode.
             return { ...result, clientEphemeralPrivateKey: pair.privateKey, expectations };
