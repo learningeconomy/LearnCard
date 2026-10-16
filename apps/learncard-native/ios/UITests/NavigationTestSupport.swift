@@ -10,11 +10,10 @@ import XCTest
     func openCredentialTools(file: StaticString = #filePath, line: UInt = #line) {
         let add = buttons["create"]
         XCTAssertTrue(add.waitForExistence(timeout: 10), file: file, line: line); add.tap()
-        let tools = buttons["learner-more-tools"]
-        XCTAssertTrue(tools.waitForExistence(timeout: 5), file: file, line: line)
-        for _ in 0..<3 { if tools.isHittable { break }; swipeUp() }
-        tools.tap()
-        XCTAssertTrue(buttons["collection-action-create"].waitForExistence(timeout: 5), file: file, line: line)
+        let create = buttons["collection-action-create"]
+        XCTAssertTrue(create.waitForExistence(timeout: 5), file: file, line: line)
+        for _ in 0..<3 { if create.isHittable { break }; swipeUp() }
+        XCTAssertTrue(create.isHittable, file: file, line: line)
     }
     func exploreLearnerWelcome(file: StaticString = #filePath, line: UInt = #line) {
         let explore = buttons["learner-welcome-explore"]

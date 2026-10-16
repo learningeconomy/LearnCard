@@ -171,7 +171,7 @@ final class ExperimentUITests: XCTestCase {
     func testCreateForSomeoneKeepsTemplateSeparateFromCollection() {
         let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
         app.openCredentialTools(); app.buttons["Create new"].tap()
-        XCTAssertTrue(app.buttons["draft-artwork"].exists)
+        XCTAssertTrue(app.buttons["draft-artwork"].waitForExistence(timeout: 5))
         let title = app.textFields["draft-title"]; title.tap(); title.typeText("Native kindness badge")
         let summary = app.descendants(matching: .any)["draft-summary"]; summary.tap(); summary.typeText("Recognizing a thoughtful teammate.")
         app.swipeUp(); app.buttons["create-next"].tap()

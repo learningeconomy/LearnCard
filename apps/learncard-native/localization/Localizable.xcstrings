@@ -26337,59 +26337,57 @@
       }
     },
     "learner.addTitle": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add to your LearnCard"
+            "value": "Add or send"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añade a tu LearnCard"
+            "value": "Añadir o enviar"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajoutez à votre LearnCard"
+            "value": "Ajouter ou envoyer"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "أضف إلى LearnCard الخاص بك"
+            "value": "إضافة أو إرسال"
           }
         }
       }
     },
     "learner.addBody": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Have a code or link? Start here."
+            "value": "Receive, create or send a credential."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Tienes un código o enlace? Empieza aquí."
+            "value": "Recibe, crea o envía una credencial."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous avez un code ou un lien ? Commencez ici."
+            "value": "Recevez, créez ou envoyez une attestation."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "هل لديك رمز أو رابط؟ ابدأ هنا."
+            "value": "استلم شهادة أو أنشئها أو أرسلها."
           }
         }
       }
@@ -28368,6 +28366,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "استيراد الملفات غير متاح. حاول مجددًا."
+          }
+        }
+      }
+    },
+    "people.send": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send a credential"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar una credencial"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer une attestation"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إرسال شهادة"
+          }
+        }
+      }
+    },
+    "people.sendBody": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create one or choose from your creations."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea una o elige entre tus creaciones."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créez-en une ou choisissez parmi vos créations."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أنشئ شهادة أو اختر من شهاداتك المُنشأة."
           }
         }
       }

@@ -6,6 +6,8 @@ Working rules, October 16, 2026. Applies to the SwiftUI consumer experiment. Use
 
 The October 16 learner pass renames the personal destination **Passport**, keeping shared credential collections distinct. Reading order is **Home / Passport / Inbox / Apps**; historical Collection references below describe the same internal destination. The implemented Home and optional welcome follow the [learner Home and first-arrival compositions](LEARNER_HOME_BRIEF.md). Existing creator/issuer capabilities are secondary; institution workspaces remain a later product slice.
 
+Learner-first sets the hierarchy while keeping creation/sending discoverable. Show these actions directly in Add and as visible secondary Home rows. Connected profiles offer contextual **Send a credential**, with the person carried into new/existing creation flows and explicit review before delivery. Connections support useful recognition and exchange; Home does not need gamified sending prompts or administrative controls. See [the social sending contract](../SOCIAL_SENDING.md).
+
 **Confident, useful, a little whimsical.** Substantial type, clear actions, warm outlined illustrations and the Colorful theme. Keep ordinary tasks quick. Personality belongs in a smiling avatar, an illustrated envelope, or a little house, while reading and account decisions stay calm.
 
 - Neutral canvas, colorful objects. Strong full-page backgrounds were tried and rejected.

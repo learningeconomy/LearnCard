@@ -1,6 +1,6 @@
 # People and optional LearnCard intake
 
-October 16, 2026. Home now groups Data Sharing immediately after My collection, Create a credential and Your creations. Families stays in its existing area. Scan a code is an illustrated full-width action with explanatory copy and a chevron, rather than unadorned text.
+October 16, 2026. Learner Home prioritizes arrivals, recent achievements and scan/share actions, followed by People and Data Sharing. Families stays in its existing area. Scan a code is an illustrated action with explanatory copy rather than unadorned text. Creation/sending remains directly available through Add and visible secondary Home rows.
 
 ## Where things live
 
@@ -20,7 +20,9 @@ See [the generated composition and native screenshots](design/PEOPLE_INTAKE_BRIE
 
 Services and stores belong to one native account. Lock/sign-out/reset clears list, profile, search, pagination and busy state. Generation/request checks discard late reads and writes; the existing runtime is disposed with the account. Live unavailable services never substitute sample contacts. Demo People and Inbox share an in-memory relationship graph solely for reproducible checks.
 
-Contact invitation links/QR, device contacts, profile-specific send/share shortcuts, a richer profile editor and specialized guardian/device notifications remain separate. The generic credential scanner does not silently treat contact-invite codes as credential claims.
+Connected profiles offer **Send a credential**, carrying the person into either new credential authoring or an existing creation's send form. New authoring defaults to that person and still allows changing the recipient or choosing self; existing live sends prefill the username and retain explicit recipient lookup/review. Opening, cancelling or returning from these screens never sends a credential. The new-creation action remains available when there are no reusable creations. See [entry points and handoff rules](SOCIAL_SENDING.md).
+
+Contact invitation links/QR, device contacts, person-specific sharing of personal achievements, a richer profile editor and specialized guardian/device notifications remain separate. The generic credential scanner does not silently treat contact-invite codes as credential claims.
 
 ## Build My LearnCard: claims and files
 

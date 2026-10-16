@@ -18,7 +18,6 @@ struct HomeView: View {
     let openCollection: () -> Void
     let openApps: (Bool) -> Void
     var onScrollStateChange: (Bool) -> Void = { _ in }
-    @State private var toolsExpanded = false
     private var consumer: ConsumerAppsStore { store.consumer }
 
     private var summary: LearnerHomeSummary { LearnerHomeSummary(snapshot: store.snapshot, hasError: store.error != nil || store.snapshotReadFailed) }
@@ -61,24 +60,14 @@ struct HomeView: View {
                         }.accessibilityIdentifier("home-welcome")
                     }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
                     VStack(spacing: 0) {
-                        Button { toolsExpanded.toggle() } label: {
-                            HStack {
-                                Text(NativeText.text("learner.tools")).font(.body.weight(.semibold))
-                                Spacer()
-                                Image(systemName: toolsExpanded ? "chevron.up" : "chevron.down").accessibilityHidden(true)
-                            }.padding(16).frame(minHeight: 52).contentShape(Rectangle())
-                        }.buttonStyle(.plain).accessibilityIdentifier("home-tools")
-                            .accessibilityValue(toolsExpanded ? NativeText.text("learner.expanded") : NativeText.text("learner.collapsed"))
-                        if toolsExpanded { VStack(spacing: 0) {
-                            Button(action: create) {
-                                DrawnSettingsRow(title: NativeText.text("home.create"), symbol: .pencil, tint: Palette.pinkCard, subtitle: NativeText.text("home.createBody"))
-                            }.accessibilityIdentifier("home-create")
-                            rowDivider
-                            NavigationLink { CreationsView(store: store) } label: {
-                                DrawnSettingsRow(title: "Your creations", symbol: .credential, tint: Palette.studiesCard, subtitle: NativeText.text("home.creationsBody"))
-                            }.accessibilityIdentifier("home-creations")
-                        }.buttonStyle(CredentialPressStyle()) }
-                    }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                        Button(action: create) {
+                            DrawnSettingsRow(title: NativeText.text("home.create"), symbol: .pencil, tint: Palette.pinkCard, subtitle: NativeText.text("home.createBody"))
+                        }.accessibilityIdentifier("home-create")
+                        rowDivider
+                        NavigationLink { CreationsView(store: store) } label: {
+                            DrawnSettingsRow(title: "Your creations", symbol: .credential, tint: Palette.studiesCard, subtitle: NativeText.text("home.creationsBody"))
+                        }.accessibilityIdentifier("home-creations")
+                    }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
                     if !(store.snapshot?.activity.isEmpty ?? true) { HomeSessionActivity(items: store.snapshot?.activity ?? []) }
                 }
             }.padding(NativeLayout.pageInset).frame(maxWidth: 760).frame(maxWidth: .infinity)

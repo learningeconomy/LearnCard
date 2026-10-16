@@ -40,7 +40,6 @@ import XCTest
         app.buttons["nav-home"].tap(); app.buttons["home-collection"].tap()
         XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 5))
         app.buttons["nav-home"].tap()
-        let tools = app.buttons["home-tools"]; reveal(tools, in: app); tools.tap()
         reveal(app.buttons["home-create"], in: app); app.buttons["home-create"].tap()
         XCTAssertTrue(app.textFields["draft-title"].waitForExistence(timeout: 5))
     }

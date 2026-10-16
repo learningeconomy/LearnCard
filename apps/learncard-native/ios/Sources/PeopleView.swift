@@ -99,6 +99,7 @@ private struct PersonDetailView: View {
     let appStore: AppStore
     let id: String
     @State private var confirm: PeopleAction?
+    @State private var sendTo: AccountRecipient?
     private var people: PeopleStore { appStore.people }
     var body: some View {
         ScrollView {
@@ -112,6 +113,13 @@ private struct PersonDetailView: View {
                         if let bio = person.bio, !bio.isEmpty { Text(bio).font(.body).foregroundStyle(Palette.secondary) }
                     }.multilineTextAlignment(.center).frame(maxWidth: .infinity).padding(22).background(Palette.surface, in: RoundedRectangle(cornerRadius: 26))
                     Text(NativeText.text("people.privacy")).font(.subheadline).foregroundStyle(Palette.secondary)
+                    if person.status == .connected {
+                        Button { sendTo = AccountRecipient(id: person.id, name: person.name) } label: {
+                            DrawnSettingsRow(title: NativeText.text("people.send"), symbol: .credential, tint: Palette.pinkCard,
+                                             subtitle: NativeText.text("people.sendBody"))
+                        }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                            .disabled(people.busy).accessibilityIdentifier("person-send")
+                    }
                     if let error = people.error { Text(error).foregroundStyle(Palette.errorInk) }
                     if person.status == .none { primary(.connect) }
                     if person.status == .incoming { primary(.accept) }
@@ -123,6 +131,13 @@ private struct PersonDetailView: View {
             }.padding(20).frame(maxWidth: 620).frame(maxWidth: .infinity)
         }.background(Palette.paper).foregroundStyle(Palette.ink).navigationTitle(NativeText.text("people.person")).navigationBarTitleDisplayMode(.inline)
             .task(id: people.revision) { await people.show(id: id) }
+            .sheet(item: $sendTo) { recipient in
+                NavigationStack {
+                    CreationsView(store: appStore, sendOnSelect: true, initialRecipient: recipient)
+                        .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.text("common.done")) { sendTo = nil } } }
+                }.environment(\.locale, NativeLanguage.selected.locale)
+                    .environment(\.layoutDirection, NativeLanguage.selected.isRightToLeft ? .rightToLeft : .leftToRight)
+            }
             .confirmationDialog(NativeText.text("people.action.\(confirm?.rawValue ?? "block")"), isPresented: Binding(get: { confirm != nil }, set: { if !$0 { confirm = nil } }), titleVisibility: .visible) {
                 if let action = confirm {
                     Button(NativeText.text("people.action.\(action.rawValue)"), role: action == .block || action == .disconnect ? .destructive : nil) { confirm = nil; Task { _ = await people.act(action) } }

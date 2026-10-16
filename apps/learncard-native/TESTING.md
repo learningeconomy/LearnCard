@@ -1,5 +1,21 @@
 # Native regression checks
 
+## Discoverable social sending — October 16, 2026
+
+The focused localization case passes (`artifacts/social-entry-localization-2026-10-16.log`), including the two new People action keys in all four languages. Catalog generation validates **962 keys** across en/es/fr/ar. No protocol/core behavior changed, so the full Bun/Swift suites were not rerun.
+
+There are **nine distinct passing focused UI cases** across these runs:
+
+- `social-entry-ui-2026-10-16.xcresult`: **7/8 pass**, covering the two new direct-menu/connected-profile cases, Home hierarchy/routing, People request acceptance and optional-welcome intake routes. The older create-for-someone case checked artwork existence immediately after the menu tap, before the deferred sheet handoff finished.
+- `social-entry-confirmed-ui-2026-10-16.xcresult`: **3/3 pass** after changing that check to wait for the same editor control. Recipient/template separation remains asserted. The run also repeats the connection flow through explicit review, cancellation, successful sample creation/send and an existing creation with the selected person retained; it covers ordinary creation followed by an existing-credential sample send too.
+- Screenshot review found the Add sheet's DEBUG large-type preview flag was not inherited. Add, Creations and Send now use the existing scoped review modifier, following the builder's pattern. `social-entry-accessibility-ui-2026-10-16.xcresult` passes **2/2** with the final preview handling. The direct-menu case now requires the nested Create row to grow at accessibility size; English standard, Arabic accessibility/dark and the existing Arabic welcome/intake direction checks pass. The earlier standard-looking large-flag captures are superseded by this run's actual enlarged captures.
+
+Tests use production SwiftUI with synthetic service boundaries on the separate checks simulator. Cancellation never creates a template; the selected connection survives new/existing review; successful child completion dismisses its picker before the normal notice. Live existing sends keep explicit recipient lookup/review before confirmation. No real staging send, relationship change, account reset or sign-out was performed. See [behavior and native captures](SOCIAL_SENDING.md).
+
+The configured suite is now **499 cases** (193 Bun, 187 Swift, 119 simulator), plus the opt-in live-exchange skip. This is focused verification, not a complete suite or hosted CI run.
+
+Final-source Release and Debug builds pass (`artifacts/social-entry-release-2026-10-16.log`, `social-entry-review-install.log`). The normal review app is installed on Native Lab with all **48 payload files matching**, build version **3** and private configuration preserved byte-for-byte (`social-entry-install-proof.json`). Read-only observation confirms the signed-in Passport, retained private test credential and updated Add or send entry. The separate checks simulator is shut down; native hosted CI was not dispatched.
+
 ## Drawn heading accents — October 16, 2026
 
 `artifacts/heading-accents-ui-2026-10-16.xcresult` passes **all three focused existing UI cases**. The root-title case visits Home/Passport/Inbox/Apps at standard English light, standard Arabic dark and accessibility Arabic dark sizes, checking visible titles within screen bounds and preserving destination identifiers. The scrolling-brand case checks the fixed header slot and now expects the canonical Passport name rather than its stale Collection label. The existing French dark/Arabic large Home case retains routing and 44-point navigation target assertions. Sixteen screenshot attachments were exported; [selected native captures](design/HEADING_ACCENTS.md) show inline accents, RTL mirroring and decoration yielding to accessibility text.
@@ -40,7 +56,7 @@ At the naming checkpoint, the learner Home/welcome boards were design references
 
 The Debug review build was installed and launched on Native Lab (`passport-review-install.log`); the installed payload and private configuration are compared in `passport-install-proof.json`. The separate checks simulator is shut down. No real account reset/sign-out, issuance, sharing or cloud registration ran. That naming-only run did not validate the Home/optional welcome implemented in the later pass above.
 
-Current configured suite: **497 cases** (193 Bun, 187 Swift, 117 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
+Before the social-sending follow-up, the configured suite was **497 cases** (193 Bun, 187 Swift, 117 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 

@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Learner-first with discoverable sending — October 16
+
+The user clarified that sending should be secondary while remaining easy to find. Add now shows Create/Send existing/Share directly, Home creation rows stay visible without expansion, and connected People profiles offer a recipient-aware new/existing credential route. No novelty sending prompts or administrative workspace are added. See [the social sending contract](SOCIAL_SENDING.md); organization workspaces remain a later product slice.
+
 ## Shared heading flair — October 16
 
 The user-approved builder ray strokes now extend to the four main pane titles and one selected supporting section per pane. The reusable native modifier preserves title identities, mirrors in RTL and hides decoration at accessibility text sizes. See [placement rules and native captures](design/HEADING_ACCENTS.md). The broader Apps composition below remains a separate queued pass.

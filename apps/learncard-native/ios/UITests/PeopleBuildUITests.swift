@@ -22,7 +22,7 @@ import XCTest
         let app = launch(), sharing = app.buttons["home-data-sharing"]
         XCTAssertGreaterThan(sharing.frame.minY, app.buttons["home-people"].frame.minY)
         XCTAssertLessThan(sharing.frame.minY, app.buttons["home-apps"].frame.minY)
-        XCTAssertFalse(app.buttons["home-create"].exists, "Creator tools start collapsed")
+        XCTAssertTrue(app.buttons["home-create"].exists, "Secondary creation stays discoverable without a disclosure")
         reveal(sharing, app); capture(app, "Home primary actions include Data Sharing"); sharing.tap(); XCTAssertTrue(app.staticTexts["page-title-sharing"].waitForExistence(timeout: 5)); back(app)
         let scan = app.buttons["receive"]; reveal(scan, app); XCTAssertGreaterThanOrEqual(scan.frame.height, 68); XCTAssertTrue(scan.label.contains("camera")); capture(app, "Home illustrated Scan action"); scan.tap()
         XCTAssertTrue(app.descendants(matching: .any)["claim-camera"].firstMatch.waitForExistence(timeout: 5))
@@ -36,6 +36,60 @@ import XCTest
         app.buttons["people-scope-connections"].tap(); XCTAssertTrue(app.buttons["person-alex"].waitForExistence(timeout: 5))
         app.buttons["nav-inbox"].tap(); let row = app.buttons["inbox-accept-sample-request"]; XCTAssertFalse(row.exists)
         app.buttons["inbox-people"].tap(); XCTAssertTrue(app.staticTexts["page-title-people"].waitForExistence(timeout: 5)); XCTAssertTrue(app.buttons["people-scope-requests"].isSelected)
+    }
+    func testConnectedPersonOffersNewAndExistingCredentialsWithRecipientCarriedForward() {
+        let app = launch(), people = app.buttons["home-people"]; reveal(people, app); people.tap()
+        let jordan = app.buttons["person-jordan"]; XCTAssertTrue(jordan.waitForExistence(timeout: 5)); jordan.tap()
+        let send = app.buttons["person-send"]; reveal(send, app); capture(app, "Connected profile with Send a credential"); send.tap()
+        let recipient = app.descendants(matching: .any)["creations-recipient"].firstMatch
+        XCTAssertTrue(recipient.waitForExistence(timeout: 5)); XCTAssertTrue(recipient.label.contains("Jordan Lee"))
+        capture(app, "New or existing credential for the selected connection")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'creation-'")).firstMatch.exists)
+        let create = app.buttons["creations-create"]; reveal(create, app); create.tap()
+        let title = app.textFields["draft-title"]; XCTAssertTrue(title.waitForExistence(timeout: 5)); title.tap(); title.typeText("A thoughtful collaborator")
+        let summary = app.descendants(matching: .any)["draft-summary"].firstMatch; summary.tap(); summary.typeText("For helping the group learn together.")
+        app.toolbars.buttons["Done"].tap(); app.buttons["create-next"].tap()
+        XCTAssertTrue(app.buttons["recipient-other"].waitForExistence(timeout: 5)); XCTAssertTrue(app.buttons["recipient-other"].isSelected)
+        XCTAssertTrue(app.staticTexts["@jordan"].exists)
+        app.buttons["create-next"].tap()
+        XCTAssertTrue(app.staticTexts["draft-delivery"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["draft-delivery"].label.contains("Jordan Lee"))
+        capture(app, "Explicit review retains the selected connection")
+        app.navigationBars.buttons["Cancel"].tap()
+        XCTAssertTrue(recipient.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["A thoughtful collaborator"].exists, "Review and cancellation must not publish a draft")
+        create.tap()
+        XCTAssertTrue(title.waitForExistence(timeout: 5)); title.tap(); title.typeText("A thoughtful collaborator")
+        summary.tap(); summary.typeText("For helping the group learn together.")
+        app.toolbars.buttons["Done"].tap(); app.buttons["create-next"].tap(); app.buttons["create-next"].tap(); app.buttons["create-confirm"].tap()
+        let done = app.alerts["Done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.buttons["Done"].tap()
+        XCTAssertTrue(send.waitForExistence(timeout: 5)); send.tap()
+        let existing = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'creation-'")).firstMatch
+        reveal(existing, app); existing.tap()
+        XCTAssertTrue(app.buttons["send-confirm"].waitForExistence(timeout: 5))
+        let picker = app.descendants(matching: .any)["send-recipient-picker"].firstMatch
+        XCTAssertTrue(picker.label.contains("Jordan Lee") || (picker.value as? String) == "Jordan Lee")
+        capture(app, "Existing credential retains the selected connection")
+        app.navigationBars.buttons["Cancel"].tap()
+        XCTAssertTrue(recipient.waitForExistence(timeout: 5))
+    }
+    func testAddShowsCreateAndSendDirectlyAtStandardAndArabicAccessibilitySizes() {
+        var normalCreateHeight: CGFloat = 0
+        for args in [["--locale", "en", "--standard-type"], ["--locale", "ar", "--large-type", "--preview-dark"]] {
+            let app = launch(args); app.openCredentialTools()
+            XCTAssertFalse(app.buttons["learner-more-tools"].exists)
+            let send = app.buttons["collection-action-send"]
+            for _ in 0..<4 { if send.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(send.isHittable); capture(app, "Direct create and send in Add \(args.contains("ar") ? "Arabic accessibility" : "English standard")")
+            send.tap(); XCTAssertTrue(app.buttons["creations-create"].waitForExistence(timeout: 5))
+            XCTAssertGreaterThanOrEqual(app.buttons["creations-create"].frame.height, 44)
+            if args.contains("ar") {
+                XCTAssertGreaterThan(app.buttons["creations-create"].frame.height, normalCreateHeight,
+                                     "The nested picker must honor the accessibility preview size")
+            } else { normalCreateHeight = app.buttons["creations-create"].frame.height }
+            app.terminate()
+        }
     }
     func testAccountPeopleFindAndSentRequestCancellation() {
         let app = launch(); app.buttons["account"].tap(); app.buttons["account-people"].tap()

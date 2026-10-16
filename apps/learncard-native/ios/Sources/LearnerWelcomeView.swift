@@ -57,34 +57,29 @@ struct LearnerIntakeSheet: View {
                     Text(NativeText.text("learner.addTitle")).font(.largeTitle.bold()).tracking(-0.6)
                         .accessibilityAddTraits(.isHeader).accessibilityIdentifier("learner-intake")
                     Text(NativeText.text("learner.addBody")).font(.title3).foregroundStyle(Palette.secondary)
-                    Image("LearnerAddIllustration").resizable().scaledToFit().frame(height: 125)
-                        .frame(maxWidth: .infinity).accessibilityHidden(true)
                     VStack(spacing: 4) {
                         route(.scan, title: "claims.title", body: "build.scanBody", symbol: .scan, tint: Palette.cyanCard)
                         route(.link, title: "build.link", body: "build.linkBody", symbol: .sharing, tint: Palette.pinkCard)
                         route(.photo, title: "build.photo", body: "build.photoBody", symbol: .credential, tint: Palette.portfolioCard)
                     }
                     Text(NativeText.text("claims.beforeAdding")).font(.subheadline).foregroundStyle(Palette.secondary)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(NativeText.text("learner.tools")).font(.title3.bold()).accessibilityAddTraits(.isHeader)
+                            .headingFlair(Palette.flairPink)
+                        CollectionActionsMenu(select: tool, includesScan: false)
+                    }
                     NavigationLink { BuildLearnCardView(appStore: appStore, receive: select, filesOnly: true) } label: {
                         DrawnSettingsRow(title: NativeText.text("intake.filesHeading"), symbol: .collection, tint: Palette.portfolioCard, subtitle: NativeText.text("intake.documentsBody"))
                     }.accessibilityIdentifier("learner-intake-files")
-                    NavigationLink {
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 20) {
-                                PageHeading(title: NativeText.text("learner.tools"), identifier: "credential-tools")
-                                CollectionActionsMenu(select: tool)
-                            }.padding(20)
-                        }.background(Palette.paper).navigationBarTitleDisplayMode(.inline)
-                    } label: {
-                        Label(NativeText.text("learner.tools"), systemImage: "ellipsis.circle")
-                            .font(.body.weight(.medium)).frame(minHeight: 44)
-                    }.accessibilityIdentifier("learner-more-tools")
                 }.padding(24).frame(maxWidth: 620).frame(maxWidth: .infinity)
             }.background(Palette.paper).foregroundStyle(Palette.ink)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.text("common.cancel")) { dismiss() } } }
         }.environment(\.locale, NativeLanguage.selected.locale)
             .environment(\.layoutDirection, NativeLanguage.selected.isRightToLeft ? .rightToLeft : .leftToRight)
             .presentationDetents([.large]).presentationDragIndicator(.visible)
+            #if DEBUG
+            .modifier(NativeReviewPreferences())
+            #endif
     }
     private func route(_ mode: ClaimEntryMode, title: String, body: String, symbol: DrawnSymbol, tint: Color) -> some View {
         Button { select(mode) } label: {

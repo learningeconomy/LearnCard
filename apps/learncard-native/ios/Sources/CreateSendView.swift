@@ -9,6 +9,7 @@ struct CreateView: View {
     @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let store: AppStore
+    private let onComplete: () -> Void
     @State private var title = ""
     @State private var summary = ""
     @State private var category = CreationCategory.achievement
@@ -32,6 +33,13 @@ struct CreateView: View {
     @State private var requestID = UUID().uuidString
     @State private var localError: String?
     @FocusState private var focused: BuilderField?
+
+    init(store: AppStore, initialRecipient: AccountRecipient? = nil, onComplete: @escaping () -> Void = {}) {
+        self.store = store
+        self.onComplete = onComplete
+        _recipient = State(initialValue: initialRecipient)
+        _forMe = State(initialValue: initialRecipient == nil)
+    }
 
     private var detailsValid: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -388,7 +396,7 @@ struct CreateView: View {
             let draft = CredentialDraft(requestID: requestID, title: title, summary: summary, kind: kind,
                                         achievementType: achievementType, criteria: criteria, artworkURL: uploadedURL,
                                         recipient: forMe ? nil : recipient?.id, details: details.isEmpty ? nil : details, category: category, displayType: displayType)
-            if await store.create(draft: draft) { dismiss() }
+            if await store.create(draft: draft) { onComplete(); dismiss() }
             else { localError = NativeText.text("builder.createError") }
         } catch { localError = NativeText.text("builder.uploadError") }
     }
@@ -473,11 +481,20 @@ struct SendView: View {
     @Environment(\.dismiss) private var dismiss
     let store: AppStore
     let credential: Credential
+    private let onComplete: () -> Void
     @State private var recipient = "Alex Morgan"
     @State private var profileId = ""
     @State private var verifiedRecipient: AccountRecipient?
     @State private var lookingUp = false
     @State private var error: String?
+
+    init(store: AppStore, credential: Credential, initialRecipient: AccountRecipient? = nil, onComplete: @escaping () -> Void = {}) {
+        self.store = store
+        self.credential = credential
+        self.onComplete = onComplete
+        _recipient = State(initialValue: initialRecipient?.name ?? "Alex Morgan")
+        _profileId = State(initialValue: initialRecipient?.id ?? "")
+    }
 
     var body: some View {
         NavigationStack {
@@ -487,6 +504,7 @@ struct SendView: View {
                     Section("Choose a recipient") {
                         TextField("LearnCard username", text: $profileId).textInputAutocapitalization(.never).autocorrectionDisabled()
                             .onChange(of: profileId) { _, _ in verifiedRecipient = nil }
+                            .accessibilityIdentifier("send-recipient-search")
                         Button(lookingUp ? "Looking up…" : "Review Recipient") {
                             lookingUp = true; error = nil
                             let requested = profileId
@@ -498,7 +516,7 @@ struct SendView: View {
                                 }
                                 catch { if profileId == requested { self.error = "Couldn't find that recipient. Check the username and try again." } }
                             }
-                        }.disabled(lookingUp || profileId.isEmpty)
+                        }.disabled(lookingUp || profileId.isEmpty).accessibilityIdentifier("send-review-recipient")
                         if let verifiedRecipient { Text("Send to \(verifiedRecipient.name) (@\(verifiedRecipient.id))") }
                         if let error { Text(error).foregroundStyle(Palette.ink) }
                     }
@@ -506,12 +524,12 @@ struct SendView: View {
                     Picker("To", selection: $recipient) {
                         Text("Alex Morgan").tag("Alex Morgan")
                         Text("Jordan Lee").tag("Jordan Lee")
-                    }
+                    }.accessibilityIdentifier("send-recipient-picker")
                 } }
                 Section {
                     PrimaryButton(title: store.isBusy ? "Sending…" : store.isLive ? "Send Credential" : "Record Sample Send", loading: store.isBusy,
                                   disabled: store.isLive && verifiedRecipient == nil) {
-                        Task { if await store.send(credential, to: store.isLive ? verifiedRecipient?.id ?? "" : recipient) { dismiss() } }
+                        Task { if await store.send(credential, to: store.isLive ? verifiedRecipient?.id ?? "" : recipient) { onComplete(); dismiss() } }
                     }.accessibilityIdentifier("send-confirm")
                 } footer: { Text(store.isLive ? "Delivers this credential to the confirmed recipient." : "Records this action in Home. No credential is delivered.") }
             }
@@ -521,5 +539,8 @@ struct SendView: View {
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Cancel")) { dismiss() } } }
         }
         .interactiveDismissDisabled(store.isBusy)
+        #if DEBUG
+        .modifier(NativeReviewPreferences())
+        #endif
     }
 }
