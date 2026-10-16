@@ -1,6 +1,7 @@
 import type { CredentialSummary } from './credentialFacts';
 import { trySummarizeCredential } from './credentialFacts';
 import {
+    getCredentialFactsWriteGeneration,
     loadCredentialFacts,
     onCredentialSummaryAdded,
     removeMissingCredentialFacts,
@@ -156,11 +157,12 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                 const cached = await loadCredentialFacts(did);
                 if (!active()) return;
                 publish({ ...snapshot, summaries: cached, complete: false });
+                const indexWriteGeneration = getCredentialFactsWriteGeneration();
                 const records = await source.list();
                 if (!active()) return;
                 const unique = new Map(records.map(record => [record.uri, record]));
                 const uris = new Set([...unique.keys(), ...claimed.keys()]);
-                await removeMissingCredentialFacts(did, uris);
+                await removeMissingCredentialFacts(did, uris, indexWriteGeneration);
                 if (!active()) return;
                 const facts = new Map(
                     cached.filter(fact => uris.has(fact.uri)).map(fact => [fact.uri, fact])
