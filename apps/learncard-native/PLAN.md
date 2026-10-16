@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Next: registration, Build My LearnCard and People — October 16
+
+The user clarified that a complete first-time account flow is still needed after the existing-account access pass. Plan native age/country eligibility, name/unique username/photo, privacy choices, same-account setup, guardian approval and supported recovery enrollment. Review shared age-policy discrepancies before porting; pending approval must be a native state. Build My LearnCard belongs as an optional resumable Home entry for existing document/credential intake, separate from required signup. People should be reachable from Home, Account and Inbox requests while retaining the four-tab shell. These are proposed next slices, not implemented features. See [source audit, navigation and acceptance plan](ONBOARDING_AND_PEOPLE.md).
+
 ## Account, sign-in and recovery — October 16
 
 The user selected account access as the next UI priority after the separate DIDKit investigation finished. Sign-in, code entry, recovery and the security overview now follow the drawn design system: passport/envelope/smiling-key SVGs, substantial type, labeled inputs, a keyboard-aware fixed action tray and a designed recovery-method bottom sheet. Existing Firebase/recovery/Keychain behavior and painted waiting states remain. New copy distinguishes email recovery keys from sign-in codes and covers four languages. This pass does not integrate new DIDKit artifacts or add backend/account-management capabilities. See [account behavior](ACCOUNT_ACCESS.md), [reference and native screens](design/ACCOUNT_ACCESS_BRIEF.md) and [validation](TESTING.md).

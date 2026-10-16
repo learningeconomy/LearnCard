@@ -26,10 +26,11 @@ Home and the tray derive counts from one `NativeAppStore` summary. Duplicate cre
 
 ## Deferred native parity
 
+- First-time account creation, optional Build My LearnCard and a People destination are now audited in [the onboarding/navigation plan](ONBOARDING_AND_PEOPLE.md). Build My LearnCard should be a resumable Home entry; People is reached from Home/Account and Inbox requests. These remain proposals, not implemented Home cards.
 - Persistent cross-device activity, pending consent-request dashboard summaries and app-specific unread counts need dedicated contracts; session activity and loaded updates are not substitutes for them.
 - Learning profile/insights, onboarding/recovery prompts and goal/review cards need their real account state and feature gates exposed before rendering progress or completion.
 - AI career Pathways and AI Sessions remain separate native slices. The newer Journeys/Pathways graph's scope is still unconfirmed.
-- QR claim handling still needs a production native contract; the sample claim action remains demo-only.
+- Native staging QR/claim handling has since been implemented; see [current claim contracts](QR_CLAIM_FLOW.md). Production/system-Camera association and contact-invite QR remain separate work.
 - Child account custody/bootstrap/switching remains governed by `FAMILIES_NEXT_PHASE.md`.
 
 No backend schema or permission changes are required for this Home slice. No live account mutations are part of its automated design verification.

@@ -95,6 +95,7 @@ Read-only live checks already confirmed account recovery/resumption, collection/
 
 ## Remaining work after review
 
+- Next product slices: full first-time native registration with reviewed age/country/approval behavior, optional Build My LearnCard on Home, and native People/connections reached from Home/Account/Inbox. The existing-account access pass does not implement signup. See [audit and proposed acceptance gates](ONBOARDING_AND_PEOPLE.md), including the shared Ireland threshold discrepancy and the missing native pending-approval state. This is planning only; the installed build remains the completed account-access pass.
 - Review live sharing-picker latency and real publication/passcode/revocation with explicitly chosen test credentials. Metadata/index optimization for large libraries is a separate backend/performance task; this picker progressively reads existing pages. Legacy review/publication copy still needs complete localization.
 
 - Validate physical camera capture, PhotosPicker behavior and a dedicated live staging claim, including exhausted/expired links and server approval cases. Confirm the exact-head hosted run after the CI timing follow-up. Publish associated-domain/AASA configuration before promising automatic system Camera/Safari HTTPS opening. Other QR protocols remain separate.

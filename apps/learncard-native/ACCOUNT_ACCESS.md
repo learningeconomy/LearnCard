@@ -2,6 +2,8 @@
 
 The October 16 account pass brings sign-in, email-code entry, recovery and the recovery/security overview into the native drawn design system. It changes presentation around the existing Firebase, account recovery and Keychain integration. It does not change account identity, cryptography, recovery services or the separate DIDKit investigation. See [the composition and actual screens](design/ACCOUNT_ACCESS_BRIEF.md).
 
+Full native first-time registration is still missing: `needs_setup` and `missing_profile` lead to web setup. Age/country eligibility, profile creation, approval waiting and new-account recovery enrollment are planned in [onboarding and People](ONBOARDING_AND_PEOPLE.md). A successful existing-account recovery is not evidence that native signup works.
+
 ## Flow and language
 
 - Sign-in shows the configured dedicated test email and **Email me a code**. The address remains read-only; this experiment does not yet offer a general account chooser.
