@@ -179,9 +179,16 @@ impl Transition {
         }
         if let Some(old) = &before.hold {
             let new = hold.as_ref().ok_or(Error::InvalidRequest)?;
+            // P9.1 (attack C): a non-terminal hold can still be updated whether
+            // it is awaiting its email confirmation or already confirmed and
+            // Pending — Released/Cancelled are the only statuses that may
+            // never be written over again.
             require(
                 old.hold_id == new.hold_id
-                    && old.status == HoldStatus::Pending
+                    && matches!(
+                        old.status,
+                        HoldStatus::AwaitingConfirmation | HoldStatus::Pending
+                    )
                     && old.enrollment_version == new.enrollment_version
                     && old.epoch == new.epoch
                     && old.blob_identity == new.blob_identity

@@ -60,6 +60,7 @@ impl Fixture {
                     rewrap_delegated: true,
                 }),
             },
+            email_throttle: None,
         };
         let binding = Binding {
             tenant: vector.intent.tenant.clone(),
@@ -129,7 +130,7 @@ fn rust_and_typescript_match_message_public_key_and_signature_golden_bytes() {
 fn every_signed_field_is_bound_and_json_property_order_is_irrelevant() {
     let f = Fixture::new();
     let mutations: Vec<(&str, serde_json::Value)> = vec![
-        ("version", 2.into()),
+        ("version", 3.into()),
         ("tenant", "other".into()),
         ("did", "did:web:attacker.test".into()),
         ("authorityGeneration", "g3".into()),
@@ -142,6 +143,10 @@ fn every_signed_field_is_bound_and_json_property_order_is_irrelevant() {
         ("enrollmentEpoch", 5.into()),
         ("requestId", "other-request".into()),
         ("allowRewrap", false.into()),
+        // P9.1: the fixture's action (carry) requires both null; any non-null
+        // value must fail closed just like every other signed field.
+        ("recoveryEmail", "attacker@example.com".into()),
+        ("recoveryLanguage", "fr".into()),
     ];
     for (field, value) in mutations {
         let mut json = serde_json::to_value(&f.signed).unwrap();
@@ -218,6 +223,8 @@ fn substituted_source_or_target_and_altered_pin_semantics_are_rejected() {
     .is_err());
     f.signed.intent.action = EnrollmentAction::Replace;
     f.signed.intent.pin_action = PinAction::Set;
+    f.signed.intent.recovery_email = Some("owner@example.com".into());
+    f.signed.intent.recovery_language = Some("en".into());
     f.resign();
     assert!(verify_intent(&f.signed, f.context()).is_err()); // Existing PIN requires change.
     f.signed.intent.pin_action = PinAction::Change;
@@ -236,6 +243,8 @@ fn enroll_and_disable_require_their_exact_input_shapes_and_epochs() {
     f.signed.intent.expected_enrollment_version = 0;
     f.signed.intent.enrollment_epoch = 1;
     f.signed.intent.pin_action = PinAction::Set;
+    f.signed.intent.recovery_email = Some("owner@example.com".into());
+    f.signed.intent.recovery_language = Some("en".into());
     f.resign();
     let initial = IntentContext {
         current: None,
@@ -322,8 +331,8 @@ fn strict_json_bounds_missing_null_and_integer_limits_fail_closed() {
     let f = Fixture::new();
     let raw = serde_json::to_string(&f.signed).unwrap();
     for bad in [
-        raw.replace("\"version\":1", "\"version\":1,\"version\":1"),
-        raw.replace("\"version\":1", "\"extra\":0,\"version\":1"),
+        raw.replace("\"version\":2", "\"version\":2,\"version\":2"),
+        raw.replace("\"version\":2", "\"extra\":0,\"version\":2"),
         raw.replace(
             "\"expectedEnrollmentVersion\":7",
             "\"expectedEnrollmentVersion\":9007199254740992",

@@ -1964,6 +1964,19 @@
             },
             "useInstead": "Usar mi PIN de recuperación"
         },
+        "confirmCode": {
+            "title": "Revisa tu correo",
+            "description": "Ingresa el código que enviamos para confirmar esta solicitud.",
+            "confirming": "Confirmando...",
+            "error": "Ese código no funcionó o ha expirado. Revísalo e inténtalo de nuevo, o toca Reenviar código para obtener uno nuevo.",
+            "failed": "Algo salió mal. Comprueba tu conexión e inténtalo de nuevo.",
+            "resend": "Reenviar código",
+            "resending": "Reenviando...",
+            "resent": "Enviamos un código nuevo.",
+            "resendError": "Has solicitado varios códigos recientemente. Por favor, espera un momento e inténtalo de nuevo.",
+            "resendFailed": "No pudimos enviar un código nuevo. Comprueba tu conexión e inténtalo de nuevo."
+        },
+        "invalidRequest": "Esta solicitud de recuperación ya no es válida. Inicia una nueva.",
         "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
         "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
         "error.invalidCode": "Ese código es incorrecto o ha expirado. Solicita uno nuevo e inténtalo de nuevo.",

@@ -1,7 +1,10 @@
 //! Single-owner policy actor: concurrent socket IO, serialized policy operations.
 use crate::{
     nsm::{parse_attestation_document, AttestationRequest, NsmDriver},
-    policy::{CreateHoldRequest, Policy, ReleaseRequest},
+    policy::{
+        ConfirmHoldRequest, CreateHoldRequest, Policy, ReleaseRequest, ResendCodeRequest,
+        SendReleaseWarningRequest,
+    },
     wire::{
         v1::{Request, Response},
         AttestationMode, ErrorCode, Measurements,
@@ -51,6 +54,21 @@ fn refusal(code: ErrorCode) -> Response {
         code,
         message: "Request refused.".into(),
     }
+}
+
+/// Pure boot-wiring selection: generic (not tied to `EmailConfig`, which
+/// requires the `kms` feature, same as every other authority/email type) so
+/// this exact selection logic — the dispatch decision regressed in P1
+/// (`parent::nitro::data_plane_email`, which delegates to this) — compiles
+/// and is tested under default features, independent of the Linux + nitro +
+/// kms gating the real wiring call itself needs.
+// Its only call site (`parent::nitro::data_plane_email`) compiles solely
+// under Linux + nitro + kms, so other feature/platform combinations
+// correctly see this as dead code; suppressed rather than feature-gating the
+// function itself, which would defeat the point of testing it independently.
+#[allow(dead_code)]
+pub(crate) fn select_configured<T>(value: &Option<T>) -> Option<&T> {
+    value.as_ref()
 }
 
 pub async fn run(transport: Transport) -> io::Result<()> {
@@ -382,6 +400,72 @@ impl Service<'_> {
                     receipt: None,
                 })
             }
+            Request::ConfirmHold {
+                envelope,
+                hold,
+                request_id,
+                client_ephemeral_public_key,
+                expected_did,
+                code,
+            } => {
+                let (receipt, confirmed_hi_ms) = self
+                    .policy
+                    .confirm_hold(ConfirmHoldRequest {
+                        envelope: &envelope,
+                        hold: &hold,
+                        request_id: &request_id,
+                        expected_did: &expected_did,
+                        client_ephemeral_public_key: &client_ephemeral_public_key,
+                        code: &code,
+                    })
+                    .await?;
+                Ok(Response::ConfirmHold {
+                    confirmed: true,
+                    receipt,
+                    confirmed_hi_ms,
+                })
+            }
+            Request::ResendCode {
+                envelope,
+                hold,
+                request_id,
+                client_ephemeral_public_key,
+                expected_did,
+            } => {
+                let receipt = self
+                    .policy
+                    .resend_code(ResendCodeRequest {
+                        envelope: &envelope,
+                        hold: &hold,
+                        request_id: &request_id,
+                        expected_did: &expected_did,
+                        client_ephemeral_public_key: &client_ephemeral_public_key,
+                    })
+                    .await?;
+                Ok(Response::ResendCode {
+                    sent: true,
+                    receipt,
+                })
+            }
+            Request::SendReleaseWarning {
+                hold_id,
+                request_id,
+                expected_did,
+            } => {
+                let (receipt, release_warning_sent_hi_ms) = self
+                    .policy
+                    .send_release_warning(SendReleaseWarningRequest {
+                        hold_id: &hold_id,
+                        request_id: &request_id,
+                        expected_did: &expected_did,
+                    })
+                    .await?;
+                Ok(Response::SendReleaseWarning {
+                    sent: true,
+                    receipt,
+                    release_warning_sent_hi_ms,
+                })
+            }
         }
     }
 }
@@ -598,4 +682,19 @@ fn spawn_reader(
             _ => Completed::Done,
         }
     });
+}
+
+// Kept last in the file (not alongside `select_configured` above, which it
+// tests): clippy's `items_after_test_module` lint (new in 1.93.0) flags any
+// item defined after an inline `#[cfg(test)] mod` in the same file.
+#[cfg(test)]
+mod default_feature_tests {
+    use super::select_configured;
+
+    #[test]
+    fn selects_only_when_configured() {
+        let configured = Some(42);
+        assert_eq!(select_configured(&configured), Some(&42));
+        assert_eq!(select_configured(&None::<i32>), None);
+    }
 }

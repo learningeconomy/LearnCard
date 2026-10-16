@@ -62,6 +62,10 @@ locals {
     verification  = { name = "_amazonses.${var.sending_domain}", type = "TXT", records = [aws_ses_domain_identity.enclave[0].verification_token] }
     mail_from_mx  = { name = "bounce.${var.sending_domain}", type = "MX", records = ["10 feedback-smtp.${var.aws_region}.amazonses.com"] }
     mail_from_spf = { name = "bounce.${var.sending_domain}", type = "TXT", records = ["v=spf1 include:amazonses.com -all"] }
+    # Monitor-only DMARC; aggregate reports go to email_dmarc_report_address when set.
+    dmarc = { name = "_dmarc.${var.sending_domain}", type = "TXT", records = [join("; ", compact([
+      "v=DMARC1", "p=none", var.email_dmarc_report_address == null ? "" : "rua=mailto:${var.email_dmarc_report_address}"
+    ]))] }
     }, { for i in range(3) : "dkim_${i}" => {
       name = "${aws_ses_domain_dkim.enclave[0].dkim_tokens[i]}._domainkey.${var.sending_domain}", type = "CNAME", records = ["${aws_ses_domain_dkim.enclave[0].dkim_tokens[i]}.dkim.amazonses.com"]
     }
@@ -77,7 +81,7 @@ resource "aws_route53_record" "sending" {
 }
 output "sending_zone_name_servers" {
   value       = try(aws_route53_zone.sending[0].name_servers, null)
-  description = "Delegate sending_domain to these NS in the parent account; no parent zone/DMARC is managed here."
+  description = "Delegate sending_domain to these NS in the parent account; the parent zone and its DMARC are not managed here."
 }
 output "sending_dns_records" {
   value       = local.email_enabled ? local.email_dns_records : null

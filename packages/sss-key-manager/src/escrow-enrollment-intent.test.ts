@@ -86,7 +86,7 @@ describe('owner-signed escrow enrollment intent', () => {
         { tenant: 'other' },
         { authorityGeneration: 'g3' },
         { expectedEnrollmentVersion: 8 },
-        { action: 'replace' },
+        { action: 'replace', recoveryEmail: 'owner@example.com', recoveryLanguage: 'en' },
         { sourceBlobIdentity: '11'.repeat(32) },
         { targetBlobIdentity: '22'.repeat(32) },
         { shareVersion: 43 },
@@ -109,7 +109,8 @@ describe('owner-signed escrow enrollment intent', () => {
     );
 
     it.each([
-        { version: 2 },
+        { version: 1 },
+        { version: 3 },
         { tenant: '' },
         { tenant: 'a'.repeat(129) },
         { tenant: 'tenant\0evil' },
@@ -130,6 +131,21 @@ describe('owner-signed escrow enrollment intent', () => {
         { action: 'rewrap' },
         { pinAction: 'clear' },
         { extra: 'unsigned-field' },
+        { recoveryLanguage: 'en' },
+        { recoveryEmail: 'owner@example.com' },
+        {
+            action: 'enroll',
+            sourceBlobIdentity: null,
+            recoveryEmail: 'owner@example.com',
+            recoveryLanguage: 'xx',
+        },
+        {
+            action: 'enroll',
+            sourceBlobIdentity: null,
+            recoveryEmail: 'not-an-email',
+            recoveryLanguage: 'en',
+        },
+        { recoveryEmail: 'owner@example.com', recoveryLanguage: 'en' },
     ])('rejects invalid wire input %j', mutation => {
         // Exercise runtime guards, rather than pretending unknown input is typed.
         const input: unknown = { ...vector.intent, ...mutation };
@@ -144,6 +160,8 @@ describe('owner-signed escrow enrollment intent', () => {
             expectedEnrollmentVersion: Number.MAX_SAFE_INTEGER,
             enrollmentEpoch: Number.MAX_SAFE_INTEGER,
             shareVersion: 0xffffffff,
+            recoveryEmail: 'owner@example.com',
+            recoveryLanguage: 'en',
         };
         expect(() => encodeEscrowEnrollmentIntent(intent)).not.toThrow();
         const { sourceBlobIdentity: omitted, ...missing } = intent;
@@ -162,7 +180,13 @@ describe('owner-signed escrow enrollment intent', () => {
         expect(() => encodeEscrowEnrollmentIntent({ ...disable, allowRewrap: true })).toThrow();
         for (const pinAction of ['set', 'change', 'clear', 'keep'] as const) {
             expect(() =>
-                encodeEscrowEnrollmentIntent({ ...vector.intent, action: 'replace', pinAction })
+                encodeEscrowEnrollmentIntent({
+                    ...vector.intent,
+                    action: 'replace',
+                    pinAction,
+                    recoveryEmail: 'owner@example.com',
+                    recoveryLanguage: 'en',
+                })
             ).not.toThrow();
         }
         expect(() =>

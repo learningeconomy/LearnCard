@@ -164,6 +164,9 @@ pub struct EnrollmentItem {
     pub pin: PinState,
     pub intent_digest: Hash,
     pub enrollment: EnrollmentStatus,
+    /// P9.1 (attack C): per-DID send throttle, independent of any one hold.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub email_throttle: Option<EmailThrottle>,
 }
 
 impl EnrollmentItem {
@@ -203,9 +206,18 @@ impl EnrollmentItem {
     }
 }
 
+/// P9.1 (attack C): `AwaitingConfirmation` is the entry state for every new
+/// `ReleasePolicy::Hold` hold; `confirm-hold` is the only transition into
+/// `Pending`, which is what actually starts the release waiting period (see
+/// `HoldItem::confirmed_hi_ms`, measured independently of
+/// `created_lo`/`created_hi` on the signed hold record, which still mean hold
+/// *creation*, not confirmation). `ReleasePolicy::Pin` holds skip this
+/// entirely and start in `Pending` directly — the PIN fast-release path is
+/// unchanged.
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum HoldStatus {
+    AwaitingConfirmation,
     Pending,
     Released,
     Cancelled,
@@ -213,6 +225,13 @@ pub enum HoldStatus {
 
 /// One bounded item per hold; terminal rows are retained after rotation. The
 /// signed-hold digest binds recipient/policy/time without storing raw identity.
+///
+/// P9.1 (attack C) fields are present only while relevant and cleared once
+/// consumed: `code_hash`/`code_expires_lo_ms` exist only in
+/// `AwaitingConfirmation` (cleared on confirm, so a confirmed hold can never
+/// be guessed against); `confirmed_hi_ms` exists from `Pending` onward;
+/// `release_warning_sent_hi_ms` is set by `send-release-warning` and gates
+/// `release` in addition to (not instead of) the 7-day-since-confirmation check.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct HoldItem {
@@ -224,6 +243,28 @@ pub struct HoldItem {
     pub created_revision: Counter,
     pub updated_revision: Counter,
     pub status: HoldStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub code_hash: Option<Hash>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub code_expires_lo_ms: Option<u64>,
+    #[serde(default)]
+    pub code_guesses_used: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub confirmed_hi_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub release_warning_sent_hi_ms: Option<u64>,
+}
+
+pub const MAX_CODE_GUESSES: u8 = 5;
+
+/// P9.1 (attack C): per-DID, not per-hold — bounds how often any hold for this
+/// enrollment can (re)send a code, independent of which hold_id is active.
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EmailThrottle {
+    pub window_start_lo_ms: u64,
+    pub sends_in_window: u8,
+    pub last_sent_lo_ms: u64,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -238,6 +279,15 @@ pub enum OperationKind {
     PinAttempt,
     Release,
     Cancel,
+    /// P9.1 (attack C): a correct OR incorrect code guess; see `HoldItem::
+    /// code_guesses_used` for the bounded-attempt counter this commits.
+    ConfirmHold,
+    /// P9.1 (attack C): system-initiated (lca-api's hourly job), records
+    /// `HoldItem::release_warning_sent_hi_ms` only on a confirmed SES send.
+    SendReleaseWarning,
+    /// P9.1 (attack C): a fresh code replacing the prior one; resets
+    /// `HoldItem::code_guesses_used` since the old code can no longer match.
+    ResendCode,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -301,11 +351,39 @@ impl StoredItem {
                 item.epoch.positive()?;
                 require(item.epoch.get() <= item.enrollment_version.get())?;
                 require(item.enrollment_version.get() <= item.created_revision.get())?;
-                require(item.created_revision.get() <= item.updated_revision.get())?;
-                require(
-                    item.status == HoldStatus::Pending
-                        || item.created_revision.get() < item.updated_revision.get(),
-                )
+                // P9.1: unlike pre-PR3, "untouched since creation" (created ==
+                // updated) is no longer unique to one status — both a fresh
+                // `AwaitingConfirmation` (Hold policy) and a fresh `Pending`
+                // (Pin policy, which skips confirmation entirely) start this
+                // way, and are indistinguishable from a *confirmed* `Pending`
+                // by status alone. `<=` (checked above) is the only invariant
+                // that still holds for every status.
+                require(item.code_guesses_used <= MAX_CODE_GUESSES)?;
+                match item.status {
+                    HoldStatus::AwaitingConfirmation => require(
+                        item.code_hash.is_some()
+                            && item.code_expires_lo_ms.is_some()
+                            && item.confirmed_hi_ms.is_none()
+                            && item.release_warning_sent_hi_ms.is_none(),
+                    ),
+                    HoldStatus::Pending => require(
+                        item.code_hash.is_none()
+                            && item.code_expires_lo_ms.is_none()
+                            && item.confirmed_hi_ms.is_some(),
+                    ),
+                    // P9.1: `release_warning_sent_hi_ms` is NOT required here even
+                    // though `authority_release_with_receipt`'s Hold-policy branch
+                    // requires it before transitioning to `Released` — this schema
+                    // has no `release_policy` field to condition on, and a
+                    // Pin-policy release (immediate, no email flow at all) reaches
+                    // `Released` having never set it. The real gate lives at the
+                    // call site, not here; this is deliberately the weaker,
+                    // policy-agnostic structural check.
+                    HoldStatus::Released => {
+                        require(item.code_hash.is_none() && item.confirmed_hi_ms.is_some())
+                    }
+                    HoldStatus::Cancelled => Ok(()),
+                }
             }
             ItemValue::Operation(item) => {
                 identifier(&item.request_id)?;
@@ -414,6 +492,7 @@ mod tests {
                 },
                 intent_digest: [2; 32],
                 enrollment: EnrollmentStatus::Disabled,
+                email_throttle: None,
             }),
         }
     }
@@ -549,6 +628,7 @@ mod tests {
     #[test]
     fn holds_are_separate_bounded_terminal_items() {
         for status in [
+            HoldStatus::AwaitingConfirmation,
             HoldStatus::Pending,
             HoldStatus::Released,
             HoldStatus::Cancelled,
@@ -561,8 +641,17 @@ mod tests {
                 blob_identity: [3; 32],
                 signed_hold_digest: [4; 32],
                 created_revision: counter(7),
-                updated_revision: counter(if status == HoldStatus::Pending { 7 } else { 8 }),
+                updated_revision: counter(if status == HoldStatus::AwaitingConfirmation {
+                    7
+                } else {
+                    8
+                }),
                 status,
+                code_hash: (status == HoldStatus::AwaitingConfirmation).then_some([5; 32]),
+                code_expires_lo_ms: (status == HoldStatus::AwaitingConfirmation).then_some(1_000),
+                code_guesses_used: 0,
+                confirmed_hi_ms: (status != HoldStatus::AwaitingConfirmation).then_some(2_000),
+                release_warning_sent_hi_ms: (status == HoldStatus::Released).then_some(3_000),
             });
             assert_eq!(item.sort_key().unwrap(), "HOLD#hold-1");
             roundtrip(&item);

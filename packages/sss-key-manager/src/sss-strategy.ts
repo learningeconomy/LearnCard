@@ -43,6 +43,7 @@ import {
     ESCROW_PIN_LOCKED_MESSAGE,
     ESCROW_PIN_MISMATCH_PATTERN,
     ESCROW_PIN_UNAVAILABLE_MESSAGE,
+    type EscrowRecoveryExpectations,
 } from '@learncard/types';
 import {
     validatePin,
@@ -54,10 +55,16 @@ import { encryptEscrowBlob, generateEscrowKeyPair, openEscrowRelease } from './e
 import { verifyEnclaveAttestation } from './escrow-attestation';
 import {
     createEscrowEnrollmentIntent,
+    resolveEscrowEnrollmentAction,
     verifyEscrowAuthorityState,
     verifyEscrowEnrollmentCommit,
+    verifyEscrowHoldRecord,
+    verifyEscrowHoldConfirmation,
+    escrowAuthorityMeasurements,
+    type EscrowHoldRecordLike,
 } from './escrow-authority';
 import type { VerifiedEnclaveIdentity, EscrowAuthorityState } from './escrow-authority.types';
+import { EscrowEvidenceError } from './escrow-authority.types';
 import type { EscrowEnvelope } from './escrow-crypto';
 import type { EmailRelayBranding } from './email-relay-crypto';
 
@@ -361,6 +368,7 @@ interface IdentityRecoverySessionResponse {
         credentialId?: string;
         shareVersion?: number;
     }>;
+    primaryDid: string | null;
 }
 
 interface IdentityRecoveryMaterialResponse {
@@ -1172,6 +1180,80 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         return verifyEnclaveAttestation(attestation, config.escrow.attestation, nonce);
     };
 
+    /** Shared by the public `getEscrowRecoveryStatus` and [D]'s internal
+     * confirm-time verification, so both read the enclave-signed
+     * `holdRecord` field via this package's own `EscrowHoldStatus` type
+     * rather than the narrower cross-package `KeyDerivationStrategy`
+     * interface (which never exposes it to generic callers). */
+    const fetchEscrowHoldStatus = async (
+        params:
+            | { holdId: string; resumeToken: string }
+            | { token: string; providerType: AuthProviderType }
+    ): Promise<EscrowHoldStatus | null> => {
+        const query = new URLSearchParams(
+            'holdId' in params ? { holdId: params.holdId } : { providerType: params.providerType }
+        );
+        const secret = 'holdId' in params ? params.resumeToken : params.token;
+        const result = await escrowRequest<{ hold: EscrowHoldStatus | null }>(`/status?${query}`, {
+            method: 'GET',
+            headers: {
+                ...buildHeaders('', undefined, tenantId),
+                'X-Auth-Token': secret,
+            },
+        });
+        return result.hold;
+    };
+
+    const recoveryExpectations = (
+        holdId: string,
+        expected?: EscrowRecoveryExpectations
+    ): EscrowRecoveryExpectations => {
+        if (
+            !expected ||
+            expected.holdId !== holdId ||
+            expected.tenant !== (tenantId ?? 'learncard') ||
+            !expected.did ||
+            !expected.clientEphemeralPublicKey ||
+            !expected.blobHash ||
+            !expected.authorityGeneration ||
+            !expected.holdDigest ||
+            !expected.ledgerPublicKey ||
+            !expected.keyId
+        )
+            throw new EscrowEvidenceError();
+        // Do not let callers mutate the bindings while attestation/network IO is pending.
+        return { ...expected };
+    };
+
+    const verifyPendingHold = async (
+        status: EscrowHoldStatus,
+        expected: EscrowRecoveryExpectations,
+        identity: VerifiedEnclaveIdentity
+    ): Promise<EscrowHoldRecordLike> => {
+        if (
+            !config.escrow ||
+            identity.mode !== 'nitro' ||
+            !identity.authority ||
+            identity.authority.ledgerPublicKey !== expected.ledgerPublicKey ||
+            ![identity.keyId, ...identity.previousKeyIds].includes(expected.keyId) ||
+            status.holdId !== expected.holdId ||
+            !status.holdRecord
+        )
+            throw new EscrowEvidenceError();
+        const record = status.holdRecord;
+        const verified = await verifyEscrowHoldRecord(record, expected, identity, {
+            historical: true,
+            allowedMeasurements: await escrowAuthorityMeasurements(config.escrow.attestation),
+            authorityGeneration: expected.authorityGeneration,
+        });
+        if (
+            verified.holdDigest !== expected.holdDigest ||
+            verified.receipt.keyId !== expected.keyId
+        )
+            throw new EscrowEvidenceError();
+        return record;
+    };
+
     const fetchAuthorityState = async (
         token: string,
         providerType: AuthProviderType,
@@ -1216,7 +1298,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         verifiedKey?: VerifiedEnclaveIdentity,
         pinMaterial?: { pinSalt: string; pinVerifier: string },
         clearPin = false,
-        assertCurrent = guardedStorage().assertCurrent
+        assertCurrent = guardedStorage().assertCurrent,
+        // P9.1 (attack C): the device's own authenticated-account email + app
+        // locale, bound into both the blob plaintext and the signed intent for
+        // nitro/authority mode. Kept last (after the long-established
+        // `assertCurrent` position) so existing positional callers that pass
+        // `assertCurrent` explicitly are never silently shifted. Only
+        // included in the blob plaintext when this call will resolve to
+        // enroll/replace (see `willCarryPin` below) — Rust rejects a Carry
+        // target blob whose plaintext already carries either field, since
+        // the enclave always fills them in from the source blob instead.
+        recoveryEmail = '',
+        recoveryLanguage = ''
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
@@ -1235,12 +1328,26 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                       assertCurrent
                   )
                 : undefined;
+        // P9.1 (attack C): calls the SAME `resolveEscrowEnrollmentAction` used
+        // by `createEscrowEnrollmentIntent` below, so the blob PLAINTEXT built
+        // here and the signed intent built later always agree on whether this
+        // is a carry — the enclave rejects a Carry target blob whose
+        // plaintext carries a non-null recoveryEmail/recoveryLanguage.
+        const bindsRecoveryContact =
+            !authority ||
+            resolveEscrowEnrollmentAction(
+                authority,
+                pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic'
+            ).bindsRecoveryContact;
         const envelope = await encryptEscrowBlob(
             {
                 recoveryShare: shares.recoveryShare,
                 did: primaryDid,
                 shareVersion,
                 ...(pinMaterial ? { pinVerifier: pinMaterial.pinVerifier } : {}),
+                ...(authority && recoveryEmail && bindsRecoveryContact
+                    ? { recoveryEmail, recoveryLanguage }
+                    : {}),
             },
             publicKey,
             keyId
@@ -1259,6 +1366,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                   shareVersion,
                   privateKey,
                   pinAction: pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic',
+                  recoveryEmail,
+                  recoveryLanguage,
               })
             : undefined;
         assertCurrent();
@@ -1317,6 +1426,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         let clearPinForEnrollment = forceRotate;
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
         const pin = params.options?.pin;
+        const recoveryEmail = params.options?.recoveryEmail ?? '';
+        const recoveryLanguage = params.options?.recoveryLanguage ?? '';
         if (pin !== undefined) {
             const validation = validatePin(pin);
             if (!validation.ok)
@@ -1406,7 +1517,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     undefined,
                     undefined,
                     retry.clearPin,
-                    storage.assertCurrent
+                    storage.assertCurrent,
+                    recoveryEmail,
+                    recoveryLanguage
                 );
                 unenrolledRotation = undefined;
                 return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
@@ -1463,7 +1576,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 verifiedKey,
                 pinMaterial,
                 clearPinForEnrollment,
-                storage.assertCurrent
+                storage.assertCurrent,
+                recoveryEmail,
+                recoveryLanguage
             );
             unenrolledRotation = undefined;
             return { enrolled: true, changed: true, shareVersion };
@@ -2016,6 +2131,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     shareVersion: current.shareVersion ?? 0,
                     privateKey: params.privateKey,
                     pinAction: 'disable',
+                    // Disable always nulls these server-side regardless of input.
+                    recoveryEmail: '',
+                    recoveryLanguage: '',
                 });
                 const vp = await requestFreshDidAuthVp(
                     serverUrl,
@@ -2089,7 +2207,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         async setEscrowPin({ pin, ...params }): Promise<void> {
             const storage = guardedStorage();
             const result = await withRotationLock(() =>
-                ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } }, storage)
+                // P9.1: preserve the caller's recoveryEmail/recoveryLanguage — do
+                // not replace `params.options` wholesale, or nitro enroll/replace
+                // loses its required recovery contact.
+                ensureEscrowEnrollmentUnguarded(
+                    this,
+                    {
+                        ...params,
+                        options: {
+                            pin,
+                            recoveryEmail: params.options?.recoveryEmail,
+                            recoveryLanguage: params.options?.recoveryLanguage,
+                        },
+                    },
+                    storage
+                )
             );
             if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');
@@ -2130,6 +2262,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         /** Start or explicitly restart a hold with fresh client-bound resume secrets. */
         async startEscrowRecovery(params): Promise<EscrowRecoveryStart> {
+            const expectedDid = params.expectedDid;
+            const nitro = config.escrow?.attestation.mode === 'nitro';
+            if (nitro && (!expectedDid || (params.tenantId ?? tenantId) !== tenantId))
+                throw new EscrowEvidenceError();
             const sessionProof = params.recoverySessionToken !== undefined;
             if (
                 sessionProof
@@ -2159,28 +2295,136 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 },
                 params.options?.releasePolicy === 'pin'
             );
-            return { ...result, clientEphemeralPrivateKey: pair.privateKey };
+            // [D] Verify the enclave itself committed to creating THIS exact
+            // hold — recipient key, DID and blob identity — before trusting
+            // the response. Skipped for a reported existing hold
+            // (`resumeToken: null`): that response isn't bound to this call's
+            // freshly generated key pair in the first place (see
+            // EscrowRecoveryPanel's `existingHold` display), so there is
+            // nothing of ours to verify it against.
+            let expectations: EscrowRecoveryExpectations | undefined;
+            if (nitro && result.resumeToken !== null) {
+                const identity = await fetchVerifiedEnclaveKey();
+                if (
+                    identity.mode !== 'nitro' ||
+                    !identity.authority ||
+                    !result.holdRecord ||
+                    !expectedDid
+                )
+                    throw new EscrowEvidenceError();
+                const verified = await verifyEscrowHoldRecord(
+                    result.holdRecord,
+                    {
+                        tenant: tenantId ?? 'learncard',
+                        did: expectedDid,
+                        holdId: result.holdId,
+                        clientEphemeralPublicKey: pair.publicKey,
+                        blobHash: result.holdRecord.hold.blobHash,
+                    },
+                    identity
+                );
+                expectations = {
+                    tenant: tenantId ?? 'learncard',
+                    did: expectedDid,
+                    holdId: result.holdId,
+                    clientEphemeralPublicKey: pair.publicKey,
+                    blobHash: result.holdRecord.hold.blobHash,
+                    authorityGeneration: verified.authorityGeneration,
+                    holdDigest: verified.holdDigest,
+                    ledgerPublicKey: identity.authority.ledgerPublicKey,
+                    keyId: verified.receipt.keyId,
+                };
+            }
+            // Never accept a server-supplied expectations object, even in software mode.
+            return { ...result, clientEphemeralPrivateKey: pair.privateKey, expectations };
         },
 
         /** Read hold status; secrets (auth or resume token) never travel in a URL. */
         async getEscrowRecoveryStatus(params): Promise<EscrowHoldStatus | null> {
-            const query = new URLSearchParams(
-                'holdId' in params
-                    ? { holdId: params.holdId }
-                    : { providerType: params.providerType }
-            );
-            const secret = 'holdId' in params ? params.resumeToken : params.token;
-            const result = await escrowRequest<{ hold: EscrowHoldStatus | null }>(
-                `/status?${query}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        ...buildHeaders('', undefined, tenantId),
-                        'X-Auth-Token': secret,
-                    },
+            const expected =
+                config.escrow?.attestation.mode === 'nitro' && 'holdId' in params
+                    ? recoveryExpectations(params.holdId, params.expectations)
+                    : undefined;
+            const status = await fetchEscrowHoldStatus(params);
+            if (expected && status)
+                await verifyPendingHold(status, expected, await fetchVerifiedEnclaveKey());
+            return status;
+        },
+
+        /** Submit the confirmation code emailed by the enclave for an authority-mode hold. */
+        async confirmEscrowRecovery(params): Promise<{ success: true }> {
+            // [D] Fetch and verify the hold record this code is being
+            // confirmed against (the same hold `startEscrowRecovery` already
+            // verified at creation) BEFORE submitting the code, then verify
+            // the confirmation result commits to that SAME hold — a wrong
+            // recipient key, hold id/digest, DID, unsigned/forged record, or
+            // a retry snapshot for a different hold all fail closed here.
+            let pending:
+                | {
+                      identity: VerifiedEnclaveIdentity;
+                      holdRecord: EscrowHoldRecordLike;
+                      expected: EscrowRecoveryExpectations;
+                  }
+                | undefined;
+            if (config.escrow?.attestation.mode === 'nitro') {
+                const expected = recoveryExpectations(params.holdId, params.expectations);
+                if ((params.tenantId ?? tenantId) !== tenantId) throw new EscrowEvidenceError();
+                const identity = await fetchVerifiedEnclaveKey();
+                const status = await fetchEscrowHoldStatus({
+                    holdId: params.holdId,
+                    resumeToken: params.resumeToken,
+                });
+                if (!status?.holdRecord) {
+                    throw new EscrowEvidenceError();
                 }
-            );
-            return result.hold;
+                const holdRecord = await verifyPendingHold(status, expected, identity);
+                pending = { identity, holdRecord, expected };
+            }
+            const confirm = () =>
+                escrowRequest<{ success: true; receipt?: unknown }>('/confirm', {
+                    method: 'POST',
+                    headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                    body: JSON.stringify({
+                        holdId: params.holdId,
+                        resumeToken: params.resumeToken,
+                        code: params.code,
+                    }),
+                });
+            const result = await confirm();
+            if (pending) {
+                if (!result.receipt) {
+                    throw new EscrowEvidenceError();
+                }
+                const receipt = await verifyEscrowHoldConfirmation(
+                    result.receipt,
+                    pending.holdRecord,
+                    pending.expected,
+                    pending.identity
+                );
+                // A commit's secret-keyed requestDigest cannot be checked by the
+                // client. Require the idempotent readback snapshot, which exposes
+                // the exact hold digest without exposing an offline code oracle.
+                if (receipt.kind === 'commit') {
+                    const readback = await confirm();
+                    const snapshot = await verifyEscrowHoldConfirmation(
+                        readback.receipt,
+                        pending.holdRecord,
+                        pending.expected,
+                        pending.identity
+                    );
+                    if (snapshot.kind !== 'snapshot') throw new EscrowEvidenceError();
+                }
+            }
+            return { success: true };
+        },
+
+        /** Request a fresh confirmation code for a hold awaiting confirmation. */
+        async resendEscrowRecoveryCode(params): Promise<{ success: true }> {
+            return escrowRequest<{ success: true }>('/resend', {
+                method: 'POST',
+                headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                body: JSON.stringify({ holdId: params.holdId, resumeToken: params.resumeToken }),
+            });
         },
 
         /** Cancel a pending hold with a fresh DID-owner proof. */
@@ -2225,9 +2469,23 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         ? await this.startEscrowRecovery!({
                               token,
                               providerType,
+                              expectedDid: input.expectedDid,
                               options: { releasePolicy: 'pin' },
                           })
                         : input;
+                const expected =
+                    config.escrow?.attestation.mode === 'nitro'
+                        ? recoveryExpectations(start.holdId, start.expectations)
+                        : undefined;
+                if (expected) {
+                    if (!start.resumeToken) throw new EscrowEvidenceError();
+                    const status = await fetchEscrowHoldStatus({
+                        holdId: start.holdId,
+                        resumeToken: start.resumeToken,
+                    });
+                    if (!status) throw new EscrowEvidenceError();
+                    await verifyPendingHold(status, expected, await fetchVerifiedEnclaveKey());
+                }
                 let pinProof: string | undefined;
                 if (input.method === 'escrow-pin') {
                     if (!('pinSalt' in start) || !start.pinSalt || !start.resumeToken)
@@ -2253,6 +2511,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     material.sealedShare,
                     start.clientEphemeralPrivateKey
                 );
+                if (
+                    expected &&
+                    (plaintext.did !== expected.did || plaintext.holdId !== expected.holdId)
+                )
+                    throw new EscrowEvidenceError();
                 if (
                     plaintext.holdId !== start.holdId ||
                     plaintext.did !== material.primaryDid ||

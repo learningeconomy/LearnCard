@@ -45,6 +45,10 @@ locals {
       { Effect = "Allow", Action = ["dynamodb:GetItem"], Resource = local.authority_table_arn },
       { Effect = "Allow", Action = local.authority_mutation_actions, Resource = local.authority_table_arn,
       Condition = { StringEquals = { "dynamodb:EnclosingOperation" = "TransactWriteItems" } } },
+      # The table is encrypted with the shared customer-managed key, so every
+      # read and write also needs that key, usable only through DynamoDB.
+      { Effect = "Allow", Action = ["kms:Decrypt", "kms:DescribeKey"], Resource = aws_kms_key.s3.arn,
+      Condition = { StringEquals = { "kms:ViaService" = "dynamodb.${var.aws_region}.amazonaws.com", "kms:CallerAccount" = data.aws_caller_identity.current.account_id } } },
     ]
   }
 }

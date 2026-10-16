@@ -18,6 +18,24 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const MAX_ACCOUNT_ROWS: usize = 4096;
 pub const MAX_ACCOUNT_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_PARTITIONS: usize = 50_000;
+/// P9.1 (attack C): must match the enclave's own RELEASE_WARNING_MIN_GAP_MS
+/// (policy/authority.rs) — the monitor independently re-derives this gate
+/// from signed events rather than trusting the stored HoldItem's own fields.
+const RELEASE_WARNING_MIN_GAP_MS: u64 = 24 * 60 * 60 * 1000;
+
+/// Tracks per-hold state derived only from signed ledger events, never from
+/// the unauthenticated stored HoldItem row (cross-checked against it below).
+struct HoldTrack<'a> {
+    created: &'a AuthorityEvent,
+    last: &'a AuthorityEvent,
+    /// Set from the one ConfirmHold event whose guess matched (hold_status
+    /// transitions AwaitingConfirmation -> Pending); None for every mismatch.
+    confirmed_hi_ms: Option<u64>,
+    /// Set from the earliest SendReleaseWarning event, if any. Using the
+    /// earliest (not latest) is the conservative choice if a retried send
+    /// ever produced more than one.
+    warned_hi_ms: Option<u64>,
+}
 
 #[derive(Clone)]
 pub struct Row {
@@ -242,7 +260,7 @@ pub fn verify_account(
     check(executions.len() as u64 == current.revisions.operation.get())?;
     let mut previous: Option<&AuthorityEvent> = None;
     let mut latest_requests = BTreeMap::new();
-    let mut holds: BTreeMap<&str, (&AuthorityEvent, &AuthorityEvent)> = BTreeMap::new();
+    let mut holds: BTreeMap<&str, HoldTrack> = BTreeMap::new();
     let mut intent_digest = None;
     for (offset, (execution, event)) in executions.values().enumerate() {
         check(event.revisions.operation.get() == offset as u64 + 1)?;
@@ -270,14 +288,67 @@ pub fn verify_account(
         }
         if let Some(id) = event.hold_id.as_deref() {
             if event.kind == Kind::CreateHold {
-                check(holds.insert(id, (event, event)).is_none())?;
+                check(
+                    holds
+                        .insert(
+                            id,
+                            HoldTrack {
+                                created: event,
+                                last: event,
+                                confirmed_hi_ms: None,
+                                warned_hi_ms: None,
+                            },
+                        )
+                        .is_none(),
+                )?;
             } else {
-                let (created, last) = holds.get_mut(id).ok_or(Error::Integrity)?;
-                check(last.hold_status == Some(HoldStatus::Pending))?;
+                let track = holds.get_mut(id).ok_or(Error::Integrity)?;
+                // P9.1 (attack C): ConfirmHold/ResendCode require the hold to
+                // still be awaiting confirmation; Cancel accepts either
+                // non-terminal status (matching authority_cancel); every
+                // other kind (SendReleaseWarning, Release, PinAttempt)
+                // requires the hold to already be confirmed (Pending).
+                let allowed_prior: &[HoldStatus] = match event.kind {
+                    Kind::ConfirmHold | Kind::ResendCode => &[HoldStatus::AwaitingConfirmation],
+                    Kind::Cancel => &[HoldStatus::AwaitingConfirmation, HoldStatus::Pending],
+                    _ => &[HoldStatus::Pending],
+                };
+                check(
+                    track
+                        .last
+                        .hold_status
+                        .is_some_and(|status| allowed_prior.contains(&status)),
+                )?;
                 if event.kind != Kind::Cancel {
-                    check(created.revisions.enrollment == event.revisions.enrollment)?;
+                    check(track.created.revisions.enrollment == event.revisions.enrollment)?;
                 }
-                *last = event;
+                if event.kind == Kind::ConfirmHold && event.hold_status == Some(HoldStatus::Pending)
+                {
+                    check(track.confirmed_hi_ms.is_none())?;
+                    track.confirmed_hi_ms = Some(event.time.interval.hi_ms);
+                }
+                if event.kind == Kind::SendReleaseWarning {
+                    track.warned_hi_ms.get_or_insert(event.time.interval.hi_ms);
+                }
+                // P9.1 (attack C): the independent release gate. A hold that
+                // started AwaitingConfirmation must show a matched ConfirmHold
+                // and a SendReleaseWarning at least 24h before this release's
+                // own trusted-time lower bound, mirroring (and independently
+                // re-checking, not trusting) the enclave's own release policy.
+                if track.created.hold_status == Some(HoldStatus::AwaitingConfirmation)
+                    && (event.kind == Kind::Release
+                        || (event.kind == Kind::PinAttempt
+                            && event.hold_status == Some(HoldStatus::Released)))
+                {
+                    check(
+                        track.confirmed_hi_ms.is_some()
+                            && track.warned_hi_ms.is_some_and(|warned| {
+                                event.time.interval.lo_ms
+                                    >= warned.saturating_add(RELEASE_WARNING_MIN_GAP_MS)
+                            }),
+                    )?;
+                }
+                track.last = event;
             }
         }
         previous = Some(event);
@@ -317,17 +388,17 @@ pub fn verify_account(
                 )?;
             }
             ItemValue::Hold(hold) => {
-                let (created, last) = holds
+                let track = holds
                     .remove(hold.hold_id.as_str())
                     .ok_or(Error::Integrity)?;
                 check(
-                    hold.created_revision == created.revisions.operation
-                        && hold.updated_revision == last.revisions.operation
-                        && Some(hold.status) == last.hold_status
-                        && hold.enrollment_version == created.revisions.enrollment
-                        && hold.epoch == created.epoch
-                        && Some(hold.blob_identity) == created.target_identity
-                        && hold.signed_hold_digest == created.request_digest,
+                    hold.created_revision == track.created.revisions.operation
+                        && hold.updated_revision == track.last.revisions.operation
+                        && Some(hold.status) == track.last.hold_status
+                        && hold.enrollment_version == track.created.revisions.enrollment
+                        && hold.epoch == track.created.epoch
+                        && Some(hold.blob_identity) == track.created.target_identity
+                        && hold.signed_hold_digest == track.created.request_digest,
                 )?;
             }
             ItemValue::Enrollment(_) => return Err(Error::Integrity),
@@ -453,9 +524,16 @@ fn transition(old: Option<&AuthorityEvent>, new: &AuthorityEvent) -> Result<()> 
         _ => return Err(Error::Integrity),
     }
     match new.kind {
-        Kind::CreateHold => {
-            check(new.hold_id.is_some() && new.hold_status == Some(HoldStatus::Pending))?
-        }
+        // P9.1 (attack C): a Hold-policy create always starts AwaitingConfirmation
+        // (the enclave fails the whole request closed rather than falling back to
+        // Pending when a blob/sender is missing); Pin-policy starts Pending.
+        Kind::CreateHold => check(
+            new.hold_id.is_some()
+                && matches!(
+                    new.hold_status,
+                    Some(HoldStatus::Pending) | Some(HoldStatus::AwaitingConfirmation)
+                ),
+        )?,
         Kind::Release => {
             check(new.hold_id.is_some() && new.hold_status == Some(HoldStatus::Released))?
         }
@@ -470,6 +548,25 @@ fn transition(old: Option<&AuthorityEvent>, new: &AuthorityEvent) -> Result<()> 
                     } else {
                         HoldStatus::Pending
                     }),
+        )?,
+        // P9.1 (attack C): committed regardless of guess match (a mismatch never
+        // transitions status); the matching guess moves AwaitingConfirmation ->
+        // Pending, so both resulting statuses are valid for this kind alone.
+        Kind::ConfirmHold => check(
+            new.hold_id.is_some()
+                && matches!(
+                    new.hold_status,
+                    Some(HoldStatus::AwaitingConfirmation) | Some(HoldStatus::Pending)
+                ),
+        )?,
+        // P9.1 (attack C): system-initiated, never transitions status (requires
+        // Pending on entry and leaves it Pending — see authority_send_release_warning).
+        Kind::SendReleaseWarning => {
+            check(new.hold_id.is_some() && new.hold_status == Some(HoldStatus::Pending))?
+        }
+        // P9.1 (attack C): only valid pre-confirmation; never transitions status.
+        Kind::ResendCode => check(
+            new.hold_id.is_some() && new.hold_status == Some(HoldStatus::AwaitingConfirmation),
         )?,
         _ => check(new.hold_id.is_none() && new.hold_status.is_none())?,
     }

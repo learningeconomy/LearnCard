@@ -5,7 +5,7 @@ import {
     ESCROW_ENVELOPE_VERSION,
 } from '@learncard/sss-key-manager';
 
-const safeInteger = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+export const safeInteger = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const label = z
     .string()
     .min(1)
@@ -36,11 +36,24 @@ export const AuthorityCommitValidator = AuthorityRecordValidator.extend({
     kind: z.literal('commit'),
     payload: z.string().min(1).max(8192),
 });
+// Idempotent-retry attestation for confirm-hold / send-release-warning (see
+// `authority_hold_snapshot` in policy/authority.rs): a fresh call returns a
+// `commit`; a retry of an already-applied operation returns this instead,
+// signed over the hold's current fields rather than a new ledger transition.
+export const AuthorityHoldSnapshotValidator = AuthorityRecordValidator.extend({
+    kind: z.literal('snapshot'),
+});
+// confirm-hold and send-release-warning responses carry whichever shape the
+// enclave actually returned; callers must not assume `commit`.
+export const AuthorityHoldReceiptValidator = z.union([
+    AuthorityCommitValidator,
+    AuthorityHoldSnapshotValidator,
+]);
 export const SignedEnrollmentIntentValidator = z
     .object({
         intent: z
             .object({
-                version: z.literal(1),
+                version: z.literal(2),
                 tenant: label,
                 did: z.string().length(56),
                 authorityGeneration: label,
@@ -59,6 +72,11 @@ export const SignedEnrollmentIntentValidator = z
                 enrollmentEpoch: safeInteger.positive(),
                 requestId: z.string().min(1).max(112),
                 allowRewrap: z.boolean(),
+                // P9.1 (attack C): shape only — `encodeEscrowEnrollmentIntent` below
+                // enforces normalization, the paired requirement, and the language
+                // allow-list; lca-api never re-derives or overrides these values.
+                recoveryEmail: z.string().min(3).max(254).nullable(),
+                recoveryLanguage: z.string().length(2).nullable(),
             })
             .strict()
             .refine(intent => {
@@ -103,5 +121,6 @@ export const AuthorityMutationValidator = z
     })
     .strict();
 export type AuthorityRecord = z.infer<typeof AuthorityRecordValidator>;
+export type AuthorityHoldReceipt = z.infer<typeof AuthorityHoldReceiptValidator>;
 export type AuthorityMutationResult = z.infer<typeof AuthorityMutationValidator>;
 export type AuthorityStateResponse = z.infer<typeof AuthorityStateResponseValidator>;

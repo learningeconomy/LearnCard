@@ -77,6 +77,7 @@ fn initial() -> EnrollmentItem {
                 rewrap_delegated: true,
             }),
         },
+        email_throttle: None,
     }
 }
 fn operation(
@@ -447,6 +448,11 @@ async fn holds_commit_with_account_and_terminal_rows_cannot_be_reopened() {
         created_revision: after.revisions.operation,
         updated_revision: after.revisions.operation,
         status: HoldStatus::Pending,
+        code_hash: None,
+        code_expires_lo_ms: None,
+        code_guesses_used: 0,
+        confirmed_hi_ms: Some(1),
+        release_warning_sent_hi_ms: None,
     };
     let create = Transition::prepare(
         binding(),
@@ -483,6 +489,7 @@ async fn holds_commit_with_account_and_terminal_rows_cannot_be_reopened() {
         Some(hold.clone()),
     )
     .unwrap();
+    hold.release_warning_sent_hi_ms = Some(2);
     hold.status = HoldStatus::Released;
     let release = Transition::prepare(
         binding(),

@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { beforeAll, afterAll, afterEach, describe, it, expect } from 'vitest';
+import { beforeAll, afterAll, afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { client } from '@mongo';
 import {
     createUserKeysIndexes,
@@ -14,10 +14,14 @@ import {
     generateEscrowResumeToken,
     hashEscrowResumeToken,
     recordEscrowHoldNotification,
+    computeEffectiveReleaseAfter,
+    ESCROW_RELEASE_TIME_MARGIN_MS,
+    ESCROW_RELEASE_WARNING_GAP_MS,
     type AuthProviderMapping,
 } from '@models';
 import {
     __setEscrowEnclaveForTests,
+    getEscrowEnclave,
     notifyEscrowHoldEvent,
 } from '../../src/services/escrow-enclave';
 import { escrowCancelTokenMatches, hashEscrowCancelToken } from '@helpers/escrowCancelToken';
@@ -91,6 +95,12 @@ beforeAll(async () => {
     await createEscrowHoldsIndexes();
 });
 
+// The reminder job scans every due hold (including overdue catch-up), so holds
+// left behind by other spec files sharing this Mongo would be picked up.
+beforeEach(async () => {
+    await getEscrowHoldsCollection().deleteMany({});
+});
+
 afterEach(async () => {
     const ids = seededProviderIds.splice(0);
     if (ids.length === 0) return;
@@ -152,6 +162,187 @@ describe('runEscrowHoldReminders', () => {
         await runEscrowHoldReminders({ now: new Date(now.getTime() + HOUR / 2), limit: 1, notify });
         expect(attempts[0]).toBe(untouched._id);
         expect(attempts[1]).toBe(reminder._id);
+    });
+
+    it('calls the enclave sendReleaseWarning instead of its own reminder notification for an authority-mode hold', async () => {
+        const now = new Date();
+        const hold = await seed(new Date(now.getTime() + HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { requiresConfirmation: true, confirmedAt: now } }
+        );
+        const calls: { holdId: string; expectedDid: string }[] = [];
+        // This file has no per-test enclave reset (unlike keys-escrow.spec.ts's
+        // beforeEach): Object.assign mutates the shared software singleton in
+        // place, so it must be cleaned up or it leaks into every later test.
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => {
+            calls.push(params);
+            return { success: true as const };
+        };
+        try {
+            const notified: string[] = [];
+            const notify: typeof notifyEscrowHoldEvent = async event => {
+                notified.push(event.hold._id);
+                return true;
+            };
+            const result = await runEscrowHoldReminders({ now, notify });
+            expect(result.reminded).toBe(1);
+            expect(calls).toEqual([
+                { holdId: hold.holdRecord.hold.holdId, expectedDid: hold.primaryDid },
+            ]);
+            expect(notified).toHaveLength(0);
+            const stored = await findEscrowHoldById(hold._id);
+            // P2-a: a successful enclave warning is now acknowledged in Mongo
+            // (previously left empty forever, causing a re-send every run).
+            expect(stored?.notifications.map(entry => entry.kind)).toEqual(['reminder']);
+        } finally {
+            delete software.sendReleaseWarning;
+        }
+    });
+
+    it('sends the release warning exactly once across consecutive hourly runs (P2-a)', async () => {
+        const now = new Date();
+        const hold = await seed(new Date(now.getTime() + HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { requiresConfirmation: true, confirmedAt: now } }
+        );
+        const calls: { holdId: string; expectedDid: string }[] = [];
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => {
+            calls.push(params);
+            return { success: true as const };
+        };
+        try {
+            const first = await runEscrowHoldReminders({ now });
+            const secondRun = await runEscrowHoldReminders({ now: new Date(now.getTime() + HOUR) });
+            expect(first.reminded).toBe(1);
+            expect(secondRun.reminded).toBe(0);
+            expect(calls).toHaveLength(1);
+            expect(
+                (await findEscrowHoldById(hold._id))?.notifications.map(entry => entry.kind)
+            ).toEqual(['reminder']);
+        } finally {
+            delete software.sendReleaseWarning;
+        }
+    });
+
+    it('a lost acknowledgment write is safe to retry and eventually stops re-calling the enclave (P2-a)', async () => {
+        const now = new Date();
+        const hold = await seed(new Date(now.getTime() + HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { requiresConfirmation: true, confirmedAt: now } }
+        );
+        const calls: { holdId: string; expectedDid: string }[] = [];
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => {
+            calls.push(params);
+            return {
+                receipt: {
+                    version: 1 as const,
+                    kind: calls.length === 1 ? ('commit' as const) : ('snapshot' as const),
+                    keyId: 'test-key',
+                    measurement: Array.from({ length: 32 }, () => 0),
+                    payload:
+                        calls.length === 1
+                            ? 'AQ=='
+                            : Buffer.from(
+                                  JSON.stringify([
+                                      'learncard-authority-hold-snapshot-v2',
+                                      params.holdId,
+                                      Array.from({ length: 32 }, () => 7),
+                                      'pending',
+                                      now.getTime(),
+                                      now.getTime(),
+                                      'g1',
+                                  ])
+                              ).toString('base64'),
+                    signature: Buffer.alloc(64).toString('base64'),
+                },
+                releaseWarningSentAtMs: now.getTime(),
+            };
+        };
+        try {
+            const first = await runEscrowHoldReminders({ now });
+            expect(first.reminded).toBe(1);
+            expect(calls).toHaveLength(1);
+            // Simulate the acknowledgment write being lost (e.g. a crash right
+            // after a successful enclave call) rather than mocking Mongo, so
+            // this exercises the job's own catch-up path: a real enclave would
+            // not re-send or move its timestamp on this retry (covered by the
+            // Rust-side idempotence test), but lca-api must not get stuck
+            // either, so it retries until its own acknowledgment lands.
+            await getEscrowHoldsCollection().updateOne(
+                { _id: hold._id },
+                { $set: { notifications: [], releaseAfter: hold.releaseAfter } }
+            );
+            const second = await runEscrowHoldReminders({ now });
+            expect(second.reminded).toBe(1);
+            expect(calls).toHaveLength(2);
+            expect(
+                (await findEscrowHoldById(hold._id))?.notifications.map(entry => entry.kind)
+            ).toEqual(['reminder']);
+            const third = await runEscrowHoldReminders({ now });
+            expect(third.reminded).toBe(0);
+            expect(calls).toHaveLength(2);
+        } finally {
+            delete software.sendReleaseWarning;
+        }
+    });
+
+    // [B] A catch-up warning sent well after the 7-day window elapsed (an
+    // outage, or the job simply not running for a while) must advertise an
+    // availability time derived from the LATER gate — the enclave's own
+    // `release_warning_sent_hi_ms + 24h` — not the hold's original,
+    // long-since-passed creation/confirmation-based estimate, which would
+    // otherwise keep telling the client it's ready when the enclave would
+    // still refuse release.
+    it('[B] an overdue warning advances the stored releaseAfter to the warning-based availability time', async () => {
+        const now = new Date();
+        // Confirmed 10 days ago: its own 7-day-plus-margin gate has long
+        // since passed, so only the warning-based gate can be the later one.
+        const confirmedAt = new Date(now.getTime() - 10 * 24 * HOUR);
+        const hold = await seed(new Date(confirmedAt.getTime() + HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { requiresConfirmation: true, confirmedAt } }
+        );
+        const releaseWarningSentAtMs = now.getTime();
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.sendReleaseWarning = async () => ({
+            receipt: {
+                version: 1 as const,
+                kind: 'commit' as const,
+                keyId: 'test-key',
+                measurement: Array.from({ length: 32 }, () => 0),
+                payload: 'AQ==',
+                signature: Buffer.alloc(64).toString('base64'),
+            },
+            releaseWarningSentAtMs,
+        });
+        try {
+            const result = await runEscrowHoldReminders({ now });
+            expect(result.reminded).toBe(1);
+            const stored = await findEscrowHoldById(hold._id);
+            const expected = computeEffectiveReleaseAfter({
+                confirmedAtMs: confirmedAt.getTime(),
+                holdDurationMs: hold.holdRecord.holdDurationMs,
+                releaseWarningSentAtMs,
+            });
+            // Sanity: the warning-based gate really is the later one here.
+            expect(expected.getTime()).toBe(
+                releaseWarningSentAtMs +
+                    ESCROW_RELEASE_WARNING_GAP_MS +
+                    ESCROW_RELEASE_TIME_MARGIN_MS
+            );
+            expect(stored?.releaseAfter.getTime()).toBe(expected.getTime());
+            // And specifically later than the original (long-passed) estimate.
+            expect(stored!.releaseAfter.getTime()).toBeGreaterThan(hold.releaseAfter.getTime());
+        } finally {
+            delete software.sendReleaseWarning;
+        }
     });
 
     it('retries an undelivered start notification with a cancel link', async () => {

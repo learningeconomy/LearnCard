@@ -1,11 +1,14 @@
 import { base64ToBuffer, bufferToBase64, bytesToHex } from './crypto';
 import { parseEscrowEnvelope } from './escrow-crypto';
+import { EscrowEvidenceError } from './escrow-authority.types';
+import type { HistoricalEscrowEvidence } from './escrow-authority.types';
+import type { EscrowAttestationPolicy } from './types';
 import {
     encodeEscrowEnrollmentIntent,
     getEscrowBlobIdentity,
     signEscrowEnrollmentIntent,
 } from './escrow-enrollment-intent';
-import type { EscrowEnvelope } from './escrow-crypto';
+import type { EscrowBlobPlaintext, EscrowEnvelope } from './escrow-crypto';
 import type {
     EscrowEnrollmentIntent,
     SignedEscrowEnrollmentIntent,
@@ -18,7 +21,7 @@ import type {
 } from './escrow-authority.types';
 
 const fail = (): never => {
-    throw new Error('Automatic recovery evidence could not be verified.');
+    throw new EscrowEvidenceError();
 };
 const requireEvidence = (condition: boolean): void => {
     if (!condition) fail();
@@ -86,25 +89,55 @@ const join = (...values: Uint8Array[]): Uint8Array<ArrayBuffer> => {
 const hash = async (value: Uint8Array): Promise<string> =>
     bytesToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(value))));
 const utf8 = (value: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(value);
+
+/** Derive historical receipt pins from the same complete PCR tuples used for
+ * Nitro attestation. Legacy image-only pins and malformed tuples authorize nothing. */
+export const escrowAuthorityMeasurements = async (
+    policy: EscrowAttestationPolicy
+): Promise<string[]> => {
+    if (policy.mode !== 'nitro') return [];
+    const hashes: string[] = [];
+    for (const pin of policy.pinnedMeasurements) {
+        const tuple = [pin.pcr0, pin.pcr1, pin.pcr2];
+        if (!tuple.every(pcr => typeof pcr === 'string' && /^[0-9a-f]{96}$/i.test(pcr))) continue;
+        if (pin.pcr0 === '00'.repeat(48)) continue;
+        const encoded = tuple.join('');
+        const decoded = Uint8Array.from({ length: 144 }, (_, i) =>
+            parseInt(encoded.slice(i * 2, i * 2 + 2), 16)
+        );
+        hashes.push(await hash(decoded));
+    }
+    return hashes;
+};
 const P256_ORDER = BigInt('0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551');
 
 /** Verify the exact Rust record bytes and artifact kind before interpreting JSON. */
 const verifyRecord = async (
     input: unknown,
     kind: 'snapshot' | 'commit',
-    identity: VerifiedEnclaveIdentity
+    identity: VerifiedEnclaveIdentity,
+    historical?: HistoricalEscrowEvidence
 ): Promise<{ record: EscrowAuthorityRecord; payload: unknown }> => {
     requireEvidence(identity.mode === 'nitro' && !!identity.authority);
     const raw = object(input);
     keys(raw, ['version', 'kind', 'keyId', 'measurement', 'payload', 'signature']);
-    requireEvidence(raw.version === 1 && raw.kind === kind && raw.keyId === identity.keyId);
+    requireEvidence(raw.version === 1 && raw.kind === kind);
+    const keyId = text(raw.keyId, 128);
+    requireEvidence(
+        historical
+            ? [identity.keyId, ...identity.previousKeyIds].includes(keyId)
+            : keyId === identity.keyId
+    );
     const measurement = bytes(raw.measurement, 32);
-    requireEvidence(bytesToHex(measurement) === identity.authority?.measurement);
+    requireEvidence(
+        historical
+            ? historical.allowedMeasurements.includes(bytesToHex(measurement))
+            : bytesToHex(measurement) === identity.authority?.measurement
+    );
     const payloadB64 = text(raw.payload, kind === 'snapshot' ? 49_152 : 8192);
     const signatureB64 = text(raw.signature, 88);
     const payload = base64(payloadB64, kind === 'snapshot' ? 49_152 : 8192);
     const signature = base64(signatureB64, 88);
-    const keyId = identity.keyId;
     const ledgerKey = base64(identity.authority?.ledgerPublicKey, 88);
     requireEvidence(ledgerKey.length === 65 && ledgerKey[0] === 4);
     requireEvidence(signature.length === 64);
@@ -113,7 +146,7 @@ const verifyRecord = async (
     const message = join(
         utf8('learncard-authority-signed-record-v1\0'),
         Uint8Array.of(kind === 'snapshot' ? 2 : 1),
-        frame(utf8(identity.keyId)),
+        frame(utf8(keyId)),
         measurement,
         frame(payload)
     );
@@ -288,31 +321,202 @@ export const verifyEscrowEnrollmentCommit = async (
     return { envelope: output, receipt: record };
 };
 
-/** Owner-only mutation selection. Recovery itself never calls this helper. */
-export const createEscrowEnrollmentIntent = async (input: {
-    state: EscrowAuthorityState;
-    target: EscrowEnvelope | null;
-    shareVersion: number;
-    privateKey: string;
-    pinAction: 'automatic' | 'set' | 'clear' | 'disable';
-}): Promise<SignedEscrowEnrollmentIntent> => {
-    const current = state(input.state);
-    const target = input.target === null ? null : envelope(input.target);
-    const disabling = input.pinAction === 'disable';
-    requireEvidence(
-        current.enrollmentVersion < Number.MAX_SAFE_INTEGER &&
-            (disabling || current.enrollmentEpoch < Number.MAX_SAFE_INTEGER)
+/** Opaque wire shape of `SignedHoldRecord` (wire.rs `HoldRecord` / policy.rs
+ * `SignedHoldRecord`) — exactly the fields `hold_hash` commits to, plus the
+ * embedded enclave signature over the hold's own creation. */
+export interface EscrowHoldRecordLike {
+    hold: {
+        holdId: string;
+        did: string;
+        shareVersion: number;
+        blobHash: string;
+        enrollmentEpoch: number;
+        releasePolicy: 'hold' | 'pin';
+        clientEphemeralPublicKey: string;
+        createdLo: number;
+        createdHi: number;
+        policyVersion: number;
+        signature: string;
+    };
+    holdDurationMs: number;
+    ledgerSeq: number;
+}
+
+export interface VerifiedEscrowHold {
+    receipt: EscrowAuthorityRecord;
+    authorityGeneration: string;
+    holdDigest: string;
+}
+
+/** Mirrors `hold_hash` in escrow-enclave-app's policy.rs exactly: SHA-256 of
+ * compact JSON of this fixed-order array. Every later operation on a hold
+ * (confirm, release, cancel, and the idempotent-retry snapshot) commits to
+ * this same value, so recomputing and comparing it is what actually binds a
+ * later receipt to the SAME hold a client started, not merely the same
+ * `holdId` string. */
+const holdDigest = async (tenant: string, record: EscrowHoldRecordLike): Promise<string> => {
+    const h = record.hold;
+    const didHash = await hash(utf8(h.did));
+    return hash(
+        utf8(
+            JSON.stringify([
+                'learncard-hold-v1',
+                tenant,
+                h.holdId,
+                didHash,
+                h.shareVersion,
+                h.blobHash,
+                h.enrollmentEpoch,
+                h.releasePolicy,
+                h.clientEphemeralPublicKey,
+                h.createdLo,
+                h.createdHi,
+                record.holdDurationMs,
+                h.policyVersion,
+                record.ledgerSeq,
+            ])
+        )
     );
-    if (disabling && current.status !== 'active') return fail();
-    if (current.status === 'disabled' && current.hasPin && input.pinAction === 'automatic')
+};
+
+/** Verify the enclave committed to creating THIS exact hold before trusting
+ * a `SignedHoldRecord` returned by lca-api: recipient key, DID, blob
+ * identity and hold id all come from the caller's own expectations (never
+ * from the record alone), and the embedded signature is checked against the
+ * attested ledger key exactly like `verifyEscrowEnrollmentCommit`. Returns
+ * the record's own `authorityGeneration` so a later confirmation/warning
+ * receipt for the SAME hold can be pinned to it.
+ * `historical` explicitly permits an older signed measurement only if it is
+ * allowlisted, verifies with the current attested ledger key and an attested
+ * current/previous key ID, and matches the retained authority generation.
+ * Never use historical verification for newly produced confirmation evidence. */
+export const verifyEscrowHoldRecord = async (
+    record: EscrowHoldRecordLike,
+    expected: {
+        tenant: string;
+        did: string;
+        clientEphemeralPublicKey: string;
+        blobHash: string;
+        holdId: string;
+    },
+    identity: VerifiedEnclaveIdentity,
+    historical?: HistoricalEscrowEvidence
+): Promise<VerifiedEscrowHold> => {
+    requireEvidence(
+        record.hold.holdId === expected.holdId &&
+            record.hold.did === expected.did &&
+            record.hold.clientEphemeralPublicKey === expected.clientEphemeralPublicKey &&
+            record.hold.blobHash === expected.blobHash
+    );
+    let signed: unknown;
+    try {
+        signed = JSON.parse(
+            new TextDecoder('utf-8', { fatal: true }).decode(base64(record.hold.signature, 8192))
+        );
+    } catch {
         return fail();
+    }
+    const { record: receipt, payload } = await verifyRecord(signed, 'commit', identity, historical);
+    const data = object(payload);
+    keys(data, ['commit', 'eventHash', 'requestDigest', 'resultBlobIdentity', 'enrollmentEpoch']);
+    const commit = object(data.commit);
+    keys(commit, ['schemaVersion', 'binding', 'executionId', 'revisions', 'transactionDigest']);
+    const binding = object(commit.binding);
+    keys(binding, ['tenant', 'generation', 'didHash']);
+    requireEvidence(commit.schemaVersion === 1 && binding.tenant === expected.tenant);
+    const authorityGeneration = text(binding.generation, 128);
+    if (historical) requireEvidence(authorityGeneration === historical.authorityGeneration);
+    requireEvidence(bytesToHex(bytes(binding.didHash, 32)) === (await hash(utf8(expected.did))));
+    requireEvidence(integer(data.enrollmentEpoch, 1) === record.hold.enrollmentEpoch);
+    requireEvidence(bytesToHex(bytes(data.resultBlobIdentity, 32)) === record.hold.blobHash);
+    const digest = await holdDigest(expected.tenant, record);
+    requireEvidence(bytesToHex(bytes(data.requestDigest, 32)) === digest);
+    return { receipt, authorityGeneration, holdDigest: digest };
+};
+
+/** Verify a confirm-hold / send-release-warning result commits to THIS exact
+ * hold (the one `verifyEscrowHoldRecord` already verified). A fresh
+ * `commit`'s `requestDigest` is a secret-keyed, PIN-style hash the client
+ * cannot recompute by design (publishing an unkeyed digest here would be an
+ * offline oracle — see escrow-enclave-app's ledger "Operation commitments"),
+ * so a fresh commit is checked on tenant/generation/DID binding, epoch and
+ * blob identity only. The idempotent retry **snapshot** instead embeds
+ * `signedHoldDigest` directly in its (unkeyed) payload, so a snapshot
+ * additionally recomputes and compares the hold digest — exactly binding a
+ * retry to the hold the client itself started, not a different one. A caller
+ * receiving a commit MUST also obtain and verify this snapshot before claiming
+ * hold-specific confirmation (as createSSSStrategy does). */
+export const verifyEscrowHoldConfirmation = async (
+    receipt: unknown,
+    record: EscrowHoldRecordLike,
+    expected: { tenant: string; did: string; authorityGeneration: string },
+    identity: VerifiedEnclaveIdentity
+): Promise<EscrowAuthorityRecord> => {
+    const raw = object(receipt);
+    const kind = raw.kind;
+    if (kind !== 'commit' && kind !== 'snapshot') return fail();
+    const { record: verified, payload } = await verifyRecord(raw, kind, identity);
+    if (kind === 'snapshot') {
+        if (!Array.isArray(payload) || payload.length !== 7) return fail();
+        const [tag, holdId, digestBytes] = payload;
+        requireEvidence(
+            tag === 'learncard-authority-hold-snapshot-v2' &&
+                holdId === record.hold.holdId &&
+                payload[6] === expected.authorityGeneration
+        );
+        requireEvidence(
+            bytesToHex(bytes(digestBytes, 32)) === (await holdDigest(expected.tenant, record))
+        );
+        requireEvidence(payload[3] === 'pending');
+        integer(payload[4], 1);
+        return verified;
+    }
+    const data = object(payload);
+    keys(data, ['commit', 'eventHash', 'requestDigest', 'resultBlobIdentity', 'enrollmentEpoch']);
+    const commit = object(data.commit);
+    keys(commit, ['schemaVersion', 'binding', 'executionId', 'revisions', 'transactionDigest']);
+    const binding = object(commit.binding);
+    keys(binding, ['tenant', 'generation', 'didHash']);
+    requireEvidence(
+        commit.schemaVersion === 1 &&
+            binding.tenant === expected.tenant &&
+            binding.generation === expected.authorityGeneration
+    );
+    requireEvidence(bytesToHex(bytes(binding.didHash, 32)) === (await hash(utf8(expected.did))));
+    requireEvidence(integer(data.enrollmentEpoch, 1) === record.hold.enrollmentEpoch);
+    requireEvidence(bytesToHex(bytes(data.resultBlobIdentity, 32)) === record.hold.blobHash);
+    bytes(data.requestDigest, 32);
+    return verified;
+};
+
+export type EscrowEnrollmentActionInput = 'automatic' | 'set' | 'clear' | 'disable';
+
+/** Pure action resolution, shared between intent-building (here) and blob
+ * plaintext construction (sss-strategy.ts's `enrollEscrow`), so both always
+ * agree on enroll/replace/carry/disable from the same inputs instead of
+ * maintaining two copies of this decision. P9.1 (attack C) / P2-d:
+ * `bindsRecoveryContact` is the single source of truth for whether
+ * `recoveryEmail`/`recoveryLanguage` may appear in EITHER the signed intent
+ * or the target blob plaintext — Rust rejects a Carry target blob whose
+ * plaintext already carries either field (the enclave fills them in from
+ * the source blob instead), so this must be computed identically in both
+ * places or a carry can be built with a blob the enclave will refuse. */
+export const resolveEscrowEnrollmentAction = (
+    current: Pick<EscrowAuthorityState, 'status' | 'hasPin'>,
+    input: EscrowEnrollmentActionInput
+): {
+    action: EscrowEnrollmentIntent['action'];
+    pinAction: EscrowEnrollmentIntent['pinAction'];
+    bindsRecoveryContact: boolean;
+} => {
+    const disabling = input === 'disable';
     const pinAction = disabling
         ? 'keep'
-        : input.pinAction === 'set'
+        : input === 'set'
           ? current.hasPin
               ? 'change'
               : 'set'
-          : input.pinAction === 'clear'
+          : input === 'clear'
             ? current.hasPin
                 ? 'clear'
                 : 'keep'
@@ -324,11 +528,56 @@ export const createEscrowEnrollmentIntent = async (input: {
           : current.hasPin && pinAction === 'keep'
             ? 'carry'
             : 'replace';
+    return { action, pinAction, bindsRecoveryContact: action === 'enroll' || action === 'replace' };
+};
+
+/** P2-d cross-language contract: mirrors the enclave's Carry contact-field
+ * rejection rule (`apply_enrollment_intent` in authority.rs) — true means
+ * the enclave would refuse this target blob. The enclave always fills
+ * recoveryEmail/recoveryLanguage in from the source blob on carry, so a
+ * target that already claims either field is refused. Shared by
+ * `escrow-carry-contact-contract-v1.json`'s TS and Rust tests, and by any
+ * caller (e.g. a test fake) that wants to fail the same way the real
+ * enclave does instead of accepting a shape it would reject. */
+export const violatesCarryContactRule = (
+    action: EscrowEnrollmentIntent['action'],
+    target: Pick<EscrowBlobPlaintext, 'recoveryEmail' | 'recoveryLanguage'> | null
+): boolean =>
+    action === 'carry' && !!target && (!!target.recoveryEmail || !!target.recoveryLanguage);
+
+/** Owner-only mutation selection. Recovery itself never calls this helper.
+ * P9.1 (attack C): `recoveryEmail`/`recoveryLanguage` are always supplied by the
+ * caller (the device's authenticated account email + app locale) but are only
+ * bound into the intent for enroll/replace; disable/carry null them out here
+ * regardless of input, since the enclave carries the prior value forward. */
+export const createEscrowEnrollmentIntent = async (input: {
+    state: EscrowAuthorityState;
+    target: EscrowEnvelope | null;
+    shareVersion: number;
+    privateKey: string;
+    pinAction: EscrowEnrollmentActionInput;
+    recoveryEmail: string;
+    recoveryLanguage: string;
+}): Promise<SignedEscrowEnrollmentIntent> => {
+    const current = state(input.state);
+    const target = input.target === null ? null : envelope(input.target);
+    const disabling = input.pinAction === 'disable';
+    requireEvidence(
+        current.enrollmentVersion < Number.MAX_SAFE_INTEGER &&
+            (disabling || current.enrollmentEpoch < Number.MAX_SAFE_INTEGER)
+    );
+    if (disabling && current.status !== 'active') return fail();
+    if (current.status === 'disabled' && current.hasPin && input.pinAction === 'automatic')
+        return fail();
+    const { action, pinAction, bindsRecoveryContact } = resolveEscrowEnrollmentAction(
+        current,
+        input.pinAction
+    );
     requireEvidence(!disabling || input.target === null);
     requireEvidence(disabling || input.target !== null);
     if (action === 'carry') requireEvidence(input.shareVersion > (current.shareVersion ?? 0));
     const intent: EscrowEnrollmentIntent = {
-        version: 1,
+        version: 2,
         tenant: current.tenant,
         did: current.did,
         authorityGeneration: current.authorityGeneration,
@@ -341,6 +590,8 @@ export const createEscrowEnrollmentIntent = async (input: {
         enrollmentEpoch: current.enrollmentEpoch + (disabling ? 0 : 1),
         requestId: crypto.randomUUID(),
         allowRewrap: !disabling,
+        recoveryEmail: bindsRecoveryContact ? input.recoveryEmail : null,
+        recoveryLanguage: bindsRecoveryContact ? input.recoveryLanguage : null,
     };
     return signEscrowEnrollmentIntent(intent, input.privateKey);
 };

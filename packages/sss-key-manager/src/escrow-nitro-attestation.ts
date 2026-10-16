@@ -41,12 +41,18 @@ const bytes = (value: unknown, reason: NitroAttestationReason): Uint8Array =>
     value instanceof Uint8Array && value.length > 0 ? value : fail(reason);
 const map = (value: unknown, reason: NitroAttestationReason): Map<unknown, unknown> =>
     value instanceof Map ? value : fail(reason);
-const decodeCbor = (value: Uint8Array): unknown => {
+/**
+ * `allowIndefinite` is only for the signed NSM payload: real AWS Nitro documents
+ * encode it as an indefinite-length map (0xbf). That is safe because the COSE
+ * signature below is verified over the original payload bytes, not a re-encoding.
+ * Everything else (COSE envelope, protected header, user_data) stays definite-only.
+ */
+const decodeCbor = (value: Uint8Array, { allowIndefinite = false } = {}): unknown => {
     try {
         return decode(value, {
             useMaps: true,
             rejectDuplicateMapKeys: true,
-            allowIndefinite: false,
+            allowIndefinite,
             allowUndefined: false,
             allowNaN: false,
             allowInfinity: false,
@@ -157,7 +163,7 @@ export const verifyNitroAttestationDocument = async (
     const payloadBytes = bytes(payloadValue, 'cose');
     const signature = bytes(signatureValue, 'signature');
     if (signature.length !== 96) fail('signature');
-    const payload = map(decodeCbor(payloadBytes), 'cbor');
+    const payload = map(decodeCbor(payloadBytes, { allowIndefinite: true }), 'cbor');
     const moduleId = payload.get('module_id');
     const timestamp = payload.get('timestamp');
     if (typeof moduleId !== 'string' || !moduleId || payload.get('digest') !== 'SHA384')

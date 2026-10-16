@@ -33,11 +33,11 @@ but off by default. The management-account SCP is a prerequisite to enabling the
 see `infra/escrow-enclave/README.md`. Public authority/email settings are recorded in local measurements and the
 CI-signed manifest; no plaintext access keys belong in either artifact.
 Without authority configuration, `UnavailableEnrollment` remains wired. Partial
-configuration, missing ciphertext or unsealing failure fails boot closed. No email
-client is active. **PR 2 implementation is complete offline, not deployed or a
-production launch approval.** Authority, wire/API, clients and independent audit
-integration are implemented. The ordered staging gates and PR 3 attack-C/email
-confirmation blocker remain; see `STAGING.md` and `SECURITY.md`.
+configuration, missing ciphertext or unsealing failure fails boot closed. **PR 2 and
+PR 3 implementation are both complete offline, not deployed or a production launch
+approval.** Authority, wire/API, clients, independent audit integration, and the
+attack-C email confirmation flow (§9) are all implemented and offline-tested.
+The ordered staging gates remain; see `STAGING.md` and `SECURITY.md`.
 
 Operation budget: with one time server down, a round now ends at the second
 consistent authenticated response, not the missing server's shared 2s cap.
@@ -163,6 +163,24 @@ nonce, verifies the record signature/kind/scope, and compares the signed state
 against its unsigned duplicate. It verifies each mutation's commit against the
 exact intent digest, expected enrollment version, DID/tenant/generation, epoch
 and actual returned blob identity before treating enrollment as successful.
+
+Recovery clients retain the initiating DID, generated recipient key and returned hold ID,
+plus the verified hold digest/blob/generation/ledger identity, alongside their pending
+recovery secrets; status responses must never replace those expectations. Historical
+hold-creation receipts use an explicit historical-verification option: their signed
+measurement must equal SHA-256 of a complete PCR0/1/2 tuple in the same configured
+`escrowEnclaveMeasurements` allowlist used for Nitro attestation, their key ID must be
+current or attested-previous, and their signature must verify under the unchanged
+attested ledger key with the retained generation. Fresh confirmation evidence still
+requires the current attested measurement exactly; a fresh commit must match the
+retained generation and is followed by an idempotent confirmation snapshot to check
+the exact hold digest. Snapshot v2 appends the enclave-configured authority generation
+to the existing six-field tuple; clients reject v1 snapshots rather than silently
+skipping generation verification. Deploy the v2 enclave before enabling these clients.
+NSM binds the key and measurement, while the signed commit/snapshot binds generation;
+neither historical evidence nor unsigned status metadata establishes current state
+or nonce-bound freshness. Removing M1 from the allowlist deliberately invalidates M1
+holds even when M2 retains the key; actual ledger-key replacement also fails closed.
 
 Automatic repair checks the authority even when Mongo claims enrollment. Empty
 staging generations re-enroll cleanly without importing Mongo epochs or PIN state.
@@ -719,9 +737,14 @@ visible only to the enclave and the user's inbox.
 **Content constraints.** Email text is part of the measured image, so changing it
 needs a new EIF, new PCRs and a measurement rotation. Keep it to three plain-text
 messages (code, started, release warning) with no links or images, in the four app
-languages, using the tenant name only. Every message says "Only enter this code if
-you started a recovery." A separately signed template file was considered and
-deferred: its signing key could produce misleading or leaking templates.
+languages, using a display name derived from the tenant label (`src/authority/email.rs`'s
+`brand_name`, e.g. `learncard` → `LearnCard`; unknown labels fall back unchanged).
+Only the code message says "Only enter this code if you started this recovery."
+— the other two carry no code, so that line only belongs there. The started and
+release-warning messages instead tell the recipient how to stop an unexpected
+recovery: "If you didn't start this, open the \[app] and cancel the recovery right
+away." A separately signed template file was considered and deferred: its signing
+key could produce misleading or leaking templates.
 
 **Operations.** SES sending domain with SPF/DKIM/DMARC, production access (out of
 the SES sandbox), bounce and complaint handling, quota monitoring. Cost is
@@ -734,6 +757,101 @@ lca-api routes, SES infrastructure.
 **Residual risks.** Phishing for the code; users who lose both their device and
 their email account use another recovery method; the host can block email (denial
 of service, fails closed).
+
+**Implementation notes (closed).** The design above left several numbers
+unspecified ("codes expire, guesses are bounded, resends are rate-limited");
+the shipped values, chosen to balance a comfortable confirmation window against
+a bounded guessing/flooding surface, are: 8-digit CSPRNG code, 30-minute expiry,
+5 guesses per code (independent of the existing 10-lifetime PIN-comparison
+budget), resend limited to 3 per rolling 24h window with a 60-second minimum
+gap between sends — all per DID, not per hold, so restarting a hold cannot
+reset the budget. The hold state machine gained an explicit `AwaitingConfirmation`
+status (entry state for Hold-policy only; Pin-policy still enters `Pending`
+directly, unchanged). Release requires **both** a matched confirmation and a
+`send-release-warning` recorded at least 24 hours earlier — the independent
+ledger monitor (`escrow-ledger-monitor`) re-derives and enforces this gate from
+signed events, not from the stored `HoldItem` row's own timestamps, so a parent
+that tampered with those fields without a genuine signed `ConfirmHold`/
+`SendReleaseWarning` sequence is still caught. The recorded warning time is
+always the trusted upper bound sampled after the email provider accepts the
+send, never a value sampled beforehand. `cancel` is valid from either
+non-terminal status and idempotent on retry (it derives its own request ID from
+the hold's digest, not the caller's). lca-api suppresses its own "started" and
+hourly reminder notifications for an authority-mode Hold-policy hold in favor of
+the enclave's own email, via the same `confirmHold`-is-defined check used to
+decide `requiresConfirmation` at creation. Full implementation/test inventory:
+`SECURITY.md`'s `BLOCKER-ATTACK-C` entry and `AUDIT-COVERAGE.md`'s "Recovery
+boundary / attack C" row. Operator rollout steps (SES domain, production access,
+`enable_enclave_email`, credential provisioning): `STAGING.md`.
+
+**Unconfirmed-hold lifecycle (added 2026-10-14, Custard7 PR 3 review).**
+Determination: an `awaiting_confirmation` hold does **not** block a new
+recovery attempt or the user indefinitely. Two independent paths already
+supersede it, and neither required new code:
+
+1. **Explicit cancel.** `cancel_hold`/`authority_cancel` accept both
+   `AwaitingConfirmation` and `Pending` as non-terminal, cancellable states
+   (`authority.rs`'s `authority_verified_hold(..., require_active: false)`),
+   and lca-api's `cancelRecovery` (DID-authenticated) and
+   `cancelRecoveryByLink` (single-use cancel-link token, no DID needed) both
+   call this path with no additional status check. The UI's code-entry step
+   can offer "cancel and try a different way" at any time, including before
+   a code is ever entered.
+2. **Automatic restart.** `startRecovery` (`api/src/routes/escrow.ts`)
+   already looks up any existing pending hold for the same identity/policy
+   via `findPendingEscrowHoldByAuthProvider`, regardless of whether it is
+   enclave-side `AwaitingConfirmation` or `Pending` (Mongo's own `status`
+   field does not distinguish the two — only `requiresConfirmation` +
+   `confirmedAt` do). Calling `startRecovery` again with `restart: true`
+   after `ESCROW_HOLD_RESTART_MIN_AGE_MS` has elapsed since the old hold's
+   `requestedAt` supersedes it: the old hold is cancelled (`cancelEscrowHold`
+   with `cancelReason: 'superseded'`) and a fresh hold — with a fresh code —
+   is created in its place. This is the same mechanism already used to
+   recover from a PIN mismatch/lock; it was not written newly for
+   unconfirmed holds, it simply already covers them because Mongo's model
+   never distinguished confirmed from unconfirmed in the first place.
+
+No fix was needed because no block exists. An unconfirmed Hold-policy hold
+also never blocks a PIN-policy recovery for the same identity (or vice
+versa): the partial unique index and `findPendingEscrowHoldByAuthProvider`
+are both scoped per `releasePolicy`.
+
+**Compromised email (added 2026-10-14, Custard7 PR 3 review).** If an
+attacker controls the recovery email's inbox but not the account's signing
+key or any device share, they can read the confirmation code and the
+release-warning email but cannot authorize anything on their own: starting
+a hold still requires the account's own auth session (`startRecovery`'s
+`authToken`/`recoverySessionToken`), and completing one still decrypts
+recovery material only to the ephemeral key the _original_ device generated
+(bound into the signed hold record at creation, `clientEphemeralPublicKey`
+in `authority.rs`), which never leaves that device. The owner's available
+mitigations, from a signed-in device or the cancel link, at any time
+including before confirmation (see above):
+
+- **Cancel any hold**, confirmed or not, immediately — `cancelRecovery` from
+  a signed-in device, or `cancelRecoveryByLink` from the email itself (the
+  same email the attacker may be reading, which is a known limitation: if
+  the attacker reads and discards the cancel-link email too, the owner
+  needs the signed-in-device path instead).
+- **Change the recovery address only by re-enrolling.** The address lives
+  only inside the active sealed blob's plaintext, bound by a signed
+  Enroll/Replace intent (`createEscrowEnrollmentIntent`'s `action`); Carry
+  (PIN-preserving re-seal, e.g. on ordinary sign-in) explicitly cannot touch
+  it (P2-d above), so there is no implicit path that silently updates or
+  clears a compromised address. The owner must sign a fresh Replace intent
+  from a device holding the account key.
+
+**Residual risk:** if the attacker also controls the account's signing key
+or a device share (not just the recovery inbox), owning the inbox adds
+nothing further — that threat is already out of scope for the enrollment
+authority (see "Threat model and required guarantee" above: client signing
+keys are assumed uncompromised). If the attacker controls _only_ the inbox,
+the owner's device-side paths above remain available, but a user who relies
+solely on email-based cues (and never checks their account from a
+signed-in device) will not notice an in-progress hold until the
+release-warning email arrives at the (compromised) inbox — at which point
+cancellation is still available but requires the owner to act before the
+hold's 7-day-plus-24h window elapses.
 
 ## 10. Open questions for security/product
 

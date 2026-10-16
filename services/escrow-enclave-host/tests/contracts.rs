@@ -2,6 +2,7 @@ use axum::{
     body::{Body, to_bytes},
     http::{Request, StatusCode},
 };
+use base64::{Engine, engine::general_purpose::STANDARD};
 use escrow_enclave_host::{
     Event,
     api::{self, Api},
@@ -48,6 +49,29 @@ fn fixtures() -> Vec<(&'static str, Value, Value)> {
     let mutation = json!({"envelope":envelope(),"receipt":record,"authorityGeneration":"g1","enrollmentVersion":8,"enrollmentEpoch":4});
     let mut snapshot_record = record.clone();
     snapshot_record["kind"] = json!("snapshot");
+    let hold_snapshot = |warning: Option<u64>| {
+        let mut receipt = snapshot_record.clone();
+        receipt["payload"] = json!(
+            STANDARD.encode(
+                serde_json::to_vec(&json!([
+                    "learncard-authority-hold-snapshot-v2",
+                    "hold-1",
+                    vec![7; 32],
+                    "pending",
+                    1_700_000_500_000u64,
+                    warning,
+                    "g1"
+                ]))
+                .unwrap()
+            )
+        );
+        receipt["signature"] = json!(STANDARD.encode([0u8; 64]));
+        receipt
+    };
+    let confirm_hold_request = json!({"envelope":envelope(),"hold":hold(),"requestId":"request-4","clientEphemeralPublicKey":"AA==","expectedDid":"did:example:alice","code":"123456"});
+    let send_release_warning_request =
+        json!({"holdId":"hold-1","requestId":"request-5","expectedDid":"did:example:alice"});
+    let resend_code_request = json!({"envelope":envelope(),"hold":hold(),"requestId":"request-6","clientEphemeralPublicKey":"AA==","expectedDid":"did:example:alice"});
     vec![
         (
             "applyEnrollment",
@@ -98,6 +122,34 @@ fn fixtures() -> Vec<(&'static str, Value, Value)> {
             "rewrapEscrowBlob",
             json!({"envelope":envelope(),"expectedDid":"did:example:alice","expectedShareVersion":1,"sourceEnrollmentEpoch":1}),
             json!({"envelope":envelope()}),
+        ),
+        // P9.1 (attack C): both carry an authoritative enclave timestamp that
+        // the host DTO must preserve across reserialization, on both a fresh
+        // commit and an idempotent retry snapshot (see wire.rs doc comments).
+        (
+            "confirmHold",
+            confirm_hold_request.clone(),
+            json!({"confirmed":true,"receipt":record,"confirmedHiMs":1_700_000_500_000u64}),
+        ),
+        (
+            "confirmHold",
+            confirm_hold_request,
+            json!({"confirmed":true,"receipt":hold_snapshot(None),"confirmedHiMs":1_700_000_500_000u64}),
+        ),
+        (
+            "sendReleaseWarning",
+            send_release_warning_request.clone(),
+            json!({"sent":true,"receipt":record,"releaseWarningSentHiMs":1_700_604_800_100u64}),
+        ),
+        (
+            "sendReleaseWarning",
+            send_release_warning_request,
+            json!({"sent":true,"receipt":hold_snapshot(Some(1_700_604_800_100)),"releaseWarningSentHiMs":1_700_604_800_100u64}),
+        ),
+        (
+            "resendCode",
+            resend_code_request,
+            json!({"sent":true,"receipt":record}),
         ),
     ]
 }
@@ -151,6 +203,9 @@ fn path(method: &str) -> &str {
         "rewrapEscrowBlob" => "/v1/rewrap-escrow-blob",
         "createHold" => "/v1/create-hold",
         "release" => "/v1/release",
+        "confirmHold" => "/v1/confirm-hold",
+        "resendCode" => "/v1/resend-code",
+        "sendReleaseWarning" => "/v1/send-release-warning",
         _ => "/v1/cancel-hold",
     }
 }
@@ -315,6 +370,88 @@ async fn p42_missing_id_is_randomized_without_losing_signed_fields() {
     let second = seen[1]["requestId"].as_str().unwrap();
     assert!(uuid::Uuid::parse_str(first).is_ok());
     assert_ne!(first, second);
+}
+
+// Builds the real enclave `wire::v1::Response` variants directly (not JSON
+// literals), so a future field change on the enclave side fails to compile
+// here rather than silently drifting from the host DTO. Covers both the
+// fresh-commit and idempotent-retry-snapshot receipt shapes for both
+// endpoints, and asserts the HTTP JSON body preserves the authoritative
+// timestamp, returns 200, and never leaks the `method` discriminator.
+#[tokio::test]
+async fn confirm_hold_and_send_release_warning_preserve_authoritative_timestamps() {
+    use authority::record::{RecordKind, SignedAuthorityRecord};
+
+    fn receipt(kind: RecordKind) -> SignedAuthorityRecord {
+        SignedAuthorityRecord {
+            version: 1,
+            kind,
+            key_id: "key-1".into(),
+            measurement: [0; 32],
+            payload: "AQ==".into(),
+            signature: "AA==".into(),
+        }
+    }
+
+    let confirm_hold_body = json!({"envelope":envelope(),"hold":hold(),"requestId":"request-4","clientEphemeralPublicKey":"AA==","expectedDid":"did:example:alice","code":"123456"});
+    for (kind, confirmed_hi_ms) in [
+        (RecordKind::Commit, 1_700_000_500_000u64),
+        (RecordKind::Snapshot, 1_700_000_500_000u64),
+    ] {
+        let reply = serde_json::to_value(enclave_wire::v1::Response::ConfirmHold {
+            confirmed: true,
+            receipt: receipt(kind),
+            confirmed_hi_ms,
+        })
+        .unwrap();
+        let fake = Arc::new(Fake {
+            reply,
+            seen: Default::default(),
+        });
+        let (status, body) = call(
+            fake,
+            "/v1/confirm-hold",
+            serde_json::to_vec(&confirm_hold_body).unwrap(),
+            Some(&format!("Bearer {TOKEN}")),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{body}");
+        assert_eq!(body["confirmed"], json!(true));
+        assert_eq!(body["confirmedHiMs"], json!(confirmed_hi_ms));
+        assert!(!body.as_object().unwrap().contains_key("method"));
+    }
+
+    let send_release_warning_body =
+        json!({"holdId":"hold-1","requestId":"request-5","expectedDid":"did:example:alice"});
+    for (kind, release_warning_sent_hi_ms) in [
+        (RecordKind::Commit, 1_700_604_800_100u64),
+        (RecordKind::Snapshot, 1_700_604_800_100u64),
+    ] {
+        let reply = serde_json::to_value(enclave_wire::v1::Response::SendReleaseWarning {
+            sent: true,
+            receipt: receipt(kind),
+            release_warning_sent_hi_ms,
+        })
+        .unwrap();
+        let fake = Arc::new(Fake {
+            reply,
+            seen: Default::default(),
+        });
+        let (status, body) = call(
+            fake,
+            "/v1/send-release-warning",
+            serde_json::to_vec(&send_release_warning_body).unwrap(),
+            Some(&format!("Bearer {TOKEN}")),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{body}");
+        assert_eq!(body["sent"], json!(true));
+        assert_eq!(
+            body["releaseWarningSentHiMs"],
+            json!(release_warning_sent_hi_ms)
+        );
+        assert!(!body.as_object().unwrap().contains_key("method"));
+    }
 }
 
 struct Blocked {

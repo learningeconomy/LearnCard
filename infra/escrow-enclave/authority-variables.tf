@@ -61,6 +61,16 @@ variable "sending_domain" {
     error_message = "Email requires an explicit lowercase DNS sending_domain."
   }
 }
+
+variable "email_dmarc_report_address" {
+  type        = string
+  default     = null
+  description = "Optional mailbox for DMARC aggregate (rua) reports on sending_domain. Cross-domain addresses also need the receiving domain's DMARC report authorization record."
+  validation {
+    condition     = var.email_dmarc_report_address == null || can(regex("^[^@\\s;]+@[^@\\s;]+$", var.email_dmarc_report_address))
+    error_message = "email_dmarc_report_address must be a single email address."
+  }
+}
 variable "create_sending_zone" {
   type        = bool
   default     = false

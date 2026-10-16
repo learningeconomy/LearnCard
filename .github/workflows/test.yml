@@ -66,6 +66,49 @@ jobs:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
+    escrow-integration:
+        name: Escrow integration (lca-api)
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+
+            - name: Detect escrow changes
+              id: changes
+              run: |
+                  git fetch --no-tags --prune origin main
+                  if git diff --quiet origin/main...HEAD -- \
+                      services/learn-card-network/lca-api \
+                      services/escrow-enclave-app \
+                      packages/sss-key-manager \
+                      .github/workflows/test.yml; then
+                    echo "run=false" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "run=true" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Use Composite Setup Action
+              if: steps.changes.outputs.run == 'true'
+              uses: ./.github/actions/setup
+
+            # Live-Mongo (mongodb-memory-server) specs; the nx `test` target only
+            # runs vitest.config.ts, so these are otherwise never exercised in CI.
+            - name: Run escrow integration specs
+              if: steps.changes.outputs.run == 'true'
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/keys-escrow.spec.ts
+                  test/models/escrow.spec.ts
+                  test/jobs/escrowBlobRewrap.spec.ts
+                  test/jobs/escrowHoldReminders.spec.ts
+
     ai-agent:
         name: AI Agent CI
         if: github.event_name == 'pull_request'

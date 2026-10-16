@@ -1,6 +1,7 @@
 import type { EscrowEnvelope, SignedEscrowEnrollmentIntent } from '@learncard/sss-key-manager';
 import type {
     AuthorityRecord,
+    AuthorityHoldReceipt,
     AuthorityMutationResult,
     AuthorityStateResponse,
 } from './authorityContract';
@@ -55,6 +56,19 @@ export interface CancelHoldRequest {
     envelope: EscrowEnvelope;
     hold: EscrowHoldRecord;
     clientEphemeralPublicKey: string;
+    expectedDid: string;
+}
+/** P9.1 (attack C): `code` is the one-time code itself (compared against a
+ * stored hash enclave-side), never a proof — unlike `ReleaseRequest.pinProof`. */
+export interface ConfirmHoldRequest extends CancelHoldRequest {
+    code: string;
+}
+export type ResendCodeRequest = CancelHoldRequest;
+/** P9.1 (attack C): system-initiated (lca-api's hourly job) — no envelope or
+ * signed hold, since there is no user action to authenticate. */
+export interface SendReleaseWarningRequest {
+    requestId?: string;
+    holdId: string;
     expectedDid: string;
 }
 export interface VerifyEscrowBlobInput {
@@ -115,6 +129,20 @@ export interface EscrowEnclave {
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
     createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
     cancelHold(input: CancelHoldRequest): Promise<void | { receipt: AuthorityRecord }>;
+    /** P9.1 (attack C): authority (nitro) mode only — software mode never
+     * produces an awaiting-confirmation hold, so it has nothing to confirm.
+     * `confirmedAtMs` is the enclave's authoritative confirmation time
+     * (present on both a fresh confirm and an idempotent retry); callers
+     * must use it instead of a locally-observed clock to compute deadlines. */
+    confirmHold?(
+        input: ConfirmHoldRequest
+    ): Promise<{ receipt: AuthorityHoldReceipt; confirmedAtMs: number }>;
+    resendCode?(input: ResendCodeRequest): Promise<{ receipt: AuthorityRecord }>;
+    /** `releaseWarningSentAtMs` is the enclave's authoritative warning-sent
+     * time, present on both a fresh send and an idempotent retry. */
+    sendReleaseWarning?(
+        input: SendReleaseWarningRequest
+    ): Promise<{ receipt: AuthorityHoldReceipt; releaseWarningSentAtMs: number }>;
 }
 export class EscrowPolicyError extends Error {
     constructor() {

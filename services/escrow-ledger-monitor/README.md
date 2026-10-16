@@ -99,6 +99,23 @@ post-readback Commit RPC artifact. The same kind-specific signature verifier che
 Commit artifacts (covered by the shared Rust/client fixture); client verification
 of RPC commits remains separate from this independent table enumeration.
 
+### P9.1 (attack C): enclave-sent recovery email confirmation
+
+A Hold-policy `CreateHold` now starts `AwaitingConfirmation` instead of
+`Pending` (Pin-policy is unaffected — it never leaves `Pending`). `ConfirmHold`
+and `ResendCode` are only valid while still `AwaitingConfirmation`;
+`SendReleaseWarning` and `Release`/matched `PinAttempt` require `Pending`;
+`Cancel` accepts either. The verifier independently re-derives — purely from
+signed events, never from the unauthenticated stored `HoldItem` row's own
+`confirmedHiMs`/`releaseWarningSentHiMs` fields — whether a hold that started
+`AwaitingConfirmation` shows a matched `ConfirmHold` (the one whose resulting
+status is `Pending`, not one of the up-to-five rejected guesses) and a
+`SendReleaseWarning` at least 24 hours before the release event's own
+trusted-time lower bound. Either gap alarms `AuthorityIntegrityFailure` exactly
+like any other reconstructed-state violation; this mirrors (and independently
+re-checks, rather than trusts) the enclave's own `authority_release_with_receipt`
+gate.
+
 Limits: 10,000 scan pages of at most 100 items, 50,000 distinct partitions,
 4,096 rows / 32 MiB per account, and the shared 900-second Lambda deadline.
 Capacity/read failures alarm `AuthorityCoverageFailure`; incomplete sweeps never

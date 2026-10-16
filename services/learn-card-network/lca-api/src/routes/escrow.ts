@@ -1,6 +1,7 @@
 import { timingSafeEqual, randomUUID, randomBytes } from 'crypto';
 import {
     AuthorityCommitValidator,
+    AuthorityHoldReceiptValidator,
     AuthorityStateResponseValidator,
     SignedEnrollmentIntentValidator,
 } from '../services/escrow-enclave/authorityContract';
@@ -47,11 +48,15 @@ import {
     hasUnconfirmedEscrowCancellation,
     cancelEscrowHoldByCancelToken,
     completeEscrowHold,
+    recordEscrowHoldConfirmation,
     recordEscrowReleaseReceipt,
     hasCompletedEscrowHoldForVersion,
     expireStaleEscrowHolds,
     hashEscrowResumeToken,
     generateEscrowResumeToken,
+    computeEffectiveReleaseAfter,
+    ESCROW_RELEASE_TIME_MARGIN_MS,
+    EscrowHoldRecordValidator,
     type EscrowHold,
     type MongoUserKeyType,
     type AuthProviderMapping,
@@ -84,9 +89,6 @@ const unavailableMessage = 'Automatic recovery is not available for this account
 const killSwitchMessage = 'Automatic recovery is temporarily unavailable. Please try again later.';
 const invalidMessage = 'This recovery request is no longer valid.';
 const staleEscrowMessage = 'Automatic recovery needs to be set up again on a signed-in device.';
-// Roughtime's release lower bound can lag its creation upper bound. Advertise
-// an additional minute, and still allow retries when trusted time is unavailable.
-const ESCROW_RELEASE_TIME_MARGIN_MS = 60_000;
 // Keep throttling distinct: clients reserve the locked message for lifetime PIN exhaustion.
 const pinThrottledMessage = 'Please wait before trying again.';
 
@@ -198,6 +200,14 @@ const holdStatusValidator = z.object({
     releasePolicy: z.enum(['hold', 'pin']),
     cancelledAt: z.string().optional(),
     completedAt: z.string().optional(),
+    // P9.1 (attack C): lets the client decide whether to show the
+    // code-entry step; `confirmed` only ever appears once `requiresConfirmation` does.
+    requiresConfirmation: z.boolean().optional(),
+    confirmed: z.boolean().optional(),
+    // [D] Opaque enclave-signed SignedHoldRecord (authority/nitro mode only).
+    // The client independently verifies this (verifyEscrowHoldRecord) before
+    // trusting any field inside it — see escrow-authority.ts.
+    holdRecord: EscrowHoldRecordValidator.optional(),
 });
 
 const serializeHold = (hold: EscrowHold): z.infer<typeof holdStatusValidator> => ({
@@ -208,6 +218,10 @@ const serializeHold = (hold: EscrowHold): z.infer<typeof holdStatusValidator> =>
     releasePolicy: hold.releasePolicy ?? 'hold',
     ...(hold.cancelledAt ? { cancelledAt: hold.cancelledAt.toISOString() } : {}),
     ...(hold.completedAt ? { completedAt: hold.completedAt.toISOString() } : {}),
+    ...(hold.requiresConfirmation
+        ? { requiresConfirmation: true, confirmed: Boolean(hold.confirmedAt) }
+        : {}),
+    ...(hold.holdRecord ? { holdRecord: hold.holdRecord } : {}),
 });
 
 const resumeTokenMatches = (hold: EscrowHold, token: string): boolean => {
@@ -734,7 +748,14 @@ export const escrowRouter = t.router({
         .input(startInput)
         .output(
             holdStatusValidator
-                .pick({ holdId: true, requestedAt: true, releaseAfter: true, releasePolicy: true })
+                .pick({
+                    holdId: true,
+                    requestedAt: true,
+                    releaseAfter: true,
+                    releasePolicy: true,
+                    requiresConfirmation: true,
+                    holdRecord: true,
+                })
                 .extend({
                     status: z.literal('pending'),
                     resumeToken: z.string().nullable(),
@@ -844,6 +865,13 @@ export const escrowRouter = t.router({
             }
             const resumeToken = generateEscrowResumeToken();
             const cancelToken = generateEscrowCancelToken();
+            // P9.1 (attack C): `confirmHold` is defined only by the remote
+            // (nitro/authority) backend. A Hold-policy hold there always goes
+            // through the enclave's own code-then-confirmation email flow, so
+            // lca-api's own Mongo-recipient-sourced 'started' notification is
+            // suppressed entirely rather than racing/duplicating it.
+            const isAuthorityManagedHold =
+                input.releasePolicy === 'hold' && Boolean(getEscrowEnclave().confirmHold);
             const { holdRecord } = await enclaveOperation(() =>
                 getEscrowEnclave().createHold({
                     envelope: userKey.escrowBlob!.envelope,
@@ -880,7 +908,8 @@ export const escrowRouter = t.router({
                     clientEphemeralPublicKey: input.clientEphemeralPublicKey,
                     resumeTokenHash: hashEscrowResumeToken(resumeToken),
                     cancelTokenHash: hashEscrowCancelToken(cancelToken),
-                    startedNotificationPending: true,
+                    startedNotificationPending: !isAuthorityManagedHold,
+                    requiresConfirmation: isAuthorityManagedHold,
                     requestIp: ctx.clientIp,
                     tenantId: ctx.tenant?.id,
                 });
@@ -917,19 +946,117 @@ export const escrowRouter = t.router({
                     message: 'Recovery could not be started.',
                 });
             }
-            await notifyEscrowHoldEvent({
-                kind: 'started',
-                hold,
-                userKey,
-                cancelToken,
-                tenant: ctx.tenant,
-            });
+            if (!isAuthorityManagedHold) {
+                await notifyEscrowHoldEvent({
+                    kind: 'started',
+                    hold,
+                    userKey,
+                    cancelToken,
+                    tenant: ctx.tenant,
+                });
+            }
             return {
                 ...serializeHold(hold),
                 status: 'pending' as const,
                 resumeToken,
                 ...(input.releasePolicy === 'pin' ? { pinSalt: userKey.escrowPin!.salt } : {}),
             };
+        }),
+
+    // P9.1 (attack C): no DID session exists yet at this point in the flow
+    // (same stage as completeRecovery) — resumeToken is the only credential.
+    // The enclave is the sole source of truth for the code; this route never
+    // reads or stores it, only relays the guess and its enclave-returned result.
+    confirmRecovery: openRoute
+        .meta({ openapi: { method: 'POST', path: '/keys/escrow/confirm', tags: ['Keys'] } })
+        .input(resumeInput.extend({ code: z.string().regex(/^[0-9]{8}$/) }))
+        .output(successValidator.extend({ receipt: AuthorityHoldReceiptValidator.optional() }))
+        .mutation(async ({ input }) => {
+            if (isEscrowReleaseKillSwitchEnabled()) {
+                throw new TRPCError({ code: 'PRECONDITION_FAILED', message: killSwitchMessage });
+            }
+            const hold = await findEscrowHoldById(input.holdId);
+            if (
+                !hold ||
+                !resumeTokenMatches(hold, input.resumeToken) ||
+                hold.status !== 'pending'
+            ) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            }
+            const userKey = await findUserKeyByAuthProvider(
+                hold.authProvider.type,
+                hold.authProvider.id
+            );
+            const envelope = hold.enclaveEnvelope ?? userKey?.escrowBlob?.envelope;
+            if (!hold.holdRecord || !envelope) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            }
+            const confirmHold = getEscrowEnclave().confirmHold;
+            if (!confirmHold) throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            const { receipt, confirmedAtMs } = await enclaveOperation(() =>
+                confirmHold({
+                    envelope,
+                    hold: hold.holdRecord!,
+                    clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
+                    expectedDid: hold.primaryDid,
+                    code: input.code,
+                })
+            );
+            // enclaveOperation re-throws on a code mismatch (the enclave
+            // itself returns an error there); reaching this line means the
+            // code matched. releaseAfter is recomputed from the enclave's
+            // own authoritative confirmation time (`confirmedAtMs`), never a
+            // locally observed `now` — a retried confirm (lost response,
+            // idempotent snapshot) must not add another day on top of a
+            // confirmation that already happened [A2].
+            await recordEscrowHoldConfirmation(
+                hold._id,
+                new Date(confirmedAtMs),
+                computeEffectiveReleaseAfter({
+                    confirmedAtMs,
+                    holdDurationMs: hold.holdRecord.holdDurationMs,
+                })
+            );
+            // [D] Returned so the client can verify this confirmation
+            // commits to the SAME hold it started (verifyEscrowHoldConfirmation).
+            return { success: true as const, receipt };
+        }),
+
+    resendRecoveryCode: openRoute
+        .meta({ openapi: { method: 'POST', path: '/keys/escrow/resend', tags: ['Keys'] } })
+        .input(resumeInput)
+        .output(successValidator)
+        .mutation(async ({ input }) => {
+            if (isEscrowReleaseKillSwitchEnabled()) {
+                throw new TRPCError({ code: 'PRECONDITION_FAILED', message: killSwitchMessage });
+            }
+            const hold = await findEscrowHoldById(input.holdId);
+            if (
+                !hold ||
+                !resumeTokenMatches(hold, input.resumeToken) ||
+                hold.status !== 'pending'
+            ) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            }
+            const userKey = await findUserKeyByAuthProvider(
+                hold.authProvider.type,
+                hold.authProvider.id
+            );
+            const envelope = hold.enclaveEnvelope ?? userKey?.escrowBlob?.envelope;
+            if (!hold.holdRecord || !envelope) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            }
+            const resendCode = getEscrowEnclave().resendCode;
+            if (!resendCode) throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            await enclaveOperation(() =>
+                resendCode({
+                    envelope,
+                    hold: hold.holdRecord!,
+                    clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
+                    expectedDid: hold.primaryDid,
+                })
+            );
+            return { success: true as const };
         }),
 
     getStatus: openRoute

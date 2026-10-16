@@ -17,6 +17,40 @@ export const ESCROW_HOLDS_COLLECTION = 'escrowholds';
 export const ESCROW_HOLD_STALE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 export const ESCROW_HOLD_RESTART_MIN_AGE_MS = environment.ESCROW_HOLD_RESTART_MIN_AGE_MS;
 export const ESCROW_HOLD_REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000;
+// Roughtime's release lower bound can lag its creation/confirmation upper
+// bound (see escrow-enclave-app's D2); advertise an additional minute on top
+// of both enclave release gates below, and still allow retries when trusted
+// time is briefly unavailable.
+export const ESCROW_RELEASE_TIME_MARGIN_MS = 60_000;
+// Mirrors `RELEASE_WARNING_MIN_GAP_MS` in policy/authority.rs.
+export const ESCROW_RELEASE_WARNING_GAP_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The enclave gates release on BOTH `confirmed_hi_ms + holdDuration` AND
+ * `release_warning_sent_hi_ms + 24h` (see `authority_release_with_receipt`,
+ * policy/authority.rs ~663-671) — a hold is only actually releasable at the
+ * LATER of the two. A warning sent after the 7-day window has already
+ * elapsed (a late/catch-up send, P2-b) pushes real availability later than
+ * `releaseAfter` computed from confirmation alone; callers must recompute
+ * and persist this whenever either authoritative timestamp changes, using
+ * the enclave's own `confirmed_hi_ms`/`release_warning_sent_hi_ms` — never a
+ * locally observed `now` (see [A]/[A2]).
+ */
+export const computeEffectiveReleaseAfter = (params: {
+    confirmedAtMs: number;
+    holdDurationMs: number;
+    releaseWarningSentAtMs?: number;
+}): Date => {
+    const confirmedAvailabilityMs =
+        params.confirmedAtMs + params.holdDurationMs + ESCROW_RELEASE_TIME_MARGIN_MS;
+    const warningAvailabilityMs =
+        params.releaseWarningSentAtMs === undefined
+            ? undefined
+            : params.releaseWarningSentAtMs +
+              ESCROW_RELEASE_WARNING_GAP_MS +
+              ESCROW_RELEASE_TIME_MARGIN_MS;
+    return new Date(Math.max(confirmedAvailabilityMs, warningAvailabilityMs ?? 0));
+};
 // Opaque JSON validated for shape, not signature authenticity. Preserve signed extensions.
 export const EscrowHoldRecordValidator = z
     .object({
@@ -75,6 +109,14 @@ export const EscrowHoldValidator = z.object({
         .max(4)
         .optional(),
     startedNotificationPending: z.boolean().optional(),
+    // P9.1 (attack C): set at creation only for an authority-mode Hold-policy
+    // hold (the enclave gates its own release on a confirmed email code, not
+    // just this flag). `confirmedAt` is set once `confirmRecovery` succeeds,
+    // at which point `releaseAfter` is also recomputed from the confirmation
+    // time (not the original creation time) so Mongo's own stale-expiry and
+    // reminder-window queries stay consistent with the enclave's real gate.
+    requiresConfirmation: z.boolean().optional(),
+    confirmedAt: z.date().optional(),
     reminderClaimedUntil: z.date().optional(),
     startedNotificationAttemptedAt: z.date().optional(),
     reminderAttemptedAt: z.date().optional(),
@@ -355,6 +397,22 @@ export const cancelEscrowHoldByCancelToken = async (
         { returnDocument: 'after' }
     );
 };
+/**
+ * Records a successful confirmRecovery and corrects releaseAfter to the
+ * confirmation time (the enclave's own release gate is confirmation-based,
+ * not creation-based). Never overwrites an already-confirmed row.
+ */
+export const recordEscrowHoldConfirmation = async (
+    id: string,
+    confirmedAt: Date,
+    releaseAfter: Date
+): Promise<EscrowHold | null> =>
+    getEscrowHoldsCollection().findOneAndUpdate(
+        { _id: id, status: 'pending', confirmedAt: { $exists: false } },
+        { $set: { confirmedAt, releaseAfter, updatedAt: confirmedAt } },
+        { returnDocument: 'after' }
+    );
+
 export const completeEscrowHold = async (id: string): Promise<EscrowHold | null> => {
     const now = new Date();
     return getEscrowHoldsCollection().findOneAndUpdate(
@@ -462,7 +520,24 @@ export const recordEscrowStartNotificationAttempt = async (
  * excludes them in practice within a few ms of job execution; the explicit
  * releasePolicy filter documents that exclusion instead of relying on
  * timing alone. Legacy rows predating `releasePolicy` are treated as `hold`,
- * matching `findPendingEscrowHoldByAuthProvider`'s own `$or`.
+ * matching `findPendingEscrowHoldByAuthProvider`'s own `$or`. An
+ * authority-mode hold still awaiting its email confirmation is excluded
+ * outright: its stored `releaseAfter` is only a rough creation-time estimate
+ * until confirmation recomputes it, and the enclave's own
+ * `authority_send_release_warning` would reject a pre-confirmation hold
+ * anyway (see policy/authority.rs), so excluding it here avoids a
+ * predictable, recurring no-op failure every run.
+ *
+ * Deliberately has no `releaseAfter > now` lower bound (catch-up, P2-b): the
+ * mandatory warning gate means release can never complete without a
+ * successfully recorded warning, regardless of how stale Mongo's own
+ * `releaseAfter` estimate is. An outage (SES down, this job not running)
+ * spanning an entire 24h reminder window must not permanently strand the
+ * hold — it stays selected, however overdue, until a warning is finally
+ * recorded (`notifications.kind` gains `'reminder'`). Real availability is
+ * then governed by the enclave's own gate, `release_warning_sent_hi_ms +
+ * 24h` (see `authority_release_with_receipt` in policy/authority.rs), not
+ * by this stale estimate.
  */
 export const findEscrowHoldsDueForReminder = async (
     now: Date,
@@ -471,11 +546,21 @@ export const findEscrowHoldsDueForReminder = async (
     getEscrowHoldsCollection()
         .find({
             status: 'pending',
-            $or: [{ releasePolicy: 'hold' as const }, { releasePolicy: { $exists: false } }],
-            releaseAfter: {
-                $gt: now,
-                $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS),
-            },
+            $and: [
+                {
+                    $or: [
+                        { releasePolicy: 'hold' as const },
+                        { releasePolicy: { $exists: false } },
+                    ],
+                },
+                {
+                    $or: [
+                        { requiresConfirmation: { $ne: true } },
+                        { confirmedAt: { $exists: true } },
+                    ],
+                },
+            ],
+            releaseAfter: { $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS) },
             'notifications.kind': { $ne: 'reminder' },
         })
         .sort({ reminderAttemptedAt: 1, releaseAfter: 1 })
@@ -519,10 +604,17 @@ export const hashEscrowResumeToken = (token: string): string =>
     createHash('sha256').update(token).digest('hex');
 export const generateEscrowResumeToken = (): string => randomBytes(32).toString('hex');
 
-/** Appends a delivery record; a missing holdId is a no-op rather than a throw. */
+/**
+ * Appends a delivery record; a missing holdId is a no-op rather than a throw.
+ * `releaseAfter` lets a `'reminder'` notification also persist the hold's
+ * effective availability (see `computeEffectiveReleaseAfter`) — a late
+ * release-warning send can push real availability later than the stored
+ * estimate [B]; omit it for notification kinds with no such recomputation.
+ */
 export const recordEscrowHoldNotification = async (
     holdId: string,
-    kind: EscrowHold['notifications'][number]['kind']
+    kind: EscrowHold['notifications'][number]['kind'],
+    releaseAfter?: Date
 ): Promise<void> => {
     const now = new Date();
     await getEscrowHoldsCollection().updateOne(
@@ -532,6 +624,7 @@ export const recordEscrowHoldNotification = async (
             $set: {
                 updatedAt: now,
                 ...(kind === 'started' ? { startedNotificationPending: false } : {}),
+                ...(releaseAfter ? { releaseAfter } : {}),
             },
         }
     );

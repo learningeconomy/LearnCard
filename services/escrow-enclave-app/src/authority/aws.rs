@@ -338,9 +338,14 @@ impl Client {
             .map_err(|_| Error::Configuration)?
             .into();
         let url = format!("{}{}", self.endpoint, operation.path());
+        // The URL keeps the relay port (the enclave connects via its vsock relay),
+        // but Host carries the bare service name: AWS signs and checks Host as the
+        // standard :443 name, and SES rejects a signature over `host:8002`.
         let authority = self
             .endpoint
             .strip_prefix("https://")
+            .and_then(|authority| authority.split(':').next())
+            .filter(|host| !host.is_empty())
             .ok_or(Error::Configuration)?;
         let content_type = if operation.target().is_some() {
             "application/x-amz-json-1.0"
@@ -567,7 +572,7 @@ impl SesEmailClient {
     pub async fn send_email(
         &self,
         recipient: &str,
-        subject: &'static str,
+        subject: &str,
         text: &str,
     ) -> Result<EmailReceipt, Error> {
         if !email_address(recipient)

@@ -1964,6 +1964,19 @@
             },
             "useInstead": "Utiliser mon code PIN de récupération"
         },
+        "confirmCode": {
+            "title": "Vérifiez votre e-mail",
+            "description": "Saisissez le code que nous avons envoyé pour confirmer cette demande.",
+            "confirming": "Confirmation...",
+            "error": "Ce code n'a pas fonctionné ou a expiré. Vérifiez-le et réessayez, ou appuyez sur Renvoyer le code pour en obtenir un nouveau.",
+            "failed": "Quelque chose s'est mal passé. Vérifiez votre connexion et réessayez.",
+            "resend": "Renvoyer le code",
+            "resending": "Envoi en cours...",
+            "resent": "Nous avons envoyé un nouveau code.",
+            "resendError": "Vous avez demandé plusieurs codes récemment. Veuillez patienter un peu et réessayer.",
+            "resendFailed": "Nous n'avons pas pu envoyer un nouveau code. Vérifiez votre connexion et réessayez."
+        },
+        "invalidRequest": "Cette demande de récupération n'est plus valide. Commencez-en une nouvelle.",
         "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
         "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
         "error.invalidCode": "Ce code est incorrect ou a expiré. Demandez-en un nouveau et réessayez.",

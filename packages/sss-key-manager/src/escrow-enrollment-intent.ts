@@ -7,7 +7,9 @@ import type {
     SignedEscrowEnrollmentIntent,
 } from './escrow-enrollment-intent.types';
 
-export const ESCROW_ENROLLMENT_INTENT_DOMAIN = 'learncard-escrow-enrollment-intent-v1\0';
+// P9.1: bumped alongside `version` so the two new recovery fields can never be
+// verified against the pre-PR3 byte layout. Must match Rust's INTENT_DOMAIN exactly.
+export const ESCROW_ENROLLMENT_INTENT_DOMAIN = 'learncard-escrow-enrollment-intent-v2\0';
 const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const FIELDS = [
     'version',
@@ -23,9 +25,14 @@ const FIELDS = [
     'enrollmentEpoch',
     'requestId',
     'allowRewrap',
+    'recoveryEmail',
+    'recoveryLanguage',
 ];
 const ACTIONS = ['enroll', 'replace', 'disable', 'carry'];
 const PIN_ACTIONS = ['set', 'change', 'clear', 'keep'];
+// P9.1 (attack C): the app's compiled template languages. Keep in lockstep with
+// apps/learn-card-app/src/i18n's SUPPORTED_LANGUAGES and the Rust RECOVERY_LANGUAGES.
+const RECOVERY_LANGUAGES = ['en', 'es', 'fr', 'ar'];
 
 const requireIntent = (condition: boolean): void => {
     if (!condition) throw new Error('Invalid escrow enrollment intent');
@@ -93,7 +100,7 @@ export const encodeEscrowEnrollmentIntent = (
         Object.keys(intent).length === FIELDS.length &&
             FIELDS.every(field => Object.prototype.hasOwnProperty.call(intent, field))
     );
-    requireIntent(intent.version === 1 && typeof intent.allowRewrap === 'boolean');
+    requireIntent(intent.version === 2 && typeof intent.allowRewrap === 'boolean');
     requireIntent(matches(intent.tenant, /^[A-Za-z0-9_-]{1,128}$/));
     requireIntent(matches(intent.authorityGeneration, /^[A-Za-z0-9_-]{1,128}$/));
     requireIntent(matches(intent.requestId, /^[A-Za-z0-9._-]{1,112}$/));
@@ -118,6 +125,32 @@ export const encodeEscrowEnrollmentIntent = (
                 intent.sourceBlobIdentity !== intent.targetBlobIdentity
         );
     if (intent.action === 'carry') requireIntent(intent.pinAction === 'keep');
+    // P9.1 (attack C): email/language are deliberately conservative (not full
+    // RFC 5322/IDN) and paired; Enroll/Replace require them, Disable/Carry forbid them.
+    if (intent.recoveryEmail === null) {
+        requireIntent(
+            intent.recoveryLanguage === null &&
+                (intent.action === 'disable' || intent.action === 'carry')
+        );
+    } else {
+        requireIntent(intent.action === 'enroll' || intent.action === 'replace');
+        requireIntent(
+            matches(intent.recoveryEmail, /^[\x21-\x7e]{3,254}$/) &&
+                intent.recoveryEmail === intent.recoveryEmail.trim().toLowerCase()
+        );
+        const at = intent.recoveryEmail.split('@');
+        requireIntent(
+            at.length === 2 &&
+                at[0].length > 0 &&
+                at[1].length > 0 &&
+                at[1].includes('.') &&
+                !at[1].startsWith('.') &&
+                !at[1].endsWith('.')
+        );
+        requireIntent(
+            intent.recoveryLanguage !== null && RECOVERY_LANGUAGES.includes(intent.recoveryLanguage)
+        );
+    }
     const fields = [
         integer(intent.version, 4),
         utf8(intent.tenant),
@@ -132,6 +165,8 @@ export const encodeEscrowEnrollmentIntent = (
         integer(intent.enrollmentEpoch, 8),
         utf8(intent.requestId),
         Uint8Array.of(Number(intent.allowRewrap)),
+        intent.recoveryEmail === null ? new Uint8Array() : utf8(intent.recoveryEmail),
+        intent.recoveryLanguage === null ? new Uint8Array() : utf8(intent.recoveryLanguage),
     ];
     return join([
         utf8(ESCROW_ENROLLMENT_INTENT_DOMAIN),

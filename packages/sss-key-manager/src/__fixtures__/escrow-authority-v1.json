@@ -25,8 +25,8 @@
                 104, 246, 220, 65, 85, 5, 178, 132, 55, 240, 220, 184, 36, 221, 238, 197, 123, 192,
                 254, 252, 44, 2, 36, 71, 113, 41, 136, 81, 211, 167, 12, 127
             ],
-            "payload": "eyJjb21taXQiOnsiYmluZGluZyI6eyJkaWRIYXNoIjpbNiw4OCwxMjgsMTQyLDEzMywyMDQsMTMxLDIzLDE1NiwyMTIsMjIyLDM3LDE3NiwxMTIsMjAzLDE4NywzMiwxNTMsMjA4LDIxLDExNCw2MCwxMjIsMTc2LDIxNywxOSw3MiwxNCwxMywyMTcsNiwyMDFdLCJnZW5lcmF0aW9uIjoic3RhZ2luZy1nMiIsInRlbmFudCI6ImxlYXJuY2FyZCJ9LCJleGVjdXRpb25JZCI6WzEsMSwxLDEsMSwxLDEsMSwxLDEsMSwxLDEsMSwxLDFdLCJyZXZpc2lvbnMiOnsiZW5yb2xsbWVudCI6OCwib3BlcmF0aW9uIjoxMn0sInNjaGVtYVZlcnNpb24iOjEsInRyYW5zYWN0aW9uRGlnZXN0IjpbMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyXX0sImVucm9sbG1lbnRFcG9jaCI6NCwiZXZlbnRIYXNoIjpbMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzXSwicmVxdWVzdERpZ2VzdCI6WzIxNiwzNSwzNCwyMDIsMjI5LDksMTYxLDUsMTQxLDE3Miw5Miw4Niw0NywxNDIsMTg2LDIzNywyOSwxMDAsMTI2LDIwNywxMjAsMjU0LDE1MywxMDYsNzAsMjgsMjE5LDE4NywxNiw1NiwxMjMsMTE4XSwicmVzdWx0QmxvYklkZW50aXR5IjpbNDksMjIwLDM1LDEyNiwyMCwyMzUsNDcsNDksMjIsMjIwLDg1LDg5LDE2OSw0LDIxNSw0NywxMTMsMjE1LDEwMywzNCw3LDEwOCw0NiwyMTcsMTQ4LDE5NiwxNiwxNCw5NSwxOTgsNjAsMTQ3XX0=",
-            "signature": "tkcx8NdkidemKRpyG7a/nTY5DBKO7SIr73GeFuwHC2Qqr+Nca507XxfDi7yfnQ234k98Gi1dCVhZxE5ZjeYeCA==",
+            "payload": "eyJjb21taXQiOnsiYmluZGluZyI6eyJkaWRIYXNoIjpbNiw4OCwxMjgsMTQyLDEzMywyMDQsMTMxLDIzLDE1NiwyMTIsMjIyLDM3LDE3NiwxMTIsMjAzLDE4NywzMiwxNTMsMjA4LDIxLDExNCw2MCwxMjIsMTc2LDIxNywxOSw3MiwxNCwxMywyMTcsNiwyMDFdLCJnZW5lcmF0aW9uIjoic3RhZ2luZy1nMiIsInRlbmFudCI6ImxlYXJuY2FyZCJ9LCJleGVjdXRpb25JZCI6WzEsMSwxLDEsMSwxLDEsMSwxLDEsMSwxLDEsMSwxLDFdLCJyZXZpc2lvbnMiOnsiZW5yb2xsbWVudCI6OCwib3BlcmF0aW9uIjoxMn0sInNjaGVtYVZlcnNpb24iOjEsInRyYW5zYWN0aW9uRGlnZXN0IjpbMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyLDIsMiwyXX0sImVucm9sbG1lbnRFcG9jaCI6NCwiZXZlbnRIYXNoIjpbMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzXSwicmVxdWVzdERpZ2VzdCI6WzE2MiwxNDEsMTk2LDIsMTk1LDE4MSw5MSwyOSw3OSwxNDIsMTIzLDMxLDUwLDEyNCw2Myw5NiwxMTUsMTI1LDUzLDE0MCwxMCw4NSwxMTYsMjQxLDkxLDExOSw2NCwyMDgsMTE5LDE0Nyw2Nyw3Nl0sInJlc3VsdEJsb2JJZGVudGl0eSI6WzQ5LDIyMCwzNSwxMjYsMjAsMjM1LDQ3LDQ5LDIyLDIyMCw4NSw4OSwxNjksNCwyMTUsNDcsMTEzLDIxNSwxMDMsMzQsNywxMDgsNDYsMjE3LDE0OCwxOTYsMTYsMTQsOTUsMTk4LDYwLDE0N119",
+            "signature": "Jy3/K0leJzFJqc13bcBRFw2pVKuBf8+yGzuQz+isGUQT20R+Cbxudwmf7bWUSVOOGUQuyBhkHA4IUvFXGZrBWg==",
             "version": 1
         }
     },
@@ -39,12 +39,14 @@
         "enrollmentEpoch": 4,
         "expectedEnrollmentVersion": 7,
         "pinAction": "keep",
+        "recoveryEmail": null,
+        "recoveryLanguage": null,
         "requestId": "golden-carry-1",
         "shareVersion": 42,
         "sourceBlobIdentity": "8090217ef11060bfa380c4a4b26d76a64811216176ecb60749652fabf3b09425",
         "targetBlobIdentity": "31dc237e14eb2f3116dc5559a904d72f71d76722076c2ed994c4100e5fc63c93",
         "tenant": "learncard",
-        "version": 1
+        "version": 2
     },
     "ledgerPublicKey": "BAyQHUI8gxyoXifHPCY7oTJyG7nXqExPA4CypnVv1gEzHIhwI03sh4UEwXQUT6SxS2amUWkWBtgXPlW9N+OBVp4=",
     "measurement": "68f6dc415505b28437f0dcb824ddeec57bc0fefc2c02244771298851d3a70c7f",

@@ -36,15 +36,18 @@ compared with `subtle` constant-time equality. The NLB is TCP passthrough: host
 TLS certificates must cover the DNS name used by lca-api and be trusted there.
 No plaintext API listener or certificate-verification bypass exists.
 
-| HTTP path                | vsock method       |
-| ------------------------ | ------------------ |
-| `/v1/attest`             | `attest`           |
-| `/v1/verify-blob`        | `verifyBlob`       |
-| `/v1/carry-pin-verifier` | `carryPinVerifier` |
-| `/v1/rewrap-escrow-blob` | `rewrapEscrowBlob` |
-| `/v1/create-hold`        | `createHold`       |
-| `/v1/release`            | `release`          |
-| `/v1/cancel-hold`        | `cancel`           |
+| HTTP path                  | vsock method         |
+| -------------------------- | -------------------- |
+| `/v1/attest`               | `attest`             |
+| `/v1/verify-blob`          | `verifyBlob`         |
+| `/v1/carry-pin-verifier`   | `carryPinVerifier`   |
+| `/v1/rewrap-escrow-blob`   | `rewrapEscrowBlob`   |
+| `/v1/create-hold`          | `createHold`         |
+| `/v1/confirm-hold`         | `confirmHold`        |
+| `/v1/resend-code`          | `resendCode`         |
+| `/v1/release`              | `release`            |
+| `/v1/cancel-hold`          | `cancel`             |
+| `/v1/send-release-warning` | `sendReleaseWarning` |
 
 Bodies use the corresponding independent `src/wire.rs` fields **without** the
 `method` discriminator. Responses remove it too. Attestation mode is preserved,
@@ -57,6 +60,11 @@ must match the requested method. No retries. At most 32 active authorized API
 calls; each complete body/bridge operation has a 12-second timeout (above the enclave's own 10-second request deadline).
 Connection admission occurs before TLS: 128 HTTPS / 16 health connections, each
 with a hard 60-second lifetime (including handshake and slow headers).
+`confirmHold` and `sendReleaseWarning` responses additionally carry
+`confirmedHiMs` / `releaseWarningSentHiMs`: the enclave's authoritative
+confirmation/warning timestamp, present on both a fresh commit and an
+idempotent retry snapshot, which the host DTO must preserve across
+reserialization rather than let a caller fall back to a locally observed clock.
 
 Cross-component tests link the enclave crate as a **dev-dependency only** with its
 four fake features. `tests/parent_interop.rs` drives the production enclave parent

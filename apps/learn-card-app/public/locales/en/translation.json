@@ -2288,6 +2288,19 @@
             },
             "useInstead": "Use my recovery PIN instead"
         },
+        "confirmCode": {
+            "title": "Check your email",
+            "description": "Enter the code we sent to confirm this request.",
+            "confirming": "Confirming...",
+            "error": "That code didn't work or expired. Check it and try again, or tap Resend code for a new one.",
+            "failed": "Something went wrong. Check your connection and try again.",
+            "resend": "Resend code",
+            "resending": "Resending...",
+            "resent": "We sent a new code.",
+            "resendError": "You've asked for several codes recently. Please wait a bit and try again.",
+            "resendFailed": "We couldn't send a new code. Check your connection and try again."
+        },
+        "invalidRequest": "This recovery request is no longer valid. Start a new one.",
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",
         "fullyProtected": "You're fully protected.",
