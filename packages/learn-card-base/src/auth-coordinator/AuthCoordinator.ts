@@ -64,6 +64,7 @@ import type {
     AuthUser,
     AuthCoordinatorConfig,
     EscrowEnrollmentState,
+    EscrowRecoveryExpectations,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     RecoveryReason,
@@ -77,6 +78,15 @@ const isEscrowRecoveryMethod = (input: unknown): boolean =>
     input !== null &&
     'method' in input &&
     (input.method === 'escrow' || input.method === 'escrow-pin');
+
+/** Narrows to a PIN-release input so `expectedDid` can be filled in from state. */
+const isEscrowPinInput = (
+    input: unknown
+): input is { method: 'escrow-pin'; pin: string; expectedDid?: string } =>
+    typeof input === 'object' &&
+    input !== null &&
+    'method' in input &&
+    input.method === 'escrow-pin';
 
 /** Legacy strategies resolve a bare state string; PIN-aware strategies resolve the full object. */
 const normalizeEscrowEnrollmentState = (
@@ -313,18 +323,37 @@ export class AuthCoordinator {
             if (!isCurrentAccount()) return;
             const signDidAuthVp = this.config.signDidAuthVp;
             let publishedEnrollment = false;
+            let enrollmentVerificationFailed = false;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
                 const gate = await this.resolveEscrowEnrollmentGate(ready.did, credentials);
                 if (gate.allowed) {
-                    await this.runEscrowOperation(async () =>
+                    const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
                             ? this.keyDerivation.ensureEscrowEnrollment?.({
                                   ...credentials,
                                   privateKey: ready.privateKey,
                                   signDidAuthVp,
+                                  options: this.recoveryContactOptions(ready),
                               })
                             : undefined
-                    ).catch(err => log.warn('escrow.enrollment.failed', err));
+                    ).catch(err => {
+                        enrollmentVerificationFailed = true;
+                        log.warn('escrow.enrollment.failed', err);
+                    });
+                    if (
+                        enrollmentResult &&
+                        !enrollmentResult.enrolled &&
+                        enrollmentResult.reason === 'opted-out' &&
+                        isCurrentAccount() &&
+                        this.state.status === 'ready'
+                    ) {
+                        this.setState({
+                            ...this.state,
+                            escrowEnrollment: 'opted-out',
+                            escrowPin: undefined,
+                        });
+                        publishedEnrollment = true;
+                    }
                 } else if (gate.prefetched && isCurrentAccount() && this.state.status === 'ready') {
                     // The gate blocked the call precisely because the prefetch already proved
                     // this account is not-enrolled; nothing ran that could change that, so
@@ -338,7 +367,13 @@ export class AuthCoordinator {
                 }
             }
             if (!isCurrentAccount()) return;
-            if (!publishedEnrollment && this.keyDerivation.getEscrowEnrollmentState) {
+            // Do not overwrite a failed authority verification with Mongo's
+            // optimistic enrolled flag. Recovery polling remains independent.
+            if (
+                !publishedEnrollment &&
+                !enrollmentVerificationFailed &&
+                this.keyDerivation.getEscrowEnrollmentState
+            ) {
                 try {
                     const enrollment = normalizeEscrowEnrollmentState(
                         await this.keyDerivation.getEscrowEnrollmentState(credentials)
@@ -377,10 +412,22 @@ export class AuthCoordinator {
         const start = this.keyDerivation.startEscrowRecovery.bind(this.keyDerivation);
         const result = await this.runEscrowOperation(async () => {
             if (this.state.status === 'identity_recovery' && this.state.recoverySessionToken) {
-                return start({ recoverySessionToken: this.state.recoverySessionToken, options });
+                // Independently known from the verify-recovery-session response
+                // above, never from an escrow response -- see EscrowRecoveryExpectations.
+                return start({
+                    recoverySessionToken: this.state.recoverySessionToken,
+                    expectedDid: this.state.expectedDid,
+                    options,
+                });
             }
             if (this.state.status !== 'needs_recovery') throw new Error('Recovery is not ready');
-            return start({ ...(await this.getAuthCredentials()), options });
+            // Independently known from the server key-status lookup above, never
+            // from an escrow status response -- see EscrowRecoveryExpectations.
+            return start({
+                ...(await this.getAuthCredentials()),
+                expectedDid: this.state.expectedDid,
+                options,
+            });
         });
         if (generation !== this.recoveryGeneration)
             throw new Error('This recovery request was cancelled.');
@@ -388,11 +435,38 @@ export class AuthCoordinator {
     }
 
     /** Resume proofs allow status checks without an active sign-in session. */
-    async getEscrowRecoveryStatus(proof?: { holdId: string; resumeToken: string }) {
+    async getEscrowRecoveryStatus(proof?: {
+        holdId: string;
+        resumeToken: string;
+        /** Retained from the hold's start response; required for a Nitro hold. */
+        expectations?: EscrowRecoveryExpectations;
+    }) {
         if (!this.keyDerivation.getEscrowRecoveryStatus) return null;
         return this.keyDerivation.getEscrowRecoveryStatus(
             proof ?? (await this.getAuthCredentials())
         );
+    }
+
+    /** Submit the confirmation code emailed by the enclave for an authority-mode hold. */
+    async confirmEscrowRecovery(params: {
+        holdId: string;
+        resumeToken: string;
+        code: string;
+        /** Retained from the hold's start response; required for a Nitro hold. */
+        expectations?: EscrowRecoveryExpectations;
+    }): Promise<{ success: true }> {
+        if (!this.keyDerivation.confirmEscrowRecovery) throw new Error('Recovery is not available');
+        return this.keyDerivation.confirmEscrowRecovery(params);
+    }
+
+    /** Request a fresh confirmation code for a hold awaiting confirmation. */
+    async resendEscrowRecoveryCode(params: {
+        holdId: string;
+        resumeToken: string;
+    }): Promise<{ success: true }> {
+        if (!this.keyDerivation.resendEscrowRecoveryCode)
+            throw new Error('Recovery is not available');
+        return this.keyDerivation.resendEscrowRecoveryCode(params);
     }
 
     /** Cancel a pending request from an account-owning device. */
@@ -473,6 +547,7 @@ export class AuthCoordinator {
                 ...(await this.getAuthCredentials()),
                 privateKey: ready.privateKey,
                 signDidAuthVp: this.config.signDidAuthVp!,
+                options: this.recoveryContactOptions(ready),
             })
         );
     }
@@ -496,6 +571,7 @@ export class AuthCoordinator {
                     privateKey: ready.privateKey,
                     signDidAuthVp: this.config.signDidAuthVp!,
                     pin,
+                    options: this.recoveryContactOptions(ready),
                 })
             );
         } finally {
@@ -521,6 +597,7 @@ export class AuthCoordinator {
                     ...(await this.getAuthCredentials()),
                     privateKey: ready.privateKey,
                     signDidAuthVp: this.config.signDidAuthVp!,
+                    options: this.recoveryContactOptions(ready),
                 })
             );
         } finally {
@@ -553,6 +630,24 @@ export class AuthCoordinator {
         } catch (err) {
             log.warn('escrow.pin.refresh.failed', err);
         }
+    }
+
+    /**
+     * P9.1 (attack C): the authenticated account's own email (never a
+     * host-supplied or user-typed value at this layer) plus the app's
+     * current locale, both bound into the sealed escrow blob on the device
+     * side by the key-derivation strategy — lca-api cannot read or change
+     * them afterward. Omitted when either is unavailable; the strategy/
+     * enclave fail closed for nitro/authority-mode enroll/replace rather
+     * than silently default a jargon-adjacent placeholder.
+     */
+    private recoveryContactOptions(
+        ready: Extract<UnifiedAuthState, { status: 'ready' }>
+    ): { recoveryEmail?: string; recoveryLanguage?: string } | undefined {
+        const recoveryEmail = ready.authUser?.email;
+        const recoveryLanguage = this.config.getRecoveryLanguage?.();
+        if (!recoveryEmail && !recoveryLanguage) return undefined;
+        return { recoveryEmail, recoveryLanguage };
     }
 
     /** Helper: get token + providerType from the auth provider.
@@ -817,6 +912,7 @@ export class AuthCoordinator {
                     escrowPin: serverStatus.escrowPin,
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                     sssActivationState: serverStatus.sssActivationState ?? null,
+                    expectedDid: serverStatus.primaryDid ?? undefined,
                 });
                 return this.state;
             }
@@ -835,6 +931,7 @@ export class AuthCoordinator {
                     escrowPin: serverStatus.escrowPin,
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                     sssActivationState: serverStatus.sssActivationState ?? null,
+                    expectedDid: serverStatus.primaryDid ?? undefined,
                 });
                 return this.state;
             }
@@ -873,6 +970,7 @@ export class AuthCoordinator {
                             escrowPin: serverStatus.escrowPin,
                             maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                             sssActivationState: serverStatus.sssActivationState ?? null,
+                            expectedDid: serverStatus.primaryDid,
                         });
                         return this.state;
                     }
@@ -1174,6 +1272,7 @@ export class AuthCoordinator {
         const recoveryReason = this.state.recoveryReason;
         const maskedRecoveryEmail = this.state.maskedRecoveryEmail;
         const sssActivationState = this.state.sssActivationState;
+        const expectedDid = this.state.expectedDid;
         const generation = this.recoveryGeneration;
         if (isEscrow) this.escrowRecoveryInFlight = true;
 
@@ -1186,7 +1285,12 @@ export class AuthCoordinator {
             const params = {
                 token,
                 providerType,
-                input,
+                // PIN release has no persisted hold to carry its own binding, so
+                // fill in the DID independently known from this `needs_recovery`
+                // state (never from a server response) when the caller omits it.
+                input: isEscrowPinInput(input)
+                    ? { ...input, expectedDid: input.expectedDid ?? expectedDid }
+                    : input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
                 signDidAuthVp: this.config.signDidAuthVp,
             };
@@ -1226,6 +1330,7 @@ export class AuthCoordinator {
                     recoveryReason,
                     maskedRecoveryEmail,
                     sssActivationState,
+                    expectedDid,
                 },
             });
 
@@ -1286,6 +1391,7 @@ export class AuthCoordinator {
             email: this.state.email,
             recoverySessionToken: session.recoverySessionToken,
             recoveryMethods: session.recoveryMethods,
+            expectedDid: session.primaryDid ?? undefined,
         });
         return this.state;
     }
@@ -1303,6 +1409,7 @@ export class AuthCoordinator {
 
         const email = this.state.email;
         const recoveryMethods = this.state.recoveryMethods;
+        const expectedDid = this.state.expectedDid;
 
         try {
             const result = await this.keyDerivation.prepareIdentityRecovery({
@@ -1339,6 +1446,7 @@ export class AuthCoordinator {
                     recoverySessionToken: this.state.recoverySessionToken,
                     recoveryMethods,
                     error: errorMessage,
+                    expectedDid,
                 });
             }
             // Recovery forms await this call to surface errors and release their loading state.

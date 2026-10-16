@@ -93,10 +93,19 @@ export interface EscrowHoldStatus {
     releaseAfter: string;
     cancelledAt?: string;
     completedAt?: string;
+    /** Only present for an authority-mode hold-policy hold; `confirmed` only appears alongside it. */
+    requiresConfirmation?: boolean;
+    confirmed?: boolean;
+    /** Opaque enclave-signed `SignedHoldRecord`; present only in authority
+     * (nitro) mode. Callers must verify it with `verifyEscrowHoldRecord`
+     * before trusting any field inside it — see escrow-authority.ts. */
+    holdRecord?: import('./escrow-authority').EscrowHoldRecordLike;
 }
 
 /** Persist these secrets securely until completion; a null token means an existing hold. */
 export type EscrowRecoveryStart = EscrowHoldStatus & {
+    /** Persist with the secrets, never rebuild from server status. Required for Nitro resume. */
+    expectations?: import('@learncard/types').EscrowRecoveryExpectations;
     resumeToken: string | null;
     clientEphemeralPrivateKey: string;
     pinSalt?: string;
@@ -166,8 +175,15 @@ export type RecoveryMethod =
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
-    | { method: 'escrow-pin'; pin: string }
-    | { method: 'escrow'; holdId: string; resumeToken: string; clientEphemeralPrivateKey: string }
+    | { method: 'escrow-pin'; pin: string; expectedDid?: string }
+    | {
+          method: 'escrow';
+          holdId: string;
+          resumeToken: string;
+          clientEphemeralPrivateKey: string;
+          /** Original start bindings loaded with the private key, required for Nitro. */
+          expectations?: import('@learncard/types').EscrowRecoveryExpectations;
+      }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
     | { method: 'backup'; fileContents: string; password: string }
@@ -285,7 +301,10 @@ export type SSSKeyDerivationStrategy = KeyDerivationStrategy<
     RecoverySetupInput,
     RecoverySetupResult,
     RecoveryConfirmationInput
->;
+> & {
+    /** Last receipt/snapshot-verified ciphertext for this session, never a freshness oracle. */
+    getVerifiedEscrowEnvelope?(): import('./escrow-crypto').EscrowEnvelope | null;
+};
 
 // ---------------------------------------------------------------------------
 // Legacy types (deprecated)

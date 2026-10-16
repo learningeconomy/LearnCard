@@ -76,6 +76,8 @@ export interface AuthCoordinatorContextValue {
     recover: (input: unknown) => Promise<void>;
     startEscrowRecovery: AuthCoordinator['startEscrowRecovery'];
     getEscrowRecoveryStatus: AuthCoordinator['getEscrowRecoveryStatus'];
+    confirmEscrowRecovery: AuthCoordinator['confirmEscrowRecovery'];
+    resendEscrowRecoveryCode: AuthCoordinator['resendEscrowRecoveryCode'];
     cancelEscrowRecovery: AuthCoordinator['cancelEscrowRecovery'];
     disableEscrowRecovery: AuthCoordinator['disableEscrowRecovery'];
     enableEscrowRecovery: AuthCoordinator['enableEscrowRecovery'];
@@ -146,6 +148,9 @@ export interface AuthCoordinatorProviderProps {
     /** Optional: retrieve a cached private key for private-key-first init */
     getCachedPrivateKey?: () => Promise<string | null>;
 
+    /** App locale for vault-sent recovery emails (`en`/`es`/`fr`/`ar`); required for Nitro enrollment. */
+    getRecoveryLanguage?: () => string | undefined;
+
     /** Called after the coordinator finishes its own logout cleanup. Use for app-specific store/DB clearing. */
     onLogout?: () => Promise<void>;
 
@@ -203,6 +208,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     didFromPrivateKey,
     signDidAuthVp,
     getCachedPrivateKey,
+    getRecoveryLanguage,
     onLogout,
     clearPendingEscrowRecovery,
     onDebugEvent,
@@ -381,6 +387,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             didFromPrivateKey,
             signDidAuthVp,
             getCachedPrivateKey,
+            getRecoveryLanguage,
             onLogout,
             clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
@@ -428,6 +435,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         didFromPrivateKey,
         signDidAuthVp,
         getCachedPrivateKey,
+        getRecoveryLanguage,
         onLogout,
         clearPendingEscrowRecovery,
         onDebugEvent,
@@ -492,6 +500,20 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         async (proof?: { holdId: string; resumeToken: string }) => {
             if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
             return coordinatorRef.current.getEscrowRecoveryStatus(proof);
+        },
+        []
+    );
+    const confirmEscrowRecovery = useCallback(
+        async (params: { holdId: string; resumeToken: string; code: string }) => {
+            if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+            return coordinatorRef.current.confirmEscrowRecovery(params);
+        },
+        []
+    );
+    const resendEscrowRecoveryCode = useCallback(
+        async (params: { holdId: string; resumeToken: string }) => {
+            if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+            return coordinatorRef.current.resendEscrowRecoveryCode(params);
         },
         []
     );
@@ -664,6 +686,8 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
+            confirmEscrowRecovery,
+            resendEscrowRecoveryCode,
             cancelEscrowRecovery,
             disableEscrowRecovery,
             enableEscrowRecovery,
@@ -709,6 +733,8 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
+            confirmEscrowRecovery,
+            resendEscrowRecoveryCode,
             cancelEscrowRecovery,
             disableEscrowRecovery,
             enableEscrowRecovery,
