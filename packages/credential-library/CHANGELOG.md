@@ -1,5 +1,13 @@
 # @learncard/credential-library
 
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/sd-jwt-vc-plugin@0.2.17
+
 ## 2.1.1
 
 ### Patch Changes
