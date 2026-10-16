@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,7 +30,8 @@ class AppStoreAdminGetAllListingsRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = None
     cursor: Optional[StrictStr] = None
     status: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["limit", "cursor", "status"]
+    pending_updates_only: Optional[StrictBool] = Field(default=None, alias="pendingUpdatesOnly")
+    __properties: ClassVar[List[str]] = ["limit", "cursor", "status", "pendingUpdatesOnly"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -91,6 +92,11 @@ class AppStoreAdminGetAllListingsRequest(BaseModel):
         if self.cursor is None and "cursor" in self.model_fields_set:
             _dict['cursor'] = None
 
+        # set to None if pending_updates_only (nullable) is None
+        # and model_fields_set contains the field
+        if self.pending_updates_only is None and "pending_updates_only" in self.model_fields_set:
+            _dict['pendingUpdatesOnly'] = None
+
         return _dict
 
     @classmethod
@@ -105,7 +111,8 @@ class AppStoreAdminGetAllListingsRequest(BaseModel):
         _values = {
             "limit": obj.get("limit"),
             "cursor": obj.get("cursor"),
-            "status": obj.get("status")
+            "status": obj.get("status"),
+            "pendingUpdatesOnly": obj.get("pendingUpdatesOnly")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

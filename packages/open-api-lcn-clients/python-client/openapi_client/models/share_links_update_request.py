@@ -23,7 +23,8 @@ from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from uuid import UUID
 from openapi_client.models.credential_send_credential_request_credential_any_of1 import CredentialSendCredentialRequestCredentialAnyOf1
-from openapi_client.models.share_links_update_request_envelope import ShareLinksUpdateRequestEnvelope
+from openapi_client.models.share_links_create_request_envelope import ShareLinksCreateRequestEnvelope
+from openapi_client.models.share_links_update_request_attachment import ShareLinksUpdateRequestAttachment
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -34,7 +35,7 @@ class ShareLinksUpdateRequest(BaseModel):
     """ # noqa: E501
     id: Optional[StrictStr]
     expected_version: Annotated[int, Field(le=2147483647, strict=True, ge=1)] = Field(alias="expectedVersion")
-    client_request_id: UUID = Field(alias="clientRequestId")
+    client_request_id: Optional[UUID] = Field(alias="clientRequestId")
     title: Optional[Annotated[str, Field(min_length=1, strict=True, max_length=120)]] = None
     note: Optional[Annotated[str, Field(strict=True, max_length=500)]] = None
     expires_at: Optional[datetime] = Field(default=None, alias="expiresAt")
@@ -42,13 +43,17 @@ class ShareLinksUpdateRequest(BaseModel):
     notify_on_view: Optional[StrictBool] = Field(default=None, alias="notifyOnView")
     content_version: Optional[Annotated[int, Field(le=2147483647, strict=True, ge=1)]] = Field(default=None, alias="contentVersion")
     selected_count: Optional[Annotated[int, Field(le=50, strict=True, ge=1)]] = Field(default=None, alias="selectedCount")
-    envelope: Optional[ShareLinksUpdateRequestEnvelope] = None
+    envelope: Optional[ShareLinksCreateRequestEnvelope] = None
     owner_encrypted_recovery: Optional[CredentialSendCredentialRequestCredentialAnyOf1] = Field(default=None, alias="ownerEncryptedRecovery")
-    __properties: ClassVar[List[str]] = ["id", "expectedVersion", "clientRequestId", "title", "note", "expiresAt", "passcode", "notifyOnView", "contentVersion", "selectedCount", "envelope", "ownerEncryptedRecovery"]
+    attachment: Optional[ShareLinksUpdateRequestAttachment] = None
+    __properties: ClassVar[List[str]] = ["id", "expectedVersion", "clientRequestId", "title", "note", "expiresAt", "passcode", "notifyOnView", "contentVersion", "selectedCount", "envelope", "ownerEncryptedRecovery", "attachment"]
 
     @field_validator('client_request_id', mode="before")
     def client_request_id_validate_regular_expression(cls, value):
         """Validates the regular expression"""
+        if value is None:
+            return value
+
         if isinstance(value, str) and not re.match(r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", value):
             raise ValueError(r"must validate the regular expression /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/")
         return value
@@ -108,10 +113,18 @@ class ShareLinksUpdateRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of owner_encrypted_recovery
         if self.owner_encrypted_recovery:
             _dict['ownerEncryptedRecovery'] = self.owner_encrypted_recovery.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of attachment
+        if self.attachment:
+            _dict['attachment'] = self.attachment.to_dict()
         # set to None if id (nullable) is None
         # and model_fields_set contains the field
         if self.id is None and "id" in self.model_fields_set:
             _dict['id'] = None
+
+        # set to None if client_request_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.client_request_id is None and "client_request_id" in self.model_fields_set:
+            _dict['clientRequestId'] = None
 
         # set to None if note (nullable) is None
         # and model_fields_set contains the field
@@ -155,8 +168,9 @@ class ShareLinksUpdateRequest(BaseModel):
             "notifyOnView": obj.get("notifyOnView"),
             "contentVersion": obj.get("contentVersion"),
             "selectedCount": obj.get("selectedCount"),
-            "envelope": ShareLinksUpdateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
-            "ownerEncryptedRecovery": CredentialSendCredentialRequestCredentialAnyOf1.from_dict(obj["ownerEncryptedRecovery"]) if obj.get("ownerEncryptedRecovery") is not None else None
+            "envelope": ShareLinksCreateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
+            "ownerEncryptedRecovery": CredentialSendCredentialRequestCredentialAnyOf1.from_dict(obj["ownerEncryptedRecovery"]) if obj.get("ownerEncryptedRecovery") is not None else None,
+            "attachment": ShareLinksUpdateRequestAttachment.from_dict(obj["attachment"]) if obj.get("attachment") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

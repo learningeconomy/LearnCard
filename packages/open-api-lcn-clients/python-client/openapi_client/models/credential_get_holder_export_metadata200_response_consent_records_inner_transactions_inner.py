@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_guardian_approval import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_referral import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms
 from typing import Optional, Set
 from typing_extensions import Self
@@ -33,12 +34,13 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
     terms: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms] = None
     guardian_approval: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval] = Field(default=None, alias="guardianApproval")
+    referral: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral] = None
     id: Optional[StrictStr]
     action: StrictStr
     var_date: Optional[StrictStr] = Field(alias="date")
     uris: Optional[List[StrictStr]] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "guardianApproval", "id", "action", "date", "uris"]
+    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "guardianApproval", "referral", "id", "action", "date", "uris"]
 
     @field_validator('action')
     def action_validate_enum(cls, value):
@@ -94,6 +96,9 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
         # override the default output from pydantic by calling `to_dict()` of guardian_approval
         if self.guardian_approval:
             _dict['guardianApproval'] = self.guardian_approval.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of referral
+        if self.referral:
+            _dict['referral'] = self.referral.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
@@ -135,6 +140,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
             "oneTime": obj.get("oneTime"),
             "terms": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "guardianApproval": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval.from_dict(obj["guardianApproval"]) if obj.get("guardianApproval") is not None else None,
+            "referral": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.from_dict(obj["referral"]) if obj.get("referral") is not None else None,
             "id": obj.get("id"),
             "action": obj.get("action"),
             "date": obj.get("date"),

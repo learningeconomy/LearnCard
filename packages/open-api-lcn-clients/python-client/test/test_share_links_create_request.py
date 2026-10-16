@@ -72,7 +72,10 @@ class TestShareLinksCreateRequest(unittest.TestCase):
                                 apv = '', 
                                 apu = '', ), 
                             encrypted_key = '', )
-                        ], )
+                        ], ),
+                attachment = openapi_client.models.share_links_create_request_attachment.shareLinks_create_request_attachment(
+                    id = 'ffffffff-ffff-ffff-ffff-ffffffffffff', 
+                    chunk_count = 1, )
             )
         else:
             return ShareLinksCreateRequest(
