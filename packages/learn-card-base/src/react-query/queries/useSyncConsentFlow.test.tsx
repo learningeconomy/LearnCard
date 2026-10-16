@@ -10,6 +10,8 @@ const host = vi.hoisted(() => ({
     stored: new Set<string>(),
     unreadable: new Set<string>(),
     failAccept: new Set<string>(),
+    failAcceptOnce: new Set<string>(),
+    failStoreOnce: new Set<string>(),
     accept: vi.fn(),
     addVCtoWallet: vi.fn(),
 }));
@@ -86,13 +88,17 @@ describe('useSyncConsentFlow', () => {
         host.stored.clear();
         host.unreadable.clear();
         host.failAccept.clear();
+        host.failAcceptOnce.clear();
+        host.failStoreOnce.clear();
         wallet.invoke.getConsentFlowCredentials.mockClear();
         host.accept.mockReset().mockImplementation(async ({ uri }: { uri: string }) => {
             if (host.failAccept.has(uri)) throw new Error(`accept failed for ${uri}`);
+            if (host.failAcceptOnce.delete(uri)) throw new Error(`accept failed for ${uri}`);
             // Accepting creates CREDENTIAL_RECEIVED, so the server stops listing it as pending.
             host.pending = host.pending.filter(pendingUri => pendingUri !== uri);
         });
         host.addVCtoWallet.mockReset().mockImplementation(async ({ uri }: { uri: string }) => {
+            if (host.failStoreOnce.delete(uri)) throw new Error(`store failed for ${uri}`);
             host.stored.add(uri);
         });
     });
@@ -135,10 +141,53 @@ describe('useSyncConsentFlow', () => {
         host.failAccept.add('urn:test:c:accept-fails');
         renderSync();
 
-        await waitFor(() =>
-            expect(storedUris().sort()).toEqual(['urn:test:c:good-1', 'urn:test:c:good-2'])
+        // Storing happens before accepting, so the failed accept stays pending on the server
+        // (and gets accepted on a later sync) while the others are accepted and stored.
+        await waitFor(() => expect(host.pending).toEqual(['urn:test:c:accept-fails']));
+        expect(host.stored).toEqual(
+            new Set(['urn:test:c:good-1', 'urn:test:c:accept-fails', 'urn:test:c:good-2'])
         );
         expect(host.accept).toHaveBeenCalledWith({ uri: 'urn:test:c:accept-fails' });
+    });
+
+    it('stores a credential on a later sync when storing failed once after a successful accept', async () => {
+        host.pending = ['urn:test:e:store-fails-once', 'urn:test:e:good'];
+        host.failStoreOnce.add('urn:test:e:store-fails-once');
+        renderSync();
+
+        await waitFor(() => expect(host.stored).toEqual(new Set(['urn:test:e:good'])));
+        expect(host.addVCtoWallet).toHaveBeenCalledWith(
+            expect.objectContaining({ uri: 'urn:test:e:store-fails-once' })
+        );
+
+        act(() => {
+            focusManager.setFocused(false);
+            focusManager.setFocused(true);
+        });
+
+        await waitFor(() =>
+            expect(host.stored).toEqual(new Set(['urn:test:e:good', 'urn:test:e:store-fails-once']))
+        );
+        expect(host.pending).toEqual([]);
+    });
+
+    it('accepts an already-stored credential on a later sync without storing it again', async () => {
+        host.pending = ['urn:test:f:accept-fails-once'];
+        host.failAcceptOnce.add('urn:test:f:accept-fails-once');
+        renderSync();
+
+        await waitFor(() => expect(host.accept).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(host.stored).toEqual(new Set(['urn:test:f:accept-fails-once'])));
+        expect(host.pending).toEqual(['urn:test:f:accept-fails-once']);
+
+        act(() => {
+            focusManager.setFocused(false);
+            focusManager.setFocused(true);
+        });
+
+        await waitFor(() => expect(host.pending).toEqual([]));
+        expect(host.accept).toHaveBeenCalledTimes(2);
+        expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
     });
 
     it('accepts each credential once when refetches overlap across hook instances', async () => {

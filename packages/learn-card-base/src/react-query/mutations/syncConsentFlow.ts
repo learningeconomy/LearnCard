@@ -26,6 +26,8 @@ export type ConsentRecord = {
     contractUri: string;
     termsUri: string;
     category?: string;
+    /** Already in the wallet index, so the sync only needs to accept it on the server. */
+    alreadyStored?: boolean;
 };
 
 export type ConsentedContract = {
@@ -267,16 +269,23 @@ export const useAcceptAndStoreCredentialsMutation = () => {
     >({
         mutationFn: async ({ allRecords }) => {
             walletStore.set.setIsSyncing(WalletSyncState.Syncing);
-            // Accept and store each credential independently so one failure doesn't
-            // fail the batch or keep the successful ones from being stored.
+            // Store each credential independently so one failure doesn't fail the batch
+            // or keep the successful ones from being stored.
+            // Store before accepting: accepting removes the credential from the server's
+            // pending list, so if storing failed after an accept, no later sync would ever
+            // see it again. In this order, a failed store leaves it pending (retried next
+            // sync), and a failed accept leaves it pending and indexed (accepted next sync
+            // via alreadyStored, without storing a duplicate).
             const results = await Promise.allSettled(
                 allRecords.map(async r => {
+                    if (!r.alreadyStored) {
+                        await addVCtoWallet({
+                            uri: r.credentialUri,
+                            contractUri: r.contractUri,
+                            skipSync: true,
+                        });
+                    }
                     await acceptCredential.mutateAsync({ uri: r.credentialUri });
-                    await addVCtoWallet({
-                        uri: r.credentialUri,
-                        contractUri: r.contractUri,
-                        skipSync: true,
-                    });
                 })
             );
 
@@ -299,7 +308,7 @@ export const useAcceptAndStoreCredentialsMutation = () => {
             return { stored, failed };
         },
         onSuccess: ({ stored }) => {
-            const count = stored.length;
+            const count = stored.filter(r => !r.alreadyStored).length;
             if (count === 0) {
                 walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
             } else {
