@@ -5,7 +5,7 @@ import XCTest
 
     private func launch(_ arguments: [String] = ["--locale", "en"]) -> XCUIApplication {
         let app = XCUIApplication(); app.launchArguments = ["--demo"] + arguments; app.launch()
-        XCTAssertTrue(app.buttons["nav-home"].waitForExistence(timeout: 10)); app.buttons["nav-home"].tap()
+        XCTAssertTrue(app.buttons["nav-home"].waitForExistence(timeout: 10)); XCTAssertTrue(app.buttons["nav-home"].isSelected)
         XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 5))
         return app
     }
@@ -15,6 +15,18 @@ import XCTest
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
+    }
+    func testHomeIsInitialDestinationAndFirstInLightAndArabicDarkNavigation() {
+        for args in [["--locale", "en"], ["--locale", "ar", "--preview-dark"]] {
+            let app = launch(args)
+            let tabs = ["home", "collection", "inbox", "apps"].map { app.buttons["nav-\($0)"] }
+            for pair in zip(tabs, tabs.dropFirst()) {
+                if args.contains("ar") { XCTAssertGreaterThan(pair.0.frame.minX, pair.1.frame.minX) }
+                else { XCTAssertLessThan(pair.0.frame.minX, pair.1.frame.minX) }
+            }
+            capture(app, "Home-first navigation \(args.contains("ar") ? "Arabic dark" : "English light")")
+            app.terminate()
+        }
     }
     func testHomeSummaryAndPrimaryActionsReachExistingFlows() {
         let app = launch()

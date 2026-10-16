@@ -3,7 +3,7 @@ import XCTest
 @MainActor final class RecentStackUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
     private func launch(extra: [String] = [], locale: String = "en") -> XCUIApplication {
-        let app = XCUIApplication(); app.launchArguments = ["--demo", "--stack-fixtures", "--locale", locale] + extra; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--stack-fixtures", "--locale", locale] + extra; app.launch(); app.openCollection()
         XCTAssertTrue(app.buttons["stack-older"].waitForExistence(timeout: 10)); return app
     }
     private func active(_ id: String, in app: XCUIApplication) -> XCUIElement {

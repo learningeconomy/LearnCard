@@ -9,7 +9,7 @@ final class ExperimentUITests: XCTestCase {
     func testCollectionTitleAndScrollingBrand() {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
-        app.launch()
+        app.launch(); app.openCollection()
         XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(app.staticTexts["page-title-collection"].isHittable)
         XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-full"].exists)
@@ -40,7 +40,7 @@ final class ExperimentUITests: XCTestCase {
     func testMainDestinationsHaveVisibleTitles() {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
-        app.launch()
+        app.launch(); app.openCollection()
         for title in ["Inbox", "Apps", "Home", "Collection"] {
             app.buttons["nav-\(title.lowercased())"].tap()
             let heading = app.staticTexts["page-title-\(title.lowercased())"]
@@ -53,7 +53,7 @@ final class ExperimentUITests: XCTestCase {
     func testClaimMovesSampleIntoCollection() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
-        app.launch()
+        app.launch(); app.openCollection()
         app.buttons["nav-inbox"].tap()
         let offer = app.buttons["offer-first-aid"]
         XCTAssertTrue(offer.waitForExistence(timeout: 10))
@@ -73,7 +73,7 @@ final class ExperimentUITests: XCTestCase {
     func testCreateAndRecordSend() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
-        app.launch()
+        app.launch(); app.openCollection()
         app.buttons["create"].tap(); app.buttons["Create new"].tap()
         let title = app.textFields["draft-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
@@ -101,7 +101,7 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testTrayAndAccountSettings() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
         XCTAssertTrue(app.buttons["nav-apps"].waitForExistence(timeout: 5))
         app.buttons["Account"].tap()
         XCTAssertTrue(app.buttons["account-edit-profile"].waitForExistence(timeout: 5))
@@ -114,7 +114,7 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testPlusActionsAndMultipleCredentialSharing() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
         app.buttons["create"].tap()
         XCTAssertTrue(app.buttons["Create new"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Send existing creation"].exists)
@@ -132,7 +132,7 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testCreationFormatAndCategoryUseDesignedSheets() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
         app.buttons["create"].tap(); app.buttons["Create new"].tap(); app.swipeUp()
         app.buttons["draft-format"].tap()
         XCTAssertTrue(app.scrollViews["builder-format-sheet"].waitForExistence(timeout: 5), app.debugDescription)
@@ -154,7 +154,7 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testCreateForSomeoneKeepsTemplateSeparateFromCollection() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
         app.buttons["create"].tap(); app.buttons["Create new"].tap()
         XCTAssertTrue(app.buttons["draft-artwork"].exists)
         let title = app.textFields["draft-title"]; title.tap(); title.typeText("Native kindness badge")
@@ -176,7 +176,7 @@ final class ExperimentUITests: XCTestCase {
     func testReceiveReviewsBeforeClaiming() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
-        app.launch()
+        app.launch(); app.openCollection()
         app.buttons["nav-home"].tap()
         app.buttons["receive"].tap()
         app.buttons["use-sample-link"].tap()
@@ -193,7 +193,7 @@ final class ExperimentUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
         app.launchArguments = ["--demo", "--preview-dark", "--locale", "en"]
-        app.launch()
+        app.launch(); app.openCollection()
         app.buttons["credential-design"].tap()
         app.swipeUp()
         app.buttons["share"].tap()
@@ -218,7 +218,7 @@ final class ExperimentUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
         if reduceMotion { app.launchArguments.append("--card-reduce-motion") }
-        app.launch()
+        app.launch(); app.openCollection()
         XCTAssertTrue(app.buttons["credential-design"].waitForExistence(timeout: 10))
         app.buttons["credential-design"].tap()
         let card = app.descendants(matching: .any).matching(identifier: "credential-detail-card").firstMatch
@@ -261,7 +261,7 @@ final class ExperimentUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en", "--large-type"]
         if reduceMotion { app.launchArguments.append("--card-reduce-motion") }
-        app.launch()
+        app.launch(); app.openCollection()
         XCTAssertTrue(app.buttons["nav-inbox"].waitForExistence(timeout: 10)); app.buttons["nav-inbox"].tap()
         let offer = app.buttons["offer-first-aid"]
         XCTAssertTrue(offer.waitForExistence(timeout: 5)); offer.tap()
@@ -290,7 +290,7 @@ final class ExperimentUITests: XCTestCase {
     }
 
     @MainActor func testInboxConnectionRequestAndUpdatesHaveDistinctActions() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
         XCTAssertTrue(app.buttons["nav-inbox"].waitForExistence(timeout: 10)); app.buttons["nav-inbox"].tap()
         let accept = app.buttons["inbox-accept-sample-request"]
         for _ in 0..<6 where !accept.isHittable { app.swipeUp() }
@@ -303,7 +303,7 @@ final class ExperimentUITests: XCTestCase {
     }
 
     @MainActor func testClaimConnectionPromptRequiresExplicitDecision() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
         app.buttons["nav-inbox"].tap(); let offer = app.buttons["offer-first-aid"]
         XCTAssertTrue(offer.waitForExistence(timeout: 10)); offer.tap(); app.buttons["claim"].tap()
         XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5)); app.alerts["Done"].buttons["Done"].tap()
@@ -318,7 +318,7 @@ final class ExperimentUITests: XCTestCase {
     func testSharedHeaderActionsAndAccountAcrossTabs() {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
-        app.launch()
+        app.launch(); app.openCollection()
         for tab in ["inbox", "apps", "home", "collection"] {
             app.buttons["nav-\(tab)"].tap()
             XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-full"].waitForExistence(timeout: 5))
@@ -345,7 +345,7 @@ final class ExperimentUITests: XCTestCase {
     func testCollectionSearchShowsAllMatchesWithoutLatestCardAndCanReset() {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
-        app.launch()
+        app.launch(); app.openCollection()
         XCTAssertTrue(app.buttons["credential-design"].waitForExistence(timeout: 10))
         let search = app.textFields["collection-search"]
         search.tap(); search.typeText("design\n")

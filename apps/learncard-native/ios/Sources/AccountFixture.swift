@@ -37,6 +37,7 @@ import LearnCardNativeSDK
             for key in ["profile-name", "profile-bio", "profile-image", "signup-draft", "signup-prepared", "signup-backup", "signup-confirmed", "signup-parent-sent", "signup-approved", "reset-pending", "reset-failed", "reset-done"] { try await vault.remove(key) }
             if scenario != "sign-in" { try await vault.write(Data("synthetic".utf8), key: "fixture-auth") }
             if scenario == "ready" || scenario.hasPrefix("reset-") { try await vault.write(Data("synthetic".utf8), key: "fixture-remembered") }
+            if scenario == "reset-pending" { try await vault.write(Data("synthetic".utf8), key: "reset-pending") }
         }
         return try await vault.read("fixture-auth") == nil ? nil : user
     }

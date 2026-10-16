@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **364 cases** (153 Bun, 129 Swift, 82 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
+Current configured suite: **366 cases** (153 Bun, 129 Swift, 84 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -22,6 +22,18 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Home-first navigation and live signup follow-up — October 16
+
+The **full local suite passes: 153 Bun + 129 Swift + 84 simulator cases (366)**, with one intentionally skipped opt-in live exchange and no failures. Evidence: `artifacts/home-first-types.log`, `home-first-bun.log`, `home-first-core.log` and `home-first-full.xcresult`. Source contracts pass with the same 14 dependency diagnostics scoped to their owning packages. This supersedes the earlier targeted-only local checkpoints below; no new hosted CI result is claimed.
+
+Independent verification with the web SDK passes all ten iOS-issued credential signatures, encryption, presentations, DID-auth JWT and QR transfer (`home-first-interop.log`). The existing `clr/westbridge-full` full-verification exception has the same outcome on web and iOS; proof verification is distinct from complete issuer trust/status validation. Screenshots were exported to `home-first-attachments`, inspected for Home order and reset-button readability, and copied into [the actual native screen brief](design/HOME_ENTRY_BRIEF.md).
+
+Release compilation and Debug review installation pass (`home-first-release.log`, `home-first-review-install.log`). All seven installed artifact hashes match (`home-first-install-proof.json`), including restored private configuration and unchanged DIDKit. The checks simulator is separate from the live review device. Final real-account visual relaunch/persistence verification awaits macOS unlock; no additional reset or signup is needed. Hosted native CI remains manual and was not dispatched.
+
+Home is the initial destination after ready sign-in/setup. Existing Collection scenarios explicitly navigate there; incomplete signup, unapproved profiles and signed-out states still assert that private Home content is absent. The new navigation check asserts Home selection and reading order in English light and Arabic dark. A synthetic interrupted-reset fixture exercises the real continuation screen and captures its adaptive primary button in both appearances. Visual inspection supplements interaction assertions; these are not pixel-diff contrast tests.
+
+The user completed the authorized staging reset and required new-profile/backup setup using the retained Firebase login. Read-only checks confirmed the new public identity and removal of the former profile identity. A disposable private self-issued credential was created, read from Collection and opened in detail with the app's signature check. This does not test new Firebase identity creation, independent saved-backup restoration or full staging-web UI parity. No credential was sent to another person or published through a share link. See [the reset audit](ACCOUNT_DELETION_AUDIT.md).
 
 ## Staging-only reset — October 16
 

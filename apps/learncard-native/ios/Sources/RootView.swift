@@ -15,7 +15,7 @@ struct RootView: View {
     @State private var showExisting = false
     @State private var showShare = false
     @State private var offer: Credential?
-    @State private var selectedTab = 0
+    @State private var selectedTab = 3
     @State private var discoverApps = false
     @State private var appsEntry = 0
     @State private var compactBrands = Array(repeating: false, count: 4)
@@ -23,6 +23,15 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            NavigationStack {
+                HomeView(store: store, profileName: account?.state?.profileName,
+                         openInbox: { selectedTab = 1 }, create: { showCreate = true },
+                         receive: { claims.open() }, openCollection: { selectedTab = 0 },
+                         openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
+                    .toolbar { header(tab: 3) }
+            }
+                .tabItem { Label { Text(NativeText.literal("Home")) } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
+                .tag(3)
             NavigationStack {
                 CollectionView(store: store, onScrollStateChange: { compactBrands[0] = $0 })
                     .toolbar { header(tab: 0) }
@@ -43,15 +52,6 @@ struct RootView: View {
                 .id(appsEntry)
                 .tabItem { Label { Text(NativeText.literal("Apps")) } icon: { Image(selectedTab == 2 ? "AppsTabActive" : "AppsTab").renderingMode(.original) } }
                 .tag(2)
-            NavigationStack {
-                HomeView(store: store, profileName: account?.state?.profileName,
-                         openInbox: { selectedTab = 1 }, create: { showCreate = true },
-                         receive: { claims.open() }, openCollection: { selectedTab = 0 },
-                         openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
-                    .toolbar { header(tab: 3) }
-            }
-                .tabItem { Label { Text(NativeText.literal("Home")) } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
-                .tag(3)
         }
         .onChange(of: store.openInboxRequested) { _, value in if value { selectedTab = 1; store.openInboxRequested = false } }
         .toolbar(.hidden, for: .tabBar)

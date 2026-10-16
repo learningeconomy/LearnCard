@@ -5,7 +5,7 @@ import XCTest
     private func launch(locale: String = "en", dark: Bool = false) -> XCUIApplication {
         let app = XCUIApplication(); app.launchArguments = ["--demo", "--category-fixtures", "--locale", locale]
         if dark { app.launchArguments.append("--preview-dark") }
-        app.launch(); XCTAssertTrue(app.buttons["collection-category-all"].waitForExistence(timeout: 10))
+        app.launch(); app.openCollection(); XCTAssertTrue(app.buttons["collection-category-all"].waitForExistence(timeout: 10))
         return app
     }
     private func select(_ category: String, in app: XCUIApplication) {

@@ -2,6 +2,8 @@
 
 October 15, 2026. Home is the consumer landing place, using the existing native stores and navigation. The generated [light/dark reference](design/home-drawn-concept-2026-10-15.png) follows the approved drawn style; [design rules](design/DESIGN_SYSTEM.md) formalize scale, imagery, color and motion.
 
+October 16 follow-up: Home is now the initial root destination, including completed first-time setup and account resume. The tray and backing tab view use Home → Collection → Inbox → Apps in reading order. Existing destination IDs remain unchanged, so badges, app handoffs and Home shortcuts preserve their routes. Collection-focused UI checks explicitly navigate to Collection; signup/approval checks require Home and verify private Home content remains absent before readiness.
+
 ## Source audit
 
 The consumer dashboard is `apps/learn-card-app/src/pages/dashboard/DashboardPage.tsx`, with presentation in `DashboardView.tsx` and contracts in `DashboardView.types.ts`. The similarly named app-store developer dashboards are administrative tooling and are outside this experiment's scope.

@@ -34,6 +34,8 @@ Working rules, October 15, 2026. Applies to the SwiftUI consumer experiment. Use
 
 Colorful tiles stay opaque in dark mode, with navy `cardInk` and `cardSecondary`. Never apply white semantic dark-mode text blindly to a bright yellow/pink panel. Use semantic `ink` on adaptive surfaces. Status colors communicate success, warning and failure; illustrations are decorative and cannot be the only status signal.
 
+Filled primary actions use the pair `Palette.selection` for the fill and `Palette.selectionInk` **on the label**. Both invert together between light and dark appearances. Never rely on a parent foreground or `.tint` alone: the real reset continuation inherited navy text on a navy button and became unreadable. Keep a visible action verb and at least a 54-point primary-action height, expanding for wrapped text.
+
 ## Scale and rhythm
 
 Dimensions are logical points. Display pixel density is irrelevant to layout. `NativeLayout` provides the shared 20-point page inset, 24-point section gap/surface radius and 14-point row gap. Existing surfaces migrate to these tokens as they are touched.
@@ -55,6 +57,8 @@ Use an 8-point minor spacing rhythm (4/8/12/16/24); 20-point outer insets and 14
 ### Bottom tray
 
 Edge-to-edge adaptive surface, a fine top divider, four equal-width targets. A colored drawn icon, readable label, and short active underline communicate selection. Keep native bottom inset ownership in the tray. No floating glass island.
+
+Reading order is **Home → Collection → Inbox → Apps**. Home is the initial destination after signup, approved setup, sign-in and a fresh account resume. Keep the existing destination identifiers stable when changing visual order; Inbox badges, Home shortcuts and pending-claim review must still route to their intended destination. Arabic presents Home at the leading (right) edge. Ordinary tab switches retain each section's navigation state.
 
 `NavigationMetrics` defines icon frames from **available tray width**:
 

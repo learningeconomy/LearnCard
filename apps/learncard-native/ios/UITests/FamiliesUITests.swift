@@ -60,12 +60,12 @@ import XCTest
             app.terminate()
         }
     }
-    func testAccountBackgroundClearsFamilyEditorAndReturnsToCollection() {
+    func testAccountBackgroundClearsFamilyEditorAndReturnsToHome() {
         let app = XCUIApplication(); app.launchArguments = ["--account-fixture", "ready", UUID().uuidString, "--fixture-reset", "--locale", "en"]
         app.launch(); XCTAssertTrue(app.buttons["Account"].waitForExistence(timeout: 10)); app.buttons["Account"].tap(); app.buttons["account-families"].tap()
         XCTAssertTrue(app.buttons["family-create"].waitForExistence(timeout: 5)); app.buttons["family-create"].tap()
         let pin = app.secureTextFields["family-pin"]; if !pin.isHittable { app.swipeUp() }; XCTAssertTrue(pin.waitForExistence(timeout: 5)); pin.tap(); pin.typeText("123")
         XCUIDevice.shared.press(.home); XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5)); app.activate()
-        XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 10)); XCTAssertFalse(app.secureTextFields["family-pin"].exists)
+        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 10)); XCTAssertFalse(app.secureTextFields["family-pin"].exists)
     }
 }

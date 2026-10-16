@@ -65,7 +65,7 @@ import XCTest
         app.buttons["app-sample-earth"].tap(); app.buttons["app-detail-action"].tap()
         XCTAssertTrue(app.webViews.staticTexts["Partner SDK connected"].waitForExistence(timeout: 15), app.debugDescription)
         XCUIDevice.shared.press(.home); XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5)); app.activate()
-        XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["browser-close"].exists)
         app.buttons["nav-apps"].tap(); XCTAssertTrue(app.buttons["app-sample-earth"].waitForExistence(timeout: 5))
     }
@@ -93,10 +93,10 @@ import XCTest
         app.launch(); XCTAssertTrue(app.buttons["nav-inbox"].waitForExistence(timeout: 10))
         app.buttons["Account"].tap(); app.buttons["account-language"].tap(); app.buttons["language-fr"].tap()
         XCUIDevice.shared.press(.home); XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5)); app.activate()
-        XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons["nav-inbox"].label, "Boîte de réception")
         app.terminate(); app.launchArguments.removeLast(2); app.launchArguments.removeAll { $0 == "--fixture-reset" }; app.launch()
-        XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons["nav-inbox"].label, "Boîte de réception")
         XCTAssertFalse(app.buttons["recover-account"].exists)
     }

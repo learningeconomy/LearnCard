@@ -10,7 +10,7 @@ The implementation reuses the current AuthCoordinator and SSS strategy. Same-ide
 
 The shared policy table now corrects Ireland to 16 in both maps, following [Irish DPC guidance](https://www.dataprotection.ie/sites/default/files/uploads/2023-04/DPC_ChildrensData_ParentalConsent.pdf). Current under-13, EU approval, non-EU teen-notice and younger-user preference behavior matches the audited web product logic. The partial country table/fallback, distinction between digital-consent age and minor feature policy, and server enforcement still need review. The inspected profile handler accepts client fields; native parity is not a complete backend authorization or legal audit.
 
-The [generated composition and original SVG artwork](design/SIGNUP_BRIEF.md) follow the approved neutral/Colorful drawn direction. New copy covers en/es/fr/ar; nested country/date sheets inherit RTL and accessibility text size. Physical-device, live new-user cross-client recovery and real guardian delivery/approval remain explicit manual gates. The existing real review account is preserved.
+The [generated composition and original SVG artwork](design/SIGNUP_BRIEF.md) follow the approved neutral/Colorful drawn direction. New copy covers en/es/fr/ar; nested country/date sheets inherit RTL and accessibility text size. The user has now completed real staging profile creation and required backup setup after an explicitly authorized staging-only reset; the shared Firebase login is retained. Physical-device, new Firebase identity creation, cross-client recovery and real guardian delivery/approval remain explicit manual gates. See [live reset/signup evidence](ACCOUNT_DELETION_AUDIT.md).
 
 ## 2. Build My LearnCard on Home
 
@@ -28,7 +28,7 @@ Adding an existing résumé here is compatible with keeping the separate résum�
 
 ## 3. People and connections without a side menu
 
-Keep Collection / Inbox / Apps / Home initially. Add a **People** page with a prominent Home entry and a stable Account → People shortcut. Connection requests in Inbox link into that page and retain contextual actions. This gives relationships a destination without making a fifth bottom tab or introducing desktop navigation. Reassess a dedicated tab only if actual use warrants it.
+Keep the four tabs, now ordered **Home / Collection / Inbox / Apps** following the October 16 signup review. Home is the initial signed-in destination. Add a **People** page with a prominent Home entry and a stable Account → People shortcut. Connection requests in Inbox link into that page and retain contextual actions. This gives relationships a destination without making a fifth bottom tab or introducing desktop navigation. Reassess a dedicated tab only if actual use warrants it.
 
 - **Connections:** searchable paginated profiles, real supplied images or the drawn smiley, clear connection state and profile details.
 - **Requests:** incoming requests and existing explicit accept/decline flows; **Sent** shows outgoing requests/cancellation. Keep blocked profiles available in a secondary management view.
@@ -41,16 +41,16 @@ This is LearnCard's connection graph. Access to the device address book is a sep
 
 ## Suggested delivery order and acceptance
 
-| Slice                          | Relative scope                                                         | Acceptance gate                                                                                                           |
-| ------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Shared policy/approval audit   | Small focused investigation, potentially separate shared/backend fixes | Reviewed policy table; explicit distinction between age, approval and feature restrictions                                |
-| Native first-time registration | Implemented; live validation remains                                   | Fresh adult, missing-profile, underage, pending-approval and interrupted/retry paths; existing-account recovery unchanged |
-| People                         | Moderate, largely existing SDK APIs                                    | Multi-page search, incoming/outgoing requests, block/disconnect, Inbox consistency and lifecycle isolation                |
-| Build My LearnCard             | Small navigation entry; document processing is a larger slice          | Real intake paths, web index parity, privacy-aware processing, review, partial failure and duplicate prevention           |
+| Slice                          | Relative scope                                                             | Acceptance gate                                                                                                                                |
+| ------------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared policy/approval audit   | Small focused investigation, potentially separate shared/backend fixes     | Reviewed policy table; explicit distinction between age, approval and feature restrictions                                                     |
+| Native first-time registration | Implemented; live staging profile/backup setup completed on retained login | Fresh adult, missing-profile, underage, pending-approval and interrupted/retry paths; second-device recovery and real guardian approval remain |
+| People                         | Moderate, largely existing SDK APIs                                        | Multi-page search, incoming/outgoing requests, block/disconnect, Inbox consistency and lifecycle isolation                                     |
+| Build My LearnCard             | Small navigation entry; document processing is a larger slice              | Real intake paths, web index parity, privacy-aware processing, review, partial failure and duplicate prevention                                |
 
 Automated policy cases should cover birthday boundaries, leap days, missing/future dates, country changes, each configured threshold and unknown-policy behavior. Native account cases should cover losing a profile-create response, handle races, failed preference/email saves, delayed guardian approval, resume after five minutes, cancellation/sign-out and pending scan/Apps intents. People tests need pagination/search, duplicate requests, stale responses after account switch and badge consistency. Build My tests need malformed/large files, partial imports, retry/relaunch, cancellation, processing restrictions and truthful counts. All new UI needs four-language, RTL, dark/light, accessibility type and Reduce Motion review.
 
-No live signup, approval email, document upload or contact action was performed. The implementation corrects the shared Ireland threshold; no backend route or deployment changed. Native CI remains manual-dispatch only. Current builds and targeted verification are recorded in [TESTING](TESTING.md).
+The live follow-up completed the selected staging reset/profile setup and one private self-issued credential round trip. It did not send an approval email, upload a personal document or perform a contact action. The implementation corrects the shared Ireland threshold; no backend route or deployment changed. Native CI remains manual-dispatch only. Current build and regression evidence is recorded in [TESTING](TESTING.md).
 
 ## Source map
 

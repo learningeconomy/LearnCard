@@ -37,10 +37,12 @@ struct NativeTabTray: View {
     let inboxCount: Int
     private let names = ["Collection", "Inbox", "Apps", "Home"]
     private let icons = ["CollectionTab", "InboxTab", "AppsTab", "HomeTab"]
+    // Keep destination identifiers stable while placing Home first in reading order.
+    private let tabOrder = [3, 0, 1, 2]
     private var metrics: NavigationMetrics { NavigationMetrics(availableWidth: availableWidth) }
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(0..<4) { tab in
+            ForEach(tabOrder, id: \.self) { tab in
                 Button { selection = tab } label: {
                     VStack(spacing: 4) {
                         Image(icons[tab] + (selection == tab ? "Active" : ""))

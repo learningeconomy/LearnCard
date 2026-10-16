@@ -58,7 +58,7 @@ Run `bash apps/learncard-native/scripts/run-ios.sh` for the approved staging tes
 
 The current visual direction uses a neutral white/charcoal canvas and logo-derived color on cards, not colored or gradient page backgrounds. The selected built-in image-generation concept and generation brief are in `design/`. Correct tiled-L mark, circular real credential artwork, layered cyan feature card, compact gallery, and native navigation now run in the signed-in simulator.
 
-Destinations: Collection, Inbox, Apps, Home. Home streamlines the web dashboard into arrivals, Create, and session-local activity. Apps currently opens the staging consumer store in the browser; native catalog/installation/consent remains the next phase. Store admin/developer portals remain excluded.
+Destinations: **Home, Collection, Inbox, Apps**. Home is the initial signed-in destination and streamlines the web dashboard into arrivals, Create, and session-local activity. Apps now has native catalog/installation/consent and opens partner experiences in the in-app browser; see [Apps integration](APPS_INTEGRATION.md). Store admin/developer portals remain excluded.
 
 Seven updated UI checks pass in `artifacts/ui-20261012-141350-93352.xcresult`, including visible headings on all four tabs and scrolled inline Collection title. An earlier accessibility-only existence assertion missed a blank painted title; the new assertions require hittability and the Collection screenshot was visually reviewed. The app-process Keychain probe and account/domain evidence above remain separate validations.
 

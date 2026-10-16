@@ -30,6 +30,15 @@ import XCTest
         XCTAssertFalse(app.buttons["reset-confirm"].isEnabled)
         let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = "Staging reset - Arabic large dark"; attachment.lifetime = .keepAlways; add(attachment)
     }
+    func testResumeButtonRemainsReadableAndUsableInLightAndDarkAppearance() {
+        for extra in [[], ["--preview-dark"]] {
+            let app = launch("reset-pending", extra: extra), button = app.buttons["reset-resume"]
+            XCTAssertTrue(button.waitForExistence(timeout: 10)); XCTAssertTrue(button.isHittable)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 54)
+            let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Reset continuation \(extra.isEmpty ? "light" : "dark")"; shot.lifetime = .keepAlways; add(shot)
+            button.tap(); XCTAssertTrue(app.buttons["signup-birth-date"].waitForExistence(timeout: 10)); app.terminate()
+        }
+    }
     private func launch(_ scenario: String, language: String = "en", extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication(); app.launchArguments = ["--account-fixture", scenario, UUID().uuidString, "--fixture-reset", "--locale", language] + extra; app.launch(); return app
     }

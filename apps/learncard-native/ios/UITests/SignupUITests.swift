@@ -30,7 +30,7 @@ import XCTest
         let app = launch("signup"); birthday(app, year: "2020"); country(app, code: "US", query: "United States")
         XCTAssertTrue(app.buttons["signup-family-handoff"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["signup-continue"].isEnabled)
-        XCTAssertFalse(app.staticTexts["page-title-collection"].exists)
+        XCTAssertFalse(app.staticTexts["page-title-collection"].exists); XCTAssertFalse(app.staticTexts["page-title-home"].exists)
         capture(app, "First-time setup - family handoff")
     }
     func testIrishTeenRequiresGuardianEmailBeforeContinuing() {
@@ -39,7 +39,7 @@ import XCTest
         XCTAssertTrue(guardian.waitForExistence(timeout: 5)); XCTAssertFalse(app.buttons["signup-continue"].isEnabled)
         reveal(guardian, app); guardian.tap(); guardian.typeText("parent@example.invalid")
         waitEnabled(app.buttons["signup-continue"]); app.buttons["signup-continue"].tap()
-        XCTAssertTrue(app.textFields["signup-name"].waitForExistence(timeout: 5)); XCTAssertFalse(app.staticTexts["page-title-collection"].exists)
+        XCTAssertTrue(app.textFields["signup-name"].waitForExistence(timeout: 5)); XCTAssertFalse(app.staticTexts["page-title-collection"].exists); XCTAssertFalse(app.staticTexts["page-title-home"].exists)
     }
     func testBackupExportCancelDoesNotCreateProfileAndBackgroundClearsSecrets() {
         let app = launch("signup-resume")
@@ -50,13 +50,13 @@ import XCTest
         if cancel.exists { cancel.tap() }
         else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))) }
         XCTAssertTrue(app.descendants(matching: .any)["signup-backup-ready"].firstMatch.waitForExistence(timeout: 10))
-        XCTAssertFalse(app.staticTexts["page-title-collection"].exists)
+        XCTAssertFalse(app.staticTexts["page-title-collection"].exists); XCTAssertFalse(app.staticTexts["page-title-home"].exists)
         XCUIDevice.shared.press(.home); XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5)); app.activate()
         let password = app.secureTextFields["signup-backup-password"]
         XCTAssertTrue(password.waitForExistence(timeout: 10)); reveal(password, app)
         XCTAssertEqual(password.value as? String, "Recovery file password (12+ characters)")
         XCTAssertFalse(app.buttons["signup-create"].isEnabled)
-        XCTAssertFalse(app.staticTexts["page-title-collection"].exists)
+        XCTAssertFalse(app.staticTexts["page-title-collection"].exists); XCTAssertFalse(app.staticTexts["page-title-home"].exists)
         app.terminate(); app.launchArguments.removeAll { $0 == "--fixture-reset" }; app.launch()
         XCTAssertTrue(password.waitForExistence(timeout: 10)); XCTAssertFalse(app.buttons["signup-create"].isEnabled)
     }
@@ -64,14 +64,14 @@ import XCTest
         let app = launch("signup-resume"); fillBackup(app); app.buttons["signup-create"].tap()
         let save = app.buttons["Save"]; XCTAssertTrue(save.waitForExistence(timeout: 15)); save.tap()
         let replace = app.buttons["Replace"]; if replace.waitForExistence(timeout: 2) { replace.tap() }
-        XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.buttons["signup-create"].exists)
     }
     func testPreviouslyConfirmedBackupFinishesWithoutGeneratingAnotherIdentityOrFile() {
         let app = launch("signup-confirmed")
         let finish = app.buttons["signup-create"]; XCTAssertTrue(finish.waitForExistence(timeout: 10)); XCTAssertTrue(finish.isEnabled)
         XCTAssertFalse(app.secureTextFields["signup-backup-password"].exists)
-        finish.tap(); XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 15))
+        finish.tap(); XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 15))
     }
     func testGuardianEmailSendAndCheckNeverImplyApproval() {
         let app = launch("pending-approval")
@@ -80,15 +80,15 @@ import XCTest
         let send = app.buttons["signup-send-approval"]; reveal(send, app); send.tap()
         waitEnabled(app.buttons["signup-check-approval"]); app.buttons["signup-check-approval"].tap()
         waitEnabled(app.buttons["signup-check-approval"])
-        XCTAssertFalse(app.staticTexts["page-title-collection"].exists)
+        XCTAssertFalse(app.staticTexts["page-title-collection"].exists); XCTAssertFalse(app.staticTexts["page-title-home"].exists)
         XCUIDevice.shared.press(.home); XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5)); app.activate()
         XCTAssertTrue(app.buttons["signup-check-approval"].waitForExistence(timeout: 10))
-        XCTAssertFalse(app.staticTexts["page-title-collection"].exists)
+        XCTAssertFalse(app.staticTexts["page-title-collection"].exists); XCTAssertFalse(app.staticTexts["page-title-home"].exists)
     }
-    func testServerConfirmedApprovalOpensCollection() {
+    func testServerConfirmedApprovalOpensHome() {
         let app = launch("pending-approval", extra: ["--fixture-approve-after-check"])
         XCTAssertTrue(app.buttons["signup-check-approval"].waitForExistence(timeout: 10)); app.buttons["signup-check-approval"].tap()
-        XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 15))
     }
     func testArabicAccessibilityDarkNestedCountrySheetAndSignupLayout() {
         let app = launch("signup", language: "ar", extra: ["--large-type", "--preview-dark"])

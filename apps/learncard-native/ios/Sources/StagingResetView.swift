@@ -47,8 +47,11 @@ struct StagingResetProgressView: View {
                 if account.busy { ProgressView().frame(maxWidth: .infinity).accessibilityIdentifier("reset-progress") }
                 if let error = account.error { AccountAccessNotice(text: error, error: true).accessibilityIdentifier("reset-error") }
                 if !account.busy {
-                    Button(NativeText.text("reset.resume")) { Task { await account.resumeStagingReset() } }
-                        .buttonStyle(.borderedProminent).tint(Palette.ink).accessibilityIdentifier("reset-resume")
+                    Button { Task { await account.resumeStagingReset() } } label: {
+                        Text(NativeText.text("reset.resume")).font(.headline).foregroundStyle(Palette.selectionInk)
+                            .frame(maxWidth: .infinity, minHeight: 54).padding(.horizontal, 18).padding(.vertical, 4)
+                            .background(Palette.selection, in: RoundedRectangle(cornerRadius: 20))
+                    }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("reset-resume")
                     if account.state?.methods.isEmpty == false {
                         Button(NativeText.text("reset.restore")) { account.openResetRecovery() }.accessibilityIdentifier("reset-restore")
                     }

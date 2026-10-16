@@ -3,7 +3,7 @@ import XCTest
 @MainActor final class SharePickerUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
     private func open(locale: String = "en", extra: [String] = []) -> XCUIApplication {
-        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", locale] + extra; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", locale] + extra; app.launch(); app.openCollection()
         XCTAssertTrue(app.buttons["create"].waitForExistence(timeout: 10)); app.buttons["create"].tap()
         app.buttons["collection-action-share"].tap()
         XCTAssertTrue(app.textFields["share-search"].waitForExistence(timeout: 5)); return app

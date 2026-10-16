@@ -86,6 +86,7 @@ import XCTest
         app.terminate(); app.launchArguments.removeAll { $0 == "--fixture-reset" }; app.launch()
     }
     private func assertCollection(_ app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        app.openCollection(file: file, line: line)
         XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 15), file: file, line: line)
         XCTAssertTrue(app.buttons["credential-design"].waitForExistence(timeout: 10), file: file, line: line)
         XCTAssertFalse(app.buttons["send-sign-in-code"].exists, file: file, line: line)
@@ -93,6 +94,7 @@ import XCTest
     private func assertSignIn(_ app: XCUIApplication) {
         XCTAssertTrue(app.buttons["send-sign-in-code"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.staticTexts["page-title-collection"].exists)
+        XCTAssertFalse(app.staticTexts["page-title-home"].exists)
         XCTAssertFalse(app.buttons["credential-design"].exists)
     }
     private func signIn(_ app: XCUIApplication) {

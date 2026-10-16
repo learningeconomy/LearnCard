@@ -56,7 +56,7 @@ import XCTest
         app.launch(); return app
     }
     private func openEditor(_ app: XCUIApplication) {
-        XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 15))
         app.buttons["account"].tap()
         let edit = app.buttons["account-edit-profile"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()

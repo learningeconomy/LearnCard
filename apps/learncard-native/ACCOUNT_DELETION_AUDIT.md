@@ -4,7 +4,7 @@ October 16, 2026. The user explicitly authorized resetting the current dedicated
 
 ## Existing source behavior
 
-Web `DeleteUserConfirmationPrompt.tsx` requires the user to type their email/phone. For Firebase accounts it calls `adapter.deleteAccount()` first, then `removeAllVCsFromWallet()`, then network `deleteProfile()`. Firebase's adapter uses `deleteUser`; a recent-login requirement can force reauthentication. The native experiment currently has sign-out/forget and web recovery management, not a completed native deletion flow.
+Web `DeleteUserConfirmationPrompt.tsx` requires the user to type their email/phone. For Firebase accounts it calls `adapter.deleteAccount()` first, then `removeAllVCsFromWallet()`, then network `deleteProfile()`. Firebase's adapter uses `deleteUser`; a recent-login requirement can force reauthentication. At the start of this audit, native account management had sign-out/forget and web recovery management. The staging-only reset described below is now implemented; general production account deletion remains separate.
 
 The account's sign-in project is shared `learncard`, even though the network, LearnCloud and account-key endpoints are staging-specific. Removing that Firebase login can affect sign-in in other environments. The selected native reset never calls Firebase identity deletion or sign-out; its transport refuses the Firebase identity-management host.
 
@@ -28,13 +28,17 @@ Index deletion does not erase all payload objects, sent copies, legacy preferenc
 
 Account → Reset staging account requires the currently verified email. Scope and retention are explained before the destructive action. Confirmation, progress, retry and errors are translated into English, Spanish, French and Arabic. The domain rejects foreign receipts, identity changes, concurrent operations and stale completions; lifecycle guards close the old account before cleanup begins.
 
-The first live attempt used the verified selected email and saved protected progress, but stopped at collection cleanup verification. It did not advance to profile or recovery deletion; the shared Firebase login remains intact. Source inspection found that bulk removal misses associated identities, so the corrected page-by-page owned-record cleanup is installed. The Mac locked before an explicit retry could run. Current handoff: unlock macOS, reopen LearnCard Native Lab, then Continue reset. Do not start a second reset or remove the shared login.
+The first live attempt saved protected progress but stopped at collection verification. After installing the associated-identity cleanup correction, the user pressed Continue reset while unlocking the Mac (and subsequently reported its unreadable button label). The app reached native first-time setup. The user then completed setup and encrypted-backup export/confirmation directly in the app and reached Collection. The agent verified the new staging profile, the retained selected sign-in email and saved access on this device. This is a newly created LearnCard profile using the retained Firebase login; it does not validate creating a brand-new Firebase identity.
 
-Live cleanup completion, fresh signup and saved-backup recovery are still unverified. After successful cleanup, the user must enter age/profile/privacy details and the backup password directly in the app. See [TESTING](TESTING.md) for synthetic evidence; passing fixture tests are not a successful live reset.
+The user also reported that Continue reset was unreadable (navy text on navy fill). Its label/fill now use the explicit adaptive primary color pair, with light/dark visual and interaction coverage. Home replaces Collection as the initial destination after successful setup; Home is first in the navigation tray.
+
+Independent public DID-document reads return HTTP 200 with the expected identity and verification methods for the new profile, and HTTP 404 for the former profile. This confirms network-profile replacement outside the native app. It does not establish full staging-web UI parity or successful backup restoration on another device.
+
+Independent saved-backup recovery on a second device, staging-web profile parity and real guardian delivery/approval remain unverified. Keep passwords, codes and backup contents out of chat/logs. See [TESTING](TESTING.md) for completed evidence and validation boundaries.
 
 ## Live validation still needed
 
-After the chosen cleanup completes, enter the emailed sign-in code directly in the native app, perform birth date/country/profile/privacy setup, save/confirm a real encrypted backup, and verify relaunch, staging-web identity/profile parity and backup recovery on a separate disposable device. Real guardian delivery/approval is a separate test identity/path. Keep passwords, codes and recovery files out of chat/logs.
+Reset and required setup completed using the retained verified login. Verify final-build relaunch, staging-web identity/profile parity and backup recovery on a separate disposable device. Real guardian delivery/approval is a separate test identity/path. Keep passwords, codes and recovery files out of chat/logs.
 
 ## Sources
 

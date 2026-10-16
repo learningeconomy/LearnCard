@@ -19,8 +19,8 @@ flowchart TD
     Export -->|Saved bytes verified| Confirm[SDK confirms recovery method]
     Confirm --> Create[Create or reconcile owned network profile]
     Create -->|Guardian required| Pending[Pending approval and explicit resend / check]
-    Pending -->|Server confirms| Collection
-    Create -->|Approved| Collection[Collection or pending claim review]
+    Pending -->|Server confirms| Home
+    Create -->|Approved| Home[Home or pending claim review]
 ```
 
 Email entry is editable. Firebase still validates the exchange's returned email/UID, refresh tokens stay in Keychain, and setup never infers eligibility from a network failure. General sign-in does not add new social providers or production endpoints.
@@ -43,7 +43,7 @@ The native UI consumes a JSON policy generated from the same country/threshold s
 
 Ireland was corrected in **both shared maps** from 13 to 16, following [Irish DPC guidance](https://www.dataprotection.ie/sites/default/files/uploads/2023-04/DPC_ChildrensData_ParentalConsent.pdf). The remaining partial table/fallback and the use of digital-consent age for certain minor preferences still need policy review. A full legal review or comprehensive server enforcement is outside this frontend slice.
 
-A profile with `approved: false` gets no usable Collection/Apps/credential client. Parent email send failure leaves the account pending with an explicit resend. Sending or resending is never approval. Check status and foreground resume read the actual profile; only server confirmation opens account features. An older pending profile without locally saved guardian contact asks for that address again. This uses the existing guardian services without changing their authorization model.
+A profile with `approved: false` gets no usable Home/Collection/Apps/credential client. Parent email send failure leaves the account pending with an explicit resend. Sending or resending is never approval. Check status and foreground resume read the actual profile; only server confirmation opens account features. An older pending profile without locally saved guardian contact asks for that address again. This uses the existing guardian services without changing their authorization model.
 
 ## Interrupted operations and protected progress
 
@@ -55,7 +55,7 @@ Commands serialize profile/recovery mutations. Before retrying an uncertain prof
 
 ## Boundaries and next work
 
-- Dedicated live new-user validation: enter the email code directly in the app, complete setup, verify the same account on staging web, reload, and recover from the saved backup on another disposable device. Do not send codes, passwords or recovery files through chat.
+- Live setup on the retained staging Firebase login is complete: the user finished required profile/privacy and encrypted-backup setup, and a private self-issued credential was saved and read. New Firebase identity creation, full staging-web UI parity and saved-backup recovery on another disposable device remain separate validation. Do not send codes, passwords or recovery files through chat.
 - Exercise real guardian delivery, failed delivery/resend, link approval and foreground recheck using dedicated test identities. Synthetic checks do not prove external delivery.
 - Physical Files/iCloud/third-party provider, keyboard, VoiceOver, energy, tablet and translation review remain.
 - Existing-account Recovery & security still links to web for broader recovery management. This slice adds enrollment during required signup, not full native recovery settings or account deletion.
@@ -64,6 +64,8 @@ Commands serialize profile/recovery mutations. Before retrying an uncertain prof
 ## Live account reset requested
 
 The user selected a staging-only data/profile/recovery reset of the current dedicated test account, retaining the shared Firebase login. Account → Reset staging account has matching-email confirmation and explicit retry after interruption. Completion disposes the old SDK host and starts required setup with the retained verified login. See [the source audit, cleanup boundaries and live status](ACCOUNT_DELETION_AUDIT.md).
+
+The user has now completed that reset and required setup. Home is the initial signed-in destination, followed by Collection, Inbox and Apps in the navigation tray. Existing pending claim intent opens review after readiness; it never claims automatically. Do not reset the recreated account again for this completed validation.
 
 ## Source map
 
