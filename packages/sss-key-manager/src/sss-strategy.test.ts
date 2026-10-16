@@ -458,6 +458,38 @@ describe('escrow strategy', () => {
         });
     });
 
+    it.each(
+        [
+            'codeMismatch',
+            'codeExpired',
+            'codeLocked',
+            'secret response',
+            null,
+            403,
+            { code: 'codeMismatch' },
+            ['codeLocked'],
+        ].map(message => ({ message }))
+    )('only exposes allowlisted code refusal metadata: %s', async ({ message }) => {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            new Response(JSON.stringify({ message }), { status: 403 })
+        );
+        await expect(
+            strategy.confirmEscrowRecovery!({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                code: '12345678',
+            })
+        ).rejects.toMatchObject({
+            name: 'EscrowRequestError',
+            status: 403,
+            message: 'Escrow request failed',
+            reason:
+                message === 'codeMismatch' || message === 'codeExpired' || message === 'codeLocked'
+                    ? message
+                    : undefined,
+        });
+    });
+
     it('exposes the precondition status without exposing the response body', async () => {
         optOutStatus = 412;
         await expect(strategy.disableEscrowRecovery!(params)).rejects.toMatchObject({

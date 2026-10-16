@@ -2289,6 +2289,10 @@
             "useInstead": "Use my recovery PIN instead"
         },
         "confirmCode": {
+            "mismatch": "That code isn't right. Try again.",
+            "expired": "That code has expired. Send a new one.",
+            "locked": "Too many tries. Send a new code.",
+            "notSent": "We couldn't send your code. Wait a minute before resending.",
             "title": "Check your email",
             "description": "Enter the code we sent to confirm this request.",
             "confirming": "Confirming...",
