@@ -17,7 +17,7 @@ This does not disable manual enrollment: keep client mode `off` until approved.
 
 ## Sending domain decision
 
-Recommend **`vault.notify.learncard.com`**, delegated by NS from the existing
+The decided SES sending domain is **`vault.notify.learncard.com`**, delegated by NS from the existing
 `notify.learncard.com` zone in the WeLibrary account to a child zone in the new
 production escrow account. Staging's `staging.notify.learncard.com` delegation
 stays untouched. Obtain the parent zone/account identifiers from the operator
@@ -27,10 +27,9 @@ inventory; do not copy staging identifiers into production inputs.
   notification services; it costs a hosted zone and a one-time parent NS change.
   Subdomains still share organizational-domain reputation; this is not complete
   deliverability isolation.
-- Sending directly from `notify.learncard.com` gives a shorter sender address,
-  but requires coordinated TXT/DKIM/MX/SPF/DMARC ownership in WeLibrary. Use
-  `create_sending_zone=false` and publish `sending_dns_records` there. Do **not**
-  create a second, undelegated apex zone or replace existing DMARC/SPF blindly.
+- Do not send directly from `notify.learncard.com`, create a second undelegated
+  parent zone, or replace existing parent DMARC/SPF records. Production uses
+  `create_sending_zone=true` and delegates the child zone, just like staging.
 - [email.tf](../../infra/escrow-enclave/email.tf) creates SES identity, three DKIM
   CNAMEs, verification TXT, `bounce.<domain>` MX/SPF, TLS-required configuration
   set and bounce/complaint SNS delivery. MAIL FROM failure is `RejectMessage`.
@@ -43,8 +42,8 @@ inventory; do not copy staging identifiers into production inputs.
 
 ### 1. [operator] New member account and guardrail preparation
 
-Create a **new production member account** in the organization; the existing
-staging escrow account is not production. Put it in the security-reviewed escrow
+Use the **existing production member account** in the organization; the existing
+staging escrow account is not production. Confirm it is in the security-reviewed escrow
 OU, review effective/inherited SCPs and policy attachment quotas, enable an
 independently owned CloudTrail trail, and establish break-glass ownership.
 Prepare the [authority guardrail root](../../infra/escrow-enclave-bootstrap/authority-guardrail/README.md)
@@ -192,15 +191,34 @@ Create **`escrow-production`** before dispatching the workflow:
   `ESCROW_AUTHORITY_ENVIRONMENT` must be `production`; no access keys in these vars.
 - Set `ESCROW_ACCOUNT_ID`, `ESCROW_PUBLISH_ROLE_ARN`, `ESCROW_ARTIFACTS_BUCKET`,
   `ESCROW_ARTIFACTS_KMS_KEY_ARN` (the **storage** CMK, not either enclave CMK).
-- The escrow roots currently create **no GitHub OIDC publisher role**. Security
-  must provision one separately: issuer `token.actions.githubusercontent.com`,
-  audience `sts.amazonaws.com`, exact subject
-  `repo:<OWNER>/<REPO>:environment:escrow-production`. Grant only GetObject/PutObject
-  on the production bucket's `eif/*`, with conditional create-only writes enforced
-  in IAM/bucket policy, plus storage-CMK GenerateDataKey/Decrypt through regional
-  S3 and scoped encryption context (account for S3 Bucket Keys). Grant no deletes,
-  `sealed-keys/*`, `credentials/*`, Terraform, IAM, or escrow/credential-CMK access.
-  Review both the role and storage key policy; an identity grant alone may not suffice.
+- After the core storage resources exist, set bootstrap `enable_github_publisher=true`
+  and `publisher_storage_kms_key_arn` to the **storage** CMK ARN. Set
+  `github_oidc_provider_arn` if the account already has GitHub's OIDC provider;
+  otherwise leave it null to create the provider. Review/apply bootstrap under MFA.
+  Copy output `github_publisher_role_arn` to `ESCROW_PUBLISH_ROLE_ARN`; copy the
+  same storage CMK ARN to `ESCROW_ARTIFACTS_KMS_KEY_ARN`. The bucket variable is
+  `learncard-escrow-enclave-production-<ACCOUNT_ID>-artifacts`. No remote-state
+  coupling or competing bucket-policy ownership is introduced.
+- The role trusts only `token.actions.githubusercontent.com`, audience
+  `sts.amazonaws.com`, exact subject
+  `repo:learningeconomy/LearnCard:environment:escrow-production`, with a one-hour
+  maximum session. IAM allows PutObject only with `s3:if-none-match = *` and
+  explicitly denies missing/nonmatching headers. GetObject (also HeadObject) is
+  limited to `eif/*`. No list, delete, IAM, Terraform, authority/monitor, sealed-key
+  or credential-object permissions are granted. Write-once is enforced for this
+  publisher, not against administrators deleting/replacing objects independently.
+- SSE-KMS requires `kms:GenerateDataKey` for upload and **`kms:Decrypt` for the
+  byte-for-byte GET readback**; `kms:Encrypt` is not needed. Both grants name only
+  the storage CMK and require regional S3 plus the artifact object encryption
+  context (or bucket ARN for S3 Bucket Keys). Null omits all KMS grants for an
+  SSE-S3 bucket, but the current core bucket/workflow require SSE-KMS. Never pass
+  the escrow/credential CMK. The core storage key delegates to IAM; its policy
+  does not need changing. Bucket-Key context is bucket-wide, while S3 access
+  remains prefix-restricted.
+- Both authority-guardrail SCPs were inspected: neither denies these object/KMS
+  operations; bucket reconfiguration, authority and monitor takeover remain
+  protected, and the publisher is not added to any exception. It has no KMS-policy
+  grant. Independently check inherited SCPs and live enforcement before dispatch.
 
 ```sh
 gh api 'repos/<OWNER>/<REPO>/environments/escrow-production'
@@ -319,7 +337,9 @@ cohort. No real production hashes or account identifiers are supplied by this wo
   protect state and trust owners, and retain existing key-policy/SCP governance.
   Latest AL2023 AMI lookup, broad HTTPS/Roughtime egress, provider/host package
   updates and production capacity/availability need operational review.
-- The requested main-checkout core `staging.tfvars` was absent during preparation.
-  The production example covers the complete current root-variable inventory;
-  exact parity with that missing file cannot be claimed. Bootstrap's three staging
-  variables are covered with placeholders, plus an explicit region.
+- Variable-name parity was checked against both real `LearnCard-nitro-sync`
+  staging tfvars: all 33 core and 3 bootstrap names already exist in the production
+  examples; no parity additions were needed and no staging values were copied.
+  Publisher resources/data sources all have zero count by default; existing
+  staging resources/policies are untouched. Offline disabled-count tests establish
+  structural neutrality, not absence of live drift (no live plan was run).

@@ -3,3 +3,13 @@ aws_region      = "us-east-1"
 environment     = "production"
 kms_admin_users = ["REPLACE_OPERATOR_ONE", "REPLACE_OPERATOR_TWO"]
 alarm_emails    = ["REPLACE_SECURITY_ONCALL@example.invalid"]
+
+# Enable after the core artifacts bucket/storage CMK exist; default stays off.
+# github_publisher_role_arn output -> GitHub ESCROW_PUBLISH_ROLE_ARN.
+enable_github_publisher = false
+# null creates GitHub's provider when enabled; otherwise supply the existing
+# arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com.
+github_oidc_provider_arn = null
+# Core storage CMK -> this input AND GitHub ESCROW_ARTIFACTS_KMS_KEY_ARN.
+# Replace before enabling (null is only for SSE-S3, not the current core bucket).
+publisher_storage_kms_key_arn = "arn:aws:kms:us-east-1:<ACCOUNT_ID>:key/<STORAGE_KEY_ID>"

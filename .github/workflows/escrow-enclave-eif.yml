@@ -425,6 +425,8 @@ jobs:
               uses: aws-actions/configure-aws-credentials@v5
               with:
                   role-to-assume: ${{ vars.ESCROW_PUBLISH_ROLE_ARN }}
+                  # Bootstrap github_publisher_role_arn output; trust is environment-only.
+                  role-duration-seconds: 3600
                   aws-region: ${{ vars.ESCROW_KMS_REGION }}
                   allowed-account-ids: ${{ vars.ESCROW_ACCOUNT_ID }}
 

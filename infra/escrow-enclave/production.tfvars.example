@@ -1,5 +1,5 @@
 # Copy to ignored production.tfvars. Placeholders intentionally fail validation.
-# Full root-variable inventory: the referenced core staging.tfvars was unavailable.
+# Variable names checked against LearnCard-nitro-sync's staging.tfvars; no values copied.
 # Follow services/escrow-enclave-app/PRODUCTION.md; this is NOT a first full apply.
 aws_region  = "us-east-1"
 environment = "production"
@@ -56,6 +56,7 @@ authority_guardrail_policy_id         = "<VERIFIED_AUTHORITY_SCP_ID>"
 authority_monitor_guardrail_policy_id = "<VERIFIED_MONITOR_SCP_ID>"
 enable_enclave_email                 = true
 enable_credential_delivery           = false
+# Decided SES domain: child zone delegated from notify.learncard.com, like staging.
 sending_domain                       = "vault.notify.learncard.com"
 create_sending_zone                  = true
 email_dmarc_report_address           = "REPLACE_DMARC_REPORTS@example.invalid"
