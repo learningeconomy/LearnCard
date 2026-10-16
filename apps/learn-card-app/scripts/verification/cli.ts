@@ -498,7 +498,9 @@ const runFeatures = async (
             if (cleanupErrors.length) await report(interrupted ? 'interrupted' : 'failed');
             console.log(`Evidence retained: ${artifacts}`);
             if (!teardown)
-                console.log(`Stack still running; stop it with lc verify down --dir ${directory}`);
+                console.log(
+                    `This run did not stop the stack. If needed: lc verify down --dir ${directory}`
+                );
         }
     }
     if (cleanupErrors.length) {
