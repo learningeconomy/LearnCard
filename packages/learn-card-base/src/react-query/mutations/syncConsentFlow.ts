@@ -17,6 +17,9 @@ import { useAcceptCredentialMutation } from './mutations';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
+import { getLogger } from '../../logging/logger';
+
+const log = getLogger('sync-consent-flow');
 
 export type ConsentRecord = {
     credentialUri: string;
@@ -257,25 +260,49 @@ export const useAcceptAndStoreCredentialsMutation = () => {
     const acceptCredential = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
 
-    return useMutation<void, Error, { allRecords: ConsentRecord[] }>({
+    return useMutation<
+        { stored: ConsentRecord[]; failed: ConsentRecord[] },
+        Error,
+        { allRecords: ConsentRecord[] }
+    >({
         mutationFn: async ({ allRecords }) => {
             walletStore.set.setIsSyncing(WalletSyncState.Syncing);
-            await Promise.all(
-                allRecords.map(r => acceptCredential.mutateAsync({ uri: r.credentialUri }))
-            );
-            await Promise.all(
-                allRecords.map(r =>
-                    addVCtoWallet({
+            // Accept and store each credential independently so one failure doesn't
+            // fail the batch or keep the successful ones from being stored.
+            const results = await Promise.allSettled(
+                allRecords.map(async r => {
+                    await acceptCredential.mutateAsync({ uri: r.credentialUri });
+                    await addVCtoWallet({
                         uri: r.credentialUri,
                         contractUri: r.contractUri,
                         skipSync: true,
-                    })
-                )
+                    });
+                })
             );
+
+            const stored: ConsentRecord[] = [];
+            const failed: ConsentRecord[] = [];
+            results.forEach((result, index) => {
+                const record = allRecords[index]!;
+                if (result.status === 'fulfilled') {
+                    stored.push(record);
+                } else {
+                    failed.push(record);
+                    log.warn(
+                        'Failed to accept/store consent flow credential',
+                        record.credentialUri,
+                        result.reason
+                    );
+                }
+            });
+
+            return { stored, failed };
         },
-        onSuccess: (_, { allRecords }) => {
-            const count = allRecords.length;
-            if (count > 0) {
+        onSuccess: ({ stored }) => {
+            const count = stored.length;
+            if (count === 0) {
+                walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
+            } else {
                 // presentToast(`Successfully synced ${count} credentials`, {
                 //     toastType: ToastTypeEnum.CopySuccess,
                 // });
