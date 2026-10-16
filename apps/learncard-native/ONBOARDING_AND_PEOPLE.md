@@ -4,7 +4,7 @@ Updated October 16, 2026. First-time setup is implemented. People and the first 
 
 ## 1. First-time account setup — implemented
 
-**Current product priority:** learner Home and optional first arrival after these required steps. The user approved the [generated composition](design/LEARNER_HOME_BRIEF.md); implementation remains next. Resume pending claims directly at review, allow welcome to be skipped, and prioritize receiving/understanding/sharing personal records. The personal destination is named **Passport**; existing collection API/route identifiers remain stable. Distinct [institution workspaces](WORKSPACES_PLAN.md) are recorded for later, while demo login and live Apple/Google activation stay deferred.
+**Current product priority:** learner Home and optional first arrival after these required steps. The approved [composition and implemented native screens](design/LEARNER_HOME_BRIEF.md) now have a learner Home, labeled Add intake and an optional welcome after setup. Welcome completion is scoped to the account, survives relaunch and can be revisited from Home. Resume pending claims directly at review, allow welcome to be skipped, and prioritize receiving/understanding/sharing personal records. The personal destination is named **Passport**; existing collection API/route identifiers remain stable. Distinct [institution workspaces](WORKSPACES_PLAN.md) are recorded for later, while demo login and live Apple/Google activation stay deferred.
 
 Editable email verification routes returning users through existing resume/recovery. Fresh accounts and existing identities without a network profile get native birth date/country, name/unique username/optional photo, separate privacy choices and encrypted backup enrollment. Under-13 independent signup hands off to Families. Required guardian approval has a dedicated waiting/resend/check state and blocks consumer features until the server confirms it.
 
@@ -30,7 +30,7 @@ Adding an existing résumé here is compatible with keeping the separate résum�
 
 ## 3. People and connections without a side menu — initial graph implemented
 
-Keep the four tabs, now ordered **Home / Collection / Inbox / Apps** following the October 16 signup review. Home is the initial signed-in destination. A **People** page now has a Home entry and a stable Account → People shortcut. Inbox → People opens Requests; existing Inbox contextual actions remain. This gives relationships a destination without making a fifth bottom tab or introducing desktop navigation. Reassess a dedicated tab only if actual use warrants it.
+Keep the four tabs, now ordered **Home / Passport / Inbox / Apps** following the October 16 signup review. Home is the initial signed-in destination. A **People** page now has a Home entry and a stable Account → People shortcut. Inbox → People opens Requests; existing Inbox contextual actions remain. This gives relationships a destination without making a fifth bottom tab or introducing desktop navigation. Reassess a dedicated tab only if actual use warrants it.
 
 - **Connections:** searchable paginated profiles, real supplied images or the drawn smiley, clear connection state and profile details.
 - **Requests:** incoming requests and explicit Accept; **Sent** shows outgoing requests/cancellation. Blocked profiles have a secondary management view. The web SDK has no incoming decline endpoint: cancellation only removes outgoing requests, so native does not invent a Decline action. Explicit Block remains available.

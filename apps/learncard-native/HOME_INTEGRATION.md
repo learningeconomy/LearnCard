@@ -2,9 +2,13 @@
 
 October 15, 2026. Home is the consumer landing place, using the existing native stores and navigation. The generated [light/dark reference](design/home-drawn-concept-2026-10-15.png) follows the approved drawn style; [design rules](design/DESIGN_SYSTEM.md) formalize scale, imagery, color and motion.
 
-October 16 follow-up: Home is now the initial root destination, including completed first-time setup and account resume. The tray and backing tab view use Home → Collection → Inbox → Apps in reading order. Existing destination IDs remain unchanged, so badges, app handoffs and Home shortcuts preserve their routes. Collection-focused UI checks explicitly navigate to Collection; signup/approval checks require Home and verify private Home content remains absent before readiness.
+October 16 learner refinement: Home is the initial signed-in destination, with **Home / Passport / Inbox / Apps** in reading order. Existing destination identifiers stay stable. The approved [learner Home and first-arrival direction](design/LEARNER_HOME_BRIEF.md) is now implemented with original SVG artwork and adaptive SwiftUI controls.
 
-Home refinement: Data Sharing now sits directly under the other three primary credential actions. People has Home/Account/Inbox entry points. Build My LearnCard opens the optional native intake hub, and Scan a code is a full illustrated action. Families retains its existing route. See [scope and data contracts](PEOPLE_AND_INTAKE.md).
+Home prioritizes real incoming credentials/updates and the two most recent personal credentials in the loaded pages. A successful, fully read empty Passport gets a first-credential invitation. Loading, failed reads and an empty partial page each have their own state; retained records stay visible during refresh errors. Partial results are labeled and do not imply an account-wide total. A failed snapshot read retains its retry flag after the transient alert is dismissed; a later successful snapshot clears it. Home never infers signup status from record count.
+
+The **+ Add** header opens a designed scan/link/QR-photo sheet. It does not start the camera until Scan is selected. Incoming claims retain their existing explicit review flow. Share opens the existing personal credential picker/publication flow. Scan and Share tiles appear when records are available or more pages remain; a truly empty Passport has the primary Add invitation. People and Data Sharing precede installed apps. Build My LearnCard, Families and a revisitable welcome guide remain lower down; Create/Your creations are in an expandable secondary tools group and available through Add → Create and send.
+
+The optional welcome follows required signup/recovery/approval. `LearnerActivationStore` arms a versioned pending marker when setup is observed; ordinary ready accounts skip it. Hashed account keys store only pending/finished, while Add intent stays one-shot in memory. Lock clears active state; pending welcome survives relaunch. A pending claim completes optional welcome once the account is ready and continues to review. Home → Your LearnCard guide revisits the introduction without resetting setup.
 
 ## Source audit
 
@@ -14,17 +18,17 @@ The web consumer view composes profile/header controls, quick actions, recovery 
 
 ## Implemented mapping
 
-| Web purpose                   | Native implementation                        | Data / behavior                                                                                 |
-| ----------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Next action / unread activity | Illustrated Inbox card                       | `NativeAppStore.snapshot.offers`, `InboxStore.updates`; shared unread summary with tray         |
-| Collect and recognize         | Collection, Create and Creations rows        | Existing personal collection and native issue/send flows                                        |
-| Installed apps                | Up to three real installed listings, See all | `ConsumerAppsStore.loadInstalled`; native listing detail retains consent and in-app launch      |
-| Discover                      | Empty installed-app state                    | Explicitly opens Apps → Discover; See all opens My apps                                         |
-| Data Trust management         | Data Sharing row                             | Existing native consent/shared-link management, without unsupported aggregate read/write counts |
-| Relationships                 | People from Home/Account/Inbox               | Account-owned graph lists, username search and explicit connect/manage actions                  |
-| Optional intake               | Build My LearnCard                           | Existing native scan, selected QR photo and claim-link review; no fabricated checklist count    |
-| Family tools                  | Families row                                 | Existing native family roster/edit/invitation slice                                             |
-| Session activity              | This visit                                   | Existing session-local created/received/sent events, explicitly labeled                         |
+| Web purpose                   | Native implementation                         | Data / behavior                                                                                 |
+| ----------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Next action / unread activity | Illustrated Inbox card                        | `NativeAppStore.snapshot.offers`, `InboxStore.updates`; shared unread summary with tray         |
+| Personal achievements         | Recent Passport rows; secondary creator tools | Real loaded credentials; existing detail, creation and send flows                               |
+| Installed apps                | Up to three real installed listings, See all  | `ConsumerAppsStore.loadInstalled`; native listing detail retains consent and in-app launch      |
+| Discover                      | Empty installed-app state                     | Explicitly opens Apps → Discover; See all opens My apps                                         |
+| Data Trust management         | Data Sharing row                              | Existing native consent/shared-link management, without unsupported aggregate read/write counts |
+| Relationships                 | People from Home/Account/Inbox                | Account-owned graph lists, username search and explicit connect/manage actions                  |
+| Optional intake               | Build My LearnCard                            | Existing native scan, selected QR photo and claim-link review; no fabricated checklist count    |
+| Family tools                  | Families row                                  | Existing native family roster/edit/invitation slice                                             |
+| Session activity              | This visit                                    | Existing session-local created/received/sent events, explicitly labeled                         |
 
 `RootView` owns tab selection and Apps' My apps/Discover binding so Home actions select a real destination. Explicit Home entry starts a fresh Apps navigation stack/search, so See all cannot reopen an earlier listing or filtered list. Ordinary tab switches retain their existing state; the account-owned consumer store is reused. Home never installs, launches, connects or grants access automatically. Installed-app selection first opens its native listing detail. The existing detail/browser retains permission checks and cancellation behavior.
 

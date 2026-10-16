@@ -1,8 +1,8 @@
 # LearnCard native client plan
 
-## Current priority: learner Home and first arrival — October 16
+## Current priority: review the learner Home and first arrival — October 16
 
-The user selected a learner-first personal experience and approved the [generated Home/welcome direction](design/LEARNER_HOME_BRIEF.md). Implement the new/returning Home and optional activation after existing required setup next; pending claims resume explicit review directly. Receive, understand, organize and share personal achievements take precedence over creation/issuance management. Keep existing creator capabilities available through secondary tools. This pass has produced mockups and a design contract; it has not replaced the running Home or introduced welcome persistence yet.
+The user selected a learner-first personal experience and approved the [generated Home/welcome direction](design/LEARNER_HOME_BRIEF.md). The new/returning Home and optional activation after existing required setup are implemented; pending claims resume explicit review directly. Receive, understand, organize and share personal achievements take precedence over creation/issuance management. Keep existing creator capabilities available through secondary tools. Home now uses actual incoming items, two recent personal achievements, clear Scan/Share actions, People and Data Sharing. The labeled Add header opens a designed native intake sheet. Create/send tools are secondary. Account-scoped welcome state survives resume, can be skipped and revisited, and never bypasses required setup. The next product checkpoint is manual review of this implemented learner slice, then choosing a focused follow-up from document intake, richer achievement understanding or learner sharing.
 
 The personal tab/page and related four-language copy are now **Passport**, matching web and avoiding confusion with shared credential collections. Stable collection model/wire/route/test identifiers remain. Shared collections is still a possible clear name for grouped shared records; no rename of that separate feature is included.
 

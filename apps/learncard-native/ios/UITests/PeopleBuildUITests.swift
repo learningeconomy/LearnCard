@@ -18,9 +18,11 @@ import XCTest
         XCTAssertTrue(action.waitForExistence(timeout: 5)); action.tap()
     }
     private func back(_ app: XCUIApplication) { app.navigationBars.buttons.element(boundBy: 0).tap() }
-    func testHomeSharingFollowsCreationsAndScanIsAnIllustratedAction() {
-        let app = launch(), sharing = app.buttons["home-data-sharing"], creations = app.buttons["home-creations"]
-        XCTAssertGreaterThan(sharing.frame.minY, creations.frame.minY); XCTAssertLessThan(sharing.frame.minY, app.buttons["home-apps"].frame.minY)
+    func testHomeSharingAndPeoplePrecedeCreatorToolsAndScanIsAnIllustratedAction() {
+        let app = launch(), sharing = app.buttons["home-data-sharing"]
+        XCTAssertGreaterThan(sharing.frame.minY, app.buttons["home-people"].frame.minY)
+        XCTAssertLessThan(sharing.frame.minY, app.buttons["home-apps"].frame.minY)
+        XCTAssertFalse(app.buttons["home-create"].exists, "Creator tools start collapsed")
         reveal(sharing, app); capture(app, "Home primary actions include Data Sharing"); sharing.tap(); XCTAssertTrue(app.staticTexts["page-title-sharing"].waitForExistence(timeout: 5)); back(app)
         let scan = app.buttons["receive"]; reveal(scan, app); XCTAssertGreaterThanOrEqual(scan.frame.height, 68); XCTAssertTrue(scan.label.contains("camera")); capture(app, "Home illustrated Scan action"); scan.tap()
         XCTAssertTrue(app.descendants(matching: .any)["claim-camera"].firstMatch.waitForExistence(timeout: 5))

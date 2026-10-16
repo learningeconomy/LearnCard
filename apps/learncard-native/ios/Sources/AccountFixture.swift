@@ -11,12 +11,18 @@ import LearnCardNativeSDK
               let id = UUID(uuidString: arguments[index + 2]) else { return nil }
         let scenario = arguments[index + 1]
         let vault = KeychainVault(service: "org.learncard.native.account-ui-tests.\(id.uuidString)")
+        let preferences = UserDefaults(suiteName: "org.learncard.native.learner-ui.\(id.uuidString)")!
+        if arguments.contains("--fixture-reset") { preferences.removePersistentDomain(forName: "org.learncard.native.learner-ui.\(id.uuidString)") }
+        let activation = LearnerActivationStore(storage: PreferenceLearnerActivationStorage(preferences: preferences))
+        if scenario == "learner-welcome", arguments.contains("--fixture-reset") {
+            activation.observe(accountID: "fixture-user", phase: "finish_setup")
+        }
         let session = FixtureSession(vault: vault, scenario: scenario, reset: arguments.contains("--fixture-reset"))
         let hostScenario = scenario == "oauth-signup" ? "signup" : scenario == "oauth-approval" ? "pending-approval" : scenario
         let account = AccountController(session: session, signInClient: scenario.hasPrefix("oauth-") ? FixtureSignInClient(scenario: scenario) : nil,
                                  makeHost: { _ in FixtureHost(vault: vault, scenario: hostScenario, approveOnCheck: arguments.contains("--fixture-approve-after-check"), failSaveOnce: arguments.contains("--profile-save-failure")) },
                                  forgetAccount: { _ in try await vault.remove("fixture-remembered") },
-                                 claims: NativeClaimStore(journal: KeychainClaimJournal(vault: vault)), uploadProfilePhoto: { data in
+                                 claims: NativeClaimStore(journal: KeychainClaimJournal(vault: vault)), activation: activation, uploadProfilePhoto: { data in
                                      let url = FileManager.default.temporaryDirectory.appendingPathComponent("synthetic-profile-photo.jpg")
                                      try data.write(to: url); return url
                                  })
@@ -40,7 +46,7 @@ import LearnCardNativeSDK
             try await vault.remove("fixture-auth"); try await vault.remove("fixture-remembered")
             for key in ["profile-name", "profile-bio", "profile-image", "signup-draft", "signup-prepared", "signup-backup", "signup-confirmed", "signup-parent-sent", "signup-approved", "reset-pending", "reset-failed", "reset-done"] { try await vault.remove(key) }
             if scenario != "sign-in" && !scenario.hasPrefix("oauth-") { try await vault.write(Data("synthetic".utf8), key: "fixture-auth") }
-            if scenario == "ready" || scenario.hasPrefix("reset-") { try await vault.write(Data("synthetic".utf8), key: "fixture-remembered") }
+            if scenario == "ready" || scenario == "learner-welcome" || scenario.hasPrefix("reset-") { try await vault.write(Data("synthetic".utf8), key: "fixture-remembered") }
             if scenario == "reset-pending" { try await vault.write(Data("synthetic".utf8), key: "reset-pending") }
         }
         return try await vault.read("fixture-auth") == nil ? nil : user

@@ -90,7 +90,7 @@ import XCTest
     }
     private func openBuilder(_ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication(); app.launchArguments = ["--demo"] + (extra.contains("--locale") ? [] : ["--locale", "en"]) + extra
-        app.launch(); app.openCollection(); app.buttons["create"].tap(); app.buttons["collection-action-create"].tap()
+        app.launch(); app.openCollection(); app.openCredentialTools(); app.buttons["collection-action-create"].tap()
         XCTAssertTrue(app.textFields["draft-title"].waitForExistence(timeout: 5)); return app
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication, in scroll: XCUIElement? = nil) {

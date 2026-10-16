@@ -12,6 +12,9 @@ struct RootView: View {
     @State private var showAccount = false
     @State private var showActions = false
     @State private var requestedAction: CollectionAction?
+    @State private var requestedIntake: ClaimEntryMode?
+    @State private var showWelcome = false
+    @State private var reopenIntake = false
     @State private var showExisting = false
     @State private var showShare = false
     @State private var offer: Credential?
@@ -26,7 +29,8 @@ struct RootView: View {
             NavigationStack {
                 HomeView(store: store, profileName: account?.state?.profileName,
                          openInbox: { selectedTab = 1 }, create: { showCreate = true },
-                         receive: { claims.open() }, intake: { claims.open(mode: $0) }, openCollection: { selectedTab = 0 },
+                         receive: { claims.open() }, intake: { claims.open(mode: $0) }, add: { showActions = true },
+                         share: { showShare = true }, welcome: { showWelcome = true }, openCollection: { selectedTab = 0 },
                          openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
                     .toolbar { header(tab: 3) }
             }
@@ -59,6 +63,14 @@ struct RootView: View {
         .task { if store.snapshot == nil { await store.refresh() }; if !store.inbox.loaded { await store.inbox.load() } }
         .modifier(ClaimPresentation(flow: demoClaims, store: store, enabled: account == nil))
         .task { if account == nil { demoClaims.connect(service: store.demoClaimService, accountID: "demo") } }
+        .sheet(isPresented: $showActions, onDismiss: performRequestedAction) {
+            LearnerIntakeSheet(select: { requestedIntake = $0; showActions = false },
+                               tool: { requestedAction = $0; showActions = false })
+        }
+        .sheet(isPresented: $showWelcome, onDismiss: performRequestedAction) {
+            LearnerWelcomeView(add: { requestedIntake = nil; reopenIntake = true; showWelcome = false },
+                               explore: { showWelcome = false })
+        }
         .sheet(isPresented: $showExisting) {
             NavigationStack { CreationsView(store: store, sendOnSelect: true)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Done")) { showExisting = false } } } }
@@ -82,7 +94,14 @@ struct RootView: View {
         .alert("Done", isPresented: Binding(get: { store.notice != nil }, set: { if !$0 { store.notice = nil } })) {
             Button(NativeText.literal("Done"), role: .cancel) { store.notice = nil }
         } message: { Text(store.notice ?? "") }
+        .onChange(of: claims.link) { _, link in
+            if link != nil {
+                requestedAction = nil; requestedIntake = nil; reopenIntake = false
+                showActions = false; showWelcome = false
+            }
+        }
         .onAppear {
+            if account?.activation.takeIntakeRequest() == true { showActions = true }
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("--review-families") { showFamilyReview = true }
             #endif
@@ -93,7 +112,7 @@ struct RootView: View {
         store.inboxCount
     }
     private var availablePrompt: InboxItem? {
-        guard !claims.isPresented, !showCreate, !showAccount, !showActions, !showExisting, !showShare, !showFamilyReview,
+        guard !claims.isPresented, !showWelcome, !showCreate, !showAccount, !showActions, !showExisting, !showShare, !showFamilyReview,
               offer == nil, store.notice == nil, store.error == nil else { return nil }
         return store.inbox.postClaimPrompts.first
     }
@@ -115,25 +134,13 @@ struct RootView: View {
     private func headerControls(tab: Int) -> some View {
         HStack(spacing: 0) {
             Button { showActions = true } label: {
-                Image(systemName: "plus").font(.system(size: 21, weight: .semibold))
-                    .foregroundStyle(Palette.cardInk).frame(width: 34, height: 34)
-                    .background(Palette.blueCard, in: RoundedRectangle(cornerRadius: 12))
-                    .frame(width: 44, height: 44).contentShape(Rectangle())
-            }.buttonStyle(.plain).accessibilityLabel(NativeText.literal("Actions")).accessibilityIdentifier("create")
-                .popover(isPresented: Binding(get: { showActions && selectedTab == tab }, set: { if selectedTab == tab { showActions = $0 } }), arrowEdge: .top) {
-                    CollectionActionsMenu { action in requestedAction = action; showActions = false }
-                        .presentationCompactAdaptation(.popover).presentationBackground(Palette.surface)
-                        .onDisappear {
-                            guard let action = requestedAction else { return }
-                            requestedAction = nil
-                            switch action {
-                            case .scan: claims.open()
-                            case .create: showCreate = true
-                            case .send: showExisting = true
-                            case .share: showShare = true
-                            }
-                        }
-                }
+                HStack(spacing: 5) {
+                    Image(systemName: "plus").font(.system(size: 19, weight: .semibold))
+                    Text(NativeText.text("learner.add")).font(.subheadline.weight(.semibold))
+                }.foregroundStyle(Palette.cardInk).padding(.horizontal, 11).frame(minHeight: 40)
+                    .background(Palette.blueCard, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(2).contentShape(Rectangle())
+            }.buttonStyle(.plain).accessibilityLabel(NativeText.text("learner.addTitle")).accessibilityIdentifier("create")
             Button { showAccount = true } label: {
                 ProfileArtwork(url: account?.state?.profileImage)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
@@ -141,4 +148,20 @@ struct RootView: View {
         }.padding(4).background(Palette.surface, in: Capsule())
             .shadow(color: .black.opacity(0.035), radius: 10, y: 5)
     }
+    private func performRequestedAction() {
+        let mode = requestedIntake, action = requestedAction, reopen = reopenIntake
+        requestedIntake = nil; requestedAction = nil; reopenIntake = false
+        guard account == nil || account?.phase == "ready", claims.link == nil else { return }
+        if reopen { showActions = true }
+        else if let mode { claims.open(mode: mode) }
+        else if let action {
+            switch action {
+            case .scan: claims.open()
+            case .create: showCreate = true
+            case .send: showExisting = true
+            case .share: showShare = true
+            }
+        }
+    }
+
 }

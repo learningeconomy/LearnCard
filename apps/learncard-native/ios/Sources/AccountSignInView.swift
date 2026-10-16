@@ -10,10 +10,15 @@ struct AccountRootView: View {
     var body: some View {
         Group {
             if ["resetting", "reset_pending"].contains(account.phase) { StagingResetProgressView(account: account) }
-            else if let store = account.store, !account.busy || store.snapshot != nil || store.error != nil { RootView(store: store, account: account) }
+            else if let store = account.store, !account.busy || store.snapshot != nil || store.error != nil {
+                if account.activation.needsWelcome, account.claims.link == nil, !account.claims.isPresented {
+                    LearnerWelcomeView(add: { account.activation.finish(openIntake: true) }, explore: { account.activation.finish() })
+                } else { RootView(store: store, account: account) }
+            }
             else { AccountSignInView(account: account) }
         }
         .modifier(ClaimPresentation(flow: account.claims, store: account.store, recipient: account.state?.profileId))
+        .onChange(of: account.claims.link) { _, link in if link != nil { account.activation.finish() } }
         .task {
             await account.resume()
             if ProcessInfo.processInfo.arguments.contains("--request-test-code"), account.phase == "signIn" { await account.sendCode() }

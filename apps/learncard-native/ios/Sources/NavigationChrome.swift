@@ -13,7 +13,7 @@ struct CollectionActionsMenu: View {
             row("Create new", symbol: "plus", tint: Palette.blueCard, action: .create)
             row("Send existing creation", symbol: "paperplane", tint: Palette.cyanCard, action: .send)
             row("Share credentials", symbol: "square.and.arrow.up", tint: Palette.pinkCard, action: .share)
-        }.padding(10).frame(width: 282).background(Palette.surface)
+        }.padding(10).frame(maxWidth: .infinity).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
     }
     private func row(_ title: String, symbol: String, tint: Color, action: CollectionAction) -> some View {
         Button { select(action) } label: {

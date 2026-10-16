@@ -5,10 +5,14 @@ import LearnCardNativeSDK
 @main
 struct LearnCardNativeApp: App {
     @State private var store = AppStore()
+    #if DEBUG
+    @State private var fixtureAccount: AccountController?
+    #endif
     @AppStorage(NativeLanguage.preferenceKey) private var language = "system"
     init() {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
+        _fixtureAccount = State(initialValue: AccountFixture.controller(arguments: args))
         if args.contains("--demo"), args.contains("--category-fixtures") {
             _store = State(initialValue: AppStore(service: DemoCredentialService(includeCategorySamples: true)))
         }
@@ -53,7 +57,7 @@ struct LearnCardNativeApp: App {
 
     @ViewBuilder private var client: some View {
                 #if DEBUG
-                if let account = AccountFixture.controller(arguments: ProcessInfo.processInfo.arguments) {
+                if let account = fixtureAccount {
                     AccountRootView(account: account)
                 } else if ProcessInfo.processInfo.arguments.contains("--demo") { RootView(store: store) }
                 else { AccountRootView() }

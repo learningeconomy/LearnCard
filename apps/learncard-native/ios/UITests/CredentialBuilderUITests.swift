@@ -161,7 +161,7 @@ import XCTest
         let app = XCUIApplication()
         app.launchArguments = ["--demo"] + (extra.contains("--locale") ? [] : ["--locale", "en"]) + extra
         app.launch(); app.openCollection()
-        XCTAssertTrue(app.buttons["create"].waitForExistence(timeout: 10)); app.buttons["create"].tap()
+        app.openCredentialTools()
         app.buttons["collection-action-create"].tap()
         XCTAssertTrue(app.textFields["draft-title"].waitForExistence(timeout: 5)); return app
     }

@@ -2,6 +2,10 @@
 
 October 16, 2026. The iOS client now implements first-time setup against existing staging services. Existing-account recovery remains a separate route. [Composition reference](design/SIGNUP_BRIEF.md); [verification](TESTING.md). A fresh live Firebase signup, real guardian approval and physical-device file-provider/recovery round trip remain manual validation gates.
 
+## Optional learner welcome after setup
+
+After required profile/backup/approval gates report ready, a newly set-up account gets a one-page learner introduction: **Add my first credential** or **Explore for now**. It is optional, scoped to the account and remembered across lock/relaunch. Existing ready accounts go to Home, and a pending credential claim continues directly to explicit review after required gates. Home → Your LearnCard guide can revisit the introduction. This adds no role picker, document-upload requirement or automatic acceptance. See [the learner design and implementation](design/LEARNER_HOME_BRIEF.md).
+
 ## User flow
 
 ```mermaid
@@ -19,8 +23,15 @@ flowchart TD
     Export -->|Saved bytes verified| Confirm[SDK confirms recovery method]
     Confirm --> Create[Create or reconcile owned network profile]
     Create -->|Guardian required| Pending[Pending approval and explicit resend / check]
-    Pending -->|Server confirms| Home
-    Create -->|Approved| Home[Home or pending claim review]
+    Pending -->|Server confirms| Arrival{Pending claim?}
+    Create -->|Approved| Arrival
+    Arrival -->|Yes| Review[Explicit credential review]
+    Arrival -->|No| Welcome[Optional learner welcome]
+    Welcome -->|Explore for now| Home[Home]
+    Welcome -->|Add my first credential| Intake[Scan / claim link / QR photo]
+    Recover --> Existing{Pending claim?}
+    Existing -->|Yes| Review
+    Existing -->|No| Home
 ```
 
 Email entry is editable. Firebase still validates the exchange's returned email/UID, refresh tokens stay in Keychain, and setup never infers eligibility from a network failure. General sign-in does not add new social providers or production endpoints.
@@ -61,13 +72,13 @@ Commands serialize profile/recovery mutations. Before retrying an uncertain prof
 - Exercise real guardian delivery, failed delivery/resend, link approval and foreground recheck using dedicated test identities. Synthetic checks do not prove external delivery.
 - Physical Files/iCloud/third-party provider, keyboard, VoiceOver, energy, tablet and translation review remain.
 - Existing-account Recovery & security still links to web for broader recovery management. This slice adds enrollment during required signup, not full native recovery settings or account deletion.
-- Build My LearnCard remains optional Home credential intake, planned separately. People remains planned via Home/Account/Inbox without a fifth tab or side menu. See [the remaining roadmap](ONBOARDING_AND_PEOPLE.md).
+- Build My LearnCard provides optional native scan/link/QR-photo intake; document processing is a follow-up. People is available via Home/Account/Inbox without a fifth tab or side menu. See [the remaining roadmap](ONBOARDING_AND_PEOPLE.md).
 
 ## Live account reset requested
 
 The user selected a staging-only data/profile/recovery reset of the current dedicated test account, retaining the shared Firebase login. Account → Reset staging account has matching-email confirmation and explicit retry after interruption. Completion disposes the old SDK host and starts required setup with the retained verified login. See [the source audit, cleanup boundaries and live status](ACCOUNT_DELETION_AUDIT.md).
 
-The user has now completed that reset and required setup. Home is the initial signed-in destination, followed by Collection, Inbox and Apps in the navigation tray. Existing pending claim intent opens review after readiness; it never claims automatically. Do not reset the recreated account again for this completed validation.
+The user has now completed that reset and required setup. Home is the initial signed-in destination, followed by Passport, Inbox and Apps in the navigation tray. Existing pending claim intent opens review after readiness; it never claims automatically. Do not reset the recreated account again for this completed validation.
 
 ## Source map
 

@@ -74,7 +74,7 @@ final class ExperimentUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
         app.launch(); app.openCollection()
-        app.buttons["create"].tap(); app.buttons["Create new"].tap()
+        app.openCredentialTools(); app.buttons["Create new"].tap()
         let title = app.textFields["draft-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.tap()
@@ -115,7 +115,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testPlusActionsAndMultipleCredentialSharing() {
         let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
-        app.buttons["create"].tap()
+        app.openCredentialTools()
         XCTAssertTrue(app.buttons["Create new"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Send existing creation"].exists)
         app.buttons["Share credentials"].tap()
@@ -133,7 +133,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testCreationFormatAndCategoryUseDesignedSheets() {
         let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
-        app.buttons["create"].tap(); app.buttons["Create new"].tap(); app.swipeUp()
+        app.openCredentialTools(); app.buttons["Create new"].tap(); app.swipeUp()
         app.buttons["draft-format"].tap()
         XCTAssertTrue(app.scrollViews["builder-format-sheet"].waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertTrue(app.buttons["builder-format-badge"].isSelected)
@@ -156,7 +156,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testCreateForSomeoneKeepsTemplateSeparateFromCollection() {
         let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch(); app.openCollection()
-        app.buttons["create"].tap(); app.buttons["Create new"].tap()
+        app.openCredentialTools(); app.buttons["Create new"].tap()
         XCTAssertTrue(app.buttons["draft-artwork"].exists)
         let title = app.textFields["draft-title"]; title.tap(); title.typeText("Native kindness badge")
         let summary = app.descendants(matching: .any)["draft-summary"]; summary.tap(); summary.typeText("Recognizing a thoughtful teammate.")
@@ -332,7 +332,7 @@ final class ExperimentUITests: XCTestCase {
             app.buttons["account"].tap()
             XCTAssertTrue(app.buttons["account-language"].waitForExistence(timeout: 5))
             app.navigationBars.buttons["Done"].tap()
-            app.buttons["create"].tap()
+            app.openCredentialTools()
             for action in ["Create new", "Send existing creation", "Share credentials"] {
                 XCTAssertTrue(app.buttons[action].waitForExistence(timeout: 5))
             }

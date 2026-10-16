@@ -12,6 +12,49 @@ const drawings = (dark: boolean): Record<string, string> => {
     const glyph = (content: string): string =>
         `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#18224E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
     return {
+        LearnerPlane: glyph(
+            `<path d="M6 23L59 5L39 56L28 36Z" fill="#F9A8D4"/><path d="M28 36L59 5L18 29M28 36L25 51L37 42" fill="#93C5FD"/><path d="M6 50L16 40M5 59L17 55M46 59L51 63" stroke="#22D3EE"/>`
+        ),
+        LearnerWelcomeIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M27 109q-12-16 0-34M165 110q15-11 10-29" fill="none"/>
+                <g transform="rotate(11 146 92)">
+                    <rect x="119" y="58" width="52" height="72" rx="8" fill="#F9A8D4"/>
+                    <path d="M130 70h28M130 78h18" stroke="#FFFFFF"/>
+                    <path d="M134 87h22v8q0 15-11 15t-11-15Z" fill="#FDE047"/>
+                    <path d="M134 91h-6v7q0 7 10 7M156 91h6v7q0 7-10 7M145 111v7M138 119h14"/>
+                </g>
+                <g transform="rotate(-8 80 80)">
+                    <rect x="35" y="24" width="89" height="107" rx="12" fill="#C4B5FD"/>
+                    <rect x="41" y="29" width="89" height="107" rx="12" fill="#60A5FA"/>
+                    <path d="M51 35v93M65 44h45M65 119h39M65 126h22" stroke="#FFFFFF"/>
+                    <circle cx="87" cy="80" r="26" fill="#FDE047"/>
+                    <path d="M77 74v2M97 73l-4 3 5 2M77 87q10 12 21-1" fill="none"/>
+                    <path d="M69 67q4-7 10-9" stroke="#FFFFFF"/>
+                    <ellipse cx="72" cy="83" rx="4" ry="2.5" fill="#F9A8D4" stroke="none"/>
+                </g>
+                <path d="M116 31q15-13 25-5" stroke-dasharray="2 7" fill="none"/>
+                <path d="M138 19l47-11-19 31-8-15Z" fill="#22D3EE"/><path d="M158 24l27-16"/>
+                <path d="M23 39l-9-8M17 55H5M146 131l9 9M170 128l11 5" stroke="#FACC15" stroke-width="5"/>
+                <path d="M25 125q-9-12-14-5t14 20q23-11 17-19t-17 4" fill="#F9A8D4" stroke="none"/>
+            </g>
+        `),
+        LearnerAddIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round">
+                <g transform="rotate(-7 87 84)">
+                    <rect x="31" y="31" width="104" height="100" rx="13" fill="#93C5FD"/>
+                    <rect x="45" y="44" width="76" height="74" rx="8" fill="#FFFFFF"/>
+                    <path d="M55 55h14v14H55ZM96 55h14v14H96ZM55 93h14v14H55Z" fill="#22D3EE"/>
+                    <path d="M96 93h7v7h7v7M82 54v9M82 72v8h-8M52 80h8"/>
+                    <path d="M76 91q6 8 12 0"/>
+                </g>
+                <path d="M118 28q10-12 20-6M146 60q-5 15-1 23" stroke-dasharray="2 7" fill="none"/>
+                <path d="M131 16l53-7-26 31-5-15Z" fill="#F9A8D4"/><path d="M153 25l31-16"/>
+                <circle cx="155" cy="110" r="23" fill="#FDE047"/>
+                <path d="M147 106v1M163 106v1M147 117q8 7 16-1"/>
+                <path d="M18 45l-9-8M17 64H5M163 64l7-6M176 78l10-2" stroke="#FACC15" stroke-width="5"/>
+            </g>
+        `),
         SignupCalendarIllustration: wrap(`
             <g stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="144" cy="91" r="40" fill="#93C5FD"/>
@@ -137,10 +180,10 @@ const drawings = (dark: boolean): Record<string, string> => {
         DrawnCollection: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12V9Q5 6 8 6H17L21 11H32Q35 11 35 14V32Q35 35 32 35H8Q5 35 5 32Z" fill="#FDE047"/><path d="M10 17V29" stroke="#FFFFFF"/><path d="M27 6L29 2M34 9L38 7" stroke="#22D3EE"/></svg>`,
         DrawnPencil: `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#18224E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 25L25 6Q29 2 33 6L35 8Q38 11 34 15L15 34L4 37Z" fill="#22D3EE"/><path d="M25 6L34 15M8 25L15 32M7 26L4 37L15 34Z" fill="#FDE047"/><path d="M25 6L28 3Q30 2 33 5L36 8Q38 11 34 15Z" fill="#F9A8D4"/><path d="M12 24L24 12" stroke="#FFFFFF"/></svg>`,
         HomeInboxIllustration: wrap(`
-            <path d="M36 75L98 34L166 75V127H36Z" fill="#F9A8D4" stroke="${ink}" stroke-width="4" stroke-linejoin="round"/>
-            <g transform="rotate(4 101 67)"><rect x="64" y="28" width="74" height="74" rx="10" fill="#FDE047" stroke="${ink}" stroke-width="4"/><path d="M78 45H122M78 58H122M78 71H105" stroke="#18224E" stroke-width="4" stroke-linecap="round"/><path d="M72 37V81" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/></g>
-            <path d="M36 75L99 109L166 75V127H36Z" fill="#F9A8D4" stroke="${ink}" stroke-width="4" stroke-linejoin="round"/>
-            <path d="M36 127L83 95M166 127L118 96" stroke="${ink}" stroke-width="4" stroke-linecap="round"/>
+            <path d="M36 75L98 34L166 75V127H36Z" fill="#F9A8D4" stroke="#18224E" stroke-width="4" stroke-linejoin="round"/>
+            <g transform="rotate(4 101 67)"><rect x="64" y="28" width="74" height="74" rx="10" fill="#FDE047" stroke="#18224E" stroke-width="4"/><path d="M78 45H122M83 61q4-7 8 0M108 61q4-7 8 0M88 73q12 10 22 0" stroke="#18224E" stroke-width="4" stroke-linecap="round"/><path d="M72 37V81" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/></g>
+            <path d="M36 75L99 109L166 75V127H36Z" fill="#F9A8D4" stroke="#18224E" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M36 127L83 95M166 127L118 96" stroke="#18224E" stroke-width="4" stroke-linecap="round"/>
             <path d="M42 40L32 28M101 15L99 4M161 43L171 29" stroke="#22D3EE" stroke-width="6" stroke-linecap="round"/>
         `),
         LearnCardPaintedMark: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">

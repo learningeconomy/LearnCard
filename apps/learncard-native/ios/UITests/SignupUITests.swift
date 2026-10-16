@@ -105,14 +105,14 @@ import XCTest
         let app = launch("signup-resume"); fillBackup(app); app.buttons["signup-create"].tap()
         let save = app.buttons["Save"]; XCTAssertTrue(save.waitForExistence(timeout: 15)); save.tap()
         let replace = app.buttons["Replace"]; if replace.waitForExistence(timeout: 2) { replace.tap() }
-        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 15))
+        app.exploreLearnerWelcome()
         XCTAssertFalse(app.buttons["signup-create"].exists)
     }
     func testPreviouslyConfirmedBackupFinishesWithoutGeneratingAnotherIdentityOrFile() {
         let app = launch("signup-confirmed")
         let finish = app.buttons["signup-create"]; XCTAssertTrue(finish.waitForExistence(timeout: 10)); XCTAssertTrue(finish.isEnabled)
         XCTAssertFalse(app.secureTextFields["signup-backup-password"].exists)
-        finish.tap(); XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 15))
+        finish.tap(); app.exploreLearnerWelcome()
     }
     func testGuardianEmailSendAndCheckNeverImplyApproval() {
         let app = launch("pending-approval")
@@ -129,7 +129,7 @@ import XCTest
     func testServerConfirmedApprovalOpensHome() {
         let app = launch("pending-approval", extra: ["--fixture-approve-after-check"])
         XCTAssertTrue(app.buttons["signup-check-approval"].waitForExistence(timeout: 10)); app.buttons["signup-check-approval"].tap()
-        XCTAssertTrue(app.staticTexts["page-title-home"].waitForExistence(timeout: 15))
+        app.exploreLearnerWelcome()
     }
     func testArabicAccessibilityDarkNestedCountrySheetAndSignupLayout() {
         let app = launch("signup", language: "ar", extra: ["--large-type", "--preview-dark"])

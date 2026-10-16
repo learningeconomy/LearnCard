@@ -1,6 +1,6 @@
 # Learner Home and first arrival
 
-October 16, 2026. The user selected the learner experience as the immediate priority and approved the visual direction of these generated boards. The personal destination is now named **Passport**, matching web and distinguishing it from shared credential collections. The app's naming change is implemented; the new Home and optional welcome below remain design references awaiting implementation.
+October 16, 2026. The user selected the learner experience as the immediate priority and approved the visual direction of these generated boards. The personal destination is now named **Passport**, matching web and distinguishing it from shared credential collections. The naming change, learner Home, optional welcome and Add intake are implemented. The boards below are visual references; actual simulator evidence is recorded separately.
 
 ## Home for a new and returning learner
 
@@ -32,9 +32,29 @@ Required birth-date/country/profile/privacy/recovery and guardian behavior is un
 - Implement artwork as original editable SVG/light-dark assets and controls as SwiftUI, never crops from these raster boards. Preserve supplied user/credential/publisher images. Ordinary pages keep neutral adaptive canvases and saturated Colorful objects; no floating navigation island or perpetual Home animation.
 - Adapt the composition to narrow phones, iPad, dark appearance, four languages/RTL and Dynamic Type. Long issuer/title text wraps; do not squeeze every sample section into one viewport or reproduce gradients/shadows literally. Normal Arabic previews use the same standard text size as English, separately from accessibility stress checks.
 
-Before shipping the redesign, verify fresh and returning states, pending claims, interrupted setup, welcome skip/revisit, real empty/error/loading states, large-library recent selection, navigation, sharing, Data Sharing and account lifecycle. Current UI verification for the naming change does not validate the unimplemented Home concept.
+The implemented Home separates unknown/failed/empty/partial/record states, preserves actual issuer artwork, and shows the two most recent eligible personal records in loaded pages. New setup arms optional welcome; ordinary returning accounts skip it. Add routes through sheet dismissal into the existing scan/link/photo coordinator. Creator tools remain reachable through Add → Create and send and the expandable Home section. Validation and installed-build evidence are recorded in [TESTING](../TESTING.md) and [STATUS](../STATUS.md).
 
-## Current app naming verification
+## Implemented learner Home
+
+These are actual synthetic iPhone simulator captures, separate from the generated boards. The app uses real production views/stores with disposable demo data; no sample credential is written into the review account.
+
+| Returning learner, English light                                               | Arabic dark, standard text size                                                      |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| ![Native returning learner Home](learner-home-returning-native-2026-10-16.png) | ![Native learner Home in Arabic RTL](learner-home-arabic-dark-native-2026-10-16.png) |
+
+The header explicitly labels Add. The Inbox summary uses actual offers and distinct unread updates; recent rows use the existing credential detail route. Scan/Share, People, Data Sharing and Apps continue below the first viewport. The two-row recent preview is qualified when more pages remain. The new learner invitation appears only after a successful complete empty read; load errors and partial empty pages have retry/load-more actions instead.
+
+## Implemented optional welcome and Add
+
+| Optional welcome after required setup                                     | Add intake sheet                                                                        |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| ![Native optional learner welcome](learner-welcome-native-2026-10-16.png) | ![Native Add sheet with scan, link and photo routes](learner-add-native-2026-10-16.png) |
+
+The explanatory rows are static. Add opens the chooser, Explore opens Home, and the guide can be revisited later. Choosing a link focuses the existing input; choosing a QR photo opens the system picker. Camera access follows explicit Scan selection. No new claim acceptance or document-processing implementation is introduced.
+
+[Arabic dark welcome at standard text size](learner-welcome-arabic-dark-native-2026-10-16.png) and [empty Passport Home](learner-empty-passport-home-native-2026-10-16.png) are also captured. The empty-Passport fixture retains synthetic connection updates, illustrating that a Passport can be empty while Inbox still has something to review. Accessibility-size stress captures are retained in the local result bundle and are separate from these normal-size previews.
+
+## Historical naming-only verification
 
 These are actual synthetic simulator captures of the existing Home with the implemented Passport label, not the new Home composition:
 
@@ -42,7 +62,7 @@ These are actual synthetic simulator captures of the existing Home with the impl
 | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | ![Passport label on the current Home](passport-naming-light-native-2026-10-16.png) | ![Passport label in Arabic RTL](passport-naming-arabic-dark-native-2026-10-16.png) |
 
-The focused run passes four Swift cases and two existing Home UI cases, covering localization resources, navigation sizing/order, English light/Arabic dark and the existing Inbox/Passport/creator destinations. Private configuration was restored byte-for-byte. These results validate the naming change; the proposed learner Home/welcome still needs implementation and its own checks.
+The focused run passes four Swift cases and two existing Home UI cases, covering localization resources, navigation sizing/order, English light/Arabic dark and the existing Inbox/Passport/creator destinations. Private configuration was restored byte-for-byte. These results validate the naming change; at that checkpoint, learner Home/welcome still needed implementation and their own checks.
 
 ## Generation record
 
@@ -51,3 +71,7 @@ Generated and refined with the built-in **image_gen** tool; no CLI/API fallback.
 The initial artwork's false "instantly" claim and numbered/chevron welcome rows were corrected. Final boards preserve review-before-add and distinguish static explanations from real actions. Original and intermediate outputs remain in the generator's storage and ignored local artifacts; the two selected boards are saved beside this brief.
 
 Organization workspaces remain a separate [planning proposal](../WORKSPACES_PLAN.md), outside this learner UI slice. Live Apple/Google activation and demo login remain deferred.
+
+## Wrap-up verification boundary
+
+The final 12-case affected run passes, with 29 distinct passing simulator cases across the broader/final runs, plus 175 Bun and 180 Swift cases. Screenshot review then found Arabic intake using the system's LTR sheet layout. Both new surfaces now explicitly receive the selected locale/RTL, following the existing native Account pattern. A strengthened direction case checks the cancellation action and leading illustration. That last one-case run was cancelled after a cold-boot/BackBoard stall during wrap-up; its runtime result remains pending. The Arabic welcome capture above is the already-correct root layout, not evidence of the final presented-sheet direction fix. See [the exact resume point](../STATUS.md#resume-handoff).

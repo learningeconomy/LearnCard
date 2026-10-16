@@ -8,6 +8,8 @@ public final class NativeAppStore {
     public var snapshot: CollectionSnapshot?
     public var isBusy = false
     public var error: String?
+    /// Dismissing the transient alert does not establish an empty Passport.
+    public private(set) var snapshotReadFailed = false
     public var notice: String?
     public var openInboxRequested = false
     public let isLive: Bool
@@ -39,7 +41,9 @@ public final class NativeAppStore {
     }
 
     public func refresh() async {
-        _ = await perform { try await self.service.snapshot() }
+        guard !isBusy else { return }
+        let success = await perform { try await self.service.snapshot() }
+        snapshotReadFailed = !success
     }
 
     public func claim(_ credential: Credential) async -> Bool {
@@ -81,7 +85,12 @@ public final class NativeAppStore {
         return try await service.share(credentialIDs: credentialIDs, title: title, requestID: requestID, passcode: passcode)
     }
 
-    @discardableResult public func loadMore() async -> Bool { await perform { try await self.service.loadMore() } }
+    @discardableResult public func loadMore() async -> Bool {
+        guard !isBusy else { return false }
+        let success = await perform { try await self.service.loadMore() }
+        snapshotReadFailed = !success
+        return success
+    }
 
     public func recipient(_ profileId: String) async throws -> AccountRecipient {
         guard let service = service as? LiveCredentialService else { throw AccountError.unavailable }
@@ -95,6 +104,7 @@ public final class NativeAppStore {
         defer { isBusy = false }
         do {
             snapshot = try await operation()
+            snapshotReadFailed = false
             return true
         } catch is CancellationError {
             return false

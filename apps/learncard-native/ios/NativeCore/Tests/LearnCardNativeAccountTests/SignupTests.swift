@@ -92,9 +92,9 @@ private actor SignupTestSession: AccountSession {
         XCTAssertEqual(controller.phase, "needs_setup"); XCTAssertNil(controller.store)
         let prepared = await controller.prepareSignup(signupDraft()); XCTAssertTrue(prepared)
         let backup = await controller.prepareSignupBackup(signupDraft(), password: "synthetic-password", photo: nil); XCTAssertTrue(backup)
-        XCTAssertNil(controller.store); XCTAssertNotNil(controller.signupBackup)
+        XCTAssertNil(controller.store); XCTAssertNotNil(controller.signupBackup); XCTAssertFalse(controller.activation.needsWelcome)
         await controller.confirmSignupBackup(password: "synthetic-password")
-        XCTAssertEqual(host.calls, ["prepare", "backup", "confirm"]); XCTAssertEqual(controller.phase, "ready"); XCTAssertNotNil(controller.store); XCTAssertNil(controller.signupBackup)
+        XCTAssertEqual(host.calls, ["prepare", "backup", "confirm"]); XCTAssertEqual(controller.phase, "ready"); XCTAssertNotNil(controller.store); XCTAssertNil(controller.signupBackup); XCTAssertTrue(controller.activation.needsWelcome)
     }
     func testUnderageNeverCallsIdentityPreparation() async {
         let host = SignupTestHost(), controller = account(host); await controller.resume(); var draft = signupDraft(); draft.dob = "2020-01-01"
@@ -128,4 +128,27 @@ private actor SignupTestSession: AccountSession {
         XCTAssertNil(controller.store); await controller.refreshSignup(); XCTAssertEqual(controller.phase, "pending_approval"); XCTAssertNil(controller.store)
         host.approved = true; await controller.refreshSignup(); XCTAssertEqual(controller.phase, "ready"); XCTAssertNotNil(controller.store)
     }
+    func testPendingClaimSurvivesRequiredSetupAndBypassesOptionalWelcome() async {
+        let host = SignupTestHost(), controller = account(host)
+        await controller.claims.receive("https://staging.learncard.app/claim/boost?boostUri=lc%3Anetwork%3Astaging.network.learncard.com%2Ftrpc%3Aboost%3Asample&challenge=synthetic-token")
+        await controller.resume()
+        XCTAssertEqual(controller.phase, "needs_setup"); XCTAssertNil(controller.store)
+        XCTAssertNotNil(controller.claims.link); XCTAssertFalse(controller.activation.needsWelcome)
+        await controller.completeSignup(signupDraft())
+        XCTAssertEqual(controller.phase, "ready"); XCTAssertNotNil(controller.store)
+        XCTAssertNotNil(controller.claims.link); XCTAssertTrue(controller.claims.isPresented)
+        XCTAssertFalse(controller.activation.needsWelcome); XCTAssertFalse(controller.activation.takeIntakeRequest())
+    }
+
+    func testAnotherAccountsClaimCannotCompleteThisLearnersWelcome() async {
+        let claims = NativeClaimStore(journal: MemoryClaimJournal())
+        claims.connect(service: nil, accountID: "previous-account")
+        await claims.receive("https://staging.learncard.app/claim/boost?boostUri=lc%3Anetwork%3Astaging.network.learncard.com%2Ftrpc%3Aboost%3Asample&challenge=synthetic-token")
+        let host = SignupTestHost()
+        let controller = NativeAccountController(session: SignupTestSession(), makeHost: { _ in host }, forgetAccount: { _ in }, claims: claims)
+        await controller.resume(); await controller.completeSignup(signupDraft())
+        XCTAssertEqual(controller.phase, "ready"); XCTAssertNil(claims.link)
+        XCTAssertTrue(controller.activation.needsWelcome)
+    }
+
 }

@@ -77,6 +77,7 @@ public enum AccountActivity: Sendable { case active, inactive, background }
 @MainActor @Observable
 public final class NativeAccountController {
     public let claims: NativeClaimStore
+    public let activation: LearnerActivationStore
     private let session: (any AccountSession)?
     private let signInClient: (any NativeSignInClient)?
     private var providerExchange: Task<FirebaseUser, any Error>?
@@ -108,7 +109,8 @@ public final class NativeAccountController {
         self.init(session: firebase, signInClient: signInClient, makeHost: { user in
             guard let firebase else { throw AccountError.unavailable }
             return AccountRuntime(user: user, vault: vault, firebase: firebase)
-        }, forgetAccount: { id in try await vault.forgetAccount(userID: id) })
+        }, forgetAccount: { id in try await vault.forgetAccount(userID: id) },
+                  activation: LearnerActivationStore(storage: PreferenceLearnerActivationStorage()))
         if firebase == nil { error = "Couldn't open sign-in. Please try again." }
     }
 
@@ -117,8 +119,10 @@ public final class NativeAccountController {
                 makeHost: @escaping @MainActor (FirebaseUser) throws -> any AccountHost,
                 forgetAccount: @escaping @MainActor (String) async throws -> Void,
                 claims: NativeClaimStore? = nil,
+                activation: LearnerActivationStore = LearnerActivationStore(),
                 uploadProfilePhoto: @escaping @Sendable (Data) async throws -> URL = { try await ArtworkUploader.upload(jpeg: $0, filename: "profile-photo.jpg") }) {
         self.claims = claims ?? NativeClaimStore()
+        self.activation = activation
         self.session = session; self.makeHost = makeHost; self.forgetAccount = forgetAccount
         self.signInClient = signInClient
         self.uploadProfilePhoto = uploadProfilePhoto
@@ -215,6 +219,7 @@ public final class NativeAccountController {
         self.state = state; phase = state.phase
         if state.error != nil { throw AccountError.recovery }
         if state.phase != "ready" {
+            if let user { activation.observe(accountID: user.id, phase: state.phase) }
             store?.consumer.lock(); store?.families.lock(); store?.inbox.lock(); store?.people.lock(); store = nil; claims.lock()
         }
         if state.phase == "ready", let runtime {
@@ -222,7 +227,12 @@ public final class NativeAccountController {
             self.store = store
             await store.refresh()
             try check(expected)
-            if let user { claims.connect(service: runtime.claimService, accountID: user.id) }
+            if let user {
+                // Connect first: an intent bound to another account must be cleared
+                // before deciding whether this learner should skip their welcome.
+                claims.connect(service: runtime.claimService, accountID: user.id)
+                activation.observe(accountID: user.id, phase: state.phase, hasPendingClaim: claims.link != nil)
+            }
         }
     }
 
@@ -422,6 +432,7 @@ public final class NativeAccountController {
         providerExchange?.cancel(); providerExchange = nil
         claims.lock()
         runtime?.dispose(); runtime = nil
+        activation.lock()
         store?.consumer.lock()
         store?.families.lock()
         store?.inbox.lock(); store?.people.lock()
