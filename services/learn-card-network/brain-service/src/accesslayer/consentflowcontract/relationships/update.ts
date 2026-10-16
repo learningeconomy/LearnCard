@@ -15,7 +15,7 @@ import { ConsentFlowTerms, ConsentFlowTransaction, ConsentFlowContract } from '@
 import { neogma } from '@instance';
 import { flattenObject } from '@helpers/objects.helpers';
 import { DbContractType, DbTermsType } from 'types/consentflowcontract';
-import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
+import { getBoostUri, sendBoost, stampIssuanceDate } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
@@ -200,6 +200,8 @@ export const reconsentTerms = async (
 
                     // Set the issuer and subject
                     boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
+
+                    stampIssuanceDate(boostCredential);
 
                     if (boostCredential.type.includes('BoostCredential')) {
                         boostCredential.boostId = getBoostUri(boost.dataValues.id, domain);
@@ -438,6 +440,8 @@ export const updateTerms = async (
 
                     // Set the issuer and subject
                     boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
+
+                    stampIssuanceDate(boostCredential);
 
                     if (boostCredential.type.includes('BoostCredential')) {
                         boostCredential.boostId = getBoostUri(boost.target.id, domain);

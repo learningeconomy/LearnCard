@@ -65,7 +65,7 @@ vi.mock('@tracing', () => ({
     traceInternal: async (_name: string, action: () => unknown) => action(),
 }));
 
-import { issueClaimLinkBoost, sendBoost } from './boost.helpers';
+import { issueClaimLinkBoost, prepareCredentialFromBoost, sendBoost } from './boost.helpers';
 
 const vc = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -222,6 +222,91 @@ describe('boost payload storage', () => {
             expect(mocks.store).toHaveBeenCalledWith(issued);
         }
     );
+
+    describe('malformed template issuance dates', () => {
+        // Seen on a production Boost template; it is not RFC 3339, so DIDKit refuses to sign it.
+        const MALFORMED_DATE = '2025-10-19+053008:18:16';
+        // The reused JOTA-JOTI "Health and Well-being" Boost that carried it.
+        const BOOST_ID = 'e073d183-8304-419f-b4f6-ef91fda6524c';
+        const V1 = ['https://www.w3.org/2018/credentials/v1'];
+        const V2 = ['https://www.w3.org/ns/credentials/v2'];
+        const authority = { relationship: { did: 'did:example:sa' } } as Parameters<
+            typeof issueClaimLinkBoost
+        >[4];
+        const boostWith = (template: Record<string, unknown>) =>
+            ({
+                ...options.boost,
+                dataValues: {
+                    id: BOOST_ID,
+                    boost: JSON.stringify({ ...vc, boostId: undefined, ...template }),
+                },
+            }) as Parameters<typeof issueClaimLinkBoost>[0];
+        const expectFreshDate = (value: unknown, before: number) => {
+            expect(typeof value).toBe('string');
+            expect(value).toBe(new Date(value as string).toISOString());
+            expect(Date.parse(value as string)).toBeGreaterThanOrEqual(before);
+        };
+
+        beforeEach(() => {
+            mocks.signingAuthority.mockResolvedValue({
+                kind: 'issued-credential',
+                credential: jwe,
+                statusEntries: [],
+            });
+        });
+
+        it.each([
+            [
+                'VC 1.1 issuanceDate',
+                { '@context': V1, issuanceDate: MALFORMED_DATE },
+                'issuanceDate',
+            ],
+            [
+                'VC 2.0 validFrom',
+                { '@context': V2, issuanceDate: undefined, validFrom: MALFORMED_DATE },
+                'validFrom',
+            ],
+        ] as const)(
+            'restamps a malformed %s when a claim link is claimed',
+            async (_kind, template, field) => {
+                const before = Date.now();
+                await issueClaimLinkBoost(
+                    boostWith(template),
+                    options.domain,
+                    options.from,
+                    options.to,
+                    authority
+                );
+                const unsigned = mocks.signingAuthority.mock.calls[0]![1];
+                expectFreshDate(unsigned[field], before);
+            }
+        );
+
+        it('restamps a stale issuanceDate left on a VC 2.0 template', async () => {
+            const before = Date.now();
+            await issueClaimLinkBoost(
+                boostWith({ '@context': V2, issuanceDate: MALFORMED_DATE }),
+                options.domain,
+                options.from,
+                options.to,
+                authority
+            );
+            const unsigned = mocks.signingAuthority.mock.calls[0]![1];
+            expectFreshDate(unsigned.validFrom, before);
+            expectFreshDate(unsigned.issuanceDate, before);
+        });
+
+        it('restamps a stale issuanceDate left on a VC 2.0 template for direct sends', async () => {
+            const before = Date.now();
+            const credential = await prepareCredentialFromBoost(
+                boostWith({ '@context': V2, issuanceDate: MALFORMED_DATE }),
+                `lc:network:network.example/boost:${BOOST_ID}`,
+                options.domain
+            );
+            expectFreshDate(credential.validFrom, before);
+            expectFreshDate(credential.issuanceDate, before);
+        });
+    });
 
     it('preserves explicit notification and acceptance opt-outs', async () => {
         await sendBoost({

@@ -87,6 +87,29 @@ export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<
     return true;
 };
 
+/**
+ * Stamps the issuance time onto a credential built from a Boost template.
+ *
+ * A template's own issuanceDate/validFrom is when the template was written, not when this
+ * credential is issued, and templates created through the API are not date-validated: a
+ * malformed value (e.g. "2025-10-19+053008:18:16") makes DIDKit refuse to sign. VC 2.0
+ * templates get validFrom, VC 1.1 templates get issuanceDate, and a leftover issuanceDate on
+ * a VC 2.0 template is restamped too so it can't break signing.
+ */
+export const stampIssuanceDate = <T extends UnsignedVC | VC>(
+    credential: T,
+    now: string = new Date().toISOString()
+): T => {
+    if (isVC2Format(credential)) {
+        credential.validFrom = now;
+        if (credential.issuanceDate !== undefined) credential.issuanceDate = now;
+    } else {
+        credential.issuanceDate = now;
+    }
+
+    return credential;
+};
+
 export const convertCredentialToBoostTemplateJSON = (
     credential: VC | UnsignedVC,
     defaultIssuerDid?: string
@@ -255,6 +278,8 @@ export const issueClaimLinkBoost = async (
 
     boostCredential.issuer = signingAuthorityForUser.relationship.did;
 
+    stampIssuanceDate(boostCredential);
+
     setCredentialSubjectIds(boostCredential, getDidWeb(domain, to.profileId));
 
     // Embed the boostURI into the boost credential for verification purposes.
@@ -335,13 +360,7 @@ export const prepareCredentialFromBoost = async (
 
     appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
 
-    // Set issuance date based on VC version
-    const now = new Date().toISOString();
-    if (isVC2Format(credential)) {
-        credential.validFrom = now;
-    } else {
-        credential.issuanceDate = now;
-    }
+    stampIssuanceDate(credential);
 
     // Set issuer if provided
     if (issuerDid) {
