@@ -14,8 +14,9 @@
 | **notify_on_view**           | **bool**                                                                                                  |             | [optional] |
 | **content_version**          | **int**                                                                                                   |             | [optional] |
 | **selected_count**           | **int**                                                                                                   |             | [optional] |
-| **envelope**                 | [**ShareLinksUpdateRequestEnvelope**](ShareLinksUpdateRequestEnvelope.md)                                 |             | [optional] |
+| **envelope**                 | [**ShareLinksCreateRequestEnvelope**](ShareLinksCreateRequestEnvelope.md)                                 |             | [optional] |
 | **owner_encrypted_recovery** | [**CredentialSendCredentialRequestCredentialAnyOf1**](CredentialSendCredentialRequestCredentialAnyOf1.md) |             | [optional] |
+| **attachment**               | [**ShareLinksUpdateRequestAttachment**](ShareLinksUpdateRequestAttachment.md)                             |             | [optional] |
 
 ## Example
 

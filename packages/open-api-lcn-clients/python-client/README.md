@@ -107,12 +107,14 @@ All URIs are relative to _/api_
 | _ActivityApi_          | [**activity_get_my_credential_lifecycle_statuses**](docs/ActivityApi.md#activity_get_my_credential_lifecycle_statuses)                                | **POST** /activity/credentials/lifecycle-statuses                        | Get Credential Lifecycle Statuses                                            |
 | _AppStoreApi_          | [**app_store_add_boost_to_listing**](docs/AppStoreApi.md#app_store_add_boost_to_listing)                                                              | **POST** /app-store/listing/{listingId}/boost/add                        | Add Boost to Listing                                                         |
 | _AppStoreApi_          | [**app_store_app_event**](docs/AppStoreApi.md#app_store_app_event)                                                                                    | **POST** /app-store/event                                                | Process App Event                                                            |
+| _AppStoreApi_          | [**app_store_apply_manifest_version**](docs/AppStoreApi.md#app_store_apply_manifest_version)                                                          | **POST** /app-store/integration/{integrationId}/manifest/{version}/apply | Apply App Manifest Version                                                   |
 | _AppStoreApi_          | [**app_store_associate_listing_with_signing_authority**](docs/AppStoreApi.md#app_store_associate_listing_with_signing_authority)                      | **POST** /app-store/listing/{listingId}/associate-with-signing-authority | Associate Listing with Signing Authority                                     |
 | _AppStoreApi_          | [**app_store_browse_listed_apps**](docs/AppStoreApi.md#app_store_browse_listed_apps)                                                                  | **POST** /app-store/browse                                               | Browse App Store                                                             |
 | _AppStoreApi_          | [**app_store_count_installed_apps**](docs/AppStoreApi.md#app_store_count_installed_apps)                                                              | **GET** /app-store/installed/count                                       | Count Installed Apps                                                         |
 | _AppStoreApi_          | [**app_store_count_listings_for_integration**](docs/AppStoreApi.md#app_store_count_listings_for_integration)                                          | **GET** /app-store/integration/{integrationId}/listings/count            | Count Listings for Integration                                               |
 | _AppStoreApi_          | [**app_store_create_listing**](docs/AppStoreApi.md#app_store_create_listing)                                                                          | **POST** /app-store/listing/create                                       | Create App Store Listing                                                     |
 | _AppStoreApi_          | [**app_store_delete_listing**](docs/AppStoreApi.md#app_store_delete_listing)                                                                          | **DELETE** /app-store/listing/{listingId}                                | Delete App Store Listing                                                     |
+| _AppStoreApi_          | [**app_store_discard_listing_update**](docs/AppStoreApi.md#app_store_discard_listing_update)                                                          | **POST** /app-store/listing/{listingId}/update/discard                   | Discard Listing Update                                                       |
 | _AppStoreApi_          | [**app_store_get_boosts_for_listing**](docs/AppStoreApi.md#app_store_get_boosts_for_listing)                                                          | **GET** /app-store/listing/{listingId}/boosts                            | Get Boosts for Listing                                                       |
 | _AppStoreApi_          | [**app_store_get_installed_apps**](docs/AppStoreApi.md#app_store_get_installed_apps)                                                                  | **POST** /app-store/installed                                            | Get Installed Apps                                                           |
 | _AppStoreApi_          | [**app_store_get_integration_for_listing**](docs/AppStoreApi.md#app_store_get_integration_for_listing)                                                | **GET** /app-store/listing/{listingId}/integration                       | Get Integration for Listing                                                  |
@@ -120,6 +122,9 @@ All URIs are relative to _/api_
 | _AppStoreApi_          | [**app_store_get_listing_install_count**](docs/AppStoreApi.md#app_store_get_listing_install_count)                                                    | **GET** /app-store/listing/{listingId}/install-count                     | Get App Install Count                                                        |
 | _AppStoreApi_          | [**app_store_get_listing_signing_authority**](docs/AppStoreApi.md#app_store_get_listing_signing_authority)                                            | **GET** /app-store/listing/{listingId}/signing-authority                 | Get Listing Signing Authority                                                |
 | _AppStoreApi_          | [**app_store_get_listings_for_integration**](docs/AppStoreApi.md#app_store_get_listings_for_integration)                                              | **POST** /app-store/integration/{integrationId}/listings                 | Get Listings for Integration                                                 |
+| _AppStoreApi_          | [**app_store_get_manifest_diff**](docs/AppStoreApi.md#app_store_get_manifest_diff)                                                                    | **GET** /app-store/integration/{integrationId}/manifest/diff/{toVersion} | Get App Manifest Diff                                                        |
+| _AppStoreApi_          | [**app_store_get_manifest_version**](docs/AppStoreApi.md#app_store_get_manifest_version)                                                              | **GET** /app-store/integration/{integrationId}/manifest/{version}        | Get App Manifest Version                                                     |
+| _AppStoreApi_          | [**app_store_get_manifest_versions**](docs/AppStoreApi.md#app_store_get_manifest_versions)                                                            | **GET** /app-store/integration/{integrationId}/manifest/versions         | Get App Manifest Versions                                                    |
 | _AppStoreApi_          | [**app_store_get_my_credentials_from_app**](docs/AppStoreApi.md#app_store_get_my_credentials_from_app)                                                | **GET** /app-store/{listingId}/my-credentials                            | Get credentials earned from an app                                           |
 | _AppStoreApi_          | [**app_store_get_public_listing**](docs/AppStoreApi.md#app_store_get_public_listing)                                                                  | **GET** /app-store/public/listing/{listingId}                            | Get Public App Listing                                                       |
 | _AppStoreApi_          | [**app_store_get_public_listing_by_slug**](docs/AppStoreApi.md#app_store_get_public_listing_by_slug)                                                  | **GET** /app-store/public/listing/slug/{slug}                            | Get Public App Listing by Slug                                               |
@@ -127,11 +132,15 @@ All URIs are relative to _/api_
 | _AppStoreApi_          | [**app_store_is_app_installed**](docs/AppStoreApi.md#app_store_is_app_installed)                                                                      | **GET** /app-store/listing/{listingId}/is-installed                      | Check if App is Installed                                                    |
 | _AppStoreApi_          | [**app_store_remove_boost_from_listing**](docs/AppStoreApi.md#app_store_remove_boost_from_listing)                                                    | **POST** /app-store/listing/{listingId}/boost/remove                     | Remove Boost from Listing                                                    |
 | _AppStoreApi_          | [**app_store_send_app_notification**](docs/AppStoreApi.md#app_store_send_app_notification)                                                            | **POST** /app-store/listing/{listingId}/notify                           | Send App Notification                                                        |
+| _AppStoreApi_          | [**app_store_submit_app_manifest**](docs/AppStoreApi.md#app_store_submit_app_manifest)                                                                | **POST** /app-store/integration/{integrationId}/manifest/submit          | Submit App Manifest                                                          |
 | _AppStoreApi_          | [**app_store_submit_for_review**](docs/AppStoreApi.md#app_store_submit_for_review)                                                                    | **POST** /app-store/listing/{listingId}/submit-for-review                | Submit Listing for Review                                                    |
+| _AppStoreApi_          | [**app_store_submit_listing_update**](docs/AppStoreApi.md#app_store_submit_listing_update)                                                            | **POST** /app-store/listing/{listingId}/update/submit                    | Submit Listing Update for Review                                             |
 | _AppStoreApi_          | [**app_store_uninstall_app**](docs/AppStoreApi.md#app_store_uninstall_app)                                                                            | **POST** /app-store/listing/{listingId}/uninstall                        | Uninstall App                                                                |
 | _AppStoreApi_          | [**app_store_unsubmit_for_review**](docs/AppStoreApi.md#app_store_unsubmit_for_review)                                                                | **POST** /app-store/listing/{listingId}/unsubmit-for-review              | Unsubmit Listing from Review                                                 |
 | _AppStoreApi_          | [**app_store_update_listing**](docs/AppStoreApi.md#app_store_update_listing)                                                                          | **POST** /app-store/listing/{listingId}/update                           | Update App Store Listing                                                     |
+| _AppStoreApi_          | [**app_store_withdraw_listing_update**](docs/AppStoreApi.md#app_store_withdraw_listing_update)                                                        | **POST** /app-store/listing/{listingId}/update/withdraw                  | Withdraw Listing Update from Review                                          |
 | _AppStoreAdminApi_     | [**app_store_admin_get_all_listings**](docs/AppStoreAdminApi.md#app_store_admin_get_all_listings)                                                     | **POST** /app-store/admin/listings                                       | Get All Listings (Admin)                                                     |
+| _AppStoreAdminApi_     | [**app_store_admin_review_listing_update**](docs/AppStoreAdminApi.md#app_store_admin_review_listing_update)                                           | **POST** /app-store/admin/listing/{listingId}/update/review              | Review Listing Update (Admin)                                                |
 | _AppStoreAdminApi_     | [**app_store_admin_update_listing_status**](docs/AppStoreAdminApi.md#app_store_admin_update_listing_status)                                           | **POST** /app-store/admin/listing/{listingId}/status                     | Update Listing Status (Admin)                                                |
 | _AppStoreAdminApi_     | [**app_store_admin_update_promotion_level**](docs/AppStoreAdminApi.md#app_store_admin_update_promotion_level)                                         | **POST** /app-store/admin/listing/{listingId}/promotion                  | Update Promotion Level (Admin)                                               |
 | _AppStoreAdminApi_     | [**app_store_is_admin**](docs/AppStoreAdminApi.md#app_store_is_admin)                                                                                 | **GET** /app-store/admin/check                                           | Check Admin Status                                                           |
@@ -202,11 +211,13 @@ All URIs are relative to _/api_
 | _ContactMethodsApi_    | [**contact_methods_verify_contact_method**](docs/ContactMethodsApi.md#contact_methods_verify_contact_method)                                          | **POST** /profile/contact-methods/verify                                 | Verify Contact Method                                                        |
 | _ContactMethodsApi_    | [**contact_methods_verify_with_credential**](docs/ContactMethodsApi.md#contact_methods_verify_with_credential)                                        | **POST** /profile/contact-methods/verify-with-credential                 | Verify Contact Method With Credential                                        |
 | _ContractsApi_         | [**contracts_add_auto_boosts_to_contract**](docs/ContractsApi.md#contracts_add_auto_boosts_to_contract)                                               | **POST** /consent-flow-contracts/autoboosts/add                          | Add autoboosts to a contract                                                 |
+| _ContractsApi_         | [**contracts_add_contract_recipient**](docs/ContractsApi.md#contracts_add_contract_recipient)                                                         | **POST** /consent-flow-contract/recipient/add                            | Add a data recipient before first consent                                    |
 | _ContractsApi_         | [**contracts_cancel_contract_request**](docs/ContractsApi.md#contracts_cancel_contract_request)                                                       | **POST** /consent-flow-contracts/cancel-request                          | Cancels/removes a contract request                                           |
 | _ContractsApi_         | [**contracts_consent_to_contract**](docs/ContractsApi.md#contracts_consent_to_contract)                                                               | **POST** /consent-flow-contract/consent                                  | Consent To Contract                                                          |
 | _ContractsApi_         | [**contracts_create_consent_flow_contract**](docs/ContractsApi.md#contracts_create_consent_flow_contract)                                             | **POST** /consent-flow-contract                                          | Create Consent Flow Contract                                                 |
 | _ContractsApi_         | [**contracts_delete_consent_flow_contract**](docs/ContractsApi.md#contracts_delete_consent_flow_contract)                                             | **DELETE** /consent-flow-contract                                        | Delete a Consent Flow Contract                                               |
 | _ContractsApi_         | [**contracts_delete_credential_from_all_contracts**](docs/ContractsApi.md#contracts_delete_credential_from_all_contracts)                             | **POST** /consent-flow-contract/consent/prune-deleted-uris               | Delete credential references from all consent terms                          |
+| _ContractsApi_         | [**contracts_deny_contract_request**](docs/ContractsApi.md#contracts_deny_contract_request)                                                           | **POST** /consent-flow-contracts/deny-request                            | Deny a pending contract request as its target                                |
 | _ContractsApi_         | [**contracts_forward_contract_request_to_profile**](docs/ContractsApi.md#contracts_forward_contract_request_to_profile)                               | **POST** /consent-flow-contracts/forward-request-to-profile              | Forward a contract request                                                   |
 | _ContractsApi_         | [**contracts_get_all_contract_requests_for_profile**](docs/ContractsApi.md#contracts_get_all_contract_requests_for_profile)                           | **GET** /consent-flow-contracts/all-requests-for-profile                 | Get all contract requests for a target profile                               |
 | _ContractsApi_         | [**contracts_get_all_credentials_for_terms**](docs/ContractsApi.md#contracts_get_all_credentials_for_terms)                                           | **POST** /consent-flow-contracts/credentials                             | Get all credentials written to any terms                                     |
@@ -223,8 +234,10 @@ All URIs are relative to _/api_
 | _ContractsApi_         | [**contracts_get_terms_transaction_history**](docs/ContractsApi.md#contracts_get_terms_transaction_history)                                           | **POST** /consent-flow-contract/consent/history                          | Gets Transaction History                                                     |
 | _ContractsApi_         | [**contracts_mark_contract_request_as_seen**](docs/ContractsApi.md#contracts_mark_contract_request_as_seen)                                           | **POST** /consent-flow-contracts/mark-request-as-seen                    | Marks a contract request as seen                                             |
 | _ContractsApi_         | [**contracts_remove_auto_boosts_from_contract**](docs/ContractsApi.md#contracts_remove_auto_boosts_from_contract)                                     | **POST** /consent-flow-contracts/autoboosts/remove                       | Remove autoboosts from a contract                                            |
+| _ContractsApi_         | [**contracts_remove_contract_recipient**](docs/ContractsApi.md#contracts_remove_contract_recipient)                                                   | **POST** /consent-flow-contract/recipient/remove                         | Remove a data recipient                                                      |
 | _ContractsApi_         | [**contracts_send_ai_insight_share_request**](docs/ContractsApi.md#contracts_send_ai_insight_share_request)                                           | **POST** /consent-flow-contracts/ai-insights/share-request               | AI Insights, consent flow share-notifcation request                          |
 | _ContractsApi_         | [**contracts_send_ai_insights_contract_request**](docs/ContractsApi.md#contracts_send_ai_insights_contract_request)                                   | **POST** /consent-flow-contracts/ai-insights/request                     | AI Insights, consent flow notifcation request                                |
+| _ContractsApi_         | [**contracts_send_contract_request**](docs/ContractsApi.md#contracts_send_contract_request)                                                           | **POST** /consent-flow-contracts/request                                 | Send an attributed contract request                                          |
 | _ContractsApi_         | [**contracts_sync_credentials_to_contract**](docs/ContractsApi.md#contracts_sync_credentials_to_contract)                                             | **POST** /consent-flow-contract/sync                                     | Sync credentials to a contract                                               |
 | _ContractsApi_         | [**contracts_update_consented_contract_terms**](docs/ContractsApi.md#contracts_update_consented_contract_terms)                                       | **POST** /consent-flow-contract/consent/update                           | Updates Contract Terms                                                       |
 | _ContractsApi_         | [**contracts_verify_consent**](docs/ContractsApi.md#contracts_verify_consent)                                                                         | **GET** /consent-flow-contract/verify                                    | Verifies that a profile has consented to a contract                          |
@@ -313,14 +326,17 @@ All URIs are relative to _/api_
 | _ProfilesApi_          | [**profile_update_profile**](docs/ProfilesApi.md#profile_update_profile)                                                                              | **POST** /profile                                                        | Update your profile                                                          |
 | _SendApi_              | [**boost_send**](docs/SendApi.md#boost_send)                                                                                                          | **POST** /send                                                           | Send data to a recipient                                                     |
 | _ShareLinksApi_        | [**public_share_links_acknowledge_view**](docs/ShareLinksApi.md#public_share_links_acknowledge_view)                                                  | **POST** /public/share-links/acknowledge-view                            | Acknowledge a share view receipt                                             |
+| _ShareLinksApi_        | [**public_share_links_attachment_chunk**](docs/ShareLinksApi.md#public_share_links_attachment_chunk)                                                  | **POST** /public/share-links/attachment-chunk                            | Fetch guarded encrypted attachment chunk                                     |
 | _ShareLinksApi_        | [**public_share_links_content**](docs/ShareLinksApi.md#public_share_links_content)                                                                    | **POST** /public/share-links/{id}/content                                | Fetch guarded share content                                                  |
 | _ShareLinksApi_        | [**public_share_links_resolve**](docs/ShareLinksApi.md#public_share_links_resolve)                                                                    | **POST** /public/share-links/{id}                                        | Resolve public share metadata                                                |
 | _ShareLinksApi_        | [**share_links_create**](docs/ShareLinksApi.md#share_links_create)                                                                                    | **POST** /share-links/create                                             | Create an owner share link                                                   |
+| _ShareLinksApi_        | [**share_links_delete_attachment_chunks**](docs/ShareLinksApi.md#share_links_delete_attachment_chunks)                                                | **POST** /share-links/attachment-chunks/delete                           | Delete unreferenced encrypted attachment                                     |
 | _ShareLinksApi_        | [**share_links_get**](docs/ShareLinksApi.md#share_links_get)                                                                                          | **GET** /share-links/{id}                                                | Get owner share-link metadata                                                |
 | _ShareLinksApi_        | [**share_links_get_content**](docs/ShareLinksApi.md#share_links_get_content)                                                                          | **GET** /share-links/{id}/content                                        | Get encrypted share content (owner only)                                     |
 | _ShareLinksApi_        | [**share_links_get_operation_status**](docs/ShareLinksApi.md#share_links_get_operation_status)                                                        | **GET** /share-links/operations/{operationId}                            | Get owner scoped operation status                                            |
 | _ShareLinksApi_        | [**share_links_get_recovery**](docs/ShareLinksApi.md#share_links_get_recovery)                                                                        | **GET** /share-links/{id}/recovery                                       | Get owner-encrypted recovery (owner only)                                    |
 | _ShareLinksApi_        | [**share_links_list**](docs/ShareLinksApi.md#share_links_list)                                                                                        | **GET** /share-links                                                     | List owner share links                                                       |
+| _ShareLinksApi_        | [**share_links_put_attachment_chunk**](docs/ShareLinksApi.md#share_links_put_attachment_chunk)                                                        | **POST** /share-links/attachment-chunk/put                               | Stage encrypted share attachment chunk                                       |
 | _ShareLinksApi_        | [**share_links_retry**](docs/ShareLinksApi.md#share_links_retry)                                                                                      | **POST** /share-links/retry                                              | Retry an owner operation                                                     |
 | _ShareLinksApi_        | [**share_links_revoke**](docs/ShareLinksApi.md#share_links_revoke)                                                                                    | **POST** /share-links/revoke                                             | Revoke an owner share link                                                   |
 | _ShareLinksApi_        | [**share_links_update**](docs/ShareLinksApi.md#share_links_update)                                                                                    | **POST** /share-links/update                                             | Update an owner share link                                                   |
@@ -397,25 +413,35 @@ All URIs are relative to _/api_
 - [ActivityGetMyCredentialLifecycleStatusesRequest](docs/ActivityGetMyCredentialLifecycleStatusesRequest.md)
 - [AppStoreAddBoostToListingRequest](docs/AppStoreAddBoostToListingRequest.md)
 - [AppStoreAdminGetAllListingsRequest](docs/AppStoreAdminGetAllListingsRequest.md)
+- [AppStoreAdminReviewListingUpdateRequest](docs/AppStoreAdminReviewListingUpdateRequest.md)
 - [AppStoreAdminUpdateListingStatusRequest](docs/AppStoreAdminUpdateListingStatusRequest.md)
 - [AppStoreAdminUpdatePromotionLevelRequest](docs/AppStoreAdminUpdatePromotionLevelRequest.md)
 - [AppStoreAppEventRequest](docs/AppStoreAppEventRequest.md)
 - [AppStoreAppEventRequestEvent](docs/AppStoreAppEventRequestEvent.md)
-- [AppStoreAppEventRequestEventOneOf](docs/AppStoreAppEventRequestEventOneOf.md)
-- [AppStoreAppEventRequestEventOneOf1](docs/AppStoreAppEventRequestEventOneOf1.md)
-- [AppStoreAppEventRequestEventOneOf2](docs/AppStoreAppEventRequestEventOneOf2.md)
-- [AppStoreAppEventRequestEventOneOf3](docs/AppStoreAppEventRequestEventOneOf3.md)
-- [AppStoreAppEventRequestEventOneOf4](docs/AppStoreAppEventRequestEventOneOf4.md)
-- [AppStoreAppEventRequestEventOneOf5](docs/AppStoreAppEventRequestEventOneOf5.md)
-- [AppStoreAppEventRequestEventOneOf5SummaryData](docs/AppStoreAppEventRequestEventOneOf5SummaryData.md)
-- [AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner](docs/AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner.md)
-- [AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords](docs/AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords.md)
-- [AppStoreAppEventRequestEventOneOf5SummaryDataReflectionsInner](docs/AppStoreAppEventRequestEventOneOf5SummaryDataReflectionsInner.md)
-- [AppStoreAppEventRequestEventOneOf5SummaryDataSkillsInner](docs/AppStoreAppEventRequestEventOneOf5SummaryDataSkillsInner.md)
-- [AppStoreAppEventRequestEventOneOf6](docs/AppStoreAppEventRequestEventOneOf6.md)
-- [AppStoreAppEventRequestEventOneOf7](docs/AppStoreAppEventRequestEventOneOf7.md)
-- [AppStoreAppEventRequestEventOneOf8](docs/AppStoreAppEventRequestEventOneOf8.md)
-- [AppStoreAppEventRequestEventOneOf9](docs/AppStoreAppEventRequestEventOneOf9.md)
+- [AppStoreAppEventRequestEventAnyOf](docs/AppStoreAppEventRequestEventAnyOf.md)
+- [AppStoreAppEventRequestEventAnyOf1](docs/AppStoreAppEventRequestEventAnyOf1.md)
+- [AppStoreAppEventRequestEventAnyOf10](docs/AppStoreAppEventRequestEventAnyOf10.md)
+- [AppStoreAppEventRequestEventAnyOf10Scopes](docs/AppStoreAppEventRequestEventAnyOf10Scopes.md)
+- [AppStoreAppEventRequestEventAnyOf10ScopesRead](docs/AppStoreAppEventRequestEventAnyOf10ScopesRead.md)
+- [AppStoreAppEventRequestEventAnyOf10ScopesWrite](docs/AppStoreAppEventRequestEventAnyOf10ScopesWrite.md)
+- [AppStoreAppEventRequestEventAnyOf2](docs/AppStoreAppEventRequestEventAnyOf2.md)
+- [AppStoreAppEventRequestEventAnyOf3](docs/AppStoreAppEventRequestEventAnyOf3.md)
+- [AppStoreAppEventRequestEventAnyOf4](docs/AppStoreAppEventRequestEventAnyOf4.md)
+- [AppStoreAppEventRequestEventAnyOf5](docs/AppStoreAppEventRequestEventAnyOf5.md)
+- [AppStoreAppEventRequestEventAnyOf5SummaryData](docs/AppStoreAppEventRequestEventAnyOf5SummaryData.md)
+- [AppStoreAppEventRequestEventAnyOf5SummaryDataNextStepsInner](docs/AppStoreAppEventRequestEventAnyOf5SummaryDataNextStepsInner.md)
+- [AppStoreAppEventRequestEventAnyOf5SummaryDataNextStepsInnerKeywords](docs/AppStoreAppEventRequestEventAnyOf5SummaryDataNextStepsInnerKeywords.md)
+- [AppStoreAppEventRequestEventAnyOf5SummaryDataReflectionsInner](docs/AppStoreAppEventRequestEventAnyOf5SummaryDataReflectionsInner.md)
+- [AppStoreAppEventRequestEventAnyOf5SummaryDataSkillsInner](docs/AppStoreAppEventRequestEventAnyOf5SummaryDataSkillsInner.md)
+- [AppStoreAppEventRequestEventAnyOf6](docs/AppStoreAppEventRequestEventAnyOf6.md)
+- [AppStoreAppEventRequestEventAnyOf7](docs/AppStoreAppEventRequestEventAnyOf7.md)
+- [AppStoreAppEventRequestEventAnyOf8](docs/AppStoreAppEventRequestEventAnyOf8.md)
+- [AppStoreAppEventRequestEventAnyOf9](docs/AppStoreAppEventRequestEventAnyOf9.md)
+- [AppStoreAppEventRequestEventAnyOfAnyOf](docs/AppStoreAppEventRequestEventAnyOfAnyOf.md)
+- [AppStoreAppEventRequestEventAnyOfAnyOf1](docs/AppStoreAppEventRequestEventAnyOfAnyOf1.md)
+- [AppStoreApplyManifestVersion200Response](docs/AppStoreApplyManifestVersion200Response.md)
+- [AppStoreApplyManifestVersion200ResponseReconciled](docs/AppStoreApplyManifestVersion200ResponseReconciled.md)
+- [AppStoreApplyManifestVersionRequest](docs/AppStoreApplyManifestVersionRequest.md)
 - [AppStoreAssociateListingWithSigningAuthorityRequest](docs/AppStoreAssociateListingWithSigningAuthorityRequest.md)
 - [AppStoreBrowseListedAppsRequest](docs/AppStoreBrowseListedAppsRequest.md)
 - [AppStoreCreateListingRequest](docs/AppStoreCreateListingRequest.md)
@@ -424,17 +450,68 @@ All URIs are relative to _/api_
 - [AppStoreGetInstalledApps200Response](docs/AppStoreGetInstalledApps200Response.md)
 - [AppStoreGetInstalledApps200ResponseRecordsInner](docs/AppStoreGetInstalledApps200ResponseRecordsInner.md)
 - [AppStoreGetListing200Response](docs/AppStoreGetListing200Response.md)
+- [AppStoreGetListing200ResponsePendingUpdate](docs/AppStoreGetListing200ResponsePendingUpdate.md)
+- [AppStoreGetListing200ResponsePendingUpdateChanges](docs/AppStoreGetListing200ResponsePendingUpdateChanges.md)
 - [AppStoreGetListing200ResponseSubmitter](docs/AppStoreGetListing200ResponseSubmitter.md)
 - [AppStoreGetListingSigningAuthority200Response](docs/AppStoreGetListingSigningAuthority200Response.md)
 - [AppStoreGetListingsForIntegration200Response](docs/AppStoreGetListingsForIntegration200Response.md)
 - [AppStoreGetListingsForIntegration200ResponseRecordsInner](docs/AppStoreGetListingsForIntegration200ResponseRecordsInner.md)
+- [AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate](docs/AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate.md)
+- [AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdateChanges](docs/AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdateChanges.md)
 - [AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter](docs/AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.md)
 - [AppStoreGetListingsForIntegrationRequest](docs/AppStoreGetListingsForIntegrationRequest.md)
+- [AppStoreGetManifestDiff200Response](docs/AppStoreGetManifestDiff200Response.md)
+- [AppStoreGetManifestDiff200ResponseTemplates](docs/AppStoreGetManifestDiff200ResponseTemplates.md)
+- [AppStoreGetManifestDiff200ResponseTemplatesChangedInner](docs/AppStoreGetManifestDiff200ResponseTemplatesChangedInner.md)
+- [AppStoreGetManifestVersion200Response](docs/AppStoreGetManifestVersion200Response.md)
+- [AppStoreGetManifestVersion200ResponseManifest](docs/AppStoreGetManifestVersion200ResponseManifest.md)
+- [AppStoreGetManifestVersion200ResponseManifestConsentRequestsInner](docs/AppStoreGetManifestVersion200ResponseManifestConsentRequestsInner.md)
+- [AppStoreGetManifestVersion200ResponseManifestConsentRequestsInnerScopes](docs/AppStoreGetManifestVersion200ResponseManifestConsentRequestsInnerScopes.md)
+- [AppStoreGetManifestVersion200ResponseManifestConsentRequestsInnerScopesRead](docs/AppStoreGetManifestVersion200ResponseManifestConsentRequestsInnerScopesRead.md)
+- [AppStoreGetManifestVersion200ResponseManifestConsentRequestsInnerScopesWrite](docs/AppStoreGetManifestVersion200ResponseManifestConsentRequestsInnerScopesWrite.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInner](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInner.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplate](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplate.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1Activity](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1Activity.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1AlignmentsInner](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1AlignmentsInner.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1Credits](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1Credits.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1Criteria](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1Criteria.md)
+- [AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1EvidenceInner](docs/AppStoreGetManifestVersion200ResponseManifestTemplatesInnerTemplateAnyOf1EvidenceInner.md)
+- [AppStoreGetManifestVersions200Response](docs/AppStoreGetManifestVersions200Response.md)
+- [AppStoreGetManifestVersions200ResponseRecordsInner](docs/AppStoreGetManifestVersions200ResponseRecordsInner.md)
 - [AppStoreGetMyCredentialsFromApp200Response](docs/AppStoreGetMyCredentialsFromApp200Response.md)
 - [AppStoreGetMyCredentialsFromApp200ResponseRecordsInner](docs/AppStoreGetMyCredentialsFromApp200ResponseRecordsInner.md)
 - [AppStoreRemoveBoostFromListingRequest](docs/AppStoreRemoveBoostFromListingRequest.md)
 - [AppStoreSendAppNotification200Response](docs/AppStoreSendAppNotification200Response.md)
 - [AppStoreSendAppNotificationRequest](docs/AppStoreSendAppNotificationRequest.md)
+- [AppStoreSubmitAppManifest200Response](docs/AppStoreSubmitAppManifest200Response.md)
+- [AppStoreSubmitAppManifest200ResponseDiff](docs/AppStoreSubmitAppManifest200ResponseDiff.md)
+- [AppStoreSubmitAppManifest200ResponseDiffConsentScopes](docs/AppStoreSubmitAppManifest200ResponseDiffConsentScopes.md)
+- [AppStoreSubmitAppManifest200ResponseDiffPermissions](docs/AppStoreSubmitAppManifest200ResponseDiffPermissions.md)
+- [AppStoreSubmitAppManifest200ResponseDiffTemplates](docs/AppStoreSubmitAppManifest200ResponseDiffTemplates.md)
+- [AppStoreSubmitAppManifest200ResponseDiffTemplatesAddedInner](docs/AppStoreSubmitAppManifest200ResponseDiffTemplatesAddedInner.md)
+- [AppStoreSubmitAppManifest200ResponseDiffTemplatesChangedInner](docs/AppStoreSubmitAppManifest200ResponseDiffTemplatesChangedInner.md)
+- [AppStoreSubmitAppManifest200ResponseDiffTemplatesRemovedInner](docs/AppStoreSubmitAppManifest200ResponseDiffTemplatesRemovedInner.md)
+- [AppStoreSubmitAppManifestRequest](docs/AppStoreSubmitAppManifestRequest.md)
+- [AppStoreSubmitAppManifestRequestManifest](docs/AppStoreSubmitAppManifestRequestManifest.md)
+- [AppStoreSubmitAppManifestRequestManifestConsentRequestsInner](docs/AppStoreSubmitAppManifestRequestManifestConsentRequestsInner.md)
+- [AppStoreSubmitAppManifestRequestManifestConsentRequestsInnerScopes](docs/AppStoreSubmitAppManifestRequestManifestConsentRequestsInnerScopes.md)
+- [AppStoreSubmitAppManifestRequestManifestConsentRequestsInnerScopesRead](docs/AppStoreSubmitAppManifestRequestManifestConsentRequestsInnerScopesRead.md)
+- [AppStoreSubmitAppManifestRequestManifestConsentRequestsInnerScopesWrite](docs/AppStoreSubmitAppManifestRequestManifestConsentRequestsInnerScopesWrite.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInner](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInner.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplate](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplate.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1Activity](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1Activity.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1AlignmentsInner](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1AlignmentsInner.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1Credits](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1Credits.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1CreditsAvailable](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1CreditsAvailable.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1CreditsEarned](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1CreditsEarned.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1Criteria](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1Criteria.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1EvidenceInner](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1EvidenceInner.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1WalletSkillsInner](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1WalletSkillsInner.md)
+- [AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOfWalletSkillsInner](docs/AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOfWalletSkillsInner.md)
 - [AppStoreUpdateListingRequest](docs/AppStoreUpdateListingRequest.md)
 - [AppStoreUpdateListingRequestUpdates](docs/AppStoreUpdateListingRequestUpdates.md)
 - [AuthGrantsAddAuthGrantRequest](docs/AuthGrantsAddAuthGrantRequest.md)
@@ -691,6 +768,7 @@ All URIs are relative to _/api_
 - [ContactMethodsVerifyWithCredentialRequest](docs/ContactMethodsVerifyWithCredentialRequest.md)
 - [ContractsAddAutoBoostsToContractRequest](docs/ContractsAddAutoBoostsToContractRequest.md)
 - [ContractsAddAutoBoostsToContractRequestAutoboostsInner](docs/ContractsAddAutoBoostsToContractRequestAutoboostsInner.md)
+- [ContractsAddContractRecipientRequest](docs/ContractsAddContractRecipientRequest.md)
 - [ContractsCancelContractRequestRequest](docs/ContractsCancelContractRequestRequest.md)
 - [ContractsConsentToContract200Response](docs/ContractsConsentToContract200Response.md)
 - [ContractsConsentToContractRequest](docs/ContractsConsentToContractRequest.md)
@@ -712,6 +790,7 @@ All URIs are relative to _/api_
 - [ContractsCreateConsentFlowContractRequestContractWriteCredentials](docs/ContractsCreateConsentFlowContractRequestContractWriteCredentials.md)
 - [ContractsDeleteCredentialFromAllContracts200Response](docs/ContractsDeleteCredentialFromAllContracts200Response.md)
 - [ContractsDeleteCredentialFromAllContractsRequest](docs/ContractsDeleteCredentialFromAllContractsRequest.md)
+- [ContractsDenyContractRequestRequest](docs/ContractsDenyContractRequestRequest.md)
 - [ContractsForwardContractRequestToProfileRequest](docs/ContractsForwardContractRequestToProfileRequest.md)
 - [ContractsGetAllContractRequestsForProfile200ResponseInner](docs/ContractsGetAllContractRequestsForProfile200ResponseInner.md)
 - [ContractsGetAllContractRequestsForProfile200ResponseInnerContract](docs/ContractsGetAllContractRequestsForProfile200ResponseInnerContract.md)
@@ -777,8 +856,10 @@ All URIs are relative to _/api_
 - [ContractsGetTermsTransactionHistoryRequestQueryTermsReadCredentials](docs/ContractsGetTermsTransactionHistoryRequestQueryTermsReadCredentials.md)
 - [ContractsMarkContractRequestAsSeenRequest](docs/ContractsMarkContractRequestAsSeenRequest.md)
 - [ContractsRemoveAutoBoostsFromContractRequest](docs/ContractsRemoveAutoBoostsFromContractRequest.md)
+- [ContractsRemoveContractRecipientRequest](docs/ContractsRemoveContractRecipientRequest.md)
 - [ContractsSendAiInsightShareRequestRequest](docs/ContractsSendAiInsightShareRequestRequest.md)
 - [ContractsSendAiInsightsContractRequestRequest](docs/ContractsSendAiInsightsContractRequestRequest.md)
+- [ContractsSendContractRequestRequest](docs/ContractsSendContractRequestRequest.md)
 - [ContractsSyncCredentialsToContractRequest](docs/ContractsSyncCredentialsToContractRequest.md)
 - [ContractsUpdateConsentedContractTermsRequest](docs/ContractsUpdateConsentedContractTermsRequest.md)
 - [ContractsUpdateConsentedContractTermsRequestTerms](docs/ContractsUpdateConsentedContractTermsRequestTerms.md)
@@ -799,6 +880,8 @@ All URIs are relative to _/api_
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials.md)
+- [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner.md)
+- [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials.md)
@@ -807,6 +890,7 @@ All URIs are relative to _/api_
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval.md)
+- [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials.md)
@@ -878,6 +962,8 @@ All URIs are relative to _/api_
 - [InboxClaimRequestCredentialAnyOf](docs/InboxClaimRequestCredentialAnyOf.md)
 - [InboxClaimRequestCredentialAnyOf1](docs/InboxClaimRequestCredentialAnyOf1.md)
 - [InboxFinalize200Response](docs/InboxFinalize200Response.md)
+- [InboxFinalize200ResponseDeliveriesInner](docs/InboxFinalize200ResponseDeliveriesInner.md)
+- [InboxFinalize200ResponseVerifiableCredentialsInner](docs/InboxFinalize200ResponseVerifiableCredentialsInner.md)
 - [InboxGetBatch200Response](docs/InboxGetBatch200Response.md)
 - [InboxGetBatch200ResponseItemsInner](docs/InboxGetBatch200ResponseItemsInner.md)
 - [InboxGetBatch200ResponseItemsInnerResult](docs/InboxGetBatch200ResponseItemsInnerResult.md)
@@ -983,6 +1069,8 @@ All URIs are relative to _/api_
 - [ProfileUpdateProfileRequest](docs/ProfileUpdateProfileRequest.md)
 - [PublicShareLinksAcknowledgeView200Response](docs/PublicShareLinksAcknowledgeView200Response.md)
 - [PublicShareLinksAcknowledgeViewRequest](docs/PublicShareLinksAcknowledgeViewRequest.md)
+- [PublicShareLinksAttachmentChunk200Response](docs/PublicShareLinksAttachmentChunk200Response.md)
+- [PublicShareLinksAttachmentChunkRequest](docs/PublicShareLinksAttachmentChunkRequest.md)
 - [PublicShareLinksContent200Response](docs/PublicShareLinksContent200Response.md)
 - [PublicShareLinksContentRequest](docs/PublicShareLinksContentRequest.md)
 - [PublicShareLinksResolve200Response](docs/PublicShareLinksResolve200Response.md)
@@ -1002,7 +1090,10 @@ All URIs are relative to _/api_
 - [ShareLinksCreate200ResponseOneOfShare](docs/ShareLinksCreate200ResponseOneOfShare.md)
 - [ShareLinksCreate200ResponseOneOfShareMinorPolicy](docs/ShareLinksCreate200ResponseOneOfShareMinorPolicy.md)
 - [ShareLinksCreateRequest](docs/ShareLinksCreateRequest.md)
+- [ShareLinksCreateRequestAttachment](docs/ShareLinksCreateRequestAttachment.md)
 - [ShareLinksCreateRequestEnvelope](docs/ShareLinksCreateRequestEnvelope.md)
+- [ShareLinksDeleteAttachmentChunks200Response](docs/ShareLinksDeleteAttachmentChunks200Response.md)
+- [ShareLinksDeleteAttachmentChunksRequest](docs/ShareLinksDeleteAttachmentChunksRequest.md)
 - [ShareLinksGet200Response](docs/ShareLinksGet200Response.md)
 - [ShareLinksGet200ResponseOneOf](docs/ShareLinksGet200ResponseOneOf.md)
 - [ShareLinksGet200ResponseOneOf1](docs/ShareLinksGet200ResponseOneOf1.md)
@@ -1014,10 +1105,13 @@ All URIs are relative to _/api_
 - [ShareLinksList200Response](docs/ShareLinksList200Response.md)
 - [ShareLinksList200ResponseRecordsInner](docs/ShareLinksList200ResponseRecordsInner.md)
 - [ShareLinksList200ResponseRecordsInnerMinorPolicy](docs/ShareLinksList200ResponseRecordsInnerMinorPolicy.md)
+- [ShareLinksPutAttachmentChunk200Response](docs/ShareLinksPutAttachmentChunk200Response.md)
+- [ShareLinksPutAttachmentChunkRequest](docs/ShareLinksPutAttachmentChunkRequest.md)
+- [ShareLinksPutAttachmentChunkRequestEnvelope](docs/ShareLinksPutAttachmentChunkRequestEnvelope.md)
 - [ShareLinksRetryRequest](docs/ShareLinksRetryRequest.md)
 - [ShareLinksRevokeRequest](docs/ShareLinksRevokeRequest.md)
 - [ShareLinksUpdateRequest](docs/ShareLinksUpdateRequest.md)
-- [ShareLinksUpdateRequestEnvelope](docs/ShareLinksUpdateRequestEnvelope.md)
+- [ShareLinksUpdateRequestAttachment](docs/ShareLinksUpdateRequestAttachment.md)
 - [SkillFrameworksAddFrameworkAdminRequest](docs/SkillFrameworksAddFrameworkAdminRequest.md)
 - [SkillFrameworksCountBoostsThatUseFramework200Response](docs/SkillFrameworksCountBoostsThatUseFramework200Response.md)
 - [SkillFrameworksCreateManagedBatchRequest](docs/SkillFrameworksCreateManagedBatchRequest.md)

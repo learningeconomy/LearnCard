@@ -137,7 +137,19 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInner(unitte
                             country = '', 
                             locale = '', 
                             approved = True, )
-                        ], ),
+                        ], 
+                    recipients = [
+                        openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                            profile_id = '012', 
+                            display_name = '', 
+                            short_bio = '', 
+                            image = '', 
+                            hero_image = '', 
+                            type = '', 
+                            is_service_profile = True, 
+                            did = '', )
+                        ], 
+                    audience_version = 0, ),
                 terms = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms(
                     read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_read(
                         anonymize = True, 
@@ -167,6 +179,10 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInner(unitte
                     denied_writers = [
                         ''
                         ], ),
+                referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_referral(
+                    request_id = '', 
+                    requested_by = '', 
+                    external_reference_id = '', ),
                 transactions = [
                     openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner(
                         expires_at = '', 
@@ -205,6 +221,10 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInner(unitte
                             guardian_did = '', 
                             approved_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                             contract_updated_at = '', ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         id = '', 
                         action = 'consent', 
                         date = '', 
@@ -317,7 +337,19 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInner(unitte
                             country = '', 
                             locale = '', 
                             approved = True, )
-                        ], ),
+                        ], 
+                    recipients = [
+                        openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                            profile_id = '012', 
+                            display_name = '', 
+                            short_bio = '', 
+                            image = '', 
+                            hero_image = '', 
+                            type = '', 
+                            is_service_profile = True, 
+                            did = '', )
+                        ], 
+                    audience_version = 0, ),
                 terms = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms(
                     read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_read(
                         anonymize = True, 
@@ -385,6 +417,10 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInner(unitte
                             guardian_did = '', 
                             approved_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                             contract_updated_at = '', ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         id = '', 
                         action = 'consent', 
                         date = '', 

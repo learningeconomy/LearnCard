@@ -2,11 +2,12 @@
 
 ## Properties
 
-| Name       | Type      | Description | Notes      |
-| ---------- | --------- | ----------- | ---------- |
-| **limit**  | **float** |             | [optional] |
-| **cursor** | **str**   |             | [optional] |
-| **status** | **str**   |             | [optional] |
+| Name                     | Type      | Description | Notes      |
+| ------------------------ | --------- | ----------- | ---------- |
+| **limit**                | **float** |             | [optional] |
+| **cursor**               | **str**   |             | [optional] |
+| **status**               | **str**   |             | [optional] |
+| **pending_updates_only** | **bool**  |             | [optional] |
 
 ## Example
 

@@ -21,6 +21,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from uuid import UUID
 from openapi_client.models.share_links_create200_response_one_of_share_minor_policy import ShareLinksCreate200ResponseOneOfShareMinorPolicy
 from typing import Optional, Set
 from typing_extensions import Self
@@ -37,6 +38,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
     version: Annotated[int, Field(le=2147483647, strict=True, ge=1)]
     content_version: Annotated[int, Field(le=2147483647, strict=True, ge=1)] = Field(alias="contentVersion")
     status: StrictStr
+    attachment_id: Optional[UUID] = Field(default=None, alias="attachmentId")
+    attachment_chunk_count: Optional[Annotated[int, Field(le=16, strict=True, ge=1)]] = Field(default=None, alias="attachmentChunkCount")
     content_state: StrictStr = Field(alias="contentState")
     created_at: Optional[datetime] = Field(alias="createdAt")
     updated_at: Optional[datetime] = Field(alias="updatedAt")
@@ -49,13 +52,23 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
     minor_policy: ShareLinksCreate200ResponseOneOfShareMinorPolicy = Field(alias="minorPolicy")
     content_url: Optional[StrictStr] = Field(default=None, alias="contentUrl")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "title", "note", "selectedCount", "version", "contentVersion", "status", "contentState", "createdAt", "updatedAt", "expiresAt", "stoppedAt", "lastViewedAt", "viewCount", "passcodeProtected", "notifyOnView", "minorPolicy", "contentUrl"]
+    __properties: ClassVar[List[str]] = ["id", "title", "note", "selectedCount", "version", "contentVersion", "status", "attachmentId", "attachmentChunkCount", "contentState", "createdAt", "updatedAt", "expiresAt", "stoppedAt", "lastViewedAt", "viewCount", "passcodeProtected", "notifyOnView", "minorPolicy", "contentUrl"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
         if value not in set(['pending', 'active', 'stopped']):
             raise ValueError("must be one of enum values ('pending', 'active', 'stopped')")
+        return value
+
+    @field_validator('attachment_id', mode="before")
+    def attachment_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", value):
+            raise ValueError(r"must validate the regular expression /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/")
         return value
 
     @field_validator('content_state')
@@ -174,6 +187,16 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
         if self.note is None and "note" in self.model_fields_set:
             _dict['note'] = None
 
+        # set to None if attachment_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.attachment_id is None and "attachment_id" in self.model_fields_set:
+            _dict['attachmentId'] = None
+
+        # set to None if attachment_chunk_count (nullable) is None
+        # and model_fields_set contains the field
+        if self.attachment_chunk_count is None and "attachment_chunk_count" in self.model_fields_set:
+            _dict['attachmentChunkCount'] = None
+
         # set to None if created_at (nullable) is None
         # and model_fields_set contains the field
         if self.created_at is None and "created_at" in self.model_fields_set:
@@ -233,6 +256,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
             "version": obj.get("version"),
             "contentVersion": obj.get("contentVersion"),
             "status": obj.get("status"),
+            "attachmentId": obj.get("attachmentId"),
+            "attachmentChunkCount": obj.get("attachmentChunkCount"),
             "contentState": obj.get("contentState"),
             "createdAt": obj.get("createdAt"),
             "updatedAt": obj.get("updatedAt"),

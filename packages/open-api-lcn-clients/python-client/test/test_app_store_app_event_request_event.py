@@ -41,6 +41,8 @@ class TestAppStoreAppEventRequestEvent(unittest.TestCase):
                     'key' : null
                     },
                 prevent_duplicate_claim = True,
+                alias = '',
+                template = None,
                 boost_uri = '',
                 recipient = '',
                 limit = 1.337,
@@ -52,22 +54,22 @@ class TestAppStoreAppEventRequestEvent(unittest.TestCase):
                 detail_level = 'compact',
                 wait_for_sync = True,
                 session_title = '',
-                summary_data = openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data.appStore_appEvent_request_event_oneOf_5_summaryData(
+                summary_data = openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data.appStore_appEvent_request_event_anyOf_5_summaryData(
                     title = '', 
                     summary = '', 
                     learned = [
                         ''
                         ], 
                     skills = [
-                        openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data_skills_inner.appStore_appEvent_request_event_oneOf_5_summaryData_skills_inner(
+                        openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data_skills_inner.appStore_appEvent_request_event_anyOf_5_summaryData_skills_inner(
                             title = '', 
                             description = '', )
                         ], 
                     next_steps = [
-                        openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data_next_steps_inner.appStore_appEvent_request_event_oneOf_5_summaryData_nextSteps_inner(
+                        openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data_next_steps_inner.appStore_appEvent_request_event_anyOf_5_summaryData_nextSteps_inner(
                             title = '', 
                             description = '', 
-                            keywords = openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data_next_steps_inner_keywords.appStore_appEvent_request_event_oneOf_5_summaryData_nextSteps_inner_keywords(
+                            keywords = openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data_next_steps_inner_keywords.appStore_appEvent_request_event_anyOf_5_summaryData_nextSteps_inner_keywords(
                                 occupations = [
                                     ''
                                     ], 
@@ -83,7 +85,7 @@ class TestAppStoreAppEventRequestEvent(unittest.TestCase):
                                 field_of_study = '', ), )
                         ], 
                     reflections = [
-                        openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data_reflections_inner.appStore_appEvent_request_event_oneOf_5_summaryData_reflections_inner(
+                        openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data_reflections_inner.appStore_appEvent_request_event_anyOf_5_summaryData_reflections_inner(
                             title = '', 
                             description = '', )
                         ], ),
@@ -99,30 +101,42 @@ class TestAppStoreAppEventRequestEvent(unittest.TestCase):
                 amount = -9007199254740991,
                 keys = [
                     'z0'
-                    ]
+                    ],
+                scopes = openapi_client.models.app_store_app_event_request_event_any_of_10_scopes.appStore_appEvent_request_event_anyOf_10_scopes(
+                    read = openapi_client.models.app_store_app_event_request_event_any_of_10_scopes_read.appStore_appEvent_request_event_anyOf_10_scopes_read(
+                        credential_categories = [
+                            'Achievement'
+                            ], 
+                        personal_fields = [
+                            'name'
+                            ], ), 
+                    write = openapi_client.models.app_store_app_event_request_event_any_of_10_scopes_write.appStore_appEvent_request_event_anyOf_10_scopes_write(), 
+                    reason = '', )
             )
         else:
             return AppStoreAppEventRequestEvent(
                 type = 'send-credential',
                 template_alias = '',
+                alias = '',
+                template = None,
                 recipient = '',
                 session_title = '',
-                summary_data = openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data.appStore_appEvent_request_event_oneOf_5_summaryData(
+                summary_data = openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data.appStore_appEvent_request_event_anyOf_5_summaryData(
                     title = '', 
                     summary = '', 
                     learned = [
                         ''
                         ], 
                     skills = [
-                        openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data_skills_inner.appStore_appEvent_request_event_oneOf_5_summaryData_skills_inner(
+                        openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data_skills_inner.appStore_appEvent_request_event_anyOf_5_summaryData_skills_inner(
                             title = '', 
                             description = '', )
                         ], 
                     next_steps = [
-                        openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data_next_steps_inner.appStore_appEvent_request_event_oneOf_5_summaryData_nextSteps_inner(
+                        openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data_next_steps_inner.appStore_appEvent_request_event_anyOf_5_summaryData_nextSteps_inner(
                             title = '', 
                             description = '', 
-                            keywords = openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data_next_steps_inner_keywords.appStore_appEvent_request_event_oneOf_5_summaryData_nextSteps_inner_keywords(
+                            keywords = openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data_next_steps_inner_keywords.appStore_appEvent_request_event_anyOf_5_summaryData_nextSteps_inner_keywords(
                                 occupations = [
                                     ''
                                     ], 
@@ -138,12 +152,22 @@ class TestAppStoreAppEventRequestEvent(unittest.TestCase):
                                 field_of_study = '', ), )
                         ], 
                     reflections = [
-                        openapi_client.models.app_store_app_event_request_event_one_of_5_summary_data_reflections_inner.appStore_appEvent_request_event_oneOf_5_summaryData_reflections_inner(
+                        openapi_client.models.app_store_app_event_request_event_any_of_5_summary_data_reflections_inner.appStore_appEvent_request_event_anyOf_5_summaryData_reflections_inner(
                             title = '', 
                             description = '', )
                         ], ),
                 key = 'z0',
                 amount = -9007199254740991,
+                scopes = openapi_client.models.app_store_app_event_request_event_any_of_10_scopes.appStore_appEvent_request_event_anyOf_10_scopes(
+                    read = openapi_client.models.app_store_app_event_request_event_any_of_10_scopes_read.appStore_appEvent_request_event_anyOf_10_scopes_read(
+                        credential_categories = [
+                            'Achievement'
+                            ], 
+                        personal_fields = [
+                            'name'
+                            ], ), 
+                    write = openapi_client.models.app_store_app_event_request_event_any_of_10_scopes_write.appStore_appEvent_request_event_anyOf_10_scopes_write(), 
+                    reason = '', ),
         )
         """
 

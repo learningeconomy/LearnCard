@@ -60,7 +60,10 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInnerContract(unit
                             required = True, 
                             default_enabled = True, )
                         }, ),
-                uri = ''
+                uri = '',
+                name = '',
+                image = '',
+                description = ''
             )
         else:
             return ContractsGetAllContractRequestsForProfile200ResponseInnerContract(

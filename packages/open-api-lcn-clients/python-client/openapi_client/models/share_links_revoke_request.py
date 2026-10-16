@@ -96,6 +96,11 @@ class ShareLinksRevokeRequest(BaseModel):
         if self.id is None and "id" in self.model_fields_set:
             _dict['id'] = None
 
+        # set to None if client_request_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.client_request_id is None and "client_request_id" in self.model_fields_set:
+            _dict['clientRequestId'] = None
+
         return _dict
 
     @classmethod

@@ -66,6 +66,10 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                     denied_writers = [
                         ''
                         ], ),
+                referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                    request_id = '', 
+                    requested_by = '', 
+                    external_reference_id = '', ),
                 contract = openapi_client.models.contracts_get_consent_flow_contract_200_response.contracts_getConsentFlowContract_200_response(
                     contract = openapi_client.models.storage_resolve_200_response_any_of_any_of_1.storage_resolve_200_response_anyOf_anyOf_1(
                         read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
@@ -164,7 +168,19 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                             country = '', 
                             locale = '', 
                             approved = True, )
-                        ], ),
+                        ], 
+                    recipients = [
+                        openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                            profile_id = '012', 
+                            display_name = '', 
+                            short_bio = '', 
+                            image = '', 
+                            hero_image = '', 
+                            type = '', 
+                            is_service_profile = True, 
+                            did = '', )
+                        ], 
+                    audience_version = 0, ),
                 uri = '',
                 consenter = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
@@ -334,7 +350,19 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                             country = '', 
                             locale = '', 
                             approved = True, )
-                        ], ),
+                        ], 
+                    recipients = [
+                        openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                            profile_id = '012', 
+                            display_name = '', 
+                            short_bio = '', 
+                            image = '', 
+                            hero_image = '', 
+                            type = '', 
+                            is_service_profile = True, 
+                            did = '', )
+                        ], 
+                    audience_version = 0, ),
                 uri = '',
                 consenter = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
