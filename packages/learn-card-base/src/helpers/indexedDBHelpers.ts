@@ -12,7 +12,8 @@ const DEFAULT_PRESERVED = ['lcb-sss-keys'];
 
 // Firebase caches open connections to these databases across sign-outs. Deleting
 // them can block other tabs' auth initialization, request headers, or analytics.
-// Firebase signOut() removes the persisted user before this cleanup runs; preserve
+// Firebase signOut() removes the persisted user before this cleanup runs, and
+// the sign-in adapter verifies that removal with a bounded read-only check. Keep
 // its database infrastructure, not the authenticated session. Installations keeps
 // its SDK installation identity independently of the signed-in user.
 const ALWAYS_PRESERVED = [

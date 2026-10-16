@@ -117,13 +117,18 @@ test('logout removes the persisted user and permits login with older Firebase ta
     expect(await currentUser(logoutTab)).toBe('test-user');
 
     const blockedWarnings: string[] = [];
+    const verificationMessages: string[] = [];
     logoutTab.on('console', message => {
+        if (message.text().includes('Firebase persisted sign-in cleared after sign-out')) {
+            verificationMessages.push(message.text());
+        }
         if (message.text().includes('IndexedDB logout cleanup blocked')) {
             blockedWarnings.push(message.text());
         }
     });
 
     await logoutTab.evaluate(() => window.firebaseLogoutTest.logout());
+    expect(verificationMessages).toHaveLength(1);
     expect(await currentUser(logoutTab)).toBeNull();
     await expect.poll(() => currentUser(olderTab)).toBeNull();
 

@@ -56,6 +56,55 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
     if (server) await new Promise<void>(resolveClosed => server.close(() => resolveClosed()));
 });
+test.beforeEach(() => {
+    connections = 0;
+    usedTokens.clear();
+    waitingTabs.length = 0;
+});
+
+test('a hung tab bounds queued sign-in without stealing its lock, then permits retry', async ({
+    context,
+}) => {
+    const holder = await context.newPage();
+    await holder.goto(origin);
+    await holder.evaluate(async () => {
+        await new Promise<void>(acquired => {
+            void navigator.locks.request('learncard:web3auth:key-derivation', () => {
+                acquired();
+                return new Promise<void>(() => {});
+            });
+        });
+    });
+    const waiting = await context.newPage();
+    await waiting.clock.install();
+    await waiting.goto(origin);
+    const messages: string[] = [];
+    waiting.on('console', message => messages.push(message.text()));
+    const result = waiting.evaluate(() =>
+        window.web3AuthTabTest.deriveWithoutFirebase().catch((error: Error) => error.message)
+    );
+    await expect
+        .poll(() => waiting.evaluate(async () => (await navigator.locks.query()).pending?.length))
+        .toBe(1);
+    await waiting.clock.runFor(30_000);
+    expect(await result).toContain('Sign-in is taking longer in another tab');
+    expect(
+        messages.some(message => message.includes('Waiting for another tab to finish sign-in'))
+    ).toBe(true);
+    expect(connections).toBe(0);
+    const locks = await holder.evaluate(() => navigator.locks.query());
+    expect(locks.pending).toHaveLength(0);
+    expect(
+        locks.held?.filter(lock => lock.name === 'learncard:web3auth:key-derivation')
+    ).toHaveLength(1);
+    // Closing the holder releases its real browser lock. The expired request
+    // must not run later; retry starts a new operation and makes one connection.
+    await holder.close();
+    expect(await waiting.evaluate(() => window.web3AuthTabTest.deriveWithoutFirebase())).toBe(
+        'synthetic-private-key'
+    );
+    expect(connections).toBe(1);
+});
 
 test('one Firebase login coordinates ordinary setup and legacy upgrade across signed-out tabs', async ({
     context,

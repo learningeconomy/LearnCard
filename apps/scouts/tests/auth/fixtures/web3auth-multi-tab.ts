@@ -20,6 +20,7 @@ declare global {
         web3AuthTabTest: {
             ready: () => Promise<void>;
             signIn: () => Promise<void>;
+            deriveWithoutFirebase: () => Promise<string>;
             status: string;
             error?: string;
             key?: string;
@@ -31,6 +32,12 @@ window.web3AuthTabTest = {
     signIn: async () => {
         await signInWithCustomToken(auth, 'synthetic-custom-token');
     },
+    // Exercise real lock acquisition independently of Firebase notification timing.
+    deriveWithoutFirebase: () =>
+        deriveWeb3AuthKey(
+            { ...strategyConfig, isSessionCurrent: undefined },
+            `header.${btoa(JSON.stringify({ sub: 'test-user' }))}.synthetic-signature`
+        ),
     status: 'idle',
 };
 onAuthStateChanged(auth, async user => {

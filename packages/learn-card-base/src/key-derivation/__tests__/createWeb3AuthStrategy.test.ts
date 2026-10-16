@@ -49,7 +49,10 @@ describe('Web3Auth account setup coordination', () => {
         sdk.request.mockResolvedValue('synthetic-private-key');
         vi.stubGlobal('navigator', {});
     });
-    afterEach(() => vi.unstubAllGlobals());
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
 
     it('coalesces same-account initialization across strategy instances within a tab', async () => {
         let finish: () => void = () => undefined;
@@ -77,7 +80,7 @@ describe('Web3Auth account setup coordination', () => {
     it('waits for the browser lock before initializing and restores a matching SDK session', async () => {
         let run: (() => Promise<string>) | undefined;
         const request = vi.fn(
-            (_name: string, action: () => Promise<string>) =>
+            (_name: string, _options: LockOptions, action: () => Promise<string>) =>
                 new Promise<string>((resolve, reject) => {
                     run = () =>
                         action()
@@ -92,6 +95,7 @@ describe('Web3Auth account setup coordination', () => {
         const result = derive(strategy);
         expect(request).toHaveBeenCalledWith(
             'learncard:web3auth:key-derivation',
+            { signal: expect.any(AbortSignal) },
             expect.any(Function)
         );
         expect(sdk.init).not.toHaveBeenCalled();
@@ -139,7 +143,7 @@ describe('Web3Auth account setup coordination', () => {
     it('coalesces legacy upgrade extraction with ordinary sign-in under the same lock', async () => {
         let run: (() => Promise<string>) | undefined;
         const request = vi.fn(
-            (_name: string, action: () => Promise<string>) =>
+            (_name: string, _options: LockOptions, action: () => Promise<string>) =>
                 new Promise<string>((resolve, reject) => {
                     run = () =>
                         action()
@@ -160,6 +164,86 @@ describe('Web3Auth account setup coordination', () => {
             'synthetic-private-key',
         ]);
         expect(sdk.connect).toHaveBeenCalledOnce();
+    });
+
+    it('aborts a queued lock after 30 seconds, reports the wait, and allows retry', async () => {
+        vi.useFakeTimers();
+        let signal: AbortSignal | undefined;
+        const request = vi.fn(
+            (_name: string, options: LockOptions, _action: () => Promise<string>) =>
+                new Promise<string>((_resolve, reject) => {
+                    signal = options.signal;
+                    signal?.addEventListener('abort', () =>
+                        reject(new DOMException('Aborted', 'AbortError'))
+                    );
+                })
+        );
+        vi.stubGlobal('navigator', { locks: { request } });
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        const result = derive(strategy);
+        const rejection = expect(result).rejects.toThrow('Sign-in is taking longer in another tab');
+        await vi.advanceTimersByTimeAsync(1_000);
+        expect(sdk.info).toHaveBeenCalledWith(
+            'Waiting for another tab to finish sign-in',
+            expect.objectContaining({ setupAttemptId: expect.any(Number) })
+        );
+        await vi.advanceTimersByTimeAsync(29_000);
+        await rejection;
+        expect(signal?.aborted).toBe(true);
+        expect(sdk.init).not.toHaveBeenCalled();
+        expect(sdk.error).toHaveBeenCalledWith(
+            'Web3Auth account setup failed',
+            expect.objectContaining({ lockWaitTimedOut: true })
+        );
+        request.mockImplementationOnce(async (_name, _options, action) => action());
+        expect(await derive(strategy)).toBe('synthetic-private-key');
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('keeps an acquired lock and same-tab deduplication while the SDK runs past the deadline', async () => {
+        vi.useFakeTimers();
+        let finish: () => void = () => undefined;
+        sdk.init.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    finish = resolve;
+                })
+        );
+        let signal: AbortSignal | undefined;
+        let released = false;
+        const request = vi.fn(
+            async (_name: string, options: LockOptions, action: () => Promise<string>) => {
+                signal = options.signal;
+                try {
+                    return await action();
+                } finally {
+                    released = true;
+                }
+            }
+        );
+        vi.stubGlobal('navigator', { locks: { request } });
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        const first = derive(strategy);
+        await vi.advanceTimersByTimeAsync(60_000);
+        const second = derive(strategy);
+        expect(released).toBe(false);
+        expect(signal?.aborted).toBe(false);
+        expect(request).toHaveBeenCalledOnce();
+        expect(sdk.init).toHaveBeenCalledOnce();
+        expect(
+            sdk.info.mock.calls.some(
+                ([message]) => message === 'Waiting for another tab to finish sign-in'
+            )
+        ).toBe(false);
+        finish();
+        expect(await Promise.all([first, second])).toEqual([
+            'synthetic-private-key',
+            'synthetic-private-key',
+        ]);
+        expect(released).toBe(true);
+        expect(vi.getTimerCount()).toBe(0);
     });
 
     it('sanitizes a legacy upgrade replay failure before it reaches the caller', async () => {

@@ -25,6 +25,8 @@ import { getLogger } from '../logging/logger';
 
 const log = getLogger('web3auth-key-derivation');
 const DERIVATION_LOCK = 'learncard:web3auth:key-derivation';
+const LOCK_WAIT_TIMEOUT_MS = 30_000;
+const LOCK_WAIT_NOTICE_MS = 1_000;
 let derivationAttempt = 0;
 // Also deduplicate coordinator recreation within a document, including hosts
 // without Web Locks. Entries live only until the operation settles.
@@ -204,7 +206,18 @@ export const createWeb3AuthStrategy = (
             setupAttemptId,
             crossTabLockAvailable: Boolean(locks),
         });
+        const lockWaitController = locks ? new AbortController() : undefined;
+        let lockWaitTimedOut = false;
+        let waitTimeout: ReturnType<typeof setTimeout> | undefined;
+        let waitNotice: ReturnType<typeof setTimeout> | undefined;
+        const clearLockWait = (): void => {
+            clearTimeout(waitTimeout);
+            clearTimeout(waitNotice);
+        };
         const action = async (): Promise<string> => {
+            // Only queued acquisition has a deadline. Once acquired, retain the
+            // lock until the SDK settles, even if the network takes longer.
+            clearLockWait();
             const assertSessionCurrent = async (): Promise<void> => {
                 if (config.isSessionCurrent && !(await config.isSessionCurrent(uid))) {
                     throw new AuthSessionError('Sign-in changed while waiting.', 'no_session');
@@ -221,7 +234,20 @@ export const createWeb3AuthStrategy = (
             await assertSessionCurrent();
             return privateKey;
         };
-        const operation = (locks ? locks.request(DERIVATION_LOCK, action) : action())
+        if (lockWaitController) {
+            waitNotice = setTimeout(() => {
+                log.info('Waiting for another tab to finish sign-in', { setupAttemptId });
+            }, LOCK_WAIT_NOTICE_MS);
+            waitTimeout = setTimeout(() => {
+                lockWaitTimedOut = true;
+                lockWaitController.abort();
+            }, LOCK_WAIT_TIMEOUT_MS);
+        }
+        const operation = (
+            locks && lockWaitController
+                ? locks.request(DERIVATION_LOCK, { signal: lockWaitController.signal }, action)
+                : action()
+        )
             .then(privateKey => {
                 log.info('Web3Auth account setup completed', {
                     setupAttemptId,
@@ -242,17 +268,23 @@ export const createWeb3AuthStrategy = (
                     restoredIdentityMismatch:
                         message === 'Web3Auth restored session identity mismatch',
                     crossTabLockAvailable: Boolean(locks),
+                    lockWaitTimedOut,
                     elapsedMs: Math.round(performance.now() - startedAt),
                 });
                 // Torus errors can embed the full OAuth JWT. Do not propagate
                 // them into coordinator state, debug events, or the overlay.
                 throw new Error(
-                    tokenAlreadyUsed
-                        ? 'Sign-in is already completing in another tab. Please wait a moment and try again.'
-                        : 'We couldn’t finish signing you in. Please try again.'
+                    lockWaitTimedOut
+                        ? 'Sign-in is taking longer in another tab. Please close that tab and try again.'
+                        : tokenAlreadyUsed
+                          ? 'Sign-in is already completing in another tab. Please wait a moment and try again.'
+                          : 'We couldn’t finish signing you in. Please try again.'
                 );
             })
-            .finally(() => pendingDerivations.delete(identity));
+            .finally(() => {
+                clearLockWait();
+                pendingDerivations.delete(identity);
+            });
         pendingDerivations.set(identity, operation);
         return operation;
     };
