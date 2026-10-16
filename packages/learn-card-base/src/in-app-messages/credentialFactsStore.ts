@@ -14,6 +14,8 @@ const storage = localforage.createInstance({
 // Keys include the active DID, which prevents summaries from leaking across
 // switched profiles. Memory also gives callers an immediately updated snapshot.
 const memory = new Map<string, CredentialSummary>();
+const writeGenerations = new Map<string, number>();
+let writeGeneration = 0;
 const factListeners = new Set<(did: string, summary: CredentialSummary) => void>();
 
 // Serialize writes so a later save cannot be persisted before an earlier save.
@@ -24,6 +26,7 @@ let pendingWrites: Promise<void> = Promise.resolve();
 let epoch = 0;
 
 export const getCredentialFactsEpoch = (): number => epoch;
+export const getCredentialFactsWriteGeneration = (): number => writeGeneration;
 
 const keyFor = (did: string, uri: string): string => `${encodeURIComponent(did)}:${uri}`;
 const prefixFor = (did: string): string => `${encodeURIComponent(did)}:`;
@@ -90,6 +93,7 @@ export const saveCredentialFact = async (
 
     // Publish to the session cache immediately, then persist in queue order.
     memory.set(key, summary);
+    writeGenerations.set(key, ++writeGeneration);
 
     pendingWrites = pendingWrites.then(async () => {
         if (writeEpoch !== epoch) return;
@@ -132,40 +136,45 @@ export const onCredentialSummaryAdded = (
 
 export const removeMissingCredentialFacts = async (
     did: string,
-    currentUris: Set<string>
+    currentUris: Set<string>,
+    maxWriteGeneration = writeGeneration
 ): Promise<void> => {
     const removeEpoch = epoch;
     const prefix = prefixFor(did);
-    // Build the removal set from both layers. A key may exist in only one layer
-    // after an IndexedDB failure or an interrupted previous session.
-    const keys = new Set(
-        [...memory.keys()].filter(
-            key => key.startsWith(prefix) && !currentUris.has(key.slice(prefix.length))
-        )
-    );
+    const shouldRemove = (key: string): boolean =>
+        key.startsWith(prefix) &&
+        !currentUris.has(key.slice(prefix.length)) &&
+        (writeGenerations.get(key) ?? 0) <= maxWriteGeneration;
 
-    try {
-        (await storage.keys())
-            .filter(key => key.startsWith(prefix) && !currentUris.has(key.slice(prefix.length)))
-            .forEach(key => keys.add(key));
-    } catch {
-        // Memory cleanup still proceeds.
-    }
+    // Serialize disk removals with saves, and preserve facts written after the
+    // index request began even if their claim listeners have not fired yet.
+    pendingWrites = pendingWrites.then(async () => {
+        if (removeEpoch !== epoch) return;
+        const keys = new Set([...memory.keys()].filter(shouldRemove));
 
-    if (removeEpoch !== epoch) return;
+        try {
+            (await storage.keys()).filter(shouldRemove).forEach(key => keys.add(key));
+        } catch {
+            // Memory cleanup still proceeds.
+        }
 
-    // Removal is best-effort on disk but authoritative in memory.
-    await Promise.all(
-        [...keys].map(async key => {
-            memory.delete(key);
+        if (removeEpoch !== epoch) return;
 
-            try {
-                await storage.removeItem(key);
-            } catch {
-                // IndexedDB cleanup is best-effort when the driver is unavailable.
-            }
-        })
-    );
+        await Promise.all(
+            [...keys].map(async key => {
+                if (!shouldRemove(key)) return;
+                memory.delete(key);
+                writeGenerations.delete(key);
+
+                try {
+                    await storage.removeItem(key);
+                } catch {
+                    // IndexedDB cleanup is best-effort when the driver is unavailable.
+                }
+            })
+        );
+    });
+    await pendingWrites;
 };
 
 export const clearCredentialFacts = async (did?: string): Promise<void> => {
@@ -176,6 +185,7 @@ export const clearCredentialFacts = async (did?: string): Promise<void> => {
     // No DID means a full logout cleanup; otherwise clear one switched profile.
     if (!did) {
         memory.clear();
+        writeGenerations.clear();
 
         try {
             await storage.clear();
