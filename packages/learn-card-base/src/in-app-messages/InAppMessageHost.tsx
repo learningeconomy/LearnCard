@@ -23,6 +23,13 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     const { message, credentialFacts } = useInAppMessages();
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
+    const [opening, setOpening] = useState({
+        accountDid: credentialFacts.accountDid,
+        ready: false,
+    });
+    if (opening.accountDid !== credentialFacts.accountDid) {
+        setOpening({ accountDid: credentialFacts.accountDid, ready: false });
+    }
     const [presented, setPresented] = useState<{
         message: InAppMessage;
         accountDid?: string;
@@ -57,7 +64,17 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     useEffect(() => {
         const did = credentialFacts.accountDid;
 
-        if (canPresent && did) emitAppOpenedOnce(did);
+        if (!canPresent) return;
+
+        if (did) emitAppOpenedOnce(did);
+        // Let the event subscription reach evaluation before consuming an impression.
+        let canceled = false;
+        queueMicrotask(() => {
+            if (!canceled) setOpening({ accountDid: did, ready: true });
+        });
+        return () => {
+            canceled = true;
+        };
     }, [canPresent, credentialFacts.accountDid]);
 
     const accountDid = credentialFacts.accountDid ?? undefined;
@@ -65,7 +82,8 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         presented && presented.accountDid === accountDid ? presented.message : message;
     const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
     const realActive = candidate && messageKey && !closedIds.has(messageKey) ? candidate : null;
-    const active = override ?? (canPresent ? realActive : null);
+    const openingReady = !accountDid || (opening.accountDid === accountDid && opening.ready);
+    const active = override ?? (canPresent && openingReady ? realActive : null);
     const isOverride = Boolean(override);
 
     // Retain a presented message after its own impression makes it ineligible.
