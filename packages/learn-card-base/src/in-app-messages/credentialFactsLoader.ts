@@ -10,7 +10,7 @@ import {
 export const MAX_SESSION_DECRYPTS = 200;
 const RESUME_THROTTLE_MS = 5 * 60 * 1000;
 let readsUsed = 0;
-const attempted = new Set<string>();
+const attempted = new Map<string, symbol>();
 
 export interface CredentialFactsSnapshot {
     summaries: CredentialSummary[] | null;
@@ -58,6 +58,7 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
     let users = 0;
     const listeners = new Set<() => void>();
     const claimed = new Map<string, CredentialSummary>();
+    const pendingAttempts = new Map<string, symbol>();
 
     const getSnapshot = (): CredentialFactsSnapshot => snapshot;
 
@@ -76,6 +77,11 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
     const stop = (): void => {
         generation += 1;
         cancelIdle?.();
+        running = null;
+        pendingAttempts.forEach((attempt, key) => {
+            if (attempted.get(key) === attempt) attempted.delete(key);
+        });
+        pendingAttempts.clear();
         if (users === 0) {
             releaseFactListener?.();
             releaseFactListener = undefined;
@@ -204,11 +210,13 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                         missing.slice(offset, offset + 4).map(async record => {
                             if (claimed.has(record.uri)) return;
                             const key = `${did}:${record.uri}`;
+                            const attempt = Symbol();
                             const resolved = source.cached(record.uri);
                             if (resolved == null) {
                                 if (readsUsed >= MAX_SESSION_DECRYPTS) return;
                                 if (!force && attempted.has(key)) return;
-                                attempted.add(key);
+                                attempted.set(key, attempt);
+                                pendingAttempts.set(key, attempt);
                                 readsUsed += 1;
                             }
                             try {
@@ -228,6 +236,13 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                                 if (active()) facts.set(record.uri, summary);
                             } catch {
                                 // Failed reads remain incomplete and can be retried in a later session.
+                            } finally {
+                                if (!active() && attempted.get(key) === attempt) {
+                                    attempted.delete(key);
+                                }
+                                if (pendingAttempts.get(key) === attempt) {
+                                    pendingAttempts.delete(key);
+                                }
                             }
                         })
                     );
@@ -238,11 +253,12 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                 if (active()) publish({ ...snapshot, complete: false });
             }
         };
-        running = run();
+        const currentRun = run();
+        running = currentRun;
         try {
-            await running;
+            await currentRun;
         } finally {
-            running = null;
+            if (running === currentRun) running = null;
         }
     };
 

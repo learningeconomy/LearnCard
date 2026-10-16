@@ -176,11 +176,95 @@ describe('credential facts backfill', () => {
         await expect(loader.refresh(source)).resolves.toBeUndefined();
         expect(loader.getSnapshot().complete).toBe(false);
         source.read = vi.fn().mockResolvedValue(vc);
+        loader.stop();
+        await loader.refresh(source);
+        expect(source.read).not.toHaveBeenCalled();
+        expect(loader.getSnapshot()).toMatchObject({ complete: false, readsUsed: 1 });
         await loader.refresh(source, true);
         expect(loader.getSnapshot().complete).toBe(true);
         source.list = vi.fn().mockRejectedValue(new Error('offline'));
         await loader.refresh(source, true);
         expect(loader.getSnapshot().complete).toBe(false);
+    });
+
+    it.each(['resolved', 'rejected'])(
+        'retries a lifecycle-canceled %s read after switching back without resetting the budget',
+        async outcome => {
+            const { getCredentialFactsLoader } = await import('../credentialFactsLoader');
+            const { loadCredentialFacts } = await import('../credentialFactsStore');
+            const otherDid = 'did:example:other';
+            let activeDid = did;
+            let finish: (value: unknown) => void = () => undefined;
+            let fail: (error: Error) => void = () => undefined;
+            const pendingRead = new Promise<unknown>((resolve, reject) => {
+                finish = resolve;
+                fail = reject;
+            });
+            const loader = getCredentialFactsLoader(did);
+            const release = loader.acquire();
+            const source = sourceFor(1);
+            source.isActive = () => activeDid === did;
+            source.read = vi.fn().mockReturnValueOnce(pendingRead).mockResolvedValue(vc);
+            const originalRefresh = loader.refresh(source);
+            await vi.waitFor(() => expect(source.read).toHaveBeenCalledOnce());
+
+            activeDid = otherDid;
+            release();
+            const other = getCredentialFactsLoader(otherDid);
+            const releaseOther = other.acquire();
+            await other.refresh(sourceFor(1));
+            expect(await loadCredentialFacts(did)).toEqual([]);
+
+            activeDid = did;
+            releaseOther();
+            const releaseAgain = loader.acquire();
+            const resumedRefresh = loader.refresh(source);
+            await resumedRefresh;
+            expect(source.read).toHaveBeenCalledTimes(2);
+            if (outcome === 'resolved') finish(vc);
+            else fail(new Error('read canceled during account switch'));
+            await originalRefresh;
+
+            expect(source.read).toHaveBeenCalledTimes(2);
+            expect(loader.getSnapshot()).toMatchObject({ complete: true, total: 1, readsUsed: 3 });
+            expect(await loadCredentialFacts(did)).toEqual([
+                expect.objectContaining({ uri: 'lc:0' }),
+            ]);
+            releaseAgain();
+        }
+    );
+
+    it('does not let a canceled read clear a newer refresh or its failed-attempt marker', async () => {
+        const { createCredentialFactsLoader } = await import('../credentialFactsLoader');
+        const loader = createCredentialFactsLoader(did);
+        let finishOld: (value: unknown) => void = () => undefined;
+        let failNew: (error: Error) => void = () => undefined;
+        const oldRead = new Promise<unknown>(resolve => {
+            finishOld = resolve;
+        });
+        const newRead = new Promise<unknown>((_, reject) => {
+            failNew = reject;
+        });
+        const source = sourceFor(1);
+        source.read = vi.fn().mockReturnValueOnce(oldRead).mockReturnValueOnce(newRead);
+        const oldRefresh = loader.refresh(source);
+        await vi.waitFor(() => expect(source.read).toHaveBeenCalledOnce());
+
+        loader.stop();
+        const newRefresh = loader.refresh(source);
+        await vi.waitFor(() => expect(source.read).toHaveBeenCalledTimes(2));
+        finishOld(vc);
+        await oldRefresh;
+        const sharedRefresh = loader.refresh(source);
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(source.list).toHaveBeenCalledTimes(2);
+
+        failNew(new Error('unreadable'));
+        await Promise.all([newRefresh, sharedRefresh]);
+        loader.stop();
+        await loader.refresh(source);
+        expect(source.read).toHaveBeenCalledTimes(2);
+        expect(loader.getSnapshot()).toMatchObject({ complete: false, readsUsed: 2 });
     });
 
     it('keeps facts incomplete when a decrypted value is malformed', async () => {
