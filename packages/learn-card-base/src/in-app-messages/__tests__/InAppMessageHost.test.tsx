@@ -144,6 +144,31 @@ describe('message host impressions', () => {
         }
     );
 
+    it.each(['disabled', 'removed'])(
+        'withdraws a retained required modal when its live campaign is %s',
+        async change => {
+            state.gate = true;
+            const required = inAppMessageValidator.parse({
+                id: 'required',
+                title: 'Required action',
+                dismissible: false,
+            });
+            state.messages = [required];
+            const { rerender } = render(<InAppMessageHost />);
+            await waitFor(() => expect(screen.getByText('Required action')).toBeTruthy());
+            expect(shouldSuppressMessage('required', 'once', Date.now(), 'alice')).toBe(true);
+            rerender(<InAppMessageHost />);
+            await waitFor(() => expect(screen.getByText('Required action')).toBeTruthy());
+
+            state.messages = change === 'disabled' ? [{ ...required, enabled: false }] : [];
+            rerender(<InAppMessageHost />);
+            expect(screen.queryByText('Required action')).toBeNull();
+            state.messages = [required];
+            rerender(<InAppMessageHost />);
+            expect(screen.queryByText('Required action')).toBeNull();
+        }
+    );
+
     it('does not consume seen state or fatigue for a preview', () => {
         setInAppMessageOverride(state.messages[0]!);
         render(<InAppMessageHost />);
