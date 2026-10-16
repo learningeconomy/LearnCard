@@ -100,18 +100,11 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
                     onCopy={() => onCopy(share)}
                 />
             )}
-            <button
-                type="button"
-                onClick={() => onOpen(share)}
-                aria-label={m['dataShareCenter.shared.openLink']({ title: share.title })}
-                className="shrink-0 p-1 mt-[5px] text-grayscale-400 hover:text-grayscale-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
-            >
-                <IonIcon
-                    icon={chevronForward}
-                    aria-hidden="true"
-                    className="transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
-                />
-            </button>
+            <IonIcon
+                icon={chevronForward}
+                aria-hidden="true"
+                className="shrink-0 text-grayscale-400 pointer-events-none transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
+            />
         </li>
     );
 };
