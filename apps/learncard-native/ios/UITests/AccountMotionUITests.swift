@@ -18,8 +18,8 @@ import UIKit
         }
     }
 
-    func testSettledLogoKeepsStopMotionLifeAndBackgroundFloats() {
-        let app = launch("launch", extra: ["--motion-settled"])
+    func testLogoKeepsStopMotionLifeWithoutAssemblyAndBackgroundFloats() {
+        let app = launch("launch")
         let mark = app.descendants(matching: .any)["brand-motion-mark"].firstMatch
         XCTAssertTrue(mark.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Opening LearnCard…"].exists)
@@ -29,7 +29,7 @@ import UIKit
         let backdrop = lowerBackdrop(app)
         let floats = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in self.lowerBackdrop(app) != backdrop }, object: nil)
         XCTAssertEqual(XCTWaiter.wait(for: [floats], timeout: 5), .completed)
-        capture(app, "Settled stop-motion mosaic and floating paint")
+        capture(app, "Full-size stop-motion mosaic and floating paint")
     }
     func testReduceMotionShowsStillMosaicInDarkAppearance() {
         let app = launch("reconnect", extra: ["--motion-reduced", "--preview-dark"])

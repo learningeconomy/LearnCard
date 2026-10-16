@@ -48,12 +48,6 @@ struct AccountTransitionView: View {
         BrandMotion.isAnimated(visible: appeared, active: scenePhase == .active,
                                reduced: reduceMotion || ProcessInfo.processInfo.arguments.contains("--motion-reduced"), voiceOver: voiceOver)
     }
-    private var drawsMotion: Bool {
-        // Before activation, draw the initial pose rather than the final still
-        // logo. Otherwise the first active frame appears to pull it apart.
-        BrandMotion.isAnimated(visible: true, active: true,
-                               reduced: reduceMotion || ProcessInfo.processInfo.arguments.contains("--motion-reduced"), voiceOver: voiceOver)
-    }
     var body: some View {
         GeometryReader { bounds in
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !moves)) { tick in
@@ -62,7 +56,7 @@ struct AccountTransitionView: View {
             }
         }.accessibilityIdentifier("account-motion-screen")
             .toolbar(.hidden, for: .navigationBar)
-            .onAppear { began = Date.now.addingTimeInterval(ProcessInfo.processInfo.arguments.contains("--motion-settled") ? -4 : 0); appeared = true }
+            .onAppear { began = .now; appeared = true }
             .onDisappear { appeared = false }
             .onChange(of: scenePhase) { _, phase in if phase == .active { began = .now } }
     }
@@ -76,7 +70,7 @@ struct AccountTransitionView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: BrandMotion.wordmarkGap) {
-                        PaintedMosaic(size: markSize, elapsed: scenePhase == .active ? elapsed : 0, animated: drawsMotion)
+                        PaintedMosaic(size: markSize, elapsed: moves ? elapsed : 0, animated: moves)
                             .frame(height: markSize)
                             .accessibilityElement(children: .ignore).accessibilityLabel("LearnCard")
                             .accessibilityAddTraits(.isImage).accessibilityIdentifier("brand-motion-mark")

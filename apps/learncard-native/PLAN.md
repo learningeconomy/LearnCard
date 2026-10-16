@@ -8,6 +8,10 @@
 
 This is queued follow-up work: no new Apps board, app implementation, build, install or CI run is part of recording this feedback. Native AI career Pathways/Sessions and organization workspaces remain separate feature scopes.
 
+## Complete logo from first frame — October 16
+
+The user rejected the small/separated-to-large logo intro because short app openings often end before the complete mark appears. Static splash, initial loading and reconnect now start with the full-size formed mark, keeping only the slight stop-motion jiggle and floating background pieces. There is no artificial launch delay. Build 3 refreshes cached system artwork; account readiness and accessibility/lifecycle guards remain authoritative. See [motion contract](ACCOUNT_MOTION.md).
+
 ## Current priority: learner document and credential-file intake — October 16
 
 The user selected a learner-first personal experience and approved the [generated Home/welcome direction](design/LEARNER_HOME_BRIEF.md). The new/returning Home and optional activation after existing required setup are implemented; pending claims resume explicit review directly. Receive, understand, organize and share personal achievements take precedence over creation/issuance management. Keep existing creator capabilities available through secondary tools. Home now uses actual incoming items, two recent personal achievements, clear Scan/Share actions, People and Data Sharing. The labeled Add header opens a designed native intake sheet. Create/send tools are secondary. Account-scoped welcome state survives resume, can be skipped and revisited, and never bypasses required setup. The next product checkpoint is manual review of this implemented learner slice, then choosing a focused follow-up from document intake, richer achievement understanding or learner sharing.

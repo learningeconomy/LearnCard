@@ -10,26 +10,21 @@ final class BrandMotionTests: XCTestCase {
             XCTAssertEqual(BrandMotion.background(index, elapsed: 0, animated: true), BrandMotion.background(index, elapsed: 0, animated: false))
         }
     }
-    func testPiecesGatherIntoRecognizableMosaicWithoutWaitingOnAccountReadiness() {
+    func testLogoStartsFullSizeAndNeverNeedsAssemblyTime() {
         for index in 0..<9 {
-            let final = BrandMotion.tile(index, elapsed: 2.1, animated: true)
             let still = BrandMotion.tile(index, elapsed: 0, animated: false)
-            XCTAssertEqual(final.x, still.x, accuracy: 0.001)
-            XCTAssertEqual(final.y, still.y, accuracy: 0.001)
-            XCTAssertEqual(final.rotation, 0, accuracy: 0.001)
-            XCTAssertEqual(final.opacity, 1)
-            let target = BrandMotion.tile(index, elapsed: 0, animated: false)
-            var previousDistance = Double.infinity
-            var previousScale = 0.0
+            XCTAssertEqual(still.x, Double(index % 3 - 1) * 21 / 65)
+            XCTAssertEqual(still.y, Double(index / 3 - 1) * 21 / 65)
             for tick in 0...100 {
                 let pose = BrandMotion.tile(index, elapsed: Double(tick) * 0.021, animated: true)
-                let distance = hypot(pose.x - target.x, pose.y - target.y)
-                XCTAssertLessThanOrEqual(distance, previousDistance + 0.000001, "Assembly must gather inward without an outward opening")
-                XCTAssertGreaterThanOrEqual(pose.scale, previousScale)
-                previousDistance = distance; previousScale = pose.scale
+                XCTAssertEqual(pose.scale, 1, "Even a very short launch must show full-size tiles")
+                XCTAssertEqual(pose.opacity, 1)
+                XCTAssertLessThan(abs(pose.x - still.x), 0.008)
+                XCTAssertLessThan(abs(pose.y - still.y), 0.007)
             }
         }
-        XCTAssertNotEqual(BrandMotion.tile(0, elapsed: 0.1, animated: true), BrandMotion.tile(0, elapsed: 1, animated: true))
+        XCTAssertNotEqual(BrandMotion.tile(0, elapsed: 0.41, animated: true), BrandMotion.tile(0, elapsed: 0.61, animated: true),
+                          "The gentle jiggle starts without waiting for an assembly sequence")
     }
     func testReducedMotionIsAlwaysFullyAssembledAndTimeIndependent() {
         for index in 0..<9 {

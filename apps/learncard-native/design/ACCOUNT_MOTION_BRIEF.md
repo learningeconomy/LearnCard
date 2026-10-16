@@ -1,5 +1,7 @@
 # Account motion design brief — October 15, 2026
 
+**Current direction — October 16:** the user rejected the small/separated-to-full assembly because real app openings can finish before it completes. The system splash and running view now start with the full-size assembled mark and LearnCard name. Keep only the gentle stop-motion jiggle and floating edge pieces. The older gathering storyboard below is retained for material/style provenance; its opening sequence is superseded. See [the current contract](../ACCOUNT_MOTION.md).
+
 The user requested more expressive loading/lock/initial screens: swirling LearnCard-colored blocks and a launch animation in which watercolor logo pieces come together. The ordinary app canvas remains neutral. Built-in `image_gen` produced a storyboard and a grayscale paint material; final layout and animation are SwiftUI, not a video or a generated-screen image.
 
 ## Selected composition

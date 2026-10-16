@@ -6,8 +6,6 @@ public enum BrandMotion {
     public static let markMaxWidth = 224.0
     public static let markWidthFraction = 0.57
     public static let markCenterFraction = 0.365
-    public static let assemblySpread = 1.16
-    public static let assemblyScale = 0.7
     public static let wordmarkSize = 32.0
     public static let wordmarkGap = 18.0
     public static let backdropOpacity = 0.8
@@ -32,32 +30,28 @@ public enum BrandMotion {
     public static func isAnimated(visible: Bool, active: Bool, reduced: Bool, voiceOver: Bool) -> Bool {
         visible && active && !reduced && !voiceOver
     }
-    /// Recognizable separated tiles, shared with the static launch artwork.
+    /// The complete, full-size mark is present from the system launch frame.
     public static func launchTile(_ index: Int) -> Tile {
         let index = min(8, max(0, index))
-        return Tile(x: Double(index % 3 - 1) * (21.0 / 65.0) * assemblySpread,
-                    y: Double(index / 3 - 1) * (21.0 / 65.0) * assemblySpread,
-                    rotation: 0, scale: assemblyScale, opacity: 1)
+        return Tile(x: Double(index % 3 - 1) * (21.0 / 65.0),
+                    y: Double(index / 3 - 1) * (21.0 / 65.0),
+                    rotation: 0, scale: 1, opacity: 1)
     }
     public static func tile(_ index: Int, elapsed: Double, animated: Bool) -> Tile {
         let index = min(8, max(0, index))
-        let targetX = Double(index % 3 - 1) * (21.0 / 65.0)
-        let targetY = Double(index / 3 - 1) * (21.0 / 65.0)
-        guard animated else { return Tile(x: targetX, y: targetY, rotation: 0, scale: 1, opacity: 1) }
-        let time = elapsed.isFinite ? max(0, elapsed) : 2.2
-        let local = min(1, max(0, (time - Double(index) * 0.045) / 1.55))
-        let progress = 1 - pow(1 - local, 3)
-        // Gather inward from the system launch pose; never explode outward first.
         let initial = launchTile(index)
-        let life = min(1, max(0, (time - 2.2) / 0.4)) * (index == 4 ? 0.4 : 1)
-        let frame = floor(max(0, time - 2.2) * 5)
+        guard animated else { return initial }
+        let time = elapsed.isFinite ? max(0, elapsed) : 0
+        // Only the tiny held-pose jiggle eases in; tiles never shrink or gather.
+        let life = min(1, time / 0.4) * (index == 4 ? 0.4 : 1)
+        let frame = floor(time * 5)
         let jitterX = noise(frame, seed: index * 3) * 0.007 * life
         let jitterY = noise(frame, seed: index * 3 + 1) * 0.006 * life
         let jitterAngle = noise(frame, seed: index * 3 + 2) * 1.15 * life
-        return Tile(x: targetX + (initial.x - targetX) * (1 - progress) + jitterX,
-                    y: targetY + (initial.y - targetY) * (1 - progress) + jitterY,
+        return Tile(x: initial.x + jitterX,
+                    y: initial.y + jitterY,
                     rotation: jitterAngle,
-                    scale: assemblyScale + (1 - assemblyScale) * progress,
+                    scale: 1,
                     opacity: 1)
     }
 

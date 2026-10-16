@@ -93,14 +93,8 @@ const clips = paths
     .slice(0, 9)
     .map(([, path], index) => `<clipPath id="pigment${index}"><path d="${path}"/></clipPath>`)
     .join('');
-const launchTiles = tiles.map((tile, index) => {
-    const x = (index % 3) * 21 + 11.5;
-    const y = Math.floor(index / 3) * 21 + 11.5;
-    const launchX = 32.5 + (x - 32.5) * metric('assemblySpread');
-    const launchY = 32.5 + (y - 32.5) * metric('assemblySpread');
-    return `<g transform="translate(${launchX} ${launchY}) scale(${metric('assemblyScale')}) translate(${-x} ${-y})">${tile}</g>`;
-});
-const launchDrawing = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 65 65" width="${markWidth}" height="${markWidth}"><defs>${defs}${clips}</defs>${launchTiles.join('')}</svg>`;
+// Match launchTile's full-size 65-unit mosaic. No separated or scaled intro pose.
+const launchDrawing = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 65 65" width="${markWidth}" height="${markWidth}"><defs>${defs}${clips}</defs>${tiles.join('')}</svg>`;
 const launch = resolve(assets, 'LearnCardLaunchPose.imageset');
 await mkdir(launch, { recursive: true });
 const images = [];

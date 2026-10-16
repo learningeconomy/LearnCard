@@ -49,3 +49,19 @@ Updated actual cold starts: [light appearance](splash-continuity-light.mp4) · [
 ## Live review
 
 After the user unlocked macOS, the updated real review account opened Home with the correct navigation order. The saved private signup-test credential remained present and opened with its description and signature-check status. The revised empty Badges category was also inspected. No repeat reset/signup or new credential was needed. The app is left on Home. An apparent self-connection prompt from the earlier test was skipped without creating a connection; prompt identity filtering/server generation remains a separate follow-up.
+
+## Fully formed logo from first frame
+
+The user rejected the small/separated-to-full growth and gathering intro on October 16: short real app openings often finish while it still looks incomplete. Build 3 starts the system splash and every running transition at the final full-size nine-piece mark. Only small stop-motion shifts and floating outer blocks remain. It introduces no minimum loading duration. The earlier inward-assembly captures above are historical.
+
+Actual system launch captures below use the disposable simulator's debugger-wait launch; running captures and normal cold-start clips use the real native review component with no account request. No account was reset. These are native captures, not new image generations.
+
+| Static system splash, light                      | Static system splash, dark                     |
+| ------------------------------------------------ | ---------------------------------------------- |
+| ![Full light mark](logo-formed-static-light.png) | ![Full dark mark](logo-formed-static-dark.png) |
+
+| Running view, light                                       | Running view, dark                                      |
+| --------------------------------------------------------- | ------------------------------------------------------- |
+| ![Full light loading mark](logo-formed-loading-light.png) | ![Full dark loading mark](logo-formed-loading-dark.png) |
+
+Actual cold starts, compressed for review: [light](logo-formed-cold-light.mp4) · [dark](logo-formed-cold-dark.mp4). Inspected early frames include the complete system mark and the complete running mark; only the jiggle/edge drift changes the logo pose. See [current timing and accessibility contract](../ACCOUNT_MOTION.md).
