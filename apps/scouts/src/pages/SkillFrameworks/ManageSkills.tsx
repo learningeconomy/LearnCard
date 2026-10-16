@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -236,7 +237,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         setFrameworkApproved(false);
 
                         // Recursively add IDs to all skills and subskills
-                        const addIdsToNodes = (nodes: any[]): any[] => {
+                        const addIdsToNodes = (
+                            nodes: SkillFrameworkNode[]
+                        ): SkillFrameworkNode[] => {
                             return nodes.map(node => ({
                                 ...node,
                                 id: node.id || generateSkillId(),
@@ -665,4 +668,4 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
     );
 };
 
-export default ManageSkills;
+export default withCompetencyAdmin(ManageSkills);

@@ -32,6 +32,7 @@ import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
 import type { LCNProfile } from '@learncard/types';
+import { getLocale } from '../paraglide/runtime.js';
 
 import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
@@ -1442,6 +1443,8 @@ const AuthSessionManager: React.FC<{
                         ]),
                         onStart: coordinator.startEscrowRecovery,
                         onStatus: coordinator.getEscrowRecoveryStatus,
+                        onConfirmCode: coordinator.confirmEscrowRecovery,
+                        onResendCode: coordinator.resendEscrowRecoveryCode,
                         onRecover: async input => {
                             await coordinator.recover(input);
 
@@ -2227,6 +2230,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
                 didFromPrivateKey={didFromPrivateKey}
                 signDidAuthVp={signDidAuthVp}
                 getCachedPrivateKey={getCachedPrivateKey}
+                getRecoveryLanguage={getLocale}
                 onLogout={handleAppLogout}
                 clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
                 onDebugEvent={handleDebugEvent}

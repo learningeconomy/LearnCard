@@ -90,3 +90,31 @@ describe('RecoveryPinInput', () => {
         expect(onComplete).toHaveBeenCalledWith('123456');
     });
 });
+
+describe('RecoveryPinInput code variant', () => {
+    it('shows an emailed code as visible digits with OS code autofill and no password prompts', () => {
+        render(<RecoveryPinInput length={8} variant="code" value="" onChange={() => {}} />);
+        const inputs = screen.getAllByLabelText(/Code digit/);
+        expect(inputs).toHaveLength(8);
+        expect(inputs.every(input => input.getAttribute('type') === 'text')).toBe(true);
+        expect(inputs[0]).toHaveAttribute('autocomplete', 'one-time-code');
+        expect(inputs[1]).toHaveAttribute('autocomplete', 'off');
+        expect(screen.queryByLabelText(/PIN digit/)).not.toBeInTheDocument();
+    });
+
+    it('lets every box shrink so eight fit a narrow card', () => {
+        render(<RecoveryPinInput length={8} variant="code" value="" onChange={() => {}} />);
+        for (const input of screen.getAllByLabelText(/Code digit/)) {
+            expect(input.className).toContain('flex-1');
+            expect(input.className).toContain('min-w-0');
+            expect(input.className).not.toMatch(/(^|\s)w-1[02](\s|$)/);
+        }
+    });
+
+    it('keeps PINs masked', () => {
+        render(<RecoveryPinInput value="" onChange={() => {}} />);
+        const inputs = screen.getAllByLabelText(/PIN digit/);
+        expect(inputs).toHaveLength(6);
+        expect(inputs.every(input => input.getAttribute('type') === 'password')).toBe(true);
+    });
+});

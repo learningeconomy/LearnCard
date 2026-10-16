@@ -1,5 +1,30 @@
 # @learncard/network-brain-service
 
+## 2.5.38
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/core@9.4.39
+    - @learncard/helpers@1.6.3
+    - @learncard/did-web-plugin@1.1.39
+    - @learncard/didkey-plugin@1.1.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/didkit-plugin-node@0.3.4
+    - @learncard/encryption-plugin@1.1.39
+    - @learncard/learn-card-plugin@1.2.39
+    - @learncard/vc-plugin@1.6.5
+    - @learncard/vc-templates-plugin@1.1.39
+    - @learncard/crypto-plugin@1.1.39
+    - @learncard/expiration-plugin@1.2.39
+
+## 2.5.37
+
+### Patch Changes
+
+- [#1711](https://github.com/learningeconomy/LearnCard/pull/1711) [`63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae`](https://github.com/learningeconomy/LearnCard/commit/63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae) Thanks [@goblincore](https://github.com/goblincore)! - Exclude bundled service configuration from published service dependencies so public packages do not require the private service-config workspace package during installation. Keep runtime workspace dependencies for source-based service deployments.
+
 ## 2.5.36
 
 ### Patch Changes

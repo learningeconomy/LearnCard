@@ -25,6 +25,7 @@ import {
     useImageUpload,
     getLogger,
     Toggle,
+    getSSSConfig,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -47,6 +48,7 @@ import { inferCountryCode } from './countryInference';
 import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
 import { RecoveryPinStep } from './RecoveryPinStep';
+import { waitForEscrowEnrollment } from './waitForEscrowEnrollment';
 import { writeRecoveryPinPromptFlag } from '../../recovery/recoveryPinPromptFlag';
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
@@ -84,6 +86,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const adapter = useSignInAdapter();
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState, setupNewKey, setEscrowPin, authProvider } = useAppAuth();
+    // Async handlers must read the live coordinator state, not their render-time snapshot.
+    const coordinatorStateRef = useRef(coordinatorState);
+    coordinatorStateRef.current = coordinatorState;
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
     const { mutateAsync: updatePreferences } = useUpdatePreferences();
@@ -660,9 +665,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 trackOnboardingStepCompleted('profile', 2);
 
-                const pinAvailable =
-                    coordinatorState.status === 'ready' &&
-                    coordinatorState.escrowEnrollment === 'enrolled';
+                const pinAvailable = await waitForEscrowEnrollment(
+                    () => {
+                        const state = coordinatorStateRef.current;
+                        return {
+                            status: state.status,
+                            escrowEnrollment:
+                                state.status === 'ready' ? state.escrowEnrollment : undefined,
+                        };
+                    },
+                    { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
+                );
                 setStep(pinAvailable ? 'pin' : 'celebrate');
             }
         } catch (err: unknown) {

@@ -47,6 +47,11 @@ provider "aws" {
   skip_metadata_api_check     = true
 }
 
+# Gated global governance has no resources here; never consult ambient credentials.
+mock_provider "aws" {
+  alias = "governance"
+}
+
 variables {
   environment                         = "staging"
   vpc_id                              = "vpc-0123456789abcdef0"
