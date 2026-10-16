@@ -40,13 +40,13 @@ export const cancelHoldInEnclave = async (
         ) {
             throw new Error('Cancellation material unavailable');
         }
-        await getEscrowEnclave().cancelHold({
+        const result = await getEscrowEnclave().cancelHold({
             envelope,
             hold: hold.holdRecord,
             clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
             expectedDid: hold.primaryDid,
         });
-        await confirmEscrowEnclaveCancellation(hold._id);
+        await confirmEscrowEnclaveCancellation(hold._id, result?.receipt);
         return true;
     } catch {
         // Policy/unknown/terminal errors are ambiguous, not proof of cancellation.

@@ -7,7 +7,34 @@ use serde::{Deserialize, Serialize};
 /// compatibility; the server accepts exclusively this v1 protocol.
 pub mod v1 {
     use super::*;
+    use crate::authority::{intent::SignedEnrollmentIntent, record::SignedAuthorityRecord};
     use crate::policy::SignedHoldRecord;
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    pub struct AuthorityState {
+        pub tenant: String,
+        pub authority_generation: String,
+        pub did: String,
+        pub enrollment_version: u64,
+        pub enrollment_epoch: u64,
+        pub status: String,
+        pub envelope: Option<EscrowEnvelope>,
+        pub share_version: Option<u32>,
+        pub has_pin: bool,
+        pub pin_generation: u64,
+        pub attempts_used: u8,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    pub struct AuthorityMutationResponse {
+        pub envelope: Option<EscrowEnvelope>,
+        pub receipt: SignedAuthorityRecord,
+        pub authority_generation: String,
+        pub enrollment_version: u64,
+        pub enrollment_epoch: u64,
+    }
 
     #[derive(Clone, Serialize, Deserialize)]
     #[serde(
@@ -17,6 +44,21 @@ pub mod v1 {
         deny_unknown_fields
     )]
     pub enum Request {
+        EnrollmentState {
+            expected_did: String,
+            nonce: String,
+        },
+        ApplyEnrollment {
+            signed_intent: Box<SignedEnrollmentIntent>,
+            source_envelope: Option<EscrowEnvelope>,
+            target_envelope: Option<EscrowEnvelope>,
+        },
+        AuthorityRewrap {
+            envelope: EscrowEnvelope,
+            expected_did: String,
+            expected_share_version: u32,
+            source_enrollment_epoch: u64,
+        },
         Attest {
             #[serde(with = "serde_bytes")]
             nonce: Vec<u8>,
@@ -67,6 +109,30 @@ pub mod v1 {
             client_ephemeral_public_key: String,
             expected_did: String,
         },
+        /// P9.1 (attack C): no `pinProof`-style secret field — `code` is the
+        /// one-time code itself, compared against a stored hash, never a proof.
+        ConfirmHold {
+            envelope: EscrowEnvelope,
+            hold: SignedHoldRecord,
+            request_id: String,
+            client_ephemeral_public_key: String,
+            expected_did: String,
+            code: String,
+        },
+        ResendCode {
+            envelope: EscrowEnvelope,
+            hold: SignedHoldRecord,
+            request_id: String,
+            client_ephemeral_public_key: String,
+            expected_did: String,
+        },
+        /// P9.1 (attack C): system-initiated (lca-api's hourly job) — no
+        /// signed hold/envelope, since there is no user action to authenticate.
+        SendReleaseWarning {
+            hold_id: String,
+            request_id: String,
+            expected_did: String,
+        },
         Health,
     }
 
@@ -78,6 +144,16 @@ pub mod v1 {
         deny_unknown_fields
     )]
     pub enum Response {
+        EnrollmentState {
+            state: AuthorityState,
+            proof: SignedAuthorityRecord,
+        },
+        ApplyEnrollment {
+            result: AuthorityMutationResponse,
+        },
+        AuthorityRewrap {
+            result: AuthorityMutationResponse,
+        },
         Attest {
             mode: AttestationMode,
             key_id: String,
@@ -108,9 +184,35 @@ pub mod v1 {
         },
         Release {
             sealed: EscrowEnvelope,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            receipt: Option<SignedAuthorityRecord>,
         },
         Cancel {
             cancelled: bool,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            receipt: Option<SignedAuthorityRecord>,
+        },
+        ConfirmHold {
+            confirmed: bool,
+            receipt: SignedAuthorityRecord,
+            /// Authoritative enclave confirmation time (Unix ms), present on
+            /// both a fresh confirm (`receipt.kind == commit`) and an
+            /// idempotent retry (`receipt.kind == snapshot`) — callers must
+            /// use this, never a locally-observed `now`, to compute the
+            /// release deadline (see lca-api's `routes/escrow.ts`).
+            confirmed_hi_ms: u64,
+        },
+        ResendCode {
+            sent: bool,
+            receipt: SignedAuthorityRecord,
+        },
+        SendReleaseWarning {
+            sent: bool,
+            receipt: SignedAuthorityRecord,
+            /// Authoritative enclave warning-sent time (Unix ms), present on
+            /// both a fresh send (`receipt.kind == commit`) and an idempotent
+            /// retry (`receipt.kind == snapshot`).
+            release_warning_sent_hi_ms: u64,
         },
         Health {
             ok: bool,

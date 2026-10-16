@@ -344,6 +344,93 @@ async fn conflict_unavailable_and_lying_append_never_compare_or_fork() {
 }
 
 #[tokio::test]
+async fn conflict_requires_a_signed_successor_before_discarding_proposal() {
+    let (keys, mut loser, enrollment, store) = setup();
+    let rejected = BadAppend {
+        inner: &store,
+        error: Some(AppendError::Conflict),
+        persist: false,
+    };
+    assert_eq!(
+        loser
+            .transition(
+                &rejected,
+                &enrollment,
+                &op("lost", "lost"),
+                Event::HoldCreated
+            )
+            .await,
+        Err(LedgerError::Store(AppendError::Conflict))
+    );
+    let checkpoint = &loser.checkpoints[&enrollment.chain_id()];
+    assert!(checkpoint.committed.is_none());
+    assert!(checkpoint.pending.is_some());
+    assert!(matches!(
+        loser.observe(&[], &enrollment),
+        Err(LedgerError::Rollback)
+    ));
+
+    let mut winner = Ledger::new(&keys, "key".into(), [0; 32]).unwrap();
+    winner
+        .transition(&store, &enrollment, &op("won", "won"), Event::HoldCreated)
+        .await
+        .unwrap();
+    let records = store.get_chain(&enrollment.chain_id()).await.unwrap();
+    let mut forged = records.clone();
+    forged[0].sig[0] ^= 1;
+    assert!(loser.observe(&forged, &enrollment).is_err());
+    assert!(loser.checkpoints[&enrollment.chain_id()].pending.is_some());
+    loser.observe(&records, &enrollment).unwrap();
+    let checkpoint = &loser.checkpoints[&enrollment.chain_id()];
+    assert!(checkpoint.pending.is_none());
+    assert_eq!(
+        checkpoint.committed,
+        Some((0, records[0].record_hash().unwrap()))
+    );
+    loser
+        .transition(&store, &enrollment, &op("won", "cancel"), Event::Cancelled)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn cancelled_append_keeps_proposal_separate_and_blocks_forks() {
+    struct CancelledStore;
+    impl HeadStore for CancelledStore {
+        fn get_chain<'a>(&'a self, _: &'a str) -> StoreFuture<'a, Vec<LedgerRecord>> {
+            Box::pin(async { Ok(Vec::new()) })
+        }
+        fn append<'a>(&'a self, _: &'a str, _: &'a LedgerRecord) -> StoreFuture<'a, ()> {
+            Box::pin(std::future::pending())
+        }
+    }
+    let (keys, mut ledger, enrollment, store) = setup();
+    let operation = op("h", "cancelled-io");
+    let mut append =
+        Box::pin(ledger.transition(&CancelledStore, &enrollment, &operation, Event::HoldCreated));
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(append.as_mut().poll(&mut context).is_pending());
+    drop(append);
+    let checkpoint = &ledger.checkpoints[&enrollment.chain_id()];
+    assert!(checkpoint.committed.is_none());
+    assert!(checkpoint.pending.is_some());
+    let mut other = Ledger::new(&keys, "key".into(), [0; 32]).unwrap();
+    other
+        .transition(&store, &enrollment, &op("fork", "fork"), Event::HoldCreated)
+        .await
+        .unwrap();
+    let fork = store.get_chain(&enrollment.chain_id()).await.unwrap();
+    assert!(matches!(
+        ledger.observe(&fork, &enrollment),
+        Err(LedgerError::Rollback)
+    ));
+    assert!(matches!(
+        ledger.observe(&[], &enrollment),
+        Err(LedgerError::Rollback)
+    ));
+}
+
+#[tokio::test]
 async fn time_terminal_and_result_transition_rules() {
     for terminal in [Event::Released, Event::Cancelled] {
         let (_, mut ledger, enrollment, store) = setup();

@@ -2,6 +2,13 @@ import { Agent } from 'node:https';
 import axios from 'axios';
 import { z } from 'zod';
 import {
+    AuthorityCommitValidator,
+    AuthorityHoldReceiptValidator,
+    AuthorityMutationValidator,
+    AuthorityStateResponseValidator,
+    safeInteger,
+} from './authorityContract';
+import {
     ESCROW_ALGORITHM,
     ESCROW_ENVELOPE_VERSION,
     type EscrowEnvelope,
@@ -12,11 +19,14 @@ import {
     EscrowPolicyError,
     EscrowUnavailableError,
     type CarryPinVerifierInput,
+    type ConfirmHoldRequest,
     type EnclaveAttestation,
     type EscrowEnclave,
     type ReleaseRequest,
     type ReleaseResult,
+    type ResendCodeRequest,
     type RewrapEscrowBlobInput,
+    type SendReleaseWarningRequest,
     type VerifyEscrowBlobInput,
     type VerifyEscrowBlobResult,
 } from './types';
@@ -58,7 +68,6 @@ const verifyBlobResponseValidator = z.union([
 ]);
 
 const carryPinVerifierResponseValidator = z.object({ envelope: envelopeValidator });
-const rewrapEscrowBlobResponseValidator = z.object({ envelope: envelopeValidator });
 
 // Opaque SignedHoldRecord JSON: validate shape while preserving signed extensions.
 const holdRecordValidator = z
@@ -74,8 +83,8 @@ const holdRecordValidator = z
                 clientEphemeralPublicKey: z.string().min(1),
                 createdLo: z.number().int().nonnegative(),
                 createdHi: z.number().int().nonnegative(),
-                policyVersion: z.number().int().positive(),
-                signature: z.string().min(1),
+                policyVersion: z.union([z.literal(1), z.literal(2)]),
+                signature: z.string().min(1).max(8192),
             })
             .passthrough(),
         holdDurationMs: z.number().int().nonnegative(),
@@ -84,9 +93,21 @@ const holdRecordValidator = z
     .passthrough();
 const validatedHold = (hold: ReleaseRequest['hold']): ReleaseRequest['hold'] => {
     if (!holdRecordValidator.safeParse(hold).success) throw new EscrowUnavailableError();
+    if (hold.hold.policyVersion === 2) {
+        try {
+            AuthorityCommitValidator.parse(
+                JSON.parse(Buffer.from(hold.hold.signature, 'base64').toString('utf8'))
+            );
+        } catch {
+            throw new EscrowUnavailableError();
+        }
+    }
     return hold;
 };
-const releaseResponseValidator = z.object({ sealed: envelopeValidator });
+const releaseResponseValidator = z.object({
+    sealed: envelopeValidator,
+    receipt: AuthorityCommitValidator.optional(),
+});
 
 const errorCodeValidator = z.enum([
     'policy',
@@ -181,6 +202,24 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
     };
 
     return {
+        getEnrollmentState: input =>
+            call('/v1/enrollment-state', input, AuthorityStateResponseValidator),
+        applyEnrollmentIntent: async input => {
+            const { result } = await call(
+                '/v1/apply-enrollment',
+                input,
+                z.object({ result: AuthorityMutationValidator }).strict()
+            );
+            if (
+                result.authorityGeneration !== input.signedIntent.intent.authorityGeneration ||
+                result.enrollmentVersion !==
+                    input.signedIntent.intent.expectedEnrollmentVersion + 1 ||
+                result.enrollmentEpoch !== input.signedIntent.intent.enrollmentEpoch ||
+                (result.envelope === null) !== (input.signedIntent.intent.action === 'disable')
+            )
+                throw new EscrowUnavailableError();
+            return result;
+        },
         getAttestation: (nonce?: Uint8Array): Promise<EnclaveAttestation> =>
             call('/v1/attest', { nonce: Array.from(nonce ?? []) }, attestResponseValidator),
         verifyEscrowBlob: (input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult> =>
@@ -207,47 +246,110 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 },
                 carryPinVerifierResponseValidator
             ),
-        rewrapEscrowBlob: (input: RewrapEscrowBlobInput): Promise<{ envelope: EscrowEnvelope }> =>
-            call(
-                '/v1/rewrap-escrow-blob',
+        rewrapEscrowBlob: async (input: RewrapEscrowBlobInput) => {
+            const { result } = await call(
+                '/v1/authority-rewrap',
                 {
                     envelope: input.envelope,
                     expectedDid: input.expectedDid,
                     expectedShareVersion: input.expectedShareVersion,
                     sourceEnrollmentEpoch: input.sourceEnrollmentEpoch,
                 },
-                rewrapEscrowBlobResponseValidator
-            ),
+                z.object({ result: AuthorityMutationValidator }).strict()
+            );
+            if (!result.envelope || result.enrollmentEpoch !== input.sourceEnrollmentEpoch)
+                throw new EscrowUnavailableError();
+            return { envelope: result.envelope, authority: result };
+        },
         createHold: async input => ({
-            holdRecord: await call(
-                '/v1/create-hold',
-                {
-                    envelope: input.envelope,
-                    holdId: input.holdId,
-                    expectedDid: input.expectedDid,
-                    expectedShareVersion: input.expectedShareVersion,
-                    enrollmentEpoch: input.enrollmentEpoch,
-                    releasePolicy: input.releasePolicy,
-                    clientEphemeralPublicKey: input.clientEphemeralPublicKey,
-                },
-                holdRecordValidator
+            holdRecord: validatedHold(
+                await call(
+                    '/v1/create-hold',
+                    {
+                        envelope: input.envelope,
+                        holdId: input.holdId,
+                        expectedDid: input.expectedDid,
+                        expectedShareVersion: input.expectedShareVersion,
+                        enrollmentEpoch: input.enrollmentEpoch,
+                        releasePolicy: input.releasePolicy,
+                        clientEphemeralPublicKey: input.clientEphemeralPublicKey,
+                    },
+                    holdRecordValidator
+                )
             ),
         }),
         cancelHold: async input => {
-            await call(
+            const result = await call(
                 '/v1/cancel-hold',
                 {
                     envelope: input.envelope,
                     hold: validatedHold(input.hold),
                     clientEphemeralPublicKey: input.clientEphemeralPublicKey,
                     expectedDid: input.expectedDid,
+                    ...(input.requestId ? { requestId: input.requestId } : {}),
                 },
-                z.object({ ok: z.literal(true) })
+                z.object({ ok: z.literal(true), receipt: AuthorityCommitValidator.optional() })
             );
+            if (input.hold.hold.policyVersion === 2 && !result.receipt)
+                throw new EscrowUnavailableError();
+            if (result.receipt) return { receipt: result.receipt };
+            return undefined;
+        },
+        confirmHold: async (input: ConfirmHoldRequest) => {
+            const result = await call(
+                '/v1/confirm-hold',
+                {
+                    envelope: input.envelope,
+                    hold: validatedHold(input.hold),
+                    clientEphemeralPublicKey: input.clientEphemeralPublicKey,
+                    expectedDid: input.expectedDid,
+                    code: input.code,
+                    ...(input.requestId ? { requestId: input.requestId } : {}),
+                },
+                z.object({
+                    confirmed: z.literal(true),
+                    receipt: AuthorityHoldReceiptValidator,
+                    confirmedHiMs: safeInteger,
+                })
+            );
+            return { receipt: result.receipt, confirmedAtMs: result.confirmedHiMs };
+        },
+        resendCode: async (input: ResendCodeRequest) => {
+            const result = await call(
+                '/v1/resend-code',
+                {
+                    envelope: input.envelope,
+                    hold: validatedHold(input.hold),
+                    clientEphemeralPublicKey: input.clientEphemeralPublicKey,
+                    expectedDid: input.expectedDid,
+                    ...(input.requestId ? { requestId: input.requestId } : {}),
+                },
+                z.object({ sent: z.literal(true), receipt: AuthorityCommitValidator })
+            );
+            return { receipt: result.receipt };
+        },
+        sendReleaseWarning: async (input: SendReleaseWarningRequest) => {
+            const result = await call(
+                '/v1/send-release-warning',
+                {
+                    holdId: input.holdId,
+                    expectedDid: input.expectedDid,
+                    ...(input.requestId ? { requestId: input.requestId } : {}),
+                },
+                z.object({
+                    sent: z.literal(true),
+                    receipt: AuthorityHoldReceiptValidator,
+                    releaseWarningSentHiMs: safeInteger,
+                })
+            );
+            return {
+                receipt: result.receipt,
+                releaseWarningSentAtMs: result.releaseWarningSentHiMs,
+            };
         },
         releaseEscrow: async (input: ReleaseRequest): Promise<ReleaseResult> => {
             validatedHold(input.hold);
-            return call(
+            const result = await call(
                 '/v1/release',
                 {
                     envelope: input.envelope,
@@ -255,9 +357,13 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                     clientEphemeralPublicKey: input.clientEphemeralPublicKey,
                     expectedDid: input.expectedDid,
                     ...(input.pinProof !== undefined ? { pinProof: input.pinProof } : {}),
+                    ...(input.requestId ? { requestId: input.requestId } : {}),
                 },
                 releaseResponseValidator
             );
+            if (input.hold.hold.policyVersion === 2 && !result.receipt)
+                throw new EscrowUnavailableError();
+            return result;
         },
     };
 };
