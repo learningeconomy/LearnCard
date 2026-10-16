@@ -144,7 +144,6 @@ export const EscrowRecoveryPanel = ({
     const [confirmed, setConfirmed] = useState(false);
     const [verifiedHoldId, setVerifiedHoldId] = useState<string>();
     const [statusFailed, setStatusFailed] = useState(false);
-    const [statusAttempt, setStatusAttempt] = useState(0);
     const [codeInput, setCodeInput] = useState('');
     const [codeError, setCodeError] = useState('');
     const [confirming, setConfirming] = useState(false);
@@ -307,7 +306,7 @@ export const EscrowRecoveryPanel = ({
             cancelled = true;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pending?.holdId, statusAttempt]);
+    }, [pending?.holdId]);
 
     if (!available && !pending && !error) return null;
     const run = async (action: () => Promise<void>) => {
@@ -386,6 +385,7 @@ export const EscrowRecoveryPanel = ({
         const holdId = pending.holdId;
         const generation = beginStatusRead();
         let hold;
+        setStatusFailed(false);
         try {
             hold = await onStatus({
                 holdId: pending.holdId,
@@ -466,9 +466,20 @@ export const EscrowRecoveryPanel = ({
                     { generation, holdId }
                 );
             }
-            await checkStatus().catch(cause =>
-                logRecoveryError('recovery.status.confirm.failed', cause)
-            );
+            const refresh = checkStatus();
+            const refreshGeneration = statusGenerationRef.current;
+            await refresh.catch(cause => {
+                logRecoveryError('recovery.status.confirm.failed', cause);
+                if (
+                    !active.current ||
+                    refreshGeneration !== statusGenerationRef.current ||
+                    holdId !== activeHoldIdRef.current
+                )
+                    return;
+                // Code acceptance remains authoritative if this best-effort read fails.
+                setStatusFailed(false);
+                setVerifiedHoldId(holdId);
+            });
         } catch (e) {
             const isRefusal = isEscrowRefusal(e);
             setCodeError(
@@ -636,20 +647,18 @@ export const EscrowRecoveryPanel = ({
                 ? (() => {
                       if (
                           statusFailed ||
-                          (pending.requiresConfirmation && verifiedHoldId !== pending.holdId)
+                          ((pending.requiresConfirmation || loading) &&
+                              verifiedHoldId !== pending.holdId)
                       ) {
                           return (
                               <button
                                   className={button}
                                   disabled={!statusFailed || loading}
                                   onClick={() => {
-                                      setError('');
-                                      if (pending.requiresConfirmation)
-                                          setStatusAttempt(value => value + 1);
-                                      else
-                                          void run(async () => {
-                                              await checkStatus();
-                                          });
+                                      setVerifiedHoldId(undefined);
+                                      void run(async () => {
+                                          await checkStatus();
+                                      });
                                   }}
                               >
                                   {!statusFailed || loading ? spinner('Checking...') : 'Try Again'}

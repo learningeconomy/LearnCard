@@ -170,6 +170,7 @@ export class EscrowUnavailableError extends Error {
             | 'time'
             | 'transport'
             | 'invalid_response'
+            | 'invalid_hold'
             | 'http_refusal'
             | 'rate_limit' = 'unavailable'
     ) {

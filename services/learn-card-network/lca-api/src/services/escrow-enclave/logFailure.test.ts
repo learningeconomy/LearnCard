@@ -1,10 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRemoteEnclave } from './remoteEnclave';
 import { logEscrowFailure } from './logFailure';
+import { EscrowUnavailableError } from './types';
 
 afterEach(() => vi.restoreAllMocks());
 
 describe('escrow failure reasons', () => {
+    it('logs invalid outbound holds without error details', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const error = new EscrowUnavailableError('invalid_hold');
+        error.message = 'private hold contents';
+        logEscrowFailure(error);
+        expect(warn).toHaveBeenCalledExactlyOnceWith('[LCA escrow] enclave operation failed', {
+            reason: 'invalid_hold',
+        });
+    });
     it.each([
         [403, 'policy', 'policy'],
         [403, 'pinMismatch', 'pin_mismatch'],

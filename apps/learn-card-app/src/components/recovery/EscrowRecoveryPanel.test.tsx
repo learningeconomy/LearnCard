@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EscrowHoldRestartThrottledError } from '@learncard/sss-key-manager';
 import { EscrowRecoveryPanel, formatTimeRemaining } from './EscrowRecoveryPanel';
@@ -85,6 +85,149 @@ describe('EscrowRecoveryPanel', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
+
+    it.each([true, undefined])(
+        'clears the retry banner and handles cancellation (confirmation: %s)',
+        async requiresConfirmation => {
+            const releaseAfter = new Date(Date.now() + 86400000).toISOString();
+            vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+                holdId: 'hold-confirm-1',
+                resumeToken: 'token',
+                clientEphemeralPrivateKey: 'key',
+                releaseAfter,
+                requiresConfirmation,
+                expectations,
+            });
+            let resolveRetry!: (value: unknown) => void;
+            const onStatus = vi
+                .fn()
+                .mockResolvedValueOnce({ status: 'pending', confirmed: true, releaseAfter })
+                .mockRejectedValueOnce(new Error('private failure'))
+                .mockImplementationOnce(
+                    () =>
+                        new Promise(resolve => {
+                            resolveRetry = resolve;
+                        })
+                );
+            // Software holds do not read status on mount.
+            if (!requiresConfirmation)
+                onStatus
+                    .mockReset()
+                    .mockRejectedValueOnce(new Error('private failure'))
+                    .mockImplementationOnce(
+                        () =>
+                            new Promise(resolve => {
+                                resolveRetry = resolve;
+                            })
+                    );
+            render(
+                <EscrowRecoveryPanel
+                    view="status"
+                    available
+                    onStart={vi.fn()}
+                    onStatus={onStatus}
+                    onRecover={vi.fn()}
+                    onConfirmCode={vi.fn()}
+                    onResendCode={vi.fn()}
+                />
+            );
+            fireEvent.click(await screen.findByRole('button', { name: 'Check status' }));
+            fireEvent.click(await screen.findByRole('button', { name: 'Try Again' }));
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'Checking...' })).toBeDisabled();
+            await act(async () => {
+                resolveRetry({ status: 'cancelled' });
+            });
+            expect(await screen.findByText('This recovery request was cancelled.')).toBeVisible();
+            expect(clearPendingEscrowRecovery).toHaveBeenCalledWith('hold-confirm-1', 'default');
+            expect(screen.queryByText('Recovery in progress')).not.toBeInTheDocument();
+            expect(
+                screen.queryByText("We couldn't check your request right now.")
+            ).not.toBeInTheDocument();
+        }
+    );
+
+    it.each(['failure', 'stale', 'superseded failure'])(
+        'preserves authoritative confirmation across a post-confirm %s',
+        async scenario => {
+            const releaseAfter = new Date(Date.now() + 86400000).toISOString();
+            const newerReleaseAfter = new Date(Date.now() + 5 * 86400000).toISOString();
+            vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+                holdId: 'hold-confirm-1',
+                resumeToken: 'token',
+                clientEphemeralPrivateKey: 'key',
+                releaseAfter,
+                requiresConfirmation: true,
+                expectations,
+            });
+            let resolveOld!: (value: unknown) => void;
+            let rejectOld!: (reason: Error) => void;
+            const onStatus = vi
+                .fn()
+                .mockResolvedValueOnce({ status: 'pending', confirmed: false, releaseAfter })
+                .mockImplementationOnce(
+                    () =>
+                        new Promise((resolve, reject) => {
+                            resolveOld = resolve;
+                            rejectOld = reject;
+                        })
+                );
+            render(
+                <EscrowRecoveryPanel
+                    view="status"
+                    available
+                    onStart={vi.fn()}
+                    onStatus={onStatus}
+                    onRecover={vi.fn()}
+                    onConfirmCode={vi.fn().mockResolvedValue({ success: true })}
+                    onResendCode={vi.fn()}
+                />
+            );
+            await screen.findByText('Check your email');
+            fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+                clipboardData: { getData: () => '12345678' },
+            });
+            await waitFor(() => expect(onStatus).toHaveBeenCalledTimes(2));
+            if (scenario !== 'failure') {
+                if (scenario === 'stale')
+                    onStatus.mockResolvedValueOnce({
+                        status: 'pending',
+                        confirmed: true,
+                        releaseAfter: newerReleaseAfter,
+                    });
+                else onStatus.mockRejectedValueOnce(new Error('newer failure'));
+                fireEvent.click(screen.getByRole('button', { name: 'Check status' }));
+                await waitFor(() => expect(onStatus).toHaveBeenCalledTimes(3));
+                if (scenario === 'stale')
+                    await waitFor(() =>
+                        expect(savePendingEscrowRecovery).toHaveBeenCalledWith(
+                            expect.objectContaining({ releaseAfter: newerReleaseAfter }),
+                            'default'
+                        )
+                    );
+                else await screen.findByText("We couldn't check your request right now.");
+            }
+            await act(async () => {
+                if (scenario === 'stale')
+                    resolveOld({ status: 'pending', confirmed: false, releaseAfter });
+                else rejectOld(new Error('private refresh failure'));
+            });
+            expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+            if (scenario === 'superseded failure') {
+                expect(screen.getByText("We couldn't check your request right now.")).toBeVisible();
+            } else {
+                expect(screen.getByText('Recovery in progress')).toBeVisible();
+                expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+                if (scenario === 'stale')
+                    expect(savePendingEscrowRecovery).toHaveBeenCalledTimes(1);
+            }
+            if (scenario !== 'stale')
+                expect(logError).toHaveBeenCalledWith('recovery.status.confirm.failed', {
+                    errorType: 'Error',
+                });
+            expect(JSON.stringify(logError.mock.calls)).not.toContain('private refresh');
+        }
+    );
 
     it('hides code entry and countdown after a failed status read, and retries safely', async () => {
         vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({

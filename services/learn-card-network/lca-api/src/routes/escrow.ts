@@ -1304,8 +1304,10 @@ export const escrowRouter = t.router({
                     };
                 } catch (error) {
                     // Keep the typed mismatch inside the wrapper; never expose enclave internals.
-                    if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError)
+                    if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError) {
+                        logEscrowFailure(error);
                         return { mismatch: true as const };
+                    }
                     if (reserved && hold.holdRecord.hold.policyVersion !== 2)
                         await refundEscrowPinAttempt(
                             hold.authProvider,
