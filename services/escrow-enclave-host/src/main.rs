@@ -196,7 +196,10 @@ async fn start() -> io::Result<()> {
         &token,
         enclave,
         32,
-        Duration::from_secs(10),
+        // Outer budget: longer than the enclave's own 10s request deadline
+        // (escrow-enclave-app server.rs IO_TIMEOUT) so the host never gives up
+        // on a response the enclave is about to return; lca-api waits 15s.
+        Duration::from_secs(12),
     )));
     let health = Router::new().route(
         "/health",

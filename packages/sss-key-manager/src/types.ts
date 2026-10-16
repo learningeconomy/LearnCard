@@ -285,7 +285,10 @@ export type SSSKeyDerivationStrategy = KeyDerivationStrategy<
     RecoverySetupInput,
     RecoverySetupResult,
     RecoveryConfirmationInput
->;
+> & {
+    /** Last receipt/snapshot-verified ciphertext for this session, never a freshness oracle. */
+    getVerifiedEscrowEnvelope?(): import('./escrow-crypto').EscrowEnvelope | null;
+};
 
 // ---------------------------------------------------------------------------
 // Legacy types (deprecated)

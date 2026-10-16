@@ -5,10 +5,11 @@ locals {
   authority_writer_name       = "${local.name_prefix}-authority-writer"
   email_sender_name           = "${local.name_prefix}-email-sender"
   authority_writer_arn        = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/${local.authority_writer_name}"
+  authority_monitor_arn       = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-ledger-monitor-role"
   email_sender_arn            = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/${local.email_sender_name}"
   authority_item_actions      = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:ConditionCheckItem"]
   authority_mutation_actions  = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:ConditionCheckItem"]
-  authority_bypass_actions    = ["dynamodb:PartiQL*", "dynamodb:BatchWriteItem", "dynamodb:BatchGetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:ExportTableToPointInTime", "dynamodb:EnableKinesisStreamingDestination", "dynamodb:UpdateKinesisStreamingDestination", "dynamodb:DisableKinesisStreamingDestination"]
+  authority_bypass_actions    = ["dynamodb:PartiQL*", "dynamodb:BatchWriteItem", "dynamodb:BatchGetItem", "dynamodb:ExportTableToPointInTime", "dynamodb:EnableKinesisStreamingDestination", "dynamodb:UpdateKinesisStreamingDestination", "dynamodb:DisableKinesisStreamingDestination"]
   authority_lifecycle_actions = ["dynamodb:CreateTable", "dynamodb:DeleteTable", "dynamodb:UpdateTable", "dynamodb:UpdateTimeToLive", "dynamodb:UpdateContinuousBackups", "dynamodb:RestoreTableFromBackup", "dynamodb:RestoreTableToPointInTime", "dynamodb:ImportTable", "dynamodb:PutResourcePolicy", "dynamodb:DeleteResourcePolicy", "dynamodb:CreateGlobalTable", "dynamodb:UpdateGlobalTable*", "dynamodb:TagResource", "dynamodb:UntagResource"]
   # DynamoDB resource policies reject table-creation actions (they cannot target
   # an existing table). The SCP's DenyAuthorityLifecycleExceptAdmin covers those.
@@ -17,12 +18,16 @@ locals {
     Version = "2012-10-17"
     Statement = [
       { Sid = "DenyUntrustedPrincipalsAllApis", Effect = "Deny", Principal = "*", Action = ["dynamodb:*"], Resource = [local.authority_table_arn, "${local.authority_table_arn}/*"],
-      Condition = { ArnNotEquals = { "aws:PrincipalArn" = [local.authority_writer_arn, var.kms_admin_role_arn] } } },
+      Condition = { ArnNotEquals = { "aws:PrincipalArn" = [local.authority_writer_arn, var.kms_admin_role_arn, local.authority_monitor_arn] } } },
+      { Sid = "AllowMonitorReads", Effect = "Allow", Principal = { AWS = local.authority_monitor_arn }, Action = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"], Resource = local.authority_table_arn },
+      { Sid = "DenyMonitorNonReads", Effect = "Deny", Principal = "*", NotAction = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"], Resource = [local.authority_table_arn, "${local.authority_table_arn}/*"], Condition = { ArnEquals = { "aws:PrincipalArn" = local.authority_monitor_arn } } },
+      { Sid = "DenyEnumerationExceptMonitor", Effect = "Deny", Principal = "*", Action = ["dynamodb:Query", "dynamodb:Scan"], Resource = local.authority_table_arn, Condition = { ArnNotEquals = { "aws:PrincipalArn" = local.authority_monitor_arn } } },
+      { Sid = "DenyNonReaderData", Effect = "Deny", Principal = "*", Action = ["dynamodb:GetItem"], Resource = local.authority_table_arn, Condition = { ArnNotEquals = { "aws:PrincipalArn" = [local.authority_writer_arn, local.authority_monitor_arn] } } },
       { Sid = "AllowWriterRead", Effect = "Allow", Principal = { AWS = local.authority_writer_arn }, Action = ["dynamodb:GetItem"], Resource = local.authority_table_arn },
       { Sid = "AllowWriterTransactions", Effect = "Allow", Principal = { AWS = local.authority_writer_arn }, Action = local.authority_mutation_actions, Resource = local.authority_table_arn,
       Condition = { StringEquals = { "dynamodb:EnclosingOperation" = "TransactWriteItems" } } },
       # Includes root, the host, OrganizationAccountAccessRole and even break-glass.
-      { Sid = "DenyNonWriterData", Effect = "Deny", Principal = "*", Action = local.authority_item_actions, Resource = local.authority_table_arn,
+      { Sid = "DenyNonWriterData", Effect = "Deny", Principal = "*", Action = local.authority_mutation_actions, Resource = local.authority_table_arn,
       Condition = { ArnNotEquals = { "aws:PrincipalArn" = local.authority_writer_arn } } },
       { Sid = "DenyNonTransactionalWrites", Effect = "Deny", Principal = "*", Action = local.authority_mutation_actions, Resource = local.authority_table_arn,
       Condition = { StringNotEqualsIfExists = { "dynamodb:EnclosingOperation" = "TransactWriteItems" } } },
@@ -77,7 +82,7 @@ resource "aws_dynamodb_resource_policy" "authority" {
   count        = var.enable_enrollment_authority ? 1 : 0
   resource_arn = aws_dynamodb_table.authority[0].arn
   policy       = jsonencode(local.authority_resource_policy)
-  depends_on   = [aws_iam_user.authority_writer]
+  depends_on   = [aws_iam_user.authority_writer, aws_iam_role.ledger_monitor]
 }
 resource "aws_iam_user" "authority_writer" {
   count         = var.enable_enrollment_authority ? 1 : 0

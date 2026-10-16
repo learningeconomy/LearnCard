@@ -2,12 +2,17 @@ import path from 'path';
 import esbuild from 'esbuild';
 import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
 
-const nodeResolveExternal = (bundleCborg = false) =>
+const nodeResolveExternal = (bundleEsmOnly = false) =>
     NodeResolvePlugin({
         extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
         onResolved: resolved => {
-            // cborg exposes only ESM; CommonJS consumers cannot require it directly.
-            if (bundleCborg && resolved.includes(`${path.sep}cborg${path.sep}`)) return resolved;
+            // These dependencies expose only ESM; CommonJS cannot require them directly.
+            const esmOnly = [
+                `${path.sep}cborg${path.sep}`,
+                `${path.sep}@noble${path.sep}ed25519${path.sep}`,
+            ];
+            if (bundleEsmOnly && esmOnly.some(segment => resolved.includes(segment)))
+                return resolved;
             if (resolved.includes('node_modules')) {
                 return { external: true };
             }

@@ -445,6 +445,16 @@ pub struct DynamoAuthorityClient {
     client: Client,
 }
 impl DynamoAuthorityClient {
+    pub(crate) fn authority_config(&self) -> &AuthorityConfig {
+        &self.config
+    }
+    #[cfg(test)]
+    pub(crate) fn set_test_connector(
+        &mut self,
+        connector: aws_smithy_runtime_api::client::http::SharedHttpConnector,
+    ) {
+        self.client.connector = Some(connector);
+    }
     pub fn new(
         config: AuthorityConfig,
         credentials: DedicatedCredentials,

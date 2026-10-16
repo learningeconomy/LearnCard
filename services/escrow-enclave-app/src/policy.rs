@@ -20,6 +20,8 @@ use crate::{
     wire::{ErrorCode, EscrowEnvelope, HoldRecord, ReleasePolicy},
 };
 
+#[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+pub mod authority;
 #[cfg(test)]
 mod tests;
 
@@ -41,7 +43,7 @@ pub type EnrollmentFuture<'a> =
 /// Trusted driver boundary, like TimeSource. Implementations MUST authenticate
 /// tenant/DID ownership and freshness independently of the parent. A signed old
 /// snapshot is insufficient. Rotation must serialize with policy operations.
-/// No production implementation is provided: missing authority fails closed.
+/// Configured production uses AuthorityEnrollment; missing authority fails closed.
 pub trait EnrollmentSource: Send + Sync {
     fn current<'a>(&'a self, tenant: &'a str, did: &'a str) -> EnrollmentFuture<'a>;
 }
@@ -104,6 +106,8 @@ pub struct Policy<'a> {
     store: &'a dyn HeadStore,
     time: &'a dyn TimeSource,
     enrollments: &'a dyn EnrollmentSource,
+    #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+    authority: Option<&'a authority::AuthorityEnrollment>,
     #[cfg(test)]
     comparisons: usize,
 }
@@ -158,6 +162,8 @@ impl<'a> Policy<'a> {
             store,
             time,
             enrollments,
+            #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+            authority: None,
             #[cfg(test)]
             comparisons: 0,
         })
@@ -256,6 +262,10 @@ impl<'a> Policy<'a> {
         target_share_version: u32,
         (source_enrollment_epoch, target_enrollment_epoch): (u64, u64),
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return Err(ErrorCode::Policy);
+        }
         let mut source = self.decrypt(source_envelope)?;
         let mut target = self.decrypt(target_envelope)?;
         if source.did != expected_did
@@ -399,6 +409,19 @@ impl<'a> Policy<'a> {
         expected_share_version: u32,
         source_enrollment_epoch: u64,
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self
+                .authority_rewrap(
+                    envelope,
+                    expected_did,
+                    expected_share_version,
+                    source_enrollment_epoch,
+                )
+                .await?
+                .envelope
+                .ok_or(ErrorCode::Unavailable);
+        }
         if envelope.key_id == self.key_id
             || !self
                 .previous_keys
@@ -481,6 +504,10 @@ impl<'a> Policy<'a> {
         &mut self,
         req: CreateHoldRequest<'_>,
     ) -> Result<SignedHoldRecord, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_create_hold(req).await;
+        }
         identifier(req.hold_id)?;
         identifier(req.request_id)?;
         validate_client_key(req.client_ephemeral_public_key)?;
@@ -620,6 +647,10 @@ impl<'a> Policy<'a> {
         &mut self,
         req: ReleaseRequest<'_>,
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_release(req, ReleasePolicy::Hold).await;
+        }
         if req.hold.hold.release_policy != ReleasePolicy::Hold {
             return Err(ErrorCode::Policy);
         }
@@ -635,6 +666,10 @@ impl<'a> Policy<'a> {
         &mut self,
         req: ReleaseRequest<'_>,
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_release(req, ReleasePolicy::Pin).await;
+        }
         if req.hold.hold.release_policy != ReleasePolicy::Pin {
             return Err(ErrorCode::Policy);
         }
@@ -749,6 +784,10 @@ impl<'a> Policy<'a> {
     /// Signed cancellation is irrevocable in the observable chain. Caller must
     /// authenticate user intent before invoking; cancellation never grants release.
     pub async fn cancel_hold(&mut self, req: ReleaseRequest<'_>) -> Result<(), ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_cancel(req).await.map(|_| ());
+        }
         let verified = self.verify_hold(&req).await?;
         let time = self.now(&verified.state).await?;
         let operation = self.operation(&req, time, "cancel", None)?;

@@ -24,6 +24,7 @@ fake-nsm = ["dep:p384", "dep:x509-cert", "sha2/oid"]
 fake-kms = ["enclave-runtime"]
 fake-time = []
 fake-ledger = []
+fake-authority = []
 verified-roughtime-keys = []
 nitro = ["enclave-runtime", "dep:aws-nitro-enclaves-nsm-api", "dep:aws-nitro-enclaves-cose"]
 kms = ["enclave-runtime", "dep:aws-sdk-kms", "dep:aws-smithy-async", "dep:aws-smithy-runtime-api", "dep:aws-smithy-types", "dep:rustls", "dep:webpki-roots", "dep:hyper", "dep:hyper-rustls", "dep:hyper-util", "dep:http-body-util", "dep:aws-sigv4", "dep:aws-credential-types"]
@@ -46,6 +47,7 @@ thiserror = "~2.0.21"
 tracing = "~0.1.44"
 tracing-subscriber = "~0.3.23"
 base64 = "~0.23.1"
+bs58 = "=0.5.1"
 hex = "~0.4.3"
 ed25519-dalek = "~2.2.0"
 subtle = "~2.6.1"

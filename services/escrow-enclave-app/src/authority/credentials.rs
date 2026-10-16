@@ -58,7 +58,7 @@ fn validate_key(
 
 impl CredentialUnsealer {
     /// Measured configuration only. Unset groups return None without invoking KMS
-    /// or NSM. Boot/Policy do not call this factory in the foundations checkpoint.
+    /// or NSM. Configured boot unseals the writer; email activation is still deferred.
     pub fn from_measured_env(
         boot_credentials: Credentials,
         time: Arc<dyn TimeSource>,

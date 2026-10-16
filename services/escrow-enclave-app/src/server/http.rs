@@ -48,6 +48,9 @@ pub(super) async fn read(stream: &mut dyn Socket, token: &str) -> io::Result<Req
     }
     let method = match path {
         Some("/v1/attest") => "attest",
+        Some("/v1/enrollment-state") => "enrollmentState",
+        Some("/v1/apply-enrollment") => "applyEnrollment",
+        Some("/v1/authority-rewrap") => "authorityRewrap",
         Some("/v1/verify-blob") => "verifyBlob",
         Some("/v1/carry-pin-verifier") => "carryPinVerifier",
         Some("/v1/rewrap-escrow-blob") => "rewrapEscrowBlob",
@@ -151,14 +154,22 @@ pub(super) async fn respond(stream: &mut dyn Socket, response: Response) -> io::
         _ => 200,
     };
     let create = matches!(&response, Response::CreateHold { .. });
-    let cancel = matches!(&response, Response::Cancel { cancelled: true });
+    let cancel = matches!(
+        &response,
+        Response::Cancel {
+            cancelled: true,
+            ..
+        }
+    );
     let mut value = serde_json::to_value(response).map_err(|_| invalid())?;
     value.as_object_mut().ok_or_else(invalid)?.remove("method");
     if create {
         value = value.get_mut("hold").ok_or_else(invalid)?.take();
     }
     if cancel {
-        value = serde_json::json!({"ok":true});
+        let object = value.as_object_mut().ok_or_else(invalid)?;
+        object.remove("cancelled");
+        object.insert("ok".into(), serde_json::json!(true));
     }
     send(
         stream,

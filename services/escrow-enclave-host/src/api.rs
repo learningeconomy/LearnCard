@@ -52,6 +52,9 @@ impl Api {
 }
 pub fn router(api: Arc<Api>) -> Router {
     Router::new()
+        .route("/v1/enrollment-state", post(handle))
+        .route("/v1/apply-enrollment", post(handle))
+        .route("/v1/authority-rewrap", post(handle))
         .route("/v1/attest", post(handle))
         .route("/v1/verify-blob", post(handle))
         .route("/v1/carry-pin-verifier", post(handle))
@@ -88,6 +91,9 @@ async fn handle(State(api): State<Arc<Api>>, request: Request) -> Response {
 }
 async fn forward(api: &Api, request: Request) -> Response {
     let method = match request.uri().path() {
+        "/v1/enrollment-state" => "enrollmentState",
+        "/v1/apply-enrollment" => "applyEnrollment",
+        "/v1/authority-rewrap" => "authorityRewrap",
         "/v1/attest" => "attest",
         "/v1/verify-blob" => "verifyBlob",
         "/v1/carry-pin-verifier" => "carryPinVerifier",
@@ -170,7 +176,9 @@ async fn forward(api: &Api, request: Request) -> Response {
     }
     if method == "cancel" {
         return if value.get("cancelled") == Some(&json!(true)) {
-            Json(json!({"ok":true})).into_response()
+            value.remove("cancelled");
+            value.insert("ok".into(), json!(true));
+            Json(value).into_response()
         } else {
             error(StatusCode::FORBIDDEN, wire::ErrorCode::Policy)
         };

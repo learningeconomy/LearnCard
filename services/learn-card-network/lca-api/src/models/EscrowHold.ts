@@ -1,5 +1,9 @@
 import { createHash, createHmac, randomBytes } from 'crypto';
 import { z } from 'zod';
+import {
+    AuthorityCommitValidator,
+    type AuthorityRecord,
+} from '../services/escrow-enclave/authorityContract';
 import type { Collection } from 'mongodb';
 import mongodb from '@mongo';
 import { environment } from '@environment';
@@ -51,6 +55,8 @@ export const EscrowHoldValidator = z.object({
     cancelReason: z.enum(['pin-mismatch', 'pin-locked', 'superseded', 'release-failed']).optional(),
     cancelledAt: z.date().optional(),
     enclaveCancelPendingAt: z.date().optional(),
+    enclaveCancelReceipt: AuthorityCommitValidator.optional(),
+    enclaveReleaseReceipt: AuthorityCommitValidator.optional(),
     enclaveCancelConfirmedAt: z.date().optional(),
     enclaveCancelAttempts: z.number().int().nonnegative().optional(),
     // Retain ciphertext for revocation even after account removal or re-enrollment.
@@ -259,7 +265,10 @@ export const recordEscrowEnclaveCancelAttempt = async (id: string): Promise<bool
     return result.modifiedCount > 0;
 };
 
-export const confirmEscrowEnclaveCancellation = async (id: string): Promise<void> => {
+export const confirmEscrowEnclaveCancellation = async (
+    id: string,
+    receipt?: AuthorityRecord
+): Promise<void> => {
     const now = new Date();
     await getEscrowHoldsCollection().updateOne(
         {
@@ -269,9 +278,25 @@ export const confirmEscrowEnclaveCancellation = async (id: string): Promise<void
             enclaveCancelConfirmedAt: { $exists: false },
         },
         {
-            $set: { enclaveCancelConfirmedAt: now, updatedAt: now },
+            $set: {
+                enclaveCancelConfirmedAt: now,
+                updatedAt: now,
+                ...(receipt
+                    ? { enclaveCancelReceipt: AuthorityCommitValidator.parse(receipt) }
+                    : {}),
+            },
             $unset: { enclaveCancelPendingAt: '', enclaveEnvelope: '' },
         }
+    );
+};
+
+export const recordEscrowReleaseReceipt = async (
+    id: string,
+    receipt: AuthorityRecord
+): Promise<void> => {
+    await getEscrowHoldsCollection().updateOne(
+        { _id: id, status: 'completed' },
+        { $set: { enclaveReleaseReceipt: AuthorityCommitValidator.parse(receipt) } }
     );
 };
 

@@ -23,16 +23,201 @@ Roughtime evidence for TLS validity and SigV4, with compiled roots and no automa
 retries or cross-operation TLS reuse (see SECURITY.md for delayed-delivery limits).
 Direct DynamoDB/SES data-plane clients are compiled under `kms`, with optional
 measured settings, dedicated credential types, generated execution IDs, and no
-automatic retries. They are not constructed by boot or Policy. Local TLS tests
+automatic retries. Configured boot now constructs the authority client. Local TLS tests
 cover response conversion, body limits, stalled bodies and cross-operation
-connection isolation. Dormant attested credential unsealing and optional opaque
-host ciphertext delivery are implemented. The unsealer is not called by boot or
-Policy. Gated authority/credential/email infrastructure, optional delegated DNS,
+connection isolation. Attested writer-credential unsealing and optional opaque
+host ciphertext delivery are implemented. Email credential unsealing and sending
+remain inactive. Gated authority/credential/email infrastructure, optional delegated DNS,
 host proxy allowlists, governance alarms and operator provisioning are implemented
 but off by default. The management-account SCP is a prerequisite to enabling them;
 see `infra/escrow-enclave/README.md`. Public authority/email settings are recorded in local measurements and the
 CI-signed manifest; no plaintext access keys belong in either artifact.
-`UnavailableEnrollment` remains wired; no authority or email client is active.
+Without authority configuration, `UnavailableEnrollment` remains wired. Partial
+configuration, missing ciphertext or unsealing failure fails boot closed. No email
+client is active. **PR 2 implementation is complete offline, not deployed or a
+production launch approval.** Authority, wire/API, clients and independent audit
+integration are implemented. The ordered staging gates and PR 3 attack-C/email
+confirmation blocker remain; see `STAGING.md` and `SECURITY.md`.
+
+Operation budget: with one time server down, a round now ends at the second
+consistent authenticated response, not the missing server's shared 2s cap.
+Create-hold uses four rounds (three AWS TLS/signing samples and one shared
+back-to-back policy/event sample); PIN release uses nine (six AWS, three policy/event).
+At 200ms per quorum and 100ms per AWS call the paused-time policy regressions take
+1.1s / 2.4s, leaving over half of the enclave's 10s read/queue/execute/write deadline.
+These are latency assumptions, not availability guarantees: at the full 2s cap,
+time acquisition alone can cost 8s / 18s, and each AWS call has a 15s cap; the
+enclave's shared 10s deadline cancels unfinished work fail-closed rather than
+allowing those inner caps to add up. PR #1714 must budget an additional quorum
+and AWS call for SES and a fresh post-acceptance evidence round for warning sends
+(at these latencies, +0.3s and +0.2s respectively); no pre-SES evidence may timestamp
+acceptance. AWS samples stay fresh because they also validate TLS certificate
+intervals: a monotonic-age SigV4 cache cannot replace that evidence. Outer
+deadlines must exceed inner operation deadlines plus transport/response overhead:
+enclave 10s < host forwarding 12s < lca-api 15s (`ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS`
+default) < SDK fetch 30s. Deployments that set the lca-api value explicitly must
+keep it above 12s.
+The AWS 15s per-call cap is subordinate to the enclave operation deadline, not
+a promise that each call gets 15s. Slow quorum/AWS service or actor queueing can
+still exhaust the operation budget; ambiguous writes must not be retried as releases.
+
+PR 2 item-a checkpoint adds the persistence schema in
+`src/authority/state.rs`. It is available without AWS features for offline tests
+and future independent verification. Account rows bind tenant, generation and DID
+hash; operation revision is separate from enrollment version and epoch. Active
+state includes the encrypted envelope and its canonical blob identity. Disabled
+tombstones retain versions and PIN accounting. Holds and operation metadata occupy
+separate bounded rows, with no TTL or default state for missing records.
+
+Storage payloads use strict, versioned JSON, capped at 64 KiB, with 24 KiB encrypted
+envelopes and 8 KiB proposed events. Partition keys are domain-separated hashes of
+length-framed tenant/generation and DID hash; sort keys distinguish `ENROLLMENT`,
+`HOLD#<holdId>` and `OPERATION#<requestId>`. This encoding is **not** the future
+signed-intent canonicalization. Stored proposal bytes are **not** signed proof of
+commit. Schema validation does not authenticate a snapshot or enforce transitions.
+PR 2 item b adds `AuthorityStore` with the direct DynamoDB adapter and an
+explicit `fake-authority` feature. Each transition atomically puts the account,
+request-operation, optional hold, and immutable `EXECUTION#<randomId>` receipt.
+Rows contain `pk`, `sk`, and a binary `payload`; existing rows require exact prior
+payload equality, new rows require absence. Reads use `TransactGetItems`. The fake
+uses the same conditions under one lock, including delayed/ambiguous-write tests.
+
+The durable execution ID is generated inside the enclave and stored with the
+operation and receipt. It is independent of the AWS client's short-lived transport
+idempotency token. The immutable receipt binds the transaction digest and resulting
+revision; it survives updates to a PIN operation's reservation/result row. Receipts
+retain the exact signed proposal in their immutable execution row, so a reservation
+event is not lost when its mutable operation row advances to a result. Receipts
+are storage evidence; item c separately signs portable post-commit artifacts. An acknowledged
+write requires receipt readback for `Applied`; reconciliation returns only
+`Reconciled`, never a fresh PIN comparison permit. Missing receipts with unchanged
+or missing account state remain `Unknown`. Only an atomic read showing an advanced
+account revision without that receipt establishes a losing transaction. There is
+no automatic retry, deletion, expiry, or refund path. A missing account is never
+initialized from an existing blob; only an explicitly prepared initial enrollment
+can create it, and item c verifies the owner's signature and plaintext bindings first.
+
+Item c adds `policy/authority.rs`. Configured boot unseals the dedicated writer
+credentials, supervises the DynamoDB relay and installs `AuthorityEnrollment` as
+both the enrollment source and transactional policy backend. The signed-intent
+verifier is compiled with this mode and called unconditionally for enrollment
+changes; there is no unsigned activation switch. The old unsigned carry method is
+refused in configured mode. Enroll/replace/disable/carry validate decrypted DID,
+share version and PIN action before committing. All resulting active envelopes
+are persisted atomically, including enclave-randomized carry output. Background
+rewrap requires the current blob and signed delegation and preserves plaintext,
+epoch, PIN generation and attempts. It increments enrollment version, invalidating
+old holds while leaving the epoch unchanged.
+
+Set/change/clear start a fresh signed PIN generation; keep/carry/rewrap cannot
+refund attempts. Only `Applied` reservations permit a comparison. Reconciled or
+unknown reservations are never resumed. PIN success and hold release commit in
+one transaction; cancellation, rotation and other result writers race against
+the same account/hold conditions. Conflict fails closed without retrying comparison.
+Reconciled release commits do not disclose another seal. Cancellation uses a stable
+hold-bound operation ID; committed cancellations can be confirmed across restarts
+without a new transition. A missing receipt never establishes non-commit.
+
+Authority holds have policy version 2 and use `ledgerSeq` as the creation operation
+revision. Their `signature` contains base64 JSON of a signed **Commit** artifact,
+not a legacy ledger signature. Proposal and Commit records use distinct tags under
+`learncard-authority-signed-record-v1`, bind key ID and measurement, and use raw
+low-S P-256 signatures. Policy stores signed proposals with the transaction and
+signs commit artifacts only after authenticated receipt readback. Commit payloads
+bind the immutable execution receipt, proposed-event hash and request commitment.
+The configured policy does not derive freshness or PIN budgets from the legacy
+parent ledger. Item g now consumes these authority artifacts independently; the
+legacy ledger observer remains separate.
+
+Item e exposes `enrollmentState`, `applyEnrollment` and `authorityRewrap` through
+the enclave and independent host DTOs, at `/v1/enrollment-state`,
+`/v1/apply-enrollment` and `/v1/authority-rewrap`. Release/cancel responses preserve
+post-commit receipts. The API requires owner-signed intent in remote mode and
+never falls back to unsigned/PIN-less enrollment. It caches and returns the actual
+persisted output envelope, authoritative epoch/version/generation and commit
+evidence. Mongo persistence compares the old blob and PIN cache; a lost cache CAS
+does not undo or retry the authority transition. Signed disablement uses the POST
+body route `/keys/escrow/disable`; the legacy DELETE route remains software-only,
+so signed capabilities and encrypted sources never become URL query parameters.
+The rewrap job can reconcile a
+lost response from fresh authoritative state instead of trying to reseal an old copy.
+Pending obsolete holds can still be cancelled after rotation/disable, and confirmed
+cancellation receipts are stored before clearing the durable pending marker.
+
+`POST /keys/escrow/authority-state` requires account/provider authentication and
+forwards a client-generated 32-byte nonce (64 lowercase hex characters). The enclave
+signs `[nonce, state]` as a distinct Snapshot artifact (kind tag 2, versus Proposal=0
+and Commit=1). Snapshot payloads are bounded at 49,152 base64 characters to accommodate
+the encrypted active envelope; Proposal/Commit payloads retain the 8192-character
+bound. Commit payloads now explicitly bind resulting blob identity and epoch, so
+clients can check the returned ciphertext without reconstructing a DynamoDB transaction.
+API shape validation is not signature verification: clients must verify these artifacts
+against the nonce-bound attested ledger key before trusting them (item f).
+
+Item f integrates the signed protocol into `sss-key-manager` and AuthCoordinator.
+The NSM verifier extracts the raw P-256 ledger key only from the signed `public_key`
+field and derives the record measurement from the verified PCR0/1/2 tuple. Legacy
+evidence without an attested ledger key remains readable for compatibility but
+cannot authorize Nitro enrollment. The client requires a fresh random Snapshot
+nonce, verifies the record signature/kind/scope, and compares the signed state
+against its unsigned duplicate. It verifies each mutation's commit against the
+exact intent digest, expected enrollment version, DID/tenant/generation, epoch
+and actual returned blob identity before treating enrollment as successful.
+
+Automatic repair checks the authority even when Mongo claims enrollment. Empty
+staging generations re-enroll cleanly without importing Mongo epochs or PIN state.
+Active PINs carry only via signed keep intent; set/change/clear are selected from
+verified state. A disabled authority is never resurrected by background repair,
+even if Mongo loses its opt-out marker. Explicit enable without a new PIN signs
+a clear of the retired verifier. Disable uses the POST body endpoint, verifies
+its commit, and can recognize an already-disabled state through fresh evidence.
+
+Only receipt/Snapshot-verified ciphertext enters the client's account-scoped
+session cache (`getVerifiedEscrowEnvelope`); durable ciphertext remains in the
+authority and lca-api caches the returned envelope. The session cache is not a
+freshness oracle and is cleared on account switch, logout and device forgetting.
+Guarded asynchronous writes cannot emit a mutation after a forgotten session
+resumes. AuthCoordinator does not replace a failed verification with Mongo's
+optimistic enrolled flag. Recovery itself never requests the lost key to sign
+an intent; owner signatures begin only after key possession/reconstruction.
+
+`escrow-authority-v1.json` adds Rust-produced Snapshot/Commit signatures and a
+fake-CA NSM document with the bound ledger key, verified by both Rust and TypeScript.
+Its documented fixture keys/root are public test material, never production trust.
+
+Item g adds a gated read-only authority sweep, independent of host/Mongo/legacy
+ledger data. It verifies measurement/key-pinned proposals and authenticated
+execution receipts, reconstructs revisions/PIN generations/hold states, and checks
+every committed row against history. Signed proposals include public share version
+and rewrap delegation. An unchanged account fence brackets pagination; moving or
+unavailable reads never become a clean partial sweep. Integrity, coverage and
+missing-heartbeat alarms are separate from legacy telemetry. No authority writes,
+writer secrets or escrow/credential-CMK grants are added to the observer.
+
+The read exception is bounded by table IAM and two separately attached SCPs. The
+observer's role/PassRole, Lambda and public SSM trust path are protected from
+non-admin takeover. These are still structural offline tests, not live enforcement
+proof. A coherent privileged purge/rollback and detector suppression remain explicit
+risks; the sweep is not an external durable high-water mark.
+
+Item h's [coverage inventory](AUDIT-COVERAGE.md) maps every requested offline
+must-have to tests, including new comparison/cancellation pause points and mutation
+crash matrices. Item i updates security status and the ordered staging runbook.
+Software mode remains staging/dev only. Email confirmation remains PR 3; current
+lca-api notifications do not close attack C.
+
+Item d was implemented before c to avoid an unsigned activation window. The Rust
+verifier is `src/authority/intent.rs`; the TypeScript encoder/signer is
+`packages/sss-key-manager/src/escrow-enrollment-intent.ts`. Both consume the shared
+golden vector `packages/sss-key-manager/src/__fixtures__/escrow-enrollment-intent-v1.json`.
+The fixture uses a **public RFC 8032 test seed**, never a real account key. Its
+envelopes test ciphertext identity binding, not decrypted-plaintext authorization.
+The verifier requires an authenticated authority snapshot and exact request
+envelopes. A valid signature over a fabricated source still fails when that source
+is not the active authority blob (attack B). Signature replay fails after enrollment
+version changes; unrelated operation revisions do not invalidate intent. Policy
+calls the verifier, routes carry intent, and AuthCoordinator supplies the account
+key to the strategy that verifies state and signs the exact change.
 
 The client layer is not authorization: enclave policy must build its typed requests
 from validated intent and bind generation/tenant/expected revision in item keys and
@@ -40,6 +225,69 @@ conditions. It is not exposed as a host RPC. `GetItem` sets `ConsistentRead: tru
 `TransactGetItems` uses AWS's atomic transactional API (which has no `ConsistentRead`
 parameter). Transaction tokens are 128-bit enclave-generated IDs with immutable
 request bytes; AWS's ten-minute token window does not replace durable receipts.
+
+### Signed enrollment intent V1 encoding (item d)
+
+The account's own **Ed25519** key signs, matching LearnCard's `did:key` plugin.
+The verifier decodes the DID locally: `did:key:z` followed by canonical base58btc
+of the two-byte Ed25519 multicodec `ed 01` and 32-byte compressed public key.
+Other DID methods, codecs, fragments, invalid/noncanonical points and weak keys
+fail closed. It never fetches a DID document. The client checks that its 32-byte
+seed derives exactly that public key and wipes its temporary seed byte array.
+
+Sign **the complete message bytes** using ordinary RFC 8032 Ed25519 (not a digest,
+Ed25519ph, JWS or JSON). The signature is raw 64-byte `R || S`, transported as
+canonical padded standard base64. Rust uses `verify_strict`; malformed/noncanonical
+signatures are rejected. JSON object order and whitespace do not affect the signed
+message; unknown/duplicate fields, omitted required nulls and out-of-range integers
+are rejected by the Rust decoder. Raw signed-intent JSON is capped at 4096 bytes.
+
+The message starts with the ASCII bytes `learncard-escrow-enrollment-intent-v1`
+followed by a single zero byte. Append the following fields **in this order**.
+Every field, including integers and booleans, has a four-byte unsigned big-endian
+byte-length prefix. Integers are unsigned big-endian at the fixed width below.
+
+| Field                       | Encoding                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `version`                   | Four bytes; exactly `1`                                                          |
+| `tenant`                    | ASCII `[A-Za-z0-9_-]`, 1–128 bytes                                               |
+| `did`                       | Canonical Ed25519 `did:key` UTF-8, 56 bytes                                      |
+| `authorityGeneration`       | ASCII `[A-Za-z0-9_-]`, 1–128 bytes                                               |
+| `expectedEnrollmentVersion` | Eight bytes; 0 through `2^53 - 1`                                                |
+| `action`                    | One byte: enroll=0, replace=1, disable=2, carry=3                                |
+| `sourceBlobIdentity`        | Zero bytes for explicit JSON null, otherwise 32 bytes decoded from lowercase hex |
+| `targetBlobIdentity`        | Same encoding as source identity                                                 |
+| `pinAction`                 | One byte: set=0, change=1, clear=2, keep=3                                       |
+| `shareVersion`              | Four bytes; 1 through `2^32 - 1`                                                 |
+| `enrollmentEpoch`           | Eight bytes; 1 through `2^53 - 1`                                                |
+| `requestId`                 | ASCII `[A-Za-z0-9._-]`, 1–112 bytes                                              |
+| `allowRewrap`               | One byte: false=0, true=1                                                        |
+
+Blob identities use the existing `learncard-escrow-blob-id-v1` algorithm, including
+Q/-Q equivalence. The TypeScript helper validates the P-256 point and reproduces
+the Rust identity. For carry, `targetBlobIdentity` is the **submitted target before
+enclave resealing**; the resulting ciphertext must be persisted atomically and
+bound by the separate post-commit receipt. The owner cannot sign a future randomized
+envelope that the enclave has not produced yet.
+
+Initial enrollment requires expected version zero, no source, target present and
+epoch one. Re-enrollment from disabled state requires its retained version and next
+epoch; it cannot silently keep a disabled PIN whose verifier is no longer available.
+Replace/carry require the active source and next epoch; share versions cannot
+decrease (carry requires a strict increase and keeps the existing PIN). Disable
+requires the active source, no target, current share version/epoch, `pinAction=keep`
+and `allowRewrap=false`; the tombstone preserves accounting. Set requires no prior
+PIN; change/clear require one. These checks do not replace decrypting the inputs
+and enforcing DID/share/PIN semantics in policy.
+
+`allowRewrap` explicitly delegates only the background operation described in the
+product rules: DID, share version, epoch, verifier and attempts must all remain
+unchanged. Recovery requests never require a new owner signature. Intent verification
+does not authorize release and does not establish commit freshness: item c must
+condition the mutation against the verified enrollment version and source identity,
+consume durable request tombstones, and distinguish proposals from signed commit
+receipts. The policy, clients and monitor now enforce/check this boundary; rollout
+must still pass the documented operational gates and separately address attack C.
 
 ## 1. Problem and current boundary
 

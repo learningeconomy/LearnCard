@@ -1,6 +1,6 @@
 # infra/escrow-enclave
 
-## Enrollment authority foundations (PR 1 — disabled)
+## Enrollment authority (PR 2 — gated, not deployed by this work)
 
 `enable_enrollment_authority=false`, `enable_enclave_email=false`,
 `create_sending_zone=false`, and `enable_credential_delivery=false` by default.
@@ -8,8 +8,10 @@ No new resources, grants, proxy settings or ciphertext reads are enabled in curr
 staging. Offline tests compare the disabled user-data template with its original
 SHA-256 and check unchanged bucket/SNS/DLQ policy shapes. No live staging plan was
 run: this is a structural no-op check, not a claim about external state drift.
-`kms.tf` and its escrow-key policy are unchanged. The enclave still wires
-`UnavailableEnrollment`; provisioning these foundations does not activate recovery.
+`kms.tf` and its escrow-key policy are unchanged. Configured boot now wires the
+authority after credential unsealing; unconfigured boot retains `UnavailableEnrollment`.
+Follow the [ordered PR 2 cutover](../../services/escrow-enclave-app/STAGING.md#pr-2-authority-cutover--operator-only),
+not an isolated flag flip. Email confirmation remains PR 3.
 
 ### Resources and enforcement
 
@@ -17,10 +19,13 @@ run: this is a structural no-op check, not a claim about external state drift.
   existing data/S3 CMK, deletion protection and PITR, **without TTL**. PITR is for
   disaster recovery/forensics, never restoring older authority state in place.
   A restore requires break-glass approval and a **new measured authority generation**.
-- Only the dedicated writer IAM user can access item data. Writes require
+- Only the dedicated writer IAM user can mutate item data. The independent monitor
+  has GetItem/Query/Scan only on the exact table, with explicit deny of all other
+  authority APIs. Host/org-admin/root remain denied data reads. Writes require
   `dynamodb:EnclosingOperation=TransactWriteItems`; IAM authorizes the underlying
   item actions, not invented transaction action names. PartiQL, batch APIs,
-  scans/queries/exports, Kinesis streaming destinations and TTL are denied. A
+  exports, Kinesis streaming destinations and TTL are denied; scans/queries are
+  reserved to the read-only monitor. A
   wildcard backstop denies all table APIs to untrusted principals, including new
   APIs that could otherwise escape an enumerated list. Host, root and org-admin data access is
   denied; lifecycle/resource-policy changes are restricted to `escrow-kms-admin`.
@@ -53,9 +58,10 @@ that cannot be secured solely by a policy on an already-existing table. SCPs do
 not restrict an Organizations management account: the escrow account must be a
 member account. Organization administrators remain trusted guardrail owners.
 
-`authority_guardrail_policy_id` is a required deployment receipt when enabling the
-stack, **not proof that the correct SCP is attached**. A security reviewer must
-verify its content, attachment, bootstrap user list and MFA trust before activation.
+`authority_guardrail_policy_id` and `authority_monitor_guardrail_policy_id` are
+required deployment receipts, **not proof that the correct SCPs are attached**.
+A security reviewer must verify both contents/attachments, bootstrap user list,
+MFA trust and observer takeover protection before activation.
 The SCP exception uses the existing same-account `escrow-kms-admin` role; it does
 not apply a broken per-request MFA condition to assumed-role sessions. As with D10,
 approved break-glass/key administrators can deliberately change policy or misuse a
@@ -101,9 +107,18 @@ restore. New-generation continuity and two-person approval remain process gates.
     to disk. The only temporary file is encrypted ciphertext.
 
 6. Review/bake the public Terraform configuration outputs into the measured EIF,
-   then deliberately enable credential delivery. Host settings reference only the
+   then deliberately stage credential delivery with the compatible new EIF. Host settings reference only the
    two fixed purpose/generation paths; relays allow regional DynamoDB/SES :443 on
-   8001/8002. Enclave clients and the unsealer remain unwired until subsequent PRs.
+   8001/8002. Authority clients and writer unsealing are wired; email remains deferred.
+
+The authority observer is gated by `enable_enrollment_authority`, uses the existing
+15-minute schedule, and has separate integrity/coverage/missing-heartbeat alarms.
+Provision its security-owned public SSM trust parameter (output
+`authority_monitor_trust_parameter_name`) from verified NSM ledger keys and PCR
+tuple hashes, and recycle the Lambda after updates. Neither plaintext writer keys
+nor trust-parameter values enter Terraform. See the monitor runbook for limits and
+the distinction between stored proposals, table receipts and RPC Commit/Snapshot
+signatures. The monitor grant does not include escrow/credential KMS access.
 
 **Rotation/revocation:** never overwrite the existing generation's object or reset
 authority state just to rotate credentials. Prepare an approved new generation

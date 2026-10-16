@@ -3,10 +3,15 @@
 use super::super::*;
 use super::{append, boot, boot_failed, get_chain, persist_key};
 use crate::{
+    authority::{
+        aws::{CredentialPurpose, DynamoAuthorityClient},
+        config::AuthorityConfig,
+        credentials::CredentialUnsealer,
+    },
     kms::{unseal_or_generate_escrow_key, AwsKmsClient, Credentials, RecipientKey},
     ledger::{AppendError, HeadStore, LedgerRecord, StoreFuture},
     nsm::RealNsm,
-    policy::{EnrollmentFuture, EnrollmentSource},
+    policy::{authority::AuthorityEnrollment, EnrollmentFuture, EnrollmentSource},
     time::{RoughtimeTimeSource, VsockRoughtimeTransport},
 };
 use std::sync::OnceLock;
@@ -54,10 +59,18 @@ fn configured(name: &str) -> io::Result<String> {
         .ok_or_else(unavailable)
 }
 pub(crate) async fn run(port: u32) -> io::Result<()> {
+    let authority = step("policy_init", AuthorityConfig::from_measured_env())?;
     // Supervision: any forwarder exit also terminates serving.
     let result = tokio::select! {
         result = crate::kms::vsock_forward::run() => step("kms_forwarder", result),
-        result = boot_and_serve(port) => result,
+        result = async {
+            if let Some(config) = &authority {
+                tokio::select! {
+                    result = crate::kms::vsock_forward::run_data_plane(config, None) => step("policy_init", result),
+                    result = boot_and_serve(port, authority.as_ref()) => result,
+                }
+            } else { boot_and_serve(port, None).await }
+        } => result,
     };
     if let Some(name) = FAILED_STEP.get() {
         let _ = timeout(Duration::from_secs(2), async {
@@ -82,7 +95,7 @@ fn step<T, E>(name: &'static str, result: Result<T, E>) -> io::Result<T> {
     })
 }
 
-async fn boot_and_serve(port: u32) -> io::Result<()> {
+async fn boot_and_serve(port: u32, authority_config: Option<&AuthorityConfig>) -> io::Result<()> {
     let nsm = step("nsm_open", RealNsm::new())?;
     let measurement = step("nsm_measurement", measurement(&nsm))?;
     let time = Arc::new(step(
@@ -116,6 +129,17 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
         let mut boot_material = step(
             "parent_boot",
             boot(&mut step("parent_connect", connect().await)?, &key_id).await,
+        )?;
+        let unsealer = step(
+            "policy_init",
+            CredentialUnsealer::from_measured_env(
+                Credentials {
+                    access_key_id: boot_material.access_key_id.clone(),
+                    secret_access_key: boot_material.secret_access_key.clone(),
+                    session_token: boot_material.session_token.clone(),
+                },
+                time.clone(),
+            ),
         )?;
         let sealed = match &boot_material.sealed {
             Some(blob) if blob.len() <= 24_000 => {
@@ -183,13 +207,46 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
             }
             previous_keys.push((previous_id.clone(), previous));
         }
-        Ok::<_, io::Error>((keys, previous_keys))
+        let authority = match (authority_config, unsealer) {
+            (Some(config), Some(unsealer)) => {
+                let ciphertext = step(
+                    "policy_init",
+                    boot_material
+                        .authority_credential_ciphertext
+                        .as_ref()
+                        .ok_or(()),
+                )?;
+                let ciphertext = step("policy_init", STANDARD.decode(ciphertext))?;
+                let credentials = step(
+                    "policy_init",
+                    unsealer
+                        .unseal(CredentialPurpose::AuthorityWriter, &ciphertext, &nsm)
+                        .await,
+                )?;
+                let client = step(
+                    "policy_init",
+                    DynamoAuthorityClient::new(config.clone(), credentials, time.clone()),
+                )?;
+                let store = step("policy_init", client.into_store())?;
+                Some(step(
+                    "policy_init",
+                    AuthorityEnrollment::new(
+                        tenant.clone(),
+                        config.generation().into(),
+                        Arc::new(store),
+                    ),
+                )?)
+            }
+            (None, None) => None,
+            _ => return step("policy_init", Err(())),
+        };
+        Ok::<_, io::Error>((keys, previous_keys, authority))
     })
     .await;
-    let (keys, previous_keys) = step("boot_timeout", keys)??;
+    let (keys, previous_keys, authority) = step("boot_timeout", keys)??;
     let public_key = keys.public_key.clone();
     let store = ParentStore;
-    let authority = UnavailableEnrollment;
+    let unavailable_enrollment = UnavailableEnrollment;
     let policy = step(
         "policy_init",
         Policy::new(
@@ -200,9 +257,13 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
             measurement,
             &store,
             time.as_ref(),
-            &authority,
+            &unavailable_enrollment,
         ),
     )?;
+    let policy = match &authority {
+        Some(authority) => step("policy_init", policy.with_authority(authority))?,
+        None => policy,
+    };
     let listener = step(
         "vsock_bind",
         VsockListener::bind(VsockAddr::new(u32::MAX, port)),
@@ -234,9 +295,14 @@ fn install_kms_hosts(region: &str) -> io::Result<()> {
     }
     // Docker's build-time hosts file does not survive EIF construction.
     // This process owns the enclave network namespace; no parent DNS is trusted.
-    std::fs::write(
-        "/etc/hosts",
-        format!("127.0.0.1 localhost kms.{region}.amazonaws.com\n"),
-    )
-    .map_err(|_| unavailable())
+    use std::io::Write;
+    // Preserve data-plane host entries regardless of supervised future ordering.
+    std::fs::OpenOptions::new()
+        .append(true)
+        .open("/etc/hosts")
+        .and_then(|mut hosts| {
+            hosts
+                .write_all(format!("\n127.0.0.1 localhost kms.{region}.amazonaws.com\n").as_bytes())
+        })
+        .map_err(|_| unavailable())
 }

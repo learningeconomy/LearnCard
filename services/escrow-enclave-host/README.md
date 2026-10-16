@@ -54,7 +54,7 @@ are replaced by constants. Unsigned legacy holds, unknown fields and host `now`
 are rejected. HTTP bodies and each framed message are capped at 256 KiB; one
 connection/one request/one response, u32 big-endian length then JSON. Responses
 must match the requested method. No retries. At most 32 active authorized API
-calls; each complete body/bridge operation has a 10-second timeout.
+calls; each complete body/bridge operation has a 12-second timeout (above the enclave's own 10-second request deadline).
 Connection admission occurs before TLS: 128 HTTPS / 16 health connections, each
 with a hard 60-second lifetime (including handshake and slow headers).
 

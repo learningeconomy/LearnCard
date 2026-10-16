@@ -17,6 +17,9 @@ use tower::ServiceExt;
 #[rustfmt::skip]
 #[path = "../../escrow-enclave-app/src/wire.rs"]
 mod enclave_wire;
+mod authority {
+    pub use escrow_enclave::authority::{intent, record};
+}
 
 // wire::v1 references this policy wrapper; production policy is not linked.
 mod policy {
@@ -37,7 +40,30 @@ fn hold() -> Value {
     json!({"hold":{"holdId":"hold-1","did":"did:example:alice","shareVersion":1,"blobHash":"00","enrollmentEpoch":1,"releasePolicy":"hold","clientEphemeralPublicKey":"AA==","createdLo":1700000000000u64,"createdHi":1700000000100u64,"policyVersion":1,"signature":"AA=="},"holdDurationMs":604800000,"ledgerSeq":0})
 }
 fn fixtures() -> Vec<(&'static str, Value, Value)> {
+    let vector: Value = serde_json::from_str(include_str!(
+        "../../../packages/sss-key-manager/src/__fixtures__/escrow-enrollment-intent-v1.json"
+    ))
+    .unwrap();
+    let record = json!({"version":1,"kind":"commit","keyId":"key-1","measurement":vec![0;32],"payload":"AQ==","signature":"AA=="});
+    let mutation = json!({"envelope":envelope(),"receipt":record,"authorityGeneration":"g1","enrollmentVersion":8,"enrollmentEpoch":4});
+    let mut snapshot_record = record.clone();
+    snapshot_record["kind"] = json!("snapshot");
     vec![
+        (
+            "applyEnrollment",
+            json!({"signedIntent":{"intent":vector["intent"],"signature":vector["signature"]},"sourceEnvelope":envelope(),"targetEnvelope":envelope()}),
+            json!({"result":mutation}),
+        ),
+        (
+            "authorityRewrap",
+            json!({"envelope":envelope(),"expectedDid":"did:key:test","expectedShareVersion":1,"sourceEnrollmentEpoch":4}),
+            json!({"result":mutation}),
+        ),
+        (
+            "enrollmentState",
+            json!({"expectedDid":"did:key:test","nonce":"00".repeat(32)}),
+            json!({"state":{"tenant":"tenant","authorityGeneration":"g1","did":"did:key:test","enrollmentVersion":0,"enrollmentEpoch":0,"status":"empty","envelope":null,"shareVersion":null,"hasPin":false,"pinGeneration":0,"attemptsUsed":0},"proof":snapshot_record}),
+        ),
         (
             "attest",
             json!({"nonce":[0,1,255]}),
@@ -116,6 +142,9 @@ impl Enclave for Fake {
 }
 fn path(method: &str) -> &str {
     match method {
+        "applyEnrollment" => "/v1/apply-enrollment",
+        "authorityRewrap" => "/v1/authority-rewrap",
+        "enrollmentState" => "/v1/enrollment-state",
         "attest" => "/v1/attest",
         "verifyBlob" => "/v1/verify-blob",
         "carryPinVerifier" => "/v1/carry-pin-verifier",
@@ -259,7 +288,10 @@ fn no_pii_logging_surface() {
 
 #[tokio::test]
 async fn p42_missing_id_is_randomized_without_losing_signed_fields() {
-    let (_, mut body, response) = fixtures().remove(2);
+    let (_, mut body, response) = fixtures()
+        .into_iter()
+        .find(|(method, _, _)| *method == "createHold")
+        .unwrap();
     body.as_object_mut().unwrap().remove("requestId");
     let mut tagged = response;
     tagged["method"] = json!("createHold");

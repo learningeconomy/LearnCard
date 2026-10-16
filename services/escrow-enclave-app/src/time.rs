@@ -140,7 +140,9 @@ impl RoughtimeTimeSource {
 
     /// Three independently operated, provider-published pins; two required sources.
     /// Ten-second radius cap accommodates rough/smeared time without relaxing
-    /// intersection: ALL authenticated intervals must overlap, even with a quorum.
+    /// intersection within the authenticated quorum. The untrusted host can already
+    /// suppress a source; waiting for all does not bound it. Security rests on
+    /// min_sources independent signatures whose intervals mutually intersect.
     /// This does not assert service availability or production readiness.
     pub fn production(transport: Arc<dyn RoughtimeTransport>) -> Result<Self, TimeError> {
         Self::new(servers::published()?, transport, 2, 10_000)
@@ -169,24 +171,50 @@ impl TimeSource for RoughtimeTimeSource {
                     protocol::verify(&server, &nonce, &response, max_radius)
                 });
             }
-            let mut sources = Vec::new();
-            let mut interval = TrustedInterval {
-                lo_ms: 0,
-                hi_ms: u64::MAX,
-            };
+            let mut verified = Vec::new();
+            let mut rollback = false;
             while let Some(result) = queries.join_next().await {
                 if let Ok(Ok((source, range))) = result {
-                    interval.lo_ms = interval.lo_ms.max(range.lo_ms);
-                    interval.hi_ms = interval.hi_ms.min(range.hi_ms);
-                    sources.push(source);
+                    verified.push((source, range));
+                    // Every nonempty interval intersection contains a lower
+                    // endpoint. Search these points, not exponential subsets.
+                    for (_, candidate) in &verified {
+                        let point = candidate.lo_ms.max(floor_ms.unwrap_or(0));
+                        let quorum: Vec<_> = verified
+                            .iter()
+                            .filter(|(_, r)| r.lo_ms <= point && point <= r.hi_ms)
+                            .take(self.min_sources)
+                            .collect();
+                        if quorum.len() == self.min_sources {
+                            let interval = TrustedInterval {
+                                lo_ms: quorum.iter().map(|(_, r)| r.lo_ms).max().unwrap(),
+                                hi_ms: quorum.iter().map(|(_, r)| r.hi_ms).min().unwrap(),
+                            };
+                            check_interval(interval, floor_ms)?;
+                            let mut sources: Vec<_> =
+                                quorum.iter().map(|(s, _)| s.clone()).collect();
+                            sources.sort_by(|a, b| a.server_id.cmp(&b.server_id));
+                            queries.abort_all();
+                            return Ok(TimeEvidence { interval, sources });
+                        }
+                        rollback |= verified
+                            .iter()
+                            .filter(|(_, r)| {
+                                r.lo_ms <= candidate.lo_ms && candidate.lo_ms <= r.hi_ms
+                            })
+                            .count()
+                            >= self.min_sources;
+                    }
                 }
             }
-            if sources.len() < self.min_sources {
+            if verified.len() < self.min_sources {
                 return Err(TimeError::InsufficientSources);
             }
-            check_interval(interval, floor_ms)?;
-            sources.sort_by(|a, b| a.server_id.cmp(&b.server_id));
-            Ok(TimeEvidence { interval, sources })
+            Err(if rollback {
+                TimeError::Rollback
+            } else {
+                TimeError::Disagreement
+            })
         })
     }
 }
@@ -204,4 +232,4 @@ fn check_interval(interval: TrustedInterval, floor: Option<u64>) -> Result<(), T
 #[cfg(test)]
 mod live_tests;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
