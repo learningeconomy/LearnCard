@@ -70,9 +70,9 @@ flowchart LR
     CW --> Page[On-call]
 ```
 
-The runner uses the production `sdk/` (`createSSSStrategy`) and the production
-tenant configuration (`config.production.json`: lca-api URL, enclave mode,
-pinned measurements). It does not call the host or vault directly and has no
+The runner uses the production `sdk/` (`createSSSStrategy`) and the resolved
+production tenant configuration (lca-api URL, enclave mode, pinned measurements
+from `auth.sss.escrowEnclaveMeasurements`). It does not call the host or vault directly and has no
 escrow-account credentials.
 
 ## 4. Tiers
@@ -99,7 +99,9 @@ On a PIN-enrolled canary account (two accounts, alternating):
 3. Check the recovered private key derives the account's known DID.
 4. Store the new device state, then set the PIN again (recovery retires it), so
    the attempt budget (10 per PIN set) never accumulates and the next run starts
-   clean.
+   clean. If the runner crashes between steps 2 and 4, the next run will detect
+   the retired PIN state and re-set the PIN before attempting recovery, preventing
+   the account from becoming permanently unusable.
 5. Weekly, prepend one deliberately wrong PIN and assert the mismatch response
    before the correct attempt (exercises the attempt counter).
 
@@ -157,8 +159,8 @@ not happened by its deadline emits 0 for that step:
    explicit-failure alarm, with missing data **not breaching**, because their
    absence is normal between events.
 
-Alarms: `Tier3.Overdue > 0` pages (missing data breaching, since it is emitted
-every 15 minutes); `Tier3.EvaluatorHeartbeat` missing for 45 minutes pages;
+Alarms: `Tier3.Overdue > 0` pages (missing data not breaching, relying on the
+heartbeat for evaluator silence); `Tier3.EvaluatorHeartbeat` missing for 45 minutes pages;
 any explicit step value of 0 pages. Expectedness lives only in the ledger: a run
 records "warning due at X" when it confirms, "release due at Y" when it reads the
 effective deadline, and "cancel result due" only on weekly cancel runs. Warm-up
@@ -188,10 +190,11 @@ That last window is inherent: nobody, including us, can shorten the wait.
 - **Pool:** 2 PIN accounts (tier 2), 12 hold accounts (7 in flight + 1 cancel +
   4 spare), 1 read-only account (tier 1). Per-account limits (one code send per
   minute, 3 per day, one active hold) make a pool necessary.
-- **Quarantine:** an account whose start, confirm or release fails is quarantined
-  (never reused automatically), because a failed code send can leave a hold that
-  nobody can confirm and the app cannot see (§13). The runner emits
-  `Tier3.PoolAvailable` (healthy idle accounts); an alarm fires below 2, so
+- **Quarantine:** an account whose start, confirm, release, or post-release
+  re-enrollment fails is quarantined (never reused automatically). A failed code
+  send can leave a hold that nobody can confirm and the app cannot see (§13),
+  and a failed re-enrollment leaves a broken account that would fail its next
+  tier-3 run. The runner emits `Tier3.PoolAvailable` (healthy idle accounts); an alarm fires below 2, so
   orphans exhaust the buffer loudly instead of stalling tier 3 silently. An
   operator returns a quarantined account once its hold is cleared.
 - **Real accounts:** created through normal sign-up in the production tenant,
@@ -213,8 +216,12 @@ That last window is inherent: nobody, including us, can shorten the wait.
   (`canary+<n>@…`). Store the raw message in an S3 bucket in the runner's
   account (SSE, 7-day lifecycle); drop everything else.
 - The runner matches messages by recipient and arrival after the request time,
-  parses the 8-digit code from the vault's fixed template, and asserts sender
-  `recovery@notify.learncard.com` and DKIM pass.
+  parses the 8-digit code from the vault's fixed template, and asserts the sender
+  and DKIM pass. The expected sender must be derived from the deployed email
+  configuration (e.g., `recovery@vault.notify.learncard.com` in production,
+  matching `recovery@${sending_domain}` in `infra/escrow-enclave/email.tf`),
+  not hardcoded, so the canary strictly verifies the intended sender without
+  rejecting legitimate deliveries after a rollout.
 - This also proves **delivery**, not just SES acceptance.
 
 ## 7. Where it runs
@@ -239,7 +246,7 @@ Namespace `LearnCard/EscrowCanary`, dimension `Tier`.
 | Tier 2 failing          | Success < 1 for 2 consecutive 30-minute runs                 | Breaching     | Page              |
 | Tier 3 pool low         | `Tier3.PoolAvailable` < 2                                    | Breaching     | Ticket            |
 | Tier 3 step failed      | Any explicit step value 0                                    | Not breaching | Page              |
-| Tier 3 step overdue     | `Tier3.Overdue` > 0                                          | Breaching     | Page              |
+| Tier 3 step overdue     | `Tier3.Overdue` > 0                                          | Not breaching | Page              |
 | Tier 3 evaluator silent | No `Tier3.EvaluatorHeartbeat` for 45 min                     | Breaching     | Page              |
 | Tier 3 email slow       | Delivery latency > 5 min                                     | Ignore        | Ticket            |
 | Canary silent           | No `Tier1.Success` for 5 min, or no `Tier3.Started` for 26 h | Breaching     | Page              |
@@ -265,8 +272,11 @@ fewer pages from a single transient error; the bounds in §2 and §14 include it
 These narrow the cause once a canary fails, and catch partial outages:
 
 - **lca-api reason codes:** today lca-api maps every vault failure to a generic
-  412/403 and logs nothing. Add a non-sensitive reason label (`time`, `store`,
-  `email`, `policy`, `transport`) to logs and a metric per route. Alarm on a
+  412/403 and logs nothing. Phase 1 builds on the allowlisted reason codes
+  introduced in #1739 and #1744 (`policy`, `pin_mismatch`, `blob`, `unavailable`
+  subreasons including `ledger`/`time`, `transport`, `malformed`/`invalid_response`,
+  `invalid_hold`, `http_429`, `codeMismatch`, `codeExpired`, `codeLocked`). Add
+  these non-sensitive reason labels to logs and a metric per route. Alarm on a
   spike in `startRecovery`/`confirmRecovery`/enrollment failures.
 - **DynamoDB:** `UserErrors` is an account-and-region aggregate with no
   `TableName` dimension, so alarm on it at account level (the escrow account runs
@@ -291,8 +301,10 @@ These narrow the cause once a canary fails, and catch partial outages:
    per key; no `GenerateDataKey`; sealed key unchanged; tier 1 and tier 2 pass.
    Failure stops the trim and keeps the previous image trusted for rollback.
 2. **Configuration consistency (CI):** the running image's PCR tuple must be in
-   `config.production.json`, every KMS key policy, and the monitor trust
-   parameter. Drift between these is how one deploy can break every client.
+   the resolved production tenant configuration (`auth.sss.escrowEnclaveMeasurements`
+   via `packages/learn-card-base/src/config/authConfig.ts`), every KMS key policy,
+   and the monitor trust parameter. Drift between these is how one deploy can break
+   every client.
 3. **Staging:** run tiers 1 and 2 after every staging lca-api or app deploy,
    including deploys from `main` that overwrite a branch deploy.
 
@@ -327,8 +339,9 @@ Tier 3 produces its first release signal 7 days after it starts.
    which rotates shares and re-enrols; tier 2 re-sets the PIN each run (§4).
 2. Resolved: the SDK accepts custom storage via `SSSStrategyConfig.storage` (§7).
 3. A failed code send currently leaves a confirmable-by-nobody hold that the app
-   cannot see (observed in staging). Should tier 3 detect and alert on orphaned
-   holds, and should `startRecovery` surface/replace them?
+   cannot see (observed in staging). Returned code-send failures can expose the
+   durable hold and allow resend, but loss of the entire create response can
+   still orphan a hold. Keep the quarantine and pool safeguards.
 4. Paging destination and on-call ownership for escrow alarms.
 5. SLO target: 99.9% for tiers 1+2 is proposed; confirm with product.
 6. Production SES production-access and inbound receiving for the canary domain.
