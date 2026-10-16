@@ -814,12 +814,11 @@ export const useGetProfile = (
     return useQuery<QueriedProfile | null>({
         enabled: enabled && (!!profileId || isLoggedIn) && (!requiresOwnWallet || walletReady),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
-        // The current user's profile changes rarely (avatar/displayName edits).
-        // Keep cached data fresh for 5 minutes so navigations between pages don't
-        // trigger background refetches that flicker dependent UI like
-        // UserProfilePicture in the header. Mutations that update the profile
-        // (e.g., editProfile) are responsible for invalidating this query.
+        // Cache other profiles for 5 minutes; profile edits invalidate these queries.
         staleTime: 5 * 60 * 1000,
+        // A reload can restore a pre-edit persisted snapshot. Revalidate our own
+        // identity against the wallet before that snapshot becomes fresh for 5 min.
+        refetchOnMount: profileId ? true : 'always',
         queryFn: async (): Promise<QueriedProfile | null> => {
             // Own profile: the wallet MUST resolve here. On failure, throw so React
             // Query records an error rather than caching `null` as a definitive
