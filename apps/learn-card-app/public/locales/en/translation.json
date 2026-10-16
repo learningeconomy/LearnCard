@@ -8837,6 +8837,7 @@
             "justOpened": "Opened in the last day",
             "passcodeOnIcon": "Passcode protected",
             "copyLinkFor": "Copy link for {{title}}",
+            "openLink": "Open {{title}}",
             "showQrLabel": "Show QR code",
             "credentialsLabel": "Credentials",
             "passcodeLabel": "Passcode",

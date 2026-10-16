@@ -24,29 +24,22 @@ export const ShareCredentialSelectionRow = ({
     const title = choice.credential ? getCredentialName(choice.credential) : '';
 
     const handleRowClick = (event: React.MouseEvent) => {
-        // Only toggle if not clicking the preview button or checkbox
+        // Only toggle if not clicking the preview button, checkbox, or label (label triggers checkbox natively)
         const target = event.target as HTMLElement;
-        if (!target.closest('button') && target.tagName !== 'INPUT') {
+        if (!target.closest('button') && !target.closest('label') && target.tagName !== 'INPUT') {
             onToggle();
         }
     };
 
+    const checkboxId = `credential-${choice.uri}`;
+
     return (
         <div
-            role="checkbox"
-            aria-checked={checked}
-            tabIndex={0}
             onClick={handleRowClick}
-            onKeyDown={e => {
-                if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    onToggle();
-                }
-            }}
             className={`flex items-center gap-4 p-4 rounded-[20px] border cursor-pointer transition-colors ${checked ? 'border-emerald-600 bg-emerald-50' : 'border-grayscale-200 hover:bg-grayscale-10'}`}
         >
             <ShareCredentialThumbnail credential={choice.credential} category={choice.category} />
-            <span className="flex-1 min-w-0">
+            <label htmlFor={checkboxId} className="flex-1 min-w-0 cursor-pointer">
                 <span className="block text-sm font-medium break-words">
                     {title || text.name || choice.title || m['shareLinks.credential']()}
                 </span>
@@ -60,7 +53,7 @@ export const ShareCredentialSelectionRow = ({
                         {loadFailed ? m['shareLinks.loadFailed']() : m['shareLinks.loading']()}
                     </span>
                 )}
-            </span>
+            </label>
             {choice.credential && (
                 <CredentialPreviewButton
                     credential={choice.credential}
@@ -68,6 +61,7 @@ export const ShareCredentialSelectionRow = ({
                 />
             )}
             <input
+                id={checkboxId}
                 type="checkbox"
                 className="w-5 h-5 accent-emerald-600 shrink-0"
                 checked={checked}
