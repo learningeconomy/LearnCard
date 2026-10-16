@@ -2,7 +2,7 @@ import React from 'react';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { CredentialPreviewButton } from './CredentialPreviewButton';
-import { credentialText, type CredentialChoice } from './shareLinkFlow';
+import { type CredentialChoice } from './shareLinkFlow';
 import * as m from '../../paraglide/messages.js';
 import { getCredentialName } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -20,10 +20,12 @@ export const ShareCredentialSelectionRow = ({
     loadFailed?: boolean;
     onToggle: () => void;
 }) => {
-    const text = credentialText(choice.credential);
-    const title = choice.credential ? getCredentialName(choice.credential) : '';
+    const title = choice.credential
+        ? getCredentialName(choice.credential)
+        : choice.title || m['shareLinks.credential']();
 
     const handleRowClick = (event: React.MouseEvent) => {
+        if (disabled) return;
         // Only toggle if not clicking the preview button, checkbox, or label (label triggers checkbox natively)
         const target = event.target as HTMLElement;
         if (!target.closest('button') && !target.closest('label') && target.tagName !== 'INPUT') {
@@ -36,13 +38,17 @@ export const ShareCredentialSelectionRow = ({
     return (
         <div
             onClick={handleRowClick}
-            className={`flex items-center gap-4 p-4 rounded-[20px] border cursor-pointer transition-colors ${checked ? 'border-emerald-600 bg-emerald-50' : 'border-grayscale-200 hover:bg-grayscale-10'}`}
+            aria-disabled={disabled}
+            className={`flex items-center gap-4 p-4 rounded-[20px] border transition-colors ${
+                disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+            } ${checked ? 'border-emerald-600 bg-emerald-50' : 'border-grayscale-200 hover:bg-grayscale-10'}`}
         >
             <ShareCredentialThumbnail credential={choice.credential} category={choice.category} />
-            <label htmlFor={checkboxId} className="flex-1 min-w-0 cursor-pointer">
-                <span className="block text-sm font-medium break-words">
-                    {title || text.name || choice.title || m['shareLinks.credential']()}
-                </span>
+            <label
+                htmlFor={checkboxId}
+                className={`flex-1 min-w-0 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+                <span className="block text-sm font-medium break-words">{title}</span>
                 {choice.credential ? (
                     <ShareCredentialMetadata
                         credential={choice.credential}
