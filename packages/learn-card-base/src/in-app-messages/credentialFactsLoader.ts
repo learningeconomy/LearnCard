@@ -192,11 +192,8 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                             const key = `${did}:${record.uri}`;
                             const resolved = source.cached(record.uri);
                             if (resolved == null) {
-                                if (
-                                    !force &&
-                                    (readsUsed >= MAX_SESSION_DECRYPTS || attempted.has(key))
-                                )
-                                    return;
+                                if (readsUsed >= MAX_SESSION_DECRYPTS) return;
+                                if (!force && attempted.has(key)) return;
                                 attempted.add(key);
                                 readsUsed += 1;
                             }

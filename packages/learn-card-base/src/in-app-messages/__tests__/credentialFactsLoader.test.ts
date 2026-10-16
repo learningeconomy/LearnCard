@@ -67,6 +67,22 @@ describe('credential facts backfill', () => {
         expect(loader.getSnapshot()).toMatchObject({ complete: true, readsUsed: 0 });
     });
 
+    it('enforces the session decrypt budget during a forced backfill', async () => {
+        const { createCredentialFactsLoader, MAX_SESSION_DECRYPTS } =
+            await import('../credentialFactsLoader');
+        const loader = createCredentialFactsLoader(did);
+        const source = sourceFor(MAX_SESSION_DECRYPTS + 5);
+
+        await loader.refresh(source, true);
+
+        expect(source.read).toHaveBeenCalledTimes(MAX_SESSION_DECRYPTS);
+        expect(loader.getSnapshot()).toMatchObject({
+            complete: false,
+            total: MAX_SESSION_DECRYPTS + 5,
+            readsUsed: MAX_SESSION_DECRYPTS,
+        });
+    });
+
     it('shares concurrent refreshes, throttles resumes, and removes missing credentials', async () => {
         const { getCredentialFactsLoader } = await import('../credentialFactsLoader');
         const loader = getCredentialFactsLoader(did);
