@@ -4,6 +4,7 @@ import { readFile, writeFile, copyFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import './prepare-localization';
 import './prepare-signup';
+import './prepare-native-sign-in';
 const root = resolve(import.meta.dir, '../../..');
 const folder = resolve(
     root,

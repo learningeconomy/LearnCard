@@ -16,6 +16,6 @@
     <key>UISupportedInterfaceOrientations</key>
     <array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
     <key>CFBundleURLTypes</key>
-    <array><dict><key>CFBundleURLName</key><string>LearnCard native experiment</string><key>CFBundleURLSchemes</key><array><string>learncard-native-demo</string><string>learncard-lab</string></array></dict></array>
+    <array><dict><key>CFBundleURLName</key><string>LearnCard native experiment</string><key>CFBundleURLSchemes</key><array><string>learncard-native-demo</string><string>learncard-lab</string></array></dict><dict><key>CFBundleURLName</key><string>Google sign-in</string><key>CFBundleURLSchemes</key><array><string>$(LC_NATIVE_GOOGLE_SCHEME)</string></array></dict></array>
 </dict>
 </plist>

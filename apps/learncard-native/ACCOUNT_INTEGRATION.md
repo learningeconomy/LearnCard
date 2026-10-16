@@ -1,5 +1,7 @@
 # Native account integration
 
+**October 16 provider update:** Native Apple/Google authorization now feeds this same Firebase session, UID scope and LearnCard recovery/setup routing. Live activation still requires the Lab bundle’s own provider registrations; synthetic test results do not establish live OAuth. See [current implementation and activation gates](NATIVE_SIGN_IN.md).
+
 On October 12, 2026, the personal SwiftUI app signed into the shared LearnCard Firebase project, restored an existing staging identity using the user's recovery email key, and loaded the first 30 encrypted personal collection records plus three incoming offers. An app update/relaunch resumed the same account without another email code or recovery prompt. The user entered the code and recovery information directly in the app.
 
 This establishes the first existing-account connection. It does not establish production readiness or validate every mutation against this account. The earlier disposable [staging credential exchange](STAGING_VALIDATION.md) separately verified issue/send/claim/index/reload interoperability with the current SDK.

@@ -3,7 +3,7 @@ import LearnCardNativeCore
 import LearnCardNativeSDK
 
 enum AccountMotionMode: String {
-    case launch, reconnect, locked, sending, verifying, recovering
+    case launch, reconnect, locked, sending, verifying, recovering, provider
     var titleKey: String {
         switch self {
         case .launch: "motion.launch.title"
@@ -11,6 +11,7 @@ enum AccountMotionMode: String {
         case .sending: "motion.sending.title"
         case .verifying: "motion.verifying.title"
         case .recovering: "motion.recovery.title"
+        case .provider: "oauth.loadingTitle"
         }
     }
     var statusKey: String {
@@ -21,6 +22,7 @@ enum AccountMotionMode: String {
         case .sending: "motion.sending"
         case .verifying: "motion.verifying"
         case .recovering: "motion.recovering"
+        case .provider: "oauth.loading"
         }
     }
 }

@@ -14,7 +14,10 @@ struct ClaimPresentation: ViewModifier {
         content.fullScreenCover(isPresented: Binding(get: { enabled && flow.isPresented }, set: { flow.isPresented = $0 })) {
             ReceiveView(flow: flow, store: store, recipient: recipient)
         }
-        .onOpenURL { url in if enabled { Task { await flow.receive(url.absoluteString) } } }
+        .onOpenURL { url in
+            guard enabled, (try? NativeOAuthConfiguration.load())?.handlesCallback(url) != true else { return }
+            Task { await flow.receive(url.absoluteString) }
+        }
         .onChange(of: scenePhase) { _, phase in
             if enabled && flow.isDemo {
                 if phase == .background { flow.lock() }

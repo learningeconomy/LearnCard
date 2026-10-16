@@ -2,11 +2,11 @@
 
 The October 16 account pass brings sign-in, email-code entry, recovery and the recovery/security overview into the native drawn design system. It changes presentation around the existing Firebase, account recovery and Keychain integration. It does not change account identity, cryptography, recovery services or the separate DIDKit investigation. See [the composition and actual screens](design/ACCOUNT_ACCESS_BRIEF.md).
 
-Native first-time registration is now implemented separately: `needs_setup`, `missing_profile`, `finish_setup` and `pending_approval` use native forms and server-backed approval. See [first-time setup](FIRST_TIME_SETUP.md) for age checks, profile creation, required backup enrollment and validation limits. Build My LearnCard and People remain planned.
+Native first-time registration is now implemented separately: `needs_setup`, `missing_profile`, `finish_setup` and `pending_approval` use native forms and server-backed approval. See [first-time setup](FIRST_TIME_SETUP.md) for age checks, profile creation, required backup enrollment and validation limits. Native People and the optional Build My LearnCard intake hub are also implemented; see [their scope](PEOPLE_AND_INTAKE.md).
 
 ## Flow and language
 
-- Sign-in offers editable email entry and **Email me a code**. The local review configuration can prefill the dedicated address; the verified email/UID determines account routing and storage scope.
+- Sign-in offers editable email entry and **Email me a code**. Registered builds also offer native Apple/Google controls through the same account gates; see [provider setup and boundaries](NATIVE_SIGN_IN.md). The local review configuration can prefill the dedicated address; the verified email/UID determines account routing and storage scope.
 - Code entry uses one real six-digit field for paste, OTP autofill and VoiceOver. Localized digits normalize to ASCII; extra digits and non-digits are discarded. The action stays disabled until six digits are present. Resending clears the old input and uses sending feedback.
 - Recovery defaults to **Recovery email**. Its helper explicitly distinguishes an **email recovery key** from the sign-in code. It does not suggest that either key can be invented or resent from this screen.
 - Recovery email, saved words and backup file remain the three existing methods. A custom illustrated bottom sheet explains each and marks the current selection. Cancelling preserves input; choosing a different method clears private input.

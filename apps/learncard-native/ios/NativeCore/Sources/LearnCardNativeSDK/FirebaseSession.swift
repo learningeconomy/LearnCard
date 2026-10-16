@@ -10,6 +10,11 @@ public struct FirebaseUser: Codable, Sendable, Equatable {
     }
 }
 
+private struct IdentityProviderFailure: Decodable {
+    struct Detail: Decodable { let message: String }
+    let error: Detail
+}
+
 private struct SavedSession: Codable, Sendable {
     let user: FirebaseUser
     var idToken: String
@@ -129,6 +134,51 @@ public actor FirebaseSession {
         return result.idToken
     }
 
+    /// Provider proofs enter the existing Firebase session. No independent Google/
+    /// Apple session is persisted and no credentials are linked on the client.
+    public func signIn(credential: NativeSignInCredential) async throws -> FirebaseUser {
+        try Task.checkCancellation()
+        guard !signingOut else { throw AccountError.cancelled }
+        let expected = generation
+        guard !credential.idToken.isEmpty, credential.idToken.utf8.count <= 32_768 else { throw NativeSignInError.identity }
+        var fields = ["providerId": credential.provider.firebaseID, "id_token": credential.idToken]
+        if credential.provider == .apple {
+            guard let nonce = credential.rawNonce, (16...128).contains(nonce.utf8.count) else { throw NativeSignInError.identity }
+            fields["nonce"] = nonce
+        }
+        struct Exchange: Decodable, Sendable {
+            let idToken: String?; let refreshToken: String?; let expiresIn: String?
+            let localId: String?; let providerId: String?; let needConfirmation: Bool?
+        }
+        let exchange: Exchange = try await post("https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=\(config.apiKey)", body: [
+            "postBody": GoogleSignInAttempt.form(fields), "requestUri": "https://staging.learncard.app",
+            "returnSecureToken": true, "returnIdpCredential": false,
+        ])
+        try Task.checkCancellation()
+        guard generation == expected, !signingOut else { throw AccountError.cancelled }
+        guard exchange.needConfirmation != true else { throw NativeSignInError.differentMethod }
+        guard let token = exchange.idToken, !token.isEmpty, let refreshToken = exchange.refreshToken, !refreshToken.isEmpty,
+              let id = exchange.localId, !id.isEmpty, exchange.providerId == credential.provider.firebaseID,
+              let seconds = exchange.expiresIn.flatMap(Double.init), (1...86_400).contains(seconds) else { throw NativeSignInError.identity }
+        struct Lookup: Decodable, Sendable {
+            struct User: Decodable, Sendable {
+                struct Provider: Decodable, Sendable { let providerId: String }
+                let localId: String; let email: String; let displayName: String?; let createdAt: String?
+                let providerUserInfo: [Provider]?
+            }
+            let users: [User]
+        }
+        let lookup: Lookup = try await post("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=\(config.apiKey)", body: ["idToken": token])
+        try Task.checkCancellation()
+        guard generation == expected, !signingOut else { throw AccountError.cancelled }
+        guard lookup.users.count == 1, let found = lookup.users.first, found.localId == id,
+              let email = Self.normalizedEmail(found.email),
+              found.providerUserInfo?.contains(where: { $0.providerId == credential.provider.firebaseID }) == true else { throw NativeSignInError.identity }
+        let user = FirebaseUser(id: id, email: email, displayName: found.displayName, createdAt: found.createdAt)
+        try await save(SavedSession(user: user, idToken: token, refreshToken: refreshToken, expires: .now.addingTimeInterval(seconds)), generation: expected)
+        return user
+    }
+
     private func refreshSession(_ current: SavedSession) async throws -> SavedSession {
         struct Refresh: Decodable, Sendable { let id_token: String; let refresh_token: String; let expires_in: String; let user_id: String; let project_id: String }
         let body = "grant_type=refresh_token&refresh_token=\(current.refreshToken.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "")"
@@ -183,9 +233,18 @@ public actor FirebaseSession {
         do {
             let (response, metadata) = try await http.data(for: request)
             guard let http = metadata as? HTTPURLResponse else { throw AccountError.connection }
-            guard http.statusCode == 200 else { throw http.statusCode == 400 || http.statusCode == 401 ? AccountError.signIn : AccountError.connection }
+            guard http.statusCode == 200 else {
+                if url.path.hasSuffix("accounts:signInWithIdp") {
+                    let code = (try? JSONDecoder().decode(IdentityProviderFailure.self, from: response).error.message)?.split(separator: " ").first.map(String.init)
+                    if ["EMAIL_EXISTS", "ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL", "FEDERATED_USER_ID_ALREADY_LINKED"].contains(code ?? "") { throw NativeSignInError.differentMethod }
+                    if http.statusCode == 400 || http.statusCode == 401 { throw NativeSignInError.failed }
+                    throw AccountError.connection
+                }
+                throw http.statusCode == 400 || http.statusCode == 401 ? AccountError.signIn : AccountError.connection
+            }
             return try JSONDecoder().decode(T.self, from: response)
         } catch let error as AccountError { throw error }
+        catch let error as NativeSignInError { throw error }
         catch { throw AccountError.connection }
     }
 }

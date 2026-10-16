@@ -20,7 +20,7 @@ def add(name, content):
     return key(name)
 
 
-def configs(name, settings):
+def configs(name, settings, base=None):
     entries = []
     for mode in ("Debug", "Release"):
         optimization = "-Onone" if mode == "Debug" else "-O"
@@ -30,7 +30,8 @@ def configs(name, settings):
             fields["SWIFT_ACTIVE_COMPILATION_CONDITIONS"] = '"DEBUG $(inherited)"'
             fields["ONLY_ACTIVE_ARCH"] = "YES"
         contents = " ".join(f"{field} = {value};" for field, value in fields.items())
-        entries.append(add(f"{name} {mode}", f"isa = XCBuildConfiguration; buildSettings = {{ {contents} }}; name = {mode};"))
+        reference = f"baseConfigurationReference = {base}; " if base else ""
+        entries.append(add(f"{name} {mode}", f"isa = XCBuildConfiguration; {reference}buildSettings = {{ {contents} }}; name = {mode};"))
     return add(f"{name} configurations", f"isa = XCConfigurationList; buildConfigurations = ({', '.join(entries)},); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;")
 
 
@@ -44,9 +45,10 @@ test_product = add("Test product", 'isa = PBXFileReference; explicitFileType = w
 sources = add("App sources", 'isa = PBXFileSystemSynchronizedRootGroup; path = Sources; sourceTree = "<group>";')
 tests = add("UI test sources", 'isa = PBXFileSystemSynchronizedRootGroup; path = UITests; sourceTree = "<group>";')
 plist = add("Info plist", 'isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>";')
+oauth_config = add("OAuth build configuration", 'isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = GeneratedOAuth.xcconfig; sourceTree = "<group>";')
 package_folder = add("Core folder", 'isa = PBXFileReference; lastKnownFileType = folder; path = NativeCore; sourceTree = "<group>";')
 products = add("Products", f'isa = PBXGroup; children = ({app_product}, {test_product},); name = Products; sourceTree = "<group>";')
-main = add("Main group", f'isa = PBXGroup; children = ({sources}, {tests}, {package_folder}, {plist}, {products},); sourceTree = "<group>";')
+main = add("Main group", f'isa = PBXGroup; children = ({sources}, {tests}, {package_folder}, {plist}, {oauth_config}, {products},); sourceTree = "<group>";')
 package = add("Local core package", 'isa = XCLocalSwiftPackageReference; relativePath = NativeCore;')
 core = add("Core product", f"isa = XCSwiftPackageProductDependency; package = {package}; productName = LearnCardNativeCore;")
 core_build = add("Core framework build", f"isa = PBXBuildFile; productRef = {core};")
@@ -67,7 +69,7 @@ app_configs = configs("App", {
     "TARGETED_DEVICE_FAMILY": "1", "CODE_SIGN_STYLE": "Automatic",
     "LD_RUNPATH_SEARCH_PATHS": '"$(inherited) @executable_path/Frameworks"',
     "SUPPORTED_PLATFORMS": '"iphoneos iphonesimulator"', "SUPPORTS_MACCATALYST": "NO",
-})
+}, base=oauth_config)
 test_configs = configs("UI tests", {
     "PRODUCT_NAME": '"$(TARGET_NAME)"',
     "PRODUCT_BUNDLE_IDENTIFIER": "org.learningeconomy.learncard.native.experiment.uitests",

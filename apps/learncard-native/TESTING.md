@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **416 cases** (171 Bun, 145 Swift, 100 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
+Current configured suite: **449 cases** (175 Bun, 166 Swift, 108 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -22,6 +22,22 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Native Apple/Google sign-in — October 16
+
+All **175 Bun** and **166 Swift** cases pass, plus **20 distinct focused simulator cases** across the final and preceding targeted runs. This is targeted verification, not a new full 449-case run. Native hosted CI remains manual; no workflow was dispatched.
+
+- `artifacts/oauth-bun.log`: all protocol tests plus four new public-registration checks. They reject foreign bundle/project IDs, injected build settings, secret fields and premature Apple enablement.
+- `oauth-confirmed-core.log`: 137 XCTest + 29 Swift Testing cases pass. Twenty-one new provider cases cover PKCE/state/callback/nonce binding, fixed token exchange, Firebase canonical UID/provider lookup, Apple relay/raw nonce, collisions without linking, restart/refresh/sign-out, cancelled/late exchanges, duplicate taps, common setup/recovery/approval gates, failed account-connection retry, background cancellation and four-language copy.
+- `oauth-ui.xcresult`: six of seven initial provider UI cases passed. The remaining test inserted into a prefilled email at a mid-address cursor. `oauth-final-ui.xcresult` passed 17 of 18 cases, including all five existing account-access cases and lifecycle/setup coverage, but retained that same cursor-edit failure. The cancellation fixture now starts with an empty email, types a full address and still asserts that exact address survives provider cancellation; the preservation assertion was not relaxed.
+- `oauth-confirmed-ui.xcresult`: all 15 final cases pass: all eight new provider cases, all five existing lifecycle cases, the first-time birthday/profile/privacy case and existing pending-claim recovery/background case. The new provider-to-recovery claim case also requires review before acceptance. Fixtures replace only provider/backend boundaries, retaining production screens/controller and isolated Keychain persistence. No Apple/Google account or real provider token is accessed.
+- `oauth-types.log`: native consumer source contracts pass with the same 14 dependency diagnostics scoped to their owning packages.
+
+[Actual screens](design/NATIVE_SIGN_IN_BRIEF.md) were exported and visually inspected in normal and Arabic accessibility/dark layouts. Apple's official button follows the iOS app/system language; custom runtime-language copy does not override that UIKit behavior. Physical-device VoiceOver and human translation review remain open.
+
+Release compilation and Debug review installation pass (`oauth-release.log`, `oauth-review-install.log`), and both compiled launch catalogs pass verification. All **48 installed artifact hashes match** (`oauth-install-proof.json`), including preserved private configuration and unchanged DIDKit. Builds ran sequentially with the existing two-job reduced-priority scripts. Live read-only review confirmed Home under the retained account and the saved private “Native signup check” credential still in Collection; the app is left on Home. No account reset, sign-out, issuance or provider login was performed. The separate checks simulator is shut down.
+
+Live activation is **not validated**: Firebase's app list has no Native Lab registration, and the old `com.learncard.app` iOS client must not be reused. A separate Lab registration form is prepared but unsubmitted pending approval. Apple's portal currently selects the old WeLibrary team and blocks membership access on an outstanding agreement; current team/grouping remains unverified. See [registration, routing and remaining manual checks](NATIVE_SIGN_IN.md).
 
 ## Static splash, inward logo assembly and one wordmark — October 16
 

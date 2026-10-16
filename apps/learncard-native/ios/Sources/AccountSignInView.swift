@@ -6,7 +6,7 @@ struct AccountRootView: View {
     @Environment(\.locale) private var nativeLocale
     @Environment(\.scenePhase) private var scenePhase
     @State private var account: AccountController
-    init(account: AccountController = AccountController()) { _account = State(initialValue: account) }
+    init(account: AccountController? = nil) { _account = State(initialValue: account ?? AccountController(signInClient: SystemNativeSignInClient())) }
     var body: some View {
         Group {
             if ["resetting", "reset_pending"].contains(account.phase) { StagingResetProgressView(account: account) }
@@ -54,6 +54,7 @@ struct AccountSignInView: View {
         return switch account.phase {
         case "signIn", "idle": .sending
         case "code": .verifying
+        case "provider": .provider
         case "needs_recovery", "recovery": .recovering
         case "locked": account.busy ? .reconnect : .locked
         default: account.user == nil ? .launch : .reconnect
@@ -113,7 +114,10 @@ struct AccountSignInView: View {
                         AccountAccessHero(phase: account.phase)
                         if let error = account.error { AccountAccessNotice(text: error, error: true).accessibilityIdentifier("account-error") }
                         if account.claims.link != nil { AccountAccessNotice(text: NativeText.text("claims.waitingSignIn")) }
-                        if signingIn { emailPanel }
+                        if signingIn {
+                            if !account.signInProviders.isEmpty { NativeSignInButtons(account: account) }
+                            emailPanel
+                        }
                         else if account.phase == "code" { codePanel }
                         else if recovering { recoveryPanel }
                         else { setupPanel }

@@ -12,12 +12,16 @@ import LearnCardNativeSDK
         let scenario = arguments[index + 1]
         let vault = KeychainVault(service: "org.learncard.native.account-ui-tests.\(id.uuidString)")
         let session = FixtureSession(vault: vault, scenario: scenario, reset: arguments.contains("--fixture-reset"))
-        return AccountController(session: session, makeHost: { _ in FixtureHost(vault: vault, scenario: scenario, approveOnCheck: arguments.contains("--fixture-approve-after-check"), failSaveOnce: arguments.contains("--profile-save-failure")) },
+        let hostScenario = scenario == "oauth-signup" ? "signup" : scenario == "oauth-approval" ? "pending-approval" : scenario
+        let account = AccountController(session: session, signInClient: scenario.hasPrefix("oauth-") ? FixtureSignInClient(scenario: scenario) : nil,
+                                 makeHost: { _ in FixtureHost(vault: vault, scenario: hostScenario, approveOnCheck: arguments.contains("--fixture-approve-after-check"), failSaveOnce: arguments.contains("--profile-save-failure")) },
                                  forgetAccount: { _ in try await vault.remove("fixture-remembered") },
                                  claims: NativeClaimStore(journal: KeychainClaimJournal(vault: vault)), uploadProfilePhoto: { data in
                                      let url = FileManager.default.temporaryDirectory.appendingPathComponent("synthetic-profile-photo.jpg")
                                      try data.write(to: url); return url
                                  })
+        if scenario == "oauth-cancel" { account.email = "" }
+        return account
     }
 }
 
@@ -35,7 +39,7 @@ import LearnCardNativeSDK
             reset = false
             try await vault.remove("fixture-auth"); try await vault.remove("fixture-remembered")
             for key in ["profile-name", "profile-bio", "profile-image", "signup-draft", "signup-prepared", "signup-backup", "signup-confirmed", "signup-parent-sent", "signup-approved", "reset-pending", "reset-failed", "reset-done"] { try await vault.remove(key) }
-            if scenario != "sign-in" { try await vault.write(Data("synthetic".utf8), key: "fixture-auth") }
+            if scenario != "sign-in" && !scenario.hasPrefix("oauth-") { try await vault.write(Data("synthetic".utf8), key: "fixture-auth") }
             if scenario == "ready" || scenario.hasPrefix("reset-") { try await vault.write(Data("synthetic".utf8), key: "fixture-remembered") }
             if scenario == "reset-pending" { try await vault.write(Data("synthetic".utf8), key: "reset-pending") }
         }
@@ -48,6 +52,26 @@ import LearnCardNativeSDK
         return user
     }
     func signOut() async throws { try await vault.remove("fixture-auth") }
+    func signIn(credential: NativeSignInCredential) async throws -> FirebaseUser {
+        try await vault.write(Data("synthetic".utf8), key: "fixture-auth")
+        if scenario == "oauth-ready" { try await vault.write(Data("synthetic".utf8), key: "fixture-remembered") }
+        return user
+    }
+}
+
+/// No provider requests or system account access in automated UI fixtures.
+@MainActor private final class FixtureSignInClient: NativeSignInClient {
+    let providers: [NativeSignInProvider] = [.apple, .google]
+    let scenario: String
+    private var pending: CheckedContinuation<NativeSignInCredential, any Error>?
+    init(scenario: String) { self.scenario = scenario }
+    func signIn(_ provider: NativeSignInProvider) async throws -> NativeSignInCredential {
+        if scenario == "oauth-cancel" { throw NativeSignInError.cancelled }
+        if scenario == "oauth-failure" { throw NativeSignInError.differentMethod }
+        if scenario == "oauth-delayed" { return try await withCheckedThrowingContinuation { pending = $0 } }
+        return NativeSignInCredential(provider: provider, idToken: "synthetic-not-a-provider-token", rawNonce: "synthetic-not-a-real-nonce")
+    }
+    func cancel() { pending?.resume(throwing: NativeSignInError.cancelled); pending = nil }
 }
 
 @MainActor private final class FixtureHost: AccountHost {

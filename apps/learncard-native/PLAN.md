@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Native Apple and Google sign-in — October 16
+
+Native authorization, common Firebase persistence/routing, cancellation/race guards, branded controls and public registration generation are implemented. Live activation remains gated on a matching Lab Google iOS client and confirmed Apple team/identity grouping/capability. Keep the existing review account intact and do not borrow the old app bundle registration. See [the concrete setup and verification plan](NATIVE_SIGN_IN.md).
+
 ## Home, People and optional intake — October 16
 
 Data Sharing moves directly under the three primary credential actions; Scan a code becomes an illustrated row. People is reachable through Home/Account/Inbox, retaining four tabs. Native connections, requests, sent, blocked and username search use existing graph APIs with account isolation and Inbox synchronization. Build My LearnCard opens a real optional scan/photo/link intake hub. Document extraction/raw JSON, invitation QR and profile-specific send/share remain separate. See [implemented scope and remaining work](PEOPLE_AND_INTAKE.md).

@@ -8,10 +8,14 @@ public protocol AccountSession: Sendable {
     func resume() async throws -> FirebaseUser?
     func sendCode(email: String) async throws
     func verify(code: String) async throws -> FirebaseUser
+    func signIn(credential: NativeSignInCredential) async throws -> FirebaseUser
     func signOut() async throws
 }
 
 extension FirebaseSession: AccountSession {}
+public extension AccountSession {
+    func signIn(credential: NativeSignInCredential) async throws -> FirebaseUser { throw NativeSignInError.unavailable }
+}
 
 /// Replace only the account backend in tests, retaining the production controller and views.
 @MainActor public protocol AccountHost: AnyObject {
@@ -74,6 +78,8 @@ public enum AccountActivity: Sendable { case active, inactive, background }
 public final class NativeAccountController {
     public let claims: NativeClaimStore
     private let session: (any AccountSession)?
+    private let signInClient: (any NativeSignInClient)?
+    private var providerExchange: Task<FirebaseUser, any Error>?
     private let makeHost: @MainActor (FirebaseUser) throws -> any AccountHost
     private let forgetAccount: @MainActor (String) async throws -> Void
     private let uploadProfilePhoto: @Sendable (Data) async throws -> URL
@@ -89,15 +95,17 @@ public final class NativeAccountController {
     public private(set) var phase = "loading"
     public var email = ""
     public private(set) var busy = false
+    public private(set) var signInProvider: NativeSignInProvider?
+    public var signInProviders: [NativeSignInProvider] { session == nil ? [] : signInClient?.providers ?? [] }
     public private(set) var uploadingPhoto = false
     public private(set) var signupBackup: SignupBackup?
     public var error: String?
     public var recipientName: String?
 
-    public convenience init() {
+    public convenience init(signInClient: (any NativeSignInClient)? = nil) {
         let vault = KeychainVault()
         let firebase = try? FirebaseSession(vault: vault)
-        self.init(session: firebase, makeHost: { user in
+        self.init(session: firebase, signInClient: signInClient, makeHost: { user in
             guard let firebase else { throw AccountError.unavailable }
             return AccountRuntime(user: user, vault: vault, firebase: firebase)
         }, forgetAccount: { id in try await vault.forgetAccount(userID: id) })
@@ -105,12 +113,14 @@ public final class NativeAccountController {
     }
 
     public init(session: (any AccountSession)?,
+                signInClient: (any NativeSignInClient)? = nil,
                 makeHost: @escaping @MainActor (FirebaseUser) throws -> any AccountHost,
                 forgetAccount: @escaping @MainActor (String) async throws -> Void,
                 claims: NativeClaimStore? = nil,
                 uploadProfilePhoto: @escaping @Sendable (Data) async throws -> URL = { try await ArtworkUploader.upload(jpeg: $0, filename: "profile-photo.jpg") }) {
         self.claims = claims ?? NativeClaimStore()
         self.session = session; self.makeHost = makeHost; self.forgetAccount = forgetAccount
+        self.signInClient = signInClient
         self.uploadProfilePhoto = uploadProfilePhoto
         email = session?.testEmail ?? ""
     }
@@ -146,6 +156,36 @@ public final class NativeAccountController {
             try self.check(expected)
             self.signedOut = false
             try await self.connect(user, generation: expected)
+        }
+    }
+
+    public func signIn(with provider: NativeSignInProvider) async {
+        guard ["signIn", "idle"].contains(phase), user == nil, signInProviders.contains(provider) else { return }
+        await perform {
+            let expected = self.generation
+            guard let client = self.signInClient, let session = self.session else { throw NativeSignInError.unavailable }
+            self.signInProvider = provider; self.phase = "provider"
+            defer { if self.generation == expected { self.signInProvider = nil } }
+            do {
+                let credential = try await client.signIn(provider)
+                try self.check(expected)
+                guard credential.provider == provider else { throw NativeSignInError.identity }
+                let exchange = Task { try await session.signIn(credential: credential) }
+                self.providerExchange = exchange
+                defer { if self.generation == expected { self.providerExchange = nil } }
+                let user = try await exchange.value
+                try self.check(expected)
+                self.signedOut = false
+                try await self.connect(user, generation: expected)
+            } catch {
+                try self.check(expected)
+                // Firebase may already have succeeded. Retry the saved account
+                // connection rather than offering a second provider sign-in.
+                if self.user != nil { self.phase = "locked"; throw error }
+                self.phase = "signIn"
+                if case NativeSignInError.cancelled = error { return }
+                throw error
+            }
         }
     }
 
@@ -378,6 +418,8 @@ public final class NativeAccountController {
 
     public func lock() {
         generation += 1
+        signInClient?.cancel(); signInProvider = nil
+        providerExchange?.cancel(); providerExchange = nil
         claims.lock()
         runtime?.dispose(); runtime = nil
         store?.consumer.lock()
@@ -392,7 +434,7 @@ public final class NativeAccountController {
         guard generation == expected, !endingSession else { throw AccountError.cancelled }
     }
     private func friendly(_ error: any Error) -> String {
-        (error as? StagingResetError)?.errorDescription ?? (error as? SignupError)?.errorDescription ?? (error as? AccountError)?.errorDescription ?? "Something went wrong. Please try again."
+        (error as? NativeSignInError)?.errorDescription ?? (error as? StagingResetError)?.errorDescription ?? (error as? SignupError)?.errorDescription ?? (error as? AccountError)?.errorDescription ?? "Something went wrong. Please try again."
     }
     private func perform(_ operation: () async throws -> Void) async {
         guard !busy, !endingSession else { return }
