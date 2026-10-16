@@ -901,7 +901,7 @@ export const useSyncConsentFlow = (enabled = true) => {
                         );
 
                         try {
-                            const { failed } = await acceptAndStore.mutateAsync({
+                            const { failed, rejected } = await acceptAndStore.mutateAsync({
                                 allRecords: filteredRecords,
                             });
 
@@ -910,14 +910,21 @@ export const useSyncConsentFlow = (enabled = true) => {
                             // accepts, so a failed credential is still pending on the server and
                             // the next sync sees it again: a failed store gets stored then, and a
                             // failed accept gets accepted then (it's already indexed).
+                            // Revoked/suspended credentials stay claimed for this session: the
+                            // server keeps listing them as pending, and retrying would just
+                            // store and roll them back again on every focus.
                             const failedUris = new Set(failed.map(r => r.credentialUri));
                             failedUris.forEach(uri => globalProcessedCredentials.delete(uri));
+                            const skippedUris = new Set([
+                                ...failedUris,
+                                ...rejected.map(r => r.credentialUri),
+                            ]);
 
                             await syncContracts.mutateAsync({
                                 recordsByCategory: Object.fromEntries(
                                     Object.entries(recordsByCategory).map(([category, uris]) => [
                                         category,
-                                        uris?.filter(uri => !failedUris.has(uri)),
+                                        uris?.filter(uri => !skippedUris.has(uri)),
                                     ])
                                 ) as Partial<Record<CredentialCategory, string[]>>,
                                 allContracts: allContracts.map(c => ({
