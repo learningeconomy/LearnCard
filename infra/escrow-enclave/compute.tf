@@ -108,14 +108,23 @@ resource "aws_autoscaling_group" "enclave_host" {
   target_group_arns         = [aws_lb_target_group.enclave_host.arn]
 
   launch_template {
-    id      = aws_launch_template.enclave_host.id
-    version = "$Latest"
+    id = aws_launch_template.enclave_host.id
+    # Numeric versions trigger production refresh; preserve staging behavior.
+    version = var.environment == "production" ? tostring(aws_launch_template.enclave_host.latest_version) : "$Latest"
   }
 
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50
+      min_healthy_percentage = var.environment == "production" ? 100 : 50
+      max_healthy_percentage = var.environment == "production" ? 200 : 100
+    }
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.environment != "production" || length(distinct([for s in data.aws_subnet.selected : s.availability_zone])) >= 2
+      error_message = "Production hosts must span at least two Availability Zones (not just two subnets)."
     }
   }
 

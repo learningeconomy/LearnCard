@@ -1,7 +1,7 @@
 # ALL provider calls are mocked. New policies use local jsonencode, so assertions
 # inspect real policy computations rather than mocked aws_iam_policy_document JSON.
 mock_provider "aws" {
-  mock_resource "aws_launch_template" { defaults = { id = "lt-0123456789abcdef0" } }
+  mock_resource "aws_launch_template" { defaults = { id = "lt-0123456789abcdef0", latest_version = 7 } }
   mock_resource "aws_iam_role" { defaults = { arn = "arn:aws:iam::123456789012:role/test" } }
   mock_resource "aws_sns_topic" { defaults = { arn = "arn:aws:sns:us-east-1:123456789012:monitor" } }
   mock_resource "aws_sqs_queue" { defaults = { arn = "arn:aws:sqs:us-east-1:123456789012:dlq", id = "https://sqs.us-east-1.amazonaws.com/123456789012/dlq" } }
@@ -63,6 +63,15 @@ variables {
 
 run "disabled_is_structurally_a_noop" {
   command = apply
+  assert {
+    condition = (
+      aws_autoscaling_group.enclave_host.launch_template[0].version == "$Latest" &&
+      aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].min_healthy_percentage == 50 &&
+      aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].max_healthy_percentage == 100 &&
+      !aws_lb.enclave_host.enable_deletion_protection
+    )
+    error_message = "Production safety settings must not change staging behavior."
+  }
   assert {
     condition = alltrue([
       length(aws_dynamodb_table.authority) == 0, length(aws_dynamodb_resource_policy.authority) == 0,
@@ -200,6 +209,35 @@ run "email_external_dns_and_delivery" {
     error_message = "Enabled proxy/delivery paths and governance alarm coverage must be present."
   }
 }
+run "production_safety_and_domain" {
+  command = apply
+  variables {
+    environment                   = "production"
+    enable_enrollment_authority   = true
+    enable_enclave_email          = true
+    authority_generation          = "g1"
+    authority_tenant              = "learncard"
+    authority_guardrail_policy_id = "p-12345678"
+    sending_domain                = "vault.notify.learncard.com"
+    create_sending_zone           = true
+    email_dmarc_policy            = "reject"
+  }
+  assert {
+    condition = (
+      aws_autoscaling_group.enclave_host.min_size >= 2 &&
+      aws_autoscaling_group.enclave_host.launch_template[0].version == "7" &&
+      aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].min_healthy_percentage == 100 &&
+      aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].max_healthy_percentage == 200 &&
+      aws_lb.enclave_host.enable_deletion_protection
+    )
+    error_message = "Production must roll new-host-first on numeric template changes and protect the NLB."
+  }
+  assert {
+    condition     = aws_route53_record.sending["dmarc"].records == toset(["v=DMARC1; p=reject"]) && aws_ses_domain_mail_from.enclave[0].mail_from_domain == "bounce.vault.notify.learncard.com"
+    error_message = "Production sending domain and DMARC policy must be independent of staging."
+  }
+}
+
 run "delegated_sending_zone_and_cross_region_global_events" {
   command = apply
   variables {

@@ -1,0 +1,5 @@
+# Copy to ignored production.tfvars. Replace placeholders; no credentials here.
+aws_region      = "us-east-1"
+environment     = "production"
+kms_admin_users = ["REPLACE_OPERATOR_ONE", "REPLACE_OPERATOR_TWO"]
+alarm_emails    = ["REPLACE_SECURITY_ONCALL@example.invalid"]
