@@ -65,7 +65,6 @@ export const sharingFeature: FeatureDefinition = {
             }
         });
         return {
-            entries: ['share-menu-copy', 'share-anonymous-view'],
             observations: {
                 ownerProfileId: context.actors.learner.profileId,
                 title,

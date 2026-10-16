@@ -79,7 +79,6 @@ export const credentialsFeature: FeatureDefinition = {
             }
         );
         return {
-            entries: ['wallet-self-issue', 'wallet-detail-persistence', 'wallet-peer-claim'],
             observations: {
                 issuerProfileId: learner.profileId,
                 recipientProfileId: recipient.profileId,

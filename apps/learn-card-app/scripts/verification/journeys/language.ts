@@ -87,7 +87,6 @@ export const languageFeature: FeatureDefinition = {
             await assertProfile(learner, context.actors.learner);
         });
         return {
-            entries: ['locale-login-switch', 'locale-login-persistence', 'locale-sidebar-switch'],
             observations: {
                 profileId: context.actors.learner.profileId,
                 switchedLocale: 'es',

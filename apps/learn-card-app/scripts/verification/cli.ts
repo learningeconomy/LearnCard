@@ -10,13 +10,15 @@ import type { Browser, BrowserContext } from '@playwright/test';
 
 import { verificationFeatures } from './catalog';
 import { expect } from './expect';
-import { BASE_URL, configureContext, createHarness, newRunId, saveJson, signIn } from './harness';
+import { configureContext, createHarness, newRunId, saveJson, signIn } from './harness';
 import type { NetworkRecord, VerificationHarness } from './harness';
 import { queryMongo, queryNeo4j, serviceLogs } from './inspect';
 import { runLearnCardCli, stopLearnCardCommands } from './learncard-cli';
 import { createScriptContext, loadScript, writeInlineScript } from './script';
-import { doctorStack, startStack, stopStack } from './stack';
-import type { FeatureDefinition, FeatureResult, VerificationActor } from './types';
+import { doctorStack, readStackEndpoints, startStack, stopStack } from './stack';
+import { preflightVerification } from './preflight';
+import { prepareVerification } from './prepare';
+import type { FeatureDefinition, FeatureResult, StackEndpoints, VerificationActor } from './types';
 import { getVerificationLearnCard } from './sdk';
 
 const DEFAULT_ROOT = '/tmp/learncard-verification';
@@ -24,18 +26,26 @@ const DEFAULT_ROOT = '/tmp/learncard-verification';
  * traces and sessions are saved. */
 const OWN_SIGNALS = { handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false } as const;
 
+/** Keep machine output independent of dependency logging on stderr. */
+const writeEvent = (event: Record<string, unknown>): void => {
+    process.stdout.write(`${JSON.stringify(event)}\n`);
+};
+
 const help = (): void => {
     console.log(`LearnCard verification: real local services, owned stacks, retained evidence.
 
 Lifecycle
-  lc verify up --dir DIR                 Start an owned stack and save signed-in learner/recipient sessions
+  lc verify up --dir DIR [--json]        Prepare and start an isolated stack; block until usable
+  lc verify doctor --preflight          Check toolchain, Docker, browser, and resource prerequisites
+  lc verify prepare --dir DIR            Prepare generated artifacts without starting services
   lc verify doctor --dir DIR             Read-only: is this stack ours, healthy, and signed in?
-  lc verify down --dir DIR               Stop only the owned stack; evidence stays in DIR
+  lc verify down --dir DIR [--force]     Stop owned resources; --force also stops a verified starter
 
 Scripted coverage
   lc verify list [--json]                Catalog features, surfaces, and required entries
   lc verify run [all|FEATURE...]         Run journeys (fresh stack unless --dir names a live one)
-      [--dir DIR] [--keep] [--headed] [--video]
+      [--dir DIR] [--fresh] [--keep] [--headed] [--video] [--json]
+      --fresh refuses an existing state; --json emits per-feature events and a final result
 
 Drive anything else (needs a live --dir)
   lc verify script FILE --dir DIR        Run an ad-hoc journey: default-export async (v) => {...}
@@ -87,7 +97,7 @@ const doctor = async (directory: string): Promise<Record<string, unknown>> => {
         };
     }
     const actor = await readSessionActor(session);
-    const wallet = await getVerificationLearnCard(actor.seed);
+    const wallet = await getVerificationLearnCard(await readStackEndpoints(directory), actor.seed);
     const profile = await wallet.invoke.getProfile(actor.profileId);
     assert(
         profile && 'did' in profile && profile.did === wallet.id.did(),
@@ -102,19 +112,27 @@ const doctor = async (directory: string): Promise<Record<string, unknown>> => {
 const bootstrapSessions = async (
     directory: string,
     headed: boolean,
-    onReady: (browser: Browser, harness: VerificationHarness) => void
+    signal: AbortSignal,
+    onReady: (browser: Browser, harness?: VerificationHarness) => void
 ): Promise<void> => {
+    signal.throwIfAborted();
     const browser = await chromium.launch({ ...OWN_SIGNALS, headless: !headed });
-    const runId = newRunId();
-    const harness = await createHarness(
-        browser,
-        join(directory, 'sessions', 'bootstrap', runId),
-        runId
-    );
-    onReady(browser, harness);
+    onReady(browser);
+    let harness: VerificationHarness | undefined;
     try {
+        signal.throwIfAborted();
+        const runId = newRunId();
+        harness = await createHarness(
+            browser,
+            join(directory, 'sessions', 'bootstrap', runId),
+            runId,
+            { stackDirectory: directory }
+        );
+        onReady(browser, harness);
+        signal.throwIfAborted();
         const profiles: Record<string, unknown> = {};
         for (const role of ['learner', 'recipient'] as const) {
+            signal.throwIfAborted();
             const actor = harness.context.actors[role];
             const page = await harness.context.newPage(role, { signInAs: actor });
             await page.reload();
@@ -133,7 +151,7 @@ const bootstrapSessions = async (
         await saveJson(join(directory, 'sessions', 'profiles.json'), profiles);
     } finally {
         try {
-            await harness.close();
+            await harness?.close();
         } finally {
             await browser.close();
         }
@@ -158,6 +176,7 @@ const runBrowser = async (
     values: { session?: string; 'cdp-port'?: string; headed?: boolean }
 ): Promise<void> => {
     await requireStack(directory);
+    const stack = await readStackEndpoints(directory);
     const session = resolve(directory, values.session ?? 'sessions/learner.json');
     const sessionRelative = relative(directory, session);
     assert(
@@ -190,10 +209,10 @@ const runBrowser = async (
     process.on('SIGTERM', finish);
     try {
         context = await browser.newContext({
-            baseURL: BASE_URL,
+            baseURL: stack.app,
             serviceWorkers: 'block',
         });
-        await configureContext(context, network);
+        await configureContext(context, network, stack);
         const page = await context.newPage();
         await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
         // Never restore storageState's JSON-serialized CryptoKey: it is no longer a usable key.
@@ -228,7 +247,7 @@ const runBrowser = async (
 const runScript = async (
     directory: string,
     positionals: string[],
-    values: { eval?: string; name?: string; headed?: boolean; video?: boolean }
+    values: { eval?: string; name?: string; headed?: boolean; video?: boolean; json?: boolean }
 ): Promise<void> => {
     await requireStack(directory);
     const runId = newRunId();
@@ -326,7 +345,8 @@ const runScript = async (
             );
         }
         await saveJson(join(artifacts, 'report.json'), report);
-        console.log(JSON.stringify({ status: report.status, result: report.result }, null, 2));
+        if (values.json) writeEvent({ event: 'result', command: 'script', ...report, artifacts });
+        else console.log(JSON.stringify({ status: report.status, result: report.result }, null, 2));
         console.log(`Evidence retained: ${artifacts}`);
     }
     if (failed) throw failure;
@@ -336,17 +356,21 @@ const runFeatures = async (
     command: 'up' | 'run',
     directory: string,
     requested: string[],
-    values: { keep?: boolean; headed?: boolean; video?: boolean }
+    values: { keep?: boolean; headed?: boolean; video?: boolean; json?: boolean; fresh?: boolean }
 ): Promise<void> => {
-    const selected = selectFeatures(requested);
+    const selected = command === 'run' ? selectFeatures(requested) : [];
     const ownsStack = !existsSync(join(directory, 'state.json'));
+    assert(!values.fresh || ownsStack, '--fresh requires a directory without existing stack state');
+    const startup = new AbortController();
+    let endpoints: StackEndpoints | undefined;
+    let ready: Record<string, unknown> | undefined;
     const runId = newRunId();
     const artifacts = join(directory, 'runs', runId);
     const results: Array<Record<string, unknown>> = [];
     const report = async (status: string): Promise<void> =>
         saveJson(join(artifacts, 'report.json'), {
             runId,
-            baseUrl: BASE_URL,
+            baseUrl: endpoints?.app,
             status,
             selected: selected.map(feature => feature.id),
             results,
@@ -371,6 +395,7 @@ const runFeatures = async (
     const onSignal = (): void => {
         if (interrupted) return;
         interrupted = true;
+        startup.abort(new Error('Verification interrupted'));
         // Capture before closing Chromium, and join this work before any stack teardown.
         const harness = current;
         interruptPromise = (async () => {
@@ -390,8 +415,16 @@ const runFeatures = async (
     try {
         await mkdir(directory, { recursive: true, mode: 0o700 });
         console.log(`Verification directory: ${directory}`);
-        if (ownsStack) await startStack(directory);
+        if (ownsStack)
+            await startStack(directory, {
+                signal: startup.signal,
+                onProgress: event =>
+                    values.json
+                        ? writeEvent(event)
+                        : console.error(`[lc verify] ${JSON.stringify(event)}`),
+            });
         else await requireStack(directory);
+        endpoints = await readStackEndpoints(directory);
         assert(!interrupted, 'Verification interrupted');
         if (command === 'up') {
             const reusable = await Promise.all(
@@ -406,6 +439,7 @@ const runFeatures = async (
                 await bootstrapSessions(
                     directory,
                     Boolean(values.headed),
+                    startup.signal,
                     (activeBrowser, harness) => {
                         browser = activeBrowser;
                         current = harness;
@@ -413,7 +447,8 @@ const runFeatures = async (
                 );
             }
             assert(!interrupted, 'Verification interrupted');
-            console.log(JSON.stringify(await doctor(directory), null, 2));
+            ready = await doctor(directory);
+            if (!values.json) console.log(JSON.stringify(ready, null, 2));
             assert(!interrupted, 'Verification interrupted');
             console.log(`Ready. Next: lc verify run all --dir ${directory}`);
         } else {
@@ -438,17 +473,26 @@ const runFeatures = async (
                     startedAt: new Date().toISOString(),
                 };
                 console.log(`${feature.id}: running`);
+                if (values.json)
+                    writeEvent({ event: 'feature', feature: feature.id, status: 'running', runId });
                 let execution: Promise<FeatureResult> | undefined;
                 try {
                     execution = feature.run(harness.context);
                     const proof = await Promise.race([execution, interruption]);
                     assert(!interrupted, 'Verification interrupted');
-                    assert.deepEqual(
-                        [...proof.entries].sort(),
-                        [...feature.entries].sort(),
-                        'Feature did not exercise every catalog entry'
+                    const entries = feature.entries.filter(entry =>
+                        harness.completedSteps.includes(entry)
                     );
-                    Object.assign(result, { status: 'passed', ...proof });
+                    assert.deepEqual(
+                        entries,
+                        feature.entries,
+                        'Feature did not successfully execute every catalog entry step'
+                    );
+                    Object.assign(result, {
+                        status: 'passed',
+                        observations: proof.observations,
+                        entries,
+                    });
                 } catch (error) {
                     failed = true;
                     if (!interrupted) await harness.captureOpenPages('failure-state');
@@ -480,6 +524,7 @@ const runFeatures = async (
                     console.log(
                         `${feature.id}: ${result.status}${firstLine ? ` — ${firstLine}` : ''}`
                     );
+                    if (values.json) writeEvent({ event: 'feature', runId, ...result });
                 }
             }
             assert(!interrupted, 'Verification interrupted');
@@ -530,6 +575,29 @@ const runFeatures = async (
                     `This run did not stop the stack. If needed: lc verify down --dir ${directory}`
                 );
         }
+        if (values.json)
+            writeEvent({
+                event: 'result',
+                command,
+                runId,
+                status: interrupted
+                    ? 'interrupted'
+                    : failed || cleanupErrors.length
+                      ? 'failed'
+                      : 'passed',
+                directory,
+                artifacts: command === 'run' ? artifacts : undefined,
+                stackStopped: teardown && cleanupErrors.length === 0,
+                ready,
+                results,
+                error:
+                    failure instanceof Error
+                        ? failure.message
+                        : failure === undefined
+                          ? undefined
+                          : String(failure),
+                cleanupErrors: cleanupErrors.length ? cleanupErrors.map(String) : undefined,
+            });
     }
     if (cleanupErrors.length) {
         throw new AggregateError(
@@ -551,6 +619,9 @@ export const runVerificationCli = async (args: string[]): Promise<void> => {
         options: {
             dir: { type: 'string' },
             keep: { type: 'boolean' },
+            fresh: { type: 'boolean' },
+            force: { type: 'boolean' },
+            preflight: { type: 'boolean' },
             headed: { type: 'boolean' },
             video: { type: 'boolean' },
             session: { type: 'string' },
@@ -574,26 +645,58 @@ export const runVerificationCli = async (args: string[]): Promise<void> => {
             entries,
             ...(requires && { requires }),
         }));
-        if (values.json) return console.log(JSON.stringify(rows, null, 2));
+        if (values.json) return void process.stdout.write(`${JSON.stringify(rows)}\n`);
         for (const row of rows) {
             console.log(`${row.id.padEnd(14)} ${row.surface.padEnd(14)} ${row.title}`);
             console.log(`${''.padEnd(30)}${row.entries.join(', ')}`);
         }
         return;
     }
-    const known = ['up', 'doctor', 'run', 'browser', 'down', 'script', 'learncard', 'db', 'logs'];
+    const known = [
+        'prepare',
+        'up',
+        'doctor',
+        'run',
+        'browser',
+        'down',
+        'script',
+        'learncard',
+        'db',
+        'logs',
+    ];
     assert(known.includes(command), `Unknown verification command: ${command}; see lc verify help`);
-    if (command !== 'run') assert(values.dir, `${command} requires --dir`);
+    assert(!values.fresh || command === 'run', '--fresh is only supported by run');
+    assert(!values.force || command === 'down', '--force is only supported by down');
+    assert(!values.preflight || command === 'doctor', '--preflight is only supported by doctor');
     // `bun run --cwd …` hides the caller's directory, so a relative --dir would be ambiguous.
     assert(!values.dir || isAbsolute(values.dir), `--dir must be an absolute path: ${values.dir}`);
+    if (values.preflight) {
+        const result = await preflightVerification(values.dir);
+        if (values.json) writeEvent({ event: 'result', command: 'preflight', ...result });
+        else console.log(JSON.stringify(result, null, 2));
+        return;
+    }
+    if (command !== 'run') assert(values.dir, `${command} requires --dir`);
     const directory = values.dir ? resolve(values.dir) : join(DEFAULT_ROOT, newRunId());
 
     switch (command) {
-        case 'doctor':
-            return console.log(JSON.stringify(await doctor(directory), null, 2));
+        case 'prepare':
+            await prepareVerification(directory);
+            if (values.json)
+                writeEvent({ event: 'result', command, status: 'prepared', directory });
+            else console.log(`Prepared verification artifacts at ${directory}`);
+            return;
+        case 'doctor': {
+            const result = await doctor(directory);
+            if (values.json) writeEvent({ event: 'result', command, ...result });
+            else console.log(JSON.stringify(result, null, 2));
+            return;
+        }
         case 'down':
-            await stopStack(directory);
-            return console.log(`Stopped owned stack; evidence retained at ${directory}`);
+            await stopStack(directory, { force: values.force });
+            if (values.json) writeEvent({ event: 'result', command, status: 'stopped', directory });
+            else console.log(`Stopped owned stack; evidence retained at ${directory}`);
+            return;
         case 'browser':
             return runBrowser(directory, values);
         case 'script':
@@ -614,7 +717,12 @@ export const runVerificationCli = async (args: string[]): Promise<void> => {
             process.on('SIGTERM', onSignal);
             let transcript;
             try {
-                transcript = await runLearnCardCli(passthrough, workdir, transcriptPath);
+                transcript = await runLearnCardCli(
+                    passthrough,
+                    workdir,
+                    transcriptPath,
+                    await readStackEndpoints(directory)
+                );
             } finally {
                 process.removeListener('SIGINT', onSignal);
                 process.removeListener('SIGTERM', onSignal);

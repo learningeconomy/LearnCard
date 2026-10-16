@@ -20,7 +20,7 @@ Preconditions:
 
 - **Run.** `$LCV run sharing --dir /tmp/lcv` → `sharing: passed`; observations record `linkFormat` and the issuer.
 - **Earn something.** Self-issue a badge as in [credentials](credentials.md) and open its detail.
-- **Copy.** `getByRole('dialog').getByRole('button', { name: 'More options' })` → **Share** → **Copy Link**. `navigator.clipboard.readText()` returns a URL whose host is `localhost:3000`, path `/share-boost`, with `uri`, `seed` and `pin` all present.
+- **Copy.** `getByRole('dialog').getByRole('button', { name: 'More options' })` → **Share** → **Copy Link**. `navigator.clipboard.readText()` returns a URL whose host matches the allocated app host in `v.stack.app`, path `/share-boost`, with `uri`, `seed` and `pin` all present.
 - **View anonymously.** A new context (no session) opens the same URL with `https:` → `http:`. **Login** is visible, plus the title and the matching issuer. Reload and the result is the same.
 
 ## Gotchas

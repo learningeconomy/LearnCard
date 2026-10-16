@@ -62,7 +62,6 @@ export const contactsFeature: FeatureDefinition = {
             expect(connections.map(profile => profile.profileId)).toContain(recipient.profileId);
         });
         return {
-            entries: ['contacts-search', 'contacts-request', 'contacts-accept', 'contacts-mutual'],
             observations: { requester: learner.profileId, accepter: recipient.profileId },
         };
     },

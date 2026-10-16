@@ -12,7 +12,7 @@ A partner defines a data-sharing contract. A learner reviews exactly what's requ
 
 ## How to get to it (user POV)
 
-- A partner site links to `https://learncard.app/consent-flow?uri=<contractUri>&returnTo=…` (local: `http://localhost:3000/consent-flow?uri=…`).
+- A partner site links to `https://learncard.app/consent-flow?uri=<contractUri>&returnTo=…`; verification uses the allocated app origin from `doctor` with the same route.
 - In-app: Apps (`/launchpad?uri=<contractUri>`) opens the same consent screen.
 
 ## Driving it with lc verify

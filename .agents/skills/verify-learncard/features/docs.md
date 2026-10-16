@@ -5,7 +5,7 @@ The docs promise that `docs/quick-start/your-first-integration.md`'s code sends 
 ## Sub-features
 
 - `docs-snippets-in-sync`: `node scripts/check-docs-snippets.mjs` → `all in sync`.
-- `docs-quickstart-send`: `docs/snippets/quickstart/send.mjs` with only `network: true` → `network: 'http://localhost:4000/trpc'` exits 0 and prints `Delivered.` plus `Reusable template for this badge: lc:network:localhost%3A4000…`.
+- `docs-quickstart-send`: `docs/snippets/quickstart/send.mjs` with both Brain and LearnCloud pinned to this directory's endpoints exits 0 and prints `Delivered.` plus a reusable template URI on the allocated local Brain.
 - `docs-quickstart-received`: the recipient wallet's incoming credentials include "Quickstart Complete".
 
 ## How to get to it (user POV)
@@ -19,7 +19,7 @@ Preconditions:
 - Doctor ok.
 
 - **Run.** `$LCV run docs --dir /tmp/lcv` → passed; `NNN-docs-quickstart-run.json` holds stdout and stderr.
-- **Other snippets.** Run them the same way from a script: copy into `apps/learn-card-app/scripts/verification/.scratch/` (gitignored, so `@learncard/init` resolves), localize only the network host, and run with `--conditions=development`. ConsentFlow snippets are already exercised by [consent-flow](consent-flow.md).
+- **Other snippets.** Run them the same way from a script: copy into `apps/learn-card-app/scripts/verification/.scratch/` (gitignored, so `@learncard/init` resolves), explicitly pin **both** `network: v.stack.brain` and `cloud: { url: v.stack.cloud }`, and run with `--conditions=development`. Rewriting only `network: true` leaves the default production LearnCloud reachable outside browser routing. ConsentFlow snippets are already exercised by [consent-flow](consent-flow.md).
 
 ## Gotchas
 

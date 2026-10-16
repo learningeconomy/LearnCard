@@ -5,6 +5,28 @@ import type { VerificationLearnCard } from './sdk';
 /** Where a journey's user stands: the web app, the SDK, the `learncard` CLI, or several at once. */
 export type VerificationSurface = 'web' | 'sdk' | 'cli' | 'cross-surface' | 'docs';
 
+/** Allocated per owned stack; no verification listener occupies the developer stack's ports. */
+export interface VerificationPorts {
+    app: number;
+    brain: number;
+    cloud: number;
+    api: number;
+    neo4j: number;
+    mongo: number;
+    partner: number;
+}
+
+export interface StackEndpoints {
+    ports: VerificationPorts;
+    app: string;
+    brain: string;
+    brainApi: string;
+    cloud: string;
+    lcaApi: string;
+    brainDid: string;
+    partner: string;
+}
+
 export interface VerificationActor {
     role: string;
     seed: string;
@@ -34,6 +56,8 @@ export interface SignInOptions {
 
 export interface VerificationContext {
     baseUrl: string;
+    stack: StackEndpoints;
+    stackDirectory: string;
     artifactsDir: string;
     runId: string;
     browser: Browser;
@@ -50,7 +74,7 @@ export interface VerificationContext {
     /** A real network LearnCard (checkout source) for this actor; creates its profile if absent. */
     sdk: (actor: VerificationActor) => Promise<VerificationLearnCard>;
     /** Screenshot + accessibility snapshot before/after an action; failures are captured too. */
-    step: <T>(page: Page, label: string, action: () => Promise<T>) => Promise<T>;
+    step: <T>(page: Page | null, label: string, action: () => Promise<T>) => Promise<T>;
     /** Screenshot + accessibility snapshot of the current state. */
     capture: (page: Page, label: string) => Promise<void>;
     /** Read-only corroboration of side effects in the owned databases. */
@@ -63,7 +87,6 @@ export interface VerificationContext {
 }
 
 export interface FeatureResult {
-    entries: string[];
     observations: Record<string, unknown>;
 }
 

@@ -6,13 +6,12 @@ import { pathToFileURL } from 'node:url';
 import { expect } from './expect';
 import { runLearnCardCli } from './learncard-cli';
 import type { CliTranscript } from './learncard-cli';
-import { REPO_ROOT, STACK } from './constants';
+import { REPO_ROOT } from './constants';
 import type { VerificationContext } from './types';
 
 /** Everything an ad-hoc verification script can use. Scripts need no imports of their own. */
 export interface ScriptContext extends VerificationContext {
     expect: typeof expect;
-    stack: typeof STACK;
     /** Run the checkout's `learncard` CLI against the owned network in a named workdir. */
     cli: (args: string[], workdir?: string) => Promise<CliTranscript>;
     /** Alias of `inspect`: read-only Neo4j/Mongo corroboration. */
@@ -59,12 +58,12 @@ export const createScriptContext = (
     return {
         ...context,
         expect,
-        stack: STACK,
         cli: (args, workdir = 'default') =>
             runLearnCardCli(
                 args,
                 join(directory, 'cli', workdir.replace(/[^\w-]/g, '-')),
-                join(directory, `cli-${String(++cliCalls).padStart(2, '0')}.json`)
+                join(directory, `cli-${String(++cliCalls).padStart(2, '0')}.json`),
+                context.stack
             ),
         db: context.inspect,
     };

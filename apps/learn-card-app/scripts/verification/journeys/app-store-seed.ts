@@ -8,9 +8,9 @@ import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import { REPO_ROOT } from '../constants';
+import { registerAuxiliaryProcess, stopAuxiliaryProcess } from '../stack';
 import type { VerificationContext } from '../types';
 
-const APP_ORIGIN = 'http://localhost:4321';
 const MIN_NODE = [22, 12];
 
 /**
@@ -20,7 +20,10 @@ const MIN_NODE = [22, 12];
 const resolveNode = (): string => {
     const candidates = [process.env.LC_VERIFY_NODE, 'node'].filter(Boolean) as string[];
     for (const candidate of candidates) {
-        const result = spawnSync(candidate, ['--version'], { encoding: 'utf8' });
+        const result = spawnSync(candidate, ['--version'], {
+            encoding: 'utf8',
+            env: { NODE_ENV: 'development', PATH: process.env.PATH },
+        });
         const [major = 0, minor = 0] = (result.stdout ?? '')
             .replace(/^v/, '')
             .split('.')
@@ -35,12 +38,18 @@ const resolveNode = (): string => {
 };
 
 type Exit = { code: number | null; error?: Error };
-type OwnedChild = { child: ChildProcess; exited: Promise<Exit>; log: FileHandle };
+type OwnedChild = {
+    child: ChildProcess;
+    exited: Promise<Exit>;
+    log: FileHandle;
+    stackDirectory: string;
+};
 
 export interface VerificationListing {
     listingId: string;
     displayName: string;
     appUrl: string;
+    issuerDid: string;
     stop: () => Promise<void>;
 }
 
@@ -49,51 +58,64 @@ const startChild = async (
     args: string[],
     cwd: string,
     env: NodeJS.ProcessEnv,
-    logPath: string
+    logPath: string,
+    stackDirectory: string
 ): Promise<OwnedChild> => {
     const log = await open(logPath, 'wx', 0o600);
+    let child: ChildProcess;
     try {
-        const child = spawn(command, args, { cwd, env, stdio: ['ignore', log.fd, log.fd] });
-        const exited = new Promise<Exit>(resolveExit => {
-            child.once('error', error => resolveExit({ code: null, error }));
-            child.once('exit', code => resolveExit({ code }));
+        child = spawn(command, args, {
+            cwd,
+            env,
+            detached: true,
+            stdio: ['ignore', log.fd, log.fd],
         });
-        return { child, exited, log };
     } catch (error) {
+        await log.close();
+        throw error;
+    }
+    const exited = new Promise<Exit>(resolveExit => {
+        child.once('error', error => resolveExit({ code: null, error }));
+        child.once('exit', code => resolveExit({ code }));
+    });
+    try {
+        await new Promise<void>((resolveSpawn, reject) => {
+            child.once('spawn', resolveSpawn);
+            child.once('error', reject);
+        });
+        await registerAuxiliaryProcess(stackDirectory, child.pid!);
+        return { child, exited, log, stackDirectory };
+    } catch (error) {
+        if (child.pid && child.exitCode === null && child.signalCode === null) {
+            child.kill('SIGKILL');
+        }
+        await exited;
         await log.close();
         throw error;
     }
 };
 
-const stopChild = async ({ child, exited, log }: OwnedChild): Promise<void> => {
+const stopChild = async ({ child, exited, log, stackDirectory }: OwnedChild): Promise<void> => {
     try {
-        if (child.pid && child.exitCode === null && child.signalCode === null) {
-            // Signal only the child created here, never a process group or a port's owner.
-            child.kill('SIGTERM');
-            const stopped = await Promise.race([
-                exited.then(() => true),
-                delay(5_000, false, { ref: false }),
-            ]);
-            if (!stopped) child.kill('SIGKILL');
-        }
+        if (child.pid) await stopAuxiliaryProcess(stackDirectory, child.pid);
         await exited;
     } finally {
         await log.close();
     }
 };
 
-const assertPortFree = async (): Promise<void> => {
+const assertPortFree = async (port: number, host: string): Promise<void> => {
     const server = createServer();
     await new Promise<void>((resolveListen, reject) => {
         server.once('error', reject);
-        server.listen(4321, 'localhost', () => resolveListen());
+        server.listen(port, host, () => resolveListen());
     });
     await new Promise<void>((resolveClose, reject) => {
         server.close(error => (error ? reject(error) : resolveClose()));
     });
 };
 
-const awaitApp = async (owned: OwnedChild): Promise<void> => {
+const awaitApp = async (owned: OwnedChild, appOrigin: string): Promise<void> => {
     let exit: Exit | undefined;
     void owned.exited.then(result => {
         exit = result;
@@ -107,7 +129,7 @@ const awaitApp = async (owned: OwnedChild): Promise<void> => {
             );
         }
         try {
-            const response = await fetch(APP_ORIGIN, { signal: AbortSignal.timeout(5_000) });
+            const response = await fetch(appOrigin, { signal: AbortSignal.timeout(5_000) });
             if (response.ok && (await response.text()).includes('LearnCard Partner App Demo')) {
                 return;
             }
@@ -125,24 +147,28 @@ export const startVerificationListing = async (
     /** Listing title; defaults to a unique run-scoped name. Must be unique per stack. */
     name?: string
 ): Promise<VerificationListing> => {
-    if (new URL(context.baseUrl).origin !== 'http://localhost:3000') {
-        throw new Error(
-            'App-store verification is restricted to the run-owned localhost:3000 stack'
-        );
-    }
-    await assertPortFree();
+    const { stack, stackDirectory } = context;
+    const appOrigin = stack.partner;
+    await assertPortFree(stack.ports.partner, new URL(appOrigin).hostname);
     const privateEnvDir = resolve(context.artifactsDir, 'app-store-env');
     await mkdir(privateEnvDir, { recursive: true, mode: 0o700 });
     const exampleDir = resolve(REPO_ROOT, 'examples/app-store-apps/1-basic-launchpad-app');
+    const issuer = context.newActor('partner-backend');
+    const issuerDid = (await context.sdk(issuer)).id.did();
     // Use Astro's real dev server directly, keeping the server and its shutdown handler in one PID.
-    // envDir deliberately excludes the example's developer .env files.
+    // Both the Astro config and this override disable developer .env loading.
     const serverScript = `
 import { dev } from 'astro';
 const server = await dev({
     root: process.cwd(),
     envDir: ${JSON.stringify(privateEnvDir)},
-    server: { host: 'localhost', port: 4321 },
-    vite: { server: { strictPort: true } },
+    cacheDir: ${JSON.stringify(resolve(context.artifactsDir, 'app-store-cache'))},
+    server: { host: ${JSON.stringify(new URL(appOrigin).hostname)}, port: ${stack.ports.partner} },
+    vite: {
+        envDir: false,
+        cacheDir: ${JSON.stringify(resolve(context.artifactsDir, 'app-store-vite-cache'))},
+        server: { strictPort: true },
+    },
 });
 let stopping = false;
 const stop = async () => {
@@ -158,11 +184,22 @@ process.on('SIGINT', stop);
         resolveNode(),
         ['--input-type=module', '--eval', serverScript],
         exampleDir,
-        { ...process.env, NODE_ENV: 'development', PUBLIC_LEARNCARD_ORIGIN: context.baseUrl },
-        resolve(context.artifactsDir, 'app-store-app.log')
+        {
+            PATH: process.env.PATH,
+            HOME: privateEnvDir,
+            NODE_ENV: 'development',
+            ASTRO_TELEMETRY_DISABLED: '1',
+            LC_VERIFICATION: '1',
+            PUBLIC_LEARNCARD_ORIGIN: stack.app,
+            LEARNCARD_NETWORK_URL: stack.brain,
+            LEARNCARD_CLOUD_URL: stack.cloud,
+            LEARNCARD_ISSUER_SEED: issuer.seed,
+        },
+        resolve(context.artifactsDir, 'app-store-app.log'),
+        stackDirectory
     );
     try {
-        await awaitApp(app);
+        await awaitApp(app, appOrigin);
         const suffix = randomUUID().slice(0, 12);
         const slug = `lc-verify-${suffix}`;
         const displayName = name ?? `LC Verify ${context.runId} ${suffix}`;
@@ -170,13 +207,14 @@ process.on('SIGINT', stop);
         const seed = await startChild(
             'bun',
             [
+                '--no-env-file',
                 'run',
                 resolve(
                     REPO_ROOT,
                     'services/learn-card-network/brain-service/scripts/seed-dev-app.ts'
                 ),
                 '--app-url',
-                APP_ORIGIN,
+                appOrigin,
                 '--app-name',
                 displayName,
                 '--slug',
@@ -184,7 +222,7 @@ process.on('SIGINT', stop);
                 '--profile',
                 slug,
                 '--app-image',
-                `${APP_ORIGIN}/favicon.svg`,
+                `${appOrigin}/favicon.svg`,
                 '--permissions',
                 'request_identity',
                 '--launch-type',
@@ -192,21 +230,22 @@ process.on('SIGINT', stop);
                 '--promotion',
                 'STANDARD',
                 '--sa-endpoint',
-                'http://localhost:5100/api',
+                new URL('/api', stack.lcaApi).href,
             ],
             privateEnvDir,
             {
-                ...process.env,
-                NEO4J_URI: 'bolt://localhost:7687',
+                NODE_ENV: 'development',
+                PATH: process.env.PATH,
+                HOME: privateEnvDir,
+                NEO4J_URI: `bolt://${new URL(stack.brain).hostname}:${stack.ports.neo4j}`,
                 NEO4J_USERNAME: 'neo4j',
                 NEO4J_PASSWORD: 'this-is-the-password',
-                MONGO_URI: 'mongodb://localhost:27017/?replicaSet=rs0',
+                MONGO_URI: `mongodb://${new URL(stack.cloud).hostname}:${stack.ports.mongo}/?replicaSet=rs0&directConnection=true`,
                 MONGO_DB_NAME: 'lca-api',
-                REDIS_HOST: 'localhost',
-                REDIS_PORT: '6379',
-                DOMAIN_NAME: 'localhost%3A4000',
+                DOMAIN_NAME: encodeURIComponent(new URL(stack.brain).host),
             },
-            seedLog
+            seedLog,
+            stackDirectory
         );
         try {
             const result = await Promise.race([
@@ -238,7 +277,8 @@ process.on('SIGINT', stop);
                     listingId,
                     slug,
                     displayName,
-                    appUrl: APP_ORIGIN,
+                    appUrl: appOrigin,
+                    issuerDid,
                     childPid: app.child.pid,
                     permissions: ['request_identity'],
                 },
@@ -247,7 +287,7 @@ process.on('SIGINT', stop);
             ),
             { mode: 0o600 }
         );
-        return { listingId, displayName, appUrl: APP_ORIGIN, stop: () => stopChild(app) };
+        return { listingId, displayName, appUrl: appOrigin, issuerDid, stop: () => stopChild(app) };
     } catch (error) {
         await stopChild(app);
         throw error;

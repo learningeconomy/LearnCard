@@ -5,7 +5,8 @@ import { dirname, join } from 'node:path';
 import type { Browser, BrowserContext, Page } from '@playwright/test';
 
 import { expect } from './expect';
-import { DIDKIT_WASM_PATH, STACK } from './constants';
+import { DIDKIT_WASM_PATH } from './constants';
+import { readStackEndpoints } from './stack';
 import type { VerificationLearnCard } from './sdk';
 import { getVerificationProfile } from './sdk';
 import { queryMongo, queryNeo4j } from './inspect';
@@ -15,22 +16,13 @@ import type {
     SignInOptions,
     VerificationActor,
     VerificationContext,
+    StackEndpoints,
 } from './types';
 
-export const BASE_URL = STACK.app;
 export const WALLET = /\/wallet(?:[?#]|$)/;
 /** First render in a fresh browser context against the Vite dev server. */
 export const FIRST_LOAD_TIMEOUT = 120_000;
 
-/** Owned local services. Anything else is blocked and recorded, never silently proxied. */
-const OWNED_ORIGINS: Record<string, true> = {
-    'http://localhost:3000': true,
-    'http://localhost:4000': true,
-    'http://localhost:4100': true,
-    'http://localhost:5100': true,
-    // The app-store journey's real Partner Connect example app.
-    'http://localhost:4321': true,
-};
 /** Read-only static hosts (fonts, JSON-LD contexts, images) the real app depends on. */
 const STATIC_HOSTS: Record<string, true> = {
     'cdn.jsdelivr.net': true,
@@ -88,15 +80,21 @@ export const createActor = (runId: string, role: string): VerificationActor => {
  */
 export const configureContext = async (
     context: BrowserContext,
-    network: NetworkRecord[]
+    network: NetworkRecord[],
+    stack: StackEndpoints
 ): Promise<void> => {
     context.setDefaultTimeout(30_000);
     context.setDefaultNavigationTimeout(120_000);
     const wasm = await readFile(DIDKIT_WASM_PATH);
+    const ownedOrigins = new Set(
+        [stack.app, stack.brain, stack.cloud, stack.lcaApi, stack.partner].map(
+            endpoint => new URL(endpoint).origin
+        )
+    );
     // The app origin is owned and serves ~3k unbundled dev modules per page load. Excluding it
     // in a RegExp (matched browser-side) keeps those requests off this process's event loop,
     // which may be busy with SDK cryptography; everything cross-origin is still policed.
-    const appOrigin = BASE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const appOrigin = stack.app.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     await context.route(new RegExp(`^(?!${appOrigin}/)`), async route => {
         const request = route.request();
         const url = new URL(request.url());
@@ -106,7 +104,7 @@ export const configureContext = async (
             return;
         }
         const allowed =
-            OWNED_ORIGINS[url.origin] === true ||
+            ownedOrigins.has(url.origin) ||
             (url.protocol === 'https:' &&
                 STATIC_HOSTS[url.hostname] === true &&
                 ['GET', 'HEAD'].includes(request.method()));
@@ -116,7 +114,7 @@ export const configureContext = async (
     });
     await context.routeWebSocket(/.*/, socket => {
         const url = new URL(socket.url());
-        const allowed = OWNED_ORIGINS[`http://${url.host}`] === true;
+        const allowed = url.protocol === 'ws:' && ownedOrigins.has(`http://${url.host}`);
         network.push({ method: 'WEBSOCKET', url: url.origin + url.pathname, allowed });
         if (allowed) socket.connectToServer();
         else socket.close();
@@ -156,13 +154,14 @@ interface ManagedContext {
 
 export interface HarnessOptions {
     /** The owned stack directory, for read-only database inspection. */
-    stackDirectory?: string;
+    stackDirectory: string;
     /** Record WebM video for every context (evidence for PRs, footage for demos). */
     video?: boolean;
 }
 
 export interface VerificationHarness {
     context: VerificationContext;
+    readonly completedSteps: readonly string[];
     /** Screenshot every open page; call on failure so the final state is always evidence. */
     captureOpenPages: (label: string) => Promise<void>;
     close: () => Promise<void>;
@@ -176,8 +175,10 @@ export const createHarness = async (
     browser: Browser,
     directory: string,
     runId: string,
-    options: HarnessOptions = {}
+    options: HarnessOptions
 ): Promise<VerificationHarness> => {
+    const stack = await readStackEndpoints(options.stackDirectory);
+    const completedSteps: string[] = [];
     const managed: ManagedContext[] = [];
     const actions: Array<Record<string, unknown>> = [];
     const wallets = new Map<string, Promise<VerificationLearnCard>>();
@@ -185,11 +186,6 @@ export const createHarness = async (
     let sequence = 0;
     await mkdir(directory, { recursive: true, mode: 0o700 });
     let closing: Promise<void> | undefined;
-    const requireStackDirectory = (): string => {
-        if (!options.stackDirectory)
-            throw new Error('Database inspection needs the stack directory');
-        return options.stackDirectory;
-    };
 
     const capture = async (page: Page, label: string): Promise<void> => {
         const name = `${String(++sequence).padStart(3, '0')}-${safeName(label)}`;
@@ -207,7 +203,9 @@ export const createHarness = async (
     };
 
     const context: VerificationContext = {
-        baseUrl: BASE_URL,
+        baseUrl: stack.app,
+        stack,
+        stackDirectory: options.stackDirectory,
         artifactsDir: directory,
         runId,
         browser,
@@ -223,7 +221,7 @@ export const createHarness = async (
             const video = contextOptions.video ?? options.video;
             const entry: ManagedContext = {
                 context: await browser.newContext({
-                    baseURL: BASE_URL,
+                    baseURL: stack.app,
                     locale: 'en-US',
                     viewport: { width: 1440, height: 1000 },
                     serviceWorkers: 'block',
@@ -239,7 +237,7 @@ export const createHarness = async (
                 errors: [],
             };
             managed.push(entry);
-            await configureContext(entry.context, entry.network);
+            await configureContext(entry.context, entry.network, stack);
             entry.context.on('page', page =>
                 page.on('pageerror', error => entry.errors.push(error.message))
             );
@@ -267,7 +265,12 @@ export const createHarness = async (
         sdk: actor => {
             let wallet = wallets.get(actor.seed);
             if (!wallet) {
-                wallet = getVerificationProfile(actor.profileId, actor.displayName, actor.seed);
+                wallet = getVerificationProfile(
+                    stack,
+                    actor.profileId,
+                    actor.displayName,
+                    actor.seed
+                );
                 wallets.set(actor.seed, wallet);
             }
             return wallet;
@@ -275,11 +278,11 @@ export const createHarness = async (
         capture,
         inspect: {
             neo4j: async cypher => {
-                return queryNeo4j(requireStackDirectory(), cypher);
+                return queryNeo4j(options.stackDirectory, cypher);
             },
             mongo: async (database, collection, filter = {}) => {
                 return queryMongo(
-                    requireStackDirectory(),
+                    options.stackDirectory,
                     database,
                     collection,
                     JSON.stringify(filter)
@@ -298,30 +301,32 @@ export const createHarness = async (
             const record: Record<string, unknown> = {
                 label,
                 startedAt: new Date().toISOString(),
-                url: page.url(),
+                url: page?.url(),
             };
             actions.push(record);
-            await capture(page, `${label}-before`);
+            if (page) await capture(page, `${label}-before`);
             try {
                 const result = await action();
                 record.status = 'passed';
-                await capture(page, `${label}-after`);
+                if (page) await capture(page, `${label}-after`);
                 return result;
             } catch (error) {
                 record.status = 'failed';
                 record.error = String(error);
-                await capture(page, `${label}-failure`).catch(() => {});
+                if (page) await capture(page, `${label}-failure`).catch(() => {});
                 throw error;
             } finally {
                 record.finishedAt = new Date().toISOString();
-                record.url = page.url();
+                record.url = page?.url();
                 await saveJson(join(directory, 'actions.json'), actions);
+                if (record.status === 'passed') completedSteps.push(label);
             }
         },
     };
 
     return {
         context,
+        completedSteps,
         captureOpenPages: async label => {
             for (const entry of managed) {
                 for (const page of entry.context.pages()) {

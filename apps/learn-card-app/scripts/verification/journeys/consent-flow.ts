@@ -3,7 +3,6 @@ import { ConsentFlowContractDataForDidValidator, VCValidator } from '@learncard/
 
 import { readUserData } from '../../../../../docs/snippets/consentflow/read-user-data.mjs';
 import { issueThroughContract } from '../../../../../docs/snippets/consentflow/issue-through-contract.mjs';
-import { STACK } from '../constants';
 import { expect } from '../expect';
 import type { FeatureDefinition } from '../types';
 import { boostTemplate } from './sdk';
@@ -28,7 +27,8 @@ export const consentFlowFeature: FeatureDefinition = {
         const achievementName = `Consent Achievement ${suffix}`;
         const partner = await context.sdk(issuer);
         const learnerLc = await context.sdk(learner);
-        const learnerDid = `${STACK.brainDid}:users:${learner.profileId}`;
+        const learnerDid = `${context.stack.brainDid}:users:${learner.profileId}`;
+        const networkPrefix = `lc:network:${encodeURIComponent(new URL(context.stack.brain).host)}/trpc:`;
 
         // Seed only the input credential. Selecting and publishing it must happen in the UI.
         const template = boostTemplate(partner.id.did(), achievementName);
@@ -52,24 +52,28 @@ export const consentFlowFeature: FeatureDefinition = {
             category: 'Achievement',
         });
 
-        // Same terms as docs/snippets/consentflow/create-contract.mjs (minus its https redirect).
-        const contractUri = await partner.invoke.createContract({
-            name,
-            subtitle: 'Receive a verification badge',
-            description:
-                'Allow us to read your name and selected achievement, and send an achievement.',
-            contract: {
-                read: {
-                    personal: { Name: { required: false } },
-                    credentials: { categories: { Achievement: { required: false } } },
+        const contractUri = await context.step(null, 'consent-partner-contract', async () => {
+            // Same terms as the docs create-contract snippet, without its external redirect.
+            const uri = await partner.invoke.createContract({
+                name,
+                subtitle: 'Receive a verification badge',
+                description:
+                    'Allow us to read your name and selected achievement, and send an achievement.',
+                contract: {
+                    read: {
+                        personal: { Name: { required: false } },
+                        credentials: { categories: { Achievement: { required: false } } },
+                    },
+                    write: {
+                        personal: {},
+                        credentials: { categories: { Achievement: { required: true } } },
+                    },
                 },
-                write: {
-                    personal: {},
-                    credentials: { categories: { Achievement: { required: true } } },
-                },
-            },
+            });
+            expect(uri.startsWith(networkPrefix)).toBe(true);
+            expect(await partner.invoke.verifyConsent(uri, learner.profileId)).toBe(false);
+            return uri;
         });
-        expect(await partner.invoke.verifyConsent(contractUri, learner.profileId)).toBe(false);
 
         const page = await context.newPage('consent-learner', { signInAs: learner });
         await context.step(page, 'consent-personal-data', async () => {
@@ -196,7 +200,7 @@ export const consentFlowFeature: FeatureDefinition = {
         });
         const issued = await context.step(page, 'consent-partner-issues', async () => {
             const uri = await issueThroughContract(partner, learnerDid, contractUri);
-            expect(uri).toMatch(/^lc:network:localhost%3A4000\/trpc:/);
+            expect(uri.startsWith(networkPrefix)).toBe(true);
             // The learner's own wallet holds the credential the partner wrote through consent.
             await expect
                 .poll(
@@ -220,7 +224,7 @@ export const consentFlowFeature: FeatureDefinition = {
                     },
                 },
             });
-            expect(delivered.boostId).toMatch(/^lc:network:localhost%3A4000\/trpc:boost:/);
+            expect(delivered.boostId).toContain(`${networkPrefix}boost:`);
             const verification = await learnerLc.invoke.verifyCredential(delivered);
             expect(verification.errors).toEqual([]);
             expect(verification.checks).toContain('proof');
@@ -228,13 +232,6 @@ export const consentFlowFeature: FeatureDefinition = {
         });
 
         return {
-            entries: [
-                'consent-partner-contract',
-                'consent-app-door',
-                'consent-app-accept',
-                'consent-partner-reads',
-                'consent-partner-issues',
-            ],
             observations: {
                 contractUri,
                 partnerProfileId: issuer.profileId,

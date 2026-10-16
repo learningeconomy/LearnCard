@@ -1,6 +1,6 @@
 ---
 name: verify-learncard
-description: Prove LearnCard changes work end to end with `lc verify`, from the web app (Ionic/React) through the SDK (@learncard/init and plugins), the `learncard` CLI, the network services (brain, LearnCloud, LCA API), ConsentFlow, Partner Connect apps, and docs snippets. It starts an owned local stack, drives real user journeys or ad-hoc scripts, and keeps screenshots, traces, CLI transcripts, and DB corroboration. Use it after touching any of those areas, before claiming a fix or feature works, or when asked to verify, QA, smoke-test, or "see it working".
+description: Verify near-ready LearnCard changes across the web app, SDK, CLI, services, ConsentFlow, Partner Connect, and docs using lc verify. Use focused scripts or a reusable browser during development, matching journeys near PR readiness, and the full catalog before marking cross-surface or network-touching work ready. Linux ownership is required; macOS/Windows developers can use the secret-free hosted Linux workflow.
 ---
 
 # Verify LearnCard with `lc verify`
@@ -15,6 +15,8 @@ LCV="bun run --cwd apps/learn-card-app lc verify"   # or: cd apps/learn-card-app
 
 ## Pick the right tool
 
+Use focused unit/mock tests in the edit loop. When you need real-stack feedback, retain one owned stack and run a small `script`, or attach your Playwright/CDP client to `browser` and reuse the signed-in page. There is no attach-action CLI or speed flag: use the existing browser client. Run the matching catalog journey when a PR is close; run `all` before marking cross-surface or network-touching work ready. Report exactly what ran, not hypothetical coverage.
+
 | You changed…                                                  | Run this                                                                                                                                   |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | App UI, routing, i18n, wallet, sharing, contacts, app store   | the matching web feature (`account`, `language`, `credentials`, `sharing`, `contacts`, `app-store`), then `script` for anything unscripted |
@@ -25,33 +27,52 @@ LCV="bun run --cwd apps/learn-card-app lc verify"   # or: cd apps/learn-card-app
 | Partner Connect SDK or `examples/app-store-apps`              | `run app-store`                                                                                                                            |
 | Anything not in the catalog                                   | `script` (below). Never stretch a nearby journey to stand in for it.                                                                       |
 
-`run all` runs every catalog feature: about 15 minutes on a warm machine, plus 3 to 6 minutes for a cold Docker build.
+`run all` runs catalog features **serially**: previous runs took about 13–15 minutes, plus several minutes for a cold Docker build. These are observations, not a timing guarantee. Do not parallelize stateful journeys within one harness or add a fictional `--serial` switch.
 
 ## Launch
 
-Prerequisites: Linux (`/proc`), Docker Engine with Compose v2 on a **local** Unix socket, `bun install --frozen-lockfile` done, Playwright Chromium (`bunx playwright install chromium`), and the ports below free. The `app-store` journey also needs **Node ≥ 22.12** for Astro (the repo pins 24.12 in `.nvmrc`). If an older system `node` comes first on PATH, set `LC_VERIFY_NODE=/path/to/node24`.
+Prerequisites: **Linux** with `/proc` and util-linux `flock` (crash-safe per-directory teardown locking), the repo-pinned Bun (`package.json#packageManager`) and Node (`.nvmrc`, Node 24.12–24.x), `bun install --frozen-lockfile`, Docker Engine with Compose v2, and Playwright Chromium. Install Chromium with `bunx playwright install chromium`; on a Linux sandbox missing OS libraries, an administrator can run `bunx playwright install --with-deps chromium`. Preflight checks that Chromium can launch its version command and reports missing shared libraries; the verifier never installs privileged OS packages itself. If another Node comes first on PATH, set `LC_VERIFY_NODE=/path/to/node24`.
+
+Docker must use the default context and `/var/run/docker.sock` (which may resolve to `/run/docker.sock`). Inspect the daemon configuration and trust its administrator, then set `LC_VERIFY_TRUST_LOCAL_DOCKER=1`. A Unix socket alone does **not** prove that its daemon is local. Remote/custom contexts, Docker endpoint/TLS/config environment overrides, proxy environment overrides, and daemon-reported HTTP(S) proxies are rejected, not silently treated as local.
+
+Recommend **16 GiB RAM**; the reviewer's 8 GiB Ubuntu sandbox used roughly 4–5 GiB of swap during `all`. This is an observation, not a proven minimum. Preflight requires at least 10 GiB free disk; Docker images, workspace dependencies and retained evidence need additional headroom. Use one serial run on smaller hosts rather than multiplying workers.
 
 ```bash
-$LCV up --dir /tmp/lcv              # build + start the owned stack; sign in reusable learner/recipient identities
-$LCV doctor --dir /tmp/lcv          # must print "ok": true and "authenticated": true
+export LC_VERIFY_TRUST_LOCAL_DOCKER=1 # only after inspecting/trusting the local daemon
+$LCV doctor --preflight            # actionable toolchain, Docker, browser, memory/disk checks
+$LCV prepare --dir /tmp/lcv        # generate snippets/private HTML; up also prepares
+$LCV up --dir /tmp/lcv --json      # blocks until ready or failed; machine-readable progress/result
+$LCV doctor --dir /tmp/lcv         # must report "ok": true and "authenticated": true
 ```
 
-`up` is ready when it prints the doctor JSON and `Ready.`. Ready means usable, not just listening: every container is healthy, each service serves its own `did:web` document, the containers resolve each other's DIDs and the notification queue, the frontend answers with this stack's ownership token, and both reusable actors completed real browser sign-in. Doctor then authenticates a fresh protected network request using the saved learner's seed. From empty databases this takes 3 to 6 minutes, mostly the backend image build, which is cached after that.
+`up` blocks until readiness or failure; no `--wait` flag is needed. Ready means usable, not just listening: containers and services are healthy, owned `did:web` documents resolve across services, the frontend answers with this stack's ownership token, and both reusable actors completed real browser sign-in. Doctor then authenticates a fresh protected network request using the saved learner's seed. Startup prepares generated artifacts rather than relying on an earlier `lc dev`.
 
-Fixed ports (local `did:web` identities embed them): **3000** app, **4000** brain, **4100** LearnCloud, **5100** LCA API, **7687** Neo4j, **27017** MongoDB. The `app-store` journey adds **4321**. Startup refuses if any are taken, or if another owned stack holds the lock. It never adopts someone else's dev stack. Stop your `bun run lc dev` / `docker compose up` first, or use another machine.
+Each stack directory owns its **allocated ports**, endpoint configuration, and lock. The app, Brain, LearnCloud, LCA API, Neo4j, MongoDB and partner app ports are stored in `state.json`; use doctor output or `v.stack` rather than assuming 3000/4000/4321. Local `did:web` identities embed the allocated Brain port. Distinct directories can coexist with each other and `lc dev`; verification does not overwrite the dev server's tenant/index configuration or adopt an existing listener. This isolates ports, not RAM or shared checkout edits.
 
-`run` without `--dir` starts a fresh stack in `/tmp/learncard-verification/<id>` and tears it down when it finishes. Use `up` plus `--dir` whenever you'll drive more than once.
+Ports also have user-private, per-port ownership claims under `/tmp/learncard-verification-<uid>-ports/`, held until `down`; this is not a global stack lock. Claims prevent another verifier from allocating a temporarily unbound port, including the partner port before its journey starts. Stale claims are retained conservatively: recover them with ownership-checked teardown of their stack directory, never by deleting claims or adopting listeners. An unrelated process can still steal a released socket during startup handoff; startup must fail rather than adopt it.
+
+`run` without `--dir` creates a fresh stack and tears it down when finished. For a one-shot gate use `$LCV run all --fresh --json --dir /absolute/new/evidence-directory`: `--fresh` refuses reuse, prepares, starts, runs and tears down. `--json` emits machine-readable progress/results; failure exits nonzero. Use `up` plus `--dir` when driving more than once.
 
 For repeated full runs, prefer an absolute `--dir` on persistent storage, such as `"$HOME/.local/share/learncard-verification/review"`. Leave several GiB available for retained traces, logs, and caches; the system temporary filesystem also needs headroom. `/tmp` can hit a per-user quota even when `df` shows free space. `EDQUOT` is a storage failure, not a feature regression: stop the owned stack, preserve or relocate its evidence, and rerun in a fresh directory with capacity. Never delete proof to make a failed run look clean.
 
-### Sharing a live stack between agents
+### macOS, Windows and hosted Linux
 
-One coordinator can run `up --dir /tmp/lcv`, wait for readiness, and lend that exact directory to workers on the **same checkout and backend build**. Workers run doctor, then reuse `--dir` rather than starting another stack:
+Native macOS/Windows process ownership is **not supported**. Use a disposable Linux VM/sandbox with its own trusted local Docker daemon, or the secret-free [LearnCard Verification workflow](../../../.github/workflows/verification.yml). From GitHub Actions choose **LearnCard Verification → Run workflow** and select the branch containing your changes; no production credentials are required. From a checkout with GitHub CLI:
 
 ```bash
-# Worker A
+gh workflow run verification.yml --ref <branch>
+gh run list --workflow verification.yml
+```
+
+The workflow also runs for non-draft PRs touching the covered surfaces, on an ephemeral GitHub-hosted Ubuntu runner, never `pull_request_target` or a privileged self-hosted runner. It installs the pinned toolchain/dependencies/Chromium, prepares, preflights, runs the fresh catalog, and always attempts ownership-checked teardown. Only allowlisted status/count summaries are uploaded; raw reports, logs, sessions, traces and seeds stay off artifacts. Hosted execution is unobserved until a workflow run actually completes; local results are not a hosted-CI pass.
+
+### Sharing a live stack between agents
+
+One coordinator can run `up --dir /tmp/lcv`, wait for readiness, and lend that exact directory to workers on the **same checkout and backend build**. Default to **serial workers**; borrowing a live stack avoids repeated startup without introducing concurrency:
+
+```bash
+$LCV doctor --dir /tmp/lcv
 $LCV run language --dir /tmp/lcv
-# Worker B, concurrently
 $LCV run sdk --dir /tmp/lcv
 ```
 
@@ -59,10 +80,11 @@ Each `run` and `script` gets fresh actors, browser contexts, and a unique eviden
 
 Coordinate the remaining shared resources:
 
-- Serialize `app-store` runs: each owns an Astro server on port 4321.
-- Serialize processes using `learncard`, the `cli` journey, or `v.cli`: they regenerate the same checkout's `packages/learn-card-cli/src/generated/snippets.ts`. Distinct CLI workdirs isolate identities, not this generated file. Standalone `learncard` workers also need distinct `--workdir` names.
+- Serialize `app-store` runs on the same directory: they share that stack's allocated partner port. Separate stack directories have different partner ports.
+- Give standalone `learncard` workers distinct `--workdir` names; a workdir contains a mutable CLI identity. Snippet generation now uses deterministic content and atomic replacement, so it no longer requires its own serialization, but changing shared source during a proof remains unsafe.
 - Interactive `browser` workers need distinct `--cdp-port` values and actor session files. The default saved learner is a shared identity, unlike the fresh actors in `run` / `script`.
 - Keep the checkout unchanged during a proof. Vite serves shared frontend source, while backend containers contain the build from `up`; backend edits require coordinated teardown and a fresh directory/build.
+- Finish Docker stack creation/removal before driving browser workers. Linux interface changes can abort Chromium's in-flight module requests with `ERR_NETWORK_CHANGED`; use separate VMs when lifecycle operations must overlap browser proofs. Already-running stacks still have independent ports and data. Complete workspace builds before driving, too.
 - Use each worker's own report, not stack-level `doctor.json` or `last-error.json`, which may be replaced by another command.
 
 ## Doctor
@@ -83,30 +105,29 @@ $LCV run credentials sharing --dir /tmp/lcv       # selected features on the liv
 $LCV run all --dir /tmp/lcv --video               # every feature, with WebM video per browser context
 ```
 
-Each feature passes only if its journey exercised and asserted **every** entry ID listed in `catalog.ts`. Every run mints fresh actors (random seeds, unique `v-…` profile handles), so reruns on one stack never collide. Add `--headed` to watch.
+Each feature passes only if successful `context.step` executions cover **every** entry ID listed in the catalog. A literal returned entry list is not evidence; failed or interrupted steps do not count. Every run mints fresh actors (random seeds, unique `v-…` profile handles). Add `--headed` to watch. Independent worker processes require explicit coordination of the shared resources above; catalog journeys themselves remain serial.
 
 ### Ad-hoc scripts (anything else)
 
 Write a file that default-exports an async function. It receives `v`, the full harness, and needs no imports:
 
-```ts
-// /tmp/my-check.ts
-export default async (v: any) => {
-    const page = await v.newPage('learner', { signInAs: v.actors.learner }); // real seed sign-in, on /wallet
-    const lc = await v.sdk(v.actors.issuer); // network LearnCard from checkout source, profile created
-    await v.step(page, 'open-skills', async () => {
-        // before/after screenshots + aria snapshots
-        await page.getByRole('link', { name: 'Passport' }).click();
-        await v.expect(page.getByRole('heading', { name: 'Passport' })).toBeVisible();
+```js
+// /tmp/my-check.mjs
+export default async v => {
+    const page = await v.newPage('learner', { signInAs: v.actors.learner });
+    await v.step(page, 'open-passport', async () => {
+        await page.getByRole('link', { name: 'Passport', exact: true }).click();
+        await v.expect(page).toHaveURL(/\/passport/);
     });
-    const sent = await v.cli(['send', v.actors.recipient.profileId, '--yes', '--json']); // learncard CLI
-    const graph = await v.db.neo4j('MATCH (p:Profile) RETURN count(p)'); // read-only
-    return { did: lc.id.did(), cliExit: sent.exitCode, graph }; // saved to report.json
+    const lc = await v.sdk(v.actors.learner);
+    const profile = await lc.invoke.getProfile();
+    v.expect(profile?.profileId).toBe(v.actors.learner.profileId);
+    return { profileId: profile.profileId, route: new URL(page.url()).pathname };
 };
 ```
 
 ```bash
-$LCV script /tmp/my-check.ts --dir /tmp/lcv [--headed] [--video]
+$LCV script /tmp/my-check.mjs --dir /tmp/lcv [--headed] [--video]
 $LCV script -e 'const lc = await v.sdk(v.actors.issuer); return lc.id.did();' --dir /tmp/lcv
 ```
 
@@ -115,6 +136,7 @@ A runnable reference lives at [scripts/example.ts](scripts/example.ts) (`$LCV sc
 - `v.actors.{learner,recipient,issuer}` are fresh per run. `v.newActor('role')` mints more.
 - `v.newPage(label, { signInAs, createProfile: false })` leaves the account profile-less, so you can drive onboarding at `/login`.
 - `v.sdk(actor)` uses the same seed as that actor's browser session, so UI and SDK act as the same person.
+- `v.stack` contains this directory's allocated URLs and ports; never hardcode a localhost port. `v.step(null, 'label', async () => { … })` records SDK/CLI-only assertions without a browser page.
 - On failure, every open page is captured automatically (`NNN-failure-state-*.png`).
 - Return JSON-serializable evidence. Missing modules, invalid exports, non-JSON results, and even `throw null` produce a failed report and nonzero exit status.
 - To promote a script into the catalog, see "Extending" in the feature map.
@@ -130,8 +152,9 @@ $LCV logs --dir /tmp/lcv brain --tail 300                 # frontend | brain | c
 $LCV browser --dir /tmp/lcv --headed                      # signed-in Chromium + CDP on 127.0.0.1:9223
 ```
 
-- `learncard` pins Brain, LearnCloud, and LCA API to the owned stack, overriding shell and workdir service URLs. A provided `--network` must exactly match `http://localhost:4000/trpc`; duplicate overrides are rejected. `open` also pins the app URL. It runs `packages/learn-card-cli/src` under the `development` condition. Each `--workdir` keeps its own CLI identity in `.env`.
-- The production-bound `repl`, cross-network `promote`, webhook receivers/callbacks, and custom signing endpoints are unsupported here. `org apply FILE …` accepts the local hosted signer, not self-hosted signers or webhooks. Use `script` for additional local journeys; don't redirect a missing dependency to production. CLI timeouts return `timedOut: true` and exit 124, never success.
+- `learncard` pins Brain, LearnCloud, and LCA API to the owned stack, overriding shell and workdir service URLs. A provided `--network` must exactly match this directory's Brain endpoint; duplicate overrides are rejected. `open` also pins the allocated app URL. It runs `packages/learn-card-cli/src` under the `development` condition. Each `--workdir` keeps its own CLI identity in `.env`.
+- `verify` is supported through a verify-only child preload that restricts the known DIDKit WASM/dynamic-loader fetch path to the owned HTTP service origins and refuses redirects. A policy violation forces failure even if the CLI catches it. This is **confined verification, not networkless verification or a general OS network sandbox**; ordinary CLI behavior outside this wrapper is unchanged.
+- The production-bound `repl`, `demo` (its SDK initialization cannot be fully pinned), cross-network `promote`, webhook receivers/callbacks, and custom signing endpoints are unsupported here. `org apply FILE …` accepts the local hosted signer, not self-hosted signers or webhooks. Use `script` for additional local journeys; don't redirect a missing dependency to production. CLI timeouts return `timedOut: true` and exit 124, never success.
 - `db` is enforced read-only: Neo4j runs in `--access-mode read`, and Mongo exposes only list and bounded `find`. Use it to corroborate side effects, never to set state.
 - `browser` is for interactive exploration through another tool's CDP client (`chromium.connectOverCDP('http://127.0.0.1:9223')`, then pick the `/wallet` page). It reauthenticates the saved actor through the real developer sign-in UI in a fresh context. Stop it with Ctrl-C, or `kill -INT <pid you started>` when backgrounded; either one saves `manual/<id>/{trace.zip,session.json,network.json}`. Closing Chromium yourself loses the trace. For reproducible proof, prefer `script`.
     - `--session runs/<run>/<feature>/<context>-session.json` reuses that artifact's `verificationActor`, not its browser storage. Contexts signed in with `v.signIn` or `v.newPage({ signInAs })` record this private seed metadata. Anonymous or manually authenticated snapshots without metadata are evidence only.
@@ -164,7 +187,7 @@ Proof standards:
 $LCV down --dir /tmp/lcv
 ```
 
-`down` validates ownership, saves container logs into the directory, removes only the token-labelled containers, volumes, network and image, stops only the recorded frontend PID, and releases the lock. Evidence stays. Fresh `run`s clean up after themselves, even on failure (`--keep` retains a successful one). The `app-store` journey stops its own Astro server. After cleanup, confirm `runs/` and `scripts/` still exist. Never kill by process name or `docker compose down -v` someone else's project. If a run was SIGKILLed, use `down`. Don't guess PIDs. `/tmp` evidence won't survive a reboot, so pass a durable `--dir` if you need it longer.
+`down` validates ownership, saves container logs into the directory, removes only token-owned Docker resources, and stops only the recorded frontend and registered auxiliary process identities. Evidence stays. Fresh `run`s clean up after themselves, even on failure (`--keep` retains a successful non-fresh run). The `app-store` journey normally stops its own Astro server; registered ownership lets teardown recover it after a crash. Never kill by process name or run `docker compose down -v` on someone else's project. After a crash use `down --dir /tmp/lcv`; for a hung startup use `down --force --dir /tmp/lcv`. **Force does not bypass ownership checks** or authorize stopping active workers; coordinate first. `/tmp` evidence will not survive a reboot.
 
 If execution and teardown both fail, the command fails with both errors preserved in an `AggregateError`; `cleanup.json` records teardown errors separately. Do not treat failed cleanup as a passing run or discard the original execution failure.
 
@@ -173,6 +196,13 @@ If execution and teardown both fail, the command fails with both errors preserve
 - `lc verify help`: the full command surface.
 - [scripts/example.ts](scripts/example.ts): a runnable ad-hoc script exercising every `v` capability.
 - Implementation: `apps/learn-card-app/scripts/verification/` (`catalog.ts` is the coverage contract; `journeys/` holds the recipes as code). Typecheck with `bunx tsc -p apps/learn-card-app/scripts/verification/tsconfig.json`.
-- The typecheck follows imported workspace source and service declarations. If stale `dist` declarations cause missing routes or incompatible types, rebuild the affected workspace packages; report remaining upstream diagnostics. Do not narrow the project or suppress diagnostics to call it green.
+- The typecheck follows imported workspace source and service declarations. `prepare` creates snippets/private HTML, **not** service `dist` declarations. On a clean checkout, build the required service declarations and their Nx dependency graph before typechecking:
 
-Keep the map honest with `/maintain-verification-skill` when routes, copy, auth, or seeding change.
+```bash
+bunx nx run-many -t build --projects=network-brain-service,learn-cloud-service,lca-api-service --parallel=1 --skip-nx-cache
+bunx tsc -p apps/learn-card-app/scripts/verification/tsconfig.json
+```
+
+Report any remaining upstream diagnostics; do not narrow the project or suppress them to call it green. These typecheck prerequisite builds are separate from the runtime catalog, which uses checkout source and builds its Docker services during startup.
+
+Keep the map honest with `bun scripts/check-verification-map.ts` from the repo root. It checks catalog feature IDs, exact entry sets, recipe headings and the overview table without starting Docker. When routes, copy, auth or seeding change, update the journey and corresponding recipe together, run the checker, then exercise the affected journey. See the feature map for coverage roles and extension rules.

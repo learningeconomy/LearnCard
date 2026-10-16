@@ -2,24 +2,24 @@
 
 ## Build & Test Commands
 
-- Build project: `bun run build` or `bunx nx build <package-name>`
-- Test all packages: `bun test` or `bunx nx test`
-- Run tests once (non-watch): `bun test -- run` (equivalent to `vitest run`)
-- Run single test: `bunx nx test <package-name> --testFile=path/to/test.spec.ts`
-- Run e2e tests: `bunx nx test:e2e e2e`
+-   Build project: `bun run build` or `bunx nx build <package-name>`
+-   Test all packages: `bun test` or `bunx nx test`
+-   Run tests once (non-watch): `bun test -- run` (equivalent to `vitest run`)
+-   Run single test: `bunx nx test <package-name> --testFile=path/to/test.spec.ts`
+-   Run e2e tests: `bunx nx test:e2e e2e`
 
 ## Code Style Guidelines
 
-- **TypeScript**: Strict typing with interfaces in dedicated type files
-- **Imports**: Prefer named imports; avoid default exports when possible
-- **Formatting**: Follow Prettier config; 4-space indentation for JSX
-- **Naming**: PascalCase for classes/interfaces/types/components, camelCase for variables/functions/methods, ALL_CAPS for constants
-- **Error handling**: Use try/catch with specific error types
-- **Functions**: Prefer arrow functions with explicit return types
-- **React**: Function components with hooks preferred over class components
-- **React callbacks**: Use `onComplete`/`onSwitchComplete` callback props to let parent components control side effects after async actions complete, rather than hardcoding side effects in child components
-- **Modules**: Keep files focused on single responsibility
-- **Documentation**: Add JSDoc comments for public APIs and complex logic
+-   **TypeScript**: Strict typing with interfaces in dedicated type files
+-   **Imports**: Prefer named imports; avoid default exports when possible
+-   **Formatting**: Follow Prettier config; 4-space indentation for JSX
+-   **Naming**: PascalCase for classes/interfaces/types/components, camelCase for variables/functions/methods, ALL_CAPS for constants
+-   **Error handling**: Use try/catch with specific error types
+-   **Functions**: Prefer arrow functions with explicit return types
+-   **React**: Function components with hooks preferred over class components
+-   **React callbacks**: Use `onComplete`/`onSwitchComplete` callback props to let parent components control side effects after async actions complete, rather than hardcoding side effects in child components
+-   **Modules**: Keep files focused on single responsibility
+-   **Documentation**: Add JSDoc comments for public APIs and complex logic
 
 ## Monorepo Structure
 
@@ -31,29 +31,29 @@ GitBook docs synced to docs.learncard.com. Diataxis framework: tutorials in `doc
 
 Key editing rules:
 
-- GitBook-flavored markdown (`{% tabs %}`, `{% hint %}`, `{% content-ref %}`)
-- Use `@learncard/init` for initialization (not `@learncard/core`)
-- API patterns: `learnCard.invoke.*` for methods, `learnCard.id.did()` for DID access
-- Internal links use relative paths
+-   GitBook-flavored markdown (`{% tabs %}`, `{% hint %}`, `{% content-ref %}`)
+-   Use `@learncard/init` for initialization (not `@learncard/core`)
+-   API patterns: `learnCard.invoke.*` for methods, `learnCard.id.did()` for DID access
+-   Internal links use relative paths
 
 ## Architecture Reference
 
 For detailed architecture, read the relevant AGENTS.md when working in that area:
 
-| Area                                                            | File                                                  | What's there                                                                                                                                           |
-| --------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Plugin system, network routes, credential storage               | `AGENTS.md` (root)                                    | Plugin architecture, adding routes, 3-layer storage model                                                                                              |
-| Brain service (Neo4j, tRPC, ConsentFlow, revocation)            | `services/learn-card-network/brain-service/AGENTS.md` | Neo4j data model, tRPC routes, ConsentFlow, signing authorities, revocation, tracing                                                                   |
-| Partner Connect SDK                                             | `packages/learn-card-partner-connect-sdk/AGENTS.md`   | Security model, message lifecycle, adding methods                                                                                                      |
-| Credential library & fixtures                                   | `AGENTS.md` (root, "Credential Library" section)      | Fixture system, query API, prepareFixture, JSON-LD context gotchas, CLR types                                                                          |
-| Credential viewer                                               | `examples/credential-viewer/README.md`                | Interactive fixture browser, bulk issue/send, fixture creation UI                                                                                      |
-| App Store examples                                              | `examples/app-store-apps/AGENTS.md`                   | Example app patterns, Astro + Partner Connect stack                                                                                                    |
-| ScoutPass app                                                   | `apps/scouts/AGENTS.md`                               | Troop/Scout hierarchy, credential status, key components                                                                                               |
-| LearnCard app (E2E testing, architecture)                       | `apps/learn-card-app/AGENTS.md`                       | Multi-tenant config, JSON themes, Playwright E2E, Ionic modal gotchas, credential flows                                                                |
-| i18n / translations (Paraglide)                                 | `apps/learn-card-app/src/i18n/AGENTS.md`              | Paraglide conventions, `m[...]`/`TransP`, gotchas (translated-string comparisons, plurals, RTL), shared-package `useT`, `hideLanguageSelector` LD flag |
-| Developer portal (guides, dashboards)                           | `PATTERNS.md` (Dashboard Patterns section)            | Guide/dashboard tab system, guide state access, per-guideType routing                                                                                  |
-| Verifying any change end to end (app, SDK, CLI, services, docs) | `.agents/skills/verify-learncard/SKILL.md`            | `lc verify`: owned local stack, 11 scripted journeys, ad-hoc scripts, read-only DB/log inspection, evidence                                            |
-| ConsentFlow test harness                                        | `examples/consent-flow-test/README.md`                | Standalone test app for consent redirect + credential sending                                                                                          |
+| Area                                                 | File                                                  | What's there                                                                                                                                           |
+| ---------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Plugin system, network routes, credential storage    | `AGENTS.md` (root)                                    | Plugin architecture, adding routes, 3-layer storage model                                                                                              |
+| Brain service (Neo4j, tRPC, ConsentFlow, revocation) | `services/learn-card-network/brain-service/AGENTS.md` | Neo4j data model, tRPC routes, ConsentFlow, signing authorities, revocation, tracing                                                                   |
+| Partner Connect SDK                                  | `packages/learn-card-partner-connect-sdk/AGENTS.md`   | Security model, message lifecycle, adding methods                                                                                                      |
+| Credential library & fixtures                        | `AGENTS.md` (root, "Credential Library" section)      | Fixture system, query API, prepareFixture, JSON-LD context gotchas, CLR types                                                                          |
+| Credential viewer                                    | `examples/credential-viewer/README.md`                | Interactive fixture browser, bulk issue/send, fixture creation UI                                                                                      |
+| App Store examples                                   | `examples/app-store-apps/AGENTS.md`                   | Example app patterns, Astro + Partner Connect stack                                                                                                    |
+| ScoutPass app                                        | `apps/scouts/AGENTS.md`                               | Troop/Scout hierarchy, credential status, key components                                                                                               |
+| LearnCard app (E2E testing, architecture)            | `apps/learn-card-app/AGENTS.md`                       | Multi-tenant config, JSON themes, Playwright E2E, Ionic modal gotchas, credential flows                                                                |
+| i18n / translations (Paraglide)                      | `apps/learn-card-app/src/i18n/AGENTS.md`              | Paraglide conventions, `m[...]`/`TransP`, gotchas (translated-string comparisons, plurals, RTL), shared-package `useT`, `hideLanguageSelector` LD flag |
+| Developer portal (guides, dashboards)                | `PATTERNS.md` (Dashboard Patterns section)            | Guide/dashboard tab system, guide state access, per-guideType routing                                                                                  |
+| Near-ready cross-surface/network verification       | `.agents/skills/verify-learncard/SKILL.md`            | Linux-owned `lc verify` gate or secret-free hosted workflow; focused scripts/browser reuse during development; honest catalog coverage                  |
+| ConsentFlow test harness                             | `examples/consent-flow-test/README.md`                | Standalone test app for consent redirect + credential sending                                                                                          |
 
 ## Quick Reference
 

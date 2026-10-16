@@ -1,6 +1,7 @@
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { StackEndpoints, VerificationPorts } from './types';
 export const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const REPO_ROOT = resolve(APP_ROOT, '../..');
 
@@ -10,15 +11,14 @@ export const DIDKIT_WASM_PATH = join(
     'packages/plugins/didkit/src/didkit/pkg/didkit_wasm_bg.wasm'
 );
 
-/**
- * Owned verification-stack endpoints. Ports are fixed because local did:web identities embed
- * them. LCA API is 5100 here (the tests/e2e compose stack uses 5200).
- */
-export const STACK = {
-    app: 'http://localhost:3000',
-    brain: 'http://localhost:4000/trpc',
-    brainApi: 'http://localhost:4000/api',
-    cloud: 'http://localhost:4100/trpc',
-    lcaApi: 'http://localhost:5100/trpc',
-    brainDid: 'did:web:localhost%3A4000',
-} as const;
+/** Derive every endpoint and did:web authority from the same persisted port allocation. */
+export const stackEndpoints = (ports: VerificationPorts): StackEndpoints => ({
+    ports,
+    app: `http://localhost:${ports.app}`,
+    brain: `http://localhost:${ports.brain}/trpc`,
+    brainApi: `http://localhost:${ports.brain}/api`,
+    cloud: `http://localhost:${ports.cloud}/trpc`,
+    lcaApi: `http://localhost:${ports.api}/trpc`,
+    brainDid: `did:web:localhost%3A${ports.brain}`,
+    partner: `http://localhost:${ports.partner}`,
+});

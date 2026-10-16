@@ -1,11 +1,11 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { extname, join } from 'node:path';
 import { createServer, loadConfigFromFile } from 'vite';
 import type { Plugin } from 'vite';
-import { deepMerge } from '../../../../packages/learn-card-base/src/config/deepMerge';
-import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../../packages/learn-card-base/src/config/tenantDefaults';
-import { parseTenantConfig } from '../../../../packages/learn-card-base/src/config/tenantConfigSchema';
+import { z } from 'zod';
+import { APP_ROOT } from './constants';
+import { readStackEndpoints } from './stack';
+import { processIdentity } from './process';
 
 // This is a direct child entrypoint, not imported by lc. The real app configuration,
 // transforms and source modules are unchanged; only deployment configuration differs.
@@ -13,84 +13,32 @@ const start = async (): Promise<void> => {
     const [directory, token] = process.argv.slice(2);
     if (!directory || !token || !/^[a-f0-9]{32}$/.test(token))
         throw new Error('Verification directory/token required');
-    const app = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-    const state = JSON.parse(await readFile(join(directory, 'state.json'), 'utf8'));
-    if (state.token !== token || state.directory !== directory || state.phase !== 'starting')
-        throw new Error('Frontend ownership mismatch');
-    const stat = await readFile(`/proc/${process.pid}/stat`, 'utf8');
+    const app = APP_ROOT;
+    z.object({
+        token: z.literal(token),
+        directory: z.literal(directory),
+        phase: z.literal('starting'),
+    }).parse(JSON.parse(await readFile(join(directory, 'state.json'), 'utf8')));
+    const identity = processIdentity(process.pid);
+    if (!identity) throw new Error('Cannot identify verification frontend process');
     await writeFile(
         join(directory, 'frontend-process.json'),
         JSON.stringify({
             token,
-            identity: {
-                pid: process.pid,
-                startTime: stat.slice(stat.lastIndexOf(')') + 2).split(' ')[19],
-                bootId: (await readFile('/proc/sys/kernel/random/boot_id', 'utf8')).trim(),
-            },
+            identity,
         }),
         { mode: 0o600 }
     );
-    const base = JSON.parse(
-        await readFile(join(app, 'environments/learncard/config.json'), 'utf8')
-    );
-    const local = JSON.parse(
-        await readFile(join(app, 'environments/learncard/config.local.json'), 'utf8')
-    );
-    const config = deepMerge(deepMerge(DEFAULT_LEARNCARD_TENANT_CONFIG, base), local);
-    // Replacing these blocks (rather than merging) avoids inherited production keys.
-    config.domain = 'localhost:3000';
-    config.devDomain = 'localhost:3000';
-    config.stage = 'local';
-    config.apis = {
-        brainService: 'http://localhost:4000/trpc',
-        brainServiceApi: 'http://localhost:4000/api',
-        cloudService: 'http://localhost:4100/trpc',
-        lcaApi: 'http://localhost:5100/trpc',
-        notificationsEndpoint: 'http://localhost:5100/api/notifications/send',
-        xapi: 'http://localhost:4100/xapi',
-        aiService: 'http://localhost:4300',
-        aiAgentService: 'http://localhost:4300',
-    };
-    // Seed login is the production developer-login path. Keycloak avoids initializing
-    // Firebase's live SDK; interactive OAuth and AI are intentionally not provisioned.
-    config.auth = {
-        provider: 'keycloak',
-        keyDerivation: 'sss',
-        keycloak: local.auth.keycloak,
-        sss: local.auth.sss,
-    };
-    config.observability = {
-        sentryDsn: '',
-        sentryEnv: 'verification',
-        sentryTraceDomains: [],
-        launchDarklyClientId: '',
-        userflowToken: '',
-        analyticsProvider: 'noop',
-        posthogKey: '',
-        googleMapsApiKey: '',
-    };
-    config.features = {
-        ...(config.features as Record<string, unknown>),
-        analytics: false,
-        aiFeatures: false,
-        samplePersonas: [],
-        legacySamplePersonaContractUris: [],
-    };
-    // No upload provider is provisioned. Its configured endpoint is local so manual
-    // exploration fails closed instead of uploading to the default Filestack account.
-    config.storage = {
-        provider: 's3',
-        uploadEndpoint: 'http://localhost:5100/api/uploads',
-        cdnDomain: 'localhost:5100',
-    };
-    const tenant = JSON.stringify(parseTenantConfig(config, 'lc verify local tenant'));
-    await writeFile(join(directory, 'tenant-config.json'), tenant, { mode: 0o600 });
+    const stack = await readStackEndpoints(directory);
+    const tenant = await readFile(join(directory, 'tenant-config.json'), 'utf8');
+    const html = await readFile(join(directory, 'index.html'), 'utf8');
     const overlay: Plugin = {
         name: 'lc-verification-tenant',
         enforce: 'pre',
         configureServer(server) {
             server.middlewares.use((request, response, next) => {
-                const pathname = request.url?.split('?')[0];
+                const url = new URL(request.url ?? '/', stack.app);
+                const pathname = url.pathname;
                 if (
                     pathname === '/tenant-config.json' ||
                     pathname === '/__tenant-config' ||
@@ -103,6 +51,24 @@ const start = async (): Promise<void> => {
                     );
                     return;
                 }
+                // Serve the production template through Vite's own transforms, without
+                // creating/replacing app/index.html (another stack or lc dev may own it).
+                if (
+                    (request.method === 'GET' || request.method === 'HEAD') &&
+                    !url.searchParams.has('html-proxy') &&
+                    (pathname === '/' ||
+                        pathname === '/index.html' ||
+                        (!extname(pathname) && request.headers.accept?.includes('text/html')))
+                ) {
+                    void server
+                        .transformIndexHtml('/index.html', html, request.url)
+                        .then(transformed => {
+                            response.setHeader('Content-Type', 'text/html; charset=utf-8');
+                            response.setHeader('Cache-Control', 'no-store');
+                            response.end(request.method === 'HEAD' ? undefined : transformed);
+                        }, next);
+                    return;
+                }
                 next();
             });
         },
@@ -113,15 +79,20 @@ const start = async (): Promise<void> => {
         VITE_ENABLE_AUTH_DEBUG_WIDGET: 'false',
         VITE_CREDENTIAL_REFRESH_LOCAL_QA: 'true',
         VITE_DOCKER_SOURCE: 'true',
-        VITE_AI_AGENT_URL: 'http://localhost:4300',
+        VITE_AI_AGENT_URL: `http://localhost:${stack.ports.api}`,
         ANALYZE: 'false',
         CHOKIDAR_USEPOLLING: 'false',
         CHOKIDAR_INTERVAL: '1000',
     });
+    // Bun loads TypeScript with development exports. Vite's default bundler ignores
+    // that condition while externalizing config imports and requires stale dist builds.
     const loaded = await loadConfigFromFile(
         { command: 'serve', mode: 'development', isSsrBuild: false, isPreview: false },
         join(app, 'vite.config.mts'),
-        app
+        app,
+        undefined,
+        undefined,
+        'native'
     );
     if (!loaded) throw new Error('LearnCard Vite configuration not found');
     const resolved = loaded.config;
@@ -132,11 +103,17 @@ const start = async (): Promise<void> => {
         envFile: false,
         mode: 'development',
         cacheDir: join(directory, 'vite-cache'),
+        optimizeDeps: {
+            ...resolved.optimizeDeps,
+            // The checkout intentionally has no generated index.html. Scan the tracked
+            // template instead; /src imports still resolve against the real app root.
+            entries: [join(app, 'index.template.html')],
+        },
         plugins: [overlay, ...(resolved.plugins ?? [])],
         server: {
             ...resolved.server,
             host: '127.0.0.1',
-            port: 3000,
+            port: stack.ports.app,
             strictPort: true,
             open: false,
         },

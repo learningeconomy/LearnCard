@@ -13,7 +13,7 @@ import type { FeatureDefinition } from './types';
 
 /**
  * The executable coverage contract. `lc verify run all` runs exactly these, in this order; each
- * feature passes only when its journey returns (and asserted) every listed entry.
+ * feature passes only when its journey successfully executes every listed acceptance step.
  */
 export const verificationFeatures: FeatureDefinition[] = [
     accountFeature,

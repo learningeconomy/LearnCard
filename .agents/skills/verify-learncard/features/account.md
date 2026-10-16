@@ -11,7 +11,7 @@ A visitor lands on the public sign-in page, a new account signs in with a seed, 
 
 ## How to get to it (user POV)
 
-- Open `http://localhost:3000/login` signed out.
+- Open `/login` on the app origin reported by `doctor`, signed out.
 - Open `/developer/sign-in`, paste a 64-hex seed, and choose **Sign in**.
 - With a signed-in account that has no profile, open `/login`; onboarding opens as a full-screen modal.
 - Open the avatar (**Open profile**), then choose **Logout**.

@@ -72,12 +72,6 @@ export const accountFeature: FeatureDefinition = {
             await context.capture(page, 'account-private-route-rejected');
         });
         return {
-            entries: [
-                'auth-public-email-entry',
-                'auth-developer-seed',
-                'auth-onboarding',
-                'auth-sign-out',
-            ],
             observations: {
                 profileId: actor.profileId,
                 networkProfile: profile,

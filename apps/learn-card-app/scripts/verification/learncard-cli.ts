@@ -1,15 +1,16 @@
 import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { REPO_ROOT, STACK } from './constants';
+import { REPO_ROOT } from './constants';
+import type { StackEndpoints } from './types';
 import { saveJson } from './harness';
 import { loadOrgSpec } from '../../../../packages/learn-card-cli/src/org/load';
 
 const CLI_ROOT = join(REPO_ROOT, 'packages/learn-card-cli');
-/** Subcommands without a `--network` option (commander rejects unknown flags). */
-const NETWORKLESS: Record<string, true> = {
-    verify: true,
+/** Display-only commands without a `--network` option. */
+const DISPLAY_ONLY: Record<string, true> = {
     help: true,
     '--help': true,
     '-h': true,
@@ -34,8 +35,13 @@ export interface CliTranscript {
  * Pin every invocation to the owned local network. The CLI defaults to production, so a missing
  * flag is filled in and any non-local `--network` is refused rather than silently sent upstream.
  */
-export const localizeCliArgs = (args: string[]): string[] => {
+export const localizeCliArgs = (args: string[], stack: StackEndpoints): string[] => {
     const subcommand = args[0];
+    if (subcommand === 'demo') {
+        throw new Error(
+            'learncard demo does not pin every service to the owned stack; use lc verify script with getVerificationLearnCard(stack) instead'
+        );
+    }
     if (subcommand === 'repl') {
         throw new Error(
             'The learncard REPL hard-codes production services; use lc verify script instead'
@@ -50,8 +56,8 @@ export const localizeCliArgs = (args: string[]): string[] => {
         }
     }
     for (const [flag, expected] of [
-        ['--app-url', STACK.app],
-        ['--lca-url', STACK.lcaApi],
+        ['--app-url', stack.app],
+        ['--lca-url', stack.lcaApi],
     ] as const) {
         const occurrences = args.flatMap((arg, index) =>
             arg === flag || arg.startsWith(`${flag}=`) ? [index] : []
@@ -66,7 +72,7 @@ export const localizeCliArgs = (args: string[]): string[] => {
     const pinned =
         subcommand === 'open' &&
         !args.some(arg => arg === '--app-url' || arg.startsWith('--app-url='))
-            ? [...args, '--app-url', STACK.app]
+            ? [...args, '--app-url', stack.app]
             : args;
     if (args.includes('--'))
         throw new Error('Nested -- separators are unsupported during verification');
@@ -79,20 +85,37 @@ export const localizeCliArgs = (args: string[]): string[] => {
         const value = args[index]!.startsWith('--network=')
             ? args[index]!.slice('--network='.length)
             : args[index + 1];
-        if (value !== STACK.brain) {
+        if (value !== stack.brain) {
             throw new Error(
-                `Verification requires --network ${STACK.brain}, not ${value ?? '(missing)'}`
+                `Verification requires --network ${stack.brain}, not ${value ?? '(missing)'}`
             );
         }
         return pinned;
     }
-    // Only the actual command can exempt an invocation, never a display name or recipient.
-    if (!subcommand || NETWORKLESS[subcommand] === true) return args;
+    // Verify has no --network option: its child preload confines document-resolution fetches.
+    // Only the actual command is exempt, never a display name or recipient.
+    if (!subcommand || subcommand === 'verify' || DISPLAY_ONLY[subcommand] === true) return args;
     if (subcommand.startsWith('-')) {
         throw new Error('Place the learncard subcommand before its options');
     }
-    return [...pinned, '--network', STACK.brain];
+    return [...pinned, '--network', stack.brain];
 };
+
+/** Keep shell secrets, preload flags, proxy settings, and unrelated service URLs out of children. */
+export const cliEnvironment = (
+    stack: StackEndpoints,
+    source: Record<string, string | undefined> = process.env
+): NodeJS.ProcessEnv => ({
+    NODE_ENV: 'development',
+    PATH: source.PATH,
+    HOME: source.HOME,
+    TMPDIR: source.TMPDIR,
+    NO_COLOR: '1',
+    CI: '1',
+    NETWORK_URL: stack.brain,
+    CLOUD_URL: stack.cloud,
+    LCA_API_URL: stack.lcaApi,
+});
 
 let snippetsEmbedded: Promise<void> | undefined;
 
@@ -155,10 +178,11 @@ const run = (
 export const runLearnCardCli = async (
     args: string[],
     workdir: string,
-    transcriptPath?: string,
+    transcriptPath: string | undefined,
+    stack: StackEndpoints,
     timeoutMs = 180_000
 ): Promise<CliTranscript> => {
-    const localArgs = localizeCliArgs(args);
+    const localArgs = localizeCliArgs(args, stack);
     if (args[0] === 'org' && args[1] === 'apply') {
         const file = args[2];
         if (!file || file.startsWith('-')) {
@@ -174,9 +198,9 @@ export const runLearnCardCli = async (
     await mkdir(workdir, { recursive: true, mode: 0o700 });
     // The CLI's own `start` script regenerates its embedded docs snippets first; do the same.
     snippetsEmbedded ??= run(
-        [join(CLI_ROOT, 'scripts/embed-snippets.ts')],
+        ['--no-env-file', '--no-install', join(CLI_ROOT, 'scripts/embed-snippets.ts')],
         CLI_ROOT,
-        process.env,
+        cliEnvironment(stack),
         60_000
     ).then(result => {
         if (result.exitCode !== 0) throw new Error(`embed-snippets failed: ${result.stderr}`);
@@ -184,25 +208,26 @@ export const runLearnCardCli = async (
     await snippetsEmbedded;
     const startedAt = new Date().toISOString();
     const result = await run(
-        ['--conditions=development', join(CLI_ROOT, 'src/index.tsx'), ...localArgs],
+        [
+            '--no-env-file',
+            '--no-install',
+            '--conditions=development',
+            ...(args[0] === 'verify'
+                ? ['--preload', fileURLToPath(new URL('./cli-verify-preload.ts', import.meta.url))]
+                : []),
+            join(CLI_ROOT, 'src/index.tsx'),
+            ...localArgs,
+        ],
         workdir,
-        // No inherited SECURE_SEED/LEARNCARD_* from the developer's shell: the workdir's .env rules.
-        {
-            PATH: process.env.PATH,
-            HOME: process.env.HOME,
-            TMPDIR: process.env.TMPDIR,
-            NO_COLOR: '1',
-            CI: '1',
-            NETWORK_URL: STACK.brain,
-            CLOUD_URL: STACK.cloud,
-            LCA_API_URL: STACK.lcaApi,
-        } as unknown as NodeJS.ProcessEnv,
+        // No inherited secrets, Bun env files, preload options, or proxy configuration.
+        cliEnvironment(stack),
         timeoutMs
     );
-    const lastLine = result.stdout.trim().split('\n').at(-1) ?? '';
+    const output = result.stdout.trim();
+    const jsonText = output.startsWith('{') ? output : (output.split('\n').at(-1) ?? '');
     let json: unknown;
     try {
-        json = lastLine.startsWith('{') ? JSON.parse(lastLine) : undefined;
+        json = jsonText.startsWith('{') ? JSON.parse(jsonText) : undefined;
     } catch {
         json = undefined;
     }

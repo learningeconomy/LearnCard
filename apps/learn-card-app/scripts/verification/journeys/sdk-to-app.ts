@@ -64,12 +64,6 @@ export const sdkToAppFeature: FeatureDefinition = {
             expect(graph).toMatch(/^received, claimed\n1, 1$/m);
         });
         return {
-            entries: [
-                'cross-sdk-send',
-                'cross-app-claim',
-                'cross-app-wallet-detail',
-                'cross-sdk-observes-claim',
-            ],
             observations: {
                 issuerProfileId: issuer.profileId,
                 learnerProfileId: learner.profileId,

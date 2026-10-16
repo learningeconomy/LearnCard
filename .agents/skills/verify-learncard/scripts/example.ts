@@ -5,6 +5,8 @@
  *       .agents/skills/verify-learncard/scripts/example.ts --dir /tmp/lcv
  *
  * Copy it, keep the parts you need, and assert the behavior *your* change introduced.
+ * Reuse an owned --dir for quick iterations; do not run the full catalog after every edit.
+ * All endpoint access comes from v.stack, never fixed dev ports.
  */
 import type { VerificationScript } from '../../../../apps/learn-card-app/scripts/verification/script';
 
@@ -12,10 +14,13 @@ const script: VerificationScript = async v => {
     const { learner, issuer } = v.actors;
 
     // SDK (checkout source) as the issuer; `sdk()` creates the network profile if needed.
-    const issuerLc = await v.sdk(issuer);
-    const credential = await issuerLc.invoke.issueCredential(issuerLc.invoke.getTestVc());
-    const verification = await issuerLc.invoke.verifyCredential(credential);
-    v.expect(verification.errors).toEqual([]);
+    const { issuerLc, verification } = await v.step(null, 'example-sdk-proof', async () => {
+        const issuerLc = await v.sdk(issuer);
+        const credential = await issuerLc.invoke.issueCredential(issuerLc.invoke.getTestVc());
+        const verification = await issuerLc.invoke.verifyCredential(credential);
+        v.expect(verification.errors).toEqual([]);
+        return { issuerLc, verification };
+    });
 
     // Web app as the learner: real seed sign-in, then a captured user action.
     const page = await v.newPage('learner', { signInAs: learner });
