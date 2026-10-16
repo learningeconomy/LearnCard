@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { CredentialPreviewButton } from './CredentialPreviewButton';
-import { type CredentialChoice } from './shareLinkFlow';
+import { credentialText, type CredentialChoice } from './shareLinkFlow';
 import * as m from '../../paraglide/messages.js';
 import { getCredentialName } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -20,20 +20,23 @@ export const ShareCredentialSelectionRow = ({
     loadFailed?: boolean;
     onToggle: () => void;
 }) => {
+    const text = credentialText(choice.credential);
     const title = choice.credential
-        ? getCredentialName(choice.credential)
+        ? text.name ||
+          getCredentialName(choice.credential, { skipHumanizedFallback: true }) ||
+          m['shareLinks.credential']()
         : choice.title || m['shareLinks.credential']();
+
+    const checkboxId = useId();
 
     const handleRowClick = (event: React.MouseEvent) => {
         if (disabled) return;
-        // Only toggle if not clicking the preview button, checkbox, or label (label triggers checkbox natively)
+        // Toggle on thumbnail/padding clicks; exclude button, label, and checkbox (label triggers checkbox natively)
         const target = event.target as HTMLElement;
         if (!target.closest('button') && !target.closest('label') && target.tagName !== 'INPUT') {
             onToggle();
         }
     };
-
-    const checkboxId = `credential-${choice.uri}`;
 
     return (
         <div
