@@ -11,6 +11,64 @@ import BoostPreview from '../boost/boostCMS/BoostPreview/BoostPreview';
 import NonBoostPreview from '../boost/boostCMS/BoostPreview/NonBoostPreview';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 
+interface CredentialPreviewModalProps {
+    credential: VC;
+    categoryType: BoostCategoryOptionsEnum;
+    onClose: () => void;
+}
+
+/** Modal content that runs hooks only when the preview is opened. */
+const CredentialPreviewModal: React.FC<CredentialPreviewModalProps> = ({
+    credential,
+    categoryType,
+    onClose,
+}) => {
+    const {
+        title,
+        achievementType,
+        badgeThumbnail,
+        displayType,
+        backgroundImage,
+        backgroundColor,
+        accentColor,
+    } = useGetVCInfo(credential, categoryType);
+
+    const isBoost = isBoostCredential(credential);
+
+    const previewProps = {
+        credential,
+        categoryType,
+        verificationItems: [],
+        customThumbComponent: (
+            <CredentialBadgeNew
+                achievementType={achievementType}
+                fallbackCircleText={title}
+                boostType={categoryType}
+                badgeThumbnail={badgeThumbnail ?? ''}
+                badgeCircleCustomClass="w-[170px] h-[170px]"
+                credential={credential}
+                showBackgroundImage
+                backgroundImage={backgroundImage}
+                backgroundColor={backgroundColor}
+                accentColor={accentColor}
+                displayType={displayType}
+            />
+        ),
+        customBodyCardComponent: null,
+        customFooterComponent: <div />,
+        customIssueHistoryComponent: null,
+        handleCloseModal: onClose,
+        titleOverride: title,
+        displayType,
+        isEarnedBoost: true,
+        showEndorsementBadge: true,
+    };
+
+    const PreviewComponent = isBoost ? BoostPreview : NonBoostPreview;
+
+    return <PreviewComponent {...previewProps} />;
+};
+
 interface CredentialPreviewButtonProps {
     credential: VC;
     category?: string;
@@ -30,62 +88,19 @@ export const CredentialPreviewButton: React.FC<CredentialPreviewButtonProps> = (
         (getDefaultCategoryForCredential(credential) as BoostCategoryOptionsEnum) ||
         BoostCategoryOptionsEnum.achievement;
 
-    const {
-        title,
-        achievementType,
-        badgeThumbnail,
-        displayType,
-        backgroundImage,
-        backgroundColor,
-        accentColor,
-    } = useGetVCInfo(credential, categoryType);
-
     const handleViewCredential = (event: React.MouseEvent) => {
         event.preventDefault();
         event.stopPropagation();
 
-        const isBoost = isBoostCredential(credential);
-
-        const previewProps = {
-            credential,
-            categoryType,
-            verificationItems: [],
-            customThumbComponent: (
-                <CredentialBadgeNew
-                    achievementType={achievementType}
-                    fallbackCircleText={title}
-                    boostType={categoryType}
-                    badgeThumbnail={badgeThumbnail ?? ''}
-                    badgeCircleCustomClass="w-[170px] h-[170px]"
-                    credential={credential}
-                    showBackgroundImage
-                    backgroundImage={backgroundImage}
-                    backgroundColor={backgroundColor}
-                    accentColor={accentColor}
-                    displayType={displayType}
-                />
-            ),
-            customBodyCardComponent: null,
-            customFooterComponent: <div />,
-            customIssueHistoryComponent: null,
-            handleCloseModal: () => closeModal(),
-            titleOverride: title,
-            displayType,
-            isEarnedBoost: true,
-            showEndorsementBadge: true,
-        };
-
-        const PreviewComponent = isBoost ? BoostPreview : NonBoostPreview;
-
         newModal(
-            <PreviewComponent {...previewProps} />,
+            <CredentialPreviewModal
+                credential={credential}
+                categoryType={categoryType}
+                onClose={() => closeModal()}
+            />,
             {
                 className: '!bg-transparent',
                 hideButton: true,
-                backgroundImage:
-                    displayType === 'certificate' || displayType === 'award'
-                        ? backgroundImage
-                        : undefined,
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
