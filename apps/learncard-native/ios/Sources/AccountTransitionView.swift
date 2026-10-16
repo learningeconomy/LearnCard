@@ -31,6 +31,7 @@ struct AccountTransitionView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     @Environment(\.dynamicTypeSize) private var textSize
+    @ScaledMetric(relativeTo: .title) private var wordmarkSize = BrandMotion.wordmarkSize
     let mode: AccountMotionMode
     var busy = true
     var error: String?
@@ -46,7 +47,9 @@ struct AccountTransitionView: View {
                                reduced: reduceMotion || ProcessInfo.processInfo.arguments.contains("--motion-reduced"), voiceOver: voiceOver)
     }
     private var drawsMotion: Bool {
-        BrandMotion.isAnimated(visible: true, active: scenePhase == .active,
+        // Before activation, draw the initial pose rather than the final still
+        // logo. Otherwise the first active frame appears to pull it apart.
+        BrandMotion.isAnimated(visible: true, active: true,
                                reduced: reduceMotion || ProcessInfo.processInfo.arguments.contains("--motion-reduced"), voiceOver: voiceOver)
     }
     var body: some View {
@@ -67,17 +70,22 @@ struct AccountTransitionView: View {
         return ZStack {
             Palette.paper.ignoresSafeArea()
             PigmentBackdrop(elapsed: moves ? elapsed : 0, animated: moves)
-                .opacity(moves ? min(1, elapsed / 0.65) : 1)
                 .allowsHitTesting(false).accessibilityHidden(true).ignoresSafeArea()
             ScrollView {
                 VStack(spacing: 24) {
-                    PaintedMosaic(size: markSize, elapsed: elapsed, animated: drawsMotion)
-                        .frame(height: markSize)
-                        .accessibilityElement(children: .ignore).accessibilityLabel("LearnCard")
-                        .accessibilityAddTraits(.isImage).accessibilityIdentifier("brand-motion-mark")
+                    VStack(spacing: BrandMotion.wordmarkGap) {
+                        PaintedMosaic(size: markSize, elapsed: scenePhase == .active ? elapsed : 0, animated: drawsMotion)
+                            .frame(height: markSize)
+                            .accessibilityElement(children: .ignore).accessibilityLabel("LearnCard")
+                            .accessibilityAddTraits(.isImage).accessibilityIdentifier("brand-motion-mark")
+                        Text("LearnCard").font(.system(size: wordmarkSize, weight: .bold))
+                            .foregroundStyle(Palette.ink).accessibilityHidden(true)
+                    }
                     VStack(spacing: 14) {
-                        Text(NativeText.text(mode.titleKey)).font(.largeTitle.bold()).tracking(-0.8)
-                            .foregroundStyle(Palette.ink).multilineTextAlignment(.center).accessibilityAddTraits(.isHeader)
+                        if mode != .launch {
+                            Text(NativeText.text(mode.titleKey)).font(.largeTitle.bold()).tracking(-0.8)
+                                .foregroundStyle(Palette.ink).multilineTextAlignment(.center).accessibilityAddTraits(.isHeader)
+                        }
                         Text(NativeText.text(mode.statusKey)).font(.body).foregroundStyle(Palette.secondary)
                             .multilineTextAlignment(.center).accessibilityIdentifier("account-loading")
                         Text(NativeText.text("motion.longer")).font(.subheadline).foregroundStyle(Palette.secondary)
@@ -135,14 +143,14 @@ private struct PigmentBackdrop: View {
     let animated: Bool
     var body: some View {
         GeometryReader { size in
-            ForEach(0..<8, id: \.self) { index in
-                let color = [0,2,7,3,8,1,6,5][index]
+            ForEach(BrandMotion.backdrop.indices, id: \.self) { index in
+                let block = BrandMotion.backdrop[index]
                 let pose = BrandMotion.background(index, elapsed: elapsed, animated: animated)
-                PigmentTile(index: color)
-                    .frame(width: index.isMultiple(of: 3) ? 100 : 65, height: index.isMultiple(of: 3) ? 100 : 65)
+                PigmentTile(index: block.color)
+                    .frame(width: block.size, height: block.size)
                     .rotationEffect(.degrees(pose.rotation))
                     .position(x: size.size.width * pose.x, y: size.size.height * pose.y)
-                    .opacity(0.8)
+                    .opacity(BrandMotion.backdropOpacity)
             }
         }
     }

@@ -2,9 +2,12 @@ import XCTest
 @testable import LearnCardNativeCore
 
 final class BrandMotionTests: XCTestCase {
-    func testFirstAnimatedFrameMatchesTheFullyVisibleStaticLaunchMark() {
+    func testFirstAnimatedFrameMatchesTheFullyVisibleStaticLaunchComposition() {
         for index in 0..<9 {
-            XCTAssertEqual(BrandMotion.tile(index, elapsed: 0, animated: true), BrandMotion.tile(index, elapsed: 0, animated: false))
+            XCTAssertEqual(BrandMotion.tile(index, elapsed: 0, animated: true), BrandMotion.launchTile(index))
+        }
+        for index in BrandMotion.backdrop.indices {
+            XCTAssertEqual(BrandMotion.background(index, elapsed: 0, animated: true), BrandMotion.background(index, elapsed: 0, animated: false))
         }
     }
     func testPiecesGatherIntoRecognizableMosaicWithoutWaitingOnAccountReadiness() {
@@ -15,6 +18,16 @@ final class BrandMotionTests: XCTestCase {
             XCTAssertEqual(final.y, still.y, accuracy: 0.001)
             XCTAssertEqual(final.rotation, 0, accuracy: 0.001)
             XCTAssertEqual(final.opacity, 1)
+            let target = BrandMotion.tile(index, elapsed: 0, animated: false)
+            var previousDistance = Double.infinity
+            var previousScale = 0.0
+            for tick in 0...100 {
+                let pose = BrandMotion.tile(index, elapsed: Double(tick) * 0.021, animated: true)
+                let distance = hypot(pose.x - target.x, pose.y - target.y)
+                XCTAssertLessThanOrEqual(distance, previousDistance + 0.000001, "Assembly must gather inward without an outward opening")
+                XCTAssertGreaterThanOrEqual(pose.scale, previousScale)
+                previousDistance = distance; previousScale = pose.scale
+            }
         }
         XCTAssertNotEqual(BrandMotion.tile(0, elapsed: 0.1, animated: true), BrandMotion.tile(0, elapsed: 1, animated: true))
     }

@@ -11,6 +11,9 @@ import UIKit
             XCTAssertTrue(mark.waitForExistence(timeout: 5))
             XCTAssertEqual(mark.frame.midY, app.frame.height * 0.365, accuracy: 3)
             XCTAssertEqual(mark.frame.width, min(224, app.frame.width * 0.57), accuracy: 1)
+            if mode == "launch" {
+                XCTAssertFalse(app.staticTexts["LearnCard"].exists, "The brand lockup must not repeat as a second loading heading")
+            }
             capture(app, "Shared launch composition \(mode)"); app.terminate()
         }
     }

@@ -23,6 +23,19 @@ bash apps/learncard-native/scripts/test-ci.sh
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
 
+## Static splash, inward logo assembly and one wordmark — October 16
+
+All **145 Swift** cases pass (`artifacts/splash-continuity-final-core.log`). The existing first-frame case now compares every logo/background piece with the static launch pose, and the assembly case checks monotonically inward movement and growing tiles through the entire entrance. The configured suite remains 416 cases; existing cases gained assertions, with no new case count.
+
+- `splash-continuity-ui.xcresult`: **9/9 pass**, the four motion cases and all five existing account lifecycle cases, including background/resume, recovery retry, sign-out and forget-device behavior.
+- `splash-continuity-final-ui.xcresult` and `splash-continuity-confirmed-ui.xcresult`: **4/4 pass** after the inward-motion and scene-activation corrections. The latter contains the final initial-pose handling.
+- `splash-continuity-label-ui.xcresult`: **2/2 pass** after removing the duplicate launch heading.
+- `splash-continuity-regression-ui.xcresult`: **4/4 pass** on build 2 with the final asset name and an explicit duplicate-heading regression assertion. It also checks shared logo geometry, actual continuing mark/background motion, still Reduce Motion, dark review and Arabic accessibility layout. This is focused validation, not a full 416-case run. Account-runtime/Bun code is unchanged from the preceding 171-case pass.
+
+Actual system-launch captures exposed problems the app-side checks could not: negative center multipliers misplaced green blocks, and same-version simulator launches retained stale catalog pixels, then briefly an absent renamed mark. Explicit leading anchors and a build-2 update/restart correct those cases. No account uninstall/reset is needed. Final light/dark static captures use debugger-wait only for inspection; `artifacts/splash-continuity-v2-*` clips launch normally and show the inward handoff. See [the inspected native captures](design/EMPTY_STATES_BRIEF.md#updated-static-splash-and-inward-assembly). No delay or debugger wait ships in the application.
+
+Release/Debug build and installation pass (`splash-continuity-release.log`, `splash-continuity-review-install.log`). Both compiled launch catalogs pass the expanded check for opaque canvas/wordmark colors and all nine launch images. All **47 installed payload hashes match** (`splash-continuity-install-proof.json`); private configuration is retained byte-for-byte and DIDKit is unchanged. Tests use the separate synthetic checks simulator, builds remain sequential with two jobs at reduced priority, and hosted CI was not dispatched. Physical-device cold-start timing/energy and human VoiceOver review remain manual.
+
 ## Home actions, People and optional intake — October 16
 
 All **171 Bun**, **145 Swift** (116 XCTest +29 Swift Testing), source contracts and **20 distinct focused UI cases pass**. The configured suite is now 416 cases plus the opt-in live-exchange skip; this was targeted simulator validation, not a full 416-case run. The older full local baseline remains 366. Hosted native CI stays manual and was not dispatched.

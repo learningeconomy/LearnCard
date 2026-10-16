@@ -3,22 +3,78 @@
     <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies><plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="26000"/><capability name="Named colors" minToolsVersion="9.0"/><capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/></dependencies>
     <scenes><scene sceneID="launch-scene"><objects>
-        <viewController id="launch-controller" sceneMemberID="viewController"><view key="view" contentMode="scaleToFill" id="launch-view">
+        <viewController id="launch-controller" sceneMemberID="viewController"><view key="view" clipsSubviews="YES" contentMode="scaleToFill" id="launch-view">
             <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-            <subviews><imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LearnCardLaunchMark" translatesAutoresizingMaskIntoConstraints="NO" id="launch-mark">
+            <subviews>
+            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchPaint0" translatesAutoresizingMaskIntoConstraints="NO" id="launch-paint-0">
+                <rect key="frame" x="-100" y="-14.799999999999997" width="200" height="200"/>
+                <constraints><constraint firstAttribute="width" constant="200" id="paint-width-0"/><constraint firstAttribute="height" constant="200" id="paint-height-0"/></constraints>
+            </imageView>
+            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchPaint1" translatesAutoresizingMaskIntoConstraints="NO" id="launch-paint-1">
+                <rect key="frame" x="261.19" y="20.200000000000003" width="130" height="130"/>
+                <constraints><constraint firstAttribute="width" constant="130" id="paint-width-1"/><constraint firstAttribute="height" constant="130" id="paint-height-1"/></constraints>
+            </imageView>
+            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchPaint2" translatesAutoresizingMaskIntoConstraints="NO" id="launch-paint-2">
+                <rect key="frame" x="335.86" y="275.8" width="130" height="130"/>
+                <constraints><constraint firstAttribute="width" constant="130" id="paint-width-2"/><constraint firstAttribute="height" constant="130" id="paint-height-2"/></constraints>
+            </imageView>
+            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchPaint3" translatesAutoresizingMaskIntoConstraints="NO" id="launch-paint-3">
+                <rect key="frame" x="-100" y="343.04" width="200" height="200"/>
+                <constraints><constraint firstAttribute="width" constant="200" id="paint-width-3"/><constraint firstAttribute="height" constant="200" id="paint-height-3"/></constraints>
+            </imageView>
+            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchPaint4" translatesAutoresizingMaskIntoConstraints="NO" id="launch-paint-4">
+                <rect key="frame" x="324.07" y="599.5600000000001" width="130" height="130"/>
+                <constraints><constraint firstAttribute="width" constant="130" id="paint-width-4"/><constraint firstAttribute="height" constant="130" id="paint-height-4"/></constraints>
+            </imageView>
+            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchPaint5" translatesAutoresizingMaskIntoConstraints="NO" id="launch-paint-5">
+                <rect key="frame" x="-9.979999999999997" y="761.4399999999999" width="130" height="130"/>
+                <constraints><constraint firstAttribute="width" constant="130" id="paint-width-5"/><constraint firstAttribute="height" constant="130" id="paint-height-5"/></constraints>
+            </imageView>
+            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchPaint6" translatesAutoresizingMaskIntoConstraints="NO" id="launch-paint-6">
+                <rect key="frame" x="206.54000000000002" y="709.4" width="200" height="200"/>
+                <constraints><constraint firstAttribute="width" constant="200" id="paint-width-6"/><constraint firstAttribute="height" constant="200" id="paint-height-6"/></constraints>
+            </imageView>
+            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchPaint7" translatesAutoresizingMaskIntoConstraints="NO" id="launch-paint-7">
+                <rect key="frame" x="-59.105000000000004" y="633.64" width="130" height="130"/>
+                <constraints><constraint firstAttribute="width" constant="130" id="paint-width-7"/><constraint firstAttribute="height" constant="130" id="paint-height-7"/></constraints>
+            </imageView>
+            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LearnCardLaunchPose" translatesAutoresizingMaskIntoConstraints="NO" id="launch-mark">
                 <rect key="frame" x="84.5" y="198.98" width="224" height="224"/>
                 <constraints><constraint firstAttribute="width" relation="lessThanOrEqual" constant="224" id="mark-maximum"/><constraint firstAttribute="height" secondItem="launch-mark" secondAttribute="width" id="mark-square"/></constraints>
-            </imageView></subviews>
+            </imageView>
+            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="LearnCard" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="launch-wordmark">
+                <rect key="frame" x="84.5" y="440.98" width="224" height="39"/>
+                <fontDescription key="fontDescription" type="boldSystem" pointSize="32"/>
+                <color key="textColor" name="LaunchInk"/>
+            </label></subviews>
             <viewLayoutGuide key="safeArea" id="launch-safe"/>
             <color key="backgroundColor" name="LaunchCanvas"/>
             <constraints>
+                <constraint firstItem="launch-paint-0" firstAttribute="centerX" secondItem="launch-view" secondAttribute="leading" id="paint-x-0"/>
+                <constraint firstItem="launch-paint-0" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="0.2" id="paint-y-0"/>
+                <constraint firstItem="launch-paint-1" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" multiplier="1.66" id="paint-x-1"/>
+                <constraint firstItem="launch-paint-1" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="0.2" id="paint-y-1"/>
+                <constraint firstItem="launch-paint-2" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" multiplier="2.04" id="paint-x-2"/>
+                <constraint firstItem="launch-paint-2" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="0.8" id="paint-y-2"/>
+                <constraint firstItem="launch-paint-3" firstAttribute="centerX" secondItem="launch-view" secondAttribute="leading" id="paint-x-3"/>
+                <constraint firstItem="launch-paint-3" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="1.04" id="paint-y-3"/>
+                <constraint firstItem="launch-paint-4" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" multiplier="1.98" id="paint-x-4"/>
+                <constraint firstItem="launch-paint-4" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="1.56" id="paint-y-4"/>
+                <constraint firstItem="launch-paint-5" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" multiplier="0.28" id="paint-x-5"/>
+                <constraint firstItem="launch-paint-5" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="1.94" id="paint-y-5"/>
+                <constraint firstItem="launch-paint-6" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" multiplier="1.56" id="paint-x-6"/>
+                <constraint firstItem="launch-paint-6" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="1.9" id="paint-y-6"/>
+                <constraint firstItem="launch-paint-7" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" multiplier="0.03" id="paint-x-7"/>
+                <constraint firstItem="launch-paint-7" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="1.64" id="paint-y-7"/>
                 <constraint firstItem="launch-mark" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" id="mark-center-x"/>
                 <constraint firstItem="launch-mark" firstAttribute="centerY" secondItem="launch-view" secondAttribute="centerY" multiplier="0.73" id="mark-center-y"/>
                 <constraint firstItem="launch-mark" firstAttribute="width" secondItem="launch-view" secondAttribute="width" multiplier="0.57" priority="750" id="mark-responsive-width"/>
+                <constraint firstItem="launch-wordmark" firstAttribute="centerX" secondItem="launch-view" secondAttribute="centerX" id="wordmark-center-x"/>
+                <constraint firstItem="launch-wordmark" firstAttribute="top" secondItem="launch-mark" secondAttribute="bottom" constant="18" id="wordmark-top"/>
             </constraints>
         </view></viewController>
         <placeholder placeholderIdentifier="IBFirstResponder" id="launch-responder" userLabel="First Responder" sceneMemberID="firstResponder"/>
     </objects></scene></scenes>
-    <resources><image name="LearnCardLaunchMark" width="224" height="224"/><namedColor name="LaunchCanvas"><color red="0.9372549019607843" green="0.9411764705882353" blue="0.9607843137254902" alpha="1" colorSpace="custom" customColorSpace="sRGB"/></namedColor></resources>
+    <resources><image name="LearnCardLaunchPose" width="224" height="224"/><image name="LaunchPaint0" width="200" height="200"/><image name="LaunchPaint1" width="130" height="130"/><image name="LaunchPaint2" width="130" height="130"/><image name="LaunchPaint3" width="200" height="200"/><image name="LaunchPaint4" width="130" height="130"/><image name="LaunchPaint5" width="130" height="130"/><image name="LaunchPaint6" width="200" height="200"/><image name="LaunchPaint7" width="130" height="130"/><namedColor name="LaunchCanvas"><color red="0.9372549019607843" green="0.9411764705882353" blue="0.9607843137254902" alpha="1" colorSpace="custom" customColorSpace="sRGB"/></namedColor><namedColor name="LaunchInk"><color red="0.09411764705882353" green="0.13333333333333333" blue="0.3058823529411765" alpha="1" colorSpace="custom" customColorSpace="sRGB"/></namedColor></resources>
 </document>

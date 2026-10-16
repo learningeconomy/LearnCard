@@ -6,11 +6,38 @@ public enum BrandMotion {
     public static let markMaxWidth = 224.0
     public static let markWidthFraction = 0.57
     public static let markCenterFraction = 0.365
+    public static let assemblySpread = 1.16
+    public static let assemblyScale = 0.7
+    public static let wordmarkSize = 32.0
+    public static let wordmarkGap = 18.0
+    public static let backdropOpacity = 0.8
+    public struct BackdropBlock: Equatable, Sendable {
+        public let color: Int
+        public let x: Double, y: Double, size: Double, rotation: Double
+    }
+    // The generator bakes these same still poses into launch-safe image assets.
+    public static let backdrop: [BackdropBlock] = [
+        BackdropBlock(color: 0, x: 0.0, y: 0.1, size: 100, rotation: 0),
+        BackdropBlock(color: 2, x: 0.83, y: 0.1, size: 65, rotation: 17),
+        BackdropBlock(color: 7, x: 1.02, y: 0.4, size: 65, rotation: 34),
+        BackdropBlock(color: 3, x: 0.0, y: 0.52, size: 100, rotation: 51),
+        BackdropBlock(color: 8, x: 0.99, y: 0.78, size: 65, rotation: 68),
+        BackdropBlock(color: 1, x: 0.14, y: 0.97, size: 65, rotation: 85),
+        BackdropBlock(color: 6, x: 0.78, y: 0.95, size: 100, rotation: 102),
+        BackdropBlock(color: 5, x: 0.015, y: 0.82, size: 65, rotation: 119),
+    ]
     public struct Tile: Equatable, Sendable {
         public let x: Double, y: Double, rotation: Double, scale: Double, opacity: Double
     }
     public static func isAnimated(visible: Bool, active: Bool, reduced: Bool, voiceOver: Bool) -> Bool {
         visible && active && !reduced && !voiceOver
+    }
+    /// Recognizable separated tiles, shared with the static launch artwork.
+    public static func launchTile(_ index: Int) -> Tile {
+        let index = min(8, max(0, index))
+        return Tile(x: Double(index % 3 - 1) * (21.0 / 65.0) * assemblySpread,
+                    y: Double(index / 3 - 1) * (21.0 / 65.0) * assemblySpread,
+                    rotation: 0, scale: assemblyScale, opacity: 1)
     }
     public static func tile(_ index: Int, elapsed: Double, animated: Bool) -> Tile {
         let index = min(8, max(0, index))
@@ -20,20 +47,17 @@ public enum BrandMotion {
         let time = elapsed.isFinite ? max(0, elapsed) : 2.2
         let local = min(1, max(0, (time - Double(index) * 0.045) / 1.55))
         let progress = 1 - pow(1 - local, 3)
-        // Start at the launch screen's assembled pose, open gently, then gather.
-        let opening = min(1, time / 0.28) * (1 - progress)
-        let angle = Double(index) * 2.39996 + time * 0.7 * (1 - progress)
-        // Keep the opening bloom above the status copy beneath the mark.
-        let radius = index == 4 ? 0 : 0.36 + Double(index % 3) * 0.04
+        // Gather inward from the system launch pose; never explode outward first.
+        let initial = launchTile(index)
         let life = min(1, max(0, (time - 2.2) / 0.4)) * (index == 4 ? 0.4 : 1)
         let frame = floor(max(0, time - 2.2) * 5)
         let jitterX = noise(frame, seed: index * 3) * 0.007 * life
         let jitterY = noise(frame, seed: index * 3 + 1) * 0.006 * life
         let jitterAngle = noise(frame, seed: index * 3 + 2) * 1.15 * life
-        return Tile(x: targetX + (cos(angle) * radius - targetX) * opening + jitterX,
-                    y: targetY + (sin(angle) * radius - targetY) * opening + jitterY,
-                    rotation: opening * (index.isMultiple(of: 2) ? 44 : -42) + jitterAngle,
-                    scale: 1 - opening * 0.22,
+        return Tile(x: targetX + (initial.x - targetX) * (1 - progress) + jitterX,
+                    y: targetY + (initial.y - targetY) * (1 - progress) + jitterY,
+                    rotation: jitterAngle,
+                    scale: assemblyScale + (1 - assemblyScale) * progress,
                     opacity: 1)
     }
 
@@ -45,16 +69,17 @@ public enum BrandMotion {
 
     /// Smooth independent paths in the outer corridors; never sweep across the status copy.
     public static func background(_ index: Int, elapsed: Double, animated: Bool) -> Tile {
-        let anchors: [(Double, Double)] = [(-0.01,0.1),(0.83,0.1),(1.02,0.4),(-0.015,0.52),(0.99,0.78),(0.14,0.97),(0.78,0.95),(0.015,0.82)]
-        let index = min(7, max(0, index)), anchor = anchors[index]
-        guard animated else { return Tile(x: anchor.0, y: anchor.1, rotation: Double(index * 17), scale: 1, opacity: 1) }
+        let index = min(backdrop.count - 1, max(0, index)), anchor = backdrop[index]
+        guard animated else { return Tile(x: anchor.x, y: anchor.y, rotation: anchor.rotation, scale: 1, opacity: 1) }
         let time = elapsed.isFinite ? max(0, elapsed) : 0
+        let entrance = min(1, time / 1.2)
+        let drift = entrance * entrance * (3 - 2 * entrance)
         let phase = Double(index) * 1.8, angle = time * (2 * .pi / (18 + Double(index) * 1.7)) + phase
         let side = [0,2,3,4,7].contains(index)
         let dx = side ? 0.04 : 0.1
-        return Tile(x: anchor.0 + sin(angle) * dx,
-                    y: anchor.1 + cos(angle * 0.83 + phase) * (side ? 0.095 : 0.07),
-                    rotation: Double(index * 17) + sin(angle * 0.73) * 18,
+        return Tile(x: anchor.x + sin(angle) * dx * drift,
+                    y: anchor.y + cos(angle * 0.83 + phase) * (side ? 0.095 : 0.07) * drift,
+                    rotation: anchor.rotation + sin(angle * 0.73) * 18 * drift,
                     scale: 1, opacity: 1)
     }
 }
