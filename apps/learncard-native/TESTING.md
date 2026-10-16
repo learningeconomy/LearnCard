@@ -1,5 +1,13 @@
 # Native regression checks
 
+## Passport naming and learner design — October 16
+
+The learner Home/welcome boards are design references, not running UI. The personal navigation/page, Home shortcut and related personal-record copy are renamed **Passport** across en/es/fr/ar; model/wire/destination/accessibility identifiers remain stable. Shared collection/link semantics are unchanged. See [concepts versus actual naming captures](design/LEARNER_HOME_BRIEF.md).
+
+`artifacts/passport-label-check.log` passes **four focused Swift cases** (three localization XCTest cases and one navigation-sizing Swift Testing case). `passport-label-ui.xcresult` passes **both existing Home UI cases**, covering Home-first order in English light/Arabic dark plus Inbox/Passport/creator routing. Their screenshots were exported and inspected; these are standard-size language previews. Catalog generation validates all 880 keys across four locales. Private configuration was restored byte-for-byte after synthetic testing. No new test cases or hosted CI run were added; the full configured suite below was not rerun.
+
+The Debug review build was installed and launched on Native Lab (`passport-review-install.log`); the installed payload and private configuration are compared in `passport-install-proof.json`. The separate checks simulator is shut down. No real account reset/sign-out, issuance, sharing or cloud registration ran. The proposed Home/optional welcome need their own implementation and verification next.
+
 Current configured suite: **450 cases** (175 Bun, 166 Swift, 109 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.

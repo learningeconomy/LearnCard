@@ -1573,25 +1573,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Read from your collection"
+            "value": "Read from your Passport"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Leer de tu colección"
+            "value": "Leer de tu pasaporte"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lire votre collection"
+            "value": "Lire votre passeport"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "قراءة مجموعتك"
+            "value": "القراءة من جواز تعلّمك"
           }
         }
       }
@@ -1631,25 +1631,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add to your collection"
+            "value": "Add to your Passport"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añadir a tu colección"
+            "value": "Añadir a tu pasaporte"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajouter à votre collection"
+            "value": "Ajouter à votre passeport"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "الإضافة إلى مجموعتك"
+            "value": "الإضافة إلى جواز تعلّمك"
           }
         }
       }
@@ -3645,25 +3645,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Collection"
+            "value": "Passport"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Colección"
+            "value": "Pasaporte"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Collection"
+            "value": "Passeport"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "المجموعة"
+            "value": "جواز التعلّم"
           }
         }
       }
@@ -6486,25 +6486,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Filtering your collection…"
+            "value": "Filtering your Passport…"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Filtrando tu colección…"
+            "value": "Filtrando tu pasaporte…"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Filtrage de votre collection…"
+            "value": "Filtrage de votre passeport…"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "جارٍ تصفية مجموعتك…"
+            "value": "جارٍ تصفية جواز تعلّمك…"
           }
         }
       }
@@ -6689,25 +6689,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Search more to check the rest of your collection."
+            "value": "Search more to check the rest of your Passport."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Busca más para revisar el resto de tu colección."
+            "value": "Busca más para revisar el resto de tu pasaporte."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recherchez davantage pour explorer le reste de votre collection."
+            "value": "Recherchez davantage pour explorer le reste de votre passeport."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "ابحث عن المزيد للتحقق من بقية مجموعتك."
+            "value": "ابحث عن المزيد للتحقق من بقية جواز تعلّمك."
           }
         }
       }
@@ -8225,25 +8225,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "My collection"
+            "value": "My Passport"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mi colección"
+            "value": "Mi pasaporte"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ma collection"
+            "value": "Mon passeport"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "مجموعتي"
+            "value": "جواز تعلّمي"
           }
         }
       }
@@ -9431,25 +9431,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Added to your collection"
+            "value": "Added to your Passport"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añadido a tu colección"
+            "value": "Añadido a tu pasaporte"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajouté à votre collection"
+            "value": "Ajouté à votre passeport"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "تمت الإضافة إلى مجموعتك"
+            "value": "تمت الإضافة إلى جواز تعلّمك"
           }
         }
       }
@@ -9837,25 +9837,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adding to your collection…"
+            "value": "Adding to your Passport…"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añadiendo a tu colección…"
+            "value": "Añadiendo a tu pasaporte…"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajout à votre collection…"
+            "value": "Ajout à votre passeport…"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "جارٍ الإضافة إلى مجموعتك…"
+            "value": "جارٍ الإضافة إلى جواز تعلّمك…"
           }
         }
       }
@@ -9866,25 +9866,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add to Collection"
+            "value": "Add to Passport"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añadir a la colección"
+            "value": "Añadir al pasaporte"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajouter à la collection"
+            "value": "Ajouter au passeport"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "إضافة إلى المجموعة"
+            "value": "إضافة إلى جواز التعلّم"
           }
         }
       }
@@ -10156,25 +10156,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The signature could not be checked. It wasn’t saved to your collection."
+            "value": "The signature could not be checked. It wasn’t saved to your Passport."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se pudo verificar la firma. No se guardó en tu colección."
+            "value": "No se pudo verificar la firma. No se guardó en tu pasaporte."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La signature n’a pas pu être vérifiée. Le justificatif n’a pas été enregistré dans votre collection."
+            "value": "La signature n’a pas pu être vérifiée. Le justificatif n’a pas été enregistré dans votre passeport."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "تعذّر التحقق من التوقيع. لم يتم حفظ بيانات الاعتماد في مجموعتك."
+            "value": "تعذّر التحقق من التوقيع. لم يتم حفظ بيانات الاعتماد في جواز تعلّمك."
           }
         }
       }
@@ -13538,25 +13538,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Collection category"
+            "value": "Passport category"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Categoría de la colección"
+            "value": "Categoría del pasaporte"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Catégorie de la collection"
+            "value": "Catégorie du passeport"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "فئة المجموعة"
+            "value": "فئة جواز التعلّم"
           }
         }
       }
@@ -19299,25 +19299,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This removes your staging collection, profile and recovery setup."
+            "value": "This removes your staging Passport, profile and recovery setup."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se eliminarán tu colección, perfil y configuración de recuperación de pruebas."
+            "value": "Se eliminarán tu pasaporte, perfil y configuración de recuperación de pruebas."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Votre collection, profil et configuration de récupération de test seront supprimés."
+            "value": "Votre passeport, profil et configuration de récupération de test seront supprimés."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "سيؤدي هذا إلى إزالة مجموعة الاختبار وملفك وإعدادات الاسترداد."
+            "value": "سيؤدي هذا إلى إزالة جواز الاختبار وملفك وإعدادات الاسترداد."
           }
         }
       }
@@ -19589,25 +19589,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clearing your staging collection"
+            "value": "Clearing your staging Passport"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eliminando tu colección de pruebas"
+            "value": "Eliminando tu pasaporte de pruebas"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suppression de votre collection de test"
+            "value": "Suppression de votre passeport de test"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "جارٍ مسح مجموعة الاختبار"
+            "value": "جارٍ مسح جواز الاختبار"
           }
         }
       }
@@ -20024,25 +20024,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Load more to check the rest of your collection."
+            "value": "Load more to check the rest of your Passport."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Carga más para revisar el resto de tu colección."
+            "value": "Carga más para revisar el resto de tu pasaporte."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chargez la suite pour parcourir le reste de votre collection."
+            "value": "Chargez la suite pour parcourir le reste de votre passeport."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "حمّل المزيد للاطلاع على بقية مجموعتك."
+            "value": "حمّل المزيد للاطلاع على بقية جواز تعلّمك."
           }
         }
       }
@@ -26013,6 +26013,93 @@
           "stringUnit": {
             "state": "translated",
             "value": "تعذّر تأكيد تسجيل الدخول. حاول مجددًا أو استخدم البريد الإلكتروني."
+          }
+        }
+      }
+    },
+    "collection.loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading your Passport…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargando tu pasaporte…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargement de votre passeport…"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جارٍ تحميل جواز تعلّمك…"
+          }
+        }
+      }
+    },
+    "credential.inPassport": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In your Passport"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tu pasaporte"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans votre passeport"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في جواز تعلّمك"
+          }
+        }
+      }
+    },
+    "credential.issuedInPassport": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issued by you · In your Passport"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emitido por ti · En tu pasaporte"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Émis par vous · Dans votre passeport"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أصدرتها أنت · في جواز تعلّمك"
           }
         }
       }

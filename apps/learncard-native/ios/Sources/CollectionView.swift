@@ -37,7 +37,7 @@ struct CollectionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                PageHeading(title: "Collection")
+                PageHeading(title: "Passport", identifier: "collection")
                 if !searchMode { Text(NativeText.literal("My credentials")).font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary) }
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").foregroundStyle(searchMode ? Palette.green : Palette.secondary)
@@ -74,7 +74,7 @@ struct CollectionView: View {
                 .padding(.horizontal, -20)
                 if store.snapshot == nil {
                     VStack(spacing: 16) {
-                        if store.isBusy { ProgressView("Loading your collection…") }
+                        if store.isBusy { ProgressView(NativeText.text("collection.loading")) }
                         else { Button(NativeText.literal("Try Again")) { Task { await store.refresh() } } }
                     }.frame(maxWidth: .infinity).padding(.vertical, 50)
                 } else if filtering {

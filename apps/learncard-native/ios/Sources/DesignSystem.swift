@@ -331,7 +331,7 @@ struct LearnCardBrand: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var textSize
     var compact = false
-    var section = "Collection"
+    var section = "Passport"
     private var sectionTitle: String { section == "Inbox" ? NativeText.text("nav.inbox.short") : NativeText.literal(section) }
     var body: some View {
         HStack(spacing: 8) {

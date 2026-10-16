@@ -35,7 +35,8 @@ struct NativeTabTray: View {
     @State private var availableWidth: CGFloat = 0
     @ScaledMetric(relativeTo: .footnote) private var labelSize = 14.0
     let inboxCount: Int
-    private let names = ["Collection", "Inbox", "Apps", "Home"]
+    private let names = ["Passport", "Inbox", "Apps", "Home"]
+    private let identifiers = ["collection", "inbox", "apps", "home"]
     private let icons = ["CollectionTab", "InboxTab", "AppsTab", "HomeTab"]
     // Keep destination identifiers stable while placing Home first in reading order.
     private let tabOrder = [3, 0, 1, 2]
@@ -68,7 +69,7 @@ struct NativeTabTray: View {
                 }.buttonStyle(CredentialPressStyle()).accessibilityLabel(NativeText.literal(names[tab]))
                     .accessibilityValue(tab == 1 && inboxCount > 0 ? "\(inboxCount) to review" : "")
                     .accessibilityAddTraits(selection == tab ? .isSelected : [])
-                    .accessibilityIdentifier("nav-\(names[tab].lowercased())")
+                    .accessibilityIdentifier("nav-\(identifiers[tab])")
             }
         }.padding(.top, 6).padding(.bottom, 5).padding(.horizontal, 8)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }

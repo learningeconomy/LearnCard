@@ -34,12 +34,12 @@ struct CredentialDetailView: View {
                     metadata("From", value: credential.issuer)
                     metadata("Category", value: credential.categoryTitle)
                     metadata("Date", value: credential.date.formatted(date: .abbreviated, time: .omitted))
-                    metadata("Status", value: isCreation ? "Reusable creation" : credential.isSample ? "Sample · unsigned" : credential.createdByMe ? "Issued by you · In your collection" : "In your collection")
+                    metadata("Status", value: isCreation ? "Reusable creation" : credential.isSample ? "Sample · unsigned" : NativeText.text(credential.createdByMe ? "credential.issuedInPassport" : "credential.inPassport"))
                 }
                 Text(credential.isSample ? "Sample content for exploring the native app." : credential.verificationSummary ?? "Verification unavailable.")
                     .font(.caption).foregroundStyle(Palette.secondary)
                 if isOffer {
-                    PrimaryButton(title: store.isBusy ? "Adding…" : "Add to Collection", loading: store.isBusy) {
+                    PrimaryButton(title: store.isBusy ? "Adding…" : "Add to Passport", loading: store.isBusy) {
                         Task { if await store.claim(credential) { dismiss() } }
                     }.accessibilityIdentifier("claim")
                 } else {

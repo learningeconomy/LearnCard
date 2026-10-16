@@ -4,6 +4,8 @@ Working rules, October 15, 2026. Applies to the SwiftUI consumer experiment. Use
 
 ## Character
 
+The October 16 learner pass renames the personal destination **Passport**, keeping shared credential collections distinct. Reading order is **Home / Passport / Inbox / Apps**; historical Collection references below describe the same internal destination. Use [learner Home and first-arrival compositions](LEARNER_HOME_BRIEF.md) for the next implementation pass. Existing creator/issuer capabilities become secondary; institution workspaces remain a later product slice.
+
 **Confident, useful, a little whimsical.** Substantial type, clear actions, warm outlined illustrations and the Colorful theme. Keep ordinary tasks quick. Personality belongs in a smiling avatar, an illustrated envelope, or a little house, while reading and account decisions stay calm.
 
 - Neutral canvas, colorful objects. Strong full-page backgrounds were tried and rejected.
@@ -62,7 +64,7 @@ Review English and Arabic at the same explicit standard Dynamic Type size first.
 
 Edge-to-edge adaptive surface, a fine top divider, four equal-width targets. A colored drawn icon, readable label, and short active underline communicate selection. Keep native bottom inset ownership in the tray. No floating glass island.
 
-Reading order is **Home → Collection → Inbox → Apps**. Home is the initial destination after signup, approved setup, sign-in and a fresh account resume. Keep the existing destination identifiers stable when changing visual order; Inbox badges, Home shortcuts and pending-claim review must still route to their intended destination. Arabic presents Home at the leading (right) edge. Ordinary tab switches retain each section's navigation state.
+Reading order is **Home → Passport → Inbox → Apps**. Home is the initial destination after signup, approved setup, sign-in and a fresh account resume. Keep the existing destination identifiers stable when changing visual order; Inbox badges, Home shortcuts and pending-claim review must still route to their intended destination. Arabic presents Home at the leading (right) edge. Ordinary tab switches retain each section's navigation state.
 
 `NavigationMetrics` defines icon frames from **available tray width**:
 

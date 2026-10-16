@@ -36,7 +36,7 @@ struct RootView: View {
                 CollectionView(store: store, scan: { claims.open() }, create: { showCreate = true }, onScrollStateChange: { compactBrands[0] = $0 })
                     .toolbar { header(tab: 0) }
             }
-            .tabItem { Label { Text(NativeText.literal("Collection")) } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }
+            .tabItem { Label { Text(NativeText.literal("Passport")) } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }
             .tag(0)
             NavigationStack {
                 InboxView(store: store, selectedOffer: $offer, scan: { claims.open() }, onScrollStateChange: { compactBrands[1] = $0 })
@@ -109,7 +109,7 @@ struct RootView: View {
     }
 
     private func brand(tab: Int) -> some View {
-        LearnCardBrand(compact: compactBrands[tab], section: ["Collection", "Inbox", "Apps", "Home"][tab])
+        LearnCardBrand(compact: compactBrands[tab], section: ["Passport", "Inbox", "Apps", "Home"][tab])
     }
 
     private func headerControls(tab: Int) -> some View {
