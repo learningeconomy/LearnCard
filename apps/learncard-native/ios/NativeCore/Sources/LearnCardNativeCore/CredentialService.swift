@@ -87,6 +87,11 @@ public actor DemoCredentialService: CredentialService {
         else if emptyFirstPage { loadedCount = 0 }
     }
 
+    public func importSample(id: String, title: String, issuer: String) {
+        guard !credentials.contains(where: { $0.id == id }) else { return }
+        credentials.append(Credential(id: id, title: title, issuer: issuer, summary: "Imported in this demo session. No live account was changed.", kind: .achievement, date: .now))
+    }
+
     public func snapshot() -> CollectionSnapshot {
         let count = loadedCount ?? credentials.count
         return CollectionSnapshot(credentials: Array(credentials.prefix(count)), offers: offers, activity: activity, hasMore: count < credentials.count)

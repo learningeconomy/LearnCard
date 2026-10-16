@@ -1,6 +1,6 @@
 # First-time setup, Build My LearnCard and People
 
-Updated October 16, 2026. First-time setup is implemented. People and the first optional Build My LearnCard intake hub are now native; document processing and broader relationship features remain follow-ups. See [the implemented scope](PEOPLE_AND_INTAKE.md). The existing-account access pass stays separate. See [first-time behavior, recovery capability and manual gates](FIRST_TIME_SETUP.md).
+Updated October 16, 2026. First-time setup is implemented. People and the first optional Build My LearnCard intake hub are now native; private document copies and signed JSON imports now extend the hub. AI extraction and broader relationship features remain follow-ups. See [the implemented scope](PEOPLE_AND_INTAKE.md). The existing-account access pass stays separate. See [first-time behavior, recovery capability and manual gates](FIRST_TIME_SETUP.md).
 
 ## 1. First-time account setup — implemented
 
@@ -14,17 +14,19 @@ The shared policy table now corrects Ireland to 16 in both maps, following [Iris
 
 The [generated composition and original SVG artwork](design/SIGNUP_BRIEF.md) follow the approved neutral/Colorful drawn direction. New copy covers en/es/fr/ar; nested country/date sheets inherit RTL and accessibility text size. The user has now completed real staging profile creation and required backup setup after an explicitly authorized staging-only reset; the shared Firebase login is retained. Physical-device, new Firebase identity creation, cross-client recovery and real guardian delivery/approval remain explicit manual gates. See [live reset/signup evidence](ACCOUNT_DELETION_AUDIT.md).
 
-## 2. Build My LearnCard on Home — initial hub implemented
+## 2. Build My LearnCard on Home — claim and file intake implemented
 
 This is **optional credential intake after account setup**, available to existing users too. Home now shows an illustrated **Build My LearnCard** entry; a native page offers scan, QR photo and claim-link intake. Back freely leaves the optional page, which stays available for later use. Do not require the user to upload documents to finish signup or fabricate a completion percentage.
+
+The native hub now also offers document-kind selection, one-file review/private-original saving, selected signed JSON import, real source counts and protected Quick Look viewing. It preserves web’s four source categories and `uploadType: rawVC`. The [intake contract](DOCUMENT_INTAKE.md) records limits, signature meanings, partial retry and duplicate boundaries. AI extraction and its privacy/session integration remain separate.
 
 The current web feature includes résumé, certificate, transcript and diploma uploads, selected QR/claim-link intake, raw credential JSON import and optional demo/sample tools. LinkedIn, school-connect and self-attested-skills entries exist in enums but are commented out of the active checklist; do not advertise them as current supported actions. Sample data must remain visibly optional and separate from real records.
 
 Native delivery can be incremental:
 
 1. **Implemented:** Home entry and scan/photo/paste-claim routes, with mode-specific entry and review before adding. Unavailable document actions stay out until their contracts work.
-2. Add native document/credential file intake, upload/storage, progress/failure/cancel/retry and review before saving extracted credentials. Audit existing parser/AI privacy gating first; uploading a document and processing its contents are distinct steps. Interrupted or partial import must not duplicate records or present self-authored extracted content as an issuer-verified achievement.
-3. Match web bookkeeping: shared LearnCloud categories/source tags and actual counts, with durable operation state where needed. Counts use `resume`, `certificate`, `transcript`, `diploma` and imported `uploadType: rawVC`, independently of semantic Collection categories. Existing web intake must be visible natively and vice versa. Completion follows saved data, not local taps or a subset of loaded Collection pages.
+2. **File intake implemented:** native document/credential file intake, encrypted storage, progress/failure/cancel/retry and selected-original review. Add extraction integration and review before saving generated credentials next. Audit existing parser/AI privacy gating first; uploading a document and processing its contents are distinct steps. Interrupted or partial import must not duplicate records or present self-authored extracted content as an issuer-verified achievement.
+3. **Source bookkeeping implemented:** match web bookkeeping: shared LearnCloud categories/source tags and actual counts, with durable operation state where needed. Counts use `resume`, `certificate`, `transcript`, `diploma` and imported `uploadType: rawVC`, independently of semantic Collection categories. Existing web intake must be visible natively and vice versa. Completion follows saved data, not local taps or a subset of loaded Collection pages.
 
 Adding an existing résumé here is compatible with keeping the separate résumé **builder/editor** web-only. AI career Pathways and AI Sessions remain their own native slices.
 
@@ -48,7 +50,7 @@ This is LearnCard's connection graph. Access to the device address book is a sep
 | Shared policy/approval audit   | Small focused investigation, potentially separate shared/backend fixes     | Reviewed policy table; explicit distinction between age, approval and feature restrictions                                                     |
 | Native first-time registration | Implemented; live staging profile/backup setup completed on retained login | Fresh adult, missing-profile, underage, pending-approval and interrupted/retry paths; second-device recovery and real guardian approval remain |
 | People                         | Initial graph implemented; invitation/send/share refinements remain        | Multi-page search, incoming/outgoing requests, block/disconnect, Inbox consistency and lifecycle isolation                                     |
-| Build My LearnCard             | Native claim-intake hub implemented; document processing is the next slice | Real intake paths, web index parity, privacy-aware processing, review, partial failure and duplicate prevention                                |
+| Build My LearnCard             | Native claim/file intake implemented; AI extraction is the next slice      | Real intake paths, web index parity, privacy-aware processing, review, partial failure and duplicate prevention                                |
 
 Automated policy cases should cover birthday boundaries, leap days, missing/future dates, country changes, each configured threshold and unknown-policy behavior. Native account cases should cover losing a profile-create response, handle races, failed preference/email saves, delayed guardian approval, resume after five minutes, cancellation/sign-out and pending scan/Apps intents. People tests need pagination/search, duplicate requests, stale responses after account switch and badge consistency. Build My tests need malformed/large files, partial imports, retry/relaunch, cancellation, processing restrictions and truthful counts. All new UI needs four-language, RTL, dark/light, accessibility type and Reduce Motion review.
 

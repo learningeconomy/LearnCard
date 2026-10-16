@@ -10,6 +10,7 @@ struct LearnCardNativeApp: App {
     #endif
     @AppStorage(NativeLanguage.preferenceKey) private var language = "system"
     init() {
+        IntakePreviewCache.cleanStaleFiles()
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         _fixtureAccount = State(initialValue: AccountFixture.controller(arguments: args))

@@ -52,6 +52,7 @@ import { LCN_DID_WEB_REGEX } from '../../../packages/learn-card-base/src/constan
 import { createConsumerCommands, consumerErrorCode } from './consumer-apps';
 import { createInboxCommands, inboxErrorCode } from './inbox';
 import { createPeopleCommands, peopleErrorCode } from './people';
+import { createIntakeCommands, intakeErrorCode, documentKinds } from './intake';
 import { createFamilyCommands, familyErrorCode, type FamilyPinService } from './families';
 import { getClient as getAccountAPI } from '@learncard/lca-api-client';
 import { isFamilyCreation, sendPersonalCreation } from './personal-creations';
@@ -463,6 +464,7 @@ const snapshot = async (more = false) => {
     validateCollectionCursor(page.hasMore, page.cursor, visitedCollectionCursors);
     for (const record of page.records) {
         if (string(record.id).startsWith('__verifiable_data_')) continue;
+        if (documentKinds.includes(record.category as never)) continue;
         if (!string(record.uri) || collection.some(item => item.id === record.uri)) continue;
         collection.push(await display(record));
     }
@@ -508,6 +510,7 @@ const commands = {
     ),
     ...signupCommands,
     ...createPeopleCommands(() => wallet),
+    ...createIntakeCommands(() => wallet),
     ...createConsumerCommands(() => wallet),
     ...createInboxCommands(
         () => wallet,
@@ -928,17 +931,19 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
                             ? claimErrorCode(error)
                             : method.startsWith('people')
                               ? peopleErrorCode(error)
-                              : method.startsWith('inbox')
-                                ? inboxErrorCode(error)
-                                : method.startsWith('families')
-                                  ? familyErrorCode(error)
-                                  : method.startsWith('apps') || method.startsWith('privacy')
-                                    ? consumerErrorCode(error)
-                                    : method === 'initialize'
-                                      ? 'connection'
-                                      : method === 'recover'
-                                        ? 'recovery'
-                                        : 'unavailable',
+                              : method.startsWith('intake')
+                                ? intakeErrorCode(error)
+                                : method.startsWith('inbox')
+                                  ? inboxErrorCode(error)
+                                  : method.startsWith('families')
+                                    ? familyErrorCode(error)
+                                    : method.startsWith('apps') || method.startsWith('privacy')
+                                      ? consumerErrorCode(error)
+                                      : method === 'initialize'
+                                        ? 'connection'
+                                        : method === 'recover'
+                                          ? 'recovery'
+                                          : 'unavailable',
                 });
             }
         },

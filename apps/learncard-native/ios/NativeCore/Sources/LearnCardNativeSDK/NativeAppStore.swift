@@ -17,6 +17,7 @@ public final class NativeAppStore {
     public let families: FamiliesStore
     public let inbox: InboxStore
     public let people: PeopleStore
+    public let intake: IntakeStore
     public var demoClaimService: any ClaimService { DemoClaimService(service: service) }
     /// Matches the tray and Home; credential arrival notices must not count twice.
     public var unreadInboxUpdateCount: Int {
@@ -24,9 +25,10 @@ public final class NativeAppStore {
     }
     public var inboxCount: Int { (snapshot?.offers.count ?? 0) + unreadInboxUpdateCount }
 
-    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil, peopleService: (any PeopleService)? = nil) {
+    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil, peopleService: (any PeopleService)? = nil, intakeService: (any IntakeService)? = nil) {
         self.service = service
         self.isLive = isLive
+        intake = IntakeStore(service: intakeService ?? (isLive ? UnavailableIntakeService() : DemoIntakeService(service: service)))
         consumer = ConsumerAppsStore(service: consumerService ?? (isLive ? UnavailableConsumerAppService() : DemoConsumerAppService()))
         families = FamiliesStore(service: familyService ?? (isLive ? UnavailableFamilyService() : DemoFamilyService()))
         let demoPeople = DemoPeopleService()

@@ -47,7 +47,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(NativeText.text("learner.more")).font(.title2.bold())
                     VStack(spacing: 0) {
-                        NavigationLink { BuildLearnCardView(receive: intake) } label: {
+                        NavigationLink { BuildLearnCardView(appStore: store, receive: intake) } label: {
                             DrawnSettingsRow(title: NativeText.text("build.title"), symbol: .credential, tint: Palette.portfolioCard, subtitle: NativeText.text("build.homeBody"))
                         }.accessibilityIdentifier("home-build")
                         rowDivider

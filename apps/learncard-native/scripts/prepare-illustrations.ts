@@ -12,6 +12,20 @@ const drawings = (dark: boolean): Record<string, string> => {
     const glyph = (content: string): string =>
         `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#18224E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
     return {
+        IntakeFolderIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round">
+                <g transform="rotate(-9 62 75)"><rect x="23" y="25" width="65" height="101" rx="9" fill="#60A5FA"/>
+                <path d="M32 31v86M44 40h30M44 112h25" stroke="#FFFFFF"/><circle cx="57" cy="73" r="22" fill="#FDE047"/>
+                <path d="M49 68v1M66 68v1M48 80q9 11 19-1" fill="none"/></g>
+                <g transform="rotate(9 134 83)"><path d="M96 49v-9q0-7 7-7h20l10 11h31q9 0 9 9v66q0 8-9 8h-61q-7 0-7-8Z" fill="#FFFFFF"/>
+                <path d="M92 59q0-8 8-8h64q9 0 9 8v60q0 8-9 8h-64q-8 0-8-8Z" fill="#FDE047"/>
+                <path d="M103 59h49" stroke="#FFFFFF"/><path d="M119 81v2M145 81v2M119 96q13 14 26-1" fill="none"/>
+                <circle cx="111" cy="93" r="4" fill="#F9A8D4" stroke="none"/></g>
+                <path d="M24 130l-6 10M74 130l8 9M117 129l-6 10M156 131l7 7M20 68l-12-3M180 79l12-8"/>
+                <path d="M91 24l3-13M178 44l10-7M13 41l-7-8" stroke="#22D3EE" stroke-width="5"/>
+                <path d="M105 17l8-6M181 111l10 5" stroke="#F9A8D4" stroke-width="6"/>
+            </g>
+        `),
         LearnerPlane: glyph(
             `<path d="M6 23L59 5L39 56L28 36Z" fill="#F9A8D4"/><path d="M28 36L59 5L18 29M28 36L25 51L37 42" fill="#93C5FD"/><path d="M6 50L16 40M5 59L17 55M46 59L51 63" stroke="#22D3EE"/>`
         ),

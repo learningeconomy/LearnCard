@@ -64,7 +64,7 @@ struct RootView: View {
         .modifier(ClaimPresentation(flow: demoClaims, store: store, enabled: account == nil))
         .task { if account == nil { demoClaims.connect(service: store.demoClaimService, accountID: "demo") } }
         .sheet(isPresented: $showActions, onDismiss: performRequestedAction) {
-            LearnerIntakeSheet(select: { requestedIntake = $0; showActions = false },
+            LearnerIntakeSheet(appStore: store, select: { requestedIntake = $0; showActions = false },
                                tool: { requestedAction = $0; showActions = false })
         }
         .sheet(isPresented: $showWelcome, onDismiss: performRequestedAction) {

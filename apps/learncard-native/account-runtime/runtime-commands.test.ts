@@ -215,3 +215,14 @@ test.each(['peopleList', 'peopleProfile', 'peopleAction'])(
         expect(bridgeCalls).toBe(0);
     }
 );
+
+test.each(['intakeStatus', 'intakePrepare', 'intakeCommit', 'intakeDocument', 'intakeDiscard'])(
+    'registered %s refuses signed-out file access without transport',
+    async method => {
+        expect(JSON.parse(await account.call(method, {}))).toEqual({
+            ok: false,
+            error: 'intake:signIn',
+        });
+        expect(bridgeCalls).toBe(0);
+    }
+);

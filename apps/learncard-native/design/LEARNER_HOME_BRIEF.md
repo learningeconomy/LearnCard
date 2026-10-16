@@ -75,3 +75,7 @@ Organization workspaces remain a separate [planning proposal](../WORKSPACES_PLAN
 ## Wrap-up verification boundary
 
 The final 12-case affected run passes, with 29 distinct passing simulator cases across the broader/final runs, plus 175 Bun and 180 Swift cases. Screenshot review then found Arabic intake using the system's LTR sheet layout. Both new surfaces now explicitly receive the selected locale/RTL, following the existing native Account pattern. A strengthened direction case checks the cancellation action and leading illustration. That last one-case run was cancelled after a cold-boot/BackBoard stall during wrap-up; its runtime result remains pending. The Arabic welcome capture above is the already-correct root layout, not evidence of the final presented-sheet direction fix. See [the exact resume point](../STATUS.md#resume-handoff).
+
+## Resume verification completed — October 16
+
+The strengthened Arabic sheet-direction case now passes in `learner-rtl-resume-2026-10-16.xcresult`, at both standard and accessibility sizes. The actual screenshot confirms right-side cancellation and leading/right illustration placement. This closes the preceding wrap-up boundary; it does not turn the earlier cancelled bundle into a pass. The next user-selected slice is [Build My LearnCard files](DOCUMENT_INTAKE_BRIEF.md).

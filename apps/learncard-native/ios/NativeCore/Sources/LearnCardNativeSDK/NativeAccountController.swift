@@ -24,6 +24,7 @@ public extension AccountSession {
     var familyService: any FamilyService { get }
     var inboxService: any InboxService { get }
     var peopleService: any PeopleService { get }
+    var intakeService: any IntakeService { get }
     var claimService: (any ClaimService)? { get }
     func initialize() async throws -> AccountState
     func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async throws -> AccountState
@@ -47,6 +48,7 @@ extension AccountRuntime: AccountHost {
     public var familyService: any FamilyService { LiveFamilyService(runtime: self) }
     public var inboxService: any InboxService { LiveInboxService(runtime: self) }
     public var peopleService: any PeopleService { LivePeopleService(runtime: self) }
+    public var intakeService: any IntakeService { LiveIntakeService(runtime: self) }
     public var claimService: (any ClaimService)? { LiveClaimService(runtime: self) }
 }
 
@@ -54,6 +56,7 @@ public extension AccountHost { var consumerService: any ConsumerAppService { Una
 public extension AccountHost { var familyService: any FamilyService { UnavailableFamilyService() } }
 public extension AccountHost { var inboxService: any InboxService { UnavailableInboxService() } }
 public extension AccountHost { var peopleService: any PeopleService { UnavailablePeopleService() } }
+public extension AccountHost { var intakeService: any IntakeService { UnavailableIntakeService() } }
 public extension AccountHost { var claimService: (any ClaimService)? { nil } }
 
 public extension AccountHost {
@@ -220,10 +223,10 @@ public final class NativeAccountController {
         if state.error != nil { throw AccountError.recovery }
         if state.phase != "ready" {
             if let user { activation.observe(accountID: user.id, phase: state.phase) }
-            store?.consumer.lock(); store?.families.lock(); store?.inbox.lock(); store?.people.lock(); store = nil; claims.lock()
+            store?.consumer.lock(); store?.families.lock(); store?.inbox.lock(); store?.people.lock(); store?.intake.lock(); store = nil; claims.lock()
         }
         if state.phase == "ready", let runtime {
-            let store = NativeAppStore(service: runtime.credentialService, isLive: true, consumerService: runtime.consumerService, familyService: runtime.familyService, inboxService: runtime.inboxService, peopleService: runtime.peopleService)
+            let store = NativeAppStore(service: runtime.credentialService, isLive: true, consumerService: runtime.consumerService, familyService: runtime.familyService, inboxService: runtime.inboxService, peopleService: runtime.peopleService, intakeService: runtime.intakeService)
             self.store = store
             await store.refresh()
             try check(expected)
@@ -436,6 +439,7 @@ public final class NativeAccountController {
         store?.consumer.lock()
         store?.families.lock()
         store?.inbox.lock(); store?.people.lock()
+        store?.intake.lock()
         store = nil; state = nil; user = nil; recipientName = nil
         uploadedPhoto = nil; uploadingPhoto = false; signupBackup = nil
         busy = false; phase = "locked"; error = nil

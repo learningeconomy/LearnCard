@@ -4,7 +4,7 @@ October 16, 2026. Home now groups Data Sharing immediately after My collection, 
 
 ## Where things live
 
-The four-tab tray remains Home → Collection → Inbox → Apps. **People** is a native destination reached from Home and Account; Inbox's People shortcut opens Requests. **Build My LearnCard** is an optional Home destination for collecting credentials after required account setup. Back leaves it freely, and it remains available to returning users. No desktop side menu or extra tab is introduced.
+The four-tab tray remains Home → Passport → Inbox → Apps. **People** is a native destination reached from Home and Account; Inbox's People shortcut opens Requests. **Build My LearnCard** is an optional Home destination for collecting credentials after required account setup. Back leaves it freely, and it remains available to returning users. No desktop side menu or extra tab is introduced.
 
 See [the generated composition and native screenshots](design/PEOPLE_INTAKE_BRIEF.md). The reference guides illustration and scale; example people in it are not live accounts.
 
@@ -22,11 +22,13 @@ Services and stores belong to one native account. Lock/sign-out/reset clears lis
 
 Contact invitation links/QR, device contacts, profile-specific send/share shortcuts, a richer profile editor and specialized guardian/device notifications remain separate. The generic credential scanner does not silently treat contact-invite codes as credential claims.
 
-## Build My LearnCard: first native intake slice
+## Build My LearnCard: claims and files
 
 The hub offers working **Scan a code**, **Use a claim link** and **Choose a QR photo** actions. Each enters the existing native claim flow with a matching input mode. Link entry focuses the field without starting the camera; photo entry opens the system picker; scan uses camera availability/permission feedback. An unfinished claim retains its current review/retry state rather than being silently discarded by a new entry mode. Cancelling a picker or leaving the hub never adds a credential. Every resolved credential still goes through preview and explicit Add to Collection, with existing signature, approval and retry-journal behavior.
 
-Build My LearnCard is not required signup, a completion score or an AI processing promise. This initial hub does not offer unfinished document buttons. Web résumé/certificate/transcript/diploma extraction, raw credential JSON import and cross-client intake bookkeeping remain the next slice in [the onboarding plan](ONBOARDING_AND_PEOPLE.md). Existing résumé import is distinct from the web-only résumé builder/editor. No document is uploaded or processed by opening Home or the hub.
+The resumed learner pass adds [document originals and existing signed JSON files](DOCUMENT_INTAKE.md), with review, private encrypted saving, selected import, source-index counts and native document viewing. Home and Add both reach this hub. Documents remain personal copies, distinct from institution-issued achievements.
+
+Build My LearnCard is not required signup, a completion score or an AI processing promise. AI résumé/certificate/transcript/diploma extraction remains the next slice in [the onboarding plan](ONBOARDING_AND_PEOPLE.md). Existing résumé import is distinct from the web-only résumé builder/editor. No document is uploaded or processed by opening Home or the hub.
 
 ## Source and validation
 

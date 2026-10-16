@@ -19,6 +19,8 @@ enum AccountReply {
                let failure = StagingResetError(rawValue: String(code.dropFirst("reset:".count))) { throw failure }
             if let code = envelope["error"] as? String, code.hasPrefix("people:"),
                let failure = PeopleError(rawValue: String(code.dropFirst("people:".count))) { throw failure }
+            if let code = envelope["error"] as? String, code.hasPrefix("intake:"),
+               let failure = IntakeError(rawValue: String(code.dropFirst("intake:".count))) { throw failure }
             throw method == "recover" ? AccountError.recovery : AccountError.unavailable
         }
         let decoder = JSONDecoder()

@@ -57,7 +57,7 @@ final class StagingTransport: NSObject, WKScriptMessageHandlerWithReply {
             request.setValue(value, forHTTPHeaderField: name)
         }
         if let body = input["body"] as? String, !body.isEmpty {
-            guard body.utf8.count <= 2 * 1024 * 1024 else {
+            guard body.utf8.count <= Self.requestLimit(url, method: method) else {
                 replyHandler(nil, "Staging request exceeds the test limit")
                 return
             }
@@ -92,6 +92,12 @@ final class StagingTransport: NSObject, WKScriptMessageHandlerWithReply {
         let actions = url.path.dropFirst("/trpc/".count).split(separator: ",", omittingEmptySubsequences: false)
         let allowed: Set<String> = ["utilities.getChallenges", "preferences.updatePreferences", "pins.hasPin", "pins.createPin", "pins.verifyPin", "notifications.notifications", "notifications.updateNotificationMeta"]
         return !actions.isEmpty && actions.allSatisfy { allowed.contains(String($0)) }
+    }
+
+    /// Four-megabyte originals expand when base64-encoded and encrypted. Only
+    /// private LearnCloud storage receives the larger bound; other routes retain 2 MiB.
+    nonisolated static func requestLimit(_ url: URL, method: String) -> Int {
+        url.host == "staging.cloud.learncard.com" && url.path == "/trpc/storage.store" && method == "POST" ? 8 * 1024 * 1024 : 2 * 1024 * 1024
     }
 
     nonisolated static func permitsHeader(_ name: String, url: URL, accountHost: Bool) -> Bool {

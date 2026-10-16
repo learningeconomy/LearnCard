@@ -1,8 +1,10 @@
 # LearnCard native client plan
 
-## Current priority: review the learner Home and first arrival — October 16
+## Current priority: learner document and credential-file intake — October 16
 
 The user selected a learner-first personal experience and approved the [generated Home/welcome direction](design/LEARNER_HOME_BRIEF.md). The new/returning Home and optional activation after existing required setup are implemented; pending claims resume explicit review directly. Receive, understand, organize and share personal achievements take precedence over creation/issuance management. Keep existing creator capabilities available through secondary tools. Home now uses actual incoming items, two recent personal achievements, clear Scan/Share actions, People and Data Sharing. The labeled Add header opens a designed native intake sheet. Create/send tools are secondary. Account-scoped welcome state survives resume, can be skipped and revisited, and never bypasses required setup. The next product checkpoint is manual review of this implemented learner slice, then choosing a focused follow-up from document intake, richer achievement understanding or learner sharing.
+
+The user selected **Build My LearnCard: adding existing credentials and documents** for this resumed pass. The previous Arabic direction check passes, and the installed learner Home/saved credential were reviewed read-only. Native intake now separates issuer claim routes, private document originals and selected signed JSON imports. The four document source categories and rawVC tags align with web. Review, retries, actual source counts and protected native document viewing are part of this slice; AI extraction is the next separate integration. See [the file-intake contract](DOCUMENT_INTAKE.md) and [composition/native evidence](design/DOCUMENT_INTAKE_BRIEF.md).
 
 The personal tab/page and related four-language copy are now **Passport**, matching web and avoiding confusion with shared credential collections. Stable collection model/wire/route/test identifiers remain. Shared collections is still a possible clear name for grouped shared records; no rename of that separate feature is included.
 
@@ -14,7 +16,7 @@ Native authorization, common Firebase persistence/routing, cancellation/race gua
 
 ## Home, People and optional intake — October 16
 
-Data Sharing moves directly under the three primary credential actions; Scan a code becomes an illustrated row. People is reachable through Home/Account/Inbox, retaining four tabs. Native connections, requests, sent, blocked and username search use existing graph APIs with account isolation and Inbox synchronization. Build My LearnCard opens a real optional scan/photo/link intake hub. Document extraction/raw JSON, invitation QR and profile-specific send/share remain separate. See [implemented scope and remaining work](PEOPLE_AND_INTAKE.md).
+Data Sharing moves directly under the three primary credential actions; Scan a code becomes an illustrated row. People is reachable through Home/Account/Inbox, retaining four tabs. Native connections, requests, sent, blocked and username search use existing graph APIs with account isolation and Inbox synchronization. Build My LearnCard opens a real optional scan/photo/link intake hub. Private document originals and reviewed raw JSON now extend this hub. AI extraction, invitation QR and profile-specific send/share remain separate. See [implemented scope and remaining work](PEOPLE_AND_INTAKE.md).
 
 ## Creator category and format parity — October 16
 
@@ -26,7 +28,7 @@ First-time setup is implemented. The native client routes verified accounts thro
 
 The authorized staging-only reset and required setup are complete, with the shared Firebase identity retained. Do not reset the recreated account again. The saved private test credential and Home-first relaunch were verified after upgrade/restart. The native reset is staged and retryable, requires verified-email confirmation, preserves interrupted progress in Keychain, and reconnects through a new SDK host before first-time setup. This is not production account erasure. Independent second-device backup recovery, full staging-web parity and real guardian delivery/approval remain separate live paths. See [reset audit and status](ACCOUNT_DELETION_AUDIT.md).
 
-People and the first optional Build My LearnCard intake hub are implemented through Home/Account/Inbox without a side menu. Broader document intake and relationship tools remain next slices. See [remaining roadmap](ONBOARDING_AND_PEOPLE.md).
+People and the first optional Build My LearnCard intake hub are implemented through Home/Account/Inbox without a side menu. File intake is now implemented; AI document extraction and broader relationship tools remain later slices. See [remaining roadmap](ONBOARDING_AND_PEOPLE.md).
 
 ## Account, sign-in and recovery — October 16
 

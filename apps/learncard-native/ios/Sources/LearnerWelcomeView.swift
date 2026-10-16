@@ -46,6 +46,7 @@ struct LearnerWelcomeView: View {
 
 /// Choosing a route does not request camera access or change a pending claim.
 struct LearnerIntakeSheet: View {
+    let appStore: AppStore
     let select: (ClaimEntryMode) -> Void
     let tool: (CollectionAction) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -64,6 +65,9 @@ struct LearnerIntakeSheet: View {
                         route(.photo, title: "build.photo", body: "build.photoBody", symbol: .credential, tint: Palette.portfolioCard)
                     }
                     Text(NativeText.text("claims.beforeAdding")).font(.subheadline).foregroundStyle(Palette.secondary)
+                    NavigationLink { BuildLearnCardView(appStore: appStore, receive: select, filesOnly: true) } label: {
+                        DrawnSettingsRow(title: NativeText.text("intake.filesHeading"), symbol: .collection, tint: Palette.portfolioCard, subtitle: NativeText.text("intake.documentsBody"))
+                    }.accessibilityIdentifier("learner-intake-files")
                     NavigationLink {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 20) {
