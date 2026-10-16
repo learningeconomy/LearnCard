@@ -428,7 +428,9 @@ const TargetingDryRun: React.FC<{
 export const InAppMessagesDebugTab: React.FC = () => {
     const [copied, copyToClipboard] = useCopyToClipboard();
 
-    const { report, ready, context, credentialFacts } = useInAppMessages();
+    const { report, ready, context, credentialFacts } = useInAppMessages(undefined, {
+        forceCredentialFacts: true,
+    });
     const gate = useInAppMessagePresentationGate();
     const override = useInAppMessageOverride();
 
@@ -438,6 +440,10 @@ export const InAppMessagesDebugTab: React.FC = () => {
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [draft, setDraft] = useState<InAppMessage | null>(null);
     const [factsBusy, setFactsBusy] = useState<'backfill' | 'clear' | null>(null);
+    const [factsFeedback, setFactsFeedback] = useState<{
+        type: 'success' | 'error';
+        message: string;
+    } | null>(null);
     const [credentialFilter, setCredentialFilter] = useState('');
     const [simulatedIssuer, setSimulatedIssuer] = useState(PILOT_ISSUER);
     const [simulatedType, setSimulatedType] = useState('ClrCredential');
@@ -507,11 +513,36 @@ export const InAppMessagesDebugTab: React.FC = () => {
 
     const handleFactsAction = useCallback(
         async (action: 'backfill' | 'clear') => {
+            setFactsFeedback(null);
             setFactsBusy(action);
 
             try {
+                if (!credentialFacts.accountDid) {
+                    setFactsFeedback({
+                        type: 'error',
+                        message: 'Sign in to refresh credential facts.',
+                    });
+
+                    return;
+                }
+
                 if (action === 'backfill') await credentialFacts.backfillNow();
                 else await credentialFacts.clearFacts();
+                setFactsFeedback({
+                    type: 'success',
+                    message:
+                        action === 'backfill'
+                            ? 'Backfill complete. Credential facts refreshed.'
+                            : 'Credential facts cleared.',
+                });
+            } catch {
+                setFactsFeedback({
+                    type: 'error',
+                    message:
+                        action === 'backfill'
+                            ? 'Backfill failed. Check your connection and try again.'
+                            : 'Could not clear credential facts. Please try again.',
+                });
             } finally {
                 setFactsBusy(null);
             }
@@ -702,6 +733,19 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         {copied === 'full-report' ? 'Copied!' : 'Copy report'}
                     </button>
                 </div>
+
+                {factsFeedback && (
+                    <div
+                        role={factsFeedback.type === 'error' ? 'alert' : 'status'}
+                        className={`mt-2 p-3 rounded-2xl border text-xs leading-relaxed ${
+                            factsFeedback.type === 'success'
+                                ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                : 'bg-red-50 border-red-100 text-red-700'
+                        }`}
+                    >
+                        {factsFeedback.message}
+                    </div>
+                )}
             </Section>
 
             <Section
