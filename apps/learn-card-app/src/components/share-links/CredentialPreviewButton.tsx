@@ -49,7 +49,7 @@ export const CredentialPreviewButton: React.FC<CredentialPreviewButtonProps> = (
         const previewProps = {
             credential,
             categoryType,
-            verificationItems: [] as [],
+            verificationItems: [],
             customThumbComponent: (
                 <CredentialBadgeNew
                     achievementType={achievementType}
