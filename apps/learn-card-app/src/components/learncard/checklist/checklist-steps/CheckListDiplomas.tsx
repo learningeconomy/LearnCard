@@ -61,6 +61,7 @@ export const CheckListDiplomas: React.FC = () => {
         base64Datas,
         rawArtifactCredentials,
         fileUploadOutcomes,
+        clearFileUploadOutcome,
         retryFileExtraction,
         retryFileSave,
     } = useUploadFile(UploadTypesEnum.Diploma);
@@ -224,6 +225,7 @@ export const CheckListDiplomas: React.FC = () => {
                 if (!targetRecord) return;
 
                 await deleteCredentialRecord(targetRecord);
+                clearFileUploadOutcome(deleted.artifactId);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteDiploma::error', error);

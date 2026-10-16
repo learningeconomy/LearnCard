@@ -677,6 +677,28 @@ describe('useUploadFile persistence outcomes', () => {
         expect(records.has('second')).toBe(true);
     });
 
+    it('clears only the deleted document feedback when files have the same name', async () => {
+        uploadMutationMock.mockRejectedValue(new Error('PRIVATE_MODEL_ERROR'));
+        const first = rawArtifact('deleted-document', 'resume.pdf');
+        const second = rawArtifact('remaining-document', 'resume.pdf');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await result.current.retryFileExtraction(first, UploadTypesEnum.Certificate);
+            await result.current.retryFileExtraction(second, UploadTypesEnum.Certificate);
+        });
+        expect(result.current.fileUploadOutcomes.map(item => item.artifact.id)).toEqual([
+            first.id,
+            second.id,
+        ]);
+        await act(async () => {
+            result.current.clearFileUploadOutcome(first.id);
+        });
+        expect(result.current.fileUploadOutcomes).toMatchObject([
+            { artifact: { id: second.id }, status: 'extraction_failed' },
+        ]);
+        expect(records.get(second.id)?.uri).toBe(`original:${second.id}`);
+    });
+
     it('preserves an original without model work when AI is disabled', async () => {
         testState.aiEnabled = false;
         const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));

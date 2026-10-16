@@ -61,6 +61,7 @@ export const CheckListCerts: React.FC = () => {
         base64Datas,
         rawArtifactCredentials,
         fileUploadOutcomes,
+        clearFileUploadOutcome,
         retryFileExtraction,
         retryFileSave,
     } = useUploadFile(UploadTypesEnum.Certificate);
@@ -221,6 +222,7 @@ export const CheckListCerts: React.FC = () => {
                 if (!targetRecord) return;
 
                 await deleteCredentialRecord(targetRecord);
+                clearFileUploadOutcome(deleted.artifactId);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('Failed to delete certificate', error);

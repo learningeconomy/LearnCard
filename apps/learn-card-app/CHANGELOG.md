@@ -3,6 +3,7 @@
 ## Unreleased
 
 - LC-2202: Add per-file extraction feedback, reviewed retry, and confirmed save counts for résumés, certificates, transcripts and diplomas. Empty results and files with no readable text no longer create placeholder “Raw Artifact” credentials. Processing failures still preserve accessible originals. Retry failed persistence without duplicating confirmed writes or replacing a newer saved résumé.
+- LC-2202: Remove a deleted document's upload feedback after deletion succeeds. Keep feedback on failed deletion and preserve other files' outcomes, including files with the same name.
 
 ## 1.100.0
 

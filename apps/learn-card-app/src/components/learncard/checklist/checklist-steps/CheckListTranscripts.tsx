@@ -61,6 +61,7 @@ export const CheckListTranscripts: React.FC = () => {
         base64Datas,
         rawArtifactCredentials,
         fileUploadOutcomes,
+        clearFileUploadOutcome,
         retryFileExtraction,
         retryFileSave,
     } = useUploadFile(UploadTypesEnum.Transcript);
@@ -176,6 +177,7 @@ export const CheckListTranscripts: React.FC = () => {
                 if (!targetRecord) return;
 
                 await deleteCredentialRecord(targetRecord);
+                clearFileUploadOutcome(deleted.artifactId);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteTranscript::error', error);

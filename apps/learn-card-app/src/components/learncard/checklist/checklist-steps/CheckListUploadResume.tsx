@@ -61,6 +61,7 @@ export const CheckListUploadResume: React.FC = () => {
         base64Data,
         rawArtifactCredential,
         fileUploadOutcomes,
+        clearFileUploadOutcome,
         retryFileExtraction,
         retryFileSave,
         isParsing,
@@ -169,6 +170,7 @@ export const CheckListUploadResume: React.FC = () => {
                 if (!targetRecord) return;
 
                 await deleteCredentialRecord(targetRecord);
+                clearFileUploadOutcome(previous.artifactId);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteResume::error', error);

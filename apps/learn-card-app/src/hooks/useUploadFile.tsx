@@ -1019,6 +1019,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         fetchParsedCredentialsFromFiles,
         storeSelectedCredentials,
         fileUploadOutcomes,
+        clearFileUploadOutcome: (artifactId: string) =>
+            setFileUploadOutcomes(current =>
+                current.filter(item => item.artifact.id !== artifactId)
+            ),
         retryFileExtraction,
         retryFileSave,
     };
