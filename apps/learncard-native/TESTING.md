@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **290 cases** (114 Bun, 106 Swift, 70 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
+Current configured suite: **334 cases** (136 Bun, 119 Swift, 79 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -22,6 +22,16 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## First-time setup — October 16
+
+- All **136 Bun** cases pass (`artifacts/signup-bun-final.log`), including 15 signup policy/enrollment/reconciliation cases and seven registered signed-out command checks. Source-contract checking passes with 14 existing monorepo dependency diagnostics scoped to their owning packages (`signup-types-final.log`).
+- Canonical SSS backup/enrollment tests: **15 pass**, 166 unrelated cases skipped by the focused filter (`signup-sss.log`). Existing web GDPR helper tests: **3 pass** (`signup-web-policy.log`). These are additional targeted checks, not part of the native configured count.
+- All **119 Swift** cases pass (`signup-core-final.log`: 90 XCTest + 29 Swift Testing), including general-email identity mismatch and resume, age policy, protected progress, background cancellation and confirmed-backup/profile retries. Final simulator run: **10/10 pass** (`signup-ui-step.xcresult`), all nine new signup cases plus pending-claim recovery/background integration. Combined with the 13 existing account-access/lifecycle/motion cases passing in `signup-ui-final.xcresult`, there are **23 unique focused UI cases passing**. This is targeted validation, not a full local 334-case run.
+- Initial signup UI: seven of eight pass; the first failure was a test looking for a Cancel button on the iOS Files sheet. After using its actual dismiss gesture, the wider 22-case run passed 21, including real system file-save completion and all 13 existing account-access/lifecycle/motion cases. The remaining assertion expected the old password placeholder rather than the actual signup label; it is corrected. The finishing pass then exposed stale step content after an async transition; explicit step/phase content identity fixes it and all ten final cases pass. No app approval/save bypass was added to make the tests pass.
+- New fixtures replace account backends only, keep the production controller/forms and isolate synthetic Keychain state. They never send live email or create a real profile. A saved synthetic JSON file is not evidence of real backup recovery; dedicated new-user web/second-device and guardian delivery/approval remain manual gates.
+- Release and Debug builds/install pass (`signup-release.log`, `signup-review-install.log`). All seven installed artifact hashes match the review build (`signup-install-proof.json`), including generated signup policy; DIDKit is unchanged. The real staging account resumed to Collection without mutation.
+- Automated runs preserve and restore the private account configuration byte-for-byte and use the separate checks simulator. No hosted CI was dispatched; workflow triggers remain manual-only.
 
 ## Account access and recovery — October 16
 

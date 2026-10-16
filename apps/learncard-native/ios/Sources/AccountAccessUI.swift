@@ -79,9 +79,10 @@ struct AccountAccessHero: View {
 struct AccountAccessNotice: View {
     let text: String
     var error = false
+    var symbol = "qrcode"
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: error ? "exclamationmark.circle" : "qrcode").font(.title3).accessibilityHidden(true)
+            Image(systemName: error ? "exclamationmark.circle" : symbol).font(.title3).accessibilityHidden(true)
             Text(text).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading)
         }.foregroundStyle(error ? Palette.errorInk : Palette.ink).padding(16)
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))

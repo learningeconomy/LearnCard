@@ -17,3 +17,5 @@ ios/NativeCore/Sources/LearnCardNativeSDK/Resources/live-vectors.json
 
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/consumer-host.js
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/consumer-fixture.js
+
+ios/NativeCore/Sources/LearnCardNativeSDK/Resources/signup-policy.json

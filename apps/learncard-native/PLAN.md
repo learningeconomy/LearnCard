@@ -1,8 +1,10 @@
 # LearnCard native client plan
 
-## Next: registration, Build My LearnCard and People — October 16
+## Native first-time setup — October 16
 
-The user clarified that a complete first-time account flow is still needed after the existing-account access pass. Plan native age/country eligibility, name/unique username/photo, privacy choices, same-account setup, guardian approval and supported recovery enrollment. Review shared age-policy discrepancies before porting; pending approval must be a native state. Build My LearnCard belongs as an optional resumable Home entry for existing document/credential intake, separate from required signup. People should be reachable from Home, Account and Inbox requests while retaining the four-tab shell. These are proposed next slices, not implemented features. See [source audit, navigation and acceptance plan](ONBOARDING_AND_PEOPLE.md).
+First-time setup is the current priority. The native client now routes verified accounts through birth date/country, name/available username/photo, separate privacy choices and password-protected recovery-backup enrollment before creating a profile. Existing identities are reused; unfinished operations are protected and reconciled. Under-13 signup routes to Families; unapproved profiles wait for real server approval. Shared Ireland thresholds are corrected to 16. Staging email-backup delivery is disabled, so existing email recovery stays available while new setup uses canonical encrypted backup export/confirmation. See [implemented behavior and remaining live gates](FIRST_TIME_SETUP.md).
+
+Build My LearnCard and People remain next slices: optional resumable Home intake, then connections reachable from Home/Account/Inbox without adding a side menu. See [remaining roadmap](ONBOARDING_AND_PEOPLE.md).
 
 ## Account, sign-in and recovery — October 16
 

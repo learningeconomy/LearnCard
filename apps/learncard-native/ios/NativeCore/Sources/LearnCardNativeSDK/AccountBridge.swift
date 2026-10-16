@@ -30,6 +30,19 @@ final class AccountBridge: NSObject, WKScriptMessageHandlerWithReply {
                     replyHandler(value, nil); return
                 }
                 if op == "signOut" { try await firebase.signOut(); replyHandler(NSNull(), nil); return }
+                if ["signupRead", "signupWrite", "signupClear"].contains(op) {
+                    let key = SignupStorage.key(userID: user.id)
+                    if op == "signupRead" {
+                        let value = try await vault.read(key)
+                        guard active else { throw AccountError.cancelled }
+                        replyHandler(value.flatMap { String(data: $0, encoding: .utf8) } ?? NSNull() as Any, nil)
+                    } else if op == "signupWrite" {
+                        guard let value = input["value"] as? String, value.utf8.count <= 16_384,
+                              let data = value.data(using: .utf8), (try? JSONSerialization.jsonObject(with: data)) is [String: Any] else { throw AccountError.storage }
+                        try await vault.write(data, key: key); replyHandler(NSNull(), nil)
+                    } else { try await vault.remove(key); replyHandler(NSNull(), nil) }
+                    return
+                }
                 guard ["get", "set", "remove"].contains(op), let field = input["field"] as? String,
                       ["share", "version"].contains(field) else { throw AccountError.unavailable }
                 let key = try AccountStorageScope.key(userID: user.id, id: input["id"] as? String, field: field)

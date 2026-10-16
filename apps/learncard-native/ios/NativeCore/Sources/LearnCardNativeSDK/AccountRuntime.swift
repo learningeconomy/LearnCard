@@ -12,12 +12,13 @@ public struct AccountState: Decodable, Sendable {
     public let profileBio: String?
     public let signingDid: String?
     public let profileDid: String?
+    public let signup: SignupProgress?
     public init(phase: String, methods: [String] = [], error: String? = nil, profileName: String? = nil,
                 profileId: String? = nil, profileImage: URL? = nil, profileBio: String? = nil,
-                signingDid: String? = nil, profileDid: String? = nil) {
+                signingDid: String? = nil, profileDid: String? = nil, signup: SignupProgress? = nil) {
         self.phase = phase; self.methods = methods; self.error = error; self.profileName = profileName
         self.profileId = profileId; self.profileImage = profileImage; self.profileBio = profileBio
-        self.signingDid = signingDid; self.profileDid = profileDid
+        self.signingDid = signingDid; self.profileDid = profileDid; self.signup = signup
     }
 }
 
@@ -72,6 +73,25 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         ready = state.phase == "ready"
         return state
     }
+
+    public func prepareSignup(_ draft: SignupDraft) async throws -> AccountState {
+        var input: [String: Any] = ["dob": draft.dob, "country": draft.country, "teenAcknowledged": draft.teenAcknowledged]
+        if let email = draft.guardianEmail { input["guardianEmail"] = email }
+        return try await command("signupPrepare", input: input)
+    }
+    public func signupAvailability(_ profileId: String) async throws -> Bool {
+        struct Reply: Decodable { let available: Bool }
+        let reply: Reply = try await command("signupAvailability", input: ["profileId": profileId]); return reply.available
+    }
+    public func prepareSignupBackup(_ draft: SignupDraft, password: String) async throws -> SignupBackup {
+        try await command("signupBackup", input: ["draft": try draft.commandInput(), "password": password])
+    }
+    public func confirmSignupBackup(id: String, password: String) async throws -> AccountState {
+        try await command("signupConfirmBackup", input: ["id": id, "password": password])
+    }
+    public func completeSignup(_ draft: SignupDraft) async throws -> AccountState { try await command("signupComplete", input: ["draft": try draft.commandInput()]) }
+    public func refreshSignup() async throws -> AccountState { try await command("signupStatus") }
+    public func sendSignupApproval(email: String) async throws -> AccountState { try await command("signupApproval", input: ["guardianEmail": email]) }
 
     public func snapshot(more: Bool = false) async throws -> CollectionSnapshot {
         guard ready else { throw AccountError.unavailable }
@@ -138,7 +158,9 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
                     }
                 }
         }
-        return try AccountReply.decode(text, method: method)
+        let result: T = try AccountReply.decode(text, method: method)
+        if let state = result as? AccountState { ready = state.phase == "ready" }
+        return result
     }
 
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

@@ -56,6 +56,7 @@ public actor KeychainVault {
     /// Same UID-scoped primary/pending slots as the bundled SSS storage adapter.
     /// Kept native so forgetting also works after the SDK host has been locked/disposed.
     public func forgetAccount(userID: String) throws {
+        try remove(SignupStorage.key(userID: userID))
         for id in ["sss-device-share:\(userID)", "sss-pending-share:sss-device-share:\(userID)"] {
             for field in ["share", "version"] {
                 try remove(AccountStorageScope.key(userID: userID, id: id, field: field))

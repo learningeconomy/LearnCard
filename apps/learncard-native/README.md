@@ -2,7 +2,7 @@
 
 An independent personal credential app: SwiftUI on iOS first, Kotlin and Jetpack Compose on Android after the credential and account contracts are proven. It focuses on collecting, receiving, creating, claiming, sending, and sharing credentials. The user approved fully native clients on October 12, 2026.
 
-**Current handoff:** [STATUS.md](STATUS.md) records the review build, validation, manual review areas and remaining scope. Native Families and default Colorful theme/motion refinement are the current slice. The October 14 review keeps neutral page backgrounds and introduces a [drawn shell, compact lists and illustrated search](design/DRAWN_SHELL_BRIEF.md), with a shared header on all tabs and gentle automatic detail-card motion. See [FAMILIES_INTEGRATION.md](FAMILIES_INTEGRATION.md) for supported flows and child-account follow-ups.
+**Current handoff:** [STATUS.md](STATUS.md) records the review build, validation, manual review areas and remaining scope. Native first-time account setup is the current slice, building on the existing account-access and drawn UI passes. See [setup, recovery enrollment and approval](FIRST_TIME_SETUP.md). The October 14 review keeps neutral page backgrounds and introduces a [drawn shell, compact lists and illustrated search](design/DRAWN_SHELL_BRIEF.md), with a shared header on all tabs and gentle automatic detail-card motion. See [FAMILIES_INTEGRATION.md](FAMILIES_INTEGRATION.md) for supported flows and child-account follow-ups.
 
 The default app now connects to the approved staging test account through native Firebase email-code sign-in, the existing SSS recovery flow, and device-bound Keychain storage. Existing-account recovery, profile loading, the first 30 encrypted collection records, incoming offers, and relaunch have been confirmed live. See [account integration](ACCOUNT_INTEGRATION.md) for evidence and remaining cases.
 
@@ -18,7 +18,7 @@ From the repository root:
 LC_NATIVE_TEST_EMAIL=your-test-login@example.com bash apps/learncard-native/scripts/run-ios.sh
 ```
 
-The selected test email is saved only in ignored local build configuration and reused on later builds. A fresh checkout uses a non-deliverable placeholder until configured. No personal test email is committed. Run with `--demo` for sample mode.
+The selected test email is a prefill saved only in ignored local build configuration and reused on later builds. Email is editable in the app; a fresh checkout starts with a non-deliverable placeholder. Native first-time setup uses staging services and requires saving/confirming an encrypted recovery backup before profile creation. No personal test email is committed. Run with `--demo` for sample mode.
 
 This creates or reuses a dedicated **LearnCard Native Lab** simulator, builds the app, installs **LearnCard Lab**, and opens it. Set `LC_NATIVE_SIMULATOR_ID` to use a particular installed simulator. The experiment has its own bundle identifier, `org.learningeconomy.learncard.native.experiment`.
 

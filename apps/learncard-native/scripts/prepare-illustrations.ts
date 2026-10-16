@@ -12,6 +12,34 @@ const drawings = (dark: boolean): Record<string, string> => {
     const glyph = (content: string): string =>
         `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#18224E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
     return {
+        SignupCalendarIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="144" cy="91" r="40" fill="#93C5FD"/>
+                <path d="M125 57l17 7 6 16 21-4 9 15-14 10-2 19-17 9-10-19-19-8-7-17Z" fill="#34D399" stroke="none"/>
+                <path d="M128 88q4-8 8 0M153 88q4-8 8 0M134 103q10 11 18 0" fill="none"/>
+                <g transform="rotate(-7 72 85)">
+                    <rect x="24" y="45" width="83" height="84" rx="12" fill="#FFFFFF"/>
+                    <path d="M25 67h81V57q0-12-12-12H37q-12 0-12 12Z" fill="#93C5FD"/>
+                    <path d="M43 37v17M83 37v17"/>
+                    <path d="M44 86v2M83 86v2M55 96q11 12 21 0" fill="none"/>
+                    <circle cx="41" cy="96" r="4" fill="#F9A8D4" stroke="none"/><circle cx="87" cy="96" r="4" fill="#F9A8D4" stroke="none"/>
+                    <path d="M44 114h13M72 114h13" stroke="#93C5FD" stroke-width="6"/>
+                </g>
+                <path d="M36 39L50 9 71 38Z" fill="#FDE047"/><path d="M44 22l15 9" stroke="#93C5FD"/>
+                <path d="M113 26q-10-15-16-5t16 19q23-13 17-20t-17 6" fill="#F9A8D4" stroke="none"/>
+                <path d="M12 42l-7-7M84 19l5-9M179 41l9-8" stroke="#FDE047" stroke-width="5"/>
+            </g>
+        `),
+        SignupPrivacyIllustration: wrap(`
+            <g stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M35 34q29-3 47-18 18 15 47 18v41q0 42-47 64-47-22-47-64Z" fill="#93C5FD"/>
+                <path d="M46 44q21-2 36-13" stroke="#FFFFFF"/>
+                <path d="M58 68q4-9 9 0M92 68q4-9 9 0M69 85q13 14 25 0" fill="none"/>
+                <path d="M147 80q-14-25-30-11t30 50q48-33 33-50t-33 11Z" fill="#F9A8D4"/>
+                <path d="M134 87v2M158 87v2M140 99q8 8 14 0" fill="none"/>
+                <path d="M16 46l-9-7M18 68H6M153 31l3-12M166 42l14-6" stroke="#FDE047" stroke-width="5"/>
+            </g>
+        `),
         AccessPassportIllustration: wrap(`
             <g fill="none" stroke="#18224E" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
                 <g transform="rotate(-8 100 76)">

@@ -15,7 +15,7 @@ private final class FirebaseStub: URLProtocol, @unchecked Sendable {
         else if path.hasSuffix("accounts:signInWithCustomToken") {
             payload = "{\"idToken\":\"synthetic-id-token\",\"refreshToken\":\"synthetic-refresh-token\",\"expiresIn\":\"0\"}"
         } else if path.hasSuffix("accounts:lookup") {
-            let email = (try? AccountConfiguration.load())?.testEmail ?? "native-test@example.invalid"
+            let email = request.value(forHTTPHeaderField: "X-Test-Email") ?? (try? AccountConfiguration.load())?.testEmail ?? "native-test@example.invalid"
             payload = String(data: try! JSONSerialization.data(withJSONObject: ["users": [["localId": "synthetic-user", "email": email, "createdAt": "1600000000000"]]]), encoding: .utf8)!
         } else if path == "/v1/token" {
             payload = "{\"id_token\":\"synthetic-refreshed-token\",\"refresh_token\":\"synthetic-refresh-token-2\",\"expires_in\":\"3600\",\"user_id\":\"synthetic-user\",\"project_id\":\"776298253175\"}"
@@ -86,6 +86,29 @@ final class AccountSecurityTests: XCTestCase {
         try await restarted.signOut()
         let signedOut = try await FirebaseSession(vault: vault, http: http).resume()
         XCTAssertNil(signedOut)
+    }
+
+    func testGeneralEmailSignInAndResumeUseVerifiedAccountInsteadOfConfiguredPrefill() async throws {
+        let vault = KeychainVault(service: "org.learncard.native.general-email-tests.\(UUID())")
+        let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [FirebaseStub.self]
+        config.httpAdditionalHeaders = ["X-Test-Email": "another@example.com"]
+        let http = URLSession(configuration: config)
+        let firebase = try FirebaseSession(vault: vault, http: http)
+        try await firebase.sendCode(email: " Another@Example.com ")
+        let user = try await firebase.verify(code: "123456"); XCTAssertEqual(user.email, "another@example.com")
+        let restarted = try FirebaseSession(vault: vault, http: http)
+        let resumed = try await restarted.resume(); XCTAssertEqual(resumed?.email, user.email)
+        try await restarted.signOut()
+    }
+    func testGeneralEmailExchangeCannotSaveAnotherAccountsLookup() async throws {
+        let vault = KeychainVault(service: "org.learncard.native.mismatch-email-tests.\(UUID())")
+        let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [FirebaseStub.self]
+        config.httpAdditionalHeaders = ["X-Test-Email": "someone-else@example.com"]
+        let http = URLSession(configuration: config), firebase = try FirebaseSession(vault: vault, http: http)
+        try await firebase.sendCode(email: "intended@example.com")
+        do { _ = try await firebase.verify(code: "123456"); XCTFail("Mismatched identity must be refused") }
+        catch { XCTAssertEqual(error as? AccountError, .identity) }
+        let resumed = try await FirebaseSession(vault: vault, http: http).resume(); XCTAssertNil(resumed)
     }
 
     func testSignOutCannotBeUndoneByAnEarlierSignInResponse() async throws {

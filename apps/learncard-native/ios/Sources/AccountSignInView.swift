@@ -29,6 +29,7 @@ struct AccountSignInView: View {
     @Environment(\.locale) private var nativeLocale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var account: AccountController
+    @State private var signupForm = SignupFormModel()
     @State private var code = ""
     @State private var method = AccessRecoveryMethod.email
     @State private var phrase = ""
@@ -44,6 +45,7 @@ struct AccountSignInView: View {
     private enum Input: Hashable { case code, phrase, emailKey, password }
     private var signingIn: Bool { ["signIn", "idle"].contains(account.phase) }
     private var recovering: Bool { ["needs_recovery", "recovery"].contains(account.phase) }
+    private var signupPhase: Bool { ["needs_setup", "missing_profile", "finish_setup", "pending_approval"].contains(account.phase) }
     private var supportedPhase: Bool { signingIn || account.phase == "code" || recovering }
 
     private var transitionMode: AccountMotionMode {
@@ -59,14 +61,15 @@ struct AccountSignInView: View {
 
     var body: some View {
         NavigationStack {
-            if account.busy || account.phase == "loading" || account.phase == "locked" {
+            if (account.busy && !signupPhase) || account.phase == "loading" || account.phase == "locked" {
                 AccountTransitionView(mode: transitionMode, busy: account.busy,
                                       error: account.error, canSignOut: account.user != nil,
                                       hasPendingClaim: account.claims.link != nil,
                                       retry: { Task { await account.resume() } },
                                       signOut: { Task { await account.signOut(forget: false) } },
                                       scan: { account.claims.open() })
-            } else { accessForm.toolbar(.hidden, for: .navigationBar) }
+            } else if signupPhase { NativeSignupView(account: account, model: signupForm).toolbar(.hidden, for: .navigationBar) }
+            else { accessForm.toolbar(.hidden, for: .navigationBar) }
         }
         .onChange(of: code) { _, value in
             // Preserve one real field for autofill, paste and VoiceOver; normalize localized digits.
@@ -78,7 +81,7 @@ struct AccountSignInView: View {
         }
         .onChange(of: account.phase) { _, phase in
             if ["locked", "signIn", "ready"].contains(phase) {
-                clearInputs(); focused = nil; choosingMethod = false; importing = false
+                clearInputs(); signupForm.clear(); focused = nil; choosingMethod = false; importing = false
             }
         }
         .onChange(of: method) { _, _ in clearRecoveryInputs(); focused = nil }
@@ -139,7 +142,8 @@ struct AccountSignInView: View {
     private var emailPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(NativeText.text("access.email")).font(.subheadline.weight(.semibold))
-            Text(account.email).font(.body.weight(.medium)).textSelection(.enabled)
+            TextField(NativeText.text("signup.emailPlaceholder"), text: $account.email).font(.body.weight(.medium))
+                .keyboardType(.emailAddress).textContentType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled().privacySensitive()
                 .environment(\.layoutDirection, .leftToRight).accessibilityIdentifier("account-email")
         }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
@@ -209,7 +213,7 @@ struct AccountSignInView: View {
     private var actionTray: some View {
         Group {
             if signingIn {
-                PrimaryButton(title: NativeText.text("access.sendCode"), fill: Palette.selection) { sendCode() }
+                PrimaryButton(title: NativeText.text("access.sendCode"), disabled: FirebaseSession.normalizedEmail(account.email) == nil, fill: Palette.selection) { sendCode() }
                     .accessibilityIdentifier("send-sign-in-code")
             } else if account.phase == "code" {
                 PrimaryButton(title: NativeText.text("access.signIn"), disabled: code.count != 6, fill: Palette.selection) {

@@ -23,6 +23,14 @@ import {
     claimPreviewURL,
 } from './claims';
 import { initLearnCard } from '@learncard/init';
+import {
+    createSignupCommands,
+    readSignupJournal,
+    type SignupJournal,
+    type SignupWallet,
+} from './signup';
+import { signupErrorCode } from './signup-policy';
+import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
 import { createSSSStrategy } from '../../../packages/sss-key-manager/src/sss-strategy';
 import type { RecoveryInput } from '../../../packages/sss-key-manager/src/types';
 import { AuthCoordinator } from '../../../packages/learn-card-base/src/auth-coordinator/AuthCoordinator';
@@ -104,18 +112,27 @@ const signer = async (privateKey: string, challenge?: string) => {
     return (await signing.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge })) as string;
 };
 
-const stateDTO = async (state: UnifiedAuthState) => {
-    if (state.status === 'error')
-        return { phase: 'recovery', methods: ['phrase', 'backup', 'email'], error: 'recovery' };
-    if (state.status !== 'ready')
-        return {
-            phase: state.status,
-            methods:
-                state.status === 'needs_recovery'
-                    ? state.recoveryMethods.map(method => method.type)
-                    : [],
-        };
-    if (!state.did || !state.authSessionValid) throw new Error('Account identity missing');
+let accountPhase = 'idle';
+let identityWallet: import('./consumer-apps').ConsumerWallet | undefined;
+const signupJournal = {
+    read: async () => {
+        const raw = await native({ op: 'signupRead' }),
+            value = readSignupJournal(raw);
+        if (raw && !value) await native({ op: 'signupClear' });
+        return value;
+    },
+    write: async (value: SignupJournal) => {
+        await native({ op: 'signupWrite', value: JSON.stringify(value) });
+    },
+    clear: async () => {
+        await native({ op: 'signupClear' });
+    },
+};
+const getIdentityWallet = async () => {
+    const state = coordinator?.getState();
+    if (!state || state.status !== 'ready' || !state.did || !state.authSessionValid)
+        throw new Error('Sign in first');
+    if (identityWallet) return identityWallet;
     const signing = await initLearnCard({ seed: state.privateKey, didkit: wasm });
     if (signing.id.did() !== state.did) throw new Error('Identity mismatch');
     const token = await native({ op: 'idToken' });
@@ -123,7 +140,7 @@ const stateDTO = async (state: UnifiedAuthState) => {
     const status = await strategy.fetchServerKeyStatus(token, 'firebase');
     if (!status.primaryDid || status.primaryDid !== state.did)
         throw new Error('Account identity mismatch');
-    wallet = await initLearnCard({
+    identityWallet = await initLearnCard({
         seed: state.privateKey,
         didkit: wasm,
         network: 'https://staging.network.learncard.com/trpc',
@@ -131,23 +148,139 @@ const stateDTO = async (state: UnifiedAuthState) => {
         cloud: { url: 'https://staging.cloud.learncard.com/trpc' },
         allowRemoteContexts: false,
     });
-    const profile = await wallet.invoke.getProfile();
-    if (!profile) {
-        wallet = undefined;
-        return { phase: 'missing_profile', methods: [] };
-    }
-    myProfileName = profile.displayName || user.email;
-    return {
-        phase: 'ready',
-        methods: [],
-        profileName: myProfileName,
-        profileImage: image(profile.image),
-        profileBio: profile.bio,
-        profileId: profile.profileId,
-        signingDid: state.did,
-        profileDid: wallet.id.did(),
-    };
+    return identityWallet;
 };
+const stateDTO = async (state: UnifiedAuthState) => {
+    wallet = undefined;
+    const result = async () => {
+        if (state.status === 'error')
+            return { phase: 'recovery', methods: ['phrase', 'backup', 'email'], error: 'recovery' };
+        if (state.status !== 'ready')
+            return {
+                phase: state.status,
+                methods:
+                    state.status === 'needs_recovery'
+                        ? state.recoveryMethods.map(method => method.type)
+                        : [],
+            };
+        const current = await getIdentityWallet(),
+            profile = await current.invoke.getProfile();
+        const journal = await signupJournal.read();
+        const signup = journal?.draft
+            ? {
+                  draft: journal.draft,
+                  backupNeedsReplacement:
+                      journal.recoveryAttempted === true && !journal.recoveryConfirmed,
+                  recoveryConfirmed: journal.recoveryConfirmed === true,
+                  guardianSent: journal.guardianSent === true,
+              }
+            : undefined;
+        if (!profile)
+            return { phase: signup ? 'finish_setup' : 'missing_profile', methods: [], signup };
+        if (journal?.draft && (!journal.preferencesSaved || !journal.recoveryConfirmed))
+            return { phase: 'finish_setup', methods: [], signup };
+        if (profile.approved === false)
+            return {
+                phase: 'pending_approval',
+                methods: [],
+                profileName: profile.displayName,
+                profileId: profile.profileId,
+                signup,
+            };
+        if (journal) await signupJournal.clear();
+        wallet = current;
+        myProfileName = profile.displayName || user.email;
+        return {
+            phase: 'ready',
+            methods: [],
+            profileName: myProfileName,
+            profileImage: image(profile.image),
+            profileBio: profile.bio,
+            profileId: profile.profileId,
+            signingDid: state.did,
+            profileDid: current.id.did(),
+        };
+    };
+    const value = await result();
+    accountPhase = value.phase;
+    return value;
+};
+const signupCommands = createSignupCommands({
+    journal: signupJournal,
+    phase: () => accountPhase,
+    active: () =>
+        !!coordinator &&
+        !!user &&
+        ['needs_setup', 'missing_profile', 'finish_setup', 'pending_approval', 'ready'].includes(
+            accountPhase
+        ),
+    prepareIdentity: async () => {
+        const state = coordinator.getState();
+        if (state.status === 'needs_setup') {
+            const privateKey = await generateEd25519PrivateKey();
+            const did = (await initLearnCard({ seed: privateKey, didkit: wasm })).id.did();
+            const next = await coordinator.setupNewKey(privateKey, did);
+            if (next.status !== 'ready') throw new Error('Account setup failed');
+            identityWallet = undefined;
+        } else if (state.status !== 'ready') throw new Error('Account setup unavailable');
+    },
+    wallet: async () => {
+        const current = await getIdentityWallet();
+        return {
+            invoke: {
+                getProfile: () => current.invoke.getProfile(),
+                getProfileById: id => current.invoke.getProfile(id),
+                createProfile: input => current.invoke.createProfile(input as never),
+                sendGuardianApprovalEmail: input => current.invoke.sendGuardianApprovalEmail(input),
+            },
+        } satisfies SignupWallet;
+    },
+    savePreferences: async input => {
+        const current = await getIdentityWallet();
+        const client = await getAccountAPI(
+            'https://staging.api.learncard.app/trpc',
+            async challenge => {
+                const proof = await current.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+                if (typeof proof !== 'string') throw new Error('Account proof unavailable');
+                return proof;
+            }
+        );
+        if (!(await client.preferences.updatePreferences.mutate(input as never)))
+            throw new Error('Preferences unavailable');
+    },
+    token: async () => {
+        const token = await native({ op: 'idToken' });
+        if (!token) throw new Error('Sign in first');
+        return token;
+    },
+    prepareBackup: async password => {
+        const state = coordinator.getState(),
+            token = await native({ op: 'idToken' });
+        if (state.status !== 'ready' || !token) throw new Error('Sign in first');
+        const result = await strategy.setupRecoveryMethod!({
+            token,
+            providerType: 'firebase',
+            privateKey: state.privateKey,
+            input: { method: 'backup', password, did: state.did },
+            signDidAuthVp: signer,
+        });
+        if (result.method !== 'backup') throw new Error('Backup unavailable');
+        return JSON.stringify(result.backupFile);
+    },
+    confirmBackup: async (contents, password) => {
+        const state = coordinator.getState(),
+            token = await native({ op: 'idToken' });
+        if (state.status !== 'ready' || !token) throw new Error('Sign in first');
+        await strategy.confirmRecoveryMethod!({
+            token,
+            providerType: 'firebase',
+            privateKey: state.privateKey,
+            input: { method: 'backup', fileContents: contents, password },
+            signDidAuthVp: signer,
+        });
+    },
+    state: () => stateDTO(coordinator.getState()),
+});
 
 const string = (value: unknown): string => (typeof value === 'string' ? value : '');
 const object = (value: unknown): Record<string, unknown> =>
@@ -308,6 +441,7 @@ const commands = {
             return response.json();
         }
     ),
+    ...signupCommands,
     ...createConsumerCommands(() => wallet),
     ...createInboxCommands(
         () => wallet,
@@ -385,10 +519,13 @@ const commands = {
             didFromPrivateKey: async seed => (await initLearnCard({ seed, didkit: wasm })).id.did(),
             signDidAuthVp: signer,
             serverStatusTimeoutMs: 30_000,
-            legacyAccountThresholdMs: 5 * 60 * 1000,
+            legacyAccountThresholdMs: (await signupJournal.read())?.fresh ? 0 : 5 * 60 * 1000,
             clearPendingEscrowRecovery: async () => {},
         });
-        return stateDTO(await coordinator.initialize());
+        const state = await coordinator.initialize();
+        if (state.status === 'needs_setup' && !(await signupJournal.read()))
+            await signupJournal.write({ version: 1, started: Date.now(), fresh: true });
+        return stateDTO(state);
     },
     recover: async (input: RecoveryInput) => {
         if (!['phrase', 'backup', 'email'].includes(input.method))
@@ -668,6 +805,8 @@ const commands = {
     signOut: async () => {
         await coordinator.logout();
         wallet = undefined;
+        identityWallet = undefined;
+        accountPhase = 'idle';
         original.clear();
         creationURIs.clear();
         drafts.clear();
@@ -678,6 +817,8 @@ const commands = {
         await coordinator.forgetDevice();
         await coordinator.logout();
         wallet = undefined;
+        identityWallet = undefined;
+        accountPhase = 'idle';
         original.clear();
         creationURIs.clear();
         drafts.clear();
@@ -702,19 +843,21 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
             } catch (error) {
                 return JSON.stringify({
                     ok: false,
-                    error: method.startsWith('claims')
-                        ? claimErrorCode(error)
-                        : method.startsWith('inbox')
-                          ? inboxErrorCode(error)
-                          : method.startsWith('families')
-                            ? familyErrorCode(error)
-                            : method.startsWith('apps') || method.startsWith('privacy')
-                              ? consumerErrorCode(error)
-                              : method === 'initialize'
-                                ? 'connection'
-                                : method === 'recover'
-                                  ? 'recovery'
-                                  : 'unavailable',
+                    error: method.startsWith('signup')
+                        ? signupErrorCode(error)
+                        : method.startsWith('claims')
+                          ? claimErrorCode(error)
+                          : method.startsWith('inbox')
+                            ? inboxErrorCode(error)
+                            : method.startsWith('families')
+                              ? familyErrorCode(error)
+                              : method.startsWith('apps') || method.startsWith('privacy')
+                                ? consumerErrorCode(error)
+                                : method === 'initialize'
+                                  ? 'connection'
+                                  : method === 'recover'
+                                    ? 'recovery'
+                                    : 'unavailable',
                 });
             }
         },

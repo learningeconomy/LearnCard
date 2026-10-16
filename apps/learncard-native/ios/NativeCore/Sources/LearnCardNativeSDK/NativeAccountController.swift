@@ -23,6 +23,13 @@ extension FirebaseSession: AccountSession {}
     func initialize() async throws -> AccountState
     func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async throws -> AccountState
     func updateProfile(name: String, bio: String, image: ProfileImageUpdate) async throws -> AccountState
+    func prepareSignup(_ draft: SignupDraft) async throws -> AccountState
+    func signupAvailability(_ profileId: String) async throws -> Bool
+    func prepareSignupBackup(_ draft: SignupDraft, password: String) async throws -> SignupBackup
+    func confirmSignupBackup(id: String, password: String) async throws -> AccountState
+    func completeSignup(_ draft: SignupDraft) async throws -> AccountState
+    func refreshSignup() async throws -> AccountState
+    func sendSignupApproval(email: String) async throws -> AccountState
     func dispose()
 }
 
@@ -38,6 +45,16 @@ public extension AccountHost { var consumerService: any ConsumerAppService { Una
 public extension AccountHost { var familyService: any FamilyService { UnavailableFamilyService() } }
 public extension AccountHost { var inboxService: any InboxService { UnavailableInboxService() } }
 public extension AccountHost { var claimService: (any ClaimService)? { nil } }
+
+public extension AccountHost {
+    func prepareSignup(_ draft: SignupDraft) async throws -> AccountState { throw AccountError.unavailable }
+    func signupAvailability(_ profileId: String) async throws -> Bool { throw AccountError.unavailable }
+    func prepareSignupBackup(_ draft: SignupDraft, password: String) async throws -> SignupBackup { throw AccountError.unavailable }
+    func confirmSignupBackup(id: String, password: String) async throws -> AccountState { throw AccountError.unavailable }
+    func completeSignup(_ draft: SignupDraft) async throws -> AccountState { throw AccountError.unavailable }
+    func refreshSignup() async throws -> AccountState { try await initialize() }
+    func sendSignupApproval(email: String) async throws -> AccountState { throw AccountError.unavailable }
+}
 
 public enum AccountActivity: Sendable { case active, inactive, background }
 
@@ -61,6 +78,7 @@ public final class NativeAccountController {
     public var email = ""
     public private(set) var busy = false
     public private(set) var uploadingPhoto = false
+    public private(set) var signupBackup: SignupBackup?
     public var error: String?
     public var recipientName: String?
 
@@ -120,7 +138,7 @@ public final class NativeAccountController {
     }
 
     private func connect(_ user: FirebaseUser, generation expected: Int) async throws {
-        self.user = user; accountID = user.id
+        self.user = user; accountID = user.id; email = user.email
         runtime?.dispose()
         let host = try makeHost(user)
         runtime = host
@@ -144,12 +162,102 @@ public final class NativeAccountController {
         let expected = generation
         self.state = state; phase = state.phase
         if state.error != nil { throw AccountError.recovery }
+        if state.phase != "ready" {
+            store?.consumer.lock(); store?.families.lock(); store?.inbox.lock(); store = nil; claims.lock()
+        }
         if state.phase == "ready", let runtime {
             let store = NativeAppStore(service: runtime.credentialService, isLive: true, consumerService: runtime.consumerService, familyService: runtime.familyService, inboxService: runtime.inboxService)
             self.store = store
             await store.refresh()
             try check(expected)
             if let user { claims.connect(service: runtime.claimService, accountID: user.id) }
+        }
+    }
+
+    public func prepareSignup(_ draft: SignupDraft) async -> Bool {
+        var success = false
+        await perform {
+            let expected = self.generation
+            guard let runtime = self.runtime else { throw AccountError.unavailable }
+            let policy = try SignupPolicy.load().eligibility(dob: draft.dob, country: draft.country)
+            guard !policy.underage else { throw SignupError.underage }
+            let state = try await runtime.prepareSignup(draft); try self.check(expected); try await self.apply(state); success = true
+        }; return success
+    }
+    public func signupAvailability(_ id: String) async throws -> Bool {
+        let expected = generation
+        guard !busy, let runtime else { throw AccountError.unavailable }
+        let value = try await runtime.signupAvailability(id); try check(expected); return value
+    }
+    public func prepareSignupBackup(_ draft: SignupDraft, password: String, photo: Data?) async -> Bool {
+        var success = false
+        await perform {
+            let expected = self.generation
+            guard let runtime = self.runtime else { throw AccountError.unavailable }
+            try SignupPolicy.load().validate(draft)
+            guard password.count >= 12, password.count <= 256 else { throw SignupError.invalid }
+            var value = draft
+            if let photo {
+                guard !photo.isEmpty, photo.count <= 1_000_000 else { throw AccountError.unavailable }
+                if self.uploadedPhoto?.jpeg != photo {
+                    self.uploadingPhoto = true
+                    defer { if self.generation == expected { self.uploadingPhoto = false } }
+                    let url = try await self.uploadProfilePhoto(photo); try self.check(expected); self.uploadedPhoto = (photo, url)
+                }
+                value.image = self.uploadedPhoto?.url.absoluteString
+            }
+            let backup = try await runtime.prepareSignupBackup(value, password: password); try self.check(expected)
+            self.signupBackup = backup; success = true
+        }; return success
+    }
+    public func confirmSignupBackup(password: String) async {
+        await perform {
+            let expected = self.generation
+            guard let runtime = self.runtime, let backup = self.signupBackup else { throw AccountError.unavailable }
+            do {
+                let state = try await runtime.confirmSignupBackup(id: backup.id, password: password); try self.check(expected)
+                self.signupBackup = nil; self.uploadedPhoto = nil; try await self.apply(state)
+            } catch {
+                // Confirmation may have succeeded before a username race or profile reply failed.
+                // Unlock profile editing without rotating an already-confirmed recovery backup.
+                if let resumed = try? await runtime.refreshSignup(), resumed.phase == "finish_setup", resumed.signup?.recoveryConfirmed == true {
+                    try self.check(expected); self.signupBackup = nil; try await self.apply(resumed)
+                }
+                throw error
+            }
+        }
+    }
+    public func completeSignup(_ draft: SignupDraft, photo: Data? = nil) async {
+        await perform {
+            let expected = self.generation
+            guard let runtime = self.runtime else { throw AccountError.unavailable }
+            var value = draft
+            value.image = value.image ?? self.uploadedPhoto?.url.absoluteString ?? self.state?.signup?.draft?.image
+            if let photo {
+                guard !photo.isEmpty, photo.count <= 1_000_000 else { throw AccountError.unavailable }
+                if self.uploadedPhoto?.jpeg != photo {
+                    self.uploadingPhoto = true
+                    defer { if self.generation == expected { self.uploadingPhoto = false } }
+                    let url = try await self.uploadProfilePhoto(photo); try self.check(expected); self.uploadedPhoto = (photo, url)
+                }
+                value.image = self.uploadedPhoto?.url.absoluteString
+            }
+            let state = try await runtime.completeSignup(value); try self.check(expected)
+            self.uploadedPhoto = nil; try await self.apply(state)
+        }
+    }
+    public func refreshSignup() async {
+        await perform {
+            let expected = self.generation
+            guard let runtime = self.runtime else { throw AccountError.unavailable }
+            let state = try await runtime.refreshSignup(); try self.check(expected); try await self.apply(state)
+        }
+    }
+    public func sendSignupApproval(email: String) async {
+        await perform {
+            let expected = self.generation
+            guard let runtime = self.runtime else { throw AccountError.unavailable }
+            let state = try await runtime.sendSignupApproval(email: email); try self.check(expected); try await self.apply(state)
         }
     }
 
@@ -218,7 +326,7 @@ public final class NativeAccountController {
         store?.families.lock()
         store?.inbox.lock()
         store = nil; state = nil; user = nil; recipientName = nil
-        uploadedPhoto = nil; uploadingPhoto = false
+        uploadedPhoto = nil; uploadingPhoto = false; signupBackup = nil
         busy = false; phase = "locked"; error = nil
     }
 
@@ -226,7 +334,7 @@ public final class NativeAccountController {
         guard generation == expected, !endingSession else { throw AccountError.cancelled }
     }
     private func friendly(_ error: any Error) -> String {
-        (error as? AccountError)?.errorDescription ?? "Something went wrong. Please try again."
+        (error as? SignupError)?.errorDescription ?? (error as? AccountError)?.errorDescription ?? "Something went wrong. Please try again."
     }
     private func perform(_ operation: () async throws -> Void) async {
         guard !busy, !endingSession else { return }

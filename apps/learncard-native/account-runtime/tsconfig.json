@@ -27,6 +27,8 @@
         "inbox.ts",
         "personal-creations.ts",
         "claims.ts",
-        "profile-update.ts"
+        "profile-update.ts",
+        "signup.ts",
+        "signup-policy.ts"
     ]
 }

@@ -172,3 +172,22 @@ test.each(['claimsPreview', 'claimsIssue', 'claimsFinish', 'claimsReconcile'])(
         expect(bridgeCalls).toBe(0);
     }
 );
+
+// No identity, profile, backup, preferences or parent email can be accessed signed out.
+test.each([
+    'signupPrepare',
+    'signupAvailability',
+    'signupBackup',
+    'signupConfirmBackup',
+    'signupComplete',
+    'signupApproval',
+    'signupStatus',
+])(
+    'signup command %s is registered and refuses signed-out input without transport',
+    async method => {
+        const reply = JSON.parse(await account.call(method, {}));
+        expect(reply.ok).toBe(false);
+        expect(reply.error).toMatch(/^signup:/);
+        expect(bridgeCalls).toBe(0);
+    }
+);

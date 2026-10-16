@@ -30,7 +30,7 @@ Persistent device shares and share versions are scoped by Firebase UID, tenant, 
 
 A windowless nonpersistent WebKit host runs bundled SDK code beneath SwiftUI. It is disposed on backgrounding, sign-out, or process termination. SDK requests go through a bounded native URLSession transport with fixed staging hosts, no cookies/stored credentials, and rejected redirects. The account host permits `/api/keys/`; `X-Auth-Token` is forwarded only to that staging account API. Browser connections remain blocked by CSP. The fetch adapter preserves `Response.url` for DIDKit WASM resolution.
 
-Sign-out retains this device's recovery share. The separate “Sign Out and Forget This Device” action removes it. Signing into a different configured test email does not reuse the previous account's device-share namespace. Unsupported setup/legacy upgrade states lead to existing staging setup rather than creating another signing identity.
+Sign-out retains this device's recovery share. The separate “Sign Out and Forget This Device” action removes it. Signing into a different email does not reuse the previous account's device-share namespace. Fresh and missing-profile accounts now use [native first-time setup](FIRST_TIME_SETUP.md); legacy migration stays a web handoff. Required recovery setup uses the canonical encrypted backup and confirmation APIs, and pending guardian approval keeps consumer features closed.
 
 ## Personal credential facade
 

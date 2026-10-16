@@ -43,10 +43,12 @@ public actor FirebaseSession {
     private var persistence: Task<Void, Error>?
     private var generation = 0
     private var signingOut = false
+    private var verificationEmail: String
 
     public init(vault: KeychainVault, http: URLSession? = nil) throws {
         self.vault = vault
         config = try AccountConfiguration.load()
+        verificationEmail = config.testEmail
         let settings = URLSessionConfiguration.ephemeral
         settings.httpCookieStorage = nil
         settings.urlCredentialStorage = nil
@@ -62,26 +64,35 @@ public actor FirebaseSession {
         guard let data = try await vault.read(slot) else { return nil }
         guard generation == expected else { throw AccountError.cancelled }
         let candidate = try JSONDecoder().decode(SavedSession.self, from: data)
-        guard candidate.user.email.lowercased() == config.testEmail.lowercased() else { saved = nil; return nil }
+        guard Self.normalizedEmail(candidate.user.email) != nil else { throw AccountError.identity }
         saved = candidate
         _ = try await idToken()
         return saved?.user
     }
 
+    public nonisolated static func normalizedEmail(_ value: String) -> String? {
+        let email = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard email.utf8.count <= 254, email.range(of: #"^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?)+$"#, options: [.regularExpression, .caseInsensitive]) != nil else { return nil }
+        return email
+    }
     public func sendCode(email: String) async throws {
-        guard !config.testEmail.hasSuffix(".invalid") else { throw AccountError.unavailable }
-        guard email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == config.testEmail.lowercased() else { throw AccountError.unavailable }
+        guard !signingOut, let target = Self.normalizedEmail(email), !target.hasSuffix(".invalid") else { throw AccountError.signIn }
+        let expected = generation
         struct Reply: Decodable, Sendable { let success: Bool }
-        let response: Reply = try await post("https://staging.api.learncard.app/api/send-login-verification-code", body: ["email": config.testEmail, "locale": "en"])
+        let language = NativeLanguage.selected.locale.language.languageCode?.identifier ?? "en"
+        let response: Reply = try await post("https://staging.api.learncard.app/api/send-login-verification-code", body: ["email": target, "locale": language])
+        guard generation == expected, !signingOut else { throw AccountError.cancelled }
         guard response.success else { throw AccountError.connection }
+        verificationEmail = target
     }
 
     public func verify(code: String) async throws -> FirebaseUser {
         guard !signingOut else { throw AccountError.cancelled }
         let expected = generation
+        let target = verificationEmail
         guard code.utf8.count == 6, code.utf8.allSatisfy({ (48...57).contains($0) }) else { throw AccountError.signIn }
         struct OTP: Decodable, Sendable { let success: Bool; let token: String? }
-        let otp: OTP = try await post("https://staging.api.learncard.app/api/verify-login-code", body: ["email": config.testEmail, "code": code])
+        let otp: OTP = try await post("https://staging.api.learncard.app/api/verify-login-code", body: ["email": target, "code": code])
         guard otp.success, let token = otp.token else { throw AccountError.signIn }
         struct Exchange: Decodable, Sendable { let idToken: String; let refreshToken: String; let expiresIn: String }
         let exchange: Exchange = try await post("https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=\(config.apiKey)", body: ["token": token, "returnSecureToken": true])
@@ -91,7 +102,7 @@ public actor FirebaseSession {
         }
         let lookup: Lookup = try await post("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=\(config.apiKey)", body: ["idToken": exchange.idToken])
         guard lookup.users.count == 1, let user = lookup.users.first,
-              user.email.lowercased() == config.testEmail.lowercased(), !user.localId.isEmpty else { throw AccountError.identity }
+              user.email.lowercased() == target.lowercased(), !user.localId.isEmpty else { throw AccountError.identity }
         let result = FirebaseUser(id: user.localId, email: user.email, displayName: user.displayName, createdAt: user.createdAt)
         let session = SavedSession(user: result, idToken: exchange.idToken, refreshToken: exchange.refreshToken,
             expires: Date().addingTimeInterval(Double(exchange.expiresIn) ?? 0))
@@ -135,7 +146,7 @@ public actor FirebaseSession {
         let pending = refresh
         refresh = nil
         pending?.cancel()
-        saved = nil
+        saved = nil; verificationEmail = config.testEmail
         if let pending { _ = try? await pending.value }
         if let persistence { _ = try? await persistence.value }
         try await vault.remove(slot)

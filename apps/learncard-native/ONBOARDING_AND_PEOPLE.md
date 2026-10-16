@@ -1,73 +1,16 @@
 # First-time setup, Build My LearnCard and People
 
-Planning and source audit, October 16, 2026. **Proposed; not implemented.** The completed [account-access pass](ACCOUNT_ACCESS.md) covers existing-account sign-in/recovery and presentation of web setup handoffs. It is not a native registration flow. This plan follows the user's request to cover first-time accounts, age/country safeguards, Build My LearnCard and a home for connections without adding a side menu.
+Updated October 16, 2026. First-time setup was approved as the priority and is now implemented; Build My LearnCard and People remain planned. The existing-account access pass stays separate. See [first-time behavior, recovery capability and manual gates](FIRST_TIME_SETUP.md).
 
-## Current gaps
+## 1. First-time account setup — implemented
 
-| Area                                      | Current native behavior                                                        | Next implementation                                                                |
-| ----------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| Brand-new account                         | Shared coordinator can return `needs_setup`; native shows a web setup handoff  | Native eligibility → account setup → profile creation                              |
-| Existing identity without network profile | `stateDTO` returns `missing_profile` and discards the usable client            | Resume profile setup for the same identity; never generate a replacement identity  |
-| Profile awaiting approval                 | Native `stateDTO` does not inspect `profile.approved`                          | Explicit pending-approval state before opening account features; refresh on resume |
-| Test login                                | Configured email is read-only                                                  | General email entry/account routing before broad new-user testing                  |
-| Build My LearnCard                        | Home integration previously deferred onboarding; scan/claim exists separately  | Optional Home entry and native credential-intake journey                           |
-| Connections                               | Native Inbox handles some connection requests/prompts; recipient search exists | Full paginated connections/request management and profile details                  |
+Editable email verification routes returning users through existing resume/recovery. Fresh accounts and existing identities without a network profile get native birth date/country, name/unique username/optional photo, separate privacy choices and encrypted backup enrollment. Under-13 independent signup hands off to Families. Required guardian approval has a dedicated waiting/resend/check state and blocks consumer features until the server confirms it.
 
-Inspected web onboarding, age helpers and checklist files match the primary checkout at the time of this audit. This is a local-source audit, not a verification of every deployed environment or a complete backend authorization review.
+The implementation reuses the current AuthCoordinator and SSS strategy. Same-identity retries, protected UID-scoped progress, the five-minute legacy heuristic, preference failure, username races, lost profile-create replies, export cancellation, background and late-result isolation are covered at the domain/controller/UI boundaries. No private key or recovery password is persisted in the setup journal. New email-backup delivery is disabled in staging, so native signup uses the canonical password-protected backup file and confirmation APIs before profile creation. Existing emailed keys still recover existing accounts.
 
-## 1. First-time account setup
+The shared policy table now corrects Ireland to 16 in both maps, following [Irish DPC guidance](https://www.dataprotection.ie/sites/default/files/uploads/2023-04/DPC_ChildrensData_ParentalConsent.pdf). Current under-13, EU approval, non-EU teen-notice and younger-user preference behavior matches the audited web product logic. The partial country table/fallback, distinction between digital-consent age and minor feature policy, and server enforcement still need review. The inspected profile handler accepts client fields; native parity is not a complete backend authorization or legal audit.
 
-Entry is **email verification → resolve account state**. Returning users continue through normal resume/recovery. A missing network profile is different from a missing signing identity. Neither condition should fall through to an apparently empty Collection.
-
-```mermaid
-flowchart TD
-    Verified[Email verified] --> Resolve[Resolve existing identity and profile]
-    Resolve -->|Recovery needed| Restore[Existing recovery flow]
-    Resolve -->|Profile ready and approved| Destination[Home or pending intent review]
-    Resolve -->|Fresh account or missing profile| Eligibility[Birth date and country]
-    Eligibility -->|Under 13 under current product policy| Family[Parent or guardian / Families handoff]
-    Eligibility -->|Eligible path| Profile[Name, unique username, optional picture]
-    Profile --> Privacy[Privacy choices and required notices]
-    Privacy --> Setup[Set up or reuse the same account identity]
-    Setup --> Create[Create network profile and save preferences]
-    Create -->|Approval required| Pending[Request guardian approval and show waiting state]
-    Pending -->|Server confirms approval| Recovery[Supported recovery enrollment or reminder]
-    Create -->|Approval not required| Recovery
-    Recovery --> Destination
-    Destination --> Build[Optional Build My LearnCard on Home]
-```
-
-### Proposed native screens
-
-1. **A little about you:** birth date and country, with a short explanation of why they are needed. Country inference may suggest a value, but the user confirms it. Validate real dates and future dates with calendar-aware birthday boundaries.
-2. **Make it yours:** display name, public username and optional profile picture. Show debounced availability, offline/retry feedback and a useful collision suggestion. The server's create result remains authoritative if availability changes before submission. Keep the chosen handle stable during retries.
-3. **Your choices:** concise required notices and real privacy settings. Preserve age-derived defaults and restrictions; independent optional choices must not become one blanket agreement. Do not auto-enroll AI or document processing as a side effect of finishing registration.
-4. **A grown-up's help**, when required: guardian email, explicit sending/failure/resend states, waiting, approval recheck and safe sign-out. Sending an email is not approval. Returning from a link or foregrounding re-fetches server status. A successful parent approval cannot be represented by a local boolean.
-5. **Ready to begin:** short welcome with supported recovery setup/reminder, then Home. Resume a scanned claim or app intent at its review step after all required setup/approval completes. Do not automatically claim, connect or grant access.
-
-Use the approved neutral canvas, vivid Colorful objects, substantial typography, original drawn artwork and painted transitions. Birth-date/country controls should be designed sheets or native date controls with accessible labels. New screens and nested sheets need en/es/fr/ar, RTL, large text and keyboard review. The next visual pass should generate a composition reference after routing and required states are settled.
-
-### Existing web behavior to preserve or review
-
-`OnboardingFlow.tsx` currently runs age/country → profile → an optional recovery PIN when escrow is enrolled → welcome. It checks under-13 eligibility, country-specific EU consent, guardian email, a teen acknowledgment on the non-EU branch, username syntax/availability and privacy defaults. The variable named `needsUSConsent` actually applies to all non-EU teens in that implementation; it is product behavior to review, not evidence of a universal legal rule.
-
-The flow prepares a new key through `AuthCoordinator.setupNewKey`, calls `createProfile` with name/handle/picture/DOB/country/role and the Firebase token, marks profiles needing consent `approved: false`, then sends the guardian request. It persists preferences, attempts existing guardian-link reconciliation and conditionally offers recovery PIN enrollment. Preserve those account contracts, rather than copying the React modal implementation.
-
-Age parity is technically feasible with the existing helpers and services, but a literal copy would carry known inconsistencies:
-
-- `gdprAgeLimits.ts` has both display-name and country-code maps, a partial country table and fallback values. **Ireland is currently 13 in both maps**, while the Irish regulator describes 16 for online processing that relies on consent. Review/correct the shared policy before generating native fixtures; do not invent a native-only correction. [Irish DPC guidance](https://www.dataprotection.ie/sites/default/files/uploads/2023-04/DPC_ChildrensData_ParentalConsent.pdf).
-- Digital consent age, general minor status and product feature restrictions are separate policy decisions. The existing `getMinorAgeThreshold` uses the EU digital-consent threshold for some privacy defaults; that should be explicitly reviewed. The Commission describes country-specific thresholds between 13 and 16 where this consent rule applies. [European Commission guidance](https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/legal-grounds-processing-data/are-there-any-specific-safeguards-data-about-children_en).
-- The inspected `createProfile` handler accepts client profile fields without computing a country-aware age decision itself. Adding a native form is presentation parity, not proof that policy is enforced across clients. Shared policy plus server enforcement is the durable follow-up; audit affected protected operations before broad registration rollout.
-- The web sends guardian email after profile creation and treats that send's failure separately. Native must retain a retryable pending state if profile creation succeeded but sending failed. Preferences failure must not silently enable optional features.
-- Native currently sets `enableEmailBackupShare: false` and only exposes existing-account recovery. New-account recovery enrollment needs a deliberate contract and web interoperability validation; do not register new accounts with only the current device remembered and assume recovery has been configured.
-
-### Account implementation constraints
-
-Expose typed states such as eligibility/profile setup, pending approval and ready through the native account bridge. Do not present network/identity errors as registration eligibility. Preserve existing recovery and migration safeguards: the native coordinator has a five-minute legacy-account heuristic, so interrupted first-time setup and later return need explicit tests. Never turn an older unknown account into a fresh identity to bypass that heuristic.
-
-Keep new identity creation after the age decision, as web does. Existing identity plus missing profile reuses that identity. Snapshot non-secret setup progress where needed; DOB and guardian contact require deliberate protected storage and retention, not incidental logging/preferences. Clear private input on sign-out/background as appropriate. Serialize setup and use account-generation checks so responses cannot populate a different account.
-
-After an uncertain response, read existing state before repeating key setup or profile creation. A server-created profile, failed preference save and failed approval email are distinct recoverable outcomes. Verify ownership of an existing profile before treating a conflict as successful completion. General email entry and fresh disposable-account testing are prerequisites for claiming native signup works.
+The [generated composition and original SVG artwork](design/SIGNUP_BRIEF.md) follow the approved neutral/Colorful drawn direction. New copy covers en/es/fr/ar; nested country/date sheets inherit RTL and accessibility text size. Physical-device, live new-user cross-client recovery and real guardian delivery/approval remain explicit manual gates. The existing real review account is preserved.
 
 ## 2. Build My LearnCard on Home
 
@@ -101,13 +44,13 @@ This is LearnCard's connection graph. Access to the device address book is a sep
 | Slice                          | Relative scope                                                         | Acceptance gate                                                                                                           |
 | ------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Shared policy/approval audit   | Small focused investigation, potentially separate shared/backend fixes | Reviewed policy table; explicit distinction between age, approval and feature restrictions                                |
-| Native first-time registration | Moderate account integration plus UI                                   | Fresh adult, missing-profile, underage, pending-approval and interrupted/retry paths; existing-account recovery unchanged |
+| Native first-time registration | Implemented; live validation remains                                   | Fresh adult, missing-profile, underage, pending-approval and interrupted/retry paths; existing-account recovery unchanged |
 | People                         | Moderate, largely existing SDK APIs                                    | Multi-page search, incoming/outgoing requests, block/disconnect, Inbox consistency and lifecycle isolation                |
 | Build My LearnCard             | Small navigation entry; document processing is a larger slice          | Real intake paths, web index parity, privacy-aware processing, review, partial failure and duplicate prevention           |
 
 Automated policy cases should cover birthday boundaries, leap days, missing/future dates, country changes, each configured threshold and unknown-policy behavior. Native account cases should cover losing a profile-create response, handle races, failed preference/email saves, delayed guardian approval, resume after five minutes, cancellation/sign-out and pending scan/Apps intents. People tests need pagination/search, duplicate requests, stale responses after account switch and badge consistency. Build My tests need malformed/large files, partial imports, retry/relaunch, cancellation, processing restrictions and truthful counts. All new UI needs four-language, RTL, dark/light, accessibility type and Reduce Motion review.
 
-No live signup, approval email, document upload, contact action or policy change was performed for this plan. No new app build or hosted CI run is required for the documentation-only update.
+No live signup, approval email, document upload or contact action was performed. The implementation corrects the shared Ireland threshold; no backend route or deployment changed. Native CI remains manual-dispatch only. Current builds and targeted verification are recorded in [TESTING](TESTING.md).
 
 ## Source map
 
