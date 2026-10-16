@@ -27,7 +27,11 @@ import XCTest
         active("stack-5", in: app).swipeLeft(velocity: .slow); position(5, in: app)
         active("stack-5", in: app).swipeRight(velocity: .slow); position(4, in: app)
         capture(app, "Recent credential stack rewound to four of five")
-        active("stack-4", in: app).tap()
+        let selected = active("stack-4", in: app)
+        XCTAssertTrue(selected.isHittable)
+        // Tap the visible center once. XCTest's automatic scroll-to-visible retry
+        // can re-query the disappearing source during the native zoom transition.
+        selected.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(app.descendants(matching: .any)["credential-detail-card"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Learning moment 4"].exists)
         app.navigationBars.buttons.firstMatch.tap(); position(4, in: app)

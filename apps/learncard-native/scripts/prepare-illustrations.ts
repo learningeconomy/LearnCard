@@ -156,7 +156,7 @@ const drawings = (dark: boolean): Record<string, string> => {
             `<path d="M19 37L15 58L30 49L44 58L42 35" fill="#F9A8D4"/><path d="M32 5L39 10L48 11L51 20L57 27L51 35L48 44L39 45L32 51L24 45L15 44L12 35L6 27L12 20L15 11L24 10Z" fill="#FFFFFF"/><path d="M19 26Q24 18 32 26Q40 18 45 26Q46 33 32 41Q18 33 19 26Z" fill="#22D3EE"/>`
         ),
         CategoryAchievement: glyph(
-            `<path d="M18 13H7V22Q7 35 24 36M46 13H57V22Q57 35 40 36" fill="#FFFFFF"/><path d="M17 7H47V23Q47 41 32 42Q17 41 17 23Z" fill="#FDE047"/><path d="M29 42V51H35V42M20 58V51H44V58Z" fill="#FDE047"/><path d="M32 14L35 21L42 22L37 28L38 35L32 31L26 35L27 28L22 22L29 21Z" fill="#F9A8D4"/><path d="M23 12V21" stroke="#FFFFFF"/>`
+            `<path d="M5 44Q14 24 36 24L43 34Q21 33 12 55" fill="#F9A8D4"/><path d="M12 55Q23 34 43 34L46 40Q27 43 22 60" fill="#22D3EE"/><path d="M40 6Q41 3 43 6L48 18L60 20Q63 20 60 23L51 32L53 45Q54 48 51 46L40 39L29 45Q26 47 27 43L29 31L20 23Q18 21 21 20L34 18Z" fill="#FDE047"/><path d="M36 20L41 10L45 21" stroke="#FFFFFF" stroke-width="2.2"/><path d="M15 11L18 17M4 22L9 24M34 53L32 58"/><path d="M55 52L58 57M25 5L27 10" stroke="#EC4899"/>`
         ),
         CategoryStudies: glyph(
             `<path d="M32 20Q22 10 12 23Q5 37 17 53Q23 61 32 55Q42 61 48 53Q60 36 52 23Q43 12 32 20Z" fill="#FFFFFF"/><path d="M32 19Q29 10 23 7M32 17Q31 4 46 5Q46 17 32 17Z" fill="#34D399"/><path d="M18 28Q13 33 17 42" stroke="#22D3EE"/>`

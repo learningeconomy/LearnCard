@@ -3,7 +3,8 @@ import UIKit
 import LearnCardNativeCore
 import LearnCardNativeSDK
 
-/// A slow, isolated card tilt. No touch recognizer competes with page scrolling.
+/// A slow, isolated card tilt with a moving reflection and cast shadow.
+/// No touch recognizer competes with page scrolling.
 struct CredentialDetailCard: View {
     let credential: Credential
     var isVisible = true
@@ -27,28 +28,15 @@ struct CredentialDetailCard: View {
             let phase = tick.date.timeIntervalSince(origin) * .pi / 4.5
             let yaw = moves ? sin(phase) : 0
             let pitch = moves ? cos(phase) : 0
+            let light = (sin(phase - 0.65) + 1) / 2
             CredentialCard(credential: credential, featured: true, showsDisclosure: false,
-                           animatesPresence: false, showsStack: false)
-                .overlay {
-                    GeometryReader { geometry in
-                        Rectangle()
-                            .fill(LinearGradient(stops: [
-                                .init(color: .clear, location: 0),
-                                .init(color: .white.opacity(0.05), location: 0.28),
-                                .init(color: .white.opacity(0.28), location: 0.5),
-                                .init(color: .white.opacity(0.05), location: 0.72),
-                                .init(color: .clear, location: 1)
-                            ], startPoint: .leading, endPoint: .trailing))
-                            .frame(width: geometry.size.width * 0.48, height: geometry.size.height * 1.8)
-                            .rotationEffect(.degrees(-24))
-                            .offset(x: geometry.size.width * (0.28 + yaw * 0.85), y: -geometry.size.height * 0.4)
-                    }.clipShape(RoundedRectangle(cornerRadius: 24))
-                        .opacity(moves ? 1 : 0).allowsHitTesting(false).accessibilityHidden(true)
-                }
+                           animatesPresence: false, showsStack: false, castsShadow: false,
+                           reflectionPosition: moves ? light : nil)
                 .compositingGroup()
-                .rotation3DEffect(.degrees(pitch * 1.8), axis: (x: 1, y: 0, z: 0), perspective: 0.55)
-                .rotation3DEffect(.degrees(yaw * 4.5), axis: (x: 0, y: 1, z: 0), perspective: 0.55)
-                .shadow(color: .black.opacity(0.07), radius: 12, x: yaw * 3, y: 9)
+                .rotation3DEffect(.degrees(pitch * 3.2), axis: (x: 1, y: 0, z: 0), perspective: 0.4)
+                .rotation3DEffect(.degrees(yaw * 7), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
+                .shadow(color: .black.opacity(0.08), radius: 3, x: yaw * -2, y: 5)
+                .shadow(color: .black.opacity(0.22), radius: 18 + pitch * 2, x: yaw * -8, y: 17 + pitch * 3)
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("credential-detail-card")

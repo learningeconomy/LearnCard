@@ -218,10 +218,16 @@ final class ExperimentUITests: XCTestCase {
     @MainActor private func checkDetailMotion(reduceMotion: Bool) throws {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--locale", "en"]
-        if reduceMotion { app.launchArguments.append("--card-reduce-motion") }
+        if reduceMotion { app.launchArguments += ["--card-reduce-motion", "--preview-dark"] }
         app.launch(); app.openCollection()
-        XCTAssertTrue(app.buttons["credential-design"].waitForExistence(timeout: 10))
-        app.buttons["credential-design"].tap()
+        let category = app.buttons["collection-category-achievement"]
+        XCTAssertTrue(category.waitForExistence(timeout: 10)); category.tap()
+        let featured = app.descendants(matching: .any)["latest-stack"].buttons["credential-community"]
+        XCTAssertTrue(featured.waitForExistence(timeout: 5))
+        let passport = XCTAttachment(screenshot: app.screenshot())
+        passport.name = reduceMotion ? "Raised achievement card on dark Passport" : "Raised achievement card on light Passport"
+        passport.lifetime = .keepAlways; add(passport)
+        featured.tap()
         let card = app.descendants(matching: .any).matching(identifier: "credential-detail-card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         XCTAssertEqual(card.value as? String, reduceMotion ? "Still preview" : "Animated preview")

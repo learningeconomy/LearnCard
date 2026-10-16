@@ -126,6 +126,7 @@ struct CredentialArtwork: View {
     @Environment(\.locale) private var nativeLocale
     let credential: Credential
     var size: CGFloat = 104
+    var raised = false
 
     var body: some View {
         Group {
@@ -142,14 +143,28 @@ struct CredentialArtwork: View {
         .frame(width: size, height: size)
         .background(Palette.surface.opacity(0.9), in: Circle())
         .clipShape(Circle())
-        .overlay(Circle().stroke(.white.opacity(0.65), lineWidth: 3))
-        .shadow(color: Palette.categoryAccent(credential.displayCategory).opacity(0.12), radius: 15, x: 0, y: 8)
+        .overlay {
+            if raised {
+                Circle().fill(LinearGradient(colors: [.white.opacity(0.28), .clear, Palette.cardInk.opacity(0.06)],
+                                            startPoint: .topLeading, endPoint: .bottomTrailing))
+                Circle().inset(by: 5).stroke(.white.opacity(0.8), lineWidth: 1.2)
+            }
+        }
+        .overlay(Circle().stroke(LinearGradient(colors: [.white, .white.opacity(0.45)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: raised ? 2 : 1.5))
+        .background {
+            if raised {
+                Circle().fill(Palette.categoryTint(credential.displayCategory))
+                    .overlay(Circle().fill(Palette.cardInk.opacity(0.12))).offset(y: 3)
+            }
+        }
+        .shadow(color: Palette.cardInk.opacity(raised ? 0.18 : 0.08), radius: raised ? 8 : 10, x: 0, y: raised ? 7 : 4)
         .accessibilityHidden(true)
     }
 
     private var fallback: some View {
         Image(credential.displayCategory.illustration).resizable().scaledToFit().padding(size * 0.13)
-            .frame(width: size, height: size).background(Palette.categoryTint(credential.displayCategory))
+            .frame(width: size, height: size)
+            .background(raised ? Palette.categoryTint(credential.displayCategory).mix(with: .white, by: 0.72) : Palette.categoryTint(credential.displayCategory))
     }
 }
 
@@ -189,6 +204,8 @@ struct CredentialCard: View {
     var showsDisclosure = true
     var animatesPresence = true
     var showsStack = true
+    var castsShadow = true
+    var reflectionPosition: Double? = nil
     @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -199,7 +216,7 @@ struct CredentialCard: View {
         Group {
             if featured && !textSize.isAccessibilitySize {
                 HStack(spacing: 18) {
-                    CredentialArtwork(credential: credential, size: 116)
+                    CredentialArtwork(credential: credential, size: 116, raised: true)
                     VStack(alignment: .leading, spacing: 18) {
                         identity(featured: true)
                         footer
@@ -207,7 +224,7 @@ struct CredentialCard: View {
                 }.padding(22).frame(minHeight: 200)
             } else {
                 VStack(alignment: .leading, spacing: onWhiteSurface ? 0 : 14) {
-                    CredentialArtwork(credential: credential, size: textSize.isAccessibilitySize ? 132 : 98)
+                    CredentialArtwork(credential: credential, size: textSize.isAccessibilitySize ? 132 : 98, raised: featured)
                         .frame(maxWidth: .infinity).padding(.vertical, onWhiteSurface ? 18 : 4)
                         .background(onWhiteSurface ? Palette.categoryTint(credential.displayCategory) : .clear)
                     VStack(alignment: .leading, spacing: 14) { identity(featured: false); footer }
@@ -215,9 +232,24 @@ struct CredentialCard: View {
                 }.padding(onWhiteSurface ? 0 : 16).frame(maxWidth: .infinity, minHeight: textSize.isAccessibilitySize ? 0 : 260, alignment: .topLeading)
             }
         }
-        .background(onWhiteSurface ? Palette.surface : Palette.categoryTint(credential.displayCategory), in: RoundedRectangle(cornerRadius: 24))
+        .background {
+            if onWhiteSurface { Palette.surface }
+            else { CredentialCardSurface(tint: Palette.categoryTint(credential.displayCategory), reflectionPosition: reflectionPosition) }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Palette.surface, lineWidth: featured && showsStack ? 3 : 0))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24).strokeBorder(
+                LinearGradient(colors: [.white.opacity(onWhiteSurface ? 0 : 0.9), .white.opacity(onWhiteSurface ? 0 : 0.25)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.2)
+        }
+        .background {
+            if !onWhiteSurface {
+                // One same-color lower edge gives the card thickness without a second card.
+                RoundedRectangle(cornerRadius: 24).fill(Palette.categoryTint(credential.displayCategory))
+                    .overlay(RoundedRectangle(cornerRadius: 24).fill(Palette.cardInk.opacity(0.17)))
+                    .offset(y: featured ? 4 : 2)
+            }
+        }
         .background {
             if featured && showsStack {
                 RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .achievement ? Palette.portfolioCard : Palette.pinkCard)
@@ -226,7 +258,8 @@ struct CredentialCard: View {
                     .rotationEffect(.degrees(reduceMotion ? 0 : 2.5)).offset(x: 2, y: 13)
             }
         }
-        .shadow(color: .black.opacity(featured ? 0.07 : 0), radius: 10, x: 0, y: 7)
+        .shadow(color: .black.opacity(featured && castsShadow ? 0.06 : 0), radius: 2, x: 0, y: 4)
+        .shadow(color: .black.opacity(featured && castsShadow ? 0.16 : 0), radius: 18, x: 0, y: 14)
         .padding(.bottom, featured && showsStack ? 15 : 0)
         .modifier(CardPresenceMotion(enabled: featured && animatesPresence))
         .accessibilityElement(children: .combine)

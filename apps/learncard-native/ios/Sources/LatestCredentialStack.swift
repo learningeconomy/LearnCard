@@ -101,7 +101,6 @@ struct LatestCredentialStack: View {
                 .overlay {
                     if !active && !flying { sleeve(depth: depth).clipShape(RoundedRectangle(cornerRadius: 24)) }
                 }
-                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Palette.surface, lineWidth: 3))
                 .modifier(StackTransitionSource(active: active, id: credential.id, namespace: namespace))
         }
         .buttonStyle(CredentialPressStyle())
