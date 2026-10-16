@@ -890,10 +890,36 @@ export const isResumeBuilderCredential = (credential: VC): boolean => {
     return typeof nestedType === 'string' && LER_RS_TYPES.includes(nestedType);
 };
 
-export const getCredentialName = (credential: VC): string => {
+/**
+ * Get a display name for a credential.
+ *
+ * @param credential - The credential to get a name for
+ * @param options.skipHumanizedFallback - If true, returns undefined instead of
+ *   falling back to the humanized credential type. Useful when callers want to
+ *   provide their own translated fallback.
+ */
+export function getCredentialName(credential: VC): string;
+export function getCredentialName(
+    credential: VC,
+    options: { skipHumanizedFallback: true }
+): string | undefined;
+export function getCredentialName(
+    credential: VC,
+    options?: { skipHumanizedFallback?: boolean }
+): string | undefined {
     const credentialTypes = getCredentialType(credential);
     const name = getPotentialNameFieldsFromType(credentialTypes, credential);
     const credentialSubjectAchievementName = getCredentialSubject(credential)?.achievement?.name;
+
+    const explicitName =
+        credential?.name ||
+        name ||
+        credentialSubjectAchievementName ||
+        (isResumeBuilderCredential(credential) ? 'Resume Builder' : undefined);
+
+    if (explicitName) return explicitName;
+
+    if (options?.skipHumanizedFallback) return undefined;
 
     // Generic VCDM-shape fallback: humanize the most-specific entry of
     // the `type` array so a credential without an explicit `name` or
@@ -901,15 +927,8 @@ export const getCredentialName = (credential: VC): string => {
     // rendered nameless. Critical for vanilla VCDM credentials issued
     // via OID4VCI by issuers that don't ship a learncard-flavored
     // achievement payload (e.g. the walt.id sandbox `UniversityDegree`).
-    const humanizedType = humanizeCredentialType(getMostSpecificCredentialType(credentialTypes));
-
-    return (
-        credential?.name ||
-        name ||
-        credentialSubjectAchievementName ||
-        (isResumeBuilderCredential(credential) ? 'Resume Builder' : humanizedType)
-    );
-};
+    return humanizeCredentialType(getMostSpecificCredentialType(credentialTypes));
+}
 
 export const getCredentialType = (credential: VC) => {
     return credential?.type;

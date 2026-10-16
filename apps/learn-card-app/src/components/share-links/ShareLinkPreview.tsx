@@ -1,12 +1,14 @@
 import { ShareCredentialVisual } from './ShareCredentialVisual';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
+import { CredentialPreviewButton } from './CredentialPreviewButton';
 import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import type { SharePayload, VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { credentialText, type ProofState } from './shareLinkFlow';
+import { getCredentialName } from 'learn-card-base/helpers/credentialHelpers';
 
 /**
  * Display-only projection of the exact manifest that will be encrypted and
@@ -201,6 +203,14 @@ export const ShareLinkPreview = ({
                     item => item.targetCredentialIndex === credentialIndex
                 );
                 const proof = proofs?.[credentialIndex];
+
+                // Use getCredentialName with skipHumanizedFallback to get explicit/type-derived names,
+                // then fall back to translated "Credential" instead of humanized type
+                const credentialTitle =
+                    text.name ||
+                    getCredentialName(credential, { skipHumanizedFallback: true }) ||
+                    m['shareLinks.credential']();
+
                 return (
                     <article
                         key={credentialIndex}
@@ -210,10 +220,11 @@ export const ShareLinkPreview = ({
                             <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
                                 <h2 className="break-words text-lg font-semibold text-grayscale-900">
-                                    {text.name || m['shareLinks.credential']()}
+                                    {credentialTitle}
                                 </h2>
                                 <ShareCredentialMetadata credential={credential} />
                             </div>
+                            <CredentialPreviewButton credential={credential} />
                         </div>
                         {text.description && (
                             <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap break-words">

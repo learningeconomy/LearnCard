@@ -79,6 +79,8 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
     unwrapBoostCredential: (credential: unknown) => credential,
     getImageUrlFromCredential: () => undefined,
+    getCredentialName: (credential: { name?: string }) => credential?.name ?? 'Credential',
+    isBoostCredential: () => false,
 }));
 vi.mock('./sharePrivacy', () => ({
     enterSharePrivacy: vi.fn(),
