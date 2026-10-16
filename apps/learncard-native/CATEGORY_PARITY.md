@@ -43,6 +43,6 @@ Missing category fields remain compatible with older native replies using the le
 
 ## Boundaries
 
-Creation still uses the existing three authoring/transport kinds and its current SDK validation. Full authoring parity for all categories, including Qualifications, needs a separate builder/SDK contract update; the new browse filters do not claim that capability. Family creation/invitation restrictions remain unchanged.
+The creator now supports the eight regular web authoring categories, including Portfolio and Qualifications, with 115 category-scoped standard types and independent visual formats. Its explicit category survives template metadata, signed tags and self-claim indexing; legacy kinds remain compatible for older callers. Skills/AI browse filters do not imply manual creation, and Family creation/invitation stays separate. See [the source audit and authoring contract](CREDENTIAL_AUTHORING_PARITY.md).
 
 Regression coverage includes canonical aliases, category preservation during encoding, unknown/legacy records, Family separation, conservative qualification inference and explicit-tag precedence, proof preservation, independent Portfolio/Qualifications filtering, scoped search, metadata labels and French/Arabic dark layouts. Exact results and installed-build evidence are tracked in [TESTING](TESTING.md) and [STATUS](STATUS.md).

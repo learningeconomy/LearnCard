@@ -136,9 +136,9 @@ final class ExperimentUITests: XCTestCase {
         app.buttons["create"].tap(); app.buttons["Create new"].tap(); app.swipeUp()
         app.buttons["draft-format"].tap()
         XCTAssertTrue(app.scrollViews["builder-format-sheet"].waitForExistence(timeout: 5), app.debugDescription)
-        XCTAssertTrue(app.buttons["builder-option-Badge"].isSelected)
+        XCTAssertTrue(app.buttons["builder-format-badge"].isSelected)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Designed format bottom sheet"; shot.lifetime = .keepAlways; add(shot)
-        app.buttons["builder-option-Certificate"].tap()
+        app.buttons["builder-format-certificate"].tap()
         let formatUpdated = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Certificate"), object: app.buttons["draft-format"])
         XCTAssertEqual(XCTWaiter.wait(for: [formatUpdated], timeout: 5), .completed, app.debugDescription)
         app.buttons["draft-category"].tap()
@@ -147,8 +147,9 @@ final class ExperimentUITests: XCTestCase {
         XCTAssertTrue(app.buttons["draft-category"].label.contains("Achievements"))
         app.buttons["draft-category"].tap()
         let categoryShot = XCTAttachment(screenshot: app.screenshot()); categoryShot.name = "Designed category bottom sheet"; categoryShot.lifetime = .keepAlways; add(categoryShot)
-        app.buttons["builder-option-Learning"].tap()
-        let categoryUpdated = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Learning"), object: app.buttons["draft-category"])
+        app.buttons["builder-category-studies"].tap()
+        app.buttons["builder-type-Course"].tap()
+        let categoryUpdated = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Studies"), object: app.buttons["draft-category"])
         XCTAssertEqual(XCTWaiter.wait(for: [categoryUpdated], timeout: 5), .completed, app.debugDescription)
     }
 

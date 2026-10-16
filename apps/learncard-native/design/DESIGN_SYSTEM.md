@@ -129,3 +129,7 @@ Check the actual view at ordinary and accessibility text sizes, light/dark appea
 ## Category parity
 
 Filters and category labels use semantic credential categories, independently of the legacy three authoring kinds. Portfolio, Assistance, Qualifications and the other web categories retain distinct names, artwork and filters. Families stays in its dedicated area. Unknown partner values remain readable under Other. See [category contracts and qualification rules](../CATEGORY_PARITY.md).
+
+## Authoring vocabulary
+
+Category, credential type and visual format are separate controls and data fields. Use the eight regular web creator categories with the same Collection labels/artwork/colors. Category opens a two-stage category/type sheet with localized search; selection commits together, while Back/Cancel preserves the draft. The category tile and review show the chosen type. Format offers Badge/Award/Certificate/Media, with the ID category fixed to its dedicated card format. Do not list Course, Skill, Membership or License as visual formats. Browse-only Skills/AI and Family flows do not become manual authoring options. Keep exact wire values out of user copy and use the shared audited catalog for both Swift and JavaScript. See [the source audit and contract](../CREDENTIAL_AUTHORING_PARITY.md).

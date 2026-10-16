@@ -63,6 +63,7 @@ struct BuilderSelector: View {
     let value: String
     let symbol: String
     let tint: Color
+    var detail: String? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
@@ -74,7 +75,8 @@ struct BuilderSelector: View {
             Text(value).font(.subheadline.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        }.padding(14).frame(minWidth: 154, maxWidth: .infinity, minHeight: 80)
+            if let detail { Text(detail).font(.caption).fixedSize(horizontal: false, vertical: true) }
+        }.padding(14).frame(minWidth: 154, maxWidth: .infinity, minHeight: 112)
             .foregroundStyle(Palette.cardInk).background(tint, in: RoundedRectangle(cornerRadius: 18))
             .accessibilityElement(children: .combine)
     }
@@ -105,42 +107,45 @@ struct BuilderRecipientChoice: View {
     }
 }
 
-/// Custom list sheet, deliberately avoiding confirmationDialog/menu adaptation on iOS 26.
+extension CreationCategory {
+    var localizedName: String { NativeText.text("credentialCategory.\(displayCategory.rawValue)") }
+}
+func authoringTypeName(_ value: String) -> String { NativeText.text("builder.type.\(value)") }
+func authoringFormatName(_ value: CredentialDisplayFormat) -> String { NativeText.text("builder.display.\(value.rawValue)") }
+
+/// Category and achievement type are chosen together, independently of visual format.
 struct BuilderSelectionSheet: View {
     enum Selection { case format, category }
     let selection: Selection
-    @Binding var format: String
-    @Binding var category: CredentialKind
+    @Binding var format: CredentialDisplayFormat
+    @Binding var category: CreationCategory
+    @Binding var achievementType: String
     @Environment(\.dismiss) private var dismiss
     private var isFormat: Bool { selection == .format }
-    private var values: [String] { isFormat ? ["Badge", "Certificate", "Course", "Competency", "Membership", "License", "MicroCredential"] : CredentialKind.allCases.map(\.rawValue) }
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    BuilderHeading(title: NativeText.text(isFormat ? "builder.chooseFormat" : "builder.chooseCategory"), detail: NativeText.text(isFormat ? "builder.formatHint" : "builder.categoryHint"), illustration: "BuilderYellowRays")
-                    VStack(spacing: 10) {
-                        ForEach(values, id: \.self) { value in
-                            let selected = isFormat ? value == format : value == category.rawValue
-                            Button {
-                                if isFormat { format = value }
-                                else if let kind = CredentialKind(rawValue: value) { category = kind }
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 14) {
-                                    Image(image(value)).resizable().scaledToFit().padding(8).frame(width: 50, height: 50)
-                                        .background(tint(value), in: RoundedRectangle(cornerRadius: 14)).accessibilityHidden(true)
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text(isFormat ? NativeText.text("builder.format.\(value)") : NativeText.literal(value)).font(.headline)
-                                        Text(NativeText.text("builder.option.\(value)")).font(.subheadline).foregroundStyle(Palette.secondary)
-                                    }.frame(maxWidth: .infinity, alignment: .leading)
-                                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                                        .font(.title3).foregroundStyle(Palette.ink).accessibilityHidden(true)
-                                }.padding(14).foregroundStyle(Palette.ink)
-                                    .background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))
-                                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(selected ? Palette.ink : .clear, lineWidth: 2))
-                            }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("builder-option-\(value)")
-                                .accessibilityAddTraits(selected ? .isSelected : [])
+                    BuilderHeading(title: NativeText.text(isFormat ? "builder.chooseFormat" : "builder.chooseCategory"), detail: NativeText.text(isFormat ? category == .id ? "builder.idFormatHint" : "builder.formatHint" : "builder.categoryHint"), illustration: "BuilderYellowRays")
+                    LazyVStack(spacing: 10) {
+                        if isFormat {
+                            ForEach(category.formats, id: \.self) { value in
+                                Button { format = value; dismiss() } label: {
+                                    BuilderOptionRow(title: authoringFormatName(value), detail: NativeText.text("builder.displayHint.\(value.rawValue)"), image: formatImage(value), tint: formatTint(value), selected: value == format)
+                                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("builder-format-\(value.rawValue)")
+                                    .accessibilityAddTraits(value == format ? .isSelected : [])
+                            }
+                        } else {
+                            ForEach(CreationCategory.ordered, id: \.self) { value in
+                                NavigationLink {
+                                    BuilderTypeList(category: value, selected: value == category ? achievementType : "", cancel: { dismiss() }) { type in
+                                        category = value; achievementType = type; dismiss()
+                                    }
+                                } label: {
+                                    BuilderOptionRow(title: value.localizedName, detail: NativeText.text("builder.categoryHint.\(value.displayCategory.rawValue)"), image: value.displayCategory.illustration, tint: Palette.categoryTint(value.displayCategory), selected: value == category, forward: true)
+                                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("builder-category-\(value.displayCategory.rawValue)")
+                                    .accessibilityAddTraits(value == category ? .isSelected : [])
+                            }
                         }
                     }
                 }.padding(20).frame(maxWidth: 620).frame(maxWidth: .infinity)
@@ -155,23 +160,67 @@ struct BuilderSelectionSheet: View {
         #endif
         .presentationDetents([.fraction(0.78), .large]).presentationDragIndicator(.visible)
     }
-    private func image(_ value: String) -> String {
-        switch value {
-        case "Badge", "MicroCredential": "CategoryBadge"
-        case "Certificate", "License": "CategoryQualification"
-        case "Course", "Learning": "CategoryStudies"
-        case "Competency": "CategorySkill"
-        case "Membership", "Memberships": "CategoryID"
-        default: "CategoryAchievement"
-        }
+    private func formatImage(_ value: CredentialDisplayFormat) -> String {
+        switch value { case .badge: "CategoryBadge"; case .award: "CategoryAchievement"; case .certificate: "CategoryQualification"; case .media: "CategoryPortfolio"; case .id: "CategoryID"; case .course: "CategoryStudies" }
     }
-    private func tint(_ value: String) -> Color {
-        switch value {
-        case "Course", "Learning": Palette.studiesCard
-        case "Competency": Palette.lilacCard
-        case "Certificate", "License": Palette.qualificationCard
-        case "Achievements": Palette.pinkCard
-        default: Palette.blueCard
-        }
+    private func formatTint(_ value: CredentialDisplayFormat) -> Color {
+        switch value { case .award: Palette.pinkCard; case .certificate: Palette.qualificationCard; case .media: Palette.portfolioCard; case .course: Palette.studiesCard; default: Palette.blueCard }
+    }
+}
+
+private struct BuilderOptionRow: View {
+    let title: String
+    let detail: String?
+    let image: String
+    let tint: Color
+    let selected: Bool
+    var forward = false
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(image).resizable().scaledToFit().padding(8).frame(width: 50, height: 50)
+                .background(tint, in: RoundedRectangle(cornerRadius: 14)).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title).font(.headline)
+                if let detail { Text(detail).font(.subheadline).foregroundStyle(Palette.secondary) }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: selected ? "checkmark.circle.fill" : forward ? "chevron.forward" : "circle")
+                .font(.title3).foregroundStyle(Palette.ink).accessibilityHidden(true)
+        }.padding(14).foregroundStyle(Palette.ink).frame(minHeight: 64)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(selected ? Palette.ink : .clear, lineWidth: 2))
+    }
+}
+
+private struct BuilderTypeList: View {
+    let category: CreationCategory
+    let selected: String
+    let cancel: () -> Void
+    let choose: (String) -> Void
+    @State private var search = ""
+    private var options: [CredentialTypeOption] {
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        return category.types.filter { query.isEmpty || authoringTypeName($0.type).localizedStandardContains(query) || $0.title.localizedStandardContains(query) }.sorted { authoringTypeName($0.type).localizedStandardCompare(authoringTypeName($1.type)) == .orderedAscending }
+    }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                BuilderHeading(title: NativeText.text("builder.chooseType"), detail: NativeText.format("builder.typeHint", category.localizedName), illustration: "BuilderYellowRays")
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass").accessibilityHidden(true)
+                    TextField(NativeText.text("builder.findType"), text: $search).autocorrectionDisabled().submitLabel(.search).accessibilityIdentifier("builder-type-search")
+                    if !search.isEmpty { Button { search = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel(NativeText.text("builder.clearTypeSearch")).accessibilityIdentifier("builder-type-clear") }
+                }.font(.body).foregroundStyle(Palette.ink).padding(16).background(Palette.surface, in: RoundedRectangle(cornerRadius: 18))
+                if options.isEmpty { Text(NativeText.text("builder.noTypes")).font(.body).foregroundStyle(Palette.secondary) }
+                LazyVStack(spacing: 10) {
+                    ForEach(options) { option in
+                        Button { choose(option.type) } label: {
+                            BuilderOptionRow(title: authoringTypeName(option.type), detail: nil, image: category.displayCategory.illustration, tint: Palette.categoryTint(category.displayCategory), selected: option.type == selected)
+                        }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("builder-type-\(option.type)")
+                            .accessibilityAddTraits(option.type == selected ? .isSelected : [])
+                    }
+                }
+            }.padding(20).frame(maxWidth: 620).frame(maxWidth: .infinity)
+        }.background(Palette.paper).navigationBarTitleDisplayMode(.inline).scrollDismissesKeyboard(.interactively).accessibilityIdentifier("builder-type-sheet")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Cancel"), action: cancel).accessibilityIdentifier("builder-selector-cancel") } }
     }
 }

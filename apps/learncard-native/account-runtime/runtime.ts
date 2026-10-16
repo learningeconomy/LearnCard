@@ -13,6 +13,7 @@ import {
     type NativeCredentialDraft,
 } from './credential-draft';
 import { credentialCategoryForDisplay } from './credential-category';
+import { resolveNativeAuthoring } from './credential-authoring';
 import { validateCollectionCursor } from './collection-pagination';
 import { nativeProfileUpdate } from './profile-update';
 import {
@@ -701,16 +702,12 @@ const commands = {
         let saved = drafts.get(input.requestID);
         if (saved && saved.fingerprint !== fingerprint)
             throw new Error('Draft changed during delivery');
-        const category =
-            input.kind === 'Learning'
-                ? 'Learning History'
-                : input.kind === 'Memberships'
-                  ? 'ID'
-                  : 'Achievement';
+        const { category, achievementType } = resolveNativeAuthoring(input);
         if (!saved) {
             const uri = await wallet.invoke.createBoost(template as never, {
                 name: input.title.trim(),
                 category,
+                type: achievementType,
             });
             saved = { fingerprint, uri, indexed: false, complete: false };
             drafts.set(input.requestID, saved);

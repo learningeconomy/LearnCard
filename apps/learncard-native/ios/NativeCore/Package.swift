@@ -10,7 +10,7 @@ let package = Package(
         .library(name: "LearnCardNativeSDK", targets: ["LearnCardNativeSDK"]),
     ],
     targets: [
-        .target(name: "LearnCardNativeCore"),
+        .target(name: "LearnCardNativeCore", resources: [.process("Resources")]),
         .target(name: "LearnCardNativeSDK", dependencies: ["LearnCardNativeCore"], resources: [.process("Resources")]),
         .testTarget(name: "LearnCardNativeCoreTests", dependencies: ["LearnCardNativeCore"]),
         .testTarget(name: "LearnCardNativeAccountTests", dependencies: ["LearnCardNativeSDK"]),

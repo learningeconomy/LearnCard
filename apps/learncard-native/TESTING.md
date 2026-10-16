@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **375 cases** (153 Bun, 131 Swift, 91 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
+Current configured suite: **390 cases** (159 Bun, 136 Swift, 95 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -23,9 +23,24 @@ bash apps/learncard-native/scripts/test-ci.sh
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
 
+## Credential category, type and format parity — October 16
+
+All **159 Bun**, **136 Swift** (107 XCTest + 29 Swift Testing) and **11 distinct focused simulator cases pass**. Consumer source contracts pass with the same 14 dependency diagnostics. This is targeted UI verification, not a full 390-case run. The prior full local baseline remains 366 cases; hosted native CI remains manual and was not dispatched.
+
+- `artifacts/authoring-all-bun-final.log`: six new protocol tests cover all eight categories, all 115 standard type values, allowed formats, legacy callers, invalid combinations and signed Media cover evidence. Actual SDK issuance and proof verification succeed for every standard type and all four formats. Tampering with category tags, achievement types, display or cover evidence fails proof verification. Supporting links are retained.
+- `authoring-core.log`: all 136 Swift cases pass. New domain cases cover shared catalog scope, separate wire fields/legacy decoding, invalid combinations, the fixed ID format and a Portfolio template/self-collection round trip. The localization test checks every type and format/category copy across en/es/fr/ar. `authoring-types-final.log` records source contracts.
+- `authoring-ui.xcresult`: eight of nine focused cases passed, including all four existing builder cases, existing sheet presentation, all-category/format cancellation, Qualifications/ID and actual Arabic accessibility/dark presentation. The Portfolio case created its synthetic credential successfully but then tried to tap a horizontally offscreen Collection chip. The test now explicitly scrolls the chip into view using the existing bounded gesture pattern.
+- `authoring-final-ui.xcresult`: all four cases pass: Portfolio search → create → Portfolio Collection filter → detail metadata; category/format cancellation; and both existing create/send and reusable-template-separation regressions. Together with the initial passing cases, all 11 distinct focused cases pass with no unresolved failure. UI fixtures make no real network writes.
+
+Screenshots were exported from both runs, visually inspected and copied into [the current native brief](design/CREDENTIAL_AUTHORING_BRIEF.md). The final Portfolio screenshot comes from the passing run. The new four UI cases are included automatically by `test-ci.sh`.
+
+The catalog sync was rerun against its pinned upstream commit and reproduced the committed JSON byte-for-byte. Release compilation and Debug installation pass (`authoring-release.log`, `authoring-review-install.log`); both compiled launch catalogs pass verification. All **17 installed artifact hashes match** (`authoring-install-proof.json`), including the new Core resource bundle, preserved private configuration and unchanged DIDKit. Builds use the existing two-job reduced-priority scripts sequentially. The separate checks simulator is shut down.
+
+Live visual review resumed the existing account to Home, opened the eight-category sheet, selected Qualifications → License, verified the separate four-format sheet and cancelled the unsubmitted draft. The app is left on Home. There was no account reset, live issuance, upload, send or share publication. Dedicated live web-view/create/send validation, complete ID appearance fields, user-defined custom types and human translation/physical-device review remain separate; see [the audited contract](CREDENTIAL_AUTHORING_PARITY.md).
+
 ## Collection emptiness, launch continuity and signup photo — October 16
 
-The latest pass has **153 Bun**, **131 Swift** (102 XCTest + 29 Swift Testing) and **27 distinct focused simulator cases passing**, plus passing consumer source contracts with the same 14 dependency diagnostics. This is targeted UI verification, not a new full 375-case run. The full 366-case baseline below predates the seven new UI and two new Swift cases.
+The preceding empty/launch/photo pass has **153 Bun**, **131 Swift** (102 XCTest + 29 Swift Testing) and **27 distinct focused simulator cases passing**, plus passing consumer source contracts with the same 14 dependency diagnostics. This is targeted UI verification, not a new full 375-case run. The full 366-case baseline below predates the seven new UI and two new Swift cases.
 
 - `artifacts/empty-launch-photo-bun.log` and `empty-launch-photo-types.log`: protocol and source-contract results.
 - `empty-launch-photo-photo-final-core.log`: all 131 Swift cases after the final bounded motion refinement. New checks require an assembled visible first frame and complete four-language empty/photo copy.

@@ -12,7 +12,7 @@ The mockup is composition guidance. The implementation uses navy text on bright 
 
 Large text stacks the credential artwork/text and selectors. Long labels wrap; the footer grows with text. Narrow content is bounded at 620 points rather than stretching forms across an iPad. The presented creator and nested recipient sheet explicitly inherit native language, RTL and review text-size preferences. No splash-like background animation is added inside forms.
 
-The visual pass keeps the existing three authoring kinds and seven credential formats. Full semantic-category authoring, such as Qualifications and Portfolio, still needs a separate SDK builder contract update; Collection already displays those categories correctly. Original signed credential data is unaffected. See [flow and verification](../CREDENTIAL_BUILDER.md).
+The first visual pass retained the three legacy authoring kinds and mixed type/format choices. The October 16 follow-up replaces that contract with eight regular web categories, 115 standard types and four visual formats. See [current category/type/format screens](CREDENTIAL_AUTHORING_BRIEF.md), [the source audit](../CREDENTIAL_AUTHORING_PARITY.md) and [flow and verification](../CREDENTIAL_BUILDER.md). Earlier screenshots below document the visual evolution. Existing credentials are not reissued.
 
 ## First-pass simulator screens
 

@@ -1,10 +1,14 @@
 # LearnCard native client plan
 
+## Creator category and format parity — October 16
+
+The native creator now separates eight regular web authoring categories, 115 standard category-scoped types and four visual formats. IDs use their dedicated format. The explicit canonical category survives the signed credential, template metadata and Collection index; the selector no longer reuses the coarse three legacy kinds. See [the upstream audit and remaining boundaries](CREDENTIAL_AUTHORING_PARITY.md). Custom types, fuller ID/optional-field layouts and durable uncertain-write handling remain separate.
+
 ## Native first-time setup — October 16
 
 First-time setup is the current priority. The native client now routes verified accounts through birth date/country, name/available username/photo, separate privacy choices and password-protected recovery-backup enrollment before creating a profile. Existing identities are reused; unfinished operations are protected and reconciled. Under-13 signup routes to Families; unapproved profiles wait for real server approval. Shared Ireland thresholds are corrected to 16. Staging email-backup delivery is disabled, so existing email recovery stays available while new setup uses canonical encrypted backup export/confirmation. See [implemented behavior and remaining live gates](FIRST_TIME_SETUP.md).
 
-For live validation, reset only the selected dedicated staging account's collection/profile/recovery; **keep the shared Firebase identity**. The native reset is staged and retryable, requires verified-email confirmation, preserves interrupted progress in Keychain, and reconnects through a new SDK host before first-time setup. This is not production account erasure. Continue through real signup and separate-device backup recovery after reset; guardian delivery/approval remains a separate live path. See [reset audit and status](ACCOUNT_DELETION_AUDIT.md).
+The authorized staging-only reset and required setup are complete, with the shared Firebase identity retained. Do not reset the recreated account again. The saved private test credential and Home-first relaunch were verified after upgrade/restart. The native reset is staged and retryable, requires verified-email confirmation, preserves interrupted progress in Keychain, and reconnects through a new SDK host before first-time setup. This is not production account erasure. Independent second-device backup recovery, full staging-web parity and real guardian delivery/approval remain separate live paths. See [reset audit and status](ACCOUNT_DELETION_AUDIT.md).
 
 Build My LearnCard and People remain next slices: optional resumable Home intake, then connections reachable from Home/Account/Inbox without adding a side menu. See [remaining roadmap](ONBOARDING_AND_PEOPLE.md).
 
@@ -22,7 +26,7 @@ The creator now includes the approved plane/rays/card marks, integrated artwork/
 
 ## Illustrated credential creator — October 15
 
-The post-motion design pass replaces the plain Form with an artwork-led draft, persistent labels and character limits, colored format/category controls opening designed selection sheets, illustrated recipient choices and a precise review before creating. A fixed action tray, focused-field scrolling and explicit nested-modal locale/RTL/text-size inheritance support native editing. Existing issuance, artwork upload and delivery contracts remain. See [flow contracts](CREDENTIAL_BUILDER.md) and [concept/prompts and native screenshots](design/CREDENTIAL_BUILDER_BRIEF.md). Full semantic-category authoring stays a separate SDK builder update.
+The post-motion design pass replaces the plain Form with an artwork-led draft, persistent labels and character limits, colored format/category controls opening designed selection sheets, illustrated recipient choices and a precise review before creating. A fixed action tray, focused-field scrolling and explicit nested-modal locale/RTL/text-size inheritance support native editing. Existing issuance, artwork upload and delivery contracts remain. See [flow contracts](CREDENTIAL_BUILDER.md) and [concept/prompts and native screenshots](design/CREDENTIAL_BUILDER_BRIEF.md). The October 16 authoring pass below supersedes the old three-category/type-as-format contract.
 
 ## Expressive account transitions — October 15
 
@@ -46,7 +50,7 @@ Scan from Inbox, Home or the shared action menu, or begin before sign-in. Camera
 
 ## Category parity update — October 15
 
-Collection now has distinct filters for the web consumer categories, including Portfolio and the newly added Qualifications. Rows, cards and detail metadata use the same localized semantic category rather than the three legacy authoring kinds. Qualifications follows the upstream orange Colorful token and conservative read-only interpretation of historic license/certification records. Families remains in its dedicated native area; unknown partner categories keep their original label under Other. Filtering covers loaded pages, with explicit partial-result guidance. Full-category authoring is a separate builder/SDK update. See [category contracts and sources](CATEGORY_PARITY.md).
+Collection now has distinct filters for the web consumer categories, including Portfolio and the newly added Qualifications. Rows, cards and detail metadata use the same localized semantic category rather than the three legacy authoring kinds. Qualifications follows the upstream orange Colorful token and conservative read-only interpretation of historic license/certification records. Families remains in its dedicated native area; unknown partner categories keep their original label under Other. Filtering covers loaded pages, with explicit partial-result guidance. Regular web-category authoring is now implemented; specialized app categories remain in their own flows. See [category contracts and sources](CATEGORY_PARITY.md).
 
 ## Home and design system update — October 15
 

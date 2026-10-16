@@ -1,10 +1,13 @@
 import { z } from 'zod';
+import { resolveNativeAuthoring } from './credential-authoring';
 
 export interface NativeCredentialDraft {
     requestID: string;
     title: string;
     summary: string;
     kind: string;
+    category?: string;
+    displayType?: string;
     achievementType: string;
     criteria: string;
     artworkURL?: string;
@@ -125,17 +128,7 @@ export const buildNativeTemplate = (
         !input.summary.trim() ||
         input.title.length > 100 ||
         input.summary.length > 1000 ||
-        input.criteria.length > 2000 ||
-        !['Achievements', 'Memberships', 'Learning'].includes(input.kind) ||
-        ![
-            'Badge',
-            'Certificate',
-            'Course',
-            'Competency',
-            'Membership',
-            'License',
-            'MicroCredential',
-        ].includes(input.achievementType)
+        input.criteria.length > 2000
     ) {
         throw new Error('Invalid credential details');
     }
@@ -150,13 +143,42 @@ export const buildNativeTemplate = (
             throw new Error('Unsupported artwork');
     }
     const details = optionalDetails(input.details);
+    const authoring = resolveNativeAuthoring(input);
     return {
         ...details.credential,
+        ...(authoring.displayType === 'media' && input.artworkURL
+            ? {
+                  evidence: [
+                      {
+                          id: input.artworkURL,
+                          type: ['Evidence', 'EvidenceFile'],
+                          name: input.title.trim(),
+                          genre: 'photo',
+                          fileType: 'image/jpeg',
+                      },
+                      ...(details.credential.evidence ?? []),
+                  ],
+              }
+            : {}),
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+            'https://ctx.learncard.com/boosts/1.0.3.json',
+            ...(authoring.category === 'ID'
+                ? ['https://ctx.learncard.com/boostIDs/1.0.0.json']
+                : []),
         ],
-        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        type: [
+            'VerifiableCredential',
+            'OpenBadgeCredential',
+            'BoostCredential',
+            ...(authoring.category === 'ID' ? ['BoostID'] : []),
+        ],
+        display: {
+            displayType: authoring.displayType,
+            backgroundColor: authoring.backgroundColor,
+            previewType: 'default',
+        },
         name: input.title.trim(),
         issuer: { id: issuerDid, name: issuerName },
         credentialSubject: {
@@ -167,7 +189,8 @@ export const buildNativeTemplate = (
                 type: ['Achievement'],
                 name: input.title.trim(),
                 description: input.summary.trim(),
-                achievementType: input.achievementType,
+                achievementType: authoring.achievementType,
+                tag: [`lc:category:${authoring.category}`],
                 ...details.achievement,
                 criteria: {
                     ...details.criteria,

@@ -63,7 +63,7 @@ import XCTest
         XCTAssertTrue(app.staticTexts["أضف بهجة إلى يوم أحدهم."].exists)
         let format = app.buttons["draft-format"]; reveal(format, in: app); format.tap()
         XCTAssertTrue(app.scrollViews["builder-format-sheet"].waitForExistence(timeout: 5))
-        let option = app.buttons["builder-option-Certificate"]
+        let option = app.buttons["builder-format-certificate"]
         XCTAssertTrue(option.label.contains("شهادة")); XCTAssertGreaterThanOrEqual(option.frame.height, 44)
         capture(app, "Arabic accessibility designed format sheet")
         app.buttons["builder-selector-cancel"].tap()

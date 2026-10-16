@@ -125,9 +125,9 @@ public actor DemoCredentialService: CredentialService {
         let cleanTitle = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanSummary = draft.summary.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty, !cleanSummary.isEmpty, cleanTitle.count <= 100, cleanSummary.count <= 1_000,
-              draft.criteria.count <= 2000, draft.details?.validationIssue == nil else { throw ClientError.invalidDraft }
+              draft.criteria.count <= 2000, draft.details?.validationIssue == nil, draft.authoringIsValid else { throw ClientError.invalidDraft }
         let credential = Credential(id: UUID().uuidString, title: cleanTitle, issuer: "You", summary: cleanSummary,
-                                    kind: draft.kind, date: .now, createdByMe: true, artworkURL: draft.artworkURL)
+                                    kind: draft.category?.legacyKind ?? draft.kind, date: .now, createdByMe: true, artworkURL: draft.artworkURL, category: draft.category?.rawValue)
         templates.insert(credential, at: 0)
         if let recipient = draft.recipient {
             activity.insert(Activity(title: "Sample send recorded", detail: "\(cleanTitle) → \(recipient)", symbol: "paperplane"), at: 0)

@@ -12,7 +12,7 @@ The October 15 visual pass follows the [generated design reference](design/CREDE
 - En/es/fr/ar copy lives in the String Catalog. Published member names and credential content remain verbatim. The creator and nested picker explicitly apply language/RTL and review Dynamic Type inside their own presentation roots.
 - Accessibility sizes stack preview content and selector tiles. The bright category panels keep fixed navy text in either appearance. Ordinary form transitions respect Reduce Motion; account splash motion does not run here.
 
-The three legacy authoring categories and seven formats are unchanged. Full semantic-category authoring remains a separate builder/SDK change; this does not regress existing read/display parity for Portfolio and Qualifications.
+The October 16 parity pass replaces the three legacy categories and mixed format/type list with eight web authoring categories, their 115 standard types and four independent visual formats. IDs retain their dedicated format. Category and type are selected together in the designed sheet, with search and cancellation; the selected canonical category survives signing, template metadata and self-claim indexing. See [the audited source, mappings and remaining boundaries](CREDENTIAL_AUTHORING_PARITY.md).
 
 ## Validation
 

@@ -3,7 +3,7 @@ import PhotosUI
 import LearnCardNativeCore
 import LearnCardNativeSDK
 
-/// Visual authoring flow; the existing draft and idempotent create/send contract stay unchanged.
+/// Native authoring keeps category, achievement type and visual format independent; delivery retains its existing retry identity.
 struct CreateView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var textSize
@@ -11,8 +11,10 @@ struct CreateView: View {
     let store: AppStore
     @State private var title = ""
     @State private var summary = ""
-    @State private var kind = CredentialKind.achievement
-    @State private var achievementType = "Badge"
+    @State private var category = CreationCategory.achievement
+    @State private var displayType = CredentialDisplayFormat.badge
+    @State private var achievementType = "Certificate"
+    private var kind: CredentialKind { category.legacyKind }
     @State private var criteria = ""
     @State private var details = CredentialDraftDetails()
     @State private var step = 0
@@ -34,16 +36,16 @@ struct CreateView: View {
     private var detailsValid: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        title.count <= 100 && summary.count <= 1000 && criteria.count <= 2000 && details.validationIssue == nil && !preparing
+        title.count <= 100 && summary.count <= 1000 && criteria.count <= 2000 && details.validationIssue == nil && !preparing && category.types.contains { $0.type == achievementType } && category.formats.contains(displayType)
     }
     private var ready: Bool { detailsValid && (forMe || recipient != nil) }
     private var preview: Credential {
         Credential(id: "draft", title: title.isEmpty ? NativeText.text("builder.previewTitle") : title,
                    issuer: NativeText.literal("You"), summary: summary, kind: kind, date: .now,
-                   isSample: !store.isLive, artworkURL: uploadedURL)
+                   isSample: !store.isLive, artworkURL: uploadedURL, category: category.rawValue)
     }
-    private var tint: Color { Palette.categoryTint(.resolve(nil, fallback: kind)) }
-    private var categoryName: String { NativeText.literal(kind.rawValue) }
+    private var tint: Color { Palette.categoryTint(category.displayCategory) }
+    private var categoryName: String { category.localizedName }
 
     var body: some View {
         NavigationStack {
@@ -87,7 +89,8 @@ struct CreateView: View {
             .sheet(isPresented: $showRecipients) { RecipientPickerView(store: store, selection: $recipient) }
             .onChange(of: title) { _, _ in requestID = UUID().uuidString }
             .onChange(of: summary) { _, _ in requestID = UUID().uuidString }
-            .onChange(of: kind) { _, _ in requestID = UUID().uuidString }
+            .onChange(of: category) { _, value in displayType = value.defaultFormat; requestID = UUID().uuidString }
+            .onChange(of: displayType) { _, _ in requestID = UUID().uuidString }
             .onChange(of: achievementType) { _, _ in requestID = UUID().uuidString }
             .onChange(of: criteria) { _, _ in requestID = UUID().uuidString }
             .onChange(of: details) { _, _ in requestID = UUID().uuidString }
@@ -127,10 +130,10 @@ struct CreateView: View {
                 }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
             }
             if textSize.isAccessibilitySize {
-                VStack(spacing: 12) { formatSelector; categorySelector }
+                VStack(spacing: 12) { categorySelector; formatSelector }
             } else { ViewThatFits(in: .horizontal) {
-                HStack(spacing: 12) { formatSelector; categorySelector }
-                VStack(spacing: 12) { formatSelector; categorySelector }
+                HStack(spacing: 12) { categorySelector; formatSelector }
+                VStack(spacing: 12) { categorySelector; formatSelector }
             } }
             VStack(alignment: .leading, spacing: 16) {
                 Button {
@@ -160,15 +163,15 @@ struct CreateView: View {
 
     private var formatSelector: some View {
         Button { focused = nil; showFormat = true } label: {
-            BuilderSelector(label: NativeText.text("builder.format"), value: formatName(achievementType), symbol: "DrawnCredential", tint: Palette.blueCard)
+            BuilderSelector(label: NativeText.text("builder.format"), value: authoringFormatName(displayType), symbol: "DrawnCredential", tint: Palette.blueCard)
         }.buttonStyle(.plain).accessibilityIdentifier("draft-format")
-            .sheet(isPresented: $showFormat) { BuilderSelectionSheet(selection: .format, format: $achievementType, category: $kind) }
+            .sheet(isPresented: $showFormat) { BuilderSelectionSheet(selection: .format, format: $displayType, category: $category, achievementType: $achievementType) }
     }
     private var categorySelector: some View {
         Button { focused = nil; showCategory = true } label: {
-            BuilderSelector(label: NativeText.literal("Category"), value: categoryName, symbol: "DrawnCollection", tint: tint)
+            BuilderSelector(label: NativeText.literal("Category"), value: categoryName, symbol: category.displayCategory.illustration, tint: tint, detail: NativeText.format("builder.typeSummary", authoringTypeName(achievementType)))
         }.buttonStyle(.plain).accessibilityIdentifier("draft-category")
-            .sheet(isPresented: $showCategory) { BuilderSelectionSheet(selection: .category, format: $achievementType, category: $kind) }
+            .sheet(isPresented: $showCategory) { BuilderSelectionSheet(selection: .category, format: $displayType, category: $category, achievementType: $achievementType) }
     }
 
     private var destination: some View {
@@ -308,17 +311,18 @@ struct CreateView: View {
         VStack(alignment: compact ? .leading : .center, spacing: 10) {
             Text(title.isEmpty ? NativeText.text("builder.previewTitle") : title)
                 .font(compact ? .headline : .title2.bold()).lineLimit(compact ? 3 : nil).fixedSize(horizontal: false, vertical: true)
-            Text("\(formatName(achievementType)) · \(categoryName)").font(.subheadline.weight(.medium))
+            Text("\(authoringFormatName(displayType)) · \(categoryName)").font(.subheadline.weight(.medium))
+            Text(NativeText.format("builder.typeSummary", authoringTypeName(achievementType))).font(.subheadline)
         }
     }
     @ViewBuilder private func artwork(size: CGFloat) -> some View {
         if let jpeg, let image = UIImage(data: jpeg) {
-            Image(uiImage: image).resizable().scaledToFill().frame(width: size, height: size).clipShape(Circle())
-                .overlay(Circle().stroke(.white.opacity(0.8), lineWidth: 3)).accessibilityHidden(true)
+            Image(uiImage: image).resizable().scaledToFill().frame(width: size, height: size).clipShape(RoundedRectangle(cornerRadius: artworkRadius(size)))
+                .overlay(RoundedRectangle(cornerRadius: artworkRadius(size)).stroke(.white.opacity(0.8), lineWidth: 3)).accessibilityHidden(true)
         } else {
-            Image(kind == .achievement ? "CategoryAchievement" : kind == .membership ? "CategoryID" : "CategoryStudies")
+            Image(category.displayCategory.illustration)
                 .resizable().scaledToFit().padding(size * 0.17).frame(width: size, height: size)
-                .background(.white.opacity(0.95), in: Circle()).accessibilityHidden(true)
+                .background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: artworkRadius(size))).accessibilityHidden(true)
         }
     }
     private func fieldLabel(_ key: String, count: Int, limit: Int) -> some View {
@@ -347,7 +351,7 @@ struct CreateView: View {
             .frame(maxWidth: 620).frame(maxWidth: .infinity)
             .background { Palette.surface.ignoresSafeArea(edges: .bottom).shadow(color: .black.opacity(0.04), radius: 10, y: -4) }
     }
-    private func formatName(_ value: String) -> String { NativeText.text("builder.format.\(value)") }
+    private func artworkRadius(_ size: CGFloat) -> CGFloat { displayType == .badge || displayType == .award ? size / 2 : size * 0.15 }
     private func changeStep(_ value: Int) {
         focused = nil
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) { step = value }
@@ -383,7 +387,7 @@ struct CreateView: View {
             }
             let draft = CredentialDraft(requestID: requestID, title: title, summary: summary, kind: kind,
                                         achievementType: achievementType, criteria: criteria, artworkURL: uploadedURL,
-                                        recipient: forMe ? nil : recipient?.id, details: details.isEmpty ? nil : details)
+                                        recipient: forMe ? nil : recipient?.id, details: details.isEmpty ? nil : details, category: category, displayType: displayType)
             if await store.create(draft: draft) { dismiss() }
             else { localError = NativeText.text("builder.createError") }
         } catch { localError = NativeText.text("builder.uploadError") }
