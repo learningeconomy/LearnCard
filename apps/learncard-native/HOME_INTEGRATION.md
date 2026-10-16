@@ -39,7 +39,7 @@ Home and the tray derive counts from one `NativeAppStore` summary. Duplicate cre
 - Required [native first-time setup](FIRST_TIME_SETUP.md), optional scan/photo/link/file intake, source counts, reviewed signed JSON imports and People through Home/Account/Inbox are implemented. Connected-profile sending is also implemented. AI document extraction, contact invitation QR and person-specific personal-sharing shortcuts remain in [the onboarding/navigation plan](ONBOARDING_AND_PEOPLE.md).
 - Persistent cross-device activity, pending consent-request dashboard summaries and app-specific unread counts need dedicated contracts; session activity and loaded updates are not substitutes for them.
 - Learning profile/insights, onboarding/recovery prompts and goal/review cards need their real account state and feature gates exposed before rendering progress or completion.
-- AI career Pathways and AI Sessions remain separate native slices. The newer Journeys/Pathways graph's scope is still unconfirmed.
+- AI career Pathways, Journeys and related learner experiences now have a [scoped native queue](LEARNER_LEARNING_PLAN.md), following the user's October 16 request. Home continuation depends on actual available personal state. Framework/Journey authoring is excluded; Sessions/Insights require their own contracts.
 - Native staging QR/claim handling has since been implemented; see [current claim contracts](QR_CLAIM_FLOW.md). Production/system-Camera association and contact-invite QR remain separate work.
 - Child account custody/bootstrap/switching remains governed by `FAMILIES_NEXT_PHASE.md`.
 

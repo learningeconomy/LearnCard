@@ -138,6 +138,10 @@ Design → Recipient → Review uses an artwork-led, category-colored preview, c
 
 ## Review before extending
 
+### Apps composition in progress
+
+The [October 16 rendered Apps boards](APPS_RENDERED_BRIEF.md) propose app-first hierarchy: installed app entries or an inviting Discover action, then quieter native utilities. Use shallow static edges/light/shadows for app frames and original empty-state art; preserve actual publisher art and keep permission text/toggles calm. No perpetual card tilt in Apps. The boards are not implementation evidence, catalog facts, permission facts or final visual acceptance. First-party Pathways/Journeys follow their [separate learner plan](../LEARNER_LEARNING_PLAN.md), without framework or Journey authoring.
+
 Check the actual view at ordinary and accessibility text sizes, light/dark appearance, and representative narrow/wide logical widths. Review supplied, loading, failed and missing art. Exercise destinations and account lifecycle behavior, not only snapshots. Confirm touch areas, semantic labels, reading order, honest counts and Reduced Motion behavior. Save representative simulator screenshots alongside test results; image-generation boards are not evidence that implementation matches.
 
 ## Category parity

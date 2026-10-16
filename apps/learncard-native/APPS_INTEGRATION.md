@@ -1,5 +1,7 @@
 # Consumer Apps integration — October 13, 2026
 
+October 16 design follow-up: [new rendered Apps boards](design/APPS_RENDERED_BRIEF.md) propose an installed/discovery-first hierarchy and richer app surfaces. These are design references, not an implemented replacement or new catalog/permission facts. Existing contracts below remain the integration baseline. The separately queued [native learning plan](LEARNER_LEARNING_PLAN.md) covers first-party Pathways/Journeys; partner content stays in the browser.
+
 The consumer client uses existing LearnCard accounts, installed-app APIs, consent contracts and sharing protocols. Native screens cover discovery, listing details, installation/removal, agreement review and account Data Sharing. Third-party app content runs inside a separate browser. This is an experimental staging client; administration and developer publishing remain excluded.
 
 ## Native boundaries

@@ -8,13 +8,17 @@ The user clarified that sending should be secondary while remaining easy to find
 
 The user-approved builder ray strokes now extend to the four main pane titles and one selected supporting section per pane. The reusable native modifier preserves title identities, mirrors in RTL and hides decoration at accessibility text sizes. See [placement rules and native captures](design/HEADING_ACCENTS.md). The broader Apps composition below remains a separate queued pass.
 
-## Queued: learner Apps visual redesign — October 16
+## Current design checkpoint: rendered Apps — October 16
 
-- [ ] **Generate a fresh Apps direction board**, using the newly approved [rendered credential-card treatment](design/CREDENTIAL_DEPTH_BRIEF.md) as a visual reference. The user finds the current Apps screen boring and uninspired. Earlier [October 13](design/CONSUMER_APPS_BRIEF.md) and [October 14](design/WHIMSY_EXPANSION_BRIEF.md) concept passes exist; their prior implementation is the baseline, not final visual acceptance after this feedback.
-- [ ] **Design My apps for both zero and several installed apps.** The supplied screenshot is the zero-installed state. Give it an original inviting illustration and an unmistakable Discover action; improve the hierarchy so a generic utilities list and plain empty panel do not dominate. Make installed apps feel like useful learner tools, with clear Open actions. Reconsider the presentation of existing LearnCard tools while preserving their destinations.
-- [ ] **Carry the direction through Discover, listing detail and access review**, then implement the selected composition and review actual native captures. Use richer artwork, confident readable type, colorful accents, restrained depth and purposeful loading/empty states. Keep the neutral canvas, four-tab learner navigation, actual publisher artwork/catalog facts, native consent/account isolation and in-app browser behavior. Treat generated names/screenshots as synthetic references; do not invent catalog promotions, reviews, rankings or new permissions.
+- [x] Generate fresh mockups using the approved [rendered credential-card material](design/CREDENTIAL_DEPTH_BRIEF.md). [Two new boards](design/APPS_RENDERED_BRIEF.md) cover My apps empty/populated, Discover, listing detail and access review. Earlier October 13/14 boards remain historical references.
+- [x] Explore an inviting rocket-led empty state, direct Discover action and installed-first hierarchy with quieter LearnCard utilities below. Names/art/permissions are synthetic design content; the boards are not yet accepted or implemented.
+- [ ] Implement the chosen composition through existing Apps/store/browser/consent boundaries, then review actual native captures. Preserve publisher art, catalog categories/order/promotion facts, partial/error/search states and explicit access decisions. The [brief](design/APPS_RENDERED_BRIEF.md) records generated details that must not be copied literally and the focused regression plan.
 
-This is queued follow-up work: no new Apps board, app implementation, build, install or CI run is part of recording this feedback. Native AI career Pathways/Sessions and organization workspaces remain separate feature scopes.
+This checkpoint changes designs/planning only. The installed app and its real account remain unchanged; no build, install or hosted CI ran.
+
+## Queued: learner Pathways, Journeys and related features — October 16
+
+The user explicitly asked to queue the missing learning experiences. [The native learning plan](LEARNER_LEARNING_PLAN.md) distinguishes AI career Pathways from Journeys and stages personal skills/goals and career exploration, Journeys persistence/API work, learner Today/map/steps/progress, then Sessions/Insights and proposal/What-if review. Both products are learner features. Skill-framework editing/creation, Journey authoring and institutional management are excluded. This replaces the earlier “Journeys needs scope confirmation” backlog; it does not turn on rollout flags or add nonfunctional tiles.
 
 ## Complete logo from first frame — October 16
 
@@ -102,7 +106,7 @@ Build an independent personal credential app with SwiftUI for iOS, followed by K
 
 The core jobs are to find and understand a credential, receive one, claim it, create a credential for someone, send it, and share credentials already held. Account sign-in, recovery, privacy, revocation, and any required guardian approval support those jobs and remain part of the product.
 
-Admin tools, organization management, bulk issuance, developer portals, application administration portals and App Store administration remain excluded from the current learner slice. A distinct institution workspace is a later planning proposal. Consumer Apps has an initial native implementation: discovery, installation, listing details, app launching, consent and Data Sharing. Published third-party apps run in a separate in-app browser. First-party AI career Pathways should become native in its own follow-up; Journeys needs separate scope confirmation. Families and AI Sessions require separate feature work. Résumé builder stays web-only inside the browser. BoostCMS is deprecated as a product direction per the user; reference the current credential builder's data semantics rather than treating surviving legacy components as a feature checklist.
+Admin tools, organization management, bulk issuance, developer portals, application administration portals and App Store administration remain excluded from the current learner slice. A distinct institution workspace is a later planning proposal. Consumer Apps has an initial native implementation: discovery, installation, listing details, app launching, consent and Data Sharing. Published third-party apps run in a separate in-app browser. First-party AI career Pathways and the learner portion of Journeys are queued as native experiences in the [learning plan](LEARNER_LEARNING_PLAN.md), excluding skill-framework and Journey authoring. Families and AI Sessions require separate feature work. Résumé builder stays web-only inside the browser. BoostCMS is deprecated as a product direction per the user; reference the current credential builder's data semantics rather than treating surviving legacy components as a feature checklist.
 
 ## Native interface
 
