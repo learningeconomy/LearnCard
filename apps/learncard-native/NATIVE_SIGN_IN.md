@@ -63,7 +63,7 @@ No Firebase/Google/Apple console settings were changed in this pass. No provider
 
 ## Visual and manual checks
 
-[Native screenshots](design/NATIVE_SIGN_IN_BRIEF.md) show the normal and Arabic accessibility/dark layouts. Apple uses the official `ASAuthorizationAppleIDButton`; Google uses the existing official multicolor mark. App copy has en/es/fr/ar entries. Apple's official button and system authorization UI follow iOS application/system localization; this app's runtime language preference does not itself translate UIKit's Apple button. Physical-device language/VoiceOver review remains required.
+[Native screenshots](design/NATIVE_SIGN_IN_BRIEF.md) compare English and Arabic at the same standard text size, including Arabic dark appearance. The deliberately enlarged accessibility capture is separately labeled; it is not the default Arabic scale. Apple uses the official `ASAuthorizationAppleIDButton`; Google uses the existing official multicolor mark. App copy has en/es/fr/ar entries. Apple's official button and system authorization UI follow iOS application/system localization; this app's runtime language preference does not itself translate UIKit's Apple button. Physical-device language/VoiceOver review remains required.
 
 After registration, check each provider on a signed physical device with a disposable account: cancellation/retry, existing UID and signing identity, Apple Hide My Email, first-time setup, existing-account recovery, conflicting original sign-in method, background/resume, sign-out/relaunch and pending-claim review. Do not reset the recreated staging review account or delete its shared Firebase login. Production Apple account deletion/revocation and provider linking remain separate from this staging sign-in slice.
 

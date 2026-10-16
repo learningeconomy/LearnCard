@@ -54,6 +54,10 @@ Dimensions are logical points. Display pixel density is irrelevant to layout. `N
 
 Use an 8-point minor spacing rhythm (4/8/12/16/24); 20-point outer insets and 14-point artwork gaps are deliberate optical exceptions. Group related actions into a surface with quiet separators instead of giving every row an oversized independent panel. Long translations wrap, never disappear.
 
+### Language previews
+
+Review English and Arabic at the same explicit standard Dynamic Type size first. `--standard-type` selects the normal `.large` baseline in DEBUG review fixtures; ordinary app launches still follow the user's system setting. Keep `--large-type` (`accessibility3`) captures separately labeled as accessibility stress tests. Do not present an enlarged Arabic capture as the default language design or shrink Arabic alone to compensate for a mismatched review setting. The default sign-in controls should have matching target heights and readable, unclipped labels in both languages; keep the larger accessibility check as a separate case.
+
 ### Bottom tray
 
 Edge-to-edge adaptive surface, a fine top divider, four equal-width targets. A colored drawn icon, readable label, and short active underline communicate selection. Keep native bottom inset ownership in the tray. No floating glass island.

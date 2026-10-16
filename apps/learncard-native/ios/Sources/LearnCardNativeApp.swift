@@ -70,7 +70,7 @@ struct NativeReviewPreferences: ViewModifier {
     func body(content: Content) -> some View {
         let arguments = ProcessInfo.processInfo.arguments
         content
-            .environment(\.dynamicTypeSize, arguments.contains("--large-type") ? .accessibility3 : systemTextSize)
+            .environment(\.dynamicTypeSize, arguments.contains("--large-type") ? .accessibility3 : arguments.contains("--standard-type") ? .large : systemTextSize)
     }
 }
 #endif

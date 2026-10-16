@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **449 cases** (175 Bun, 166 Swift, 108 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
+Current configured suite: **450 cases** (175 Bun, 166 Swift, 109 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -22,6 +22,12 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Arabic typography previews — October 16
+
+`artifacts/arabic-typography-ui.xcresult`: both focused UI cases pass. The new case compares default English/Arabic sign-in at an explicit standard text size, checks matching provider-control height and unclipped labels, captures Arabic light/dark and exercises cancellation. The existing forced `accessibility3` case still passes. Screenshots were exported to `arabic-typography-attachments`, visually inspected and copied into [the corrected brief](design/NATIVE_SIGN_IN_BRIEF.md).
+
+The reported giant Arabic preview came from `--large-type`; production Arabic had no language-specific font multiplier. DEBUG review adds `--standard-type` for a reproducible normal-size baseline. System/accessibility scaling remains intact, and the giant stress capture is separately linked. Private build configuration was restored byte-for-byte; the signed-in review app was not reinstalled or changed. No cloud registration was submitted. The checks simulator is shut down. This targeted pass does not rerun the complete configured suite.
 
 ## Native Apple/Google sign-in — October 16
 

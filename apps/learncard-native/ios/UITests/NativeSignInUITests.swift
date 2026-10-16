@@ -60,6 +60,30 @@ import XCTest
         capture(app, "Native sign-in Arabic accessibility dark")
         google.tap(); XCTAssertTrue(app.buttons["send-sign-in-code"].waitForExistence(timeout: 10))
     }
+    func testArabicDefaultTypographyMatchesEnglishTextSettingInLightAndDark() {
+        let english = launch("oauth-cancel", extra: ["--standard-type"])
+        assertProviders(english)
+        let buttonHeight = english.buttons["sign-in-google"].frame.height
+        let titleHeight = english.staticTexts["page-title-account-access"].frame.height
+        capture(english, "Native sign-in English standard text")
+        english.terminate()
+        for dark in [false, true] {
+            let app = launch("oauth-cancel", language: "ar", extra: ["--standard-type"] + (dark ? ["--preview-dark"] : []))
+            assertProviders(app)
+            let google = app.buttons["sign-in-google"]
+            XCTAssertEqual(google.label, "المتابعة باستخدام Google")
+            XCTAssertEqual(google.frame.height, buttonHeight, accuracy: 1, "Default Arabic must use the same text-size setting as English.")
+            XCTAssertLessThanOrEqual(app.staticTexts["page-title-account-access"].frame.height, titleHeight * 1.5)
+            XCTAssertTrue(google.isHittable)
+            XCTAssertGreaterThanOrEqual(google.frame.minX, 0)
+            XCTAssertLessThanOrEqual(google.frame.maxX, app.frame.maxX)
+            capture(app, "Native sign-in Arabic standard text \(dark ? "dark" : "light")")
+            google.tap()
+            XCTAssertTrue(app.buttons["send-sign-in-code"].waitForExistence(timeout: 10))
+            XCTAssertFalse(app.descendants(matching: .any)["account-error"].exists)
+            app.terminate()
+        }
+    }
     func testUnregisteredProvidersAreAbsentFromEmailOnlySignIn() {
         let app = launch("sign-in")
         XCTAssertTrue(app.buttons["send-sign-in-code"].waitForExistence(timeout: 10))
