@@ -117,6 +117,15 @@ test('unknown and inherited command names are refused', async () => {
     expect(bridgeCalls).toBe(0);
 });
 
+test.each(['resetStart', 'resetResume', 'resetStatus'])(
+    'reset command %s refuses signed-out access without crossing the native bridge',
+    async method => {
+        const reply = JSON.parse(await account.call(method, {}));
+        expect(reply).toEqual({ ok: false, error: 'reset:unavailable' });
+        expect(bridgeCalls).toBe(0);
+    }
+);
+
 // These routes must remain in the actual dispatch table when feature modules move.
 test.each([
     'appsBrowse',

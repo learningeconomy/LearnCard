@@ -39,6 +39,10 @@ struct AccountView: View {
                         Link(destination: URL(string: "https://docs.learncard.com")!) { DrawnSettingsRow(title: "Help", symbol: .help, tint: Palette.cyanCard, web: true) }
                     }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
                     if let account {
+                        NavigationLink { StagingResetView(account: account) } label: {
+                            DrawnSettingsRow(title: NativeText.text("reset.title"), symbol: .forget, tint: Palette.pinkCard,
+                                             subtitle: NativeText.text("reset.subtitle"), destructive: true)
+                        }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 22)).accessibilityIdentifier("account-staging-reset")
                         VStack(spacing: 0) {
                             Button { dismiss(); Task { await account.signOut(forget: false) } } label: {
                                 DrawnSettingsRow(title: "Sign out", symbol: .signOut, tint: Palette.pinkCard)

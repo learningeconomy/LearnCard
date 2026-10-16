@@ -29,6 +29,8 @@
         "claims.ts",
         "profile-update.ts",
         "signup.ts",
-        "signup-policy.ts"
+        "signup-policy.ts",
+        "staging-reset.ts",
+        "staging-reset-adapter.ts"
     ]
 }

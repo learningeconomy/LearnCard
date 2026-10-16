@@ -13,12 +13,13 @@ public struct AccountState: Decodable, Sendable {
     public let signingDid: String?
     public let profileDid: String?
     public let signup: SignupProgress?
+    public let reset: StagingResetProgress?
     public init(phase: String, methods: [String] = [], error: String? = nil, profileName: String? = nil,
                 profileId: String? = nil, profileImage: URL? = nil, profileBio: String? = nil,
-                signingDid: String? = nil, profileDid: String? = nil, signup: SignupProgress? = nil) {
+                signingDid: String? = nil, profileDid: String? = nil, signup: SignupProgress? = nil, reset: StagingResetProgress? = nil) {
         self.phase = phase; self.methods = methods; self.error = error; self.profileName = profileName
         self.profileId = profileId; self.profileImage = profileImage; self.profileBio = profileBio
-        self.signingDid = signingDid; self.profileDid = profileDid; self.signup = signup
+        self.signingDid = signingDid; self.profileDid = profileDid; self.signup = signup; self.reset = reset
     }
 }
 
@@ -73,6 +74,10 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         ready = state.phase == "ready"
         return state
     }
+
+    public func resetStagingAccount(email: String) async throws -> AccountState { try await command("resetStart", input: ["email": email]) }
+    public func resumeStagingReset() async throws -> AccountState { try await command("resetResume") }
+    public func stagingResetStatus() async throws -> AccountState { try await command("resetStatus") }
 
     public func prepareSignup(_ draft: SignupDraft) async throws -> AccountState {
         var input: [String: Any] = ["dob": draft.dob, "country": draft.country, "teenAcknowledged": draft.teenAcknowledged]
@@ -158,7 +163,17 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
                     }
                 }
         }
-        let result: T = try AccountReply.decode(text, method: method)
+        let result: T
+        do { result = try AccountReply.decode(text, method: method) }
+        catch {
+            #if DEBUG
+            if method.hasPrefix("reset"), let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
+                // Status/method/path only, never request bodies, headers, tokens or keys.
+                try? transport.diagnostics.suffix(40).joined(separator: "\n").write(to: cache.appendingPathComponent("staging-reset-transport.txt"), atomically: true, encoding: .utf8)
+            }
+            #endif
+            throw error
+        }
         if let state = result as? AccountState { ready = state.phase == "ready" }
         return result
     }

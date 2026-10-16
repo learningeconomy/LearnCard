@@ -30,6 +30,17 @@ import {
     type SignupWallet,
 } from './signup';
 import { signupErrorCode } from './signup-policy';
+import {
+    createResetCommands,
+    readResetReceipt,
+    resetErrorCode,
+    ResetFailure,
+} from './staging-reset';
+import {
+    resetWalletAdapter,
+    deleteStagingRecovery,
+    createResetSigner,
+} from './staging-reset-adapter';
 import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
 import { createSSSStrategy } from '../../../packages/sss-key-manager/src/sss-strategy';
 import type { RecoveryInput } from '../../../packages/sss-key-manager/src/types';
@@ -113,6 +124,7 @@ const signer = async (privateKey: string, challenge?: string) => {
 };
 
 let accountPhase = 'idle';
+let resetCompleted = false;
 let identityWallet: import('./consumer-apps').ConsumerWallet | undefined;
 const signupJournal = {
     read: async () => {
@@ -130,6 +142,7 @@ const signupJournal = {
 };
 const getIdentityWallet = async () => {
     const state = coordinator?.getState();
+    if (resetCompleted) throw new Error('Open the account again');
     if (!state || state.status !== 'ready' || !state.did || !state.authSessionValid)
         throw new Error('Sign in first');
     if (identityWallet) return identityWallet;
@@ -152,7 +165,17 @@ const getIdentityWallet = async () => {
 };
 const stateDTO = async (state: UnifiedAuthState) => {
     wallet = undefined;
+    if (resetCompleted) return { phase: 'reset_complete', methods: [] };
     const result = async () => {
+        const reset = await resetCommands.resetStatus();
+        if (reset) {
+            if (state.status === 'needs_recovery')
+                return { ...reset, methods: state.recoveryMethods.map(method => method.type) };
+            return reset;
+        }
+        // If the final native handoff succeeded but its reply was lost, this host
+        // still contains the old key. Only a new host may consume the fresh marker.
+        if (accountPhase === 'reset_pending') return { phase: 'reset_pending', methods: [] };
         if (state.status === 'error')
             return { phase: 'recovery', methods: ['phrase', 'backup', 'email'], error: 'recovery' };
         if (state.status !== 'ready')
@@ -205,12 +228,52 @@ const stateDTO = async (state: UnifiedAuthState) => {
     accountPhase = value.phase;
     return value;
 };
+const resetSigner = async () => {
+    const state = coordinator?.getState();
+    if (state?.status !== 'ready' || !state.did) throw new ResetFailure('recovery');
+    return createResetSigner(state.privateKey, wasm, state.did);
+};
+const resetCommands = createResetCommands({
+    account: () => user && { uid: user.id, email: user.email },
+    active: () => !!user && !!coordinator,
+    phase: () => accountPhase,
+    journal: {
+        read: async () => readResetReceipt(await native({ op: 'resetRead' })),
+        write: async value => {
+            await native({ op: 'resetWrite', value: JSON.stringify(value) });
+        },
+    },
+    wallet: async () => {
+        if (coordinator.getState().status !== 'ready') throw new ResetFailure('recovery');
+        return resetWalletAdapter(await getIdentityWallet(), await resetSigner());
+    },
+    serverIdentity: async () => {
+        const token = await native({ op: 'idToken' });
+        if (!token) throw new Error('Sign in first');
+        const status = await strategy.fetchServerKeyStatus(token, 'firebase');
+        if (status.exists && !status.primaryDid) throw new ResetFailure('changed');
+        return status.primaryDid;
+    },
+    deleteRecovery: async expectedDid => {
+        const token = await native({ op: 'idToken' });
+        if (!token) throw new Error('Sign in first');
+        await deleteStagingRecovery(await resetSigner(), token, expectedDid);
+    },
+    finishLocal: async () => {
+        await native({ op: 'resetFinish' });
+    },
+    blockAccount: () => {
+        wallet = undefined;
+        accountPhase = 'reset_pending';
+    },
+});
 const signupCommands = createSignupCommands({
     journal: signupJournal,
     phase: () => accountPhase,
     active: () =>
         !!coordinator &&
         !!user &&
+        !resetCompleted &&
         ['needs_setup', 'missing_profile', 'finish_setup', 'pending_approval', 'ready'].includes(
             accountPhase
         ),
@@ -489,8 +552,23 @@ const commands = {
             } satisfies FamilyPinService;
         }
     ),
+    resetStart: async (input: unknown) => {
+        const result = await resetCommands.resetStart(input);
+        resetCompleted = true;
+        identityWallet = undefined;
+        return result;
+    },
+    resetResume: async () => {
+        const result = await resetCommands.resetResume();
+        resetCompleted = true;
+        identityWallet = undefined;
+        return result;
+    },
+    resetStatus: async () =>
+        (await resetCommands.resetStatus()) ?? stateDTO(coordinator.getState()),
     initialize: async (input: { wasmBase64: string; user: NativeUser }) => {
         user = input.user;
+        resetCompleted = false;
         wasm = Uint8Array.from(atob(input.wasmBase64), char => char.charCodeAt(0));
         strategy = createSSSStrategy({
             serverUrl: 'https://staging.api.learncard.app/api',
@@ -843,21 +921,23 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
             } catch (error) {
                 return JSON.stringify({
                     ok: false,
-                    error: method.startsWith('signup')
-                        ? signupErrorCode(error)
-                        : method.startsWith('claims')
-                          ? claimErrorCode(error)
-                          : method.startsWith('inbox')
-                            ? inboxErrorCode(error)
-                            : method.startsWith('families')
-                              ? familyErrorCode(error)
-                              : method.startsWith('apps') || method.startsWith('privacy')
-                                ? consumerErrorCode(error)
-                                : method === 'initialize'
-                                  ? 'connection'
-                                  : method === 'recover'
-                                    ? 'recovery'
-                                    : 'unavailable',
+                    error: method.startsWith('reset')
+                        ? resetErrorCode(error)
+                        : method.startsWith('signup')
+                          ? signupErrorCode(error)
+                          : method.startsWith('claims')
+                            ? claimErrorCode(error)
+                            : method.startsWith('inbox')
+                              ? inboxErrorCode(error)
+                              : method.startsWith('families')
+                                ? familyErrorCode(error)
+                                : method.startsWith('apps') || method.startsWith('privacy')
+                                  ? consumerErrorCode(error)
+                                  : method === 'initialize'
+                                    ? 'connection'
+                                    : method === 'recover'
+                                      ? 'recovery'
+                                      : 'unavailable',
                 });
             }
         },

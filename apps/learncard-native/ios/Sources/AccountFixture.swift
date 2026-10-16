@@ -34,9 +34,9 @@ import LearnCardNativeSDK
         if reset {
             reset = false
             try await vault.remove("fixture-auth"); try await vault.remove("fixture-remembered")
-            for key in ["profile-name", "profile-bio", "profile-image", "signup-draft", "signup-prepared", "signup-backup", "signup-confirmed", "signup-parent-sent", "signup-approved"] { try await vault.remove(key) }
+            for key in ["profile-name", "profile-bio", "profile-image", "signup-draft", "signup-prepared", "signup-backup", "signup-confirmed", "signup-parent-sent", "signup-approved", "reset-pending", "reset-failed", "reset-done"] { try await vault.remove(key) }
             if scenario != "sign-in" { try await vault.write(Data("synthetic".utf8), key: "fixture-auth") }
-            if scenario == "ready" { try await vault.write(Data("synthetic".utf8), key: "fixture-remembered") }
+            if scenario == "ready" || scenario.hasPrefix("reset-") { try await vault.write(Data("synthetic".utf8), key: "fixture-remembered") }
         }
         return try await vault.read("fixture-auth") == nil ? nil : user
     }
@@ -64,7 +64,8 @@ import LearnCardNativeSDK
         self.vault = vault; self.scenario = scenario; self.approveOnCheck = approveOnCheck; self.failSaveOnce = failSaveOnce
     }
     private func signupState() async throws -> AccountState? {
-        guard scenario.hasPrefix("signup") || scenario == "pending-approval" else { return nil }
+        let resetDone = try await vault.read("reset-done") != nil
+        guard scenario.hasPrefix("signup") || scenario == "pending-approval" || resetDone else { return nil }
         var draft: SignupDraft?
         if let data = try await vault.read("signup-draft") { draft = try JSONDecoder().decode(SignupDraft.self, from: data) }
         if draft == nil && ["signup-resume", "signup-confirmed", "pending-approval"].contains(scenario) {
@@ -117,6 +118,7 @@ import LearnCardNativeSDK
     }
     func initialize() async throws -> AccountState {
         guard !disposed else { throw AccountError.cancelled }
+        if try await vault.read("reset-pending") != nil { return AccountState(phase: "reset_pending", reset: StagingResetProgress(stage: "profile", profileId: "fixture")) }
         if let state = try await signupState() { return state }
         guard try await vault.read("fixture-remembered") != nil else { return AccountState(phase: "needs_recovery", methods: ["email"]) }
         let name = try await vault.read("profile-name").flatMap { String(data: $0, encoding: .utf8) } ?? "Fixture Person"
@@ -124,6 +126,20 @@ import LearnCardNativeSDK
         let image = try await vault.read("profile-image").flatMap { String(data: $0, encoding: .utf8) }.flatMap(URL.init(string:))
         return AccountState(phase: "ready", profileName: name, profileId: "fixture", profileImage: image, profileBio: bio)
     }
+    func resetStagingAccount(email: String) async throws -> AccountState {
+        guard email == "native-test@example.invalid" else { throw StagingResetError.confirmation }
+        return try await resumeStagingReset()
+    }
+    func resumeStagingReset() async throws -> AccountState {
+        guard !disposed else { throw AccountError.cancelled }
+        try await vault.write(Data("synthetic".utf8), key: "reset-pending")
+        if scenario == "reset-interrupted", try await vault.read("reset-failed") == nil {
+            try await vault.write(Data("synthetic".utf8), key: "reset-failed"); throw StagingResetError.connection
+        }
+        try await vault.write(Data("synthetic".utf8), key: "reset-done")
+        try await vault.remove("reset-pending"); return AccountState(phase: "reset_complete")
+    }
+    func stagingResetStatus() async throws -> AccountState { try await initialize() }
     func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async throws -> AccountState {
         guard !disposed else { throw AccountError.cancelled }
         guard method == "email", emailShare == "synthetic-recovery-key" else { throw AccountError.identity }

@@ -23,6 +23,9 @@ extension FirebaseSession: AccountSession {}
     func initialize() async throws -> AccountState
     func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async throws -> AccountState
     func updateProfile(name: String, bio: String, image: ProfileImageUpdate) async throws -> AccountState
+    func resetStagingAccount(email: String) async throws -> AccountState
+    func resumeStagingReset() async throws -> AccountState
+    func stagingResetStatus() async throws -> AccountState
     func prepareSignup(_ draft: SignupDraft) async throws -> AccountState
     func signupAvailability(_ profileId: String) async throws -> Bool
     func prepareSignupBackup(_ draft: SignupDraft, password: String) async throws -> SignupBackup
@@ -45,6 +48,12 @@ public extension AccountHost { var consumerService: any ConsumerAppService { Una
 public extension AccountHost { var familyService: any FamilyService { UnavailableFamilyService() } }
 public extension AccountHost { var inboxService: any InboxService { UnavailableInboxService() } }
 public extension AccountHost { var claimService: (any ClaimService)? { nil } }
+
+public extension AccountHost {
+    func resetStagingAccount(email: String) async throws -> AccountState { throw StagingResetError.unavailable }
+    func resumeStagingReset() async throws -> AccountState { throw StagingResetError.unavailable }
+    func stagingResetStatus() async throws -> AccountState { throw StagingResetError.unavailable }
+}
 
 public extension AccountHost {
     func prepareSignup(_ draft: SignupDraft) async throws -> AccountState { throw AccountError.unavailable }
@@ -171,6 +180,52 @@ public final class NativeAccountController {
             await store.refresh()
             try check(expected)
             if let user { claims.connect(service: runtime.claimService, accountID: user.id) }
+        }
+    }
+
+    public func resetStagingAccount(confirmation: String) async {
+        guard let user, FirebaseSession.normalizedEmail(confirmation) == FirebaseSession.normalizedEmail(user.email) else { error = StagingResetError.confirmation.errorDescription; return }
+        await runStagingReset(resume: false)
+    }
+    public func resumeStagingReset() async {
+        if state?.reset != nil { await runStagingReset(resume: true) }
+        else { await resume() }
+    }
+    public func openResetRecovery() {
+        guard phase == "reset_pending", state?.methods.isEmpty == false, !busy else { return }
+        phase = "needs_recovery"
+    }
+    private func runStagingReset(resume: Bool) async {
+        await perform {
+            let expected = self.generation
+            guard let runtime = self.runtime, let user = self.user else { throw StagingResetError.unavailable }
+            self.claims.clear()
+            self.store?.consumer.lock(); self.store?.families.lock(); self.store?.inbox.lock(); self.store = nil
+            self.signupBackup = nil; self.uploadedPhoto = nil; self.phase = "resetting"
+            var completed = false
+            do {
+                let result = try await (resume ? runtime.resumeStagingReset() : runtime.resetStagingAccount(email: user.email))
+                try self.check(expected)
+                guard result.phase == "reset_complete" else { throw StagingResetError.changed }
+                completed = true
+                // The old SDK host still holds the deleted identity. Dispose it before opening setup.
+                runtime.dispose(); self.runtime = nil; self.state = nil
+                try await self.connect(user, generation: expected)
+            } catch {
+                try self.check(expected)
+                if completed {
+                    // Cleanup already succeeded. Retry connecting with the fresh-setup marker,
+                    // never send another reset through the disposed identity.
+                    self.runtime?.dispose(); self.runtime = nil; self.state = nil; self.phase = "locked"
+                } else if let status = try? await runtime.stagingResetStatus() {
+                    try self.check(expected); try await self.apply(status)
+                } else {
+                    // A timed-out/disposed host cannot resume commands. Reconnect first;
+                    // the protected receipt will reopen reset review without auto-deleting.
+                    self.runtime?.dispose(); self.runtime = nil; self.state = nil; self.phase = "locked"
+                }
+                throw error
+            }
         }
     }
 
@@ -334,7 +389,7 @@ public final class NativeAccountController {
         guard generation == expected, !endingSession else { throw AccountError.cancelled }
     }
     private func friendly(_ error: any Error) -> String {
-        (error as? SignupError)?.errorDescription ?? (error as? AccountError)?.errorDescription ?? "Something went wrong. Please try again."
+        (error as? StagingResetError)?.errorDescription ?? (error as? SignupError)?.errorDescription ?? (error as? AccountError)?.errorDescription ?? "Something went wrong. Please try again."
     }
     private func perform(_ operation: () async throws -> Void) async {
         guard !busy, !endingSession else { return }

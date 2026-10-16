@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **334 cases** (136 Bun, 119 Swift, 79 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
+Current configured suite: **364 cases** (153 Bun, 129 Swift, 82 simulator), plus one intentionally skipped live exchange. Historical runs below retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and current local verification; hosted CI is manual.
 
 The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -22,6 +22,15 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Staging-only reset — October 16
+
+- All **153 Bun** cases pass (`artifacts/reset-bun-final.log`), including fourteen reset state/protocol cases and three real dispatch-table checks. They cover wrong email/account, incomplete progress, lost replies, partial retry, local handoff failure, concurrency, foreign/changed identities and fresh challenge-bound recovery deletion. No Firebase identity-deletion endpoint is used.
+- All **129 Swift** cases pass (`reset-core-final.log`: 100 XCTest + 29 Swift Testing), including ten reset cases. They cover UID-isolated Keychain handoff, retained Firebase/other-account records, incomplete-receipt refusal, translated progress/errors, signup-preference transport access, same-login/new-host handoff, restore/retry, late replies and a failed fresh connection after cleanup. Source contracts pass with the same 14 dependency diagnostics (`reset-types-final.log`).
+- Initial focused UI run: seven of eight pass (`reset-ui-1.xcresult`), including all five existing account lifecycle cases. The interrupted-reset test reached its retry screen but looked for its error notice as the wrong accessibility element type; the query was corrected. The Arabic layout case was also updated to use the app's actual large-text/dark launch flags before final verification.
+- Final reset UI run: **3/3 pass** (`reset-ui-verified.xcresult`), including confirmation, shared-login first-time setup, interruption/background/relaunch and Arabic accessibility-size dark presentation. In `reset-ui-final.xcresult`, the two signup checks and pending-claim integration also pass; its remaining Arabic failure used an English Account label instead of the existing stable identifier, corrected in the final run. Combined with the five earlier lifecycle cases, **11 distinct focused UI cases pass**. The actual Arabic/dark attachment was inspected.
+- UI fixtures keep the production confirmation/controller/first-time forms while substituting only synthetic account boundaries. Real reset/signup results are recorded in [the reset audit](ACCOUNT_DELETION_AUDIT.md). These results do not imply a full local 364-case run or physical-device coverage. Hosted CI remains manual and was not dispatched.
+- Final live-integration review caught the network wallet's default profile identity, which disappears during reset. A separate seed-only signer now authorizes the whole cleanup. Actual SDK JWT generation, nonce matching and independent signature verification pass in the 153-case run. Release and Debug rebuild/install pass; seven installed hashes match (`reset-install-proof.json`), including unchanged DIDKit. Native UI source is unchanged from the passing focused runs. A later deterministic controller test also covers reconnecting a timed-out host to its protected reset receipt without repeating deletion.
 
 ## First-time setup — October 16
 

@@ -4,6 +4,8 @@
 
 First-time setup is the current priority. The native client now routes verified accounts through birth date/country, name/available username/photo, separate privacy choices and password-protected recovery-backup enrollment before creating a profile. Existing identities are reused; unfinished operations are protected and reconciled. Under-13 signup routes to Families; unapproved profiles wait for real server approval. Shared Ireland thresholds are corrected to 16. Staging email-backup delivery is disabled, so existing email recovery stays available while new setup uses canonical encrypted backup export/confirmation. See [implemented behavior and remaining live gates](FIRST_TIME_SETUP.md).
 
+For live validation, reset only the selected dedicated staging account's collection/profile/recovery; **keep the shared Firebase identity**. The native reset is staged and retryable, requires verified-email confirmation, preserves interrupted progress in Keychain, and reconnects through a new SDK host before first-time setup. This is not production account erasure. Continue through real signup and separate-device backup recovery after reset; guardian delivery/approval remains a separate live path. See [reset audit and status](ACCOUNT_DELETION_AUDIT.md).
+
 Build My LearnCard and People remain next slices: optional resumable Home intake, then connections reachable from Home/Account/Inbox without adding a side menu. See [remaining roadmap](ONBOARDING_AND_PEOPLE.md).
 
 ## Account, sign-in and recovery — October 16

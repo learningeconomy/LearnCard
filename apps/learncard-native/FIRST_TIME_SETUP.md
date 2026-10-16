@@ -49,7 +49,7 @@ A profile with `approved: false` gets no usable Collection/Apps/credential clien
 
 A UID-scoped, device-only Keychain journal records a bounded non-secret draft, preference/recovery confirmation and guardian-send progress. DOB and guardian contact are protected personal data; the journal contains no password, recovery share or signing key. Progress is valid for seven days (expired/malformed entries are purged on the next read), removed on completed setup or Forget This Device, and isolated from another UID. Sign-out retains unfinished progress, consistent with remembered account access.
 
-A fresh-account marker is written only after the existing coordinator returns `needs_setup`. It lets that same interrupted setup survive the coordinator's five-minute legacy heuristic. It never upgrades an unknown older account into a new identity. Missing-profile setup after recovery also reuses the current identity.
+A fresh-account marker is written after the existing coordinator returns `needs_setup`, or after the explicit staging reset has verified remote cleanup and removed this UID's old local access. It lets interrupted setup survive the coordinator's five-minute legacy heuristic. It never upgrades an unknown older account into a new identity. Missing-profile setup after recovery also reuses the current identity. The reset's separate protected receipt is retained by Forget This Device so unfinished destructive work remains resumable.
 
 Commands serialize profile/recovery mutations. Before retrying an uncertain profile-create result, the adapter reads the signed-in identity's profile and compares ownership, handle, DOB and country. It does not blindly create another profile. A username taken after backup confirmation returns to editable profile setup; completion reuses that confirmed backup. Native generation guards reject late results after lock/sign-out. Pending scan intent is retained until required setup and approval finish, then returns to review rather than automatically claiming.
 
@@ -63,7 +63,7 @@ Commands serialize profile/recovery mutations. Before retrying an uncertain prof
 
 ## Live account reset requested
 
-The user selected the current dedicated staging account for deletion/recreation rather than providing a new email. Because Firebase is shared across environments, the choice between staging-only reset and deleting that shared login is pending. No live deletion or signup has run. See [the source audit and concrete cleanup boundaries](ACCOUNT_DELETION_AUDIT.md).
+The user selected a staging-only data/profile/recovery reset of the current dedicated test account, retaining the shared Firebase login. Account → Reset staging account has matching-email confirmation and explicit retry after interruption. Completion disposes the old SDK host and starts required setup with the retained verified login. See [the source audit, cleanup boundaries and live status](ACCOUNT_DELETION_AUDIT.md).
 
 ## Source map
 

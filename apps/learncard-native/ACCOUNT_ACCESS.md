@@ -26,7 +26,7 @@ The existing painted account transitions still cover launch, reconnect, sending,
 
 Account's existing grouped profile/settings sheet and sign-out/forget controls remain. Recovery & security now has the drawn key, email/device context and illustrated web/legal rows. Sign-out preserves remembered device recovery; forgetting still requires the existing explicit destructive confirmation and removes that material.
 
-Recovery setup/export and account deletion remain web capabilities, clearly disclosed beside **Manage recovery in LearnCard web**. This pass does not introduce fake native backup, deletion, biometric or security guarantees. The existing web destinations are unchanged.
+General recovery management and production account deletion remain web capabilities, clearly disclosed beside **Manage recovery in LearnCard web**. First-time setup now enrolls a canonical encrypted backup natively. The experiment also adds a separate **Reset staging account** action for the explicitly chosen test workflow: typed verified-email confirmation, staged personal-index/profile/recovery cleanup, protected retry progress and a fresh SDK host for setup. It keeps the shared Firebase login and does not claim full payload erasure. See [scope, implementation and live status](ACCOUNT_DELETION_AUDIT.md).
 
 ## Verification boundaries
 

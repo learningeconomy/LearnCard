@@ -30,6 +30,27 @@ final class AccountBridge: NSObject, WKScriptMessageHandlerWithReply {
                     replyHandler(value, nil); return
                 }
                 if op == "signOut" { try await firebase.signOut(); replyHandler(NSNull(), nil); return }
+                if op == "resetFinish" {
+                    try await vault.finishStagingReset(userID: user.id)
+                    guard active else { throw AccountError.cancelled }
+                    replyHandler(NSNull(), nil); return
+                }
+                if ["resetRead", "resetWrite"].contains(op) {
+                    let key = StagingResetStorage.key(userID: user.id)
+                    if op == "resetRead" {
+                        let data = try await vault.read(key); guard active else { throw AccountError.cancelled }
+                        replyHandler(data.flatMap { String(data: $0, encoding: .utf8) } ?? NSNull() as Any, nil)
+                    } else {
+                        guard let value = input["value"] as? String, value.utf8.count <= 8192,
+                              let data = value.data(using: .utf8),
+                              let receipt = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                              receipt["uid"] as? String == user.id, receipt["environment"] as? String == "staging",
+                              receipt["tenant"] as? String == "learncard" else { throw StagingResetError.storage }
+                        try await vault.write(data, key: key); guard active else { throw AccountError.cancelled }
+                        replyHandler(NSNull(), nil)
+                    }
+                    return
+                }
                 if ["signupRead", "signupWrite", "signupClear"].contains(op) {
                     let key = SignupStorage.key(userID: user.id)
                     if op == "signupRead" {

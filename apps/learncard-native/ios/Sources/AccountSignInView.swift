@@ -9,7 +9,8 @@ struct AccountRootView: View {
     init(account: AccountController = AccountController()) { _account = State(initialValue: account) }
     var body: some View {
         Group {
-            if let store = account.store, !account.busy || store.snapshot != nil || store.error != nil { RootView(store: store, account: account) }
+            if ["resetting", "reset_pending"].contains(account.phase) { StagingResetProgressView(account: account) }
+            else if let store = account.store, !account.busy || store.snapshot != nil || store.error != nil { RootView(store: store, account: account) }
             else { AccountSignInView(account: account) }
         }
         .modifier(ClaimPresentation(flow: account.claims, store: account.store, recipient: account.state?.profileId))

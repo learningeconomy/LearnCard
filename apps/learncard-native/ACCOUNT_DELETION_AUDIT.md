@@ -1,22 +1,36 @@
 # Staging account reset and deletion audit
 
-October 16, 2026. During live first-time signup planning, the user authorized resetting the current dedicated staging account and reusing its email. **No deletion has run.** The scope choice between staging-only data reset and removing the shared Firebase login is pending. The native registration feature and its synthetic verification are complete independently.
+October 16, 2026. The user explicitly authorized resetting the current dedicated staging test account and reusing its email, **keeping the shared Firebase login**. The native reset clears the staging personal index, network profile and account recovery record. This is an experimental staging flow, not a production account-deletion feature or a claim of erasing every stored object. Live results are recorded below.
 
 ## Existing source behavior
 
 Web `DeleteUserConfirmationPrompt.tsx` requires the user to type their email/phone. For Firebase accounts it calls `adapter.deleteAccount()` first, then `removeAllVCsFromWallet()`, then network `deleteProfile()`. Firebase's adapter uses `deleteUser`; a recent-login requirement can force reauthentication. The native experiment currently has sign-out/forget and web recovery management, not a completed native deletion flow.
 
-The account's sign-in project is shared `learncard`, even though the network, LearnCloud and account-key endpoints are staging-specific. Removing that Firebase login can affect sign-in in other environments. A staging-only reset must keep the shared login unless removing it is explicitly chosen.
+The account's sign-in project is shared `learncard`, even though the network, LearnCloud and account-key endpoints are staging-specific. Removing that Firebase login can affect sign-in in other environments. The selected native reset never calls Firebase identity deletion or sign-out; its transport refuses the Firebase identity-management host.
 
 The inspected web removal helper clears SQLite/LearnCloud indexes; it is not evidence that every encrypted storage object or credential held by other recipients is erased. The network profile route deletes the current profile and DID document. The inspected UI path does not invoke the separate SSS key deletion route. Avoid presenting these operations as atomic full data erasure.
 
 ## Additional backend contract
 
-LCA `keys.deleteUserKey` (`POST /keys/delete`) requires a Firebase auth token/provider plus DID/challenge authorization and verifies ownership of the stored primary DID. It deletes the matching UserKey record, including its versions/recovery metadata in that record. The old standalone SSS key-manager deletion API is deprecated and deliberately throws; use the authenticated current contract rather than weakening it.
+LCA `keys.deleteUserKey` (`POST /api/keys/delete` on the staging account API) requires a Firebase auth token/provider plus DID/challenge authorization and verifies ownership of the stored primary DID. The adapter first obtains `/api/keys/challenge`, signs its fresh challenge, then deletes. It deletes the matching UserKey record, including its versions/recovery metadata in that record. The old standalone SSS key-manager deletion API is deprecated and deliberately throws; use the authenticated current contract rather than weakening it. Both current deployed paths were verified against staging's public OpenAPI schema.
 
 A robust native reset must bind every step to the same verified Firebase UID and signing identity, preserve a protected operation receipt, reconcile lost responses before retrying, and retain a recoverable path after partial cleanup. Confirm cloud/index and profile cleanup before deleting the recovery record that enables resumed access. Clear only that account's local shares/progress after verified completion. Do not auto-claim or grant app permissions when signup restarts.
 
-Keeping the same Firebase login also retains its original creation timestamp. The coordinator's five-minute legacy heuristic will not by itself treat it as a new signup. A staging reset needs an explicit, protected, verified-reset handoff to required setup; it must not generalize into a bypass for older unknown accounts. Removing the shared Firebase login instead requires separate explicit scope and current login verification before destructive work.
+Keeping the same Firebase login also retains its original creation timestamp. The coordinator's five-minute legacy heuristic will not by itself treat it as a new signup. A UID-scoped Keychain receipt records collection → profile → recovery → local cleanup. Each destructive reply is reconciled against fresh server state before advancing. Local completion clears this UID's primary/pending access and old signup journal, writes a fresh-setup marker, then removes the receipt last. The native controller disposes the old SDK host before reconnecting the same Firebase user. An interrupted reset blocks Collection, requires explicit Continue reset, and can offer existing recovery when local access is missing. Nothing resumes destructive cleanup merely on launch.
+
+Reset authorization uses a separate seed-only `did:key` signer. The connected network wallet defaults to its profile `did:web`, whose document disappears during cleanup; using it for the final recovery deletion would fail. Real SDK JWT generation and independent signature verification cover the seed signer and fresh nonce.
+
+Network `getProfile()` caches its result, so reset reconciliation uses an authenticated brain client query rather than that cached SDK method. Server status with an existing record but no primary identity is refused, not interpreted as absence. Bulk `index.removeAll` clears only the authenticated DID, while reads include associated DIDs. The native adapter therefore removes owned record IDs in bounded batches, rereading the first page after each batch without stale cursors, and requires a verified empty read before proceeding. Lost/failed calls retain the receipt for explicit continuation.
+
+Index deletion does not erase all payload objects, sent copies, legacy preferences associated with the old identity, or other environments. This is a staged operation; simultaneous writes from other devices are not an atomic transaction.
+
+## Implementation and live status
+
+Account → Reset staging account requires the currently verified email. Scope and retention are explained before the destructive action. Confirmation, progress, retry and errors are translated into English, Spanish, French and Arabic. The domain rejects foreign receipts, identity changes, concurrent operations and stale completions; lifecycle guards close the old account before cleanup begins.
+
+The first live attempt used the verified selected email and saved protected progress, but stopped at collection cleanup verification. It did not advance to profile or recovery deletion; the shared Firebase login remains intact. Source inspection found that bulk removal misses associated identities, so the corrected page-by-page owned-record cleanup is installed. The Mac locked before an explicit retry could run. Current handoff: unlock macOS, reopen LearnCard Native Lab, then Continue reset. Do not start a second reset or remove the shared login.
+
+Live cleanup completion, fresh signup and saved-backup recovery are still unverified. After successful cleanup, the user must enter age/profile/privacy details and the backup password directly in the app. See [TESTING](TESTING.md) for synthetic evidence; passing fixture tests are not a successful live reset.
 
 ## Live validation still needed
 
