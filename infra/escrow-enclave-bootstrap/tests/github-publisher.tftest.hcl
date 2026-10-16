@@ -102,10 +102,17 @@ run "enabled_production_has_exact_trust_and_least_privilege" {
       Principal = { Federated = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" }
       Condition = { StringEquals = {
         "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-        "token.actions.githubusercontent.com:sub" = "repo:learningeconomy/LearnCard:environment:escrow-production"
+        "token.actions.githubusercontent.com:sub" = "repo:learningeconomy/LearnCard:environment:escrow-production-publish"
       } }
     }]))
-    error_message = "Trust must admit only the exact repository production environment and STS audience."
+    error_message = "Trust must admit only the publisher environment, never the build's escrow-production subject."
+  }
+  assert {
+    condition = anytrue([for s in jsondecode(data.aws_iam_policy_document.github_publisher[0].json).Statement :
+      s.Effect == "Deny" && s.Resource == "*" &&
+      toset(flatten([s.Action])) == toset(["iam:*", "sts:AssumeRole", "sts:AssumeRoleWithWebIdentity", "sts:AssumeRoleWithSAML"])
+    ])
+    error_message = "Publisher must explicitly deny self-policy changes, IAM administration and role chaining."
   }
   assert {
     condition     = aws_iam_role.github_publisher[0].max_session_duration == 3600 && length(aws_iam_openid_connect_provider.github_publisher) == 1 && aws_iam_openid_connect_provider.github_publisher[0].url == "https://token.actions.githubusercontent.com" && aws_iam_openid_connect_provider.github_publisher[0].client_id_list == toset(["sts.amazonaws.com"])

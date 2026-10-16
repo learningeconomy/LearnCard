@@ -9,6 +9,7 @@ lca_api_security_group_id = null
 privatelink_allowed_principals = ["arn:aws:iam::<LCA_API_ACCOUNT_ID>:role/<ENDPOINT_CREATOR_ROLE>"]
 
 instance_type         = "m6i.xlarge"
+host_ami_id           = "<REVIEWED_REGIONAL_AL2023_X86_64_AMI_ID>"
 asg_min_size          = 2
 asg_max_size          = 4
 enclave_cpu_count     = 2

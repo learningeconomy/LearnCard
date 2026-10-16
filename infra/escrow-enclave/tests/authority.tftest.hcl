@@ -64,6 +64,10 @@ variables {
 run "disabled_is_structurally_a_noop" {
   command = apply
   assert {
+    condition     = var.host_ami_id == null && length(data.aws_ssm_parameter.al2023_ami) == 1 && aws_launch_template.enclave_host.image_id == data.aws_ssm_parameter.al2023_ami[0].value
+    error_message = "Default staging must retain the same latest-AL2023 lookup and launch-template image."
+  }
+  assert {
     condition = (
       aws_autoscaling_group.enclave_host.launch_template[0].version == "$Latest" &&
       aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].min_healthy_percentage == 50 &&
@@ -213,6 +217,7 @@ run "production_safety_and_domain" {
   command = apply
   variables {
     environment                   = "production"
+    host_ami_id                   = "ami-0123456789abcdef0"
     enable_enrollment_authority   = true
     enable_enclave_email          = true
     authority_generation          = "g1"
@@ -221,6 +226,10 @@ run "production_safety_and_domain" {
     sending_domain                = "vault.notify.learncard.com"
     create_sending_zone           = true
     email_dmarc_policy            = "reject"
+  }
+  assert {
+    condition     = aws_launch_template.enclave_host.image_id == var.host_ami_id && length(data.aws_ssm_parameter.al2023_ami) == 0
+    error_message = "Production must use the pinned AMI without any latest-AMI lookup."
   }
   assert {
     condition = (
@@ -236,6 +245,22 @@ run "production_safety_and_domain" {
     condition     = aws_route53_record.sending["dmarc"].records == toset(["v=DMARC1; p=reject"]) && aws_ses_domain_mail_from.enclave[0].mail_from_domain == "bounce.vault.notify.learncard.com"
     error_message = "Production sending domain and DMARC policy must be independent of staging."
   }
+}
+
+run "production_requires_pinned_ami" {
+  command = plan
+  variables {
+    environment = "production"
+  }
+  expect_failures = [var.host_ami_id]
+}
+
+run "reject_malformed_ami" {
+  command = plan
+  variables {
+    host_ami_id = "ami-latest"
+  }
+  expect_failures = [var.host_ami_id]
 }
 
 run "delegated_sending_zone_and_cross_region_global_events" {

@@ -1,11 +1,12 @@
 data "aws_ssm_parameter" "al2023_ami" {
-  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+  count = var.environment == "staging" && var.host_ami_id == null ? 1 : 0
+  name  = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
 resource "aws_launch_template" "enclave_host" {
   name_prefix            = "${local.name_prefix}-"
   description            = "escrow-enclave-host: AL2023 + Nitro Enclaves, image ${var.enclave_image_version}"
-  image_id               = data.aws_ssm_parameter.al2023_ami.value
+  image_id               = var.host_ami_id != null ? var.host_ami_id : try(data.aws_ssm_parameter.al2023_ami[0].value, null)
   instance_type          = var.instance_type
   update_default_version = true
 

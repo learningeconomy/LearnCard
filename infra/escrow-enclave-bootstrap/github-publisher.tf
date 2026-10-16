@@ -32,7 +32,7 @@ data "aws_iam_policy_document" "github_publisher_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:learningeconomy/LearnCard:environment:escrow-production"]
+      values   = ["repo:learningeconomy/LearnCard:environment:escrow-production-publish"]
     }
   }
 }
@@ -61,6 +61,15 @@ resource "aws_iam_role" "github_publisher" {
 
 data "aws_iam_policy_document" "github_publisher" {
   count = var.enable_github_publisher ? 1 : 0
+
+  # Defense in depth against later attached grants, including self-modification
+  # and role chaining. Account-wide provider isolation is an operator gate.
+  statement {
+    sid       = "DenyIdentityAdministrationAndRoleChaining"
+    effect    = "Deny"
+    actions   = ["iam:*", "sts:AssumeRole", "sts:AssumeRoleWithWebIdentity", "sts:AssumeRoleWithSAML"]
+    resources = ["*"]
+  }
 
   statement {
     sid       = "CreateEifArtifactsOnly"
@@ -123,6 +132,6 @@ resource "aws_iam_role_policy" "github_publisher" {
 }
 
 output "github_publisher_role_arn" {
-  description = "Set ESCROW_PUBLISH_ROLE_ARN in the escrow-production GitHub environment. Null when disabled."
+  description = "Set ESCROW_PUBLISH_ROLE_ARN in the escrow-production-publish GitHub environment. Null when disabled."
   value       = try(aws_iam_role.github_publisher[0].arn, null)
 }

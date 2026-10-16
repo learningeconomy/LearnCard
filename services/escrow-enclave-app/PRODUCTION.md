@@ -38,6 +38,11 @@ inventory; do not copy staging identifiers into production inputs.
   Configure an actual report mailbox (and external-report authorization if needed).
   Terraform manages only the selected sending domain, not the parent DMARC policy.
 
+Launch approval must explicitly cover ScoutPass/VetPass mail coming from this
+LearnCard address, including rendered brand names (VetPass currently falls back
+to the tenant label). Domain selection is not approval of cross-brand copy;
+retain product/security sign-off and sample messages before enabling either tenant.
+
 ## Ordered bootstrap and verification
 
 ### 1. [operator] New member account and guardrail preparation
@@ -149,7 +154,10 @@ aws sesv2 get-account
 
 Require `ProductionAccessEnabled`, verified sending/DKIM, successful MAIL FROM,
 and a controlled send to a non-preverified recipient. Confirm bounce/complaint
-delivery before relying on it, then approve DMARC enforcement separately.
+delivery before relying on it. Warm up sending volume before launch. The launch
+record must name a deliverability owner and a calendar date for promotion to
+`quarantine`/`reject` after clean aggregate reports; an unset date blocks launch.
+Any delay requires a new dated security approval, not indefinite `p=none`.
 
 ### 5. [operator] Seal writer and email credentials under MFA
 
@@ -178,20 +186,23 @@ internal hostname; do not reuse staging tokens, certificates or CA keys.
 
 ### 6. [operator] Configure the GitHub production gate and artifact publisher
 
-Create **`escrow-production`** before dispatching the workflow:
+Create **`escrow-production`** (build/sign only) and
+**`escrow-production-publish`** (verified upload only) before dispatching:
 
-- Required independent reviewers, prevent self-review and disable administrator
+- On **both** environments: required independent reviewers, prevent self-review and disable administrator
   protection bypass. Permit only branch `main` and tags `escrow-enclave-v*` using
   selected deployment branch/tag rules. Protect both main and release-tag creation.
   Do not permit the staging development branch `escrow-recovery/nitro-enclave`.
-- Set the complete public `ESCROW_*` measured variables listed in the workflow,
+- In the build environment, set the complete public `ESCROW_*` measured variables listed in the workflow,
   using production Terraform outputs: tenant/key/region/escrow CMK, previous key
   IDs, first-boot flag, authority region/account/table/writer/tenant/environment/
   generation/credential CMK, and email region/account/sender/from/identity/config set.
   `ESCROW_AUTHORITY_ENVIRONMENT` must be `production`; no access keys in these vars.
-- Set `ESCROW_ACCOUNT_ID`, `ESCROW_PUBLISH_ROLE_ARN`, `ESCROW_ARTIFACTS_BUCKET`,
+- In the publish environment only, set `ESCROW_KMS_REGION` (storage region),
+  `ESCROW_ACCOUNT_ID`, `ESCROW_PUBLISH_ROLE_ARN`, `ESCROW_ARTIFACTS_BUCKET`,
   `ESCROW_ARTIFACTS_KMS_KEY_ARN` (the **storage** CMK, not either enclave CMK).
-- After the core storage resources exist, set bootstrap `enable_github_publisher=true`
+- After the core storage resources exist and **both environment protections and
+  the account-wide isolation gate below are independently verified**, set bootstrap `enable_github_publisher=true`
   and `publisher_storage_kms_key_arn` to the **storage** CMK ARN. Set
   `github_oidc_provider_arn` if the account already has GitHub's OIDC provider;
   otherwise leave it null to create the provider. Review/apply bootstrap under MFA.
@@ -201,12 +212,14 @@ Create **`escrow-production`** before dispatching the workflow:
   coupling or competing bucket-policy ownership is introduced.
 - The role trusts only `token.actions.githubusercontent.com`, audience
   `sts.amazonaws.com`, exact subject
-  `repo:learningeconomy/LearnCard:environment:escrow-production`, with a one-hour
+  `repo:learningeconomy/LearnCard:environment:escrow-production-publish`, with a one-hour
   maximum session. IAM allows PutObject only with `s3:if-none-match = *` and
   explicitly denies missing/nonmatching headers. GetObject (also HeadObject) is
   limited to `eif/*`. No list, delete, IAM, Terraform, authority/monitor, sealed-key
   or credential-object permissions are granted. Write-once is enforced for this
   publisher, not against administrators deleting/replacing objects independently.
+  IAM administration (including modification of its own trust/permissions) and
+  STS role chaining are explicitly denied, even if another policy grants them.
 - SSE-KMS requires `kms:GenerateDataKey` for upload and **`kms:Decrypt` for the
   byte-for-byte GET readback**; `kms:Encrypt` is not needed. Both grants name only
   the storage CMK and require regional S3 plus the artifact object encryption
@@ -223,8 +236,35 @@ Create **`escrow-production`** before dispatching the workflow:
 ```sh
 gh api 'repos/<OWNER>/<REPO>/environments/escrow-production'
 gh api 'repos/<OWNER>/<REPO>/environments/escrow-production/deployment-branch-policies'
+gh api 'repos/<OWNER>/<REPO>/environments/escrow-production-publish'
+gh api 'repos/<OWNER>/<REPO>/environments/escrow-production-publish/deployment-branch-policies'
 gh workflow run escrow-enclave-eif.yml --ref main -f deployment=production
 ```
+
+**Account-wide isolation gate:** security must inventory **every role trust policy**
+in the production member account (including wildcard/federated principals) and
+confirm this publisher is the **only** role assumable through GitHub's provider.
+Remove other GitHub trust before enabling publishing; retain the inventory and
+independent approval, and monitor subsequent trust/provider changes through the
+independent CloudTrail trail. These Terraform roots cannot prove the absence of
+out-of-band roles. Do not grant GitHub any bootstrap/admin role, or approve another
+workflow's use of the publish environment. Protect this workflow with required
+security review; environment reviewers must inspect workflow/ref and artifact
+evidence before approving the separate upload job. Test build-token rejection and
+publish-token success before enabling uploads; never retain raw tokens as evidence.
+
+**Claim compatibility:** AWS does not expose arbitrary GitHub JWT claims as IAM
+condition keys; `token.actions.githubusercontent.com:job_workflow_ref` and
+`:repository_id` conditions would fail closed, not add working isolation.
+Moreover, `job_workflow_ref` is for reusable workflows, not this ordinary workflow.
+See [GitHub's supported approach](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-with-reusable-workflows).
+Workflow/numeric-ID binding would require a reviewed custom `sub` template (and
+reusable-workflow extraction for `job_workflow_ref`), coordinated with **all**
+repository OIDC consumers; do not silently change it and break staging.
+Public identity inventory: repository `486055750`, owner `95718578`; these IDs
+are not enforced by the default subject. A separate publishing account with
+explicit cross-account artifact/storage-key grants is a future security option,
+not created here and not a substitute for separating build/publish subjects.
 
 The explicit production dispatch builds twice under production variables, signs
 the same manifest format, verifies Sigstore identity/issuer and SHA-256 digests,
@@ -240,6 +280,15 @@ MFA applier. Artifact publication alone is not approval to deploy or trust a tup
 **Baseline discrepancy:** this branch contains no staging S3 publisher or explicit
 staging ref gate. Its existing staging build/artifact/tag-PR behavior is unchanged;
 the production publisher is new, not a promotion of staging's measured image.
+
+**Break-glass manual publication:** if automation is unavailable, two operators
+must verify the same signed manifest, exact workflow/ref, run/commit and file
+digests on a trusted workstation before using an approved MFA publishing session.
+Reuse the workflow's `put-object --if-none-match '*'` with the storage CMK and
+byte-for-byte GET/readback comparison for all four files under a fresh
+`eif/<run-id>/<run-attempt>/` prefix. Record approver, operator, reason and object
+versions in the trust-change review; never delete/overwrite a partial upload,
+relax bucket policy, or treat publication as permission to deploy.
 
 ### 7. [terraform] First image, then steady-state image roll
 
@@ -302,6 +351,29 @@ remove-after-verification discipline:
    moved and the approved rollback window has closed. Retire obsolete client pins
    through the reviewed config rollout. **Never remove historical verification
    anchors from monitor trust.**
+
+#### Deliberate host AMI updates
+
+Production requires `host_ami_id` (a regional `ami-` plus 17 hex digits); there is
+no production SSM latest lookup. Before first compute, independently verify Amazon
+ownership, AL2023/x86_64 compatibility, availability in the deployment region and
+patch provenance. Record the exact ID in ignored production inputs and the approved
+change record. Staging defaults to null and retains its existing latest lookup.
+
+Treat every AMI update as a two-phase change, not incidental maintenance:
+
+1. **Prepare:** retain live AMI N and all live image/template inputs. Review N+1's
+   provenance and patch changes, boot an isolated candidate outside the live
+   ASG/target group with the existing EIF, then verify Nitro/relay/TLS operation,
+   fresh attestation, unchanged keys/PCRs and monitor coverage. If the EIF changes,
+   complete the client/monitor/KMS overlap procedure above before admission.
+2. **Roll:** separately approve changing only `host_ami_id` to N+1, retain N for
+   rollback, and perform the numeric-template 100/200 refresh. Wait for completion,
+   healthy capacity across AZs and fresh production-path attestation/monitor checks
+   before closing the rollback window. A rollback is another reviewed pin change.
+
+AMI pinning does not pin the packages installed by user-data; package repository
+drift remains a separate hardening item, not a claim of immutable host builds.
 
 ### 8. [operator] Monitor trust, alarms and production PrivateLink
 
@@ -405,7 +477,7 @@ cohort. No real production hashes or account identifiers are supplied by this wo
 
 - Environment validations already accept production; resource names derive from
   environment/current account. Existing staging backend IDs remain untouched.
-  No resource addresses were renamed, so no `moved` blocks are needed.
+  The staging AMI data lookup gains `[0]`; no managed resource address changes.
 - Fixed 50% refresh and `$Latest` were unsuitable for production; production now
   uses 100/200 and a numeric version, while staging retains 50/100 and `$Latest`.
   The existing AZ `check` only warns; production now also has a blocking precondition.
@@ -422,7 +494,7 @@ cohort. No real production hashes or account identifiers are supplied by this wo
   separate account, not a name to parameterize independently.
 - No Terraform prevent_destroy protects every resource. Review destructive plans,
   protect state and trust owners, and retain existing key-policy/SCP governance.
-  Latest AL2023 AMI lookup, broad HTTPS/Roughtime egress, provider/host package
+  Staging's latest AL2023 AMI lookup, broad HTTPS/Roughtime egress, provider/host package
   updates and production capacity/availability need operational review.
 - Variable-name parity was checked against both real `LearnCard-nitro-sync`
   staging tfvars: all 33 core and 3 bootstrap names already exist in the production
