@@ -422,7 +422,7 @@ jobs:
                     '.config == $measurements[0].config' manifest.json
 
             - name: Assume production artifact publisher (no Terraform or escrow-key access)
-              uses: aws-actions/configure-aws-credentials@v5
+              uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
               with:
                   role-to-assume: ${{ vars.ESCROW_PUBLISH_ROLE_ARN }}
                   # Bootstrap github_publisher_role_arn output; trust is environment-only.

@@ -231,7 +231,11 @@ the same manifest format, verifies Sigstore identity/issuer and SHA-256 digests,
 then publishes using `--if-none-match '*'` and byte-compares readback. Objects live
 under `eif/<run-id>/<run-attempt>/`; partial failures require a new attempt, never
 an overwrite. Download and retain the signed production measurement evidence for
-two-person review. Production does not open the staging measurement PR.
+two-person review. Production deliberately does not open the staging measurement
+PR: its account/CMK configuration and PCRs are different. Before changing production
+trust, attach the verified manifest, Sigstore bundle, measurements, run/attempt and
+commit to the production trust-change review; record the independent approver and
+MFA applier. Artifact publication alone is not approval to deploy or trust a tuple.
 
 **Baseline discrepancy:** this branch contains no staging S3 publisher or explicit
 staging ref gate. Its existing staging build/artifact/tag-PR behavior is unchanged;
@@ -245,7 +249,9 @@ CMK policies; never split them into independently combinable PCR lists. At most
 signed config as well as digests. Supply the verified host binary and Linux monitor
 ZIP separately. Enable credential delivery together with the matching image.
 
-For first boot only, both host input and measured image use first-boot=true.
+For first boot only, keep all client traffic paused (client mode off and no
+production API access to the NLB) through steps 7–9; the release kill switch alone
+does not block enrollment. Both host input and measured image use first-boot=true.
 Confirm the create-only sealed object exists and independently verify fresh,
 nonce-bound Nitro attestation using [the staging verification procedure](./STAGING.md).
 Then build first-boot=false (new PCRs), add that tuple **before** rolling, set the
@@ -262,9 +268,40 @@ aws s3api list-object-versions --bucket '<ARTIFACTS_BUCKET>' --prefix 'sealed-ke
 
 Require >=2 healthy hosts across AZs, the same attested escrow/ledger public keys,
 one sealed-key version and attested Decrypt (no new GenerateDataKey) in independent
-CloudTrail evidence. Every later image roll is: add N+1 to KMS → new-host-first
-refresh → verify → append monitor trust → client overlap → remove N from KMS.
-Never remove historical verification anchors from monitor trust.
+CloudTrail evidence. The traffic-paused bootstrap order above is **not** the order
+for a later live image roll. The ASG in `compute.tf` is attached directly to the
+NLB target group: healthy N+1 hosts receive traffic during refresh, not only after
+it finishes. KMS overlap does not make clients pinned only to N accept N+1.
+
+For each later same-key image roll, use two separately reviewed deployment phases
+(additive preparation, then image roll), retaining staging's add-before-roll and
+remove-after-verification discipline:
+
+1. Verify N+1's signed build/config/PCR evidence and retain N. Publish complete
+   N/N+1 tuples in the **resolved tenant** `auth.sss.escrowEnclaveMeasurements`
+   delivered to clients. Complete web cache/config adoption and any required native
+   app/baked-config rollout; confirm supported clients actually resolve both tuples,
+   not just that a source JSON changed. Append N+1's measurement hash under the
+   existing attestation-verified ledger key in
+   `/escrow-enclave-production/authority-monitor-trust`, preserving historical
+   pairs; recycle monitor execution environments and confirm the new trust is
+   loaded and a sweep succeeds (step 8). Record both client and monitor evidence
+   **before any N+1 host can receive live NLB traffic**. If adoption cannot be
+   confirmed, stop or use an explicitly approved maintenance gate that blocks all
+   escrow traffic, including enrollment; the release kill switch is insufficient.
+2. Add N+1's complete tuple to **both** CMK policies without removing N. Keep all
+   live launch-template/image inputs at N during this preparation phase. Boot and
+   freshly attest a candidate outside the live ASG/target group, checking N+1's
+   PCRs and the same escrow/ledger keys before admitting it to live traffic. A key
+   change requires a separate key-rotation procedure, not assumed same-key trust.
+3. Only after those gates pass, update the image/launch template and run the
+   new-host-first refresh. Wait for completion and verify fresh attestation through
+   the production path, >=2 healthy hosts across AZs, unchanged sealed-key/key
+   identity, attested Decrypt evidence and successful monitor coverage.
+4. Remove N from both KMS policies only after all hosts and client rollouts have
+   moved and the approved rollback window has closed. Retire obsolete client pins
+   through the reviewed config rollout. **Never remove historical verification
+   anchors from monitor trust.**
 
 ### 8. [operator] Monitor trust, alarms and production PrivateLink
 
@@ -286,12 +323,62 @@ production Lambda ENIs. An allowed principal does not create/accept the endpoint
 aws cloudwatch describe-alarms --alarm-name-prefix escrow-enclave-production
 aws ec2 describe-vpc-endpoint-connections --filters 'Name=service-id,Values=<SERVICE_ID>'
 aws ec2 describe-vpc-endpoints --vpc-endpoint-ids '<LCA_API_ENDPOINT_ID>'
-curl --fail --cacert '<PRODUCTION_CA_PEM>' 'https://<PRODUCTION_PRIVATE_HOST>:8443/health'
 ```
 
-Run connectivity checks from production lca-api's network, not a public workstation.
-Health alone is insufficient: verify fresh Nitro attestation through that path and
-exercise authority/email fail-closed cases with approved disposable identities.
+From production lca-api's network (not a public workstation), probe authenticated
+`POST /v1/attest` over the PrivateLink TLS path. `GET /health` exists only on the
+separate plain-HTTP NLB health-check port 8444, not on the 8443 TLS listener.
+Use a trusted interactive terminal with tracing/HTTP debug logging disabled; enter
+the bearer token at the hidden prompt, never in command arguments, history or logs.
+Install the verifier's `cbor2`/`cryptography` dependencies and obtain the Nitro root
+as described in [verify-attestation.py](./scripts/verify-attestation.py). Use the
+independently verified production measurements, not host-reported PCRs.
+
+```sh
+set +x
+python3 - <<'PY'
+import getpass
+import json
+import pathlib
+import secrets
+import ssl
+import subprocess
+import tempfile
+import urllib.request
+
+nonce = secrets.token_bytes(32)
+request = urllib.request.Request(
+    'https://<PRODUCTION_PRIVATE_HOST>:8443/v1/attest',
+    data=json.dumps({'nonce': list(nonce)}).encode(),
+    headers={'Authorization': 'Bearer ' + getpass.getpass('Bearer token: '),
+             'Content-Type': 'application/json'},
+    method='POST',
+)
+# Refuse redirects rather than forwarding the Authorization header elsewhere.
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+opener = urllib.request.build_opener(
+    urllib.request.ProxyHandler({}), NoRedirect(),
+    urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile='<PRODUCTION_CA_PEM>')),
+)
+with opener.open(request, timeout=15) as response, tempfile.TemporaryDirectory() as directory:
+    path = pathlib.Path(directory) / 'attest.json'
+    path.write_bytes(response.read(262145))
+    if path.stat().st_size > 262144:
+        raise SystemExit('Attestation response exceeds limit')
+    subprocess.run([
+        'python3', 'services/escrow-enclave-app/scripts/verify-attestation.py',
+        str(path), nonce.hex(), '<VERIFIED_PRODUCTION_MEASUREMENTS_JSON>', '<NITRO_ROOT_PEM>',
+    ], check=True)
+PY
+```
+
+Require successful chain/root, signature, nonce and PCR verification, not merely
+HTTP 200. During overlap, verify against the reviewed tuple for the responding
+image; do not broaden pins from its response. Then exercise authority/email
+fail-closed cases with approved disposable identities.
 
 ### 9. [operator] Production configuration and rollout gate
 
