@@ -234,6 +234,10 @@ Before shipping any new modal, overlay, or form:
 9. **Contrast**: Text readable on its background (test on white AND colored backgrounds)
 10. **Animation**: Use `animate-fade-in-up` for overlay entrance, `transition-colors` / `transition-opacity` for interactions
 
+## Verifying Your Work
+
+Before claiming a change works, prove it against a real local stack with `lc verify` (web app, SDK, `learncard` CLI, services, ConsentFlow, Partner Connect, docs snippets). Read `.agents/skills/verify-learncard/SKILL.md`; its `features/` map lists what each journey proves and what is not covered yet.
+
 ## Monorepo Structure
 
 The project uses Bun workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory

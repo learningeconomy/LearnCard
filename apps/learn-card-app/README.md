@@ -70,6 +70,27 @@ may need to install some system dependencies. See the Playwright docs [here](htt
 
 After playwright is set up, you can simply run `bun run test` or `bunx nx test learn-card-app` to run the E2E tests!
 
+### Repeatable feature verification (`lc verify`)
+
+`lc verify` starts an owned, disposable local stack (Neo4j, MongoDB, Redis, ElasticMQ, brain,
+LearnCloud and LCA API built from this checkout, plus the Vite dev server) and proves behavior
+across the web app, SDK, `learncard` CLI, ConsentFlow, Partner Connect apps, and docs snippets:
+
+```bash
+bun run lc verify up --dir /tmp/lcv        # build, start, sign in reusable sessions
+bun run lc verify list                     # 11 catalog features (web, sdk, cli, cross-surface, docs)
+bun run lc verify run all --dir /tmp/lcv   # every journey; evidence under /tmp/lcv/runs/<id>/
+bun run lc verify script my-check.ts --dir /tmp/lcv   # ad-hoc journey: pages, SDK, CLI, read-only DB
+bun run lc verify down --dir /tmp/lcv      # stop only what it started; evidence stays
+```
+
+Requires Linux, a local Docker Engine with Compose v2, `bun install --frozen-lockfile`, Playwright
+Chromium, and free ports 3000/4000/4100/5100/7687/27017 (4321 and Node >= 22.12 for the app-store
+journey). Evidence (screenshots, traces, sessions, CLI `.env` files) contains disposable secrets:
+keep it private. The full guide for agents and humans is
+[`.agents/skills/verify-learncard/SKILL.md`](../../.agents/skills/verify-learncard/SKILL.md) and its
+[feature map](../../.agents/skills/verify-learncard/features/README.md).
+
 ## Managed Account Consent
 
 - Consent identity uses the parent account's Family name/photo records. Its cache is separate from profile lists and scoped to the parent account.
