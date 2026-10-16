@@ -20,6 +20,11 @@ import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/ai
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 import { getLogger } from '../../logging/logger';
 import { getAcceptLifecycleRejection, LifecycleRejection } from './consentFlowLifecycle';
+import {
+    clearConsentFlowRecordMarker,
+    getConsentFlowRecordMarker,
+    setConsentFlowRecordMarker,
+} from './consentFlowRecordMarkers';
 
 const log = getLogger('sync-consent-flow');
 
@@ -257,15 +262,6 @@ export const useSyncConsentContractsMutation = () => {
     });
 };
 
-/**
- * Wallet index records this consent sync created that haven't been accepted yet, keyed by
- * credential URI. Only these may be rolled back when acceptance is definitively refused; a
- * record that was already in the wallet (put there by anything else, or before an app reload)
- * is never removed by the sync. In-memory on purpose: after a reload we can't prove the sync
- * created a record, so we leave it alone.
- */
-const unacceptedRecordsCreatedBySync = new Map<string, string>();
-
 class LifecycleRejectedError extends Error {
     constructor(
         readonly status: LifecycleRejection,
@@ -277,8 +273,9 @@ class LifecycleRejectedError extends Error {
 }
 
 /**
- * Remove a record this sync just indexed, plus the caches addVCtoWallet updated for it.
- * Tolerates the record already being gone (e.g. revoked-credential cleanup got there first).
+ * Remove a record this sync indexed, plus the caches addVCtoWallet updated for it. Idempotent:
+ * an id that was never written, or that's already gone (e.g. revoked-credential cleanup got
+ * there first), is a no-op. Only ever called with an id from the sync's ownership marker.
  */
 const rollBackIndexedRecord = async (
     learnCard: BespokeLearnCard,
@@ -334,6 +331,7 @@ export const useAcceptAndStoreCredentialsMutation = () => {
         mutationFn: async ({ allRecords }) => {
             walletStore.set.setIsSyncing(WalletSyncState.Syncing);
             const learnCard = await initWallet();
+            const profileDid = learnCard.id.did();
             // Store each credential independently so one failure doesn't fail the batch
             // or keep the successful ones from being stored.
             // Store before accepting: accepting removes the credential from the server's
@@ -343,19 +341,24 @@ export const useAcceptAndStoreCredentialsMutation = () => {
             // next sync via alreadyStored, without storing a duplicate).
             // If acceptance is definitively refused because the issuer revoked or suspended
             // the credential, the record this sync created is rolled back so it never sits in
-            // the normal wallet.
+            // the normal wallet. Ownership (profile + URI -> record id) is persisted BEFORE the
+            // index write, so this still works if the write landed but its response was lost,
+            // or the app reloaded before the rejection. Records without a marker were put there
+            // by something else and are never removed.
             const results = await Promise.allSettled(
                 allRecords.map(async r => {
                     const uri = r.credentialUri;
                     if (!r.alreadyStored) {
-                        const recordId = uuidv4();
+                        // Reuse a marker from an earlier attempt so it always names the only
+                        // record this sync could have written for this credential.
+                        const recordId = getConsentFlowRecordMarker(profileDid, uri) ?? uuidv4();
+                        setConsentFlowRecordMarker(profileDid, uri, recordId);
                         await addVCtoWallet({
                             id: recordId,
                             uri,
                             contractUri: r.contractUri,
                             skipSync: true,
                         });
-                        unacceptedRecordsCreatedBySync.set(uri, recordId);
                     }
 
                     try {
@@ -364,14 +367,14 @@ export const useAcceptAndStoreCredentialsMutation = () => {
                         const rejection = await getAcceptLifecycleRejection(learnCard, uri, error);
                         if (!rejection) throw error;
 
-                        const recordId = unacceptedRecordsCreatedBySync.get(uri);
+                        const recordId = getConsentFlowRecordMarker(profileDid, uri);
                         if (recordId) {
                             await rollBackIndexedRecord(learnCard, queryClient, { recordId, uri });
-                            unacceptedRecordsCreatedBySync.delete(uri);
+                            clearConsentFlowRecordMarker(profileDid, uri);
                         }
                         throw new LifecycleRejectedError(rejection, Boolean(recordId));
                     }
-                    unacceptedRecordsCreatedBySync.delete(uri);
+                    clearConsentFlowRecordMarker(profileDid, uri);
                 })
             );
 

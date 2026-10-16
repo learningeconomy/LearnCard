@@ -28,6 +28,7 @@ const host = vi.hoisted(() => ({
 }));
 
 const wallet = {
+    id: { did: () => 'did:web:test:scout' },
     invoke: {
         getConsentFlowCredentials: vi.fn(async () => ({
             hasMore: false,
@@ -124,6 +125,7 @@ describe('useSyncConsentFlow', () => {
     beforeEach(() => {
         host.pending = [];
         host.index.clear();
+        window.localStorage.clear();
         host.lifecycle.clear();
         host.lifecycleLookupFails = false;
         host.unreadable.clear();
@@ -358,6 +360,78 @@ describe('useSyncConsentFlow', () => {
         expect(host.stored).toEqual(new Set());
         expect(listedUris()).toEqual([]);
         expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('rolls back a suspended credential after an index write lands but its response is lost', async () => {
+        // From goblincore's review on #1737.
+        const uri = 'urn:test:k:committed-write-lost-response';
+        host.pending = [uri];
+        host.lifecycle.set(uri, 'suspended');
+        const normalStore = host.addVCtoWallet.getMockImplementation()!;
+        host.addVCtoWallet.mockImplementationOnce(async (args: Record<string, string>) => {
+            await normalStore(args);
+            // The index write committed, but the response never arrived.
+            throw new TypeError('Failed to fetch');
+        });
+        const hook = renderSync();
+        await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+        expect(host.stored.has(uri)).toBe(true);
+        expect(host.accept).not.toHaveBeenCalled();
+
+        await act(async () => {
+            await hook.result.current.refetch();
+        });
+        await waitFor(() => expect(host.accept).toHaveBeenCalledWith({ uri }));
+        await waitFor(() => expect(host.stored.has(uri)).toBe(false));
+        expect(listedUris()).not.toContain(uri);
+        expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('rolls back after an app reload when the store worked, the accept failed, and the issuer then suspended it', async () => {
+        const uri = 'urn:test:l:reload-then-suspended';
+        host.pending = [uri];
+        host.failAcceptOnce.add(uri);
+        renderSync();
+        await waitFor(() => expect(host.accept).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(host.stored).toEqual(new Set([uri])));
+        cleanup();
+
+        // Simulate an app reload: drop every module's in-memory state, keep storage.
+        vi.resetModules();
+        const { useSyncConsentFlow: useSyncAfterReload } = await import('./vcQueries');
+        host.lifecycle.set(uri, 'suspended');
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        host.client = client;
+        renderHook(() => useSyncAfterReload(true), {
+            wrapper: ({ children }: { children: React.ReactNode }) => (
+                <QueryClientProvider client={client}>{children}</QueryClientProvider>
+            ),
+        });
+
+        await waitFor(() => expect(host.accept).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(host.stored).toEqual(new Set()));
+        expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('treats rolling back a write that never landed as a no-op and keeps records it did not create', async () => {
+        const uri = 'urn:test:m:write-never-landed';
+        host.pending = [uri];
+        host.failStoreOnce.add(uri);
+        const hook = renderSync();
+        await waitFor(() => expect(host.addVCtoWallet).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+        expect(host.stored).toEqual(new Set());
+
+        // Something else puts the credential in the wallet, then the issuer suspends it.
+        host.index.set('someone-elses-record', uri);
+        host.lifecycle.set(uri, 'suspended');
+        await act(async () => {
+            await hook.result.current.refetch();
+        });
+
+        await waitFor(() => expect(host.accept).toHaveBeenCalledWith({ uri }));
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect([...host.index.keys()]).toEqual(['someone-elses-record']);
     });
 
     it('accepts each credential once when refetches overlap across hook instances', async () => {
