@@ -16,7 +16,7 @@ import { queryMongo, queryNeo4j, serviceLogs } from './inspect';
 import { runLearnCardCli, stopLearnCardCommands } from './learncard-cli';
 import { createScriptContext, loadScript, writeInlineScript } from './script';
 import { doctorStack, startStack, stopStack } from './stack';
-import type { FeatureDefinition, VerificationActor } from './types';
+import type { FeatureDefinition, FeatureResult, VerificationActor } from './types';
 import { getVerificationLearnCard } from './sdk';
 
 const DEFAULT_ROOT = '/tmp/learncard-verification';
@@ -360,23 +360,33 @@ const runFeatures = async (
     let browser: Browser | undefined;
     let current: VerificationHarness | undefined;
     let interrupted = false;
+    const cleanupErrors: unknown[] = [];
+    let interruptPromise: Promise<void> | undefined;
+    let rejectInterrupt: (error: Error) => void = () => {};
+    const interruption = new Promise<never>((_resolve, reject) => {
+        rejectInterrupt = reject;
+    });
+    // Signals during startup are checked before driving; don't leak an unhandled rejection.
+    void interruption.catch(() => {});
     const onSignal = (): void => {
         if (interrupted) return;
         interrupted = true;
-        // Save the in-flight feature's screenshots, traces and sessions before closing Chromium.
+        // Capture before closing Chromium, and join this work before any stack teardown.
         const harness = current;
-        void (async () => {
-            await harness?.captureOpenPages('interrupted').catch(() => {});
-            await harness?.close().catch(() => {});
-            await stopLearnCardCommands();
-            await browser?.close();
+        interruptPromise = (async () => {
+            await harness
+                ?.captureOpenPages('interrupted')
+                .catch(error => cleanupErrors.push(error));
+            await harness?.close().catch(error => cleanupErrors.push(error));
+            await stopLearnCardCommands().catch(error => cleanupErrors.push(error));
+            await browser?.close().catch(error => cleanupErrors.push(error));
         })();
+        rejectInterrupt(new Error('Verification interrupted'));
     };
     process.on('SIGINT', onSignal);
     process.on('SIGTERM', onSignal);
     let failed = false;
     let failure: unknown;
-    const cleanupErrors: unknown[] = [];
     try {
         await mkdir(directory, { recursive: true, mode: 0o700 });
         console.log(`Verification directory: ${directory}`);
@@ -419,6 +429,7 @@ const runFeatures = async (
                     `${runId}-${feature.id}`,
                     { video: values.video, stackDirectory: directory }
                 );
+                assert(!interrupted, 'Verification interrupted');
                 current = harness;
                 const result: Record<string, unknown> = {
                     feature: feature.id,
@@ -427,8 +438,10 @@ const runFeatures = async (
                     startedAt: new Date().toISOString(),
                 };
                 console.log(`${feature.id}: running`);
+                let execution: Promise<FeatureResult> | undefined;
                 try {
-                    const proof = await feature.run(harness.context);
+                    execution = feature.run(harness.context);
+                    const proof = await Promise.race([execution, interruption]);
                     assert(!interrupted, 'Verification interrupted');
                     assert.deepEqual(
                         [...proof.entries].sort(),
@@ -438,22 +451,31 @@ const runFeatures = async (
                     Object.assign(result, { status: 'passed', ...proof });
                 } catch (error) {
                     failed = true;
-                    await harness.captureOpenPages('failure-state');
+                    if (!interrupted) await harness.captureOpenPages('failure-state');
                     Object.assign(result, {
-                        status: 'failed',
+                        status: interrupted ? 'interrupted' : 'failed',
                         error: error instanceof Error ? error.stack : String(error),
                     });
                 } finally {
+                    await interruptPromise;
+                    // Closing contexts/CLI children releases in-flight driver calls. Let the
+                    // journey's finally blocks reap auxiliaries (e.g. Astro) before the stack.
+                    if (interrupted) {
+                        await execution?.catch(error => {
+                            result.interruptedExecutionError = String(error);
+                        });
+                    }
                     try {
                         await harness.close();
                     } catch (error) {
                         failed = true;
-                        result.status = 'failed';
+                        result.status = interrupted ? 'interrupted' : 'failed';
                         result.evidenceError = String(error);
                     }
+                    if (interrupted) result.status = 'interrupted';
                     result.finishedAt = new Date().toISOString();
                     results.push(result);
-                    await report('running');
+                    await report(interrupted ? 'interrupted' : 'running');
                     const firstLine = String(result.error ?? '').split('\n')[0];
                     console.log(
                         `${feature.id}: ${result.status}${firstLine ? ` — ${firstLine}` : ''}`
@@ -473,6 +495,7 @@ const runFeatures = async (
         });
         failure = error;
     } finally {
+        await interruptPromise;
         const teardown =
             ownsStack && (failed || interrupted || (command === 'run' && !values.keep));
         try {
@@ -488,6 +511,10 @@ const runFeatures = async (
         }
         process.removeListener('SIGINT', onSignal);
         process.removeListener('SIGTERM', onSignal);
+        if (interrupted) {
+            failed = true;
+            failure ??= new Error('Verification interrupted');
+        }
         if (command === 'run') {
             await saveJson(join(artifacts, 'cleanup.json'), {
                 stackStopped: teardown && cleanupErrors.length === 0,
@@ -495,7 +522,8 @@ const runFeatures = async (
                 evidenceRetained: artifacts,
                 error: cleanupErrors.length ? cleanupErrors.map(String).join('; ') : undefined,
             });
-            if (cleanupErrors.length) await report(interrupted ? 'interrupted' : 'failed');
+            if (interrupted || cleanupErrors.length)
+                await report(interrupted ? 'interrupted' : 'failed');
             console.log(`Evidence retained: ${artifacts}`);
             if (!teardown)
                 console.log(

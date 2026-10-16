@@ -42,6 +42,29 @@ Fixed ports (local `did:web` identities embed them): **3000** app, **4000** brai
 
 `run` without `--dir` starts a fresh stack in `/tmp/learncard-verification/<id>` and tears it down when it finishes. Use `up` plus `--dir` whenever you'll drive more than once.
 
+For repeated full runs, prefer an absolute `--dir` on persistent storage, such as `"$HOME/.local/share/learncard-verification/review"`. Leave several GiB available for retained traces, logs, and caches; the system temporary filesystem also needs headroom. `/tmp` can hit a per-user quota even when `df` shows free space. `EDQUOT` is a storage failure, not a feature regression: stop the owned stack, preserve or relocate its evidence, and rerun in a fresh directory with capacity. Never delete proof to make a failed run look clean.
+
+### Sharing a live stack between agents
+
+One coordinator can run `up --dir /tmp/lcv`, wait for readiness, and lend that exact directory to workers on the **same checkout and backend build**. Workers run doctor, then reuse `--dir` rather than starting another stack:
+
+```bash
+# Worker A
+$LCV run language --dir /tmp/lcv
+# Worker B, concurrently
+$LCV run sdk --dir /tmp/lcv
+```
+
+Each `run` and `script` gets fresh actors, browser contexts, and a unique evidence directory. Borrowed-stack runs—including interrupted ones—do not stop the stack. Only the coordinator calls `down`, **after every worker has finished**; `down` does not maintain worker leases or wait for active runs. A lock error is not permission to adopt an unrelated developer's stack.
+
+Coordinate the remaining shared resources:
+
+- Serialize `app-store` runs: each owns an Astro server on port 4321.
+- Serialize processes using `learncard`, the `cli` journey, or `v.cli`: they regenerate the same checkout's `packages/learn-card-cli/src/generated/snippets.ts`. Distinct CLI workdirs isolate identities, not this generated file. Standalone `learncard` workers also need distinct `--workdir` names.
+- Interactive `browser` workers need distinct `--cdp-port` values and actor session files. The default saved learner is a shared identity, unlike the fresh actors in `run` / `script`.
+- Keep the checkout unchanged during a proof. Vite serves shared frontend source, while backend containers contain the build from `up`; backend edits require coordinated teardown and a fresh directory/build.
+- Use each worker's own report, not stack-level `doctor.json` or `last-error.json`, which may be replaced by another command.
+
 ## Doctor
 
 ```bash
@@ -114,6 +137,7 @@ $LCV browser --dir /tmp/lcv --headed                      # signed-in Chromium +
     - `--session runs/<run>/<feature>/<context>-session.json` reuses that artifact's `verificationActor`, not its browser storage. Contexts signed in with `v.signIn` or `v.newPage({ signInAs })` record this private seed metadata. Anonymous or manually authenticated snapshots without metadata are evidence only.
     - Never restore these files with Playwright `storageState`: the app stores a non-exportable `CryptoKey` in IndexedDB, which JSON cannot preserve. A restored profile shell can look signed in while every protected operation fails. `up` regenerates reusable identities for legacy snapshots that lack metadata.
 - Interrupting `run` or `script` (Ctrl-C or `kill -INT`) records `status: interrupted`, captures open pages and traces, reaps verifier-owned CLI children, and exits nonzero. Only a stack created by that `run` is torn down; a caller-owned `--dir` remains running. `up` also cleans up its own interrupted startup. Startup waits for an in-flight Docker operation to settle before teardown.
+- Catalog interruption joins screenshot/trace capture before closing resources or tearing down services. The in-flight feature is recorded as `interrupted`, and the runner lets its `finally` blocks finish reaping auxiliary processes; it may wait for an already-started local SDK operation to unwind.
 
 ## Evidence
 
@@ -123,6 +147,8 @@ Everything lands under `--dir`:
 - `runs/<run-id>/<feature>/`: `NNN-<step>-before|after|failure.png` plus `.aria.txt`, `actions.json`, `*-trace.zip` (`bunx playwright show-trace <path>`), `*-network.json` (cross-origin requests, allowed or blocked), `*-errors.json` (page errors), `*-session.json`, `*-video/` with `--video`, and per-feature extras (`cli-*.json` transcripts, `*graph*.json`, `app-store-*.log`).
 - `scripts/<run-id>-<name>/`: the same evidence for ad-hoc scripts, plus `report.json` with the returned value.
 - Stack level: `state.json`, `doctor.json`, `build.log`, `compose.log`, `frontend.log`, service logs written at `down`, `last-error.json`.
+
+For a blank page, inspect the trace's **Console** and **Network** tabs even when `*-errors.json` is empty: failed JavaScript module requests are console/network errors, not necessarily page exceptions. A captured `net::ERR_NETWORK_CHANGED` on localhost is different from an untranslated selector or a backend rejection. Preserve the failed run and diagnose browser/host networking before rerunning; do not add blind retries or weaken the journey.
 
 Proof standards:
 

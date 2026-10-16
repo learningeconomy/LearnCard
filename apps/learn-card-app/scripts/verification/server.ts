@@ -1,9 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
-import type { Plugin, UserConfig } from 'vite';
-import viteConfig from '../../vite.config.mts';
+import { createServer, loadConfigFromFile } from 'vite';
+import type { Plugin } from 'vite';
 import { deepMerge } from '../../../../packages/learn-card-base/src/config/deepMerge';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../../packages/learn-card-base/src/config/tenantDefaults';
 import { parseTenantConfig } from '../../../../packages/learn-card-base/src/config/tenantConfigSchema';
@@ -119,10 +118,13 @@ const start = async (): Promise<void> => {
         CHOKIDAR_USEPOLLING: 'false',
         CHOKIDAR_INTERVAL: '1000',
     });
-    const resolved: UserConfig =
-        typeof viteConfig === 'function'
-            ? await viteConfig({ command: 'serve', mode: 'development' })
-            : await viteConfig;
+    const loaded = await loadConfigFromFile(
+        { command: 'serve', mode: 'development', isSsrBuild: false, isPreview: false },
+        join(app, 'vite.config.mts'),
+        app
+    );
+    if (!loaded) throw new Error('LearnCard Vite configuration not found');
+    const resolved = loaded.config;
     const server = await createServer({
         ...resolved,
         root: app,
