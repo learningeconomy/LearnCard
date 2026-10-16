@@ -459,7 +459,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
         if (!needle) return credentialFacts.summaries ?? [];
 
         return (credentialFacts.summaries ?? []).filter(summary =>
-            [summary.issuer, ...summary.types, ...summary.nestedIssuers]
+            [summary.name, summary.issuer, ...summary.types, ...summary.nestedIssuers]
                 .filter(Boolean)
                 .some(value => value?.toLowerCase().includes(needle))
         );
@@ -759,11 +759,11 @@ export const InAppMessagesDebugTab: React.FC = () => {
                 </p>
 
                 <input
-                    aria-label="Filter credential facts by issuer or type"
+                    aria-label="Filter credential facts by name, issuer, or type"
                     type="text"
                     value={credentialFilter}
                     onChange={event => setCredentialFilter(event.target.value)}
-                    placeholder="Filter by issuer or type"
+                    placeholder="Filter by name, issuer, or type"
                     className="w-full text-xs rounded-xl px-3 py-2 bg-white text-grayscale-900 placeholder:text-grayscale-400 border border-grayscale-300 focus:ring-2 focus:ring-emerald-500"
                 />
 
@@ -773,6 +773,11 @@ export const InAppMessagesDebugTab: React.FC = () => {
                     </p>
                     {visibleSummaries.map(summary => (
                         <div key={summary.uri} className="bg-white rounded-xl p-3 font-poppins">
+                            {summary.name && (
+                                <p className="text-xs font-medium text-grayscale-900 truncate">
+                                    {summary.name}
+                                </p>
+                            )}
                             <p className="text-xs text-grayscale-900 font-mono truncate">
                                 {summary.uri}
                             </p>
