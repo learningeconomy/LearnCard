@@ -2,4 +2,4 @@
 '@learncard/network-brain-service': patch
 ---
 
-Finish app credential activity logging before delivery to avoid competing Neo4j writes and errors after successful delivery.
+Commit app credential activity and delivery together to avoid competing Neo4j writes and partial audit records. Enqueue recipient notifications only after the database transaction commits.
