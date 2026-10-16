@@ -22,7 +22,10 @@
                 "contractUri": "lc:network:staging.network.learncard.com/trpc:contract:79672d1a-fe7c-5715-95db-27586e529934"
             }
         ],
-        "legacySamplePersonaContractUris": []
+        "legacySamplePersonaContractUris": [],
+        "escrowRolloutAllowlist": [
+            "457d1b77a104c6e30df16014cc8975ea67ac0b8a7f175b25b2a07dadea8a750d"
+        ]
     },
     "observability": {
         "sentryEnv": "staging",
