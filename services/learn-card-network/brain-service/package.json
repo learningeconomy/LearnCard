@@ -21,6 +21,7 @@
         "seed:dev-app": "bun scripts/seed-dev-app.ts",
         "seed:demo-persona": "bun --conditions=development scripts/seed-demo-persona.ts",
         "skill-frameworks": "bun scripts/skill-frameworks.ts",
+        "skill-embeddings:backfill": "bun --conditions=development scripts/skill-embeddings-backfill.ts",
         "build": "shx rm -rf dist && node bundle.mjs && tsc --p tsconfig.build.json && tsc --showConfig --p tsconfig.build.json > tsconfig.temp.json && tsc-alias --replacer ./tsc-alias-replacer.cjs -p tsconfig.temp.json && shx rm tsconfig.temp.json",
         "typecheck": "tsc --noEmit -p tsconfig.build.json && tsc --noEmit -p tsconfig.entrypoints.json",
         "build:docker": "shx rm -rf build && node esbuild-docker.mjs",
@@ -58,6 +59,7 @@
         "testcontainers": "^9.1.1"
     },
     "dependencies": {
+        "@aws-sdk/client-bedrock-runtime": "^3.1139.0",
         "@aws-sdk/client-sqs": "^3.379.1",
         "@digitalcredentials/issuer-registry-client": "^4.1.0",
         "@fastify/cors": "^11.2.0",

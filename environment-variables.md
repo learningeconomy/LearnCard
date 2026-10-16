@@ -366,6 +366,11 @@ Optional provider credentials `SKILLS_PROVIDER_API_KEY`, `TWILIO_ACCOUNT_SID`, a
 `TWILIO_AUTH_TOKEN` also belong in the bundle, never stage files.
 Both checked-in Brain stages enable credential refresh, so include its digest secret;
 active share links also require the stable request-hash secret (at least 32 bytes).
+Nova skill embeddings (LC-2206) need no credential: Brain calls Amazon Nova 2 Multimodal
+Embeddings on Bedrock with its Lambda execution role (SigV4). Keep
+`SKILL_EMBEDDING_GOOGLE_API_KEY` in the bundle while semantic search reads the legacy Google
+index (`SKILL_EMBEDDING_BEDROCK_READ_ENABLED` is `false` in every checked-in stage) and through
+the rollback window after the flag is flipped; the LC-2206 cleanup removes it.
 
 LearnCloud's bundle holds `LEARN_CLOUD_SEED`, `LEARN_CLOUD_MONGO_URI`,
 `LEARN_CLOUD_MONGO_DB_NAME`, `RSA_PRIVATE_KEY`, `RSA_PUBLIC_KEY`, `JWT_SIGNING_KEY`,
@@ -481,7 +486,7 @@ The deploy step no longer forwards them (nor `DOMAIN_NAME`, `SENTRY_ENV`,
 `SERVER_URL`, `POSTMARK_FROM_EMAIL`, `MESSAGEBIRD_ORIGINATOR`,
 `CLIENT_APP_DOMAIN_NAME`, `OIDC_TRUSTED_ISSUERS`, `OIDC_EXPECTED_AUDIENCE`,
 `CREDENTIAL_REFRESH_ENABLED` / `_NOTIFICATION_WINDOW_HOURS`,
-`SKILL_EMBEDDING_GOOGLE_MODEL`, and the other captured stage keys). Existing
+`SKILL_EMBEDDING_BEDROCK_*` / `SKILL_EMBEDDING_DIMENSION` / `SKILL_EMBEDDING_GOOGLE_MODEL`, and the other captured stage keys). Existing
 `SEED` / `LEARN_CLOUD_SEED` and the other credential secrets remain unchanged as
 fallbacks used only when `RUNTIME_SECRETS_ID` is unset.
 

@@ -827,6 +827,60 @@ assertDefaultRoleRuntimeGrant({
     secretPrefix: 'brain-service',
     requireQueueConstructs: true,
 });
+
+// LC-2206: brain's default role may invoke only the reviewed Nova 2 embeddings foundation model
+// in us-east-1 (SigV4). No wildcard model, other Region, or Bedrock API-key permission.
+{
+    const brainService = yaml.load(
+        fs.readFileSync(
+            path.join(root, 'services/learn-card-network/brain-service/serverless.yml'),
+            'utf8'
+        )
+    );
+    const brainStatements = brainService.provider.iam.role.statements;
+    const bedrockGrants = brainStatements.filter(statement =>
+        [statement.Action].flat().some(action => String(action).startsWith('bedrock:'))
+    );
+    assert.deepEqual(bedrockGrants, [
+        {
+            Sid: 'SkillEmbeddingNova2Invoke',
+            Effect: 'Allow',
+            Action: 'bedrock:InvokeModel',
+            Resource: {
+                'Fn::Sub':
+                    'arn:${AWS::Partition}:bedrock:us-east-1::foundation-model/amazon.nova-2-multimodal-embeddings-v1:0',
+            },
+        },
+    ]);
+}
+
+// LC-2206 rollout: every deployed brain stage writes Nova vectors (Bedrock enabled) but keeps
+// semantic search on the legacy Google index until SKILL_EMBEDDING_BEDROCK_READ_ENABLED is
+// flipped after the backfill and quality check. Flipping it back to "false" is the rollback.
+for (const stageFile of [
+    'config.dev.json',
+    'config.production.json',
+    'config.scouts.dev.json',
+    'config.scouts.production.json',
+]) {
+    const config = JSON.parse(
+        fs.readFileSync(
+            path.join(root, 'services/learn-card-network/brain-service/config', stageFile),
+            'utf8'
+        )
+    );
+    assert.equal(config.SKILL_EMBEDDING_BEDROCK_ENABLED, 'true', `brain ${stageFile} Nova writes`);
+    assert.equal(
+        config.SKILL_EMBEDDING_BEDROCK_READ_ENABLED,
+        'false',
+        `brain ${stageFile} Nova reads stay off until the read flag is flipped`
+    );
+    assert.equal(
+        config.SKILL_EMBEDDING_GOOGLE_MODEL,
+        'gemini-embedding-001',
+        `brain ${stageFile} legacy read model`
+    );
+}
 assertDefaultRoleRuntimeGrant({
     dir: path.join(root, 'services/learn-card-network/learn-cloud-service'),
     secretPrefix: 'learn-cloud-service',

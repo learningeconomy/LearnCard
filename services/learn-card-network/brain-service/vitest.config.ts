@@ -56,6 +56,11 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/contact-method.helpers.test.ts',
             'src/services/delivery/adapters/postmark.adapter.test.ts',
             'src/helpers/inbox-maintenance.helpers.test.ts',
+            'src/helpers/bedrock-embedding.helpers.test.ts',
+            'src/helpers/skill-embedding.helpers.test.ts',
+            'src/routes/skills-semantic-search.test.ts',
+            // Opt-in, paid, real-AWS smoke test; skipped unless SKILL_EMBEDDING_BEDROCK_SMOKE=true.
+            'src/helpers/bedrock-embedding.smoke.test.ts',
         ],
     },
 });
