@@ -468,7 +468,7 @@ describe('EscrowRecoveryPanel', () => {
 
         expect(await screen.findByText('Check your email')).toBeInTheDocument();
 
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
             clipboardData: { getData: () => '12345678' },
         });
 
@@ -550,7 +550,7 @@ describe('EscrowRecoveryPanel', () => {
         expect(await screen.findByText('Check your email')).toBeInTheDocument();
         await waitFor(() => expect(mockOnStatus).toHaveBeenCalledTimes(1));
 
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
             clipboardData: { getData: () => '12345678' },
         });
 
@@ -639,7 +639,7 @@ describe('EscrowRecoveryPanel', () => {
         expect(await screen.findByText('Check your email')).toBeInTheDocument();
         await waitFor(() => expect(mockOnStatus).toHaveBeenCalledTimes(1));
 
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
             clipboardData: { getData: () => '12345678' },
         });
 
@@ -823,7 +823,7 @@ describe('EscrowRecoveryPanel', () => {
 
         expect(await screen.findByText('Check your email')).toBeInTheDocument();
 
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
             clipboardData: { getData: () => '12345678' },
         });
 
@@ -903,7 +903,7 @@ describe('EscrowRecoveryPanel', () => {
             confirmed: true,
         });
 
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
             clipboardData: { getData: () => '12345678' },
         });
 
@@ -1014,7 +1014,7 @@ describe('EscrowRecoveryPanel', () => {
 
         expect(await screen.findByText('Check your email')).toBeInTheDocument();
 
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
             clipboardData: { getData: () => '12345678' },
         });
 
@@ -1067,7 +1067,7 @@ describe('EscrowRecoveryPanel', () => {
 
         expect(await screen.findByText('Check your email')).toBeInTheDocument();
 
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
             clipboardData: { getData: () => '12345678' },
         });
 

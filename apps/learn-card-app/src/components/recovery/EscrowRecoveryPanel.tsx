@@ -614,6 +614,7 @@ export const EscrowRecoveryPanel = ({
                                       <div className="flex justify-center py-2">
                                           <RecoveryPinInput
                                               length={8}
+                                              variant="code"
                                               value={codeInput}
                                               onChange={val => {
                                                   setCodeInput(val);
