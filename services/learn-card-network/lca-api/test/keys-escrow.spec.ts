@@ -1908,9 +1908,13 @@ describe('escrow PIN release', () => {
     it('burns a mismatched hold; a new hold with the correct PIN succeeds', async () => {
         await enrollPin();
         const first = await startPin();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         await expect(completePin(first, wrongProof)).rejects.toMatchObject({
             code: 'FORBIDDEN',
             message: 'Incorrect PIN. 9 attempts left.',
+        });
+        expect(warn).toHaveBeenCalledExactlyOnceWith('[LCA escrow] enclave operation failed', {
+            reason: 'pin_mismatch',
         });
         expect(await findEscrowHoldById(first.holdId)).toMatchObject({
             status: 'cancelled',

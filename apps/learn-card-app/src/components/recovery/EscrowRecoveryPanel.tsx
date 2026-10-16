@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
 import { IonIcon } from '@ionic/react';
 import {
     alertCircleOutline,
@@ -23,6 +24,18 @@ import {
 import type { PendingEscrowRecovery } from './escrowRecoveryStorage';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import * as m from '../../paraglide/messages.js';
+
+const log = getLogger('recovery-request');
+const statusFailureMessage = "We couldn't check your request right now.";
+// Error messages/causes may contain response bodies or request credentials.
+const logRecoveryError = (event: string, cause: unknown): void => {
+    const errorType =
+        cause instanceof Error &&
+        ['EscrowEvidenceError', 'EscrowRequestError', 'TypeError'].includes(cause.name)
+            ? cause.name
+            : 'Error';
+    log.error(event, { errorType });
+};
 
 export const formatTimeRemaining = (ms: number): string => {
     if (ms <= 0) return 'Ready';
@@ -129,6 +142,8 @@ export const EscrowRecoveryPanel = ({
     // confirmed. Reset on a fresh hold; refreshed from the server (never
     // trusted purely from local storage) on load and on every status check.
     const [confirmed, setConfirmed] = useState(false);
+    const [verifiedHoldId, setVerifiedHoldId] = useState<string>();
+    const [statusFailed, setStatusFailed] = useState(false);
     const [codeInput, setCodeInput] = useState('');
     const [codeError, setCodeError] = useState('');
     const [confirming, setConfirming] = useState(false);
@@ -201,7 +216,9 @@ export const EscrowRecoveryPanel = ({
                     setPending(undefined);
                     setLoaded(true);
                     setError(m['recovery.invalidRequest']());
-                    void clearPendingEscrowRecovery(value.holdId, scope).catch(() => {});
+                    void clearPendingEscrowRecovery(value.holdId, scope).catch(cause =>
+                        logRecoveryError('recovery.storage.clear.failed', cause)
+                    );
                     return;
                 }
                 setPending(value);
@@ -239,6 +256,8 @@ export const EscrowRecoveryPanel = ({
         if (generation !== statusGenerationRef.current || holdId !== activeHoldIdRef.current) {
             return;
         }
+        setVerifiedHoldId(holdId);
+        setStatusFailed(false);
         // Monotonic for a given hold: once confirmed locally, never let a
         // stale confirmed: false revert it. Independent of the generation
         // check above as a second guard on the field a race would most
@@ -267,15 +286,22 @@ export const EscrowRecoveryPanel = ({
         let cancelled = false;
         const holdId = pending.holdId;
         const generation = beginStatusRead();
+        setStatusFailed(false);
+        setVerifiedHoldId(undefined);
         onStatus({
             holdId: pending.holdId,
             resumeToken: pending.resumeToken,
             expectations: pending.expectations,
         })
-            .then(hold => {
-                if (!cancelled) void refreshHoldStatus(hold, { generation, holdId });
+            .then(async hold => {
+                if (!hold) throw new Error('Recovery status unavailable');
+                if (!cancelled) await refreshHoldStatus(hold, { generation, holdId });
             })
-            .catch(() => {});
+            .catch(cause => {
+                logRecoveryError('recovery.status.load.failed', cause);
+                if (cancelled || generation !== statusGenerationRef.current) return;
+                setStatusFailed(true);
+            });
         return () => {
             cancelled = true;
         };
@@ -289,6 +315,7 @@ export const EscrowRecoveryPanel = ({
         try {
             await action();
         } catch (cause) {
+            logRecoveryError('recovery.action.failed', cause);
             const message = cause instanceof Error ? cause.message.toLowerCase() : '';
             setError(
                 message.includes('cancelled')
@@ -357,11 +384,21 @@ export const EscrowRecoveryPanel = ({
         if (!pending) return { ok: false, ready: false };
         const holdId = pending.holdId;
         const generation = beginStatusRead();
-        const hold = await onStatus({
-            holdId: pending.holdId,
-            resumeToken: pending.resumeToken,
-            expectations: pending.expectations,
-        });
+        let hold;
+        setStatusFailed(false);
+        try {
+            hold = await onStatus({
+                holdId: pending.holdId,
+                resumeToken: pending.resumeToken,
+                expectations: pending.expectations,
+            });
+        } catch (cause) {
+            if (generation === statusGenerationRef.current && holdId === activeHoldIdRef.current) {
+                setStatusFailed(true);
+                setVerifiedHoldId(undefined);
+            }
+            throw cause;
+        }
         // [P2] A newer read (or a confirmation) may have started, and even
         // finished, while this one was in flight. Report not-ready instead
         // of acting on it: acting here could mean clearing a hold (below)
@@ -375,7 +412,20 @@ export const EscrowRecoveryPanel = ({
             hold.status === 'expired' ||
             (hold.status === 'completed' && !canResumeCompleted?.())
         ) {
-            await clearPendingEscrowRecovery(holdId, scope);
+            try {
+                await clearPendingEscrowRecovery(holdId, scope);
+            } catch (cause) {
+                logRecoveryError('recovery.storage.clear.failed', cause);
+                if (
+                    generation === statusGenerationRef.current &&
+                    holdId === activeHoldIdRef.current
+                ) {
+                    setStatusFailed(true);
+                    setVerifiedHoldId(undefined);
+                }
+                // Keep the request so Try Again can retry cleanup, including after confirmation.
+                return { ok: false, ready: false };
+            }
             setPending(undefined);
             setError(
                 hold?.status === 'cancelled'
@@ -429,7 +479,20 @@ export const EscrowRecoveryPanel = ({
                     { generation, holdId }
                 );
             }
-            await checkStatus().catch(() => {});
+            const refresh = checkStatus();
+            const refreshGeneration = statusGenerationRef.current;
+            await refresh.catch(cause => {
+                logRecoveryError('recovery.status.confirm.failed', cause);
+                if (
+                    !active.current ||
+                    refreshGeneration !== statusGenerationRef.current ||
+                    holdId !== activeHoldIdRef.current
+                )
+                    return;
+                // Code acceptance remains authoritative if this best-effort read fails.
+                setStatusFailed(false);
+                setVerifiedHoldId(holdId);
+            });
         } catch (e) {
             const isRefusal = isEscrowRefusal(e);
             setCodeError(
@@ -470,7 +533,7 @@ export const EscrowRecoveryPanel = ({
                     for a 7-day recovery.
                 </p>
             )}
-            {error && (
+            {(statusFailed || error) && (
                 <div
                     role="alert"
                     className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
@@ -479,7 +542,9 @@ export const EscrowRecoveryPanel = ({
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
-                    <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+                    <span className="text-sm text-red-700 leading-relaxed">
+                        {statusFailed ? statusFailureMessage : error}
+                    </span>
                 </div>
             )}
             {notice && !pending && (
@@ -593,6 +658,26 @@ export const EscrowRecoveryPanel = ({
             )}
             {pending
                 ? (() => {
+                      if (
+                          statusFailed ||
+                          ((pending.requiresConfirmation || loading) &&
+                              verifiedHoldId !== pending.holdId)
+                      ) {
+                          return (
+                              <button
+                                  className={button}
+                                  disabled={!statusFailed || loading}
+                                  onClick={() => {
+                                      setVerifiedHoldId(undefined);
+                                      void run(async () => {
+                                          await checkStatus();
+                                      });
+                                  }}
+                              >
+                                  {!statusFailed || loading ? spinner('Checking...') : 'Try Again'}
+                              </button>
+                          );
+                      }
                       if (pending.requiresConfirmation && !confirmed) {
                           return (
                               <div className="space-y-5 animate-fade-in-up">
