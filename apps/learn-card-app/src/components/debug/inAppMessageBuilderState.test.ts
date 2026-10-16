@@ -1,6 +1,61 @@
 import { inAppMessageValidator } from '@learncard/types';
-import { buildDraftJson, messageToBuilderState } from './inAppMessageBuilderState';
+import {
+    buildDraftJson,
+    emptyCondition,
+    initialState,
+    messageToBuilderState,
+} from './inAppMessageBuilderState';
 import { IN_APP_MESSAGE_TEMPLATES } from './inAppMessageTemplates';
+
+describe('message builder raw targeting validation', () => {
+    describe.each([false, true])('negate: %s', negate => {
+        it.each(['null', 'false', '0', '""', 'true', '1', '"learner"', '[]', '{}', '{'])(
+            'keeps invalid raw predicate %s from becoming absent targeting',
+            value => {
+                const draft = buildDraftJson({
+                    ...initialState,
+                    title: 'Invalid raw targeting',
+                    conditions: [{ ...emptyCondition(), kind: 'raw', value, negate }],
+                });
+
+                expect(draft).toHaveProperty('targeting');
+                expect(inAppMessageValidator.safeParse(draft).success).toBe(false);
+            }
+        );
+
+        it.each(['all', 'any'] as const)(
+            'keeps an invalid raw predicate in a combined %s condition',
+            combinator => {
+                const draft = buildDraftJson({
+                    ...initialState,
+                    title: 'Combined invalid raw targeting',
+                    combinator,
+                    conditions: [
+                        { ...emptyCondition(), kind: 'raw', value: 'null', negate },
+                        { ...emptyCondition(), kind: 'role', roles: 'learner' },
+                    ],
+                });
+
+                expect(draft.targeting).toEqual({
+                    [combinator]: [
+                        negate
+                            ? { not: { invalid: 'Invalid targeting JSON' } }
+                            : { invalid: 'Invalid targeting JSON' },
+                        { role: ['learner'] },
+                    ],
+                });
+                expect(inAppMessageValidator.safeParse(draft).success).toBe(false);
+            }
+        );
+    });
+
+    it('leaves targeting absent when no conditions are configured', () => {
+        const draft = buildDraftJson({ ...initialState, title: 'Untargeted message' });
+
+        expect(draft).not.toHaveProperty('targeting');
+        expect(inAppMessageValidator.safeParse(draft).success).toBe(true);
+    });
+});
 
 describe('message builder credential round-trip', () => {
     it.each(IN_APP_MESSAGE_TEMPLATES.filter(template => template.key.startsWith('clr-')))(
