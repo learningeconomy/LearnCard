@@ -1106,7 +1106,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             if (path === '/confirm' && response.status === 403) {
                 const body: unknown = await response.json().catch(() => undefined);
                 const reason =
-                    body && typeof body === 'object' && 'message' in body
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    typeof body.message === 'string'
                         ? body.message
                         : undefined;
                 throw new EscrowRequestError(
