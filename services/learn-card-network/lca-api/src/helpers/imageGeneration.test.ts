@@ -33,8 +33,13 @@ const payload = (overrides = {}): Buffer =>
         JSON.stringify({ images: [png.toString('base64')], finish_reasons: [null], ...overrides })
     );
 const storage = { upload: vi.fn(), storeURL: vi.fn() };
+const logs = { error: vi.fn(), warn: vi.fn(), info: vi.fn() };
 beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
+    logs.error = vi.spyOn(console, 'error').mockImplementation(() => undefined) as never;
+    logs.warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined) as never;
+    logs.info = vi.spyOn(console, 'info').mockImplementation(() => undefined) as never;
     send.mockResolvedValue({ body: payload() });
     storage.upload.mockResolvedValue({ url: 'https://stored/image' });
 });
@@ -194,14 +199,19 @@ describe('image adapter', () => {
             generateStoredImage('badge', 'did', config, undefined, storage)
         ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
     });
-    it('bounds the request timeout and aborts the invocation', async () => {
+    it('bounds the request timeout, aborts the invocation and maps it to 503', async () => {
         vi.useFakeTimers();
         send.mockImplementation(() => new Promise(() => {}));
         const pending = generateStoredImage('badge', 'did', config, undefined, storage);
-        const check = expect(pending).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+        const check = expect(pending).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
         await vi.advanceTimersByTimeAsync(1000);
         await check;
         expect(send.mock.calls[0]![1].abortSignal.aborted).toBe(true);
+        expect(logs.error.mock.calls[0]![0]).toMatchObject({
+            event: 'image_generation_failure',
+            stage: 'timeout',
+            clientCode: 'SERVICE_UNAVAILABLE',
+        });
         vi.useRealTimers();
     });
     it('rejects oversized prompts before invoking or uploading', async () => {
@@ -244,5 +254,184 @@ describe('image adapter', () => {
             { IMAGE_TIMEOUT_MS: '90000' },
         ])
             expect(() => parseLcaApiEnvironment({ NODE_ENV: 'test', ...bad })).toThrow();
+    });
+
+    const awsError = (name: string, status: number, message = 'secret provider body') =>
+        Object.assign(new Error(message), {
+            name,
+            $fault: status >= 500 ? 'server' : 'client',
+            $metadata: { httpStatusCode: status, requestId: 'req-123e4567-e89b' },
+        });
+    const budget = { ...config, IMAGE_TIMEOUT_MS: 25_000 };
+    it.each([
+        // Bedrock reports some account quotas as HTTP 400, which previously became a 500.
+        ['ServiceQuotaExceededException', 400, 'TOO_MANY_REQUESTS'],
+        ['ThrottlingException', 429, 'TOO_MANY_REQUESTS'],
+        ['ModelNotReadyException', 429, 'TOO_MANY_REQUESTS'],
+        ['ServiceUnavailableException', 503, 'SERVICE_UNAVAILABLE'],
+        ['InternalServerException', 500, 'SERVICE_UNAVAILABLE'],
+        ['ModelTimeoutException', 408, 'SERVICE_UNAVAILABLE'],
+        ['AccessDeniedException', 403, 'INTERNAL_SERVER_ERROR'],
+        ['ResourceNotFoundException', 404, 'INTERNAL_SERVER_ERROR'],
+        ['ValidationException', 400, 'INTERNAL_SERVER_ERROR'],
+        ['ModelErrorException', 424, 'INTERNAL_SERVER_ERROR'],
+    ])('maps Bedrock %s (HTTP %i) to %s', async (name, status, code) => {
+        send.mockRejectedValue(awsError(name, status));
+        const error = await generateStoredImage('badge', 'did', config, undefined, storage).catch(
+            (e: unknown) => e
+        );
+        expect(error).toMatchObject({ code });
+        expect(JSON.stringify(error)).not.toContain('secret');
+        expect((error as Error).message).not.toContain('secret');
+        expect(storage.upload).not.toHaveBeenCalled();
+    });
+    it('maps a content-filter ValidationException to a sanitized 400', async () => {
+        send.mockRejectedValue(
+            awsError(
+                'ValidationException',
+                400,
+                'This request has been blocked by our content filters.'
+            )
+        );
+        await expect(
+            generateStoredImage('badge', 'did', budget, undefined, storage)
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: 'The image request was filtered.',
+        });
+        expect(send).toHaveBeenCalledOnce();
+    });
+    it('retries throttling with jitter inside the deadline, then succeeds', async () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        send.mockRejectedValueOnce(awsError('ThrottlingException', 429))
+            .mockRejectedValueOnce(awsError('ServiceQuotaExceededException', 400))
+            .mockResolvedValueOnce({ body: payload() });
+        await expect(
+            generateStoredImage('badge', 'did', budget, undefined, storage)
+        ).resolves.toEqual({ url: 'https://stored/image' });
+        expect(send).toHaveBeenCalledTimes(3);
+        expect(storage.upload).toHaveBeenCalledOnce();
+        expect(destroy).toHaveBeenCalledOnce();
+        expect(logs.warn).toHaveBeenCalledTimes(2);
+        expect(logs.warn.mock.calls[0]![0]).toMatchObject({
+            event: 'image_generation_retry',
+            errorName: 'ThrottlingException',
+            attempt: 1,
+        });
+        expect(logs.info.mock.calls[0]![0]).toMatchObject({
+            event: 'image_generation_success',
+            attempts: 3,
+        });
+        expect(logs.error).not.toHaveBeenCalled();
+    });
+    it('stops after three attempts and returns 429', async () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        send.mockRejectedValue(awsError('ThrottlingException', 429));
+        await expect(
+            generateStoredImage('badge', 'did', budget, undefined, storage)
+        ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(send).toHaveBeenCalledTimes(3);
+        expect(logs.error.mock.calls[0]![0]).toMatchObject({ attempts: 3, retryable: true });
+    });
+    it('does not retry when a full attempt no longer fits the deadline', async () => {
+        send.mockRejectedValue(awsError('ThrottlingException', 429));
+        await expect(
+            generateStoredImage('badge', 'did', config, undefined, storage)
+        ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(send).toHaveBeenCalledOnce();
+    });
+    it.each([
+        ['AccessDeniedException', 403],
+        ['ValidationException', 400],
+        ['ModelTimeoutException', 408],
+    ])('never retries %s (possibly billed or permanent)', async (name, status) => {
+        send.mockRejectedValue(awsError(name, status));
+        await generateStoredImage('badge', 'did', budget, undefined, storage).catch(() => {});
+        expect(send).toHaveBeenCalledOnce();
+    });
+    it('logs one sanitized failure record without prompt, provider message or secrets', async () => {
+        const prompt = 'SECRET-PROMPT a badge for Jane Doe jane@example.com';
+        send.mockRejectedValue(
+            Object.assign(
+                awsError('ServiceQuotaExceededException', 400, 'quota detail AKIASECRETKEY'),
+                {
+                    $response: {
+                        headers: { authorization: 'AWS4-HMAC-SHA256 Credential=AKIASECRETKEY' },
+                    },
+                    $retryable: { throttling: true },
+                }
+            )
+        );
+        await generateStoredImage(prompt, 'did:example:user', config, undefined, storage).catch(
+            () => {}
+        );
+        expect(logs.error).toHaveBeenCalledOnce();
+        const record = logs.error.mock.calls[0]![0];
+        expect(record).toEqual({
+            event: 'image_generation_failure',
+            provider: 'bedrock',
+            modelId: 'stability.stable-image-core-v1:1',
+            region: 'us-west-2',
+            durationMs: expect.any(Number),
+            promptLength: prompt.length,
+            promptHash: expect.stringMatching(/^[0-9a-f]{12}$/),
+            stage: 'invoke',
+            attempts: 1,
+            category: 'throttled',
+            errorName: 'ServiceQuotaExceededException',
+            errorCode: undefined,
+            httpStatus: 400,
+            awsRequestId: 'req-123e4567-e89b',
+            sdkRetryable: true,
+            retryable: true,
+            finishReason: undefined,
+            decodeReason: undefined,
+            clientCode: 'TOO_MANY_REQUESTS',
+        });
+        const logged = JSON.stringify([logs.error.mock.calls, logs.warn.mock.calls]);
+        for (const secret of [
+            'SECRET',
+            'jane',
+            'AKIA',
+            'Credential',
+            'authorization',
+            'quota detail',
+            'did:example',
+        ])
+            expect(logged).not.toContain(secret);
+    });
+    it('logs filter finish reasons and decode reasons, never image bytes', async () => {
+        send.mockResolvedValue({ body: payload({ finish_reasons: ['Filter reason: prompt'] }) });
+        await generateStoredImage('badge', 'did', config, undefined, storage).catch(() => {});
+        expect(logs.error.mock.calls[0]![0]).toMatchObject({
+            stage: 'decode',
+            finishReason: 'Filter reason: prompt',
+            decodeReason: 'filtered',
+            clientCode: 'BAD_REQUEST',
+        });
+        const image = Buffer.from(png);
+        image.writeUInt32BE(800, 16);
+        send.mockResolvedValue({ body: payload({ images: [image.toString('base64')] }) });
+        await generateStoredImage('badge', 'did', config, undefined, storage).catch(() => {});
+        expect(logs.error.mock.calls[1]![0]).toMatchObject({
+            stage: 'decode',
+            finishReason: null,
+            decodeReason: 'png_dimensions_invalid',
+            clientCode: 'INTERNAL_SERVER_ERROR',
+        });
+        expect(JSON.stringify(logs.error.mock.calls)).not.toContain(
+            png.toString('base64').slice(0, 40)
+        );
+    });
+    it('logs storage failures by stage without the storage message or URL', async () => {
+        storage.upload.mockRejectedValue(
+            Object.assign(new Error('https://secret.storage/url?signature=abc'), { status: 403 })
+        );
+        await expect(
+            generateStoredImage('badge', 'did', config, undefined, storage)
+        ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+        const record = logs.error.mock.calls[0]![0];
+        expect(record).toMatchObject({ stage: 'storage', storage: { httpStatus: 403 } });
+        expect(JSON.stringify(record)).not.toContain('secret');
     });
 });

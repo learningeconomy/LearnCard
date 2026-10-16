@@ -79,13 +79,27 @@ The Bedrock adapter sends one InvokeModel request with `aspect_ratio: "1:1"`
 and `output_format: "png"`. It accepts exactly one successful image, validates
 base64, PNG header and square dimensions (640–1536), bounds decoded bytes to
 10 MiB, response bytes to 14 MiB and PNG decompression to 20 MiB, then uploads bytes through existing Filestack.
-Filtering returns a sanitized BAD_REQUEST. As in text generation, provider HTTP 429
-maps to TOO_MANY_REQUESTS and 503/504 to SERVICE_UNAVAILABLE; other provider, payload,
-timeout and storage failures return a generic INTERNAL_SERVER_ERROR. Prompts and provider error bodies
-are not logged or returned. A deadline bounds the request and aborts model work;
-storage already in flight may finish after the deadline. No automatic provider
-fallback is present. SDK model retries are disabled for both image providers;
-a manual retry after timeout may still incur another charge.
+Filtering (a `Filter reason:` finish reason, or a content-filter ValidationException) returns a
+sanitized BAD_REQUEST. Provider failures are classified by AWS error name as well as HTTP status:
+throttling and quota rejections (`ThrottlingException`, `ModelNotReadyException`, HTTP 429, and
+`ServiceQuotaExceededException`, which Bedrock returns as HTTP **400**) map to TOO_MANY_REQUESTS;
+`ServiceUnavailableException`/`InternalServerException`, HTTP 500/503, model timeouts (408/504)
+and our own deadline map to SERVICE_UNAVAILABLE. Access, validation, payload and storage failures
+return a generic INTERNAL_SERVER_ERROR. Client messages never include provider text.
+
+Throttling/quota and unavailable rejections (not billed) get at most two extra attempts with full
+jitter (≤ 500 ms, then ≤ 1 s), and only while at least 12 s of the deadline remains. Timeouts,
+access, validation and filter errors are never retried, and DALL-E is never retried.
+
+Every failure logs one `image_generation_failure` record (`console.error`, so CloudWatch) with
+allowlisted fields only: provider, modelId, region, stage (invoke/decode/storage/timeout/config),
+attempts, category, errorName, errorCode, httpStatus, awsRequestId, sdkRetryable, retryable,
+durationMs, promptLength, promptHash (first 12 hex of SHA-256), finishReason, decodeReason and
+the clientCode returned. Retries log `image_generation_retry`; success logs
+`image_generation_success` with attempts and duration. Prompts, provider messages, headers,
+credentials, URLs and image bytes are never logged or returned. A deadline bounds the request and
+aborts model work; storage already in flight may finish after the deadline. No automatic provider
+fallback is present. A manual retry after timeout may still incur another charge.
 
 Output differing from DALL-E is accepted. Before learner traffic, still smoke-test
 a small fixed prompt set on staging for badge/icon readability, filter behavior,
