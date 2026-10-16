@@ -8786,7 +8786,6 @@
             "justOpened": "Abierto en el último día",
             "passcodeOnIcon": "Protegido con código",
             "copyLinkFor": "Copiar enlace de {{title}}",
-            "openLink": "Abrir {{title}}",
             "showQrLabel": "Mostrar código QR",
             "credentialsLabel": "Credenciales",
             "passcodeLabel": "Código de acceso",

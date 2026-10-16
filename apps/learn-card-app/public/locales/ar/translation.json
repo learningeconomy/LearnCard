@@ -8875,7 +8875,6 @@
             "justOpened": "فُتح خلال اليوم الماضي",
             "passcodeOnIcon": "محمي برمز مرور",
             "copyLinkFor": "نسخ رابط {{title}}",
-            "openLink": "فتح {{title}}",
             "showQrLabel": "عرض رمز QR",
             "credentialsLabel": "بيانات الاعتماد",
             "passcodeLabel": "رمز المرور",
