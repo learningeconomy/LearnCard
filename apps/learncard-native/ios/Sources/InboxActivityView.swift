@@ -13,7 +13,7 @@ struct InboxView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                PageHeading(title: "Inbox")
+                PageHeading(title: "Inbox", accent: Palette.flairPink)
                 Text(NativeText.text("inbox.subtitle")).font(.subheadline).foregroundStyle(Palette.secondary)
                 Button(action: scan) {
                     Label(NativeText.text("claims.title"), systemImage: "qrcode.viewfinder").font(.headline)
@@ -41,6 +41,7 @@ struct InboxView: View {
                 }
                 if !updates.isEmpty {
                     Text(NativeText.text("inbox.updates")).font(.system(.headline, design: .rounded)).foregroundStyle(Palette.ink)
+                        .accessibilityAddTraits(.isHeader).headingFlair(Palette.flairBlue)
                     ForEach(updates) { item in ConnectionInboxRow(inbox: store.inbox, item: item) }
                 }
                 if let error = store.inbox.error {

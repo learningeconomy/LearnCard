@@ -20,7 +20,7 @@ final class ExperimentUITests: XCTestCase {
         app.swipeUp()
         let compactBrand = app.descendants(matching: .any).matching(identifier: "learncard-brand-compact").firstMatch
         XCTAssertTrue(compactBrand.waitForExistence(timeout: 5), app.debugDescription)
-        XCTAssertEqual(compactBrand.label, "Collection")
+        XCTAssertEqual(compactBrand.label, "Passport")
         XCTAssertEqual(compactBrand.frame.minX, expandedBrand.minX, accuracy: 1)
         XCTAssertEqual(compactBrand.frame.width, expandedBrand.width, accuracy: 1,
                        "The header label should crossfade in place without a width jump")
@@ -38,14 +38,28 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testMainDestinationsHaveVisibleTitles() {
-        let app = XCUIApplication()
-        app.launchArguments = ["--demo", "--locale", "en"]
-        app.launch(); app.openCollection()
-        for title in ["Inbox", "Apps", "Home", "Collection"] {
-            app.buttons["nav-\(title.lowercased())"].tap()
-            let heading = app.staticTexts["page-title-\(title.lowercased())"]
-            XCTAssertTrue(heading.waitForExistence(timeout: 5), app.debugDescription)
-            XCTAssertTrue(heading.isHittable, app.debugDescription)
+        for (name, arguments) in [
+            ("English light", ["--locale", "en", "--standard-type"]),
+            ("Arabic dark", ["--locale", "ar", "--standard-type", "--preview-dark"]),
+            ("Arabic accessibility", ["--locale", "ar", "--large-type", "--preview-dark"])
+        ] {
+            let app = XCUIApplication()
+            app.launchArguments = ["--demo"] + arguments
+            app.launch()
+            for destination in ["home", "collection", "inbox", "apps"] {
+                let tab = app.buttons["nav-\(destination)"]
+                XCTAssertTrue(tab.waitForExistence(timeout: 10)); tab.tap()
+                let heading = app.staticTexts["page-title-\(destination)"]
+                XCTAssertTrue(heading.waitForExistence(timeout: 5), app.debugDescription)
+                XCTAssertTrue(heading.isHittable, app.debugDescription)
+                XCTAssertGreaterThanOrEqual(heading.frame.minX, app.frame.minX)
+                XCTAssertLessThanOrEqual(heading.frame.maxX, app.frame.maxX)
+                if name == "English light", destination == "collection" { XCTAssertEqual(heading.label, "Passport") }
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "Heading accents \(destination) \(name)"
+                screenshot.lifetime = .keepAlways; add(screenshot)
+            }
+            app.terminate()
         }
     }
 

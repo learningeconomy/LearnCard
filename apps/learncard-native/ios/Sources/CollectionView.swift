@@ -37,7 +37,7 @@ struct CollectionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                PageHeading(title: "Passport", identifier: "collection")
+                PageHeading(title: "Passport", identifier: "collection", accent: Palette.flairBlue)
                 if !searchMode { Text(NativeText.literal("My credentials")).font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary) }
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").foregroundStyle(searchMode ? Palette.green : Palette.secondary)

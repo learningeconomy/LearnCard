@@ -27,7 +27,7 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: NativeLayout.sectionGap) {
                 VStack(alignment: .leading, spacing: 6) {
-                    PageHeading(title: "Home")
+                    PageHeading(title: "Home", accent: Palette.flairYellow)
                     Text(profileName.flatMap { $0.isEmpty ? nil : NativeText.format("home.greetingName", $0) } ?? NativeText.text("home.greeting"))
                         .font(.title3).foregroundStyle(Palette.secondary)
                 }
@@ -45,7 +45,8 @@ struct HomeView: View {
                 }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: NativeLayout.surfaceRadius))
                 appsSection
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(NativeText.text("learner.more")).font(.title2.bold())
+                    Text(NativeText.text("learner.more")).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                        .headingFlair(Palette.flairPink)
                     VStack(spacing: 0) {
                         NavigationLink { BuildLearnCardView(appStore: store, receive: intake) } label: {
                             DrawnSettingsRow(title: NativeText.text("build.title"), symbol: .credential, tint: Palette.portfolioCard, subtitle: NativeText.text("build.homeBody"))

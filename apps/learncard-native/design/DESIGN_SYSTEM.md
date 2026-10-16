@@ -1,10 +1,10 @@
 # LearnCard native design system
 
-Working rules, October 15, 2026. Applies to the SwiftUI consumer experiment. Use this with the approved [drawn shell](DRAWN_SHELL_BRIEF.md), [secondary screens](WHIMSY_EXPANSION_BRIEF.md), and [Home reference](home-drawn-concept-2026-10-15.png). Generated screens guide composition; shipping SwiftUI, accessibility and real data determine the final layout.
+Working rules, October 16, 2026. Applies to the SwiftUI consumer experiment. Use this with the approved [drawn shell](DRAWN_SHELL_BRIEF.md), [secondary screens](WHIMSY_EXPANSION_BRIEF.md), and [learner Home reference](LEARNER_HOME_BRIEF.md). Generated screens guide composition; shipping SwiftUI, accessibility and real data determine the final layout.
 
 ## Character
 
-The October 16 learner pass renames the personal destination **Passport**, keeping shared credential collections distinct. Reading order is **Home / Passport / Inbox / Apps**; historical Collection references below describe the same internal destination. Use [learner Home and first-arrival compositions](LEARNER_HOME_BRIEF.md) for the next implementation pass. Existing creator/issuer capabilities become secondary; institution workspaces remain a later product slice.
+The October 16 learner pass renames the personal destination **Passport**, keeping shared credential collections distinct. Reading order is **Home / Passport / Inbox / Apps**; historical Collection references below describe the same internal destination. The implemented Home and optional welcome follow the [learner Home and first-arrival compositions](LEARNER_HOME_BRIEF.md). Existing creator/issuer capabilities are secondary; institution workspaces remain a later product slice.
 
 **Confident, useful, a little whimsical.** Substantial type, clear actions, warm outlined illustrations and the Colorful theme. Keep ordinary tasks quick. Personality belongs in a smiling avatar, an illustrated envelope, or a little house, while reading and account decisions stay calm.
 
@@ -60,6 +60,12 @@ Use an 8-point minor spacing rhythm (4/8/12/16/24); 20-point outer insets and 14
 
 Review English and Arabic at the same explicit standard Dynamic Type size first. `--standard-type` selects the normal `.large` baseline in DEBUG review fixtures; ordinary app launches still follow the user's system setting. Keep `--large-type` (`accessibility3`) captures separately labeled as accessibility stress tests. Do not present an enlarged Arabic capture as the default language design or shrink Arabic alone to compensate for a mismatched review setting. The default sign-in controls should have matching target heights and readable, unclipped labels in both languages; keep the larger accessibility check as a separate case.
 
+### Heading accents
+
+Reuse the builder's three rounded ray strokes as a small static flourish, through `headingFlair` and the optional `PageHeading.accent`. Keep the mark next to the words, with six points of breathing room, rather than stranded at the page edge. Use 32-point artwork beside root page titles and 20-point artwork beside selected section headings. Current root accents are warm yellow for Home, blue for Passport, pink for Inbox and teal for Apps; `Palette.flair*` supplies light/dark colors. These are decorative colors, not status or category filters.
+
+Keep the rhythm sparse: one main title and, where useful, one supporting section in a pane. Do not repeat rays on each row, navigation icon, tab label or action. Text stays primary and can wrap; mirror the flourish in RTL, hide it from accessibility/hit testing, and omit it at accessibility Dynamic Type sizes so it never displaces readable content. It has no looping animation. The compact scrolled brand and the tray retain their existing navigation signals. See [native examples](HEADING_ACCENTS.md).
+
 ### Bottom tray
 
 Edge-to-edge adaptive surface, a fine top divider, four equal-width targets. A colored drawn icon, readable label, and short active underline communicate selection. Keep native bottom inset ownership in the tray. No floating glass island.
@@ -82,12 +88,12 @@ Collection uses a passport, Inbox an envelope, Apps a rocket, Home a pink-roofed
 
 Use the shared header on all four root sections. Left: soft painted mosaic and LearnCard. Scrolled: crossfade the wordmark into the section title in the **same fixed slot**. Do not add a competing centered navigation title or animate the horizontal position. At accessibility sizes keep the mark and preserve room for controls.
 
-Right: two 44-point controls in a tight 96 × 52 pill. A navy plus on a blue rounded square opens the labeled action menu; the profile opens Account. Default profile art is a round winking smiley with pink cheeks. The mosaic itself has no ink outline or white circular container.
+Right: a tight pill groups the labeled **+ Add** control and a 44-point profile target. Keep both labels readable and the gap compact; the profile opens Account. Default profile art is a round winking smiley with pink cheeks. The mosaic itself has no ink outline or white circular container.
 
 ## Artwork
 
 - Editable SVGs are generated by `scripts/prepare-illustrations.ts`. Navy rounded outlines, confident 3.2-unit strokes on the 64-unit category canvas, simple opaque fills, one or two small accent marks.
-- Category art is descriptive: trophy, ribbon, qualification certificate/seal, apple, book, life ring, mountain, ID, family smiles, star, conversation, path and lightbulb. App fallback is a generic illustrated application window. It does not pretend to be a publisher's logo.
+- Category art is descriptive: shooting star for achievements, ribbon, qualification certificate/seal, apple, book, life ring, mountain, ID, family smiles, skill star, conversation, path and lightbulb. App fallback is a generic illustrated application window. It does not pretend to be a publisher's logo. See [the rendered card/material refinement](CREDENTIAL_DEPTH_BRIEF.md).
 - `scripts/prepare-branding.ts` maintains the tray's original vector drawings and exports the existing 1x/2x/3x light/dark assets. Keep the source reproducible.
 - Use the built-in image generator for new composition explorations. Record the prompt, selected board and deviations driven by actual account data. Implement final icons as editable artwork, not crops of a generated phone screenshot.
 - Image loading keeps stable geometry and a native progress indicator; failed/missing images use the illustration. App loading retains its generic artwork beneath the indicator. Do not replace a real profile image just because it is an initial.
@@ -98,15 +104,15 @@ Empty states communicate the actual state: a new collection, an empty category a
 
 An illustrated action row is one complete button. Thumbnail, label, whitespace and chevron share the tap target; an optional photo must not require tapping title-like text. Camera badges and forward chevrons clarify intent. Stack the photo row at accessibility text sizes while keeping normal-size rows compact.
 
-System launch and running loading views share their adaptive canvas, painted material and initial mark bounds. Keep the first animated frame visible and assembled, then open/gather into the continuing motion. Static launch cannot animate; it must not introduce a different palette or untextured mark. No animation may delay readiness.
+System launch and running loading views share their adaptive canvas, painted material and full-size assembled mark from the first frame. Continue with the slight held-pose jiggle; do not shrink, scatter or gather the tiles. Static launch cannot animate; it must not introduce a different palette or untextured mark. No animation may delay readiness.
 
 Interactions use a brief press response and selection feedback. Navigation/label transitions are around 220–300 ms. Motion must explain state or preserve continuity and respect Reduce Motion.
 
-Credential **detail** has one isolated card with a gentle automatic 9-second loop: about ±4.5° yaw, ±1.8° pitch and a restrained diagonal sheen. No stack or drag instruction. Pause when offscreen, inactive, using Reduce Motion or VoiceOver. Collection's featured stack is a different presentation. Avoid additional perpetual motion throughout lists and dashboards.
+Credential **detail** has one isolated card with an automatic 9-second loop: about ±7° yaw, ±3.2° pitch, a moving cast shadow and reflection behind the content. Raised artwork, a lower edge and corner contours give the surface depth without washing out its text. No stack or drag instruction. Pause when offscreen, inactive, using Reduce Motion or VoiceOver. Passport's featured stack is a different presentation. Avoid additional perpetual motion throughout lists and dashboards. See [the card material contract](CREDENTIAL_DEPTH_BRIEF.md).
 
 Collection’s recent stack is deliberate browsing: up to five actual records, a horizontal toss/settlement, contrasting covered sleeves, position dots and bounded Newer/Older controls. Keep vertical scrolling intact and tap navigation tied to the active record. At most two covered layers are visible; one-record categories have no fake stack. Reduce Motion changes position immediately. This replaces ambient featured-card drift; the detail animation remains independent. See [the recent-stack contract](../RECENT_STACK.md).
 
-Account transitions are the expressive exception to quiet in-app motion. Launch, reconnect, locked and account-operation waiting states use the original watercolor mosaic assembling in roughly 1.9 seconds, then small held stop-motion shifts in each tile, with colored pigment floating on broader smooth paths at the canvas edges. The neutral canvas and clear central copy remain. Use a paused, fully formed mark for Reduce Motion/VoiceOver and never hold real readiness for a splash animation. No percent progress without real progress data. Inline buttons and list refreshes keep compact contextual feedback; do not replay the full launch sequence on every action. See [motion contracts](../ACCOUNT_MOTION.md) and [the generated board/prompts](ACCOUNT_MOTION_BRIEF.md).
+Account transitions are the expressive exception to quiet in-app motion. Launch, reconnect, locked and account-operation waiting states use the original watercolor mosaic already fully formed, with small held stop-motion shifts in each tile and colored pigment floating on broader smooth paths at the canvas edges. The neutral canvas and clear central copy remain. Use a paused, fully formed mark for Reduce Motion/VoiceOver and never hold real readiness for a splash animation. No percent progress without real progress data. Inline buttons and list refreshes keep compact contextual feedback; do not replay a full launch screen on every action. See [motion contracts](../ACCOUNT_MOTION.md) and [the generated board/prompts](ACCOUNT_MOTION_BRIEF.md).
 
 ## Content and states
 

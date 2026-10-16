@@ -48,6 +48,11 @@ enum Palette {
     // LearnCard colorful theme: login green and category pink / emerald / blue.
     static let brandGreen = Color(light: 0x058760, dark: 0x80E0C6)
     static let buttonGreen = Color(red: 4 / 255, green: 120 / 255, blue: 87 / 255)
+    // Decorative heading marks echo the builder's drawn rays, without conveying state.
+    static let flairPink = Color(light: 0xEC4899, dark: 0xF472B6)
+    static let flairBlue = Color(light: 0x3B82F6, dark: 0x93C5FD)
+    static let flairTeal = Color(light: 0x14B8A6, dark: 0x5EEAD4)
+    static let flairYellow = Color(light: 0xFACC15, dark: 0xFDE047)
 
     static func familyTint(_ color: FamilyColor) -> Color {
         switch color { case .amber: familyCard; case .mint: studiesCard; case .blue: blueCard; case .lilac: lilacCard; case .pink: pinkCard }
@@ -332,15 +337,43 @@ struct PageHeading: View {
     @Environment(\.locale) private var nativeLocale
     let title: String
     var identifier: String? = nil
+    var accent: Color? = nil
     @ScaledMetric(relativeTo: .largeTitle) private var titleSize = 38.0
     var body: some View {
         Text(NativeText.literal(title)).font(.system(size: titleSize, weight: .bold)).tracking(-0.8).foregroundStyle(Palette.ink)
             .accessibilityAddTraits(.isHeader)
             .accessibilityIdentifier("page-title-\(identifier ?? title.lowercased())")
+            .headingFlair(accent, size: 32)
+    }
+}
+
+/// The builder's small drawn flourish, kept beside the words rather than at the page edge.
+/// Decoration yields to accessibility text and stays out of the spoken heading/tap target.
+private struct HeadingFlair: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var textSize
+    @Environment(\.layoutDirection) private var direction
+    let color: Color?
+    let size: CGFloat
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if let color, !textSize.isAccessibilitySize {
+            HStack(alignment: .center, spacing: 6) {
+                content.fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                Image("BuilderPinkRays").renderingMode(.template).resizable().scaledToFit()
+                    .foregroundStyle(color).frame(width: size, height: size)
+                    .scaleEffect(x: direction == .rightToLeft ? -1 : 1, y: 1)
+                    .accessibilityHidden(true).allowsHitTesting(false)
+            }
+        } else {
+            content
+        }
     }
 }
 
 extension View {
+    func headingFlair(_ color: Color?, size: CGFloat = 20) -> some View {
+        modifier(HeadingFlair(color: color, size: size))
+    }
     func subtleEntrance() -> some View { modifier(SubtleEntrance()) }
     @ViewBuilder func credentialZoom(id: String, namespace: Namespace.ID, reduceMotion: Bool) -> some View {
         if reduceMotion { self }

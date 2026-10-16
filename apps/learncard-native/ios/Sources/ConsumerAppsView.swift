@@ -27,7 +27,7 @@ struct AppsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                PageHeading(title: NativeText.text("apps.title"), identifier: "apps")
+                PageHeading(title: NativeText.text("apps.title"), identifier: "apps", accent: Palette.flairTeal)
                 Picker(NativeText.text("apps.title"), selection: $discover) {
                     Text(NativeText.text("apps.mine")).tag(false)
                     Text(NativeText.text("apps.discover")).tag(true)
@@ -69,6 +69,7 @@ struct AppsView: View {
 
                     HStack {
                         Text(NativeText.text("apps.installed")).font(.title3.bold()).foregroundStyle(Palette.ink)
+                            .accessibilityAddTraits(.isHeader).headingFlair(Palette.flairPink)
                         Spacer()
                         Text(NativeText.count("apps.count", consumer.installedApps.count)).font(.caption).foregroundStyle(Palette.secondary)
                     }

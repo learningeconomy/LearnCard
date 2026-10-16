@@ -38,6 +38,7 @@ struct LatestCredentialStack: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Text(NativeText.literal("Latest issued")).font(.headline).foregroundStyle(Palette.ink)
+                    .accessibilityAddTraits(.isHeader).headingFlair(Palette.flairYellow)
                 Spacer()
                 if let current, current.date.timeIntervalSince1970 > 0 {
                     Text(current.date, format: .dateTime.month(.abbreviated).day().year().locale(locale))
