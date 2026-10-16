@@ -149,6 +149,7 @@ Read-only live checks already confirmed account recovery/resumption, collection/
 
 ## Remaining work after review
 
+- **Queued Apps design refresh:** the user finds the current My apps screen uninspired, especially with no installed apps. Earlier October 13/14 generated Apps boards exist; revisit My apps empty/populated, Discover and listing/access review around the newly approved rendered visual language. See [queued scope](PLAN.md#queued-learner-apps-visual-redesign--october-16). This is planning only; the installed app remains the credential-depth build.
 - Required first-time registration, authorized staging-only reset/signup and final-build relaunch/persistence are verified. Complete staging-web parity and independent second-device backup recovery. People and the first optional Home intake hub are implemented; document processing/raw JSON, contact invitations and profile-specific send/share tools remain separate. Do not reset the recreated account again. Shared Ireland threshold is corrected to 16 and pending approval now gates account access. Broader policy-table/minor-default/server enforcement review remains. See [remaining roadmap](ONBOARDING_AND_PEOPLE.md) and [reset scope audit](ACCOUNT_DELETION_AUDIT.md).
 - Review live sharing-picker latency and real publication/passcode/revocation with explicitly chosen test credentials. Metadata/index optimization for large libraries is a separate backend/performance task; this picker progressively reads existing pages. Legacy review/publication copy still needs complete localization.
 
