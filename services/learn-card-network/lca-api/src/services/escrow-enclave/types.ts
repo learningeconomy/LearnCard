@@ -129,7 +129,7 @@ export interface EscrowEnclave {
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
     createHold(input: EnclaveCreateHoldInput): Promise<{
         holdRecord: EscrowHoldRecord;
-        delivery?: { codeSent: boolean; proof: AuthorityRecord };
+        delivery?: { codeSent: boolean; proof: AuthorityHoldReceipt };
     }>;
     getHoldState?(input: {
         expectedDid: string;
