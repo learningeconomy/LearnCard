@@ -8,7 +8,7 @@ The label now owns its minimum 44-point frame and rectangular content shape, rat
 
 The configured suite is now **546 cases** (202 Bun, 203 Swift, 141 simulator), plus the live-exchange skip. This narrow UI pass runs the five focused cases and Debug build; it does not rerun the full Bun/Swift/UI suites, Release or hosted native CI. The previously completed 203-case Swift result remains the core baseline.
 
-Normal Debug installation matches all **48 payload files**, the original private account configuration and build version **3** (`home-passport-route-install-proof.json`). The real account was not reset or signed out. The Mac remains locked, so the new route is verified in the isolated simulator rather than a new signed-in visual inspection.
+Normal Debug installation matches all **48 payload files**, the original private account configuration and build version **3** (`home-passport-route-install-proof.json`). The real account was not reset or signed out. After unlock, read-only Native Lab inspection confirms Home → All credentials opens the full Passport list after an individual credential was left open. All is selected, search is empty, the list reports 34 credentials, and Native signup check is retained. Native Lab is left on Passport.
 
 ## Painted pull-to-refresh — October 17, 2026
 
