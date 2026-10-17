@@ -1,5 +1,15 @@
 # Native regression checks
 
+## Seamless recent-card handoff — October 17, 2026
+
+The baseline swipe case passes functionally (**1/1**, `deck-handoff-before-2026-10-17.xcresult`), but its native video shows the revealed blue card briefly faded/doubled as it becomes active. `StackTransitionSource` switched between plain content and a source-wrapped view. That structural replacement crossfaded the label/artwork mid-promotion.
+
+Every unique credential now retains its `matchedTransitionSource`; only the active card accepts input or VoiceOver focus. `deck-handoff-stable-source-2026-10-17.xcresult` passes **5/5** existing deck/shortcut cases: actual swipes in both directions, first/last bounds, short-drag cancellation, vertical scrolling, selected-card detail/return, independent Passport filters, prior-detail reset, Arabic accessibility and Reduce Motion. Frame-by-frame review of the actual forward and reverse recordings confirms continuous artwork/material through promotion, with the baseline faded frame removed. [Nine-second native clip](design/home-deck-handoff-native.mp4) and [promoted card](design/home-deck-handoff-native.png) use only isolated fixture credentials.
+
+This view-only fix adds no test cases; the configured suite remains **546 cases** plus the live-exchange skip. The full Bun/Swift/UI suites, Release and hosted native CI were not rerun; the preceding 203-case Swift result remains the core baseline.
+
+Normal Debug build and Native Lab install pass, matching all **48 files**, private account configuration and build **3** (`deck-handoff-install-proof.json`). Read-only inspection confirms the retained account reconnects to Home with loaded remote credential artwork. The user is actively browsing the updated deck, so no additional computer-controlled gesture sequence is claimed on the real account. Motion continuity is verified from the isolated native recordings. The checks simulator is shut down; no live acceptance, export, reset/sign-out or relationship action was performed.
+
 ## Home shortcut to Passport — October 17, 2026
 
 The older Home See all handler only selected the Passport tab, restoring any credential detail left open there. The deck/list pass already replaced it with `openPassport`, which resets the Passport navigation identity and filters. A new focused baseline case confirms that reset after opening a Passport detail, switching Home and using the shortcut (`home-passport-route-baseline-2026-10-17.xcresult`, **1/1**).

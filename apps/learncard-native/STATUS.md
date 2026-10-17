@@ -1,5 +1,9 @@
 # Native experiment handoff — 2026-10-17
 
+**Seamless deck promotion:** Covered cards now retain the same label/artwork and unique detail-transition source when they become active. The old conditional source wrapper crossfaded two versions during promotion, creating a brief faded/doubled card. The before/after native recordings confirm the flash is removed; all **5/5** focused deck/shortcut cases pass, including reverse swipes, bounds, detail/return and Arabic Reduce Motion. [Actual nine-second native clip](design/home-deck-handoff-native.mp4) and [motion contract](RECENT_STACK.md).
+
+Normal Debug is installed **48/48**, with private configuration/build **3** preserved. Native Lab reconnects to signed-in Home with existing remote credential artwork; the user is browsing the deck. The checks device is shut down. Full suites, Release and hosted native CI were not rerun; no live account or relationship write was used for verification.
+
 **Home → Passport shortcut:** The older See all handler only selected the Passport tab, restoring any credential detail left open there. The current All credentials action resets Passport to its unfiltered list. Its actual label now owns a 44-point minimum touch target. New regressions cover returning from an earlier Passport detail, ordinary tab-state preservation and tapping below the lettering in English and Arabic accessibility-size layouts. See [verification](TESTING.md).
 
 All **5/5** focused cases and Debug build pass. Normal Native Lab install matches **48/48 files**, private configuration and build **3**; the isolated checks device is shut down. Read-only review after unlock confirms Home → All credentials returns from an earlier detail to the full Passport list, with All selected, empty search and 34 retained credentials. Configured suite: **546 cases** plus live skip; broader suites/Release/hosted native CI were not rerun.

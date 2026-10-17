@@ -90,7 +90,10 @@ struct LatestCredentialStack: View {
                 .credentialZoom(id: credential.id, namespace: namespace, reduceMotion: reduceMotion)
         } label: {
             CredentialCard(credential: credential, featured: true, animatesPresence: false, showsStack: false)
-                .modifier(StackTransitionSource(active: active, id: credential.id, namespace: namespace))
+                // Keep the label/artwork identity when this covered card becomes
+                // active. Conditional source branches recreate it mid-handoff.
+                // Every record has its own source ID; only the top link is tappable.
+                .matchedTransitionSource(id: credential.id, in: namespace)
         }
         .buttonStyle(CredentialPressStyle())
         .accessibilityIdentifier(active ? "credential-\(credential.id)" : "stack-underlay-\(credential.id)")
@@ -161,16 +164,6 @@ struct LatestCredentialStack: View {
                 resetMotion()
             }
         }
-    }
-}
-
-private struct StackTransitionSource: ViewModifier {
-    let active: Bool
-    let id: String
-    let namespace: Namespace.ID
-    @ViewBuilder func body(content: Content) -> some View {
-        if active { content.matchedTransitionSource(id: id, in: namespace) }
-        else { content }
     }
 }
 

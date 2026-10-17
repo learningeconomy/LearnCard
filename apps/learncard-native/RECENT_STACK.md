@@ -14,6 +14,8 @@ The Home shortcut also clears an earlier Passport detail destination. The older 
 - Issuer/date metadata remains on each card. Tapping opens that exact credential; returning preserves its position. A refresh retains the active record if it is still in the latest five, otherwise selecting the newest eligible record.
 - Covered cards are hidden from hit-testing and VoiceOver, and never create duplicate zoom sources. Their visual content remains fully rendered during reveal.
 
+Each credential keeps a permanent, uniquely identified detail-transition source. Promoting a covered card changes its transform and interaction state without replacing its label or artwork. The earlier active/inactive source branches crossfaded two versions of the card during promotion, producing a brief faded/doubled frame. Keeping the source modifier in place removes that structural handoff while retaining tap-to-detail zoom.
+
 The deck uses the currently loaded personal-index pages. If more pages remain, its caption says Latest among loaded credentials. Swiping does not start a whole-account scan. Passport owns list paging and complete-collection filtering/sorting.
 
 ## Motion, accessibility and lifecycle
@@ -46,3 +48,5 @@ Production SwiftUI with isolated mixed-category samples; no real account data ap
 [Eight-second actual swipe recording](design/home-deck-drag-reveal-native.mp4). The held gesture reveals the next card's real blue surface, title and issuer before the pink card has left. Its underlying yellow layer belongs to the next portfolio credential.
 
 [Arabic category list](design/passport-list-arabic-native.png) and [older records after All credentials clears an earlier search](design/passport-all-credentials-native.png).
+
+The promotion refinement keeps the rendered card intact through the lift. [Updated nine-second native handoff recording](design/home-deck-handoff-native.mp4) and [settled incoming card](design/home-deck-handoff-native.png). The previous conditional-source baseline has a brief faded/doubled frame; this source-stable recording does not.
