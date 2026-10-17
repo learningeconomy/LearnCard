@@ -159,7 +159,7 @@ export const EscrowRecoveryPanel = ({
             setConfirmed(false);
             setCodeInput('');
             setCodeError('');
-            setResendNotice('');
+            setResendNotice(result.codeSent === false ? m['recovery.confirmCode.notSent']() : '');
             setSaved(false);
             setExistingHold(null);
         }
@@ -432,8 +432,20 @@ export const EscrowRecoveryPanel = ({
             await checkStatus().catch(() => {});
         } catch (e) {
             const isRefusal = isEscrowRefusal(e);
+            const reason =
+                isRefusal && typeof e === 'object' && e !== null && 'reason' in e
+                    ? e.reason
+                    : undefined;
             setCodeError(
-                isRefusal ? m['recovery.confirmCode.error']() : m['recovery.confirmCode.failed']()
+                reason === 'codeMismatch'
+                    ? m['recovery.confirmCode.mismatch']()
+                    : reason === 'codeExpired'
+                      ? m['recovery.confirmCode.expired']()
+                      : reason === 'codeLocked'
+                        ? m['recovery.confirmCode.locked']()
+                        : isRefusal
+                          ? m['recovery.confirmCode.error']()
+                          : m['recovery.confirmCode.failed']()
             );
             setCodeInput('');
         } finally {

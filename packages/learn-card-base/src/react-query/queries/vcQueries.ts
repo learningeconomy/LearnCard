@@ -1,4 +1,3 @@
-import async from 'async';
 import { useEffect, useRef } from 'react';
 import {
     useQuery,
@@ -888,41 +887,44 @@ export const useSyncConsentFlow = (enabled = true) => {
                             return;
                         }
 
-                        const filteredRecords = await async.filter<ConsentRecord>(
-                            claimedRecords,
-                            async record => {
+                        // A pending credential that's already indexed was stored by an earlier
+                        // sync whose accept failed, so it only needs accepting now.
+                        const filteredRecords = await Promise.all(
+                            claimedRecords.map(async record => {
                                 const existingRecord = await learnCard.index.LearnCloud.get({
                                     uri: record.credentialUri,
                                 });
-                                return existingRecord.length === 0;
-                            }
+                                return existingRecord.length > 0
+                                    ? { ...record, alreadyStored: true }
+                                    : record;
+                            })
                         );
 
-                        if (filteredRecords.length === 0) {
-                            // Release claimed credentials that don't need processing
-                            claimedRecords.forEach(record => {
-                                globalProcessedCredentials.delete(record.credentialUri);
-                            });
-                            return;
-                        }
-
                         try {
-                            const { failed } = await acceptAndStore.mutateAsync({
+                            const { failed, rejected } = await acceptAndStore.mutateAsync({
                                 allRecords: filteredRecords,
                             });
 
                             // Release failed credentials so the next sync can retry them, and
-                            // don't share them to contracts since they weren't stored. This only
-                            // retries failed accepts: if accept succeeded but storing failed, the
-                            // credential is already received and won't be listed as pending again.
+                            // don't share them to contracts. The mutation stores before it
+                            // accepts, so a failed credential is still pending on the server and
+                            // the next sync sees it again: a failed store gets stored then, and a
+                            // failed accept gets accepted then (it's already indexed).
+                            // Revoked/suspended credentials stay claimed for this session: the
+                            // server keeps listing them as pending, and retrying would just
+                            // store and roll them back again on every focus.
                             const failedUris = new Set(failed.map(r => r.credentialUri));
                             failedUris.forEach(uri => globalProcessedCredentials.delete(uri));
+                            const skippedUris = new Set([
+                                ...failedUris,
+                                ...rejected.map(r => r.credentialUri),
+                            ]);
 
                             await syncContracts.mutateAsync({
                                 recordsByCategory: Object.fromEntries(
                                     Object.entries(recordsByCategory).map(([category, uris]) => [
                                         category,
-                                        uris?.filter(uri => !failedUris.has(uri)),
+                                        uris?.filter(uri => !skippedUris.has(uri)),
                                     ])
                                 ) as Partial<Record<CredentialCategory, string[]>>,
                                 allContracts: allContracts.map(c => ({

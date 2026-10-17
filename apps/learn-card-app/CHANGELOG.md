@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.100.2
+
+### Patch Changes
+
+- [#1712](https://github.com/learningeconomy/LearnCard/pull/1712) [`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c) Thanks [@goblincore](https://github.com/goblincore)! - Allow optional proof creation timestamps for the standardized ECDSA, EdDSA and BBS Data Integrity cryptosuites without rewriting signed payloads.
+
+    Handle one-shot CHAPI events safely across account changes, allow cancellation during exchanges, deduplicate exact reopened offers using account-scoped fingerprints of the full signed payload, and avoid retrying consumed acknowledgements or cancellations. Preserve distinct same-ID credential revisions and explain that partial saves remain after cancellation. Keep storage diagnostics useful without logging private credential payloads or counterparty messages.
+
+- [#1721](https://github.com/learningeconomy/LearnCard/pull/1721) [`dc780c9ebf94cecec66116da7faa8f2f9482d3c4`](https://github.com/learningeconomy/LearnCard/commit/dc780c9ebf94cecec66116da7faa8f2f9482d3c4) Thanks [@Custard7](https://github.com/Custard7)! - Fix crashes when a credential has a missing or unknown category. Category metadata lookups now fall back to Achievement.
+
+- Updated dependencies []:
+    - @learncard/credential-library@2.1.2
+    - @learncard/helpers@1.6.3
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/ler-rs-plugin@0.1.30
+    - @learncard/open-badge-v2-plugin@1.1.40
+    - @learncard/render-method-plugin@10.0.1
+    - @learncard/react@2.12.11
+    - @learncard/sss-key-manager@0.2.2
+
 ## 1.100.1
 
 ### Patch Changes

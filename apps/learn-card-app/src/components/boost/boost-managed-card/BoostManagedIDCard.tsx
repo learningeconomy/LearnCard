@@ -29,7 +29,7 @@ import {
     useCountBoostRecipients,
     useModal,
     ModalTypes,
-    categoryMetadata,
+    getCategoryMetadata,
     CredentialCategory,
 } from 'learn-card-base';
 import { useGetBoostRecipients } from 'learn-card-base';
@@ -161,7 +161,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
 
     const formattedDisplayType = getAchievementTypeDisplayText(boost?.type, categoryType);
 
-    const type = categoryMetadata[categoryType].walletSubtype;
+    const type = getCategoryMetadata(categoryType).walletSubtype;
     const isID = categoryType === BoostCategoryOptionsEnum.id;
     const isMembership = categoryType === BoostCategoryOptionsEnum.membership;
 
@@ -186,7 +186,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
         history.push(`${link}${linkQueryParams}&issue=true`);
     };
 
-    let issueHistory: {
+    const issueHistory: {
         id: number;
         name: string;
         thumb: string;

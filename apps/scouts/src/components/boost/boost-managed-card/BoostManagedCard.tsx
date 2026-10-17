@@ -16,7 +16,7 @@ import {
     CredentialCategoryEnum,
     getBoostMetadata,
     BoostCategoryOptionsEnum,
-    categoryMetadata,
+    getCategoryMetadata,
     useGetBoostParents,
     useGetBoostPermissions,
 } from 'learn-card-base';
@@ -69,7 +69,7 @@ export const BoostManagedCardSkeleton: React.FC<BoostManagedCardSkeletonProps> =
     const isMeritBadge = categoryType === CredentialCategoryEnum.meritBadge;
     const { credentialType = CredentialCategoryEnum.achievement } =
         getBoostMetadata(categoryType as BoostCategoryOptionsEnum | CredentialCategoryEnum) || {};
-    const type = categoryMetadata[credentialType].walletSubtype;
+    const type = getCategoryMetadata(credentialType).walletSubtype;
 
     return (
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
@@ -209,7 +209,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     const { color, credentialType = CredentialCategoryEnum.achievement } =
         getBoostMetadata(categoryType as BoostCategoryOptionsEnum | CredentialCategoryEnum) || {};
 
-    const type = categoryMetadata[credentialType].walletSubtype;
+    const type = getCategoryMetadata(credentialType).walletSubtype;
 
     const isMeritBadge = categoryType === CredentialCategoryEnum.meritBadge;
 
@@ -251,7 +251,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
 
     const buttonBgColor = isMeritBadge ? 'bg-sp-purple-base' : 'bg-sp-blue-dark-ocean';
 
-    let customTitle = undefined;
+    let customTitle: React.ReactNode;
     const userCanEdit = boostPermissionData?.canEdit || boostPermissionData?.canEditChildren;
     if (showSkeleton) {
         customTitle = (
