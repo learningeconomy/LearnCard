@@ -13,8 +13,10 @@ import XCTest
     private func reveal(_ element: XCUIElement, app: XCUIApplication) {
         for _ in 0..<10 where !element.isHittable {
             let scroll = app.scrollViews.firstMatch
-            scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.8))
-                .press(forDuration: 0.05, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.25)))
+            let x = app.launchArguments.contains("ar") ? 0.98 : 0.02
+            let above = element.exists && element.frame.midY < scroll.frame.midY
+            scroll.coordinate(withNormalizedOffset: CGVector(dx: x, dy: above ? 0.25 : 0.8))
+                .press(forDuration: 0.05, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: x, dy: above ? 0.8 : 0.25)))
         }
         XCTAssertTrue(element.isHittable, app.debugDescription)
     }
@@ -25,11 +27,22 @@ import XCTest
         XCTAssertTrue(app.staticTexts["collection-empty-category"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["passport-reset-browse"].exists)
         capture(app, "Unobstructed category empty illustration and compact browse controls")
-        app.buttons["passport-sort"].tap(); app.buttons["passport-sort-title"].tap()
+        let dates = app.buttons["passport-dates"], sort = app.buttons["passport-sort"]
         let reset = app.buttons["passport-reset-browse"]
-        XCTAssertTrue(reset.isHittable)
-        XCTAssertEqual(reset.frame.midY, app.buttons["passport-sort"].frame.midY, accuracy: 2)
-        XCTAssertGreaterThanOrEqual(reset.frame.height, 44)
+        for (order, label) in [("oldest", "Oldest first"), ("title", "Title A–Z"), ("issuer", "Issuer A–Z")] {
+            sort.tap(); app.buttons["passport-sort-\(order)"].tap()
+            XCTAssertTrue(reset.isHittable)
+            XCTAssertEqual(sort.label, "Sort: \(label)")
+            XCTAssertEqual(dates.frame.midY, sort.frame.midY, accuracy: 2)
+            XCTAssertEqual(reset.frame.midY, sort.frame.midY, accuracy: 2)
+            for button in [dates, sort, reset] {
+                XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+                // Accessibility frames include the capsule's outer stroke.
+                XCTAssertGreaterThanOrEqual(button.frame.minX, 19)
+                XCTAssertLessThanOrEqual(button.frame.maxX, app.frame.maxX - 19)
+            }
+            if order == "oldest" { capture(app, "Passport date sort and reset on one line") }
+        }
         reset.tap(); XCTAssertFalse(reset.exists)
     }
 

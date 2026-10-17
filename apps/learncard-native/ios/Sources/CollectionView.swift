@@ -149,8 +149,8 @@ struct CollectionView: View {
     private var browseControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 10) { dateButton; sortButton; resetButton }
-                VStack(alignment: .leading, spacing: 10) { dateButton; HStack(spacing: 10) { sortButton; resetButton } }
+                HStack(spacing: 8) { dateButton; sortButton; resetButton }
+                VStack(alignment: .leading, spacing: 8) { dateButton; HStack(spacing: 8) { sortButton; resetButton } }
             }
             if browse.dateRange != .any {
                 Text(dateSummary).font(.caption).foregroundStyle(Palette.secondary)
@@ -188,10 +188,11 @@ struct CollectionView: View {
     }
 
     private var sortButton: some View {
-        browseButton(title: NativeText.format("sharePicker.sortLabel", NativeText.text("sharePicker.sort.\(browse.sort.rawValue)")),
-                     symbol: "arrow.up.arrow.down", active: browse.sort != .newest, id: "passport-sort") {
+        let order = NativeText.text("sharePicker.sort.\(browse.sort.rawValue)")
+        // The arrow already identifies sorting; leave room for reset without shrinking text.
+        return browseButton(title: order, symbol: "arrow.up.arrow.down", active: browse.sort != .newest, id: "passport-sort") {
             searching = false; sheet = .sort
-        }
+        }.accessibilityLabel(NativeText.format("sharePicker.sortLabel", order))
     }
 
     private func browseButton(title: String, symbol: String, active: Bool, id: String, action: @escaping () -> Void) -> some View {

@@ -12,7 +12,7 @@ Show **Issued _date_** below the category, as quiet metadata. This fits narrow l
 
 ## Browsing controls
 
-Keep search followed by two compact controls: **Issue date** and **Sort: _current order_**. Category chips remain directly below. Active date/sort choices receive a quiet outline, a date summary shows the applied interval, and a 44-point circular reset sits beside Sort when date/order differs from default. Its accessibility label is Reset filters & sort; it restores categories/date/newest ordering without clearing typed text. A category alone does not add another reset row—All and View all clear it. The existing Clear search flow can restore the full browsing state.
+Keep search followed by two compact controls: **Issue date** and the **current order** beside sort arrows. Omit the redundant visible “Sort:” prefix so date, order and the 44-point circular reset fit together at standard phone sizes, including 375 points. VoiceOver retains the full “Sort: _current order_” label. Use 8-point gaps and allow a two-row fallback for enlarged text or longer translations; never shrink the font or touch targets to force a single row. Category chips remain directly below. Active date/sort choices receive a quiet outline, and a date summary shows the applied interval. Reset appears beside Sort when date/order differs from default. Its accessibility label is Reset filters & sort; it restores categories/date/newest ordering without clearing typed text. A category alone does not add another reset row—All and View all clear it. The existing Clear search flow can restore the full browsing state.
 
 Issue date opens a designed sheet with Any date, Last 30 days, This year and Custom dates. Custom dates are inclusive calendar days, with From/Through controls. Apply commits the draft; Cancel discards it. Sort opens a matching single-choice sheet for Newest first, Oldest first, Title A–Z and Issuer A–Z. Choosing an order applies it and closes the sheet. Controls wrap/grow with text, and sheets support RTL and Dynamic Type.
 
@@ -27,6 +27,10 @@ Passport passes `live: false` to the query deliberately: its unreadable records 
 ## Evidence
 
 Focused verification and actual native captures are recorded in [TESTING](../TESTING.md). The root layout continues to reserve the tray as a sibling of TabView; metadata growth must not be compensated with guessed per-page tray padding.
+
+The compact-control refinement keeps all three actions on one line on a 375-point phone:
+
+![Issue date, oldest-first sorting and reset on a single row](passport-filter-row-compact-native.png)
 
 These are actual native screens with disposable unsigned sample credentials:
 

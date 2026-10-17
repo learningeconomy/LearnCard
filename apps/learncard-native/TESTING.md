@@ -1,5 +1,13 @@
 # Native regression checks
 
+## Compact Passport filter row — October 17, 2026
+
+The sort control displays its current order beside arrows, retaining the full localized “Sort: …” VoiceOver label. Eight-point gaps leave space for the conditional 44-point reset alongside Issue date. Longer translations and accessibility text retain the two-row fallback without reducing text or touch targets.
+
+`passport-filter-row-verified-2026-10-17.xcresult` passes **4/4 Passport cases** on the 402-point phone: all three non-default sorts keep date/order/reset aligned, reset remains usable, issuer/date/detail and whole-account search still work, and the Arabic dark accessibility date flow passes. The initial run passed **2/4**: new bounds checks needed to include the capsule stroke, and the existing down-only scroll helper could not return to an offscreen reset. The corrected helper scrolls toward the target and avoids the RTL scrollbar; no further product change was needed. `passport-filter-row-compact-2026-10-17.xcresult` repeats the alignment/reset regression on a **375-point iPhone SE** and passes **1/1**. Exported native captures were visually reviewed; [compact screen](design/passport-filter-row-compact-native.png).
+
+Normal Debug build and Native Lab installation pass with all **48/48 files**, original private configuration and build **3** matching (`passport-filter-row-install-proof.json`). The checks device is shut down and the disposable compact device is deleted. This view-only refinement does not change the configured suite count (546 plus live skip). Full Bun/Swift/UI suites, Release and hosted native CI were not rerun; no live account or relationship write was used.
+
 ## Abstract painted refresh — October 17, 2026
 
 The user rejected the duplicate logo beneath the existing header mark. The refresh now uses eight pigment assets, excluding the center L, on an open figure-eight. The deterministic model adds tumbling and near/far depth, gathers the pull pose into the first working frame without a jump, and holds one still curve for Reduce Motion/VoiceOver. Its native footprint is 64×36 points. The stable refresh-operation reference, gesture/action/inset ownership, timing and status/error paths are unchanged.

@@ -36,6 +36,7 @@ See [the sync contract](SAMPLE_CREDENTIALS.md#sync-feedback-across-the-app--octo
 ## Passport controls and Build My LearnCard milestones — October 17
 
 - [x] Keep date/sort reset adjacent to the controls; category-only filtering uses All/View all.
+- [x] Keep date/order/reset on one line at standard 402/375-point widths by showing the order without a redundant Sort prefix; retain accessible labels and a large-text/translation fallback.
 - [x] Remove the category tile obscuring the empty-state book and ribbon.
 - [x] Surface the web staging sample-student contract through explicit native consent and targeted retryable synchronization.
 - [x] Add optional résumé/certificate/transcript/diploma milestones based on saved source counts, independent of sample data and JSON imports.
