@@ -44,7 +44,7 @@ struct CollectionView: View {
     }
 
     var body: some View {
-        ScrollView {
+        BrandRefreshScrollView(scope: "passport", refresh: { await store.refresh() }) {
             VStack(alignment: .leading, spacing: 18) {
                 PageHeading(title: "Passport", identifier: "collection", accent: Palette.flairBlue)
                 CredentialActivityStatus(store: store)
@@ -131,7 +131,6 @@ struct CollectionView: View {
         .toolbarBackground(Palette.collectionCanvas, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .scrollDismissesKeyboard(.interactively)
-        .refreshable { await store.refresh() }
         .sheet(item: $sheet) { PassportBrowseOptions(selection: $0, query: $browse) }
         .onAppear { visible = true }
         .onDisappear { visible = false }

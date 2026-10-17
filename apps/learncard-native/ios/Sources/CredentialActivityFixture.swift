@@ -8,11 +8,12 @@ actor CredentialActivityFixture: CredentialService {
     private let demo = DemoCredentialService()
     private var reads = 0
     private let failOnce: Bool
-    init(failOnce: Bool) { self.failOnce = failOnce }
+    private let delay: Duration
+    init(failOnce: Bool, delay: Duration = .seconds(6)) { self.failOnce = failOnce; self.delay = delay }
     func snapshot() async throws -> CollectionSnapshot {
         reads += 1
         let attempt = reads
-        if attempt > 1 { try await Task.sleep(for: .seconds(6)) }
+        if attempt > 1 { try await Task.sleep(for: delay) }
         if failOnce && attempt == 2 { throw AccountError.connection }
         return await demo.snapshot()
     }

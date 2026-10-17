@@ -21,6 +21,9 @@ import XCTest
         app.launch()
         let tray = app.descendants(matching: .any).matching(identifier: "bottom-navigation").firstMatch
         XCTAssertTrue(tray.waitForExistence(timeout: 10), file: file, line: line)
+        // RTL moves the native scrollbar to the left. Drag in the opposite
+        // gutter so this remains a content pan rather than scrollbar scrubbing.
+        let gutter = arguments.contains("ar") ? 0.98 : 0.02
 
         // These are the actual final controls in the unmodified, in-memory sample data.
         for (tab, lastID) in [("apps", "apps-resume"), ("home", "home-creations"),
@@ -35,8 +38,8 @@ import XCTest
             for _ in 0..<14 {
                 // The credential stack has its own gestures. Pan in the page gutter
                 // so this check measures scrolling without opening an active card.
-                let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.82))
-                let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.22))
+                let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: gutter, dy: 0.82))
+                let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: gutter, dy: 0.22))
                 start.press(forDuration: 0.05, thenDragTo: end)
                 if last.exists && last.isHittable {
                     let current = last.frame

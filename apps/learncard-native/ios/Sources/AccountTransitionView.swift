@@ -152,7 +152,7 @@ private struct PigmentBackdrop: View {
     }
 }
 
-private struct PigmentTile: View {
+struct PigmentTile: View {
     let index: Int
     var body: some View {
         Image("PaintBlock\(index)").resizable().scaledToFit()

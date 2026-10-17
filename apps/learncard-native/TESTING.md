@@ -1,5 +1,19 @@
 # Native regression checks
 
+## Painted pull-to-refresh — October 17, 2026
+
+The complete Swift suite passes **203 cases** (170 XCTest + 33 Swift Testing), including three new deterministic refresh-motion cases for bounded pull/ripple poses, continuous looping and still Reduce Motion (`artifacts/pull-refresh-core.log`). Catalog generation validates **1,013 keys** across four languages.
+
+`pull-refresh-confirmed-2026-10-17.xcresult` passes **4/4** focused UI cases: a real slow Home read is awaited and leaves no extra space or changed deck position; a short pull does not perform the failing read; a full pull retains cached content with inline retry and a second pull recovers; fast Apps refresh leaves no ornament and Discover still opens; still-mode navigation remains usable. Screenshot review caught an English locale argument preceding the intended Arabic argument. The helper now supplies one locale and asserts the Arabic title. `pull-refresh-arabic-final-2026-10-17.xcresult` passes **1/1** with actual Arabic, dark appearance and accessibility3 text.
+
+The earlier broad run passes all three existing deck cases and the English/Arabic standard footer cases. The final focused layout run also passes the large-text footer and deck-position/search case. The large-text test's gutter now avoids RTL's left-hand scrollbar. Together these runs cover **ten distinct passing focused UI cases**. Early motion probes exposed cancellation caused by observing refresh state on the scroll owner, refresh subviews omitted from the SwiftUI accessibility tree, and incorrect assumptions about native refresh height/quiescence. Those failed probes are retained under artifacts; they are not reported as full passing runs.
+
+Native recordings verify the active artwork independently of XCTest: iOS waits for refresh quiescence before returning from the pull gesture, so active-frame queries see completion. Steady Home frames at 17/17.6 seconds show **4,365 pixels changing by more than 24 RGB levels** in the isolated refresh crop. Actual Arabic Reduce Motion frames at 25/25.6 seconds have **zero changes above that threshold** (only negligible recording compression differences). The [native clip, stills and generated reference](design/PULL_REFRESH_BRIEF.md#native-evidence) distinguish implementation evidence from mockups. No artificial duration is added to real refresh; the ten-second delay is confined to the explicit DEBUG/demo review flag. VoiceOver shares the still branch and receives a start announcement; live VoiceOver interaction was not automated.
+
+Configured suite: **544 cases** (202 Bun, 203 Swift, 139 simulator), plus the opt-in live-exchange skip. Full Bun/UI suites, Release and hosted CI were not rerun. Final normal Debug installation matches **48/48 files**, with original private configuration and build **3** retained (`pull-refresh-install-proof.json`). The checks simulator is shut down. No live consent, credential acceptance, account reset/sign-out or relationship mutation was performed.
+
+The final live UI read was blocked by the Mac lock screen. Native Lab is installed/launched and ready for review after unlock; no new signed-in screen observation is claimed.
+
 ## Home deck and list-only Passport — October 17, 2026
 
 The complete Swift suite passes **200 cases** (`artifacts/home-deck-core.log`), including the revised Home summary's five-record cap, mixed-category ordering and exclusion of Family/offer records. The catalog keeps **1,011 four-language keys**; Recent credentials now accurately describes all personal categories.

@@ -33,7 +33,7 @@ struct AppsView: View {
     }
 
     var body: some View {
-        ScrollView {
+        BrandRefreshScrollView(scope: "apps", refresh: { await reload() }) {
             VStack(alignment: .leading, spacing: NativeLayout.sectionGap) {
                 PageHeading(title: NativeText.text("apps.title"), identifier: "apps", accent: Palette.flairTeal)
                 Picker(NativeText.text("apps.title"), selection: $discover) {
@@ -75,7 +75,6 @@ struct AppsView: View {
                 await consumer.browse(category: category == "all" ? nil : category, allPages: !searchQuery.isEmpty)
                 if !Task.isCancelled { searchPending = false }
             }
-            .refreshable { await reload() }
             .navigationDestination(item: $selected) { app in ConsumerAppDetailView(app: app, store: store, openInbox: openInbox) }
             .fullScreenCover(item: $appLaunch) { next in
                 ConsumerBrowserView(launch: next, consumer: consumer, isSample: sampleBrowser, onCredential: { Task { await store.refresh() } }, openInbox: openInbox)

@@ -11,7 +11,7 @@ struct InboxView: View {
     private var updates: [InboxItem] { store.inbox.updates(excluding: Set((store.snapshot?.offers ?? []).map(\.id))) }
 
     var body: some View {
-        ScrollView {
+        BrandRefreshScrollView(scope: "inbox", refresh: { await store.refreshInbox() }) {
             VStack(alignment: .leading, spacing: 16) {
                 PageHeading(title: "Inbox", accent: Palette.flairPink)
                 CredentialActivityStatus(store: store, inbox: true)
@@ -72,6 +72,5 @@ struct InboxView: View {
         .toolbarBackground(Palette.inboxCanvas, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .task { if !store.inbox.loaded { await store.inbox.load() } }
-        .refreshable { await store.refreshInbox() }
     }
 }

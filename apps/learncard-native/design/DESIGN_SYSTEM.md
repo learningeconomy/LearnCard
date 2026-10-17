@@ -55,7 +55,7 @@ Depth follows the element's role, rather than the section it lives in. The Octob
 | Reading and actions    | Adaptive surface, no cast shadow or thick lower edge; separate with spacing or a quiet divider      | Home groups, Inbox rows, ordinary Apps cards, forms and permission groups |
 | Featured invitation    | Same flat surface, with a restrained tint or opaque Colorful fill and sparse drawn accents          | Featured app, Apps empty invitation                                       |
 | Illustrated object     | Depth inside the artwork; a small local shadow can anchor an app icon without lifting its whole row | App icons, rocket illustration, category artwork                          |
-| Credential hero/detail | Deliberately raised edge, artwork window, broad cast shadow and directional reflection              | Passport recent credential and isolated credential detail                 |
+| Credential hero/detail | Deliberately raised edge, artwork window, broad cast shadow and directional reflection              | Home recent credential and isolated credential detail                     |
 | Overlay or shell       | System sheet elevation or established compact header treatment                                      | Presented sheets, Add/account island                                      |
 
 Do not spread credential lighting, sheen or tilting to generic panels. Keep real publisher imagery intact. A panel's color or shadow must never imply verified status, endorsement or access.
@@ -68,7 +68,7 @@ Passport and Inbox also share a compact activity row directly beneath the page t
 
 ## Credential identity and browsing
 
-Credential names are primary; issuer text always starts with localized **Issued by**. Show a known issue date as a quiet **Issued _date_** line below the category, rather than squeezing it beside a long title. Keep missing dates out of rows/cards and label them unavailable in detail. Issuer labels and category art do not imply trust. Passport places designed date/sort sheets behind compact controls below search; filters and non-default order show a result list while ordinary category browsing keeps its recent stack. See [the complete browsing contract](PASSPORT_BROWSING.md).
+Credential names are primary; issuer text always starts with localized **Issued by**. Show a known issue date as a quiet **Issued _date_** line below the category, rather than squeezing it beside a long title. Keep missing dates out of rows/cards and label them unavailable in detail. Issuer labels and category art do not imply trust. Passport places designed date/sort sheets behind compact controls below search and remains a list in every browsing mode; Home holds the recent deck. See [the complete browsing contract](PASSPORT_BROWSING.md).
 
 ## Scale and rhythm
 
@@ -145,6 +145,8 @@ An illustrated action row is one complete button. Thumbnail, label, whitespace a
 System launch and running loading views share their adaptive canvas, painted material and full-size assembled mark from the first frame. Continue with the slight held-pose jiggle; do not shrink, scatter or gather the tiles. Static launch cannot animate; it must not introduce a different palette or untextured mark. No animation may delay readiness.
 
 Interactions use a brief press response and selection feedback. Navigation/label transitions are around 220–300 ms. Motion must explain state or preserve continuity and respect Reduce Motion.
+
+Root pull-to-refresh uses a compact painted mosaic and localized status. Pull distance gently stretches its tiles; actual refresh work drives a traveling diagonal ripple. Keep the system's pull gesture, accessible refresh action, inset handling and async completion. Hide the artwork at rest and end it without a minimum display time or invented success/progress. Reduce Motion and VoiceOver use a still, complete mark; pause animation offscreen and inactive. Ordinary scrolling must not continually redraw hidden artwork. Keep errors/retry in their existing page-level status. See [the motion board and interaction contract](PULL_REFRESH_BRIEF.md).
 
 Credential **detail** has one isolated card with an automatic 9-second loop: about ±7° yaw, ±3.2° pitch, a moving cast shadow and reflection behind the content. Raised artwork, a lower edge and corner contours give the surface depth without washing out its text. No stack or drag instruction. Pause when offscreen, inactive, using Reduce Motion or VoiceOver. Home's recent stack is a different presentation; Passport uses list rows. Avoid additional perpetual motion throughout lists and dashboards. See [the card material contract](CREDENTIAL_DEPTH_BRIEF.md).
 

@@ -25,7 +25,9 @@ struct HomeView: View {
     private var summary: LearnerHomeSummary { LearnerHomeSummary(snapshot: store.snapshot, hasError: store.error != nil || store.snapshotReadFailed) }
 
     var body: some View {
-        ScrollView {
+        BrandRefreshScrollView(scope: "home", refresh: {
+            await store.refresh(); await store.inbox.load(); await consumer.loadInstalled()
+        }) {
             VStack(alignment: .leading, spacing: NativeLayout.sectionGap) {
                 VStack(alignment: .leading, spacing: 6) {
                     PageHeading(title: "Home", accent: Palette.flairYellow)
@@ -79,7 +81,6 @@ struct HomeView: View {
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Palette.homeCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
         .task { await consumer.loadInstalled() }
-        .refreshable { await store.refresh(); await store.inbox.load(); await consumer.loadInstalled() }
     }
 
     private var rowDivider: some View { Divider().padding(.leading, 74) }

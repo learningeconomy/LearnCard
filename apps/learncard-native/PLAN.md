@@ -1,5 +1,13 @@
 # LearnCard native client plan
 
+## Painted pull-to-refresh — October 17
+
+- [x] Generate a compact motion reference using the painted LearnCard mosaic.
+- [x] Share pull-responsive tiles and a real-work ripple across Home, Passport, Inbox and Apps while retaining the system refresh gesture and scroll insets.
+- [x] Provide still Reduce Motion/VoiceOver feedback, lifecycle pauses and localized status; keep inline error/retry and the cross-tab sample strip.
+
+See [the design and behavior contract](design/PULL_REFRESH_BRIEF.md). Verification is recorded in [TESTING](TESTING.md).
+
 ## Home deck and list-only Passport — October 17
 
 - [x] Replace recent Home rows with the latest-five personal credential deck across categories and a clear All credentials route.
