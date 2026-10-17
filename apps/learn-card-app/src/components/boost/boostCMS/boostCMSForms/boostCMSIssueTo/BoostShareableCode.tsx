@@ -406,7 +406,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
                             <button
                                 onClick={handleGenerateLink}
-                                className={`font-poppins text-white text-[17px] font-normal bg-${primaryColor} rounded-[30px] px-[24px] py-[10px] disabled:opacity-[50%]`}
+                                className={`font-poppins text-white text-[17px] font-normal bg-${primaryColor} rounded-[30px] px-[24px] py-[10px] disabled:opacity-50`}
                                 disabled={!isManuallyChangingParameters}
                             >
                                 {m['common.update']()}
@@ -471,7 +471,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
                         {!isPermissionsLoading && canViewEnabled && (
                             <>
-                                <div className="flex flex-col gap-[10px] w-full pb-[20px] border-b-[1px] border-grayscale-200 border-solid">
+                                <div className="flex flex-col gap-[10px] w-full pb-[20px] border-b border-grayscale-200 border-solid">
                                     {((!isManuallyChangingParameters && autoGenerateLinkOnOpen) ||
                                         getCurrentClaimLink()) && (
                                         <>
@@ -529,7 +529,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                             />,
                                                             {
                                                                 sectionClassName:
-                                                                    '!bg-transparent !shadow-none !w-[400px] !max-h-[725px]',
+                                                                    'bg-transparent! shadow-none! w-[400px]! max-h-[725px]!',
                                                             },
                                                             {
                                                                 mobile: ModalTypes.Cancel,
@@ -598,7 +598,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                             )}
                                                         />
                                                     </div>,
-                                                    { sectionClassName: '!w-fit' },
+                                                    { sectionClassName: 'w-fit!' },
                                                     {
                                                         mobile: ModalTypes.Center,
                                                         desktop: ModalTypes.Center,
@@ -643,7 +643,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                             </p>
                                             <IonInput
                                                 autocapitalize="on"
-                                                className={`bg-grayscale-100 text-grayscale-500 rounded-[15px] !px-[15px] !py-[6px] font-notoSans text-[17px]`}
+                                                className={`bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[15px]! py-[6px]! font-notoSans text-[17px]`}
                                                 placeholder={m['boost.cms.issueTo.howManyClaims']()}
                                                 type="number"
                                                 min={0}
@@ -700,7 +700,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
             {sectionPortal &&
                 createPortal(
-                    <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
+                    <div className="flex flex-col justify-center items-center relative border-none! max-w-[500px]">
                         <div className="flex w-full mb-[5px]">
                             {handleBackForModal && (
                                 <button

@@ -170,7 +170,7 @@ const AddressBook: React.FC = () => {
                 isLoadingRecords={isLoadingRecords}
             />,
             {
-                sectionClassName: '!max-w-[550px]',
+                sectionClassName: 'max-w-[550px]!',
             }
         );
     };
@@ -202,7 +202,7 @@ const AddressBook: React.FC = () => {
                             (selectedGroupId === 'all' ? (
                                 <button
                                     onClick={handleContactSelection}
-                                    className="flex border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                                    className="flex border-solid border-grayscale-200 border rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
                                 >
                                     <AllContactsIcon />
                                     <div className="flex flex-col items-start ml-2">
@@ -220,7 +220,7 @@ const AddressBook: React.FC = () => {
                             ) : (
                                 <button
                                     onClick={handleContactSelection}
-                                    className="relative flex bg-white border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                                    className="relative flex bg-white border-solid border-grayscale-200 border rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
                                 >
                                     <img
                                         className="w-[40px] h-[40px] rounded-[40px] mr-2"

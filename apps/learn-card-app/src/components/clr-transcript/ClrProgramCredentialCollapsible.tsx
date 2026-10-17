@@ -87,7 +87,7 @@ const ClrProgramCredentialCollapsible: React.FC<{
                                             {credential && (
                                                 <CredentialVerificationDisplay
                                                     credential={credential}
-                                                    iconClassName="!w-5 !h-5"
+                                                    iconClassName="w-5! h-5!"
                                                 />
                                             )}
                                             {awarded && (

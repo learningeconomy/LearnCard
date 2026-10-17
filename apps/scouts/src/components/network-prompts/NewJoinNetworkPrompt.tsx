@@ -102,7 +102,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     };
 
     // const presentLogoutErrorModal = () => {
-    //     newModal(<ErrorLogout />, { sectionClassName: '!max-w-[400px]' });
+    //     newModal(<ErrorLogout />, { sectionClassName: 'max-w-[400px]!' });
     // };
 
     useEffect(() => {
@@ -294,7 +294,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     return (
         <>
             {createLoading && (
-                <div className="absolute top-0 z-[10000] flex h-full w-full flex-col items-center justify-center gap-[5px] bg-white bg-opacity-70 backdrop-blur-[3px]">
+                <div className="absolute top-0 z-[10000] flex h-full w-full flex-col items-center justify-center gap-[5px] bg-white/70  backdrop-blur-[3px]">
                     <IonSpinner color="dark" />
                     <span className="text-grayscale-900">{m['networkPrompts.joiningNet']()}</span>
                 </div>

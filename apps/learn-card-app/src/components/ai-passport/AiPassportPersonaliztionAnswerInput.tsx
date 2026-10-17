@@ -27,8 +27,8 @@ export const AIPassportPersonalizationAnswerInput: React.FC<{
 
     const minWidth =
         questionType === PersonalizedQuestionEnum.favFictionalCharacter
-            ? '!min-w-[200px]'
-            : '!min-w-[150px] w-[150px]';
+            ? 'min-w-[200px]!'
+            : 'min-w-[150px]! w-[150px]';
 
     const isAnswerEmpty = answer?.length === 0;
 
@@ -55,7 +55,7 @@ export const AIPassportPersonalizationAnswerInput: React.FC<{
                     handleCreateAnswer={handleModalAnswer}
                 />,
                 {
-                    sectionClassName: '!max-w-[80%]',
+                    sectionClassName: 'max-w-[80%]!',
                 }
             );
             return;
@@ -71,7 +71,7 @@ export const AIPassportPersonalizationAnswerInput: React.FC<{
 
     return (
         <div
-            className="flex items-center justify-between rounded-full !py-[5px] px-[16px] font-semibold text-[17px] font-notoSans mt-2 mr-2 bg-grayscale-100 text-grayscale-500"
+            className="flex items-center justify-between rounded-full py-[5px]! px-[16px] font-semibold text-[17px] font-notoSans mt-2 mr-2 bg-grayscale-100 text-grayscale-500"
             onClick={() => {
                 if (!isAnswerEmpty) {
                     handleCreateAnswer();
@@ -86,7 +86,7 @@ export const AIPassportPersonalizationAnswerInput: React.FC<{
                         ${minWidth}
                         text-left
                         bg-transparent
-                        outline-none
+                        outline-hidden
                         border-none
                         w-full
                         text-grayscale-500
@@ -105,7 +105,7 @@ export const AIPassportPersonalizationAnswerInput: React.FC<{
                         setAnswer(e.detail.value);
                     }}
                     placeholder={placeholderText}
-                    className={`${minWidth} ion-no-padding !mb-0 !min-h-[0]`}
+                    className={`${minWidth} ion-no-padding mb-0! min-h-0!`}
                     autoGrow
                     rows={1}
                     onKeyDown={handleKeyDown}
@@ -114,7 +114,7 @@ export const AIPassportPersonalizationAnswerInput: React.FC<{
 
             <AnimatedPlusToXIcon
                 isPlus
-                className="text-grayscale-500 h-[24px] w-auto ml-[10px] flex-shrink-0 !pt-0"
+                className="text-grayscale-500 h-[24px] w-auto ml-[10px] shrink-0 pt-0!"
             />
         </div>
     );

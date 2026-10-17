@@ -263,7 +263,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     if (combinedAttachments.length === 0) return null;
 
     return (
-        <div className="w-full space-y-2">
+        <div className="w-full space-y-v3-2">
             <Lightbox
                 items={lightboxItems}
                 currentUrl={currentLightboxUrl}
@@ -318,7 +318,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 }}
                             >
                                 {videoMeta?.videoLength && (
-                                    <span className="absolute bottom-1.5 right-1.5 rounded bg-grayscale-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                                    <span className="absolute bottom-1.5 right-1.5 rounded-sm bg-grayscale-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                                         {videoMeta.videoLength}
                                     </span>
                                 )}
@@ -381,13 +381,13 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         attachment.sourceContext.kind === 'course' ? (
                             <StudiesIcon className="w-4 h-4" />
                         ) : attachment.sourceContext.kind === 'program' ? (
-                            <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-500" />
+                            <CertificateDisplayIcon className="w-4 h-4 text-grayscale-500!" />
                         ) : (
                             <Graduation className="w-4 h-4 text-grayscale-500" />
                         );
 
                     return (
-                        <div className="w-full rounded-[28px] border border-grayscale-200 bg-white p-4 shadow-box-bottom space-y-3">
+                        <div className="w-full rounded-[28px] border border-grayscale-200 bg-white p-4 shadow-box-bottom space-y-v3-3">
                             <div className="flex items-center gap-2 min-w-0 px-1">
                                 {attachment.sourceContext.dateLabel && (
                                     <p className="shrink-0 text-[13px] text-grayscale-700">

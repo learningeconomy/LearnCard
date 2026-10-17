@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React from 'react';
 
 import { IonCol, IonRow } from '@ionic/react';
@@ -48,7 +49,10 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
             >
                 <button
                     onClick={onClick}
-                    className={`h-full pt-[15px] bg-opacity-30 rounded-[20px] flex flex-col items-center justify-center gap-[10px] w-[160px] min-h-[280px] ${backgroundPrimaryColor}`}
+                    style={{
+                        backgroundColor: tailwindColorWithOpacity(backgroundPrimaryColor, 30),
+                    }}
+                    className={`h-full pt-[15px] rounded-[20px] flex flex-col items-center justify-center gap-[10px] w-[160px] min-h-[280px] ${backgroundPrimaryColor}`}
                 >
                     <div className={`bg-white rounded-full p-[8px] w-fit h-fit shadow-soft-bottom`}>
                         <Plus className={`h-[20px] w-[20px]`} />
@@ -65,10 +69,11 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
 
     return (
         <IonRow
-            className={`rounded-[15px] flex gap-[10px] items-center w-full z-[2] ${backgroundPrimaryColor} bg-opacity-30 ${
+            className={`rounded-[15px] flex gap-[10px] items-center w-full z-[2] ${backgroundPrimaryColor} ${
                 isId ? 'px-[8px] py-[17px]' : 'p-[8px]'
             }`}
             onClick={onClick}
+            style={{ backgroundColor: tailwindColorWithOpacity(backgroundPrimaryColor, 30) }}
             role="button"
         >
             <div className={`bg-white rounded-full p-[10px] w-fit h-fit shadow-soft-bottom`}>

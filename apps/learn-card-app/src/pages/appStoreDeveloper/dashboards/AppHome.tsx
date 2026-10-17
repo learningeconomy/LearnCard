@@ -247,11 +247,11 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
         ];
 
         return (
-            <div className="relative pl-4 border-l-2 border-grayscale-200 space-y-8 ml-2">
+            <div className="relative pl-4 border-l-2 border-grayscale-200 space-y-v3-8 ml-2">
                 {steps.map((step, index) => (
                     <div key={step.id} className="relative">
                         <div
-                            className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 ${
+                            className={`absolute left-[-21px] top-1 w-3 h-3 rounded-full border-2 ${
                                 step.isDone
                                     ? 'bg-grayscale-900 border-grayscale-900'
                                     : 'bg-white border-grayscale-300'
@@ -275,14 +275,14 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
 
     if (isLoading) {
         return (
-            <div className="max-w-3xl mx-auto p-6 font-poppins space-y-8 animate-pulse">
+            <div className="max-w-3xl mx-auto p-6 font-poppins space-y-v3-8 animate-pulse">
                 <div className="h-16 bg-grayscale-100 rounded-2xl w-full" />
-                <div className="space-y-8 pl-4 border-l-2 border-grayscale-100 ml-2">
+                <div className="space-y-v3-8 pl-4 border-l-2 border-grayscale-100 ml-2">
                     {[1, 2, 3, 4].map(i => (
                         <div key={i} className="flex justify-between items-start">
-                            <div className="space-y-2">
-                                <div className="h-4 bg-grayscale-100 rounded w-24" />
-                                <div className="h-3 bg-grayscale-100 rounded w-32" />
+                            <div className="space-y-v3-2">
+                                <div className="h-4 bg-grayscale-100 rounded-sm w-24" />
+                                <div className="h-3 bg-grayscale-100 rounded-sm w-32" />
                             </div>
                             <div className="h-9 bg-grayscale-100 rounded-[20px] w-24" />
                         </div>
@@ -351,7 +351,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
 
                     {latestManifestData?.manifest?.templates &&
                     latestManifestData.manifest.templates.length > 0 ? (
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {latestManifestData.manifest.templates.map(
                                 (t: CapturedTemplateRecord, i: number) => (
                                     <div

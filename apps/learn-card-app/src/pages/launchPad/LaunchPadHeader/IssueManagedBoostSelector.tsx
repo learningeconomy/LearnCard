@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React, { useState, useRef, useEffect } from 'react';
 import {
     useModal,
@@ -71,7 +72,10 @@ const CategorySelectorModal: React.FC<{
                             }`}
                         >
                             <div
-                                className={`p-2 rounded-full bg-${meta.color} bg-opacity-10 text-${meta.color}`}
+                                style={{
+                                    backgroundColor: tailwindColorWithOpacity(meta.color, 10),
+                                }}
+                                className={`p-2 rounded-full bg-${meta.color} text-${meta.color}`}
                             >
                                 <Icon className="w-6 h-6" />
                             </div>
@@ -200,7 +204,8 @@ const IssueManagedBoostSelector: React.FC = () => {
                     >
                         <div className="flex items-center gap-3">
                             <div
-                                className={`p-2 rounded-full bg-${metaColor} bg-opacity-10 text-${metaTextColor}`}
+                                style={{ backgroundColor: tailwindColorWithOpacity(metaColor, 10) }}
+                                className={`p-2 rounded-full bg-${metaColor} text-${metaTextColor}`}
                             >
                                 <CategoryIcon className="w-6 h-6" />
                             </div>
@@ -224,7 +229,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                             value={searchInput}
                             placeholder={m['boost.searchBoosts']()}
                             onIonInput={e => setSearchInput(e.detail.value || '')}
-                            className="bg-grayscale-50 text-grayscale-900 rounded-[15px] !p-[5px] !font-notoSans text-[16px] !pl-[44px] --padding-start=44px border border-grayscale-200"
+                            className="bg-grayscale-50 text-grayscale-900 rounded-[15px] p-[5px]! !font-notoSans text-[16px] pl-[44px]! --padding-start=44px border border-grayscale-200"
                         />
                     </div>
                 </div>

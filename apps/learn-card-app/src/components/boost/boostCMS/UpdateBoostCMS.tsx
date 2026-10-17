@@ -538,9 +538,8 @@ const UpdateBoostCMS: React.FC = () => {
                             );
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
-                            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                                sentBoost
-                            );
+                            const issuedVcUri =
+                                await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
                             await addVCtoWallet({ uri: issuedVcUri });
                             return issuedVcUri;
                         }
@@ -662,7 +661,7 @@ const UpdateBoostCMS: React.FC = () => {
                 isSaveLoading={isSaveLoading}
                 skippedPublishStep={skippedPublishStep}
             />,
-            { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
+            { sectionClassName: 'max-w-[400px]!', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

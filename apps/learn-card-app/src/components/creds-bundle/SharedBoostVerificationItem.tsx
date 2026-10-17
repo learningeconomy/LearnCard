@@ -30,22 +30,22 @@ export const SharedBoostVerificationItem: React.FC<{
         verification.status === VerificationStatusEnum.Success
             ? m['verification.status.success']()
             : verification.status === VerificationStatusEnum.Failed
-            ? m['verification.status.failed']()
-            : verification.status === VerificationStatusEnum.Error
-            ? m['verification.status.error']()
-            : verification.status;
+              ? m['verification.status.failed']()
+              : verification.status === VerificationStatusEnum.Error
+                ? m['verification.status.error']()
+                : verification.status;
 
     const checkLower = (check ?? '').toLowerCase();
     const checkLabel =
         checkLower === 'proof'
             ? m['verification.checks.proof']()
             : checkLower === 'revocation' ||
-              checkLower === 'status' ||
-              checkLower === 'credentialstatus'
-            ? m['verification.checks.revocation']()
-            : checkLower === 'expiration'
-            ? m['verification.checks.expiration']()
-            : check;
+                checkLower === 'status' ||
+                checkLower === 'credentialstatus'
+              ? m['verification.checks.revocation']()
+              : checkLower === 'expiration'
+                ? m['verification.checks.expiration']()
+                : check;
 
     const resolveMessage = (raw: string | undefined): string | undefined => {
         if (!raw) return raw;
@@ -96,7 +96,7 @@ export const SharedBoostVerificationItem: React.FC<{
         return (
             <div
                 className={`w-full flex flex-col items-start justify-center border-grayscale-200 mb-2 pb-2 ${
-                    hideBorder ? 'border-none' : 'border-b-[1px]'
+                    hideBorder ? 'border-none' : 'border-b'
                 }`}
             >
                 <p
@@ -117,7 +117,7 @@ export const SharedBoostVerificationItem: React.FC<{
     return (
         <div
             className={`w-full flex flex-col items-start justify-center border-grayscale-200 mb-2 pb-2 ${
-                hideBorder ? 'border-none' : 'border-b-[1px]'
+                hideBorder ? 'border-none' : 'border-b'
             }`}
         >
             <p

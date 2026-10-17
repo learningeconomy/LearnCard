@@ -38,7 +38,7 @@ const BoostCMSIDCard: React.FC<{
                 style={{
                     ...backgroundStyles,
                 }}
-                className={`relative flex-col w-[335px] h-[180px] rounded-tr-[24px] rounded-tl-[24px] border-white border-opacity-30 border-solid border-l-4 border-r-4 border-t-4 z-50 pl-4 pt-2 bg-cover bg-center bg-no-repeat ${idClassName}`}
+                className={`relative flex-col w-[335px] h-[180px] rounded-tr-[24px] rounded-tl-[24px] border-white/30  border-solid border-l-4 border-r-4 border-t-4 z-50 pl-4 pt-2 bg-cover bg-center bg-no-repeat ${idClassName}`}
             >
                 <ProfilePicture
                     customContainerClass="flex justify-center items-center h-[90px] w-[90px] rounded-full overflow-hidden border-white border-solid border-[3px] text-white font-medium text-xl min-w-[70px] min-h-[70px]"
@@ -86,7 +86,7 @@ const BoostCMSIDCard: React.FC<{
             </div>
             <div
                 style={{ backgroundColor: state?.appearance?.accentColor || '#4F46E5' }}
-                className={`flex items-start justify-start relative h-[35px] rounded-br-[24px] rounded-bl-[24px] border-white border-opacity-30 border-solid border-4 w-[335px] ${idFooterClassName}`}
+                className={`flex items-start justify-start relative h-[35px] rounded-br-[24px] rounded-bl-[24px] border-white/30  border-solid border-4 w-[335px] ${idFooterClassName}`}
             >
                 <p className="pl-[16px] pt-[2px] normal text-white text-[13px]">
                     {state?.basicInfo?.name}

@@ -34,8 +34,8 @@ export const ClrRecordSections = ({
                     aria-labelledby={`${id}-${section.kind}`}
                     className={
                         military
-                            ? 'overflow-hidden rounded-[20px] border border-grayscale-300 bg-white shadow-sm'
-                            : 'space-y-3'
+                            ? 'overflow-hidden rounded-[20px] border border-grayscale-300 bg-white shadow-xs'
+                            : 'space-y-v3-3'
                     }
                 >
                     <h3
@@ -63,7 +63,7 @@ export const ClrRecordSections = ({
                             </span>
                         )}
                     </h3>
-                    <ul className={military ? 'divide-y divide-grayscale-200' : 'space-y-3'}>
+                    <ul className={military ? 'divide-y divide-grayscale-200' : 'space-y-v3-3'}>
                         {section.records.map(record => {
                             const display = records.get(record.id)?.record;
                             const issuer = record.provenance.issuer;
@@ -74,15 +74,15 @@ export const ClrRecordSections = ({
                                     key={record.id}
                                     className={
                                         military
-                                            ? 'space-y-3 border-s-4 border-grayscale-900 p-5 sm:p-6'
-                                            : 'space-y-3 rounded-[20px] border border-grayscale-200 bg-white p-5'
+                                            ? 'space-y-v3-3 border-s-4 border-grayscale-900 p-5 sm:p-6'
+                                            : 'space-y-v3-3 rounded-[20px] border border-grayscale-200 bg-white p-5'
                                     }
                                     data-clr-record-id={record.id}
                                 >
                                     <button
                                         type="button"
                                         onClick={() => onSelectRecord(record.id)}
-                                        className="w-full rounded-[20px] text-start text-base font-semibold text-grayscale-900 hover:text-grayscale-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 [overflow-wrap:anywhere]"
+                                        className="w-full rounded-[20px] text-start text-base font-semibold text-grayscale-900 hover:text-grayscale-700 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-emerald-600 wrap-anywhere"
                                     >
                                         {record.name?.value ??
                                             record.credentialName?.value ??
@@ -101,7 +101,7 @@ export const ClrRecordSections = ({
                                                 <dt className="text-xs text-grayscale-600">
                                                     {m['clrRenderer.issuedBy']()}
                                                 </dt>
-                                                <dd className="text-sm text-grayscale-900 [overflow-wrap:anywhere]">
+                                                <dd className="text-sm text-grayscale-900 wrap-anywhere">
                                                     {issuerName}
                                                 </dd>
                                             </div>

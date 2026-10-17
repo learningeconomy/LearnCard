@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React from 'react';
 
 import WarningIcon from '../../../components/svgs/WarningIcon';
@@ -11,7 +12,8 @@ export const AdminToolsConsentFlowServiceProfileWarning: React.FC = () => {
     return (
         <div className="flex flex-col items-start justify-center w-full px-4">
             <div
-                className={`flex gap-[5px] rounded-[10px] bg-${primaryColor} bg-opacity-[10%] justify-center ion-padding mt-4`}
+                style={{ backgroundColor: tailwindColorWithOpacity(primaryColor, 10) }}
+                className={`flex gap-[5px] rounded-[10px] bg-${primaryColor} justify-center ion-padding mt-4`}
             >
                 <div className="w-full flex flex-col">
                     <p

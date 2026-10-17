@@ -141,7 +141,7 @@ export const ScoutNewsListItem: React.FC<ScoutNewsListItemProps> = ({ data }) =>
                 </div>
             </div>
 
-            <div className="news-link width-[110px] h-full flex-shrink-0">
+            <div className="news-link width-[110px] h-full shrink-0">
                 <div className="link-icon-display flex flex-col h-full justify-between items-end"></div>
             </div>
         </div>

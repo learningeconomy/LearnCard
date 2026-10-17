@@ -184,7 +184,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                            w-10 h-10 rounded-full
                            flex items-center justify-center
                            text-grayscale-500 hover:text-grayscale-900
-                           hover:bg-white/60 backdrop-blur-sm
+                           hover:bg-white/60 backdrop-blur-xs
                            transition-colors"
                     style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
                 >
@@ -193,7 +193,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
 
                 <div
                     className="relative max-w-2xl mx-auto px-6 sm:px-8
-                           pb-12 space-y-12"
+                           pb-12 space-y-v3-12"
                     style={{
                         paddingTop: 'max(4rem, calc(env(safe-area-inset-top) + 3rem))',
                         paddingBottom: 'max(3rem, calc(env(safe-area-inset-bottom) + 1.5rem))',
@@ -204,7 +204,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
-                        className="text-center space-y-6"
+                        className="text-center space-y-v3-6"
                     >
                         {/*
                         Destination glyph — pulses gently once on
@@ -223,7 +223,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                             }}
                             className="inline-flex items-center justify-center
                                    w-20 h-20 rounded-full
-                                   bg-gradient-to-br from-emerald-400 to-emerald-600
+                                   bg-linear-to-br/srgb from-emerald-400 to-emerald-600
                                    shadow-xl shadow-emerald-500/30"
                         >
                             <IonIcon
@@ -243,7 +243,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
 
                         {/* The becoming — H1 */}
                         {banner.kicker && banner.phrase ? (
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 <p
                                     className="text-sm font-medium tracking-wide
                                           text-grayscale-500 uppercase"
@@ -336,15 +336,15 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                         >
                             <div
                                 className="p-5 rounded-[24px]
-                                        bg-white/80 backdrop-blur-sm
+                                        bg-white/80 backdrop-blur-xs
                                         border border-grayscale-200
                                         shadow-lg shadow-grayscale-900/5
-                                        space-y-4"
+                                        space-y-v3-4"
                             >
                                 <div className="flex items-start gap-3">
                                     <div
                                         className="shrink-0 w-12 h-12 rounded-2xl
-                                                bg-gradient-to-br from-emerald-50 to-emerald-100
+                                                bg-linear-to-br/srgb from-emerald-50 to-emerald-100
                                                 border border-emerald-200
                                                 flex items-center justify-center"
                                     >
@@ -357,7 +357,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
 
                                     <div className="min-w-0 flex-1">
                                         <p
-                                            className="text-[10px] font-semibold tracking-[0.1em]
+                                            className="text-[10px] font-semibold tracking-widest
                                                   uppercase text-grayscale-500"
                                         >
                                             Earned credential
@@ -396,7 +396,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.85, ease: 'easeOut' }}
-                        className="max-w-md mx-auto space-y-3"
+                        className="max-w-md mx-auto space-y-v3-3"
                     >
                         <label
                             htmlFor="pathway-completion-reflection"
@@ -411,9 +411,9 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                             // affordance to revise.
                             <figure
                                 className="p-4 rounded-2xl
-                                           bg-white/70 backdrop-blur-sm
+                                           bg-white/70 backdrop-blur-xs
                                            border border-grayscale-200
-                                           text-center space-y-2"
+                                           text-center space-y-v3-2"
                             >
                                 <blockquote
                                     className="text-sm
@@ -434,7 +434,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                                 </button>
                             </figure>
                         ) : (
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 <textarea
                                     id="pathway-completion-reflection"
                                     rows={3}
@@ -445,7 +445,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                                            border border-grayscale-300 rounded-2xl
                                            text-sm text-grayscale-900 bg-white
                                            placeholder:text-grayscale-400
-                                           focus:outline-none focus:ring-2
+                                           focus:outline-hidden focus:ring-2
                                            focus:ring-emerald-500
                                            focus:border-transparent
                                            resize-none font-poppins"
@@ -473,7 +473,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 1.0, ease: 'easeOut' }}
-                        className="max-w-md mx-auto space-y-3 pt-2"
+                        className="max-w-md mx-auto space-y-v3-3 pt-2"
                     >
                         <button
                             type="button"

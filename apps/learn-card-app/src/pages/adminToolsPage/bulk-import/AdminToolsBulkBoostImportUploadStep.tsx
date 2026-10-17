@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React, { useRef } from 'react';
 
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -81,7 +82,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                 imageTracking={imageTracking}
             />,
             {
-                sectionClassName: '!max-w-[500px] !bg-white',
+                sectionClassName: 'max-w-[500px]! bg-white!',
                 hideButton: true,
             }
         );
@@ -104,11 +105,12 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                 <p className="text-left text-grayscale-700 text-sm">{m['bulkImport.zipHelp']()}</p>
 
                 <div
-                    className={`w-full flex gap-[5px] rounded-[10px] bg-${primaryColor} bg-opacity-[10%] justify-center ion-padding mt-4`}
+                    style={{ backgroundColor: tailwindColorWithOpacity(primaryColor, 10) }}
+                    className={`w-full flex gap-[5px] rounded-[10px] bg-${primaryColor} justify-center ion-padding mt-4`}
                 >
                     <div className="flex flex-col">
                         <p
-                            className={`flex items-center justify-start text-[18px] text-${primaryColor} font-poppins font-[600]`}
+                            className={`flex items-center justify-start text-[18px] text-${primaryColor} font-poppins font-semibold`}
                         >
                             <CircleCheckOutlineIcon
                                 className={`inline mr-2 text-${primaryColor}`}

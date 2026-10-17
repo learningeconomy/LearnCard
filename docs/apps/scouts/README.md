@@ -10,6 +10,13 @@ Available on:
 
 ---
 
+## Supported browsers and devices
+
+Tailwind 4 requires Safari 16.4+, Chrome 111+, or Firefox 128+. The iOS app
+requires iOS 16.4 or later. On Android, keep Android System WebView or Chrome
+updated to version 111 or later; the Android OS version alone does not determine
+support. See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility).
+
 ## Key Features
 
 | Feature                    | Description                                                       |

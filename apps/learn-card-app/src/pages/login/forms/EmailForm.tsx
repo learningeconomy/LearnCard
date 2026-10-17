@@ -430,8 +430,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         const emailInputBaseClassName =
             emailInputVariant === 'appStore'
-                ? 'w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500'
-                : 'rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus-visible:outline-none focus-visible:ring-0 focus-visible:border-transparent';
+                ? 'w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500'
+                : 'rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus-visible:outline-hidden focus-visible:ring-0 focus-visible:border-transparent';
 
         const emailInputErrorClassName =
             emailInputVariant === 'appStore'
@@ -582,7 +582,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                         }}
                                         className={
                                             resendCodeButtonClassNameOverride ??
-                                            'text-white font-bold border-b-white border-solid border-b-[1px]'
+                                            'text-white font-bold border-b-white border-solid border-b'
                                         }
                                     >
                                         {resendCodeButtonText}
@@ -593,7 +593,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                         disabled
                                         className={
                                             resendCodeButtonClassNameOverride ??
-                                            'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                            'text-white font-bold mt-4 border-b-white border-solid border-b'
                                         }
                                     >
                                         {m['common.resendIn']({ seconds })}

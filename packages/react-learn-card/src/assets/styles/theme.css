@@ -1,0 +1,90 @@
+/* Keep utilities unlayered to preserve the existing Ionic/Sass cascade. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' source(none);
+@import '../../../../learn-card-base/src/assets/styles/tailwind-v3-theme.css';
+@source "../../**/*.{js,jsx,ts,tsx}";
+@source inline("bg-orange-200");
+@source inline("bg-orange-300");
+@source inline("bg-orange-700");
+@source inline("border-orange-700");
+@source inline("text-orange-700");
+@source inline("text-orange-900");
+
+@theme static {
+    --color-grayscale-50: #fbfbfc;
+    --color-grayscale-100: #eff0f5;
+    --color-grayscale-200: #e2e3e9;
+    --color-grayscale-300: #c5c8d3;
+    --color-grayscale-400: #a8acbd;
+    --color-grayscale-500: #8b91a7;
+    --color-grayscale-600: #6f7590;
+    --color-grayscale-700: #52597a;
+    --color-grayscale-800: #353e64;
+    --color-grayscale-900: #18224e;
+    --color-emerald-50: #d6faf0;
+    --color-emerald-100: #bfeee1;
+    --color-emerald-200: #9fe5d2;
+    --color-emerald-300: #80e0c6;
+    --color-emerald-400: #34eab9;
+    --color-emerald-500: #40cba6;
+    --color-emerald-600: #20c397;
+    --color-emerald-700: #00ba88;
+    --color-emerald-800: #008b66;
+    --color-emerald-900: #004633;
+    --color-cyan-50: #e7f9fd;
+    --color-cyan-100: #d0f3fc;
+    --color-cyan-200: #a0e7f8;
+    --color-cyan-300: #a0e7f8;
+    --color-cyan-400: #88e0f7;
+    --color-cyan-500: #71daf5;
+    --color-cyan-600: #59d4f4;
+    --color-cyan-700: #41cef2;
+    --color-cyan-800: #319bb5;
+    --color-cyan-900: #184d5b;
+    --color-spice-50: #ffede7;
+    --color-spice-100: #ffdbcf;
+    --color-spice-200: #ffb7a0;
+    --color-spice-300: #ff9470;
+    --color-spice-400: #ff7040;
+    --color-spice-500: #ff5820;
+    --color-spice-600: #ff4000;
+    --color-spice-700: #df3800;
+    --color-spice-800: #bf3000;
+    --color-spice-900: #802000;
+    --color-indigo-50: #eef2ff;
+    --color-indigo-100: #e0e7ff;
+    --color-indigo-200: #c7d2fe;
+    --color-indigo-300: #a5b4fc;
+    --color-indigo-400: #818cf8;
+    --color-indigo-500: #6366f1;
+    --color-indigo-600: #4f46e5;
+    --color-indigo-700: #4338ca;
+    --color-indigo-800: #3730a3;
+    --color-indigo-900: #312e81;
+    --color-blue-light: #026bff;
+    --color-green-dark: #05b65d;
+    --color-orange-500: #ef5d35;
+    --color-orange-800: #9a3412;
+    --color-red-mastercard: #eb001b;
+    --shadow-bottom: 0px 4px 0px rgba(0, 0, 0, 0.25);
+    --shadow-3xl: 0px 0px 8px rgba(0, 0, 0, 0.25);
+    --shadow-card-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);
+    --spacing-25pct: 25%;
+    --text-shadow-DEFAULT: 1px 2px 0px rgb(0 0 0 / 35%);
+}
+
+/* Emit literal card font families, as V3 did. Host app tokens use the same
+   names and must not retroactively change utilities compiled by this package. */
+@theme inline {
+    --font-mouse: 'Mouse Memoirs';
+    --font-montserrat: Montserrat, Helvetica, Serif;
+    --font-poppins: Poppins;
+    --font-jacques: 'Jacques Francois';
+    --font-sacramento: Sacramento;
+}
+
+@custom-variant xxsm (@media (max-width: 240px));
+@custom-variant xxxsm (@media (max-width: 200px));
+@utility text-shadow {
+    text-shadow: 1px 2px 0px rgb(0 0 0 / 35%);
+}

@@ -150,7 +150,7 @@ const BoostEarnedIDList: React.FC<{
                             {searchActive && searchResultsElement}
                             <section className="relative flex flex-wrap text-center justify-center items-center gap-4 max-w-[800px]">
                                 <div
-                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] z-[-10] ${bgFillerColor}`}
+                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
                                 {credentials}
                                 <div role="presentation" ref={infiniteScrollRef} />
@@ -169,7 +169,7 @@ const BoostEarnedIDList: React.FC<{
                     {!isCardView && (
                         <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
                             <div
-                                className={`bg-filler absolute h-full mt-[200px] w-[3000px] z-[-10] ${bgFillerColor}`}
+                                className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                             />
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
                                 {searchActive && searchResultsElement}

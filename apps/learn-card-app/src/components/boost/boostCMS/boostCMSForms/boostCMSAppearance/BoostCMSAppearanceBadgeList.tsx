@@ -228,7 +228,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                 >
                     All{' '}
                     <CaretLeft
-                        className={`h-auto w-[5px] text-grayscale-800 rotate-[-90deg] ml-[5px]`}
+                        className={`h-auto w-[5px] text-grayscale-800 -rotate-90 ml-[5px]`}
                     />
                 </button>
             );
@@ -243,7 +243,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                     <IconComponent className={`h-[20px] text-${color} mr-[5px]`} />
                     {title}{' '}
                     <CaretLeft
-                        className={`h-auto w-[5px] text-grayscale-800 rotate-[-90deg] ml-[5px]`}
+                        className={`h-auto w-[5px] text-grayscale-800 -rotate-90 ml-[5px]`}
                     />
                 </button>
             );

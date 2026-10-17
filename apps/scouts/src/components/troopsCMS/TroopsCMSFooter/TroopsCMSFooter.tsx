@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 
@@ -74,11 +75,11 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
             bottomBarRef.current.className =
-                'w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] pb-[15px] absolute bottom-0 bg-white !max-h-[85px] hidden';
+                'w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] pb-[15px] absolute bottom-0 bg-white/60 max-h-[85px]! hidden';
         }
         if (!isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
             bottomBarRef.current.className =
-                'w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] pb-[15px] absolute bottom-0 bg-white !max-h-[85px]';
+                'w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] pb-[15px] absolute bottom-0 bg-white/60 max-h-[85px]!';
         }
     });
 
@@ -90,7 +91,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
     return (
         <IonFooter
             mode="ios"
-            className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] absolute bottom-0 bg-white !max-h-[85px]"
+            className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[85px]!"
             ref={bottomBarRef as any}
         >
             <IonToolbar color="transparent" mode="ios">
@@ -147,10 +148,13 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                             </button>
                             <button
                                 disabled={isTroopCreationDisabled ?? false}
+                                style={{
+                                    backgroundColor: isTroopCreationDisabled
+                                        ? tailwindColorWithOpacity(actionButtonColor, 50)
+                                        : undefined,
+                                }}
                                 onClick={() => handlePublishBoosts?.()}
-                                className={`text-white text-lg font-bold rounded-full py-[12px] w-full ${
-                                    isTroopCreationDisabled ? 'bg-opacity-50' : ''
-                                } ${actionButtonColor}`}
+                                className={`text-white text-lg font-bold rounded-full py-[12px] w-full ${actionButtonColor}`}
                             >
                                 {isEdit ? m['common.save']() : m['common.create']()}
                             </button>
