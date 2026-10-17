@@ -1,5 +1,17 @@
 # Native regression checks
 
+## Home deck and list-only Passport — October 17, 2026
+
+The complete Swift suite passes **200 cases** (`artifacts/home-deck-core.log`), including the revised Home summary's five-record cap, mixed-category ordering and exclusion of Family/offer records. The catalog keeps **1,011 four-language keys**; Recent credentials now accurately describes all personal categories.
+
+`home-deck-ui-2026-10-17.xcresult` passes **10/11 focused cases**. Gesture traversal/bounds, partial/short drag cancellation, actual detail navigation/return, Arabic Reduce Motion, Passport issuer/date/sort/paged search, Home dark/accessibility routing, sample progress and all-four-tab settled footer clearance pass. The remaining All credentials check expected an older offscreen lazy row to exist immediately; its failure tree confirmed an empty search, All selected and the full list. The test now asserts that reset state and scrolls to the older record; `home-deck-list-final-2026-10-17.xcresult` passes **1/1**, bringing this pass to **11 distinct passing UI cases**. No app correction was needed for that test assumption.
+
+A native simulator recording captures the actual held pan before release. The real blue next card already has title/issuer content while the pink top card is still partly onscreen, with the real yellow portfolio layer behind it. The selected [eight-second clip and original frame](RECENT_STACK.md#native-screen-and-motion-evidence) are from the real production rendering, not a generated mockup or staged drag-state fixture.
+
+Configured suite remains **537 cases**: 202 Bun, 200 Swift, 135 simulator, plus the opt-in live-exchange skip. Runtime/protocol behavior did not change; full Bun/UI suites, Release and hosted native CI were not rerun. No real agreement, receipt, relationship write, reset or sign-out was performed.
+
+The final normal Debug build and Native Lab installation pass (`home-deck-debug-final.log`, `home-deck-review-install.log`): **48/48 payload files match**, with private configuration preserved byte-for-byte and build version **3** (`home-deck-install-proof.json`). The isolated checks simulator is shut down. Read-only review confirms the signed-in Home with its five-card deck and the All credentials route to the live Passport list, with empty search, All selected, issuer/date rows, sync Refresh and honest partial-page count. Native Lab is left on Passport; no real account or relationship mutation occurred.
+
 ## Passport and Inbox credential activity — October 17, 2026
 
 The complete Swift suite passes **200 cases** (167 XCTest plus 33 Swift Testing), including four new activity/coordinator cases (`artifacts/credential-activity-core.log`). They cover real activity lifetime, duplicate refresh exclusion, retained cached content and inline error/retry, distinct receipt/paging/creation states, both Inbox reads with independent failures, and sample completion withheld when its final Passport read fails. Catalog generation validates **1,011 keys** in English, Spanish, French and Arabic.

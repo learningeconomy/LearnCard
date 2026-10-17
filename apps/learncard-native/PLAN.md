@@ -1,5 +1,13 @@
 # LearnCard native client plan
 
+## Home deck and list-only Passport — October 17
+
+- [x] Replace recent Home rows with the latest-five personal credential deck across categories and a clear All credentials route.
+- [x] Make Passport a list at every size, retaining search/date/category/sort/paging and including the newest record.
+- [x] Render actual covered credential surfaces/artwork/colors during a partial swipe; remove opaque decorative sleeves. Preserve the settled Home position across Passport browsing.
+
+See [behavior, actual screens and held-swipe recording](RECENT_STACK.md). Sync feedback remains in Passport and Inbox.
+
 ## Shared credential activity — October 17
 
 - [x] Put actual check/receive/sample status beside the Passport and Inbox titles, with labelled Refresh and inline Try Again.

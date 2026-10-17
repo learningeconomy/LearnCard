@@ -1,32 +1,46 @@
 # Recent credential stack
 
-October 15, 2026. Collection’s **Latest issued** section browses up to five actual credentials in the current category, ordered by issue date. Family records remain separate. Equal dates preserve existing collection order; duplicate IDs cannot occupy multiple positions. This is read-only browsing, not dismissal, deletion or a change to personal indexing.
+Updated October 17, 2026. Home’s **Recent credentials** section browses the latest five loaded personal credentials across all categories. **All credentials** opens Passport's complete list and clears an earlier Passport search/filter/detail destination. Family records remain separate. Equal dates preserve source order; duplicate IDs cannot occupy multiple positions. Swiping is read-only browsing, never credential dismissal or deletion.
+
+Passport always uses list rows, including its default, single-record and wider layouts. Search, category/date filters, sorting, paging, issuer/date metadata and credential-detail navigation remain. Changing a Passport filter does not change Home's current deck position. An explicit All credentials action returns to the unfiltered list; ordinary tab switching preserves each page's state.
 
 ## Interaction and appearance
 
-- In left-to-right layouts, swipe left for an older credential and right for a newer one. Arabic reverses the physical direction. Newer/Older controls and a position/dot indicator provide the same bounded navigation. The stack stops at either end.
-- The active card follows a horizontal drag with a slight rotation. A completed swipe tosses that card beyond the screen edge, then the underlying credential settles forward. Short drags and attempted movement beyond an end spring back. Vertical intent is rejected before horizontal recognition, preserving Collection scrolling.
-- The date changes with the active card. Tapping opens that exact credential, and returning from detail retains its position. Category changes and leaving search reset the stack to the newest eligible record. A collection refresh retains the active record if it remains in the latest five; otherwise it resets to the first.
-- Covered cards keep contrasting Colorful sleeves, avoiding a pink-on-pink accent stack. Each uncovered card shows its own category color and supplied/fallback artwork. There are at most two visible covered layers, and no fabricated layers when a category has one credential.
-- The ordinary list/grid omits only the currently active card, keeping every other loaded credential accessible. Background stack cards are hidden from hit-testing/VoiceOver and are not duplicate zoom sources.
+- Swipe left for an older credential and right for a newer one in left-to-right layouts; Arabic mirrors these directions. Newer/Older buttons and the position/dot indicator provide the same bounded navigation.
+- The active card follows a horizontal drag and slight rotation. A committed swipe tosses it beyond the edge, then the next card settles forward. Short drags and attempts beyond an end spring back. Vertical intent preserves Home scrolling.
+- Covered cards render the actual credential surface, issuer/title, category artwork and category color before the drag begins. The old opaque decorative sleeves are removed. There are at most two visible covered layers. At the oldest card, the previous cards provide the visible layers for reverse browsing. A single record has no fabricated layers.
+- Issuer/date metadata remains on each card. Tapping opens that exact credential; returning preserves its position. A refresh retains the active record if it is still in the latest five, otherwise selecting the newest eligible record.
+- Covered cards are hidden from hit-testing and VoiceOver, and never create duplicate zoom sources. Their visual content remains fully rendered during reveal.
 
-The first stack comes from the currently loaded personal-index pages. If more pages remain, the caption says **Latest among loaded credentials**. Browsing this stack does not trigger an expensive whole-account scan. Use Load More to include later pages. This preserves the existing Collection boundary; the sharing picker has its own automatic filtered paging.
+The deck uses the currently loaded personal-index pages. If more pages remain, its caption says Latest among loaded credentials. Swiping does not start a whole-account scan. Passport owns list paging and complete-collection filtering/sorting.
 
 ## Motion, accessibility and lifecycle
 
-The horizontal pan uses iOS 18’s `UIGestureRecognizerRepresentable` and a delegate that refuses vertical intent. Fast intentional flicks and longer drags advance; a small accidental horizontal movement does not. The toss takes about 220 ms, followed by a short spring settlement. Input is serialized during settlement. Width-relative thresholds are bounded for different logical screen widths.
+The horizontal pan uses iOS 18's `UIGestureRecognizerRepresentable` with a delegate that refuses vertical intent. Fast intentional flicks and longer drags advance; small accidental movements do not. The toss lasts about 220 ms, followed by spring settlement; input is serialized while settling. Width-relative thresholds remain bounded.
 
-Reduce Motion switches the browsing position immediately with no drag transform or throw. Newer/Older targets are at least 44 points, with localized labels and VoiceOver custom actions. Single-card categories omit redundant controls. Six new String Catalog keys cover English, Spanish, French and Arabic, including formatted positions.
+Reduce Motion changes the reading position immediately without a drag transform or throw. Newer/Older controls have 44-point targets and localized labels/custom actions. The Home title and All credentials action stack at accessibility text sizes. English, Spanish, French and Arabic retain formatted position labels.
 
-Leaving the screen, scrolling the stack out of view, backgrounding or changing Reduce Motion invalidates pending animation completions and resets transient drag state. A cancelled completion cannot advance another category. This stack has no ambient timeline animation. Credential **detail** retains its separate automatic nine-second tilt/sheen and isolated card.
+Leaving Home, scrolling the deck out of view, backgrounding or changing Reduce Motion invalidates pending completions and clears transient drag state. These operations preserve the settled reading position. The deck has no ambient timeline animation; credential detail retains its separate automatic tilt/sheen.
 
 ## Source and regression landmarks
 
-- `ios/NativeCore/Sources/LearnCardNativeCore/RecentCredentialDeck.swift`: latest-five selection, bounded cursor/reconciliation and horizontal-intent/commit rules.
-- `ios/Sources/LatestCredentialStack.swift`: layers, toss/settlement, native horizontal recognizer, lifecycle cancellation, controls and navigation.
-- `ios/Sources/CollectionView.swift`: category/search/list integration; passes at most five records so drag frames do not sort a large collection.
-- `RecentCredentialDeckTests.swift`: category filtering, date order, deduplication, five-record cap, unchanged payloads, cursor bounds/refresh, vertical/short/fast gestures and RTL.
-- `RecentDeckLocalizationTests.swift`: all four locales and position placeholders.
-- `RecentStackUITests.swift`: actual swipes in both directions, bounds, active-card navigation/return, short-drag cancellation, vertical scrolling, search/category reset and Arabic Reduce Motion.
+- `ios/NativeCore/Sources/LearnCardNativeCore/RecentCredentialDeck.swift`: latest-five selection, cursor reconciliation and swipe intent/commit rules.
+- `ios/NativeCore/Sources/LearnCardNativeCore/LearnerHomeSummary.swift`: five recent personal records, excluding offers/families, and honest loading/failure/empty/partial states.
+- `ios/Sources/HomeAppsView.swift`: Home deck and All credentials entry.
+- `ios/Sources/CollectionView.swift`: list-only Passport browsing.
+- `ios/Sources/LatestCredentialStack.swift`: actual covered cards, toss/settlement, native pan, cancellation, controls and detail navigation.
+- `RecentStackUITests.swift`: actual swipes, bounds, navigation/return, short-drag cancellation, vertical scrolling, independent Passport search/category state and Arabic Reduce Motion.
 
-All new tests are discovered by the existing branch CI. See [TESTING](TESTING.md) for actual evidence; synthetic samples do not mutate a real collection.
+See [TESTING](TESTING.md) for current evidence. Automated credentials and interactions use isolated fixtures.
+
+## Native screen and motion evidence
+
+Production SwiftUI with isolated mixed-category samples; no real account data appears in these captures.
+
+| Home recent deck                                 | Passport list                                     | Card revealed during drag                                                         |
+| ------------------------------------------------ | ------------------------------------------------- | --------------------------------------------------------------------------------- |
+| ![Home deck](design/home-recent-deck-native.png) | ![Passport list](design/passport-list-native.png) | ![Real next card under the dragged card](design/home-deck-drag-reveal-native.png) |
+
+[Eight-second actual swipe recording](design/home-deck-drag-reveal-native.mp4). The held gesture reveals the next card's real blue surface, title and issuer before the pink card has left. Its underlying yellow layer belongs to the next portfolio credential.
+
+[Arabic category list](design/passport-list-arabic-native.png) and [older records after All credentials clears an earlier search](design/passport-all-credentials-native.png).

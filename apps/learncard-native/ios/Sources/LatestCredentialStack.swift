@@ -24,7 +24,6 @@ struct LatestCredentialStack: View {
 
     private var entries: [Credential] { RecentCredentialDeck.latest(in: credentials) }
     private var ids: [String] { entries.map(\.id) }
-    private var current: Credential? { entries.first(where: { $0.id == cursor.activeID }) ?? entries.first }
     private var reduceMotion: Bool {
         #if DEBUG
         systemReduceMotion || ProcessInfo.processInfo.arguments.contains("--card-reduce-motion")
@@ -36,15 +35,6 @@ struct LatestCredentialStack: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(NativeText.literal("Latest issued")).font(.headline).foregroundStyle(Palette.ink)
-                    .accessibilityAddTraits(.isHeader).headingFlair(Palette.flairYellow)
-                Spacer()
-                if let current, current.date.timeIntervalSince1970 > 0 {
-                    Text(current.date, format: .dateTime.month(.abbreviated).day().year().locale(locale))
-                        .font(.caption).foregroundStyle(Palette.secondary).accessibilityIdentifier("stack-issue-date")
-                }
-            }
             ZStack(alignment: .top) {
                 ForEach(Array(entries.enumerated()), id: \.element.id) { position, credential in
                     card(credential, position: position)
@@ -92,16 +82,14 @@ struct LatestCredentialStack: View {
         let active = credential.id == (cursor.activeID ?? entries.first?.id)
         let flying = credential.id == outgoing
         let moving = flying || (active && outgoing == nil)
-        let depth = active ? 0 : preview == .newer ? cursor.index - position : position - cursor.index
+        let showingNewer = preview == .newer || (preview == nil && cursor.target(for: .older) == nil)
+        let depth = active ? 0 : showingNewer ? cursor.index - position : position - cursor.index
         let visible = active || flying || (1...2).contains(depth)
         return NavigationLink {
             CredentialDetailView(store: store, credential: credential)
                 .credentialZoom(id: credential.id, namespace: namespace, reduceMotion: reduceMotion)
         } label: {
             CredentialCard(credential: credential, featured: true, animatesPresence: false, showsStack: false)
-                .overlay {
-                    if !active && !flying { sleeve(depth: depth).clipShape(RoundedRectangle(cornerRadius: 24)) }
-                }
                 .modifier(StackTransitionSource(active: active, id: credential.id, namespace: namespace))
         }
         .buttonStyle(CredentialPressStyle())
@@ -129,12 +117,6 @@ struct LatestCredentialStack: View {
         .zIndex(active || flying ? 20 : Double(10 - depth))
     }
 
-    private func sleeve(depth: Int) -> Color {
-        let category = current?.displayCategory
-        let accents: [CredentialCategory] = [.portfolio, .experience, .studies, .assistance, .badge]
-        let options = accents.filter { $0 != category && !(category == .id && $0 == .badge) && !(category == .aiTopic && $0 == .experience) }
-        return Palette.categoryTint(options[max(0, depth - 1) % options.count])
-    }
     private func stepButton(_ step: CredentialDeckStep) -> some View {
         Button { move(step) } label: {
             Label(NativeText.text(step == .older ? "collection.stackOlder" : "collection.stackNewer"), systemImage: step == .older ? "chevron.forward" : "chevron.backward")

@@ -26543,25 +26543,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recent achievements"
+            "value": "Recent credentials"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Logros recientes"
+            "value": "Credenciales recientes"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Réussites récentes"
+            "value": "Justificatifs récents"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "الإنجازات الأخيرة"
+            "value": "الشهادات الأخيرة"
           }
         }
       }

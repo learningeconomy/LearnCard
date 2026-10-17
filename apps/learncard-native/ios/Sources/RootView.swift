@@ -21,6 +21,7 @@ struct RootView: View {
     @State private var selectedTab = 3
     @State private var discoverApps = false
     @State private var appsEntry = 0
+    @State private var passportEntry = 0
     @State private var compactBrands = Array(repeating: false, count: 4)
     @State private var showFamilyReview = false
 
@@ -33,7 +34,7 @@ struct RootView: View {
                     HomeView(store: store, profileName: account?.state?.profileName,
                              openInbox: { selectedTab = 1 }, create: { showCreate = true },
                              receive: { claims.open() }, intake: { claims.open(mode: $0) }, add: { showActions = true },
-                             share: { showShare = true }, welcome: { showWelcome = true }, openCollection: { selectedTab = 0 },
+                             share: { showShare = true }, welcome: { showWelcome = true }, openCollection: openPassport,
                              openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
                         .toolbar { header(tab: 3) }
                 }
@@ -44,6 +45,7 @@ struct RootView: View {
                     CollectionView(store: store, scan: { claims.open() }, create: { showCreate = true }, onScrollStateChange: { compactBrands[0] = $0 })
                         .toolbar { header(tab: 0) }
                 }
+                .id(passportEntry)
                 .toolbar(.hidden, for: .tabBar)
                 .tabItem { Label { Text(NativeText.literal("Passport")) } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }
                 .tag(0)
@@ -65,7 +67,7 @@ struct RootView: View {
                     .tag(2)
             }
             if store.intake.hasSampleNotice {
-                SampleSyncBanner(store: store, viewPassport: { selectedTab = 0 })
+                SampleSyncBanner(store: store, viewPassport: openPassport)
             }
             NativeTabTray(selection: $selectedTab, inboxCount: inboxCount)
         }
@@ -120,6 +122,10 @@ struct RootView: View {
 
     private var inboxCount: Int {
         store.inboxCount
+    }
+    private func openPassport() {
+        // An explicit All credentials/View Passport action returns to the full list.
+        passportEntry += 1; compactBrands[0] = false; selectedTab = 0
     }
     private var availablePrompt: InboxItem? {
         guard !claims.isPresented, !showWelcome, !showCreate, !showAccount, !showActions, !showExisting, !showShare, !showFamilyReview,

@@ -56,10 +56,11 @@ public actor DemoCredentialService: CredentialService {
             }
         }
         if includeStackSamples {
+            let categories = ["Achievement", "ID", "Accomplishment", "Course", "Qualifications"]
             credentials += (1...7).map { index in
                 Credential(id: "stack-\(index)", title: "Learning moment \(index)", issuer: "Sample Learning Studio",
                            summary: "Unsigned recent stack browsing sample.", kind: .achievement,
-                           date: Date.now.addingTimeInterval(-Double(index) * 3600), category: "Achievement")
+                           date: Date.now.addingTimeInterval(-Double(index) * 3600), category: categories[(index - 1) % categories.count])
             }
             credentials += [
                 Credential(id: "stack-portfolio", title: "A recent portfolio", issuer: "Sample Learning Studio", summary: "Unsigned category stack sample.", kind: .achievement, date: Date.now.addingTimeInterval(-3 * 86_400), category: "Accomplishment"),

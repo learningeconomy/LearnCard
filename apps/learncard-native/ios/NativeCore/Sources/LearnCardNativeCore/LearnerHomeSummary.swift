@@ -8,7 +8,7 @@ public struct LearnerHomeSummary: Sendable {
     public let hasMore: Bool
     public init(snapshot: CollectionSnapshot?, hasError: Bool) {
         hasMore = snapshot?.hasMore ?? false
-        recent = Array(RecentCredentialDeck.latest(in: (snapshot?.credentials ?? []).filter(\.belongsInCollection)).prefix(2))
+        recent = RecentCredentialDeck.latest(in: snapshot?.credentials ?? [])
         if !recent.isEmpty { content = .records }
         else if hasError { content = .unavailable }
         else if snapshot == nil { content = .loading }

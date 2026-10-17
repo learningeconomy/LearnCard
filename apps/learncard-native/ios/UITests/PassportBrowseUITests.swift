@@ -58,7 +58,7 @@ import XCTest
         XCTAssertFalse(app.staticTexts["Latest issued"].exists)
         capture(app, "Passport alphabetical results and labelled metadata")
         app.buttons["passport-reset-browse"].tap()
-        XCTAssertTrue(app.staticTexts["Latest issued"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.otherElements["latest-stack"].exists)
     }
 
     func testSearchChecksRemainingPagesAndDateDraftCanCancelApplyAndReset() {
@@ -80,7 +80,7 @@ import XCTest
         app.buttons["collection-search-reset"].tap()
         XCTAssertTrue(match.waitForExistence(timeout: 5)); XCTAssertEqual(search.value as? String, "Archive 239")
         app.buttons["collection-search-clear"].tap()
-        XCTAssertTrue(app.staticTexts["Latest issued"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.otherElements["latest-stack"].exists)
     }
 
     func testArabicAccessibilityDateSheetAndControlsRemainUsable() {

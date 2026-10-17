@@ -6,6 +6,8 @@ import LearnCardNativeCore
 struct HomeView: View {
     @Environment(\.locale) private var nativeLocale
     @Environment(\.dynamicTypeSize) private var textSize
+    @State private var recentID: String?
+    @Namespace private var recentCards
     let store: AppStore
     var profileName: String?
     let openInbox: () -> Void
@@ -97,16 +99,13 @@ struct HomeView: View {
             }.padding(18).background(Palette.surface, in: RoundedRectangle(cornerRadius: 26))
         case .records:
             VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline) {
+                (textSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))) {
                     Text(NativeText.text("learner.recent")).font(.title2.bold())
-                    Spacer(minLength: 8)
-                    Button(NativeText.text("home.seeAll"), action: openCollection).font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("home-collection")
+                    if !textSize.isAccessibilitySize { Spacer(minLength: 8) }
+                    Button(NativeText.text("sharePicker.all"), action: openCollection).font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("home-collection")
                 }
-                if summary.hasMore { Text(NativeText.text("learner.loadedRecords")).font(.caption).foregroundStyle(Palette.secondary) }
-                ForEach(summary.recent) { credential in
-                    NavigationLink { CredentialDetailView(store: store, credential: credential, isOffer: false) } label: { CredentialListRow(credential: credential) }
-                        .buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-recent-\(credential.id)")
-                }
+                LatestCredentialStack(credentials: summary.recent, store: store, namespace: recentCards,
+                                      partial: summary.hasMore, activeID: $recentID)
                 if store.error != nil || store.snapshotReadFailed { retryPassport }
             }
         case .loading:

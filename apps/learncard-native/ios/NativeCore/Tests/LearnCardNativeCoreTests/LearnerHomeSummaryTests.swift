@@ -18,5 +18,7 @@ import Testing
     let snapshot = CollectionSnapshot(credentials: [record("old", 1), record("new", 3), record("middle", 2), record("family", 4, "Family")], offers: [record("offer", 5)], activity: [], hasMore: true)
     let summary = LearnerHomeSummary(snapshot: snapshot, hasError: true)
     #expect(summary.content == .records); #expect(summary.hasMore)
-    #expect(summary.recent.map(\.id) == ["new", "middle"])
+    #expect(summary.recent.map(\.id) == ["new", "middle", "old"])
+    let many = CollectionSnapshot(credentials: (1...8).map { record("record-\($0)", Double($0), $0 == 8 ? "Family" : $0 == 6 ? "Qualifications" : "Achievement") }, offers: [], activity: [])
+    #expect(LearnerHomeSummary(snapshot: many, hasError: false).recent.map(\.id) == ["record-7", "record-6", "record-5", "record-4", "record-3"])
 }

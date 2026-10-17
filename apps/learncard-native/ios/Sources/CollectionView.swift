@@ -11,7 +11,6 @@ struct CollectionView: View {
     @State private var search = ""
     @State private var appliedQuery = ""
     @State private var category: CredentialCategory?
-    @State private var latestActiveID: String?
     @State private var browse = CredentialPickerQuery()
     @State private var sheet: PassportBrowseSheet?
     @State private var loader: CredentialPickerLoader
@@ -21,7 +20,6 @@ struct CollectionView: View {
     @Namespace private var cards
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var textSize
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(store: AppStore, scan: @escaping () -> Void, create: @escaping () -> Void,
          onScrollStateChange: @escaping (Bool) -> Void = { _ in }) {
@@ -43,14 +41,6 @@ struct CollectionView: View {
     private var credentials: [Credential] {
         // Browsing must retain unreadable records too; only sharing requires a signed payload.
         resultQuery.results(in: store.snapshot?.credentials ?? [], selected: [], live: false, locale: nativeLocale)
-    }
-    private var latest: [Credential] {
-        let matches = Set(credentials.map(\.id))
-        // Keep the deck's established source order when several records have the same date.
-        return RecentCredentialDeck.latest(in: (store.snapshot?.credentials ?? []).filter { matches.contains($0.id) })
-    }
-    private var featuredID: String? {
-        return latest.contains(where: { $0.id == latestActiveID }) ? latestActiveID : latest.first?.id
     }
 
     var body: some View {
@@ -105,12 +95,7 @@ struct CollectionView: View {
                     if !query.isEmpty || browse.dateRange != .any { searchEmptyState }
                     else { collectionEmptyState }
                 } else {
-                    if !resultsMode {
-                        LatestCredentialStack(credentials: latest, store: store, namespace: cards,
-                                              partial: store.snapshot?.hasMore == true, activeID: $latestActiveID)
-                            .id(category?.rawValue ?? "all")
-                    }
-                    if resultsMode || credentials.count > 1 {
+                    Group {
                         HStack(alignment: .firstTextBaseline) {
                             Text(searchMode ? NativeText.text("collection.results") : NativeText.literal("In this view"))
                                 .font(.headline).foregroundStyle(Palette.ink)
@@ -122,15 +107,9 @@ struct CollectionView: View {
                                     .font(.subheadline.monospacedDigit()).foregroundStyle(Palette.secondary)
                             }
                         }
-                        if sizeClass == .regular && !textSize.isAccessibilitySize && !resultsMode {
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 2), spacing: 14) {
-                                ForEach(credentials.filter { $0.id != featuredID }) { credential in link(credential, featured: false, row: false) }
-                            }
-                        } else {
-                            LazyVStack(spacing: 12) {
-                                ForEach(resultsMode ? credentials : credentials.filter { $0.id != featuredID }) { credential in
-                                    link(credential, featured: false, row: true)
-                                }
+                        LazyVStack(spacing: 12) {
+                            ForEach(credentials) { credential in
+                                link(credential)
                             }
                         }
                     }
@@ -241,15 +220,12 @@ struct CollectionView: View {
         }
     }
 
-    private func link(_ credential: Credential, featured: Bool, row: Bool) -> some View {
+    private func link(_ credential: Credential) -> some View {
         NavigationLink {
             CredentialDetailView(store: store, credential: credential)
                 .credentialZoom(id: credential.id, namespace: cards, reduceMotion: reduceMotion)
         } label: {
-            Group {
-                if row { CredentialListRow(credential: credential) }
-                else { CredentialCard(credential: credential, featured: featured, onWhiteSurface: !featured) }
-            }.matchedTransitionSource(id: credential.id, in: cards)
+            CredentialListRow(credential: credential).matchedTransitionSource(id: credential.id, in: cards)
         }
         .buttonStyle(CredentialPressStyle())
         .accessibilityIdentifier("credential-\(credential.id)")
@@ -288,7 +264,7 @@ struct CollectionView: View {
                     .font(.subheadline).foregroundStyle(Palette.secondary).fixedSize(horizontal: false, vertical: true)
             }
             if category != nil {
-                Button { category = nil; latestActiveID = nil } label: {
+                Button { category = nil } label: {
                     Text(NativeText.text("collection.empty.viewAll")).font(.body.weight(.semibold))
                         .frame(maxWidth: .infinity, minHeight: 50).foregroundStyle(Palette.ink)
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(Palette.line, lineWidth: 1.5))
@@ -307,12 +283,12 @@ struct CollectionView: View {
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: 28))
     }
 
-    private func resetBrowse() { browse.resetFilters(); browse.sort = .newest; category = nil; latestActiveID = nil }
+    private func resetBrowse() { browse.resetFilters(); browse.sort = .newest; category = nil }
     private func resetSearch() { search = ""; appliedQuery = ""; resetBrowse(); searching = false }
 
     private func filter(_ title: String, value: CredentialCategory?) -> some View {
         Button {
-            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { category = value; latestActiveID = nil }
+            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { category = value }
         } label: {
             Text(NativeText.literal(title)).font(.subheadline.weight(.medium))
                 .foregroundStyle(category == value ? Palette.selectionInk : Palette.secondary)

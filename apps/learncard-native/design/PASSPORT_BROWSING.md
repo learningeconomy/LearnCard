@@ -16,7 +16,7 @@ Keep search followed by two compact controls: **Issue date** and **Sort: _curren
 
 Issue date opens a designed sheet with Any date, Last 30 days, This year and Custom dates. Custom dates are inclusive calendar days, with From/Through controls. Apply commits the draft; Cancel discards it. Sort opens a matching single-choice sheet for Newest first, Oldest first, Title A–Z and Issuer A–Z. Choosing an order applies it and closes the sheet. Controls wrap/grow with text, and sheets support RTL and Dynamic Type.
 
-Text, dates and non-default sorting show a straightforward result list instead of the recent stack, so the selected order is visible. Browsing an ordinary category retains its recent stack. Text matches all whitespace-separated terms across title, issuer and description, ignoring accents/case and respecting the selected locale. Families stay separate.
+Passport always shows a straightforward list, including default newest-first browsing and individual categories. Home owns the recent swipe deck. Every eligible loaded record appears once in the list, including the newest card. Text matches all whitespace-separated terms across title, issuer and description, ignoring accents/case and respecting the selected locale. Families stay separate.
 
 ## Paged accounts
 

@@ -32,7 +32,7 @@ Required birth-date/country/profile/privacy/recovery and guardian behavior is un
 - Implement artwork as original editable SVG/light-dark assets and controls as SwiftUI, never crops from these raster boards. Preserve supplied user/credential/publisher images. Ordinary pages keep neutral adaptive canvases and saturated Colorful objects; no floating navigation island or perpetual Home animation.
 - Adapt the composition to narrow phones, iPad, dark appearance, four languages/RTL and Dynamic Type. Long issuer/title text wraps; do not squeeze every sample section into one viewport or reproduce gradients/shadows literally. Normal Arabic previews use the same standard text size as English, separately from accessibility stress checks.
 
-The implemented Home separates unknown/failed/empty/partial/record states, preserves actual issuer artwork, and shows the two most recent eligible personal records in loaded pages. New setup arms optional welcome; ordinary returning accounts skip it. Add routes through sheet dismissal into the existing scan/link/photo coordinator. The user's later discoverability correction makes Create/Send direct Add actions and keeps secondary Home creation rows visible without expansion. Connected People profiles also lead into new/existing credential sending. See [the social sending contract](../SOCIAL_SENDING.md). Validation and installed-build evidence are recorded in [TESTING](../TESTING.md) and [STATUS](../STATUS.md).
+The implemented Home separates unknown/failed/empty/partial/record states, preserves actual issuer artwork, and shows a swipeable deck of the latest five eligible personal records across categories in loaded pages. New setup arms optional welcome; ordinary returning accounts skip it. Add routes through sheet dismissal into the existing scan/link/photo coordinator. The user's later discoverability correction makes Create/Send direct Add actions and keeps secondary Home creation rows visible without expansion. Connected People profiles also lead into new/existing credential sending. See [the social sending contract](../SOCIAL_SENDING.md). Validation and installed-build evidence are recorded in [TESTING](../TESTING.md) and [STATUS](../STATUS.md).
 
 ## Implemented learner Home
 
@@ -42,7 +42,7 @@ These are actual synthetic iPhone simulator captures, separate from the generate
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | ![Native returning learner Home](learner-home-returning-native-2026-10-16.png) | ![Native learner Home in Arabic RTL](learner-home-arabic-dark-native-2026-10-16.png) |
 
-The header explicitly labels Add. The Inbox summary uses actual offers and distinct unread updates; recent rows use the existing credential detail route. Scan/Share, People, Data Sharing and Apps continue below the first viewport. The two-row recent preview is qualified when more pages remain. The new learner invitation appears only after a successful complete empty read; load errors and partial empty pages have retry/load-more actions instead.
+The header explicitly labels Add. The Inbox summary uses actual offers and distinct unread updates; the recent deck uses the existing credential detail route. Scan/Share, People, Data Sharing and Apps continue below the first viewport. The two-row recent preview is qualified when more pages remain. The new learner invitation appears only after a successful complete empty read; load errors and partial empty pages have retry/load-more actions instead.
 
 ## Implemented optional welcome and Add
 
@@ -79,3 +79,7 @@ The final 12-case affected run passes, with 29 distinct passing simulator cases 
 ## Resume verification completed — October 16
 
 The strengthened Arabic sheet-direction case now passes in `learner-rtl-resume-2026-10-16.xcresult`, at both standard and accessibility sizes. The actual screenshot confirms right-side cancellation and leading/right illustration placement. This closes the preceding wrap-up boundary; it does not turn the earlier cancelled bundle into a pass. The next user-selected slice is [Build My LearnCard files](DOCUMENT_INTAKE_BRIEF.md).
+
+## October 17 — Home deck and list-only Passport
+
+The user moved the swipeable recent deck to Home, replacing its recent rows. All credentials opens a fresh unfiltered Passport list, which no longer has a featured deck or grid. The actual next/previous cards render fully beneath the active card during a swipe, including their own category color and artwork. See [the current deck contract](../RECENT_STACK.md). Earlier generated boards/captures remain historical composition references.

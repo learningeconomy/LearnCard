@@ -236,7 +236,7 @@ final class ExperimentUITests: XCTestCase {
         app.launch(); app.openCollection()
         let category = app.buttons["collection-category-achievement"]
         XCTAssertTrue(category.waitForExistence(timeout: 10)); category.tap()
-        let featured = app.descendants(matching: .any)["latest-stack"].buttons["credential-community"]
+        let featured = app.buttons["credential-community"]
         XCTAssertTrue(featured.waitForExistence(timeout: 5))
         let passport = XCTAttachment(screenshot: app.screenshot())
         passport.name = reduceMotion ? "Raised achievement card on dark Passport" : "Raised achievement card on light Passport"
@@ -384,7 +384,7 @@ final class ExperimentUITests: XCTestCase {
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "Illustrated Collection search empty state"; screenshot.lifetime = .keepAlways; add(screenshot)
         app.buttons["collection-search-reset"].tap()
-        XCTAssertTrue(app.staticTexts["Latest issued"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.otherElements["latest-stack"].exists)
         XCTAssertTrue(app.buttons["credential-design"].exists)
     }
 
