@@ -1,5 +1,21 @@
 # Native regression checks
 
+## Root scroll clearance — October 17, 2026
+
+`artifacts/root-scroll-before-2026-10-17.xcresult` reproduces the reported bug: the settled final Apps row ends at **771 points**, while the custom tray starts at **755**. Existing page padding was present; hittability alone did not catch partial occlusion.
+
+The shared shell now lays out TabView and the measured custom tray as vertical siblings. Each tab's NavigationStack explicitly hides the system tab bar. Page content keeps its existing spacing. Three new `RootScrollUITests` check the real final controls on Home, Passport, Inbox and Apps after scrolling settles, require at least 12 points above the custom tray, and reject visible system tab buttons. Gestures use the page gutter so the recent credential stack does not open a card during the scroll check.
+
+The final `artifacts/root-scroll-final-2026-10-17.xcresult` passes **5/5**: the three new cases (standard English, standard Arabic dark and Arabic accessibility dark), plus existing scrolling-header and Home/Apps/native Data Sharing navigation. Final screenshots were exported and visually inspected. [Actual settled Apps bottom](design/root-scroll-apps-native.png) shows the full last row, rounded surface edge and normal gap; enlarged Arabic captures are accessibility stress previews.
+
+`artifacts/root-scroll-compact-final-2026-10-17.xcresult` also passes **1/1** on the 375-point iPhone SE: the same standard case checks all four settled page ends and the single tray. [Actual compact Apps bottom](design/root-scroll-apps-compact-native.png) was visually reviewed along with Inbox. The regular checks simulator is shut down; the temporary compact simulator created for this pass was shut down and deleted after export.
+
+Final Debug compilation and the normal Native Lab install pass (`artifacts/root-scroll-debug-final.log`, `root-scroll-review-install.log`). All **48 payload files match**, private configuration is preserved byte-for-byte, and build version remains **3** (`root-scroll-install-proof.json`). Live read-only UI observation confirms the signed-in Inbox and updated custom tray after reconnect. No reset, sign-out, credential/app/access mutation or provider change was performed.
+
+A preliminary geometry-only run (`root-scroll-fixed-2026-10-17.xcresult`) passed 5/5 but visual inspection exposed the system tab bar above the custom tray; it is superseded by the final run. After scoping visibility correctly, the first single-tray check confirmed Apps/Home but its center swipe opened a Passport credential. The final gutter gesture preserves the same full-row assertions. Superseded/cancelled startup attempts are not passing evidence.
+
+The configured suite is now **506 cases**: 193 Bun, 187 Swift and 126 simulator, plus the opt-in live-exchange skip. New UI cases join the existing manual CI workflow automatically. This is focused layout/navigation verification; no full suite, Release rerun, hosted native CI or real account mutation is claimed.
+
 ## Surface and loading hierarchy — October 17, 2026
 
 All **six existing focused UI cases pass** in `artifacts/visual-hierarchy-ui-2026-10-17.xcresult`. The four account-motion cases cover shared launch/reconnect geometry, a single brand lockup, changing jiggle/backdrop pixels, still dark Reduce Motion pixels and Arabic accessibility Continue. The two Apps cases cover empty/Discover/search/reset/native Data Sharing and Arabic dark accessibility access review with optional choices off and cancellation without installation. Actual light/dark loading and Apps captures were visually inspected; the enlarged Arabic captures remain accessibility stress checks, not default font examples.
@@ -20,7 +36,7 @@ There are **twelve distinct passing focused UI cases** across three runs:
 
 The initial Debug compile caught a missing core-module import in the new surface file; that was corrected before the first UI run. No failing run above is presented as a full pass. All account/partner mutations in these checks are isolated synthetic operations; the actual PartnerConnect fixture script still exercises the production browser boundary.
 
-The configured suite is now **503 cases** (193 Bun, 187 Swift, 123 simulator), plus the opt-in live-exchange skip. The full suite and hosted native CI were not run. Runtime/SDK protocol, catalog taxonomy, promotion/permission facts and server gates remain unchanged. See [the implementation contract](APPS_REDESIGN.md) and [actual native screens](design/APPS_RENDERED_BRIEF.md#implemented-native-screens).
+At that checkpoint the configured suite was **503 cases** (193 Bun, 187 Swift, 123 simulator), plus the opt-in live-exchange skip. The full suite and hosted native CI were not run. Runtime/SDK protocol, catalog taxonomy, promotion/permission facts and server gates remain unchanged. See [the implementation contract](APPS_REDESIGN.md) and [actual native screens](design/APPS_RENDERED_BRIEF.md#implemented-native-screens).
 
 Final-source Release and Debug builds pass (`artifacts/apps-rendered-release-final.log`, `apps-rendered-debug-final.log`). The normal review app is installed on Native Lab with **48/48 payload files matching**, private configuration preserved byte-for-byte and build version **3** (`apps-rendered-install-proof.json`, `apps-rendered-review-install.log`). Read-only native UI inspection confirms the signed-in Home and retained test credential, then the new empty My apps screen with working native controls. Native Lab is left on Apps. The standard checks simulator is shut down, and the compact test-only device created for this pass was deleted after successful captures. No real installation/consent/withdrawal, account reset/sign-out or hosted native CI was performed.
 

@@ -104,6 +104,8 @@ Labels start at 14 pt, scale to 18 pt and allow two lines. This navigation-only 
 
 Collection uses a passport, Inbox an envelope, Apps a rocket, Home a pink-roofed yellow house. Home is a personal landing place, so its icon should read as home rather than a data graph. Badge values must share the same deduplication as Home's Inbox summary.
 
+The shared root shell must reserve the tray's actual measured height in layout. Keep page scrolling above it, including when label wrapping or Dynamic Type changes the tray height. Hide the system tab bar on each tab’s NavigationStack; container-level visibility can leave a second native bar. A bottom-only background may extend to the home indicator; scrollable content may not. Retain each page's normal content padding rather than adding guessed tray-height spacers to individual tabs. Verify the released, settled end position of the final row in all four tabs, not only its hittability during overscroll.
+
 ### Header
 
 Use the shared header on all four root sections. Left: soft painted mosaic and LearnCard. Scrolled: crossfade the wordmark into the section title in the **same fixed slot**. Do not add a competing centered navigation title or animate the horizontal position. At accessibility sizes keep the mark and preserve room for controls.

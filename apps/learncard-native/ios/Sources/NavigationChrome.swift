@@ -79,5 +79,6 @@ struct NativeTabTray: View {
             .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.86), value: selection)
             .sensoryFeedback(.selection, trigger: selection)
             .accessibilityElement(children: .contain).accessibilityLabel("Bottom navigation")
+            .accessibilityIdentifier("bottom-navigation")
     }
 }

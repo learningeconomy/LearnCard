@@ -4,6 +4,7 @@
 
 The user likes the rendered Apps direction but flagged card shadows inconsistent with ordinary app panels, and competing LearnCard/Welcome back headings. This immediate refinement removes diffuse shadows and raised edges from Apps reading panels, keeps rendered artwork/local icon depth, and makes loading greetings secondary to the brand. [The native design system](design/DESIGN_SYSTEM.md) now defines surface roles and loading hierarchy.
 
+- [x] Fix shared root scroll clearance so settled final rows stay above the custom tray; add frame-based checks and reject a duplicated system tab bar.
 - [ ] Audit Home, Passport, Inbox, Apps and account/intake flows together for typography, surface depth, illustration scale, spacing and action hierarchy. Start with an inventory and side-by-side native captures.
 - [ ] Consolidate repeated styles into shared native tokens/components as screens are touched; preserve the distinctive credential hero/detail depth and established header/sheet elevation.
 - [ ] Review proposed visual changes at matched standard text sizes in light/dark and RTL, with separate accessibility-size captures. Keep this a scoped consistency pass rather than another independent section redesign.

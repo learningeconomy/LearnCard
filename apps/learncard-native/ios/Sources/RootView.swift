@@ -25,41 +25,48 @@ struct RootView: View {
     @State private var showFamilyReview = false
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            NavigationStack {
-                HomeView(store: store, profileName: account?.state?.profileName,
-                         openInbox: { selectedTab = 1 }, create: { showCreate = true },
-                         receive: { claims.open() }, intake: { claims.open(mode: $0) }, add: { showActions = true },
-                         share: { showShare = true }, welcome: { showWelcome = true }, openCollection: { selectedTab = 0 },
-                         openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
-                    .toolbar { header(tab: 3) }
+        // Reserve the tray's real height outside TabView. An inset around TabView
+        // leaves its nested scroll views extending under the custom tray on iOS.
+        VStack(spacing: 0) {
+            TabView(selection: $selectedTab) {
+                NavigationStack {
+                    HomeView(store: store, profileName: account?.state?.profileName,
+                             openInbox: { selectedTab = 1 }, create: { showCreate = true },
+                             receive: { claims.open() }, intake: { claims.open(mode: $0) }, add: { showActions = true },
+                             share: { showShare = true }, welcome: { showWelcome = true }, openCollection: { selectedTab = 0 },
+                             openApps: { discoverApps = $0; appsEntry += 1; compactBrands[2] = false; selectedTab = 2 }, onScrollStateChange: { compactBrands[3] = $0 })
+                        .toolbar { header(tab: 3) }
+                }
+                    .toolbar(.hidden, for: .tabBar)
+                    .tabItem { Label { Text(NativeText.literal("Home")) } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
+                    .tag(3)
+                NavigationStack {
+                    CollectionView(store: store, scan: { claims.open() }, create: { showCreate = true }, onScrollStateChange: { compactBrands[0] = $0 })
+                        .toolbar { header(tab: 0) }
+                }
+                .toolbar(.hidden, for: .tabBar)
+                .tabItem { Label { Text(NativeText.literal("Passport")) } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }
+                .tag(0)
+                NavigationStack {
+                    InboxView(store: store, selectedOffer: $offer, scan: { claims.open() }, onScrollStateChange: { compactBrands[1] = $0 })
+                        .toolbar { header(tab: 1) }
+                }
+                    .toolbar(.hidden, for: .tabBar)
+                    .tabItem { Label { Text(NativeText.literal("Inbox")) } icon: { Image(selectedTab == 1 ? "InboxTabActive" : "InboxTab").renderingMode(.original) } }
+                    .badge(inboxCount)
+                    .tag(1)
+                NavigationStack {
+                    AppsView(store: store, create: { showCreate = true }, openInbox: { selectedTab = 1 }, discover: $discoverApps, onScrollStateChange: { compactBrands[2] = $0 })
+                        .toolbar { header(tab: 2) }
+                }
+                    .id(appsEntry)
+                    .toolbar(.hidden, for: .tabBar)
+                    .tabItem { Label { Text(NativeText.literal("Apps")) } icon: { Image(selectedTab == 2 ? "AppsTabActive" : "AppsTab").renderingMode(.original) } }
+                    .tag(2)
             }
-                .tabItem { Label { Text(NativeText.literal("Home")) } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
-                .tag(3)
-            NavigationStack {
-                CollectionView(store: store, scan: { claims.open() }, create: { showCreate = true }, onScrollStateChange: { compactBrands[0] = $0 })
-                    .toolbar { header(tab: 0) }
-            }
-            .tabItem { Label { Text(NativeText.literal("Passport")) } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }
-            .tag(0)
-            NavigationStack {
-                InboxView(store: store, selectedOffer: $offer, scan: { claims.open() }, onScrollStateChange: { compactBrands[1] = $0 })
-                    .toolbar { header(tab: 1) }
-            }
-                .tabItem { Label { Text(NativeText.literal("Inbox")) } icon: { Image(selectedTab == 1 ? "InboxTabActive" : "InboxTab").renderingMode(.original) } }
-                .badge(inboxCount)
-                .tag(1)
-            NavigationStack {
-                AppsView(store: store, create: { showCreate = true }, openInbox: { selectedTab = 1 }, discover: $discoverApps, onScrollStateChange: { compactBrands[2] = $0 })
-                    .toolbar { header(tab: 2) }
-            }
-                .id(appsEntry)
-                .tabItem { Label { Text(NativeText.literal("Apps")) } icon: { Image(selectedTab == 2 ? "AppsTabActive" : "AppsTab").renderingMode(.original) } }
-                .tag(2)
+            NativeTabTray(selection: $selectedTab, inboxCount: inboxCount)
         }
         .onChange(of: store.openInboxRequested) { _, value in if value { selectedTab = 1; store.openInboxRequested = false } }
-        .toolbar(.hidden, for: .tabBar)
-        .safeAreaInset(edge: .bottom, spacing: 0) { NativeTabTray(selection: $selectedTab, inboxCount: inboxCount) }
         .task { if store.snapshot == nil { await store.refresh() }; if !store.inbox.loaded { await store.inbox.load() } }
         .modifier(ClaimPresentation(flow: demoClaims, store: store, enabled: account == nil))
         .task { if account == nil { demoClaims.connect(service: store.demoClaimService, accountID: "demo") } }
