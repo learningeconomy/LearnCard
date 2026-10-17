@@ -175,15 +175,17 @@ private struct RefreshArtwork: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !moves)) { tick in
             HStack(spacing: 10) {
                 ZStack {
-                    ForEach(0..<9) { index in
+                    ForEach(0..<RefreshMotion.tileCount, id: \.self) { index in
                         let pose = RefreshMotion.tile(index, pull: progress,
                             elapsed: tick.date.timeIntervalSince(began), refreshing: refreshing, animated: !reduced)
-                        PigmentTile(index: index)
+                        // Reuse only the eight pigments; asset 4 is the center L.
+                        PigmentTile(index: index < 4 ? index : index + 1)
                             .frame(width: 10, height: 10)
                             .scaleEffect(pose.scale).rotationEffect(.degrees(pose.rotation))
                             .offset(x: pose.x, y: pose.y)
+                            .zIndex(pose.depth)
                     }
-                }.frame(width: 44, height: 44).environment(\.layoutDirection, .leftToRight)
+                }.frame(width: 64, height: 36).environment(\.layoutDirection, .leftToRight)
                     .accessibilityHidden(true)
                 Text(NativeText.text(refreshing ? "refresh.active" : "refresh.pull"))
                     .font(.caption.weight(.medium)).foregroundStyle(Palette.secondary)

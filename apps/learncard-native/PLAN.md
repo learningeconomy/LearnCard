@@ -3,8 +3,9 @@
 ## Painted pull-to-refresh — October 17
 
 - [x] Generate a compact motion reference using the painted LearnCard mosaic.
-- [x] Share pull-responsive tiles and a real-work ripple across Home, Passport, Inbox and Apps while retaining the system refresh gesture and scroll insets.
+- [x] Share pull-responsive tiles and real-work motion across Home, Passport, Inbox and Apps while retaining the system refresh gesture and scroll insets.
 - [x] Provide still Reduce Motion/VoiceOver feedback, lifecycle pauses and localized status; keep inline error/retry and the cross-tab sample strip.
+- [x] Refine the duplicate-logo treatment into eight colored tiles weaving around a compact figure-eight. Keep the header as the only visible brand mark and record this distinction in the design system.
 
 See [the design and behavior contract](design/PULL_REFRESH_BRIEF.md). Verification is recorded in [TESTING](TESTING.md).
 

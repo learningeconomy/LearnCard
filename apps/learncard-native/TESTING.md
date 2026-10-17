@@ -1,5 +1,17 @@
 # Native regression checks
 
+## Abstract painted refresh — October 17, 2026
+
+The user rejected the duplicate logo beneath the existing header mark. The refresh now uses eight pigment assets, excluding the center L, on an open figure-eight. The deterministic model adds tumbling and near/far depth, gathers the pull pose into the first working frame without a jump, and holds one still curve for Reduce Motion/VoiceOver. Its native footprint is 64×36 points. The stable refresh-operation reference, gesture/action/inset ownership, timing and status/error paths are unchanged.
+
+The complete Swift suite passes **203 cases** (170 XCTest + 33 Swift Testing; `refresh-weave-core.log`). The three motion cases cover finite/clamped pull inputs, release continuity, bounds, loop continuity, front/back crossing depth and a still reduced pose.
+
+`refresh-weave-ui-2026-10-17.xcresult` passes **4/4** existing refresh cases: awaited real work and clean collapse on Home, short pull/failure/retry in Passport, actual Arabic accessibility/dark Reduce Motion in Inbox, and a fast Apps refresh without leftover space. Tile iteration now has explicit stable identifiers; the final source compiles without the earlier constant-range warning and `refresh-weave-final-2026-10-17.xcresult` passes the Home case again (**1/1**).
+
+The [actual native clip](design/pull-refresh-weave-native.mp4), [standard Home frame](design/pull-refresh-weave-home-native.png) and [Arabic accessibility stress frame](design/pull-refresh-weave-arabic-native.png) were reviewed. Over 0.6 seconds, the isolated moving-tile crop changes **6,426 pixels** above 24 RGB levels; the reduced Arabic crop changes **zero** (`refresh-weave-pixels.json`). These are production views with isolated fixtures, not a staged animation or generated mockup.
+
+Normal Debug build and installation match all **48 files**, the original private account configuration and build **3** (`refresh-weave-install-proof.json`). Read-only inspection confirms Native Lab reconnects to retained signed-in Home. The checks device is shut down. The configured suite remains **546 cases** (202 Bun, 203 Swift, 141 simulator) plus live skip; full Bun/UI suites, Release and hosted native CI were not run. No live account/relationship write, reset or sign-out was used for verification.
+
 ## Seamless recent-card handoff — October 17, 2026
 
 The baseline swipe case passes functionally (**1/1**, `deck-handoff-before-2026-10-17.xcresult`), but its native video shows the revealed blue card briefly faded/doubled as it becomes active. `StackTransitionSource` switched between plain content and a source-wrapped view. That structural replacement crossfaded the label/artwork mid-promotion.

@@ -1,5 +1,9 @@
 # Native experiment handoff — 2026-10-17
 
+**Abstract refresh motion:** The refresh indicator now uses eight painted color tiles weaving and tumbling around a small figure-eight, with front/back depth. Pulling gathers the loose curve; Reduce Motion/VoiceOver keep it still. The center L and 3×3 logo arrangement are removed from this indicator so the header owns the brand mark. Native refresh timing, gestures, status and retry remain. [Actual nine-second native preview](design/pull-refresh-weave-native.mp4) and [current design contract](design/PULL_REFRESH_BRIEF.md).
+
+All **203 Swift cases**, **4/4 refresh UI cases** and a final **1/1 Home refresh check** pass. Native-frame comparison confirms moving tiles and a still actual-Arabic accessibility/dark variant. Normal Debug is installed **48/48**, private configuration/build **3** preserved; Native Lab reconnects to retained signed-in Home and the checks device is shut down. Configured suite remains **546 cases** plus live skip; full Bun/UI, Release and hosted native CI were not rerun.
+
 **Seamless deck promotion:** Covered cards now retain the same label/artwork and unique detail-transition source when they become active. The old conditional source wrapper crossfaded two versions during promotion, creating a brief faded/doubled card. The before/after native recordings confirm the flash is removed; all **5/5** focused deck/shortcut cases pass, including reverse swipes, bounds, detail/return and Arabic Reduce Motion. [Actual nine-second native clip](design/home-deck-handoff-native.mp4) and [motion contract](RECENT_STACK.md).
 
 Normal Debug is installed **48/48**, with private configuration/build **3** preserved. Native Lab reconnects to signed-in Home with existing remote credential artwork; the user is browsing the deck. The checks device is shut down. Full suites, Release and hosted native CI were not rerun; no live account or relationship write was used for verification.
