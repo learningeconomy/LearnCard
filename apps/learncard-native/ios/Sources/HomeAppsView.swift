@@ -103,7 +103,10 @@ struct HomeView: View {
                 (textSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))) {
                     Text(NativeText.text("learner.recent")).font(.title2.bold())
                     if !textSize.isAccessibilitySize { Spacer(minLength: 8) }
-                    Button(NativeText.text("sharePicker.all"), action: openCollection).font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("home-collection")
+                    Button(action: openCollection) {
+                        Text(NativeText.text("sharePicker.all")).font(.subheadline.weight(.semibold))
+                            .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                    }.buttonStyle(.plain).accessibilityIdentifier("home-collection")
                 }
                 LatestCredentialStack(credentials: summary.recent, store: store, namespace: recentCards,
                                       partial: summary.hasMore, activeID: $recentID)

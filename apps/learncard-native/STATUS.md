@@ -1,5 +1,9 @@
 # Native experiment handoff — 2026-10-17
 
+**Home → Passport shortcut:** The older See all handler only selected the Passport tab, restoring any credential detail left open there. The current All credentials action resets Passport to its unfiltered list. Its actual label now owns a 44-point minimum touch target. New regressions cover returning from an earlier Passport detail, ordinary tab-state preservation and tapping below the lettering in English and Arabic accessibility-size layouts. See [verification](TESTING.md).
+
+All **5/5** focused cases and Debug build pass. Normal Native Lab install matches **48/48 files**, private configuration and build **3**; the isolated checks device is shut down. The Mac remains locked, so no new signed-in visual inspection is claimed. Configured suite: **546 cases** plus live skip; broader suites/Release/hosted native CI were not rerun.
+
 **Painted pull-to-refresh:** Home, Passport, Inbox and Apps now share a compact painted mosaic: pull-responsive tiles, a diagonal ripple during actual work and prompt native collapse on completion. Stable reference state prevents animation updates from cancelling the read; Reduce Motion/VoiceOver retain a still mark, with a localized VoiceOver start announcement. The system keeps gesture, accessibility-action and inset ownership. [Reference, native motion and behavior](design/PULL_REFRESH_BRIEF.md).
 
 Validation: **203 Swift cases**, final **4/4 focused refresh cases** and corrected actual-Arabic **1/1** pass; existing deck and all-three footer variants pass across the scoped runs. Native recorded pixel checks confirm moving artwork and a still Arabic accessibility-size variant. Catalog: **1,013 keys**; configured suite **544 cases** plus live skip. Normal Debug is installed **48/48**, with private configuration/build **3** preserved; the checks device is shut down. Full suites, Release and hosted native CI were not run.

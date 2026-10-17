@@ -8,11 +8,12 @@ import XCTest
         reveal(app.buttons["stack-older"], app); return app
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
+        let gutter = app.launchArguments.contains("ar") ? 0.98 : 0.02
         for _ in 0..<12 {
             if element.exists && element.isHittable && element.frame.minY > 120 && element.frame.maxY < app.buttons["nav-home"].frame.minY { return }
             let scroll = app.scrollViews.firstMatch, down = element.exists && element.frame.minY < 120
-            scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: down ? 0.35 : 0.65))
-                .press(forDuration: 0.1, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: down ? 0.60 : 0.40)))
+            scroll.coordinate(withNormalizedOffset: CGVector(dx: gutter, dy: down ? 0.35 : 0.65))
+                .press(forDuration: 0.1, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: gutter, dy: down ? 0.60 : 0.40)))
         }
         XCTAssertTrue(element.isHittable)
     }
@@ -105,5 +106,43 @@ import XCTest
         capture(app, "Arabic Passport category stays a list")
         app.buttons["nav-home"].tap(); reveal(app.buttons["stack-older"], app)
         XCTAssertTrue(active("stack-2", in: app).exists)
+    }
+
+    func testAllCredentialsReturnsToPassportListAfterAnEarlierDetail() {
+        checkPassportShortcut()
+    }
+
+    func testArabicAccessibilityAllCredentialsReturnsToPassportList() {
+        checkPassportShortcut(extra: ["--large-type", "--preview-dark", "--card-reduce-motion"], locale: "ar")
+    }
+
+    private func checkPassportShortcut(extra: [String] = [], locale: String = "en") {
+        let app = launch(extra: extra, locale: locale)
+        app.buttons["nav-collection"].tap()
+        let row = app.buttons["credential-stack-1"]
+        reveal(row, app)
+        row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        let detail = app.descendants(matching: .any)["credential-detail-card"]
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        app.buttons["nav-home"].tap()
+
+        // Normal tab switches retain a previously opened detail. The explicit
+        // Home shortcut must instead take the learner to the full Passport list.
+        app.buttons["nav-collection"].tap()
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        app.buttons["nav-home"].tap()
+        let all = app.buttons["home-collection"]
+        reveal(all, app)
+        XCTAssertGreaterThanOrEqual(all.frame.height, 44)
+        // Tap below the lettering, inside the label's actual touch target.
+        // A frame around the Button alone does not expand its clickable label.
+        all.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(CGVector(dx: 0, dy: -3)).tap()
+        XCTAssertTrue(app.textFields["collection-search"].waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(app.buttons["nav-collection"].isSelected)
+        XCTAssertTrue(app.buttons["collection-category-all"].isSelected)
+        XCTAssertFalse(detail.exists)
+        reveal(row, app)
+        XCTAssertTrue(row.isHittable)
+        capture(app, "Home All credentials returns to Passport list instead of an earlier detail")
     }
 }

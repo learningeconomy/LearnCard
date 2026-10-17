@@ -1,5 +1,15 @@
 # Native regression checks
 
+## Home shortcut to Passport — October 17, 2026
+
+The older Home See all handler only selected the Passport tab, restoring any credential detail left open there. The deck/list pass already replaced it with `openPassport`, which resets the Passport navigation identity and filters. A new focused baseline case confirms that reset after opening a Passport detail, switching Home and using the shortcut (`home-passport-route-baseline-2026-10-17.xcresult`, **1/1**).
+
+The label now owns its minimum 44-point frame and rectangular content shape, rather than framing the Button from outside. `home-passport-route-final-2026-10-17.xcresult` passes **5/5**: both new English/Arabic accessibility-size route regressions, plus the three existing deck/detail/search/RTL cases. The new cases require a real 44-point button, tap below the lettering, assert Passport selected, All selected and search visible, reject a detail destination, and reveal the actual list row. Ordinary tab switches retain the earlier detail. Exported native captures were visually reviewed; the Arabic capture is a dark accessibility-size stress layout.
+
+The configured suite is now **546 cases** (202 Bun, 203 Swift, 141 simulator), plus the live-exchange skip. This narrow UI pass runs the five focused cases and Debug build; it does not rerun the full Bun/Swift/UI suites, Release or hosted native CI. The previously completed 203-case Swift result remains the core baseline.
+
+Normal Debug installation matches all **48 payload files**, the original private account configuration and build version **3** (`home-passport-route-install-proof.json`). The real account was not reset or signed out. The Mac remains locked, so the new route is verified in the isolated simulator rather than a new signed-in visual inspection.
+
 ## Painted pull-to-refresh — October 17, 2026
 
 The complete Swift suite passes **203 cases** (170 XCTest + 33 Swift Testing), including three new deterministic refresh-motion cases for bounded pull/ripple poses, continuous looping and still Reduce Motion (`artifacts/pull-refresh-core.log`). Catalog generation validates **1,013 keys** across four languages.

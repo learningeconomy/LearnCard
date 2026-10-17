@@ -4,6 +4,8 @@ Updated October 17, 2026. Home’s **Recent credentials** section browses the la
 
 Passport always uses list rows, including its default, single-record and wider layouts. Search, category/date filters, sorting, paging, issuer/date metadata and credential-detail navigation remain. Changing a Passport filter does not change Home's current deck position. An explicit All credentials action returns to the unfiltered list; ordinary tab switching preserves each page's state.
 
+The Home shortcut also clears an earlier Passport detail destination. The older See all action only switched tabs, which could restore a credential left open there. The current action resets the Passport navigation identity before selecting it. Its label owns a minimum 44-point touch area, including the space above/below the lettering.
+
 ## Interaction and appearance
 
 - Swipe left for an older credential and right for a newer one in left-to-right layouts; Arabic mirrors these directions. Newer/Older buttons and the position/dot indicator provide the same bounded navigation.
@@ -29,7 +31,7 @@ Leaving Home, scrolling the deck out of view, backgrounding or changing Reduce M
 - `ios/Sources/HomeAppsView.swift`: Home deck and All credentials entry.
 - `ios/Sources/CollectionView.swift`: list-only Passport browsing.
 - `ios/Sources/LatestCredentialStack.swift`: actual covered cards, toss/settlement, native pan, cancellation, controls and detail navigation.
-- `RecentStackUITests.swift`: actual swipes, bounds, navigation/return, short-drag cancellation, vertical scrolling, independent Passport search/category state and Arabic Reduce Motion.
+- `RecentStackUITests.swift`: actual swipes, bounds, navigation/return, short-drag cancellation, vertical scrolling, independent Passport search/category state and Arabic Reduce Motion. The explicit Home shortcut is checked after leaving a Passport detail open, including a tap below its lettering and Arabic accessibility-size layout.
 
 See [TESTING](TESTING.md) for current evidence. Automated credentials and interactions use isolated fixtures.
 
