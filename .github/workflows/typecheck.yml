@@ -1,0 +1,44 @@
+name: Typecheck
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+    merge_group:
+        types: [checks_requested]
+
+concurrency:
+    group: typecheck-${{ github.head_ref || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    typecheck-ratchet:
+        name: Typecheck ratchet
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            # tsc resolves Node-resolution services against built dist, so every library is built
+            # first. scripts/typecheck-baseline.json is generated in this same state.
+            - name: Build libraries
+              run: bunx nx run-many -t build --projects="$(bunx nx show projects --type lib --with-target build | paste -sd, -)"
+
+            # Paraglide output is gitignored; generate it so app typechecks see real message types.
+            - name: Compile Paraglide messages
+              run: |
+                  bun run --cwd apps/learn-card-app i18n:compile
+                  bun run --cwd apps/scouts i18n:generate
+
+            # Fails when any project's tsc error count rises above scripts/typecheck-baseline.json.
+            # Lower the baseline with `bun run typecheck:baseline` after fixing errors.
+            - name: Run typecheck ratchet
+              run: bun run typecheck:ratchet
