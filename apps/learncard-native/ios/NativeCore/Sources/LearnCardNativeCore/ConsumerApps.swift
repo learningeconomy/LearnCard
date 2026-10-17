@@ -63,6 +63,7 @@ public struct ConsentCredentialChoice: Codable, Identifiable, Hashable, Sendable
 }
 
 public struct ConsentPermission: Codable, Identifiable, Hashable, Sendable {
+    public let defaultEnabled: Bool?
     public let id: String
     public let required: Bool
     public let choices: [ConsentCredentialChoice]
@@ -96,13 +97,14 @@ public struct ConsumerConsentDecision: Codable, Sendable {
         reviewID = review.id; listingID = review.listingID
         readCategories = review.readCredentials.filter(\.required).map(\.id)
         selectedCredentials = [:]; personalValues = [:]
-        writeCategories = review.writeCredentials.filter(\.required).map(\.id)
+        writeCategories = review.writeCredentials.filter { $0.required || (review.listingID.hasPrefix("native-sample-") && $0.defaultEnabled == true) }.map(\.id)
         writePersonal = review.writePersonal.filter(\.required).map(\.id)
         anonymize = false
     }
     public var selectedCount: Int { selectedCredentials.values.reduce(0) { $0 + $1.count } }
     public func satisfies(_ review: ConsumerConsentReview) -> Bool {
         guard reviewID == review.id, listingID == review.listingID, review.blockReason == nil else { return false }
+        if listingID.hasPrefix("native-sample-") && writeCategories.isEmpty { return false }
         return review.readCredentials.filter(\.required).allSatisfy { readCategories.contains($0.id) }
             && review.readPersonal.filter(\.required).allSatisfy { !(personalValues[$0.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             && review.writeCredentials.filter(\.required).allSatisfy { writeCategories.contains($0.id) }

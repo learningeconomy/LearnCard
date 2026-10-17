@@ -30,7 +30,7 @@ The hub offers working **Scan a code**, **Use a claim link** and **Choose a QR p
 
 The resumed learner pass adds [document originals and existing signed JSON files](DOCUMENT_INTAKE.md), with review, private encrypted saving, selected import, source-index counts and native document viewing. Home and Add both reach this hub. Documents remain personal copies, distinct from institution-issued achievements.
 
-Build My LearnCard is not required signup, a completion score or an AI processing promise. AI résumé/certificate/transcript/diploma extraction remains the next slice in [the onboarding plan](ONBOARDING_AND_PEOPLE.md). Existing résumé import is distinct from the web-only résumé builder/editor. No document is uploaded or processed by opening Home or the hub.
+Build My LearnCard is not required signup or an AI processing promise. Its optional four-kind document checklist now shows actual saved-kind progress, with consent-reviewed sample credentials in a separate section; see [the milestone and sample contract](SAMPLE_CREDENTIALS.md). AI résumé/certificate/transcript/diploma extraction remains the next slice in [the onboarding plan](ONBOARDING_AND_PEOPLE.md). Existing résumé import is distinct from the web-only résumé builder/editor. No document is uploaded or processed by opening Home or the hub.
 
 ## Source and validation
 

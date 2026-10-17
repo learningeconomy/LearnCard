@@ -38,6 +38,9 @@ struct CredentialDetailView: View {
                     } ?? NativeText.text("credential.dateUnavailable"), identifier: "date")
                     metadata("Status", value: isCreation ? "Reusable creation" : credential.isSample ? "Sample · unsigned" : NativeText.text(credential.createdByMe ? "credential.issuedInPassport" : "credential.inPassport"))
                 }
+                if credential.sampleBundleID != nil {
+                    Text(NativeText.text("build.sampleNotice")).font(.subheadline).foregroundStyle(Palette.secondary)
+                }
                 Text(credential.isSample ? "Sample content for exploring the native app." : credential.verificationSummary ?? "Verification unavailable.")
                     .font(.caption).foregroundStyle(Palette.secondary)
                 if isOffer {

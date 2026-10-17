@@ -12,7 +12,7 @@ Show **Issued _date_** below the category, as quiet metadata. This fits narrow l
 
 ## Browsing controls
 
-Keep search followed by two compact controls: **Issue date** and **Sort: _current order_**. Category chips remain directly below. Active date/sort choices receive a quiet outline, a date summary shows the applied interval, and Reset filters & sort restores categories/date/newest ordering without clearing typed text. The existing Clear search flow can restore the full browsing state.
+Keep search followed by two compact controls: **Issue date** and **Sort: _current order_**. Category chips remain directly below. Active date/sort choices receive a quiet outline, a date summary shows the applied interval, and a 44-point circular reset sits beside Sort when date/order differs from default. Its accessibility label is Reset filters & sort; it restores categories/date/newest ordering without clearing typed text. A category alone does not add another reset row—All and View all clear it. The existing Clear search flow can restore the full browsing state.
 
 Issue date opens a designed sheet with Any date, Last 30 days, This year and Custom dates. Custom dates are inclusive calendar days, with From/Through controls. Apply commits the draft; Cancel discards it. Sort opens a matching single-choice sheet for Newest first, Oldest first, Title A–Z and Issuer A–Z. Choosing an order applies it and closes the sheet. Controls wrap/grow with text, and sheets support RTL and Dynamic Type.
 
@@ -39,3 +39,5 @@ These are actual native screens with disposable unsigned sample credentials:
 | ![Designed sort choices on a 375-point iPhone](passport-sort-compact-native.png) | ![Arabic custom dates with accessibility text](passport-date-arabic-accessibility-compact-native.png) |
 
 The last image is an accessibility stress preview, not the default Arabic scale.
+
+The later October 17 refinement removes the category tile layered over the empty-state book, keeping its cover and ribbon readable. See [sample credentials and optional document milestones](../SAMPLE_CREDENTIALS.md).

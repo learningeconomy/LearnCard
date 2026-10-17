@@ -1,5 +1,6 @@
 import XCTest
 @testable import LearnCardNativeSDK
+import LearnCardNativeCore
 
 private actor IntakeFixture: IntakeService {
     var prepares = 0
@@ -21,9 +22,73 @@ private actor IntakeFixture: IntakeService {
     func suspended(prepare: Bool) -> Bool { prepare ? pendingPrepare != nil : pendingCommit != nil }
 }
 
+private actor SampleDelayFixture: IntakeService {
+    var pending: CheckedContinuation<IntakeResult, any Error>?
+    var calls = 0
+    func status() -> IntakeStatus { IntakeStatus() }
+    func samples() -> [SampleCredentialBundle] { [] }
+    func syncSample(id: String) async throws -> IntakeResult {
+        calls += 1
+        return try await withCheckedThrowingContinuation { pending = $0 }
+    }
+    func waiting() -> Bool { pending != nil }
+    func count() -> Int { calls }
+    func resolve() { pending?.resume(returning: IntakeResult(added: 4)); pending = nil }
+    func prepare(_ file: IntakeFile, kind: IntakeKind) throws -> IntakeReview { throw IntakeError.unavailable }
+    func commit(id: String, selected: [String]) throws -> IntakeResult { throw IntakeError.unavailable }
+    func document(id: String) throws -> IntakeDocumentData { throw IntakeError.unavailable }
+}
+
 @MainActor final class IntakeTests: XCTestCase {
     private func file() throws -> IntakeFile { try IntakeFile(name: "credential.json", data: Data("{}".utf8), kind: .rawVC) }
     private func wait(_ condition: () async -> Bool) async { for _ in 0..<1000 { if await condition() { return }; await Task.yield() }; XCTFail("Expected suspended service") }
+    func testSampleSyncIsSingleFlightAndSurvivesFileDismissalButNotAccountLock() async {
+        let service = SampleDelayFixture(), store = IntakeStore(service: service)
+        let task = Task { await store.syncSample(id: "sample") }
+        await wait { await service.waiting() }
+        store.clearReview(); await store.syncSample(id: "sample")
+        let calls = await service.count(); XCTAssertEqual(calls, 1)
+        await service.resolve(); await task.value
+        XCTAssertEqual(store.sampleResult?.added, 4)
+        let next = Task { await store.syncSample(id: "sample") }
+        await wait { await service.waiting() }; store.lock()
+        await service.resolve(); await next.value
+        XCTAssertNil(store.sampleResult); XCTAssertNil(store.sampleError); XCTAssertFalse(store.sampleBusy)
+    }
+    func testSampleConsentAndSyncAreExplicitAndRepeatable() async throws {
+        let credentials = DemoCredentialService(emptyCollection: true)
+        let consumer = DemoConsumerAppService()
+        let service = DemoIntakeService(service: credentials, consumer: consumer)
+        let store = IntakeStore(service: service)
+        await store.loadSamples()
+        XCTAssertEqual(store.samples.first?.connected, false)
+        await store.syncSample(id: "native-sample-student")
+        XCTAssertEqual(store.sampleError, .decision)
+        let before = await credentials.snapshot(); XCTAssertTrue(before.credentials.isEmpty)
+        let prepared = try await consumer.review("native-sample-student")
+        let review = try XCTUnwrap(prepared)
+        XCTAssertEqual(review.writeCredentials.first?.required, false)
+        var decision = ConsumerConsentDecision(review: review)
+        XCTAssertEqual(decision.writeCategories, ["Achievement"])
+        XCTAssertTrue(decision.readCategories.isEmpty); XCTAssertTrue(decision.personalValues.isEmpty)
+        XCTAssertTrue(decision.satisfies(review))
+        decision.writeCategories = []; XCTAssertFalse(decision.satisfies(review))
+        try await consumer.consent(ConsumerConsentDecision(review: review))
+        await store.syncSample(id: "native-sample-student")
+        XCTAssertEqual(store.sampleResult, IntakeResult(added: 12)); XCTAssertEqual(store.samples.first?.connected, true)
+        await store.syncSample(id: "native-sample-student")
+        XCTAssertEqual(store.sampleResult, IntakeResult(added: 0, existing: 12))
+        store.lock(); XCTAssertTrue(store.samples.isEmpty); XCTAssertNil(store.sampleResult)
+    }
+    func testMilestonesCountSavedDocumentKindsRatherThanFilesOrVisits() async throws {
+        let store = IntakeStore(service: DemoIntakeService())
+        await store.load(); XCTAssertEqual(store.completedDocumentKinds, 0)
+        let file = try IntakeFile(name: "my-learning.txt", data: Data("Personal learning record".utf8), kind: .certificate)
+        await store.prepare(file, kind: .certificate); XCTAssertEqual(store.completedDocumentKinds, 0)
+        await store.save(); XCTAssertEqual(store.completedDocumentKinds, 1)
+        store.clearReview(); await store.load(); XCTAssertEqual(store.completedDocumentKinds, 1)
+        await store.prepare(file, kind: .transcript); await store.save(); XCTAssertEqual(store.completedDocumentKinds, 2)
+    }
     func testFileLimitsNamesAndBoundedRead() throws {
         XCTAssertThrowsError(try IntakeFile(name: "empty.txt", data: Data(), kind: .certificate))
         XCTAssertThrowsError(try IntakeFile(name: "../private.txt", data: Data([1]), kind: .certificate))

@@ -1,6 +1,7 @@
 import SwiftUI
 import QuickLook
 import LearnCardNativeSDK
+import LearnCardNativeCore
 
 /// Optional intake: issuer credentials and personal copies have distinct routes.
 struct BuildLearnCardView: View {
@@ -8,6 +9,9 @@ struct BuildLearnCardView: View {
     let appStore: AppStore
     let receive: (ClaimEntryMode) -> Void
     var filesOnly = false
+    @State private var sampleReview: ConsumerConsentReview?
+    @State private var reviewingSample = false
+    @State private var sampleReviewError: ConsumerAppError?
     @State private var fileMode: IntakeKind?
     @State private var previewURL: URL?
     @State private var previewFolder: URL?
@@ -30,28 +34,108 @@ struct BuildLearnCardView: View {
                     action(.photo, title: "build.photo", body: "build.photoBody", symbol: .credential, tint: Palette.portfolioCard)
                   }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 26))
                 }
-                Text(NativeText.text("intake.filesHeading")).font(.title2.bold())
+                if !filesOnly { sampleCredentials }
+                documentMilestones
+                Text(NativeText.text("intake.credentials")).font(.title2.bold())
                 VStack(spacing: 0) {
-                    Button { fileMode = .certificate } label: { DrawnSettingsRow(title: NativeText.text("intake.documents"), symbol: .collection, tint: Palette.portfolioCard, subtitle: NativeText.text("intake.documentsBody")) }.accessibilityIdentifier("build-documents")
-                    Divider().padding(.leading, 74)
                     Button { fileMode = .rawVC } label: { DrawnSettingsRow(title: NativeText.text("intake.credentials"), symbol: .credential, tint: Palette.blueCard, subtitle: NativeText.text("intake.credentialsBody")) }.accessibilityIdentifier("build-credential-file")
                 }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 26))
                 Text(NativeText.text("claims.beforeAdding")).font(.subheadline).foregroundStyle(Palette.secondary)
                 savedDocuments
             }.padding(20).frame(maxWidth: 620).frame(maxWidth: .infinity)
         }.foregroundStyle(Palette.ink).background(Palette.paper).navigationTitle("").navigationBarTitleDisplayMode(.inline)
-            .task { await intake.load() }.refreshable { await intake.load() }
+            .task { await intake.load(); if !filesOnly { await intake.loadSamples() } }.refreshable { await intake.load(); if !filesOnly { await intake.loadSamples() } }
             .sheet(item: $fileMode, onDismiss: { intake.clearReview(); Task { await intake.load() } }) { mode in
                 IntakeFileView(appStore: appStore, initialKind: mode)
+            }
+            .sheet(item: $sampleReview) { review in
+                NativeConsentView(appTitle: review.title, iconURL: nil, review: review, consumer: appStore.consumer) {
+                    Task { await intake.syncSample(id: review.listingID); await appStore.refresh() }
+                }
             }
             .quickLookPreview($previewURL)
             .onChange(of: previewURL) { _, new in if new == nil { cleanPreview() } }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background { openingTask?.cancel(); opening = nil; cleanPreview(); intake.lock() }
-                else if phase == .active { Task { await intake.load() } }
+                else if phase == .active { Task { await intake.load(); if !filesOnly { await intake.loadSamples() } } }
             }
             .onDisappear { openingTask?.cancel(); cleanPreview() }
     }
+    private var documentMilestones: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(NativeText.text("build.stepsTitle")).font(.title2.bold()).headingFlair(Palette.flairYellow)
+            Text(NativeText.text("build.stepsBody")).font(.subheadline).foregroundStyle(Palette.secondary)
+            if intake.status != nil {
+                Text(NativeText.format("build.stepsProgress", "\(intake.completedDocumentKinds)"))
+                    .font(.subheadline.weight(.semibold)).accessibilityIdentifier("build-progress")
+                HStack(spacing: 6) {
+                    ForEach(0..<4) { index in
+                        Capsule().fill(index < intake.completedDocumentKinds ? Palette.selection : Palette.line).frame(height: 6)
+                    }
+                }.accessibilityHidden(true)
+            } else if intake.loading { ProgressView(NativeText.text("intake.loading")) }
+            VStack(spacing: 10) {
+                ForEach(Array(IntakeKind.allCases.filter { $0 != .rawVC }.enumerated()), id: \.element) { index, kind in
+                    let count = intake.status?.counts[kind.rawValue] ?? 0
+                    Button { fileMode = kind } label: {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 14).fill(count > 0 ? Palette.tealCard : Palette.portfolioCard).frame(width: 46, height: 46)
+                                if count > 0 { Image(systemName: "checkmark").font(.headline) }
+                                else { Text("\(index + 1)").font(.title3.bold()) }
+                            }.foregroundStyle(Palette.cardInk).accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(kind.title).font(.headline)
+                                Text(count > 0 ? NativeText.count("intake.addedCount", count) : NativeText.text("build.addDocument"))
+                                    .font(.subheadline).foregroundStyle(Palette.secondary)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                            Image(systemName: "chevron.right").accessibilityHidden(true)
+                        }.foregroundStyle(Palette.ink).padding(16).contentShape(RoundedRectangle(cornerRadius: 22))
+                            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                    }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier(kind == .certificate ? "build-documents" : "build-document-\(kind.rawValue)")
+                }
+            }
+        }.accessibilityElement(children: .contain)
+    }
+
+    private var sampleCredentials: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(NativeText.text("build.samplesTitle")).font(.title2.bold()).headingFlair(Palette.flairBlue)
+            Text(NativeText.text("build.samplesBody")).font(.subheadline).foregroundStyle(Palette.secondary)
+            if intake.samplesLoading || intake.sampleBusy || reviewingSample {
+                ProgressView(NativeText.text(intake.sampleBusy ? "build.samplesSyncing" : "build.samplesLoading"))
+            }
+            ForEach(intake.samples) { bundle in
+                Button {
+                    if bundle.connected {
+                        Task { await intake.syncSample(id: bundle.id); await appStore.refresh() }
+                    } else {
+                        Task {
+                            reviewingSample = true; sampleReviewError = nil; appStore.consumer.error = nil; defer { reviewingSample = false }
+                            do { sampleReview = try await appStore.consumer.review(id: bundle.id) }
+                            catch { sampleReviewError = error as? ConsumerAppError ?? .connection }
+                        }
+                    }
+                } label: {
+                    DrawnSettingsRow(title: NativeText.text(bundle.connected ? "build.samplesSync" : "build.samplesReview"),
+                                     symbol: .credential, tint: Palette.pinkCard,
+                                     subtitle: bundle.title)
+                }.buttonStyle(CredentialPressStyle()).disabled(intake.sampleBusy || reviewingSample || bundle.expected == 0)
+                    .accessibilityIdentifier("build-sample-\(bundle.id)")
+            }
+            if let result = intake.sampleResult {
+                Text(result.failed > 0 ? NativeText.text("build.samplesPartial") : NativeText.format("build.samplesSaved", "\(result.added + result.existing)"))
+                    .font(.subheadline.weight(.medium)).accessibilityIdentifier("build-sample-result")
+            }
+            if let error = intake.sampleError ?? sampleReviewError {
+                Text(error.localizedDescription).font(.subheadline).foregroundStyle(Palette.errorInk)
+                Button(NativeText.literal("Try Again")) { Task { sampleReviewError = nil; await intake.loadSamples() } }
+                    .frame(minHeight: 44).accessibilityIdentifier("build-samples-retry")
+            }
+        }.padding(18).background(Palette.surface, in: RoundedRectangle(cornerRadius: 26))
+            .accessibilityElement(children: .contain)
+    }
+
     private func action(_ mode: ClaimEntryMode, title: String, body: String, symbol: DrawnSymbol, tint: Color) -> some View {
         Button { receive(mode) } label: { DrawnSettingsRow(title: NativeText.text(title), symbol: symbol, tint: tint, subtitle: NativeText.text(body)) }.accessibilityIdentifier("build-\(mode.rawValue)")
     }

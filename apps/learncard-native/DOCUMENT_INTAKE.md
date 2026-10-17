@@ -2,6 +2,8 @@
 
 October 16, 2026. Build My LearnCard now separates issuer-provided claim routes from importing files. It is optional, reachable from Home and **+ Add → From your files**, and uses the current signed-in account. No document is required for signup.
 
+The October 17 pass adds [optional document milestones and consent-reviewed sample credentials](SAMPLE_CREDENTIALS.md).
+
 ## Two different imports
 
 - **Document copy:** select Résumé, Certificate, Transcript or Diploma, then choose one PDF, Word `.docx`, text or PNG/JPEG/WebP file, up to 4 MiB. File selection reads locally; Save private copy is the first write. The original is embedded in a self-issued `RawArtifactCredential`, encrypted for the learner through LearnCloud and indexed with the same source category as web. It is a personal copy, not an institution-issued credential or verified achievement. A résumé explicitly replaces the web/current résumé copy after review.
@@ -29,7 +31,7 @@ Each review belongs to one account host. Leaving review, backgrounding or lockin
 
 Native imports use deterministic content-derived index IDs; a lost index reply is reconciled on retry or a reselected file after relaunch. A partial credential import retains selection and reports added/existing/failed counts. Retry leaves already saved native items in place. A failed encrypted upload can leave an unindexed storage object, but does not create a second visible index entry. Imports originally added through web with random IDs are not globally content-deduplicated by this native ID scheme.
 
-Your documents reads source records independently of the first Passport page and includes web-created records. Counts are actual index counts, not a completion score. The initial list shows up to 20 documents of each kind and states that bound. Legacy web records without filename metadata show their document kind until opened. Originals are read/decrypted only on explicit open, then shown by native Quick Look. Temporary viewer copies have complete file protection and are removed on dismissal/background/exit; startup removes owned remnants from an interrupted process. File size and supported original data-URL types are checked again when opening.
+Your documents reads source records independently of the first Passport page and includes web-created records. Counts are actual index counts. The optional four-kind milestone indicator marks each document kind once when its saved count is positive; it is not a signup or credential-quality score. The initial list shows up to 20 documents of each kind and states that bound. Legacy web records without filename metadata show their document kind until opened. Originals are read/decrypted only on explicit open, then shown by native Quick Look. Temporary viewer copies have complete file protection and are removed on dismissal/background/exit; startup removes owned remnants from an interrupted process. File size and supported original data-URL types are checked again when opening.
 
 Original document records stay outside the personal credential cards and sharing picker. Imported credentials appear in Passport after refresh. Failure to refresh does not undo a successful save, and a failed status read does not become an empty count.
 

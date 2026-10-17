@@ -19,6 +19,20 @@ import XCTest
         XCTAssertTrue(element.isHittable, app.debugDescription)
     }
 
+    func testCategoryDoesNotCreateResetRowAndDateResetStaysWithControls() {
+        let app = launch(["--empty-collection"])
+        app.buttons["collection-category-achievement"].tap()
+        XCTAssertTrue(app.staticTexts["collection-empty-category"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["passport-reset-browse"].exists)
+        capture(app, "Unobstructed category empty illustration and compact browse controls")
+        app.buttons["passport-sort"].tap(); app.buttons["passport-sort-title"].tap()
+        let reset = app.buttons["passport-reset-browse"]
+        XCTAssertTrue(reset.isHittable)
+        XCTAssertEqual(reset.frame.midY, app.buttons["passport-sort"].frame.midY, accuracy: 2)
+        XCTAssertGreaterThanOrEqual(reset.frame.height, 44)
+        reset.tap(); XCTAssertFalse(reset.exists)
+    }
+
     func testIssuerAndDateAreExplicitOnCardDetailAndSortedList() {
         let app = launch()
         let card = app.buttons["credential-design"]

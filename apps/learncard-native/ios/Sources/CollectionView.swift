@@ -173,22 +173,28 @@ struct CollectionView: View {
     private var browseControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 10) { dateButton; sortButton }
-                VStack(alignment: .leading, spacing: 10) { dateButton; sortButton }
+                HStack(spacing: 10) { dateButton; sortButton; resetButton }
+                VStack(alignment: .leading, spacing: 10) { dateButton; HStack(spacing: 10) { sortButton; resetButton } }
             }
-            if browse.dateRange != .any || browse.sort != .newest || category != nil {
-                HStack(alignment: .top, spacing: 12) {
-                    if browse.dateRange != .any {
-                        Text(dateSummary).font(.caption).foregroundStyle(Palette.secondary)
-                            .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("passport-date-summary")
-                    }
-                    Spacer(minLength: 0)
-                    Button(NativeText.text("passport.resetBrowse")) { resetBrowse() }
-                        .font(.caption.weight(.semibold)).foregroundStyle(Palette.green).frame(minHeight: 44)
-                        .accessibilityIdentifier("passport-reset-browse")
-                }
+            if browse.dateRange != .any {
+                Text(dateSummary).font(.caption).foregroundStyle(Palette.secondary)
+                    .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("passport-date-summary")
             }
+
         }.accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder private var resetButton: some View {
+        if browse.dateRange != .any || browse.sort != .newest {
+            Button { resetBrowse() } label: {
+                Image(systemName: "arrow.counterclockwise").font(.body.weight(.semibold))
+                    .frame(width: 44, height: 44).foregroundStyle(Palette.ink)
+                    .background(Palette.surface, in: Circle())
+                    .overlay(Circle().stroke(Palette.line, lineWidth: 1))
+            }.buttonStyle(CredentialPressStyle())
+                .accessibilityLabel(NativeText.text("passport.resetBrowse"))
+                .accessibilityIdentifier("passport-reset-browse")
+        }
     }
 
     private var dateSummary: String {
@@ -271,17 +277,9 @@ struct CollectionView: View {
     private var collectionEmptyState: some View {
         let partial = store.snapshot?.hasMore == true
         return VStack(spacing: 18) {
-            if let category {
-                ZStack {
-                    Image("CollectionCategoryEmptyIllustration").resizable().scaledToFit()
-                    Image(category.illustration).resizable().scaledToFit().frame(width: 58, height: 58)
-                        .padding(12).background(Palette.categoryTint(category), in: RoundedRectangle(cornerRadius: 20))
-                        .rotationEffect(.degrees(8)).offset(x: 64, y: 22)
-                }.frame(width: 224, height: 164).accessibilityHidden(true)
-            } else {
-                Image("CollectionEmptyIllustration").resizable().scaledToFit()
-                    .frame(maxWidth: 250).frame(height: textSize.isAccessibilitySize ? 130 : 190).accessibilityHidden(true)
-            }
+            Image(category == nil ? "CollectionEmptyIllustration" : "CollectionCategoryEmptyIllustration")
+                .resizable().scaledToFit().frame(maxWidth: 224)
+                .frame(height: textSize.isAccessibilitySize ? 130 : 164).accessibilityHidden(true)
             VStack(spacing: 10) {
                 Text(NativeText.text(partial ? "collection.empty.loadedTitle" : category == nil ? "collection.empty.title" : "collection.empty.categoryTitle"))
                     .font(.title2.bold()).foregroundStyle(Palette.ink)

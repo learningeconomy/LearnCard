@@ -76,6 +76,8 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
     public var issueDate: Date? { date.timeIntervalSince1970 > 0 ? date : nil }
     public let createdByMe: Bool
     public let isSample: Bool
+    /// A signed fictional bundle record, distinct from unsigned local UI fixtures.
+    public let sampleBundleID: String?
     public let artworkURL: URL?
     public let issuerLogoURL: URL?
     public let signedPayload: String?
@@ -83,7 +85,7 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
 
     public init(id: String, title: String, issuer: String, summary: String,
                 kind: CredentialKind, date: Date, createdByMe: Bool = false, isSample: Bool = true,
-                artworkURL: URL? = nil, issuerLogoURL: URL? = nil, signedPayload: String? = nil, verificationSummary: String? = nil, category: String? = nil) {
+                artworkURL: URL? = nil, issuerLogoURL: URL? = nil, signedPayload: String? = nil, verificationSummary: String? = nil, category: String? = nil, sampleBundleID: String? = nil) {
         self.id = id
         self.title = title
         self.issuer = issuer
@@ -92,6 +94,7 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
         self.category = category
         self.date = date
         self.createdByMe = createdByMe
+        self.sampleBundleID = sampleBundleID
         self.isSample = isSample; self.artworkURL = artworkURL; self.issuerLogoURL = issuerLogoURL
         self.signedPayload = signedPayload; self.verificationSummary = verificationSummary
     }

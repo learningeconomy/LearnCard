@@ -21,6 +21,7 @@
     },
     "files": [
         "consumer-apps.ts",
+        "sample-credentials.ts",
         "consumer-host.ts",
         "consumer-fixture.ts",
         "families.ts",

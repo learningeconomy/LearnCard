@@ -11,11 +11,45 @@ import XCTest
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         for _ in 0..<10 {
             if element.exists && element.isHittable && element.frame.minY > 100 && element.frame.maxY < app.frame.maxY - 100 { return }
-            if element.exists && element.frame.minY < 100 { app.swipeDown() } else { app.swipeUp() }
+            // Short gutter drags avoid overshooting a row on compact phones.
+            let scroll = app.scrollViews.firstMatch
+            let down = element.exists && element.frame.minY < 100
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: down ? 0.35 : 0.65))
+            let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: down ? 0.60 : 0.40))
+            start.press(forDuration: 0.1, thenDragTo: end)
         }
         XCTAssertTrue(element.isHittable)
     }
     private func capture(_ app: XCUIApplication, _ name: String) { let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot) }
+    func testSampleReviewCancellationConsentAndRetryAndMilestoneProgress() {
+        let app = launch()
+        let samples = app.buttons["build-sample-native-sample-student"]
+        reveal(samples, app); samples.tap()
+        XCTAssertTrue(app.buttons["consent-agree"].waitForExistence(timeout: 5))
+        let receive = app.switches["consent-permission-Achievement"]
+        XCTAssertEqual(receive.value as? String, "1")
+        reveal(receive, app); receive.tap()
+        XCTAssertFalse(app.buttons["consent-agree"].isEnabled)
+        receive.tap(); XCTAssertTrue(app.buttons["consent-agree"].isEnabled)
+        capture(app, "Sample credential access review")
+        app.navigationBars.buttons["Cancel"].tap()
+        XCTAssertFalse(app.staticTexts["build-sample-result"].exists)
+        reveal(samples, app); samples.tap(); app.buttons["consent-agree"].tap()
+        let result = app.staticTexts["build-sample-result"]
+        XCTAssertTrue(result.waitForExistence(timeout: 10)); XCTAssertTrue(result.label.contains("12"))
+        reveal(samples, app); samples.tap()
+        XCTAssertTrue(result.waitForExistence(timeout: 5)); XCTAssertTrue(result.label.contains("12"))
+        reveal(app.staticTexts["build-progress"], app)
+        XCTAssertTrue(app.staticTexts["build-progress"].label.contains("0 of 4"))
+        capture(app, "Optional document milestones and sample credentials")
+        reveal(app.buttons["build-documents"], app); app.buttons["build-documents"].tap()
+        let sampleFile = app.buttons["intake-synthetic-file"]; reveal(sampleFile, app); sampleFile.tap()
+        app.buttons["intake-file-action"].tap()
+        XCTAssertTrue(app.staticTexts["intake-complete"].waitForExistence(timeout: 5)); app.buttons["intake-file-action"].tap()
+        reveal(app.staticTexts["build-progress"], app)
+        XCTAssertTrue(app.staticTexts["build-progress"].label.contains("1 of 4"))
+        capture(app, "One saved document milestone")
+    }
     func testDocumentPickerCancellationReviewSaveAndPrivateViewer() {
         let app = launch(); capture(app, "Build native file routes")
         reveal(app.buttons["build-documents"], app); app.buttons["build-documents"].tap()

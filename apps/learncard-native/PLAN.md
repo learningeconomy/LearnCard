@@ -1,5 +1,14 @@
 # LearnCard native client plan
 
+## Passport controls and Build My LearnCard milestones — October 17
+
+- [x] Keep date/sort reset adjacent to the controls; category-only filtering uses All/View all.
+- [x] Remove the category tile obscuring the empty-state book and ribbon.
+- [x] Surface the web staging sample-student contract through explicit native consent and targeted retryable synchronization.
+- [x] Add optional résumé/certificate/transcript/diploma milestones based on saved source counts, independent of sample data and JSON imports.
+
+See [behavior, source contracts and boundaries](SAMPLE_CREDENTIALS.md). Native bulk sample removal, AI document extraction and the broader learner-learning queue remain separate work.
+
 ## Passport issuer, dates and browsing — October 17
 
 Cards and shared rows identify **Issued by**, with known issue dates below the category and clearer detail labels. Passport keeps category chips and adds designed date/sort sheets, draft/apply date choices, custom calendar ranges, newest/oldest/title/issuer ordering and reset. Active searches/filters/order check remaining pages with honest incomplete-result/retry states. The recent stack yields to date/text/sorted results. [Contract and layout rules](design/PASSPORT_BROWSING.md); verification is recorded in [TESTING](TESTING.md).

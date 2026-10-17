@@ -6,6 +6,8 @@ import LearnCardNativeCore
 public actor DemoConsumerAppService: ConsumerAppService {
     private var apps: [ConsumerApp]
     private var installedIDs: Set<String> = ["sample-earth"]
+    public private(set) var sampleConsented = false
+    private var sampleReviews = Set<String>()
     private var agreed = false
     private var withdrawn = false
     private var stopped = false
@@ -33,6 +35,12 @@ public actor DemoConsumerAppService: ConsumerAppService {
     }
     public func remove(_ id: String) { installedIDs.remove(id) }
     public func review(_ id: String) throws -> ConsumerConsentReview? {
+        if id == "native-sample-student" {
+            let reviewID = UUID().uuidString; sampleReviews.insert(reviewID)
+            return try Self.decode("""
+            {"id":"\(reviewID)","listingID":"native-sample-student","contractURI":"sample-student-contract","title":"Sample student","description":"Add twelve fictional learning records to explore your Passport.","recipients":[{"id":"sample-school","name":"Sample school"}],"readCredentials":[],"readPersonal":[],"writeCredentials":[{"id":"Achievement","required":false,"defaultEnabled":true,"choices":[]}],"writePersonal":[],"allowsAnonymous":false}
+            """)
+        }
         guard id == "sample-studio" else { return nil }
         let reviewID = UUID().uuidString; reviews.insert(reviewID)
         return try Self.decode("""
@@ -41,6 +49,10 @@ public actor DemoConsumerAppService: ConsumerAppService {
     }
     public func consent(_ decision: ConsumerConsentDecision) throws {
         if decision.anonymize { throw ConsumerAppError.unsupported }
+        if decision.listingID == "native-sample-student" {
+            guard sampleReviews.contains(decision.reviewID), decision.writeCategories.contains("Achievement") else { throw ConsumerAppError.changed }
+            sampleConsented = true; sampleReviews.remove(decision.reviewID); return
+        }
         guard reviews.contains(decision.reviewID), decision.listingID == "sample-studio", decision.writeCategories.contains("Achievement") else { throw ConsumerAppError.changed }
         agreed = true; withdrawn = false
     }

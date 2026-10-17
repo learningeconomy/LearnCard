@@ -161,6 +161,7 @@ const contractFingerprint = (contract: ConsentFlowContractDetails) =>
         name: contract.name,
         description: contract.description,
         reason: contract.reasonForAccessing,
+        autoBoosts: contract.autoBoosts,
     });
 const IndexRecord = z
     .object({
@@ -268,18 +269,23 @@ export const consentDisclosures = (terms: ConsentFlowTerms, now = Date.now()) =>
         })),
 ];
 
-export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefined) => {
+export const createConsumerCommands = (
+    getWallet: () => ConsumerWallet | undefined,
+    sampleContracts: Readonly<Record<string, string>> = {}
+) => {
     const wallet = () => {
         const value = getWallet();
         if (!value) throw new ConsumerFailure('signIn');
         return value;
     };
+    let sampleConsentBusy = false;
     const reviews = new Map<
         string,
         {
             listingID: string;
             contract: ConsentFlowContractDetails;
             choices: Map<string, Set<string>>;
+            wallet: ConsumerWallet;
         }
     >();
     const listing = async (id: string) => {
@@ -288,6 +294,10 @@ export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefin
             throw new ConsumerFailure('unavailable');
         return validateListing(found);
     };
+    const reviewURI = async (id: string) =>
+        Object.hasOwn(sampleContracts, id)
+            ? sampleContracts[id]
+            : configFor(await listing(id)).contractUri;
     const installed = async (id: string) => {
         const found = await listing(id);
         if (!(await wallet().invoke.isAppInstalled(id))) throw new ConsumerFailure('unavailable');
@@ -358,19 +368,22 @@ export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefin
         },
         appsReview: async (raw: unknown) => {
             const { id } = idInput.parse(raw),
-                app = await listing(id),
-                uri = configFor(app).contractUri;
+                uri = await reviewURI(id);
             if (!uri) return null;
             const contract = ConsentFlowContractDetailsValidator.parse(
                 await wallet().invoke.getContract(uri)
             );
-            const blockReason = contract.needsGuardianConsent
-                ? 'guardian'
-                : contract.frontDoorBoostUri || contract.owner.profileId.includes('smart-resume')
-                  ? 'unsupported'
-                  : contract.expiresAt && Date.parse(contract.expiresAt) <= Date.now()
-                    ? 'inactive'
-                    : undefined;
+            const blockReason =
+                Object.hasOwn(sampleContracts, id) && !contract.autoBoosts?.length
+                    ? 'unavailable'
+                    : contract.needsGuardianConsent
+                      ? 'guardian'
+                      : contract.frontDoorBoostUri ||
+                          contract.owner.profileId.includes('smart-resume')
+                        ? 'unsupported'
+                        : contract.expiresAt && Date.parse(contract.expiresAt) <= Date.now()
+                          ? 'inactive'
+                          : undefined;
             const choices = new Map<string, Set<string>>();
             const readCredentials = [];
             for (const [category, permission] of Object.entries(
@@ -392,7 +405,7 @@ export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefin
                 }));
             const reviewID = crypto.randomUUID();
             if (reviews.size >= 20) reviews.delete(reviews.keys().next().value!);
-            reviews.set(reviewID, { listingID: id, contract, choices });
+            reviews.set(reviewID, { listingID: id, contract, choices, wallet: wallet() });
             return {
                 id: reviewID,
                 listingID: id,
@@ -402,7 +415,15 @@ export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefin
                 recipients: audienceDTO(contract),
                 readCredentials,
                 readPersonal: permissions(contract.contract.read.personal),
-                writeCredentials: permissions(contract.contract.write.credentials.categories),
+                writeCredentials: permissions(contract.contract.write.credentials.categories).map(
+                    permission => ({
+                        ...permission,
+                        defaultEnabled:
+                            Object.hasOwn(sampleContracts, id) &&
+                            contract.contract.write.credentials.categories[permission.id]
+                                ?.defaultEnabled === true,
+                    })
+                ),
                 writePersonal: permissions(contract.contract.write.personal),
                 // This slice preserves full signed contents; it cannot promise anonymous disclosure.
                 allowsAnonymous: false,
@@ -410,85 +431,114 @@ export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefin
             };
         },
         appsConsent: async (raw: unknown) => {
-            const input = decisionInput.parse(raw),
-                saved = reviews.get(input.reviewID);
-            if (!saved || saved.listingID !== input.listingID) throw new ConsumerFailure('changed');
-            const app = await listing(input.listingID);
-            if (configFor(app).contractUri !== saved.contract.uri)
-                throw new ConsumerFailure('changed');
-            const fresh = ConsentFlowContractDetailsValidator.parse(
-                await wallet().invoke.getContract(saved.contract.uri)
-            );
-            if (contractFingerprint(fresh) !== contractFingerprint(saved.contract))
-                throw new ConsumerFailure('changed');
-            if (fresh.needsGuardianConsent) throw new ConsumerFailure('guardian');
-            if (fresh.frontDoorBoostUri || fresh.owner.profileId.includes('smart-resume'))
-                throw new ConsumerFailure('unsupported');
-            if (fresh.expiresAt && Date.parse(fresh.expiresAt) <= Date.now())
-                throw new ConsumerFailure('inactive');
-            const check = (allowed: Record<string, { required: boolean }>, enabled: string[]) => {
-                if (
-                    enabled.some(key => !Object.hasOwn(allowed, key)) ||
-                    Object.entries(allowed).some(
-                        ([key, value]) => value.required && !enabled.includes(key)
+            const input = decisionInput.parse(raw);
+            const sample = Object.hasOwn(sampleContracts, input.listingID);
+            if (sample && (sampleConsentBusy || input.writeCategories.length === 0))
+                throw new ConsumerFailure('decision');
+            if (sample) sampleConsentBusy = true;
+            try {
+                const saved = reviews.get(input.reviewID);
+                if (!saved || saved.listingID !== input.listingID)
+                    throw new ConsumerFailure('changed');
+                if (saved.wallet !== wallet()) throw new ConsumerFailure('signIn');
+                if ((await reviewURI(input.listingID)) !== saved.contract.uri)
+                    throw new ConsumerFailure('changed');
+                const fresh = ConsentFlowContractDetailsValidator.parse(
+                    await wallet().invoke.getContract(saved.contract.uri)
+                );
+                if (contractFingerprint(fresh) !== contractFingerprint(saved.contract))
+                    throw new ConsumerFailure('changed');
+                if (fresh.needsGuardianConsent) throw new ConsumerFailure('guardian');
+                if (fresh.frontDoorBoostUri || fresh.owner.profileId.includes('smart-resume'))
+                    throw new ConsumerFailure('unsupported');
+                if (fresh.expiresAt && Date.parse(fresh.expiresAt) <= Date.now())
+                    throw new ConsumerFailure('inactive');
+                const check = (
+                    allowed: Record<string, { required: boolean }>,
+                    enabled: string[]
+                ) => {
+                    if (
+                        enabled.some(key => !Object.hasOwn(allowed, key)) ||
+                        Object.entries(allowed).some(
+                            ([key, value]) => value.required && !enabled.includes(key)
+                        )
                     )
-                )
-                    throw new ConsumerFailure('decision');
-            };
-            check(fresh.contract.read.credentials.categories, input.readCategories);
-            check(fresh.contract.write.credentials.categories, input.writeCategories);
-            check(fresh.contract.write.personal, input.writePersonal);
-            const personal = Object.fromEntries(
-                Object.entries(input.personalValues).filter(([, value]) => value.trim())
-            );
-            check(fresh.contract.read.personal, Object.keys(personal));
-            if (input.anonymize) throw new ConsumerFailure('unsupported');
-            for (const [category, ids] of Object.entries(input.selectedCredentials)) {
-                if (
-                    !input.readCategories.includes(category) ||
-                    ids.some(id => !saved.choices.get(category)?.has(id))
-                )
-                    throw new ConsumerFailure('decision');
+                        throw new ConsumerFailure('decision');
+                };
+                check(fresh.contract.read.credentials.categories, input.readCategories);
+                check(fresh.contract.write.credentials.categories, input.writeCategories);
+                check(fresh.contract.write.personal, input.writePersonal);
+                const personal = Object.fromEntries(
+                    Object.entries(input.personalValues).filter(([, value]) => value.trim())
+                );
+                check(fresh.contract.read.personal, Object.keys(personal));
+                if (input.anonymize) throw new ConsumerFailure('unsupported');
+                for (const [category, ids] of Object.entries(input.selectedCredentials)) {
+                    if (
+                        !input.readCategories.includes(category) ||
+                        ids.some(id => !saved.choices.get(category)?.has(id))
+                    )
+                        throw new ConsumerFailure('decision');
+                }
+                const selected = Object.fromEntries(
+                    input.readCategories.map(key => [key, input.selectedCredentials[key] ?? []])
+                );
+                const shared = await materializeSelections(wallet(), fresh, selected);
+                // Recheck audience immediately before publication after potentially slow encryption.
+                const beforeCommit = await wallet().invoke.getContract(fresh.uri);
+                if (contractFingerprint(beforeCommit) !== contractFingerprint(fresh))
+                    throw new ConsumerFailure('changed');
+                if (beforeCommit.expiresAt && Date.parse(beforeCommit.expiresAt) <= Date.now())
+                    throw new ConsumerFailure('inactive');
+                const terms: ConsentFlowTerms = ConsentFlowTermsValidator.parse({
+                    read: {
+                        anonymize: input.anonymize,
+                        credentials: {
+                            shareAll: false,
+                            categories: Object.fromEntries(
+                                input.readCategories.map(key => [
+                                    key,
+                                    { sharing: true, shareAll: false, shared: shared[key] },
+                                ])
+                            ),
+                        },
+                        personal,
+                    },
+                    write: {
+                        credentials: {
+                            categories: Object.fromEntries(
+                                input.writeCategories.map(key => [key, true])
+                            ),
+                        },
+                        personal: Object.fromEntries(input.writePersonal.map(key => [key, true])),
+                    },
+                });
+                if (saved.wallet !== wallet()) throw new ConsumerFailure('signIn');
+                // Reconcile a lost sample-consent reply before retrying. Sync handles any missing records.
+                if (Object.hasOwn(sampleContracts, input.listingID)) {
+                    const existing = (await allTerms()).find(
+                        x =>
+                            x.contract.uri === fresh.uri &&
+                            x.status === 'live' &&
+                            (!x.expiresAt || Date.parse(x.expiresAt) > Date.now())
+                    );
+                    if (existing) {
+                        if (JSON.stringify(existing.terms) !== JSON.stringify(terms))
+                            throw new ConsumerFailure('changed');
+                        reviews.delete(input.reviewID);
+                        return true;
+                    }
+                }
+                if (saved.wallet !== wallet()) throw new ConsumerFailure('signIn');
+                await saved.wallet.invoke.consentToContract(fresh.uri, {
+                    terms,
+                    audienceVersion: fresh.audienceVersion ?? 0,
+                });
+                reviews.delete(input.reviewID);
+                return true;
+            } finally {
+                if (sample) sampleConsentBusy = false;
             }
-            const selected = Object.fromEntries(
-                input.readCategories.map(key => [key, input.selectedCredentials[key] ?? []])
-            );
-            const shared = await materializeSelections(wallet(), fresh, selected);
-            // Recheck audience immediately before publication after potentially slow encryption.
-            const beforeCommit = await wallet().invoke.getContract(fresh.uri);
-            if (contractFingerprint(beforeCommit) !== contractFingerprint(fresh))
-                throw new ConsumerFailure('changed');
-            if (beforeCommit.expiresAt && Date.parse(beforeCommit.expiresAt) <= Date.now())
-                throw new ConsumerFailure('inactive');
-            const terms: ConsentFlowTerms = ConsentFlowTermsValidator.parse({
-                read: {
-                    anonymize: input.anonymize,
-                    credentials: {
-                        shareAll: false,
-                        categories: Object.fromEntries(
-                            input.readCategories.map(key => [
-                                key,
-                                { sharing: true, shareAll: false, shared: shared[key] },
-                            ])
-                        ),
-                    },
-                    personal,
-                },
-                write: {
-                    credentials: {
-                        categories: Object.fromEntries(
-                            input.writeCategories.map(key => [key, true])
-                        ),
-                    },
-                    personal: Object.fromEntries(input.writePersonal.map(key => [key, true])),
-                },
-            });
-            await wallet().invoke.consentToContract(fresh.uri, {
-                terms,
-                audienceVersion: fresh.audienceVersion ?? 0,
-            });
-            reviews.delete(input.reviewID);
-            return true;
         },
         appsLaunch: async (raw: unknown) => {
             const { id } = idInput.parse(raw),

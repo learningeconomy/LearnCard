@@ -256,7 +256,7 @@ public final class NativeAccountController {
             let expected = self.generation
             guard let runtime = self.runtime, let user = self.user else { throw StagingResetError.unavailable }
             self.claims.clear()
-            self.store?.consumer.lock(); self.store?.families.lock(); self.store?.inbox.lock(); self.store?.people.lock(); self.store = nil
+            self.store?.consumer.lock(); self.store?.families.lock(); self.store?.inbox.lock(); self.store?.people.lock(); self.store?.intake.lock(); self.store = nil
             self.signupBackup = nil; self.uploadedPhoto = nil; self.phase = "resetting"
             var completed = false
             do {

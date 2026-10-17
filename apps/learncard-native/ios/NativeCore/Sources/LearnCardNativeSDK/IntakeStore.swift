@@ -4,9 +4,15 @@ import Observation
 @MainActor @Observable public final class IntakeStore {
     private let service: any IntakeService
     private var generation = 0
+    private var sampleGeneration = 0
     public private(set) var status: IntakeStatus?
     public private(set) var review: IntakeReview?
     public private(set) var result: IntakeResult?
+    public private(set) var samples: [SampleCredentialBundle] = []
+    public private(set) var samplesLoading = false
+    public private(set) var sampleBusy = false
+    public private(set) var sampleError: ConsumerAppError?
+    public private(set) var sampleResult: IntakeResult?
     public var selected = Set<String>()
     public private(set) var busy = false
     public private(set) var loading = false
@@ -18,6 +24,24 @@ import Observation
         defer { if expected == generation { loading = false } }
         do { let value = try await service.status(); guard expected == generation else { return }; status = value; error = nil }
         catch { if expected == generation { self.error = error as? IntakeError ?? .connection } }
+    }
+    public func loadSamples() async {
+        guard !samplesLoading else { return }; let expected = sampleGeneration; samplesLoading = true; sampleError = nil
+        defer { if expected == sampleGeneration { samplesLoading = false } }
+        do { let value = try await service.samples(); guard expected == sampleGeneration, !Task.isCancelled else { return }; samples = value }
+        catch { if expected == sampleGeneration, !Task.isCancelled { sampleError = error as? ConsumerAppError ?? .connection } }
+    }
+    public func syncSample(id: String) async {
+        guard !sampleBusy else { return }; let expected = sampleGeneration; sampleBusy = true; sampleError = nil; sampleResult = nil
+        defer { if expected == sampleGeneration { sampleBusy = false } }
+        do {
+            let value = try await service.syncSample(id: id); guard expected == sampleGeneration else { return }
+            sampleResult = value
+            await loadSamples()
+        } catch { if expected == sampleGeneration { sampleError = error as? ConsumerAppError ?? .connection } }
+    }
+    public var completedDocumentKinds: Int {
+        IntakeKind.allCases.filter { $0 != .rawVC && (status?.counts[$0.rawValue] ?? 0) > 0 }.count
     }
     public func prepare(_ file: IntakeFile, kind: IntakeKind) async {
         guard !busy else { return }; let expected = generation; busy = true; error = nil; review = nil; result = nil; selected = []
@@ -46,5 +70,5 @@ import Observation
         if let id = review?.id { let service = service; Task { await service.discard(id: id) } }
         generation += 1; busy = false; loading = false; review = nil; result = nil; selected = []; error = nil
     }
-    public func lock() { clearReview(); status = nil }
+    public func lock() { sampleGeneration += 1; samplesLoading = false; sampleBusy = false; clearReview(); status = nil; samples = []; sampleResult = nil; sampleError = nil }
 }

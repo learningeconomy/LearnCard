@@ -80,18 +80,36 @@ public struct IntakeStatus: Codable, Sendable {
     public init(counts: [String: Int] = [:], documents: [IntakeDocument] = [], limited: Bool = false) { self.counts = counts; self.documents = documents; self.limited = limited }
 }
 public struct IntakeDocumentData: Codable, Sendable { public let name: String; public let base64: String }
+public struct SampleCredentialBundle: Codable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let expected: Int
+    public let connected: Bool
+    public init(id: String, title: String, expected: Int, connected: Bool) {
+        self.id = id; self.title = title; self.expected = expected; self.connected = connected
+    }
+}
+
 public protocol IntakeService: Sendable {
+    func samples() async throws -> [SampleCredentialBundle]
+    func syncSample(id: String) async throws -> IntakeResult
     func status() async throws -> IntakeStatus
     func prepare(_ file: IntakeFile, kind: IntakeKind) async throws -> IntakeReview
     func commit(id: String, selected: [String]) async throws -> IntakeResult
     func document(id: String) async throws -> IntakeDocumentData
     func discard(id: String) async
 }
-public extension IntakeService { func discard(id: String) async {} }
+public extension IntakeService {
+    func discard(id: String) async {}
+    func samples() async throws -> [SampleCredentialBundle] { throw ConsumerAppError.unavailable }
+    func syncSample(id: String) async throws -> IntakeResult { throw ConsumerAppError.unavailable }
+}
 @MainActor public final class LiveIntakeService: IntakeService {
     private let runtime: AccountRuntime
     public init(runtime: AccountRuntime) { self.runtime = runtime }
     public func status() async throws -> IntakeStatus { try await runtime.command("intakeStatus") }
+    public func samples() async throws -> [SampleCredentialBundle] { try await runtime.command("samplesStatus") }
+    public func syncSample(id: String) async throws -> IntakeResult { try await runtime.command("samplesSync", input: ["id": id]) }
     public func prepare(_ file: IntakeFile, kind: IntakeKind) async throws -> IntakeReview { try await runtime.command("intakePrepare", input: ["kind": kind.rawValue, "name": file.name, "base64": file.data.base64EncodedString()]) }
     public func commit(id: String, selected: [String]) async throws -> IntakeResult { try await runtime.command("intakeCommit", input: ["id": id, "selected": selected]) }
     public func document(id: String) async throws -> IntakeDocumentData { try await runtime.command("intakeDocument", input: ["id": id]) }
@@ -112,7 +130,23 @@ public actor DemoIntakeService: IntakeService {
     private var saved = Set<String>()
     private var documents: [IntakeDocument] = []
     private let service: any CredentialService
-    public init(service: any CredentialService = DemoCredentialService()) { self.service = service }
+    private let consumer: DemoConsumerAppService
+    public init(service: any CredentialService = DemoCredentialService(), consumer: DemoConsumerAppService = DemoConsumerAppService()) { self.service = service; self.consumer = consumer }
+    public func samples() async -> [SampleCredentialBundle] {
+        [SampleCredentialBundle(id: "native-sample-student", title: "Sample student", expected: 12, connected: await consumer.sampleConsented)]
+    }
+    public func syncSample(id: String) async throws -> IntakeResult {
+        guard id == "native-sample-student", await consumer.sampleConsented else { throw ConsumerAppError.decision }
+        guard let demo = service as? DemoCredentialService else { throw ConsumerAppError.unavailable }
+        var added = 0, existing = 0
+        for number in 1...12 {
+            let key = "sample-student-\(number)"
+            if saved.contains(key) { existing += 1; continue }
+            await demo.importSample(id: key, title: "Sample learning \(number)", issuer: "Sample school")
+            saved.insert(key); added += 1
+        }
+        return IntakeResult(added: added, existing: existing)
+    }
     public func status() -> IntakeStatus {
         var counts = Dictionary(uniqueKeysWithValues: IntakeKind.allCases.map { ($0.rawValue, 0) })
         for document in documents { counts[document.kind.rawValue, default: 0] += 1 }

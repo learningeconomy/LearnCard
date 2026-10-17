@@ -196,8 +196,9 @@ extension CredentialCategory {
 
 extension Credential {
     var categoryTitle: String {
-        if displayCategory == .other, let category, !category.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return category }
-        return NativeText.text("credentialCategory.\(displayCategory.rawValue)")
+        let title = displayCategory == .other && category?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? category! : NativeText.text("credentialCategory.\(displayCategory.rawValue)")
+        return sampleBundleID == nil ? title : NativeText.format("build.sampleCategory", title)
     }
 }
 

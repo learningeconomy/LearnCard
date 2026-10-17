@@ -40,6 +40,12 @@ Colorful tiles stay opaque in dark mode, with navy `cardInk` and `cardSecondary`
 
 Filled primary actions use the pair `Palette.selection` for the fill and `Palette.selectionInk` **on the label**. Both invert together between light and dark appearances. Never rely on a parent foreground or `.tint` alone: the real reset continuation inherited navy text on a navy button and became unreadable. Keep a visible action verb and at least a 54-point primary-action height, expanding for wrapped text.
 
+## Optional milestone and filter actions
+
+Build My LearnCard's document milestones use numbered 46-point color tiles, with navy ink in both appearances, and checkmarks for document kinds that actually have saved copies. A four-segment summary reflects saved kinds; it is optional, independent of signup, and does not count taps or fictional credentials. Sample-bundle access uses the existing explicit consent surface. Its receiving toggles may start on when the contract marks them enabled by default, matching the explicit Add samples intent; optional sharing of existing credentials or personal information remains off. The receiving controls stay optional and visible, and agreement requires a receiving selection. Signed fictional samples are labelled without changing their issuer or cryptographic contents.
+
+Keep reset actions physically grouped with their filters. Passport's date/order reset has a 44-point circular touch target beside Sort, with an explicit accessible label. Category-only selection already has All/View all, so it must not insert an isolated reset row. Empty-state artwork should be legible as a whole; do not obscure the book/ribbon with a second category tile.
+
 ## Surface depth
 
 Depth follows the element's role, rather than the section it lives in. The October 17 review keeps the rendered artwork while removing Apps-only diffuse card shadows. Use these rules when touching existing screens; a broader consistency audit is queued in [the plan](../PLAN.md#queued-design-system-consistency-audit--october-17).

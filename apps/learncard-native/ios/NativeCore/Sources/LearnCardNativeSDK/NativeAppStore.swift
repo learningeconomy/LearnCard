@@ -28,8 +28,9 @@ public final class NativeAppStore {
     public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil, peopleService: (any PeopleService)? = nil, intakeService: (any IntakeService)? = nil) {
         self.service = service
         self.isLive = isLive
-        intake = IntakeStore(service: intakeService ?? (isLive ? UnavailableIntakeService() : DemoIntakeService(service: service)))
-        consumer = ConsumerAppsStore(service: consumerService ?? (isLive ? UnavailableConsumerAppService() : DemoConsumerAppService()))
+        let demoConsumer = consumerService as? DemoConsumerAppService ?? DemoConsumerAppService()
+        intake = IntakeStore(service: intakeService ?? (isLive ? UnavailableIntakeService() : DemoIntakeService(service: service, consumer: demoConsumer)))
+        consumer = ConsumerAppsStore(service: consumerService ?? (isLive ? UnavailableConsumerAppService() : demoConsumer))
         families = FamiliesStore(service: familyService ?? (isLive ? UnavailableFamilyService() : DemoFamilyService()))
         let demoPeople = DemoPeopleService()
         inbox = InboxStore(service: inboxService ?? (isLive ? UnavailableInboxService() : DemoInboxService(people: demoPeople)))

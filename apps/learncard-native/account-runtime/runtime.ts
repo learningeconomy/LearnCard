@@ -49,6 +49,8 @@ import { AuthCoordinator } from '../../../packages/learn-card-base/src/auth-coor
 import type { UnifiedAuthState } from '../../../packages/learn-card-base/src/auth-coordinator/types';
 import type { NativeGlobal, NativeUser, NativeMessage } from './types';
 import { LCN_DID_WEB_REGEX } from '../../../packages/learn-card-base/src/constants/regexes';
+import { createSampleCredentialCommands } from './sample-credentials';
+import stagingTenant from '../../learn-card-app/environments/learncard/config.staging.json';
 import { createConsumerCommands, consumerErrorCode } from './consumer-apps';
 import { createInboxCommands, inboxErrorCode } from './inbox';
 import { createPeopleCommands, peopleErrorCode } from './people';
@@ -57,6 +59,13 @@ import { createFamilyCommands, familyErrorCode, type FamilyPinService } from './
 import { getClient as getAccountAPI } from '@learncard/lca-api-client';
 import { isFamilyCreation, sendPersonalCreation } from './personal-creations';
 
+// This runtime's transport is staging-only; never use production sample contracts.
+const sampleContracts = Object.fromEntries(
+    stagingTenant.features.samplePersonas.map(persona => [
+        `native-sample-${persona.id}`,
+        persona.contractUri,
+    ])
+);
 const bridge = (globalThis as unknown as NativeGlobal).webkit.messageHandlers;
 const native = (input: NativeMessage): Promise<string | null> =>
     bridge.accountNative.postMessage(input);
@@ -443,6 +452,9 @@ const display = async (
         date: string(raw.issuanceDate) || string(raw.validFrom) || '1970-01-01T00:00:00Z',
         createdByMe: raw.issuer === wallet.id.did() || issuer.id === wallet.id.did(),
         isSample: false,
+        sampleBundleID:
+            string(record.nativeSampleBundle) ||
+            Object.entries(sampleContracts).find(([, uri]) => uri === record.contractUri)?.[0],
         artworkURL: image(achievement.image) || image(raw.image),
         issuerLogoURL: image(issuer.image),
         signedPayload: Object.keys(raw).length ? JSON.stringify(raw) : undefined,
@@ -511,7 +523,8 @@ const commands = {
     ...signupCommands,
     ...createPeopleCommands(() => wallet),
     ...createIntakeCommands(() => wallet),
-    ...createConsumerCommands(() => wallet),
+    ...createConsumerCommands(() => wallet, sampleContracts),
+    ...createSampleCredentialCommands(() => wallet, sampleContracts),
     ...createInboxCommands(
         () => wallet,
         async current => {
@@ -937,7 +950,9 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
                                   ? inboxErrorCode(error)
                                   : method.startsWith('families')
                                     ? familyErrorCode(error)
-                                    : method.startsWith('apps') || method.startsWith('privacy')
+                                    : method.startsWith('apps') ||
+                                        method.startsWith('samples') ||
+                                        method.startsWith('privacy')
                                       ? consumerErrorCode(error)
                                       : method === 'initialize'
                                         ? 'connection'
