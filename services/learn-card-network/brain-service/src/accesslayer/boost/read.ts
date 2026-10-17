@@ -259,6 +259,45 @@ export const countBoostSiblings = async (
     return Number(result.records[0]?.get('count') ?? 0);
 };
 
+/**
+ * Builds the Cypher (to follow `MATCH (start:Boost { id })`) that binds `boost` to every distinct
+ * member of start's family: ancestors (up to parentGenerations), descendants (up to
+ * childGenerations) and siblings (or, with includeExtendedFamily, cousins), never start itself
+ * via the sibling path.
+ *
+ * Each branch is expanded outward from the already-bound `start` node, so the cost is proportional
+ * to the size of the family. The previous form (`MATCH (boost:Boost) WHERE <pattern> OR <pattern>`)
+ * label-scanned every Boost node and evaluated the pattern predicates per node.
+ *
+ * Generations are interpolated (Cypher cannot parameterise variable-length bounds); callers must
+ * validate they are numbers. Non-finite values produce an unbounded range, matching prior behaviour.
+ */
+const getFamilialBoostsCypher = ({
+    parentGenerations,
+    childGenerations,
+    includeExtendedFamily,
+}: {
+    parentGenerations: number;
+    childGenerations: number;
+    includeExtendedFamily: boolean;
+}): string => {
+    const parentRange = Number.isFinite(parentGenerations) ? parentGenerations : '';
+    const childRange = Number.isFinite(childGenerations) ? childGenerations : '';
+    const siblingParentHops = includeExtendedFamily ? `*1..${parentRange}` : '';
+    const siblingChildHops = includeExtendedFamily ? `*1..${childRange}` : '';
+
+    return `
+OPTIONAL MATCH (start)<-[:PARENT_OF*1..${parentRange}]-(ancestor:Boost)
+WITH start, COLLECT(DISTINCT ancestor) AS ancestors
+OPTIONAL MATCH (start)-[:PARENT_OF*1..${childRange}]->(descendant:Boost)
+WITH start, ancestors, COLLECT(DISTINCT descendant) AS descendants
+OPTIONAL MATCH (start)<-[:PARENT_OF${siblingParentHops}]-(:Boost)-[:PARENT_OF${siblingChildHops}]->(sibling:Boost)
+WHERE sibling <> start
+WITH ancestors, descendants, COLLECT(DISTINCT sibling) AS siblings
+UNWIND ancestors + descendants + siblings AS boost
+WITH DISTINCT boost`;
+};
+
 export const getFamilialBoosts = async (
     boost: BoostInstance,
     {
@@ -293,22 +332,10 @@ export const getFamilialBoosts = async (
 
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({ model: Boost, where: { id: boost.id }, identifier: 'start' })
-        .match({ model: Boost, identifier: 'boost' })
-        .where(
-            `
-((start)<-[:PARENT_OF*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}]-(boost) OR 
-(start)-[:PARENT_OF*1..${Number.isFinite(childGenerations) ? childGenerations : ''}]->(boost) OR 
-(start)<-[:PARENT_OF${
-                includeExtendedFamily
-                    ? `*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}`
-                    : ''
-            }]-(:Boost)-[:PARENT_OF${
-                includeExtendedFamily
-                    ? `*1..${Number.isFinite(childGenerations) ? childGenerations : ''}`
-                    : ''
-            }]->(boost) AND boost <> start)
-AND ${whereClause}`
+        .raw(
+            getFamilialBoostsCypher({ parentGenerations, childGenerations, includeExtendedFamily })
         )
+        .where(whereClause)
         .raw(`MATCH (boost)-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-()`);
 
     const query = cursor ? _query.where('createdBy.date < $cursor') : _query;
@@ -360,22 +387,10 @@ export const countFamilialBoosts = async (
 
     const query = new QueryBuilder(new BindParam({ ...queryParams }))
         .match({ model: Boost, where: { id: boost.id }, identifier: 'start' })
-        .match({ model: Boost, identifier: 'boost' })
-        .where(
-            `
-((start)<-[:PARENT_OF*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}]-(boost) OR 
-(start)-[:PARENT_OF*1..${Number.isFinite(childGenerations) ? childGenerations : ''}]->(boost) OR 
-(start)<-[:PARENT_OF${
-                includeExtendedFamily
-                    ? `*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}`
-                    : ''
-            }]-(:Boost)-[:PARENT_OF${
-                includeExtendedFamily
-                    ? `*1..${Number.isFinite(childGenerations) ? childGenerations : ''}`
-                    : ''
-            }]->(boost) AND boost <> start)
-AND ${whereClause}`
-        );
+        .raw(
+            getFamilialBoostsCypher({ parentGenerations, childGenerations, includeExtendedFamily })
+        )
+        .where(whereClause);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
