@@ -272,11 +272,14 @@ struct CredentialCard: View {
 
     private var footer: some View {
         HStack(spacing: 4) {
-            Text(credential.categoryTitle)
-                .font(.caption2.weight(.semibold)).foregroundStyle(onWhiteSurface ? Palette.cardSecondary : cardSecondary)
-                .lineLimit(textSize.isAccessibilitySize ? nil : 1).minimumScaleFactor(0.85)
-                .padding(.horizontal, onWhiteSurface ? 9 : 0).padding(.vertical, onWhiteSurface ? 5 : 0)
-                .background(onWhiteSurface ? Palette.categoryTint(credential.displayCategory) : .clear, in: Capsule())
+            VStack(alignment: .leading, spacing: 5) {
+                Text(credential.categoryTitle)
+                    .font(.caption2.weight(.semibold)).foregroundStyle(onWhiteSurface ? Palette.cardSecondary : cardSecondary)
+                    .lineLimit(textSize.isAccessibilitySize ? nil : 1).minimumScaleFactor(0.85)
+                    .padding(.horizontal, onWhiteSurface ? 9 : 0).padding(.vertical, onWhiteSurface ? 5 : 0)
+                    .background(onWhiteSurface ? Palette.categoryTint(credential.displayCategory) : .clear, in: Capsule())
+                CredentialIssueDate(credential: credential).font(.caption2).foregroundStyle(cardSecondary)
+            }
             Spacer(minLength: 0)
             if showsDisclosure {
                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
@@ -291,7 +294,7 @@ struct CredentialCard: View {
             Text(credential.title).font(featured ? .title3.weight(.semibold) : .headline)
                 .foregroundStyle(cardText).lineLimit(textSize.isAccessibilitySize ? nil : featured ? 3 : 2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(credential.issuer).font(.caption).foregroundStyle(cardSecondary)
+            Text(NativeText.format("credential.issuedBy", credential.issuer)).font(.caption).foregroundStyle(cardSecondary)
                 .lineLimit(textSize.isAccessibilitySize ? nil : 2)
         }
     }

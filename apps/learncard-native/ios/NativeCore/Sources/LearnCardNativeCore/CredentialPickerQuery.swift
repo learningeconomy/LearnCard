@@ -56,13 +56,15 @@ public struct CredentialPickerQuery: Equatable, Sendable {
             guard categories.isEmpty || categories.contains(credential.displayCategory) else { return false }
             if let lower, let upper {
                 // The adapter uses epoch zero when issuance date is unavailable.
-                guard credential.date.timeIntervalSince1970 > 0, credential.date >= lower, credential.date < upper else { return false }
+                guard let date = credential.issueDate, date >= lower, date < upper else { return false }
             }
             let searchable = "\(credential.title) \(credential.issuer) \(credential.summary)"
             return terms.allSatisfy { searchable.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive], locale: locale) != nil }
         }.sorted { a, b in
             switch sort {
             case .newest, .oldest:
+                // Missing dates belong at the end in either direction, never under "oldest".
+                if (a.issueDate == nil) != (b.issueDate == nil) { return a.issueDate != nil }
                 if a.date != b.date { return sort == .newest ? a.date > b.date : a.date < b.date }
             case .title, .issuer:
                 let first = sort == .title ? a.title : a.issuer

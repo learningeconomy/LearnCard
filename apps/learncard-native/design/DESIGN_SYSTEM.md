@@ -54,6 +54,10 @@ Depth follows the element's role, rather than the section it lives in. The Octob
 
 Do not spread credential lighting, sheen or tilting to generic panels. Keep real publisher imagery intact. A panel's color or shadow must never imply verified status, endorsement or access.
 
+## Credential identity and browsing
+
+Credential names are primary; issuer text always starts with localized **Issued by**. Show a known issue date as a quiet **Issued _date_** line below the category, rather than squeezing it beside a long title. Keep missing dates out of rows/cards and label them unavailable in detail. Issuer labels and category art do not imply trust. Passport places designed date/sort sheets behind compact controls below search; filters and non-default order show a result list while ordinary category browsing keeps its recent stack. See [the complete browsing contract](PASSPORT_BROWSING.md).
+
 ## Scale and rhythm
 
 Dimensions are logical points. Display pixel density is irrelevant to layout. `NativeLayout` provides the shared 20-point page inset, 24-point section gap/surface radius and 14-point row gap. Existing surfaces migrate to these tokens as they are touched.

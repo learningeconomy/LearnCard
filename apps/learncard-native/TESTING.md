@@ -1,5 +1,23 @@
 # Native regression checks
 
+## Passport issuer, dates and browsing — October 17, 2026
+
+The final full Swift run passes **190 cases**: 157 XCTest plus 33 Swift Testing (`artifacts/passport-browse-core-final.log`). Two new core cases cover unknown dates sorting last in either direction and combined Passport text/category/date filtering that retains unreadable records without loosening live sharing. A new localization case checks issuer/date interpolation, loaded-match plurals and browsing copy in all four languages. Calendar boundaries, stable natural/locale sorts, original payload preservation and read-only paging cancellation/error/retry retain their existing checks. Catalog generation validates **983 keys** across en/es/fr/ar.
+
+`artifacts/passport-browse-first-2026-10-17.xcresult` passes **8/8** focused cases: the three new Passport browsing cases plus existing typed-search/reset, category-empty-state distinction, shared-picker paging/date/selection and settled tray clearance at standard/Arabic accessibility sizes. The new cases check explicit issuer/date labels on the featured card, detail and rows; designed sort choices; search finding item 239 beyond the first page; date draft cancellation/apply/reset; and custom-date controls.
+
+Screenshot review caught a cramped large-text From/Through layout and a duplicated `--locale` argument in the new test helper. The date labels now sit above their pickers, and the helper supplies one locale; the Arabic test explicitly requires Arabic text. The first new sheet preview was English accessibility text and is not presented as Arabic verification. Final paging also restarts if a refresh replaces a completed result set with a partial first page.
+
+The final `artifacts/passport-browse-compact-final-2026-10-17.xcresult` passes **4/4** on a 375-point iPhone SE: all three new browsing cases with the corrected helper/date layout, plus standard settled footer clearance on all four tabs. Actual standard/compact/card/sort/date captures were exported and visually reviewed; [the browsing contract](design/PASSPORT_BROWSING.md#evidence) includes selected native screens. The Arabic compact image is explicitly an accessibility stress preview. The normal checks device is shut down and the temporary compact device was deleted after export.
+
+Final review aligned the reset inside an empty date-filter result with the main Reset filters & sort control: both preserve typed text. The updated paging/date/reset test explicitly taps the empty-state reset and checks the retained query; `artifacts/passport-reset-final-2026-10-17.xcresult` passes **1/1** on the standard phone after this action-only refinement.
+
+The configured suite is **512 cases**: 193 Bun, 190 Swift and 129 simulator, plus the opt-in live-exchange skip. This pass reruns the complete Swift suite and focused UI checks, not the full Bun/simulator suites or hosted CI. Runtime identity/protocol, original signed credentials and verification claims retain their existing semantics; live account writes are outside this UI pass.
+
+Final Debug compilation and normal Native Lab installation pass (`artifacts/passport-browse-debug-final.log`, `passport-browse-review-install.log`). The installed payload matches all **48 files**, private account configuration is byte-identical and build version remains **3** (`passport-browse-install-proof.json`). No uninstall, account reset/sign-out, credential issuance/sharing, consumer-app access change, Release rerun or hosted CI dispatch was performed.
+
+Read-only native inspection confirms the signed-in Home with the retained “Native signup check” credential, now labelled “Issued by Timmy” and “Issued Oct 16, 2026.” Home's See all opens Passport with the new Issue date / Sort controls and the same credential. Native Lab is left on Passport for review.
+
 ## Root scroll clearance — October 17, 2026
 
 `artifacts/root-scroll-before-2026-10-17.xcresult` reproduces the reported bug: the settled final Apps row ends at **771 points**, while the custom tray starts at **755**. Existing page padding was present; hittability alone did not catch partial occlusion.
@@ -14,7 +32,7 @@ Final Debug compilation and the normal Native Lab install pass (`artifacts/root-
 
 A preliminary geometry-only run (`root-scroll-fixed-2026-10-17.xcresult`) passed 5/5 but visual inspection exposed the system tab bar above the custom tray; it is superseded by the final run. After scoping visibility correctly, the first single-tray check confirmed Apps/Home but its center swipe opened a Passport credential. The final gutter gesture preserves the same full-row assertions. Superseded/cancelled startup attempts are not passing evidence.
 
-The configured suite is now **506 cases**: 193 Bun, 187 Swift and 126 simulator, plus the opt-in live-exchange skip. New UI cases join the existing manual CI workflow automatically. This is focused layout/navigation verification; no full suite, Release rerun, hosted native CI or real account mutation is claimed.
+At that checkpoint the configured suite was **506 cases**: 193 Bun, 187 Swift and 126 simulator, plus the opt-in live-exchange skip. New UI cases join the existing manual CI workflow automatically. This is focused layout/navigation verification; no full suite, Release rerun, hosted native CI or real account mutation is claimed.
 
 ## Surface and loading hierarchy — October 17, 2026
 

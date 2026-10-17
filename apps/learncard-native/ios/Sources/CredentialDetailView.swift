@@ -31,9 +31,11 @@ struct CredentialDetailView: View {
                     Text(credential.summary).foregroundStyle(Palette.secondary).lineSpacing(4)
                 }
                 VStack(spacing: 16) {
-                    metadata("From", value: credential.issuer)
+                    metadata(NativeText.text("credential.issuerLabel"), value: credential.issuer, identifier: "from")
                     metadata("Category", value: credential.categoryTitle)
-                    metadata("Date", value: credential.date.formatted(date: .abbreviated, time: .omitted))
+                    metadata(NativeText.text("sharePicker.dateHeading"), value: credential.issueDate.map {
+                        $0.formatted(.dateTime.month(.abbreviated).day().year().locale(nativeLocale))
+                    } ?? NativeText.text("credential.dateUnavailable"), identifier: "date")
                     metadata("Status", value: isCreation ? "Reusable creation" : credential.isSample ? "Sample · unsigned" : NativeText.text(credential.createdByMe ? "credential.issuedInPassport" : "credential.inPassport"))
                 }
                 Text(credential.isSample ? "Sample content for exploring the native app." : credential.verificationSummary ?? "Verification unavailable.")
@@ -77,12 +79,12 @@ struct CredentialDetailView: View {
         }
     }
 
-    private func metadata(_ title: String, value: String) -> some View {
+    private func metadata(_ title: String, value: String, identifier: String? = nil) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title).foregroundStyle(Palette.secondary)
             Spacer(minLength: 16)
             Text(value).foregroundStyle(Palette.ink).multilineTextAlignment(.trailing)
-                .accessibilityIdentifier("credential-metadata-\(title.lowercased())")
+                .accessibilityIdentifier("credential-metadata-\(identifier ?? title.lowercased())")
         }.font(.subheadline)
     }
 }

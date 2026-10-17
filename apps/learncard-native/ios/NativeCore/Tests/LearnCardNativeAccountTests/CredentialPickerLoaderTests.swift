@@ -96,4 +96,21 @@ import LearnCardNativeCore
             }
         }
     }
+    func testPassportMetadataAndBrowseCopyInEveryLocale() {
+        for language in [NativeLanguage.en, .es, .fr, .ar] {
+            for key in ["credential.issuedBy", "credential.issuedOn"] {
+                let text = NativeText.format(key, "Timmy 42", language: language)
+                XCTAssertTrue(text.contains("Timmy 42")); XCTAssertFalse(text.contains("%@")); XCTAssertNotEqual(text, "Timmy 42")
+            }
+            for count in [0, 1, 2, 300] {
+                let text = NativeText.count("passport.loadedMatches", count, language: language)
+                XCTAssertNotEqual(text, "passport.loadedMatches"); XCTAssertFalse(text.contains("%"))
+            }
+            for key in ["credential.issuerLabel", "credential.dateUnavailable", "passport.dateTitle", "passport.sortHint", "passport.applyDates",
+                        "passport.resetBrowse", "passport.partialFailed", "passport.searchingAll", "passport.partial", "passport.noDatesBody"] {
+                XCTAssertNotEqual(NativeText.text(key, language: language), key)
+            }
+            XCTAssertEqual(NativeText.format("passport.customDates", "START", "END", language: language), "START – END")
+        }
+    }
 }

@@ -72,6 +72,8 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
     public var displayCategory: CredentialCategory { .resolve(category, fallback: kind) }
     public var belongsInCollection: Bool { displayCategory != .family }
     public let date: Date
+    /// The runtime adapter uses epoch zero when neither issuanceDate nor validFrom is available.
+    public var issueDate: Date? { date.timeIntervalSince1970 > 0 ? date : nil }
     public let createdByMe: Bool
     public let isSample: Bool
     public let artworkURL: URL?

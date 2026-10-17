@@ -77,3 +77,28 @@ private var pickerCalendar: Calendar { var value = Calendar(identifier: .gregori
     #expect(selection.ids.count == 50); #expect(selection.ids.contains("99"))
     selection.clear(); #expect(selection.ids.isEmpty)
 }
+
+@Test func passportDateSortKeepsUnavailableDatesLastInBothDirections() {
+    let records = [pickerRecord("unknown", date: "1970-01-01T00:00:00Z"), pickerRecord("new"),
+                   pickerRecord("old", date: "2025-10-15T12:00:00Z")]
+    var query = CredentialPickerQuery()
+    #expect(records[0].issueDate == nil)
+    #expect(query.results(in: records, selected: [], live: false).map(\.id) == ["new", "old", "unknown"])
+    query.sort = .oldest
+    #expect(query.results(in: records, selected: [], live: false).map(\.id) == ["old", "new", "unknown"])
+    query.dateRange = .year
+    #expect(query.results(in: records, selected: [], live: false, now: pickerNow, calendar: pickerCalendar).map(\.id) == ["new"])
+}
+
+@Test func passportBrowseRetainsUnreadableRecordsAndCombinesTextCategoryAndDate() {
+    let records = [pickerRecord("unreadable", category: "Qualifications", signed: false),
+                   pickerRecord("portfolio"), pickerRecord("other-issuer", category: "Qualifications", issuer: "Another School"),
+                   pickerRecord("old", category: "Qualifications", date: "2025-10-15T12:00:00Z")]
+    var query = CredentialPickerQuery(now: pickerNow, calendar: pickerCalendar)
+    query.categories = [.qualification]; query.text = "ecole research"; query.dateRange = .year; query.sort = .issuer
+    #expect(query.results(in: records, selected: [], live: false, now: pickerNow, calendar: pickerCalendar, locale: Locale(identifier: "en")).map(\.id) == ["unreadable"])
+    #expect(query.results(in: records, selected: [], live: true, now: pickerNow, calendar: pickerCalendar).isEmpty)
+    query.resetFilters(); query.text = ""
+    #expect(query.sort == .issuer)
+    #expect(query.results(in: records, selected: [], live: false).count == 4)
+}

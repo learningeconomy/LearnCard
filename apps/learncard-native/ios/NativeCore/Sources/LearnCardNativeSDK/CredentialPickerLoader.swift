@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Read-only collection paging for the sharing picker. Stops on failure/cancellation; never retries in a loop.
+/// Read-only collection paging for Passport and the sharing picker. Stops on failure/cancellation; never retries in a loop.
 @MainActor @Observable public final class CredentialPickerLoader {
     public private(set) var loading = false
     public private(set) var failed = false

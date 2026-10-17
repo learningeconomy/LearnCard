@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Passport issuer, dates and browsing — October 17
+
+Cards and shared rows identify **Issued by**, with known issue dates below the category and clearer detail labels. Passport keeps category chips and adds designed date/sort sheets, draft/apply date choices, custom calendar ranges, newest/oldest/title/issuer ordering and reset. Active searches/filters/order check remaining pages with honest incomplete-result/retry states. The recent stack yields to date/text/sorted results. [Contract and layout rules](design/PASSPORT_BROWSING.md); verification is recorded in [TESTING](TESTING.md).
+
 ## Queued: design-system consistency audit — October 17
 
 The user likes the rendered Apps direction but flagged card shadows inconsistent with ordinary app panels, and competing LearnCard/Welcome back headings. This immediate refinement removes diffuse shadows and raised edges from Apps reading panels, keeps rendered artwork/local icon depth, and makes loading greetings secondary to the brand. [The native design system](design/DESIGN_SYSTEM.md) now defines surface roles and loading hierarchy.

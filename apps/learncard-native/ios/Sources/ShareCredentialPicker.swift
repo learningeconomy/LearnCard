@@ -218,11 +218,9 @@ struct SharePickerRow: View {
         VStack(alignment: .leading, spacing: 5) {
                 Text(credential.title).font(.system(size: titleSize, weight: .semibold)).foregroundStyle(Palette.ink)
                     .lineLimit(textSize.isAccessibilitySize ? nil : 3)
-                Text(credential.issuer).font(.subheadline).foregroundStyle(Palette.secondary)
+                Text(NativeText.format("credential.issuedBy", credential.issuer)).font(.subheadline).foregroundStyle(Palette.secondary)
                 Text(credential.categoryTitle).font(.footnote.weight(.medium)).foregroundStyle(Palette.categoryAccent(credential.displayCategory))
-                if credential.date.timeIntervalSince1970 > 0 {
-                    Text(credential.date, format: .dateTime.month(.abbreviated).day().year().locale(locale)).font(.caption).foregroundStyle(Palette.secondary)
-                }
+                CredentialIssueDate(credential: credential).font(.caption).foregroundStyle(Palette.secondary)
             }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }

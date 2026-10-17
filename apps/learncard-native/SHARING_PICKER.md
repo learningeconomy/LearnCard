@@ -12,6 +12,8 @@ October 15, 2026. Entry: header **+ → Share credentials**. Applies to selectin
 - **Selected** shows every explicit choice, including items hidden by the current search/date/category filters. It ignores those filters, making it an audit of the selection. Switching back preserves the search and filters. Back from review preserves both selection and query.
 - The footer keeps the selected count, Clear selection and Review selection accessible independently of the list. Up to 50 items may be selected, matching the existing share-link contract. At the limit, unselected rows are disabled; selected rows can still be removed. There is no implicit select-all operation.
 
+October 17 metadata refinement: shared rows now label **Issued by** and **Issued _date_**, matching Passport cards/list rows. Dates unavailable in the adapter stay omitted, and both chronological orders keep unknown dates last. Passport reuses the query/loader for read-only browsing while retaining unreadable records; live sharing still requires the original payload. See [Passport browsing](design/PASSPORT_BROWSING.md).
+
 ## Paging and disclosure
 
 The existing account runtime reads the LearnCloud personal index in pages of thirty and opens original credential content. Ordinary browsing requests later pages near the list bottom. Active search/category/date filters, oldest order and alphabetical order continue through remaining pages automatically. Results arrive progressively, with a progress indicator and an explicit incomplete-result caption until the final page. Empty internal index pages do not strand the browsing spinner.

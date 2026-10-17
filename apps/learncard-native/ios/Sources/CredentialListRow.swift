@@ -17,10 +17,11 @@ struct CredentialListRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(credential.title).font(.system(size: titleSize, weight: .semibold)).tracking(-0.2).foregroundStyle(Palette.ink)
                     .lineLimit(textSize.isAccessibilitySize ? nil : 3)
-                Text(credential.issuer).font(.subheadline).foregroundStyle(Palette.secondary)
+                Text(NativeText.format("credential.issuedBy", credential.issuer)).font(.subheadline).foregroundStyle(Palette.secondary)
                     .lineLimit(textSize.isAccessibilitySize ? nil : 2)
                 Text(credential.categoryTitle).font(.footnote.weight(.medium))
                     .foregroundStyle(Palette.categoryAccent(credential.displayCategory))
+                CredentialIssueDate(credential: credential).font(.caption).foregroundStyle(Palette.secondary)
             }.frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
             Image(systemName: "chevron.right").font(.caption.weight(.semibold))
                 .foregroundStyle(Palette.secondary).accessibilityHidden(true)
@@ -28,6 +29,18 @@ struct CredentialListRow: View {
             .fixedSize(horizontal: false, vertical: true)
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .combine)
+    }
+}
+
+/// Keep the date explicitly labelled and locale formatted; unavailable dates are omitted.
+struct CredentialIssueDate: View {
+    let credential: Credential
+    @Environment(\.locale) private var locale
+    var body: some View {
+        if let date = credential.issueDate {
+            Text(NativeText.format("credential.issuedOn", date.formatted(.dateTime.month(.abbreviated).day().year().locale(locale))))
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 
