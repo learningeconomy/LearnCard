@@ -195,3 +195,21 @@ test('config errors are told apart from source errors', () => {
         true
     );
 });
+
+test('circular tsconfig references end instead of recursing forever', () => {
+    const repo = fixture({
+        'packages/a/tsconfig.json': {
+            files: [],
+            references: [{ path: './tsconfig.b.json' }, { path: './tsconfig.lib.json' }],
+        },
+        'packages/a/tsconfig.b.json': { files: [], references: [{ path: './tsconfig.json' }] },
+        'packages/a/tsconfig.lib.json': { include: ['src'] },
+    });
+    try {
+        assert.deepEqual(leafConfigs(join(repo, 'packages/a/tsconfig.json')), [
+            join(repo, 'packages/a/tsconfig.lib.json'),
+        ]);
+    } finally {
+        rmSync(repo, { recursive: true, force: true });
+    }
+});

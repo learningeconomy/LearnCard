@@ -41,7 +41,9 @@ export const nxProjects = repo => {
 
 // A solution tsconfig (`files: []`, no `include`, only `references`) checks nothing by itself,
 // so follow its references down to the leaf configs.
-export const leafConfigs = path => {
+export const leafConfigs = (path, seen = new Set()) => {
+    if (seen.has(path)) return [];
+    seen.add(path);
     const { config = {} } = ts.readConfigFile(path, ts.sys.readFile);
     const solution =
         config.references?.length &&
@@ -52,7 +54,7 @@ export const leafConfigs = path => {
     return config.references.flatMap(ref => {
         const target = join(dirname(path), ref.path);
         const isDir = existsSync(target) && statSync(target).isDirectory();
-        return leafConfigs(isDir ? join(target, 'tsconfig.json') : target);
+        return leafConfigs(isDir ? join(target, 'tsconfig.json') : target, seen);
     });
 };
 
@@ -112,7 +114,12 @@ export const run = ({ cmd, args, cwd }) =>
         };
         const child = spawn(cmd, args, {
             cwd,
-            env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=6144' },
+            env: {
+                ...process.env,
+                NODE_OPTIONS: [process.env.NODE_OPTIONS, '--max-old-space-size=6144']
+                    .filter(Boolean)
+                    .join(' '),
+            },
         });
         child.stdout.on('data', d => (output += d));
         child.stderr.on('data', d => (output += d));
