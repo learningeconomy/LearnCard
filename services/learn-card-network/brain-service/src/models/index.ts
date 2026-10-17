@@ -210,6 +210,10 @@ const indexQueries = [
     'CREATE INDEX contact_method_primary_idx IF NOT EXISTS FOR (c:ContactMethod) ON (c.isPrimary)',
     'CREATE INDEX credential_refresh_credential_id_idx IF NOT EXISTS FOR (r:CredentialRefresh) ON (r.credentialId)',
     'CREATE INDEX credential_refresh_version_refresh_id_idx IF NOT EXISTS FOR (c:Credential) ON (c.refreshId)',
+    // Credential activity reads join each CredentialActivity to its credential through
+    // (sender)-[:CREDENTIAL_SENT { activityId }]->(credential). Without this index every
+    // activity row scans all CREDENTIAL_SENT relationships.
+    'CREATE INDEX credential_sent_activity_id_idx IF NOT EXISTS FOR ()-[r:CREDENTIAL_SENT]-() ON (r.activityId)',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
