@@ -38,6 +38,9 @@ struct LearnCardNativeApp: App {
             _store = State(initialValue: AppStore(service: credentials, consumerService: consumer,
                 intakeService: DemoIntakeService(service: credentials, consumer: consumer, sampleDelay: args.contains("--sample-sync-slow") ? .seconds(1) : .milliseconds(100), failSampleOnce: args.contains("--sample-sync-partial"))))
         }
+        if args.contains("--demo"), args.contains("--credential-refresh-slow") || args.contains("--credential-refresh-failure") {
+            _store = State(initialValue: AppStore(service: CredentialActivityFixture(failOnce: args.contains("--credential-refresh-failure"))))
+        }
         if let index = args.firstIndex(of: "--locale"), args.indices.contains(index + 1), NativeLanguage(rawValue: args[index + 1]) != nil {
             UserDefaults.standard.set(args[index + 1], forKey: NativeLanguage.preferenceKey)
         }

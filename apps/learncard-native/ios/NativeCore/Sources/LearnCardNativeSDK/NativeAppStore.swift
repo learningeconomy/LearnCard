@@ -4,12 +4,16 @@ import LearnCardNativeCore
 
 @MainActor @Observable
 public final class NativeAppStore {
+    public enum CredentialActivity: Equatable, Sendable { case refreshing, receiving, loadingMore }
     private let service: any CredentialService
     public var snapshot: CollectionSnapshot?
     public var isBusy = false
     public var error: String?
     /// Dismissing the transient alert does not establish an empty Passport.
     public private(set) var snapshotReadFailed = false
+    public private(set) var credentialActivity: CredentialActivity?
+    /// Read failures stay beside the cached content instead of interrupting navigation.
+    public private(set) var refreshError: String?
     public var notice: String?
     public var openInboxRequested = false
     public let isLive: Bool
@@ -19,10 +23,12 @@ public final class NativeAppStore {
     public let people: PeopleStore
     public let intake: IntakeStore
     public private(set) var sampleRefreshBusy = false
+    public private(set) var sampleRefreshFailed = false
     public var sampleSyncBusy: Bool { intake.samplePreparing || intake.sampleBusy || sampleRefreshBusy }
     /// Shared across navigation; refresh Passport before presenting completion.
     public func syncSample(id: String) async {
         guard !sampleSyncBusy else { return }
+        sampleRefreshFailed = false
         sampleRefreshBusy = true
         defer { sampleRefreshBusy = false }
         await intake.syncSample(id: id)
@@ -34,6 +40,7 @@ public final class NativeAppStore {
         }
         guard intake.syncingSampleID == id else { return }
         await refresh()
+        sampleRefreshFailed = refreshError != nil
     }
     public var demoClaimService: any ClaimService { DemoClaimService(service: service) }
     /// Matches the tray and Home; credential arrival notices must not count twice.
@@ -62,12 +69,22 @@ public final class NativeAppStore {
 
     public func refresh() async {
         guard !isBusy else { return }
-        let success = await perform { try await self.service.snapshot() }
-        snapshotReadFailed = !success
+        refreshError = nil
+        let success = await perform(activity: .refreshing, reportsError: false) { try await self.service.snapshot() }
+        if !Task.isCancelled { snapshotReadFailed = !success }
+        if success { sampleRefreshFailed = false }
+    }
+
+    /// Offers and notifications come from separate reads; an Inbox check needs both.
+    public func refreshInbox() async {
+        guard !isBusy, !inbox.loading, inbox.busyID == nil else { return }
+        await refresh()
+        guard !Task.isCancelled else { return }
+        await inbox.load()
     }
 
     public func claim(_ credential: Credential) async -> Bool {
-        let success = await perform { try await self.service.claim(offerID: credential.id) }
+        let success = await perform(activity: .receiving) { try await self.service.claim(offerID: credential.id) }
         if success {
             notice = isLive ? "Credential added to your collection." : "Sample added to your collection."
             await inbox.afterClaim()
@@ -107,7 +124,7 @@ public final class NativeAppStore {
 
     @discardableResult public func loadMore() async -> Bool {
         guard !isBusy else { return false }
-        let success = await perform { try await self.service.loadMore() }
+        let success = await perform(activity: .loadingMore) { try await self.service.loadMore() }
         snapshotReadFailed = !success
         return success
     }
@@ -117,23 +134,24 @@ public final class NativeAppStore {
         return try await service.recipient(profileId)
     }
 
-    private func perform(_ operation: () async throws -> CollectionSnapshot) async -> Bool {
+    private func perform(activity: CredentialActivity? = nil, reportsError: Bool = true,
+                         _ operation: () async throws -> CollectionSnapshot) async -> Bool {
         guard !isBusy else { return false }
         isBusy = true
+        credentialActivity = activity
         error = nil
-        defer { isBusy = false }
+        defer { isBusy = false; credentialActivity = nil }
         do {
             snapshot = try await operation()
             snapshotReadFailed = false
             return true
         } catch is CancellationError {
             return false
-        } catch let clientError as ClientError {
-            error = clientError.errorDescription
-        } catch let accountError as AccountError {
-            error = accountError.errorDescription
         } catch {
-            self.error = "Something went wrong. Please try again."
+            let message = (error as? ClientError)?.errorDescription ?? (error as? AccountError)?.errorDescription
+                ?? "Something went wrong. Please try again."
+            if reportsError { self.error = message }
+            if activity == .refreshing { refreshError = message }
         }
         return false
     }

@@ -14,7 +14,7 @@ struct InboxView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 PageHeading(title: "Inbox", accent: Palette.flairPink)
-                Text(NativeText.text("inbox.subtitle")).font(.subheadline).foregroundStyle(Palette.secondary)
+                CredentialActivityStatus(store: store, inbox: true)
                 Button(action: scan) {
                     Label(NativeText.text("claims.title"), systemImage: "qrcode.viewfinder").font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 50).foregroundStyle(Palette.ink)
@@ -44,27 +44,24 @@ struct InboxView: View {
                         .accessibilityAddTraits(.isHeader).headingFlair(Palette.flairBlue)
                     ForEach(updates) { item in ConnectionInboxRow(inbox: store.inbox, item: item) }
                 }
-                if let error = store.inbox.error {
+                if let error = store.inbox.error, error != store.inbox.loadError {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(error).font(.subheadline).foregroundStyle(Palette.ink)
                         Button(NativeText.literal("Try Again")) { Task { await store.inbox.load() } }.disabled(store.inbox.loading)
                     }.padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))
                 }
                 if store.inbox.metadataPending { Text(NativeText.text("inbox.metadataPending")).font(.caption).foregroundStyle(Palette.secondary) }
-                if store.inbox.loading { ProgressView(NativeText.text("inbox.loading")).frame(maxWidth: .infinity).padding(12) }
                 if store.inbox.hasMore {
                     Button(NativeText.text("inbox.more")) { Task { await store.inbox.load(more: true) } }
                         .disabled(store.inbox.loading || store.inbox.busyID != nil).frame(maxWidth: .infinity).padding(12)
                 }
-                if store.snapshot?.offers.isEmpty == true && store.inbox.loaded && updates.isEmpty && store.inbox.error == nil {
+                if store.snapshot?.offers.isEmpty == true && store.inbox.loaded && updates.isEmpty && store.inbox.error == nil && store.inbox.loadError == nil && store.refreshError == nil && !store.inbox.loading && store.credentialActivity != .refreshing && !store.sampleSyncBusy {
                     VStack(spacing: 14) {
                         Image("InboxIllustration").resizable().scaledToFit().frame(width: 160, height: 120).accessibilityHidden(true)
                         Text(NativeText.literal("You're all caught up")).font(.title3.weight(.semibold)).foregroundStyle(Palette.ink)
                         Text(NativeText.text("inbox.empty.detail")).font(.subheadline).foregroundStyle(Palette.secondary)
                     }.multilineTextAlignment(.center).padding(24).frame(maxWidth: .infinity)
                         .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
-                } else if store.snapshot == nil {
-                    ProgressView(NativeText.text("inbox.loading")).padding(24).frame(maxWidth: .infinity)
                 }
             }.padding(20)
         }
@@ -75,6 +72,6 @@ struct InboxView: View {
         .toolbarBackground(Palette.inboxCanvas, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .task { if !store.inbox.loaded { await store.inbox.load() } }
-        .refreshable { await store.refresh(); await store.inbox.load() }
+        .refreshable { await store.refreshInbox() }
     }
 }

@@ -57,7 +57,7 @@ struct CollectionView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 PageHeading(title: "Passport", identifier: "collection", accent: Palette.flairBlue)
-                if !searchMode { Text(NativeText.literal("My credentials")).font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary) }
+                CredentialActivityStatus(store: store)
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").foregroundStyle(searchMode ? Palette.green : Palette.secondary)
                         .symbolEffect(.pulse, options: .repeating, isActive: filtering && !reduceMotion).accessibilityHidden(true)
@@ -93,10 +93,8 @@ struct CollectionView: View {
                 }
                 .padding(.horizontal, -20)
                 if store.snapshot == nil {
-                    VStack(spacing: 16) {
-                        if store.isBusy { ProgressView(NativeText.text("collection.loading")) }
-                        else { Button(NativeText.literal("Try Again")) { Task { await store.refresh() } } }
-                    }.frame(maxWidth: .infinity).padding(.vertical, 50)
+                    // The status beside the title owns first-load progress and retry.
+                    Color.clear.frame(height: 50).accessibilityHidden(true)
                 } else if filtering {
                     HStack(spacing: 12) {
                         ProgressView().tint(Palette.green)

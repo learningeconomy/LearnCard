@@ -24,6 +24,12 @@ Receipt work is split into a read-only `samplesSyncBegin` plan and one-original 
 
 The banner participates in root layout, above the measured tray, instead of floating over scroll content. Slow and partial UI fixtures are DEBUG/demo-only and use the same production views/store; they do not access staging data.
 
+### Passport and Inbox activity
+
+Both page titles now have a compact shared activity row. The row follows sample preparation, actual receipt counts and final Passport refresh, while the persistent strip remains available on every tab. General snapshot reads say Checking for credentials; explicit single-credential receipt says Adding to your Passport. Notification loading is identified separately. Idle pages offer Refresh; Inbox refresh reads both pending offers and notifications. This is feedback for actual foreground reads and approved receipts, not a new polling or automatic acceptance mechanism.
+
+A failed refresh leaves cached credentials visible with an inline Try Again action instead of a navigation-blocking alert. Failure to read offers cannot become Inbox's all-caught-up state, even if notifications load successfully. A sample bundle whose final Passport read fails remains incomplete with retry; it does not report a clean visual refresh.
+
 ## Passport refinements
 
 The date/sort reset is a labelled 44-point circular arrow directly beside the sorting control, with an adaptive second-row layout where needed. Selecting a category alone no longer creates a reset row: **All** and the empty-state **View all** action already clear the category. Typed search survives a date/sort reset. The category empty illustration shows the complete open book and ribbon; the overlapping category tile is removed.
@@ -51,3 +57,13 @@ Final production-view captures with isolated demo receipt services. The Arabic d
 | ![Progress persists while browsing](design/sample-sync-progress-native.png) | ![Completion waits for Passport refresh](design/sample-sync-complete-native.png) | ![Partial receipt keeps retry visible](design/sample-sync-partial-native.png) |
 
 [Arabic accessibility completion and usable navigation](design/sample-sync-arabic-large-native.png).
+
+### Page-level activity evidence
+
+Final production-view captures with isolated slow/failing services. The Arabic view uses deliberate accessibility text sizing.
+
+| Checking Passport                                                 | Checking incoming items                                     | Retained Passport with retry                              |
+| ----------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------- |
+| ![Passport activity](design/passport-credential-check-native.png) | ![Inbox activity](design/inbox-credential-check-native.png) | ![Inline retry](design/passport-refresh-retry-native.png) |
+
+[Arabic dark accessibility check](design/passport-credential-check-arabic-large-native.png).

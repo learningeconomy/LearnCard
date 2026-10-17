@@ -16,6 +16,7 @@ import LearnCardNativeCore
     public private(set) var loading = false
     public private(set) var busyID: String?
     public var error: String?
+    public private(set) var loadError: String?
     public var metadataPending = false
     public var relationshipsChanged: (@MainActor () -> Void)?
     public var unreadCount: Int { items.filter { !$0.read }.count }
@@ -29,7 +30,7 @@ import LearnCardNativeCore
     public func load(more: Bool = false) async {
         guard !locked, busyID == nil, !loading, !more || hasMore else { return }
         request += 1; let expected = generation, sequence = request
-        loading = true; error = nil
+        loading = true; error = nil; loadError = nil
         defer { if expected == generation && sequence == request { loading = false } }
         do {
             let page = try await service.page(cursor: more ? cursor : nil); try check(expected)
@@ -45,7 +46,7 @@ import LearnCardNativeCore
             }
             items = values; postClaimPrompts = page.postClaimPrompts.map(reconciled).filter(\.actionable)
             hasMore = page.hasMore; cursor = page.cursor; loaded = true
-        } catch { if expected == generation && !Task.isCancelled { self.error = friendly(error) } }
+        } catch { if expected == generation && !Task.isCancelled { self.error = friendly(error); loadError = self.error } }
     }
     public func act(_ item: InboxItem, _ action: InboxAction) async -> Bool {
         guard !locked, !loading, busyID == nil, items.contains(where: { $0.id == item.id }) || postClaimPrompts.contains(where: { $0.id == item.id }) else { return false }
@@ -76,7 +77,7 @@ import LearnCardNativeCore
     }
     public func lock() {
         generation += 1; request += 1; locked = true; items = []; postClaimPrompts = []; receipts = [:]
-        cursor = nil; loaded = false; loading = false; hasMore = false; busyID = nil; error = nil; metadataPending = false
+        cursor = nil; loaded = false; loading = false; hasMore = false; busyID = nil; error = nil; loadError = nil; metadataPending = false
     }
     private func reconciled(_ item: InboxItem) -> InboxItem {
         var value = item

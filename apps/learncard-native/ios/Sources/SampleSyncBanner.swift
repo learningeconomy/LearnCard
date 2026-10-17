@@ -7,7 +7,7 @@ struct SampleSyncBanner: View {
     let store: AppStore
     let viewPassport: () -> Void
     private var intake: IntakeStore { store.intake }
-    private var partial: Bool { (intake.sampleResult?.failed ?? 0) > 0 || intake.sampleSyncError != nil }
+    private var partial: Bool { (intake.sampleResult?.failed ?? 0) > 0 || intake.sampleSyncError != nil || store.sampleRefreshFailed }
     private var refreshing: Bool { store.sampleRefreshBusy && !intake.sampleBusy }
     private var title: String {
         if intake.samplePreparing { return NativeText.text("sync.preparing") }
@@ -22,6 +22,7 @@ struct SampleSyncBanner: View {
             return NativeText.text("sync.browse")
         }
         if let error = intake.sampleSyncError { return error.localizedDescription }
+        if store.sampleRefreshFailed { return NativeText.text("sync.refreshFailed") }
         if partial { return NativeText.text("build.samplesPartial") }
         return NativeText.format("build.samplesSaved", "\((intake.sampleResult?.added ?? 0) + (intake.sampleResult?.existing ?? 0))")
     }

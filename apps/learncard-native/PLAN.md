@@ -1,5 +1,13 @@
 # LearnCard native client plan
 
+## Shared credential activity — October 17
+
+- [x] Put actual check/receive/sample status beside the Passport and Inbox titles, with labelled Refresh and inline Try Again.
+- [x] Keep pending offers and notifications as separate reads and preserve cached credentials when a check fails.
+- [x] Retain the cross-tab sample strip and prevent a failed final Passport read from appearing as clean completion.
+
+This is activity feedback for foreground reads and approved receipts; automatic background delivery/polling is not added. See [behavior](SAMPLE_CREDENTIALS.md#passport-and-inbox-activity) and [verification](TESTING.md).
+
 ## Sample sync visibility and responsiveness — October 17
 
 - [x] Keep shared progress, completion and retry feedback visible across tabs.
