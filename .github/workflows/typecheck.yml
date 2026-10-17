@@ -27,6 +27,9 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Test the ratchet script
+              run: node --test scripts/typecheck-ratchet.test.mjs
+
             # tsc resolves Node-resolution services against built dist, so every library is built
             # first. scripts/typecheck-baseline.json is generated in this same state.
             - name: Build libraries
