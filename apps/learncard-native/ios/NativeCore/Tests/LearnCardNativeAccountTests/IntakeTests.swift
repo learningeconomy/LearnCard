@@ -25,6 +25,11 @@ private actor IntakeFixture: IntakeService {
 private actor SampleDelayFixture: IntakeService {
     var pending: CheckedContinuation<IntakeResult, any Error>?
     var calls = 0
+    var progressCallback: (@Sendable (SampleSyncProgress) async -> Void)?
+    func syncSample(id: String, progress: @escaping @Sendable (SampleSyncProgress) async -> Void) async throws -> IntakeResult {
+        progressCallback = progress; return try await syncSample(id: id)
+    }
+    func report(_ progress: SampleSyncProgress) async { await progressCallback?(progress) }
     func status() -> IntakeStatus { IntakeStatus() }
     func samples() -> [SampleCredentialBundle] { [] }
     func syncSample(id: String) async throws -> IntakeResult {
@@ -34,6 +39,7 @@ private actor SampleDelayFixture: IntakeService {
     func waiting() -> Bool { pending != nil }
     func count() -> Int { calls }
     func resolve() { pending?.resume(returning: IntakeResult(added: 4)); pending = nil }
+    func reject() { pending?.resume(throwing: ConsumerAppError.connection); pending = nil }
     func prepare(_ file: IntakeFile, kind: IntakeKind) throws -> IntakeReview { throw IntakeError.unavailable }
     func commit(id: String, selected: [String]) throws -> IntakeResult { throw IntakeError.unavailable }
     func document(id: String) throws -> IntakeDocumentData { throw IntakeError.unavailable }
@@ -44,14 +50,22 @@ private actor SampleDelayFixture: IntakeService {
     private func wait(_ condition: () async -> Bool) async { for _ in 0..<1000 { if await condition() { return }; await Task.yield() }; XCTFail("Expected suspended service") }
     func testSampleSyncIsSingleFlightAndSurvivesFileDismissalButNotAccountLock() async {
         let service = SampleDelayFixture(), store = IntakeStore(service: service)
+        store.beginSamplePreparation(id: "sample"); XCTAssertTrue(store.hasSampleNotice)
+        store.lock(); store.endSamplePreparation(id: "sample", error: .connection)
+        XCTAssertFalse(store.hasSampleNotice); XCTAssertFalse(store.samplePreparing)
         let task = Task { await store.syncSample(id: "sample") }
         await wait { await service.waiting() }
+        await service.report(SampleSyncProgress(processed: 1, total: 4))
+        XCTAssertEqual(store.sampleProgress, SampleSyncProgress(processed: 1, total: 4)); XCTAssertTrue(store.hasSampleNotice)
         store.clearReview(); await store.syncSample(id: "sample")
         let calls = await service.count(); XCTAssertEqual(calls, 1)
         await service.resolve(); await task.value
         XCTAssertEqual(store.sampleResult?.added, 4)
+        store.dismissSampleNotice(); XCTAssertFalse(store.hasSampleNotice)
         let next = Task { await store.syncSample(id: "sample") }
         await wait { await service.waiting() }; store.lock()
+        await service.report(SampleSyncProgress(processed: 3, total: 4))
+        XCTAssertNil(store.sampleProgress); XCTAssertFalse(store.hasSampleNotice)
         await service.resolve(); await next.value
         XCTAssertNil(store.sampleResult); XCTAssertNil(store.sampleError); XCTAssertFalse(store.sampleBusy)
     }
@@ -64,6 +78,8 @@ private actor SampleDelayFixture: IntakeService {
         XCTAssertEqual(store.samples.first?.connected, false)
         await store.syncSample(id: "native-sample-student")
         XCTAssertEqual(store.sampleError, .decision)
+        await store.loadSamples()
+        XCTAssertEqual(store.sampleSyncError, .decision); XCTAssertTrue(store.hasSampleNotice)
         let before = await credentials.snapshot(); XCTAssertTrue(before.credentials.isEmpty)
         let prepared = try await consumer.review("native-sample-student")
         let review = try XCTUnwrap(prepared)
@@ -79,6 +95,44 @@ private actor SampleDelayFixture: IntakeService {
         await store.syncSample(id: "native-sample-student")
         XCTAssertEqual(store.sampleResult, IntakeResult(added: 0, existing: 12))
         store.lock(); XCTAssertTrue(store.samples.isEmpty); XCTAssertNil(store.sampleResult)
+    }
+    func testPartialSampleNoticeRetriesAndRetainsOriginals() async throws {
+        let credentials = DemoCredentialService(), consumer = DemoConsumerAppService()
+        let prepared = try await consumer.review("native-sample-student")
+        let review = try XCTUnwrap(prepared)
+        try await consumer.consent(ConsumerConsentDecision(review: review))
+        let store = IntakeStore(service: DemoIntakeService(service: credentials, consumer: consumer, failSampleOnce: true))
+        await store.syncSample(id: "native-sample-student")
+        XCTAssertEqual(store.sampleResult, IntakeResult(added: 11, failed: 1)); XCTAssertTrue(store.hasSampleNotice)
+        XCTAssertEqual(store.sampleProgress, SampleSyncProgress(processed: 12, total: 12))
+        await store.syncSample(id: "native-sample-student")
+        XCTAssertEqual(store.sampleResult, IntakeResult(added: 1, existing: 11)); XCTAssertTrue(store.hasSampleNotice)
+        store.dismissSampleNotice(); XCTAssertFalse(store.hasSampleNotice)
+    }
+    func testInterruptedSampleSyncRefreshesEarlierAdditionsAndKeepsRetryNotice() async {
+        let credentials = DemoCredentialService(), service = SampleDelayFixture()
+        let store = NativeAppStore(service: credentials, intakeService: service)
+        await store.refresh()
+        let task = Task { await store.syncSample(id: "sample") }
+        await wait { await service.waiting() }
+        await credentials.importSample(id: "partial", title: "Earlier addition", issuer: "Sample")
+        await service.report(SampleSyncProgress(processed: 1, total: 4)); await service.reject(); await task.value
+        XCTAssertEqual(store.snapshot?.credentials.count, 4)
+        XCTAssertEqual(store.intake.sampleSyncError, .connection); XCTAssertTrue(store.intake.hasSampleNotice)
+        XCTAssertFalse(store.sampleSyncBusy); XCTAssertNil(store.error)
+    }
+    func testSharedSampleCoordinatorRefreshesPassportAfterSync() async throws {
+        let credentials = DemoCredentialService(), consumer = DemoConsumerAppService()
+        let prepared = try await consumer.review("native-sample-student")
+        let review = try XCTUnwrap(prepared)
+        try await consumer.consent(ConsumerConsentDecision(review: review))
+        let store = NativeAppStore(service: credentials, consumerService: consumer,
+            intakeService: DemoIntakeService(service: credentials, consumer: consumer))
+        await store.refresh(); XCTAssertEqual(store.snapshot?.credentials.count, 3)
+        await store.syncSample(id: "native-sample-student")
+        XCTAssertEqual(store.snapshot?.credentials.count, 15)
+        XCTAssertFalse(store.sampleSyncBusy); XCTAssertFalse(store.snapshotReadFailed); XCTAssertNil(store.error)
+        XCTAssertEqual(store.intake.sampleResult?.added, 12)
     }
     func testMilestonesCountSavedDocumentKindsRatherThanFilesOrVisits() async throws {
         let store = IntakeStore(service: DemoIntakeService())

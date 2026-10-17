@@ -64,6 +64,9 @@ struct RootView: View {
                     .tabItem { Label { Text(NativeText.literal("Apps")) } icon: { Image(selectedTab == 2 ? "AppsTabActive" : "AppsTab").renderingMode(.original) } }
                     .tag(2)
             }
+            if store.intake.hasSampleNotice {
+                SampleSyncBanner(store: store, viewPassport: { selectedTab = 0 })
+            }
             NativeTabTray(selection: $selectedTab, inboxCount: inboxCount)
         }
         .onChange(of: store.openInboxRequested) { _, value in if value { selectedTab = 1; store.openInboxRequested = false } }

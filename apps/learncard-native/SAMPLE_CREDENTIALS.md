@@ -16,6 +16,14 @@ A missing delivery, unavailable read or failed index write stays incomplete. **C
 
 Native synchronization deliberately does not run web's broad cross-contract sharing synchronization or AI insight refresh. Adding samples does not opt the user into new disclosure to other contracts.
 
+## Sync feedback across the app — October 17 refinement
+
+A Preparing sample credentials phase begins when agreement is submitted, so feedback survives dismissing the review during the server response. Sync progress then lives in the shared intake store and stays visible above the bottom navigation on every tab. The banner shows checked/total records and says browsing may continue; it changes to Updating your Passport during the final read. Completion remains until dismissed, with View Passport available. Partial or failed operations keep a retry action and distinguish incomplete results from success. A later status read cannot erase an operation error. Lock/account replacement clears progress and rejects late updates.
+
+Receipt work is split into a read-only `samplesSyncBegin` plan and one-original `samplesSyncStep` commands. Each step releases the native facade queue so queued Passport reads can run before the next write. The previous all-record command could monopolize the queue and exceed its two-minute deadline, which disposes the host and rejects subsequent reads. No overall bundle-duration timeout is imposed by a single facade call now; individual call limits remain. In-memory job IDs bind progress to the current account; an interrupted begin can resume its active plan, while a new attempt reconciles indexed URIs. Completion is shown after refreshing the shared Passport snapshot, including additions made while the hub is offscreen.
+
+The banner participates in root layout, above the measured tray, instead of floating over scroll content. Slow and partial UI fixtures are DEBUG/demo-only and use the same production views/store; they do not access staging data.
+
 ## Passport refinements
 
 The date/sort reset is a labelled 44-point circular arrow directly beside the sorting control, with an adaptive second-row layout where needed. Selecting a category alone no longer creates a reset row: **All** and the empty-state **View all** action already clear the category. Typed search survives a date/sort reset. The category empty illustration shows the complete open book and ribbon; the overlapping category tile is removed.
@@ -33,3 +41,13 @@ These captures use the production SwiftUI views with isolated demo services; dis
 | ![Optional document milestones](design/build-milestones-native.png) | ![One saved document type](design/build-milestone-saved-native.png) | ![Sample access review](design/build-sample-consent-native.png) | ![Unobstructed book illustration](design/passport-empty-refined-native.png) |
 
 [Compact 375-point sample result and milestones](design/build-milestones-compact-native.png) shows the same flow on a smaller phone; the remaining document rows are reached by scrolling.
+
+### Cross-tab sync evidence
+
+Final production-view captures with isolated demo receipt services. The Arabic dark capture intentionally uses accessibility text sizing.
+
+| Progress on Passport                                                        | Completion on Apps                                                               | Partial result with retry                                                     |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| ![Progress persists while browsing](design/sample-sync-progress-native.png) | ![Completion waits for Passport refresh](design/sample-sync-complete-native.png) | ![Partial receipt keeps retry visible](design/sample-sync-partial-native.png) |
+
+[Arabic accessibility completion and usable navigation](design/sample-sync-arabic-large-native.png).

@@ -1,5 +1,13 @@
 # LearnCard native client plan
 
+## Sample sync visibility and responsiveness — October 17
+
+- [x] Keep shared progress, completion and retry feedback visible across tabs.
+- [x] Yield the facade queue between sample originals so the entire bundle does not block Passport reads or exhaust one command deadline.
+- [x] Refresh Passport before displaying completion and preserve operation errors until retry/dismissal.
+
+See [the sync contract](SAMPLE_CREDENTIALS.md#sync-feedback-across-the-app--october-17-refinement). Verification is recorded in TESTING.
+
 ## Passport controls and Build My LearnCard milestones — October 17
 
 - [x] Keep date/sort reset adjacent to the controls; category-only filtering uses All/View all.

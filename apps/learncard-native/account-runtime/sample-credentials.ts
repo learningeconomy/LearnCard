@@ -9,7 +9,43 @@ export const createSampleCredentialCommands = (
     currentWallet: () => ConsumerWallet | undefined,
     bundles: Readonly<Record<string, string>>
 ) => {
+    type Record = Awaited<
+        ReturnType<ConsumerWallet['invoke']['getCredentialsForContract']>
+    >['records'][number];
+    type Job = {
+        id: string;
+        bundleID: string;
+        uri: string;
+        wallet: ConsumerWallet;
+        records: Record[];
+        boosts: string[];
+        processed: number;
+        added: number;
+        existing: number;
+        failed: number;
+        done: boolean;
+        fulfilled: Set<string>;
+    };
     let busy = false;
+    let active: Job | undefined;
+    const reply = (job: Job) => ({
+        id: job.id,
+        processed: job.processed,
+        total: Math.max(job.records.length, job.boosts.length),
+        added: job.added,
+        existing: job.existing,
+        failed: job.failed,
+        done: job.done,
+    });
+    const finish = (job: Job) => {
+        job.done = job.processed >= job.records.length;
+        if (job.done)
+            job.failed = Math.max(
+                job.failed,
+                job.boosts.filter(boost => !job.fulfilled.has(boost)).length
+            );
+        return reply(job);
+    };
     const wallet = () => {
         const lc = currentWallet();
         if (!lc) throw new ConsumerFailure('signIn');
@@ -59,7 +95,7 @@ export const createSampleCredentialCommands = (
                 })
             );
         },
-        samplesSync: async (raw: unknown) => {
+        samplesSyncBegin: async (raw: unknown) => {
             if (busy) throw new ConsumerFailure('decision');
             busy = true;
             try {
@@ -67,6 +103,8 @@ export const createSampleCredentialCommands = (
                 if (!Object.hasOwn(bundles, id)) throw new ConsumerFailure('unavailable');
                 const lc = wallet(),
                     uri = bundles[id];
+                if (active && !active.done && active.wallet === lc && active.bundleID === id)
+                    return reply(active);
                 const contract = ConsentFlowContractDetailsValidator.parse(
                     await lc.invoke.getContract(uri)
                 );
@@ -78,12 +116,7 @@ export const createSampleCredentialCommands = (
                     throw new ConsumerFailure('inactive');
                 const consents = live(await allTerms(lc), uri);
                 if (!consents.length) throw new ConsumerFailure('decision');
-                const records = new Map<
-                    string,
-                    Awaited<
-                        ReturnType<ConsumerWallet['invoke']['getCredentialsForContract']>
-                    >['records'][number]
-                >();
+                const records = new Map<string, Record>();
                 for (const consent of consents) {
                     let cursor: string | undefined;
                     const seen = new Set<string>();
@@ -107,64 +140,90 @@ export const createSampleCredentialCommands = (
                         cursor = page.cursor;
                     }
                 }
-                let added = 0,
-                    existing = 0,
-                    failed = 0;
-                const fulfilled = new Set<string>();
-                for (const record of records.values()) {
-                    try {
-                        check(lc);
-                        // Consent can be withdrawn while a long bundle is syncing.
-                        if (!live(await allTerms(lc), uri).some(t => t.uri === record.termsUri))
-                            throw new ConsumerFailure('changed');
-                        const indexed = await lc.index.LearnCloud.get({
-                            uri: record.credentialUri,
-                        });
-                        check(lc);
-                        if (indexed.length) {
-                            existing++;
-                            fulfilled.add(record.boostUri);
-                            continue;
-                        }
-                        const original = await lc.read.get(record.credentialUri);
-                        VCValidator.parse(original);
-                        // Validate shape, but verify the exact original rather than a parsed projection.
-                        const vc = original as z.infer<typeof VCValidator>;
-                        const verification = await lc.invoke.verifyCredential(vc, {
-                            checks: ['proof'],
-                        });
-                        check(lc);
-                        if (verification.errors.length) throw new ConsumerFailure('changed');
-                        await lc.invoke.acceptCredential(record.credentialUri, {
-                            skipNotification: true,
-                        });
-                        check(lc);
-                        const subject = Array.isArray(vc.credentialSubject)
-                            ? vc.credentialSubject[0]
-                            : vc.credentialSubject;
-                        const achievement = subject?.achievement as { name?: string } | undefined;
-                        await lc.index.LearnCloud.add({
-                            id: record.credentialUri,
-                            uri: record.credentialUri,
-                            title: achievement?.name || vc.name || 'Credential',
-                            category: (credentialCategoryForDisplay(record.category, vc) ??
-                                categoryForClaim(vc)) as never,
-                            contractUri: uri,
-                            nativeSampleBundle: id,
-                        });
-                        check(lc);
-                        added++;
-                        fulfilled.add(record.boostUri);
-                    } catch (error) {
-                        check(lc);
-                        if (error instanceof ConsumerFailure && error.kind === 'changed')
-                            throw error;
-                        failed++;
+                active = {
+                    id: crypto.randomUUID(),
+                    bundleID: id,
+                    uri,
+                    wallet: lc,
+                    records: [...records.values()],
+                    boosts: contract.autoBoosts,
+                    processed: 0,
+                    added: 0,
+                    existing: 0,
+                    failed: 0,
+                    done: false,
+                    fulfilled: new Set(),
+                };
+                return finish(active);
+            } finally {
+                busy = false;
+            }
+        },
+        // One original per facade call lets queued Passport reads run between writes.
+        samplesSyncStep: async (raw: unknown) => {
+            if (busy) throw new ConsumerFailure('decision');
+            const { id } = z.object({ id: z.string() }).strict().parse(raw);
+            const job = active;
+            if (!job || job.id !== id) throw new ConsumerFailure('changed');
+            check(job.wallet);
+            if (job.done) return reply(job);
+            busy = true;
+            const lc = job.wallet,
+                record = job.records[job.processed];
+            try {
+                try {
+                    check(lc);
+                    if (!live(await allTerms(lc), job.uri).some(t => t.uri === record.termsUri))
+                        throw new ConsumerFailure('changed');
+                    const indexed = await lc.index.LearnCloud.get({
+                        uri: record.credentialUri,
+                    });
+                    check(lc);
+                    if (indexed.length) {
+                        job.existing++;
+                        job.fulfilled.add(record.boostUri);
+                        job.processed++;
+                        return finish(job);
                     }
+                    const original = await lc.read.get(record.credentialUri);
+                    VCValidator.parse(original);
+                    // Validate shape, but verify the exact original rather than a parsed projection.
+                    const vc = original as z.infer<typeof VCValidator>;
+                    const verification = await lc.invoke.verifyCredential(vc, {
+                        checks: ['proof'],
+                    });
+                    check(lc);
+                    if (verification.errors.length) throw new ConsumerFailure('changed');
+                    await lc.invoke.acceptCredential(record.credentialUri, {
+                        skipNotification: true,
+                    });
+                    check(lc);
+                    const subject = Array.isArray(vc.credentialSubject)
+                        ? vc.credentialSubject[0]
+                        : vc.credentialSubject;
+                    const achievement = subject?.achievement as { name?: string } | undefined;
+                    await lc.index.LearnCloud.add({
+                        id: record.credentialUri,
+                        uri: record.credentialUri,
+                        title: achievement?.name || vc.name || 'Credential',
+                        category: (credentialCategoryForDisplay(record.category, vc) ??
+                            categoryForClaim(vc)) as never,
+                        contractUri: job.uri,
+                        nativeSampleBundle: job.bundleID,
+                    });
+                    check(lc);
+                    job.added++;
+                    job.fulfilled.add(record.boostUri);
+                } catch (error) {
+                    check(lc);
+                    if (error instanceof ConsumerFailure && error.kind === 'changed') throw error;
+                    job.failed++;
                 }
-                // Missing/not-yet-issued credentials are partial, never a completed bundle.
-                const missing = contract.autoBoosts.filter(boost => !fulfilled.has(boost)).length;
-                return { added, existing, failed: Math.max(failed, missing) };
+                job.processed++;
+                return finish(job);
+            } catch (error) {
+                if (active === job) active = undefined;
+                throw error;
             } finally {
                 busy = false;
             }

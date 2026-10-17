@@ -50,6 +50,46 @@ import XCTest
         XCTAssertTrue(app.staticTexts["build-progress"].label.contains("1 of 4"))
         capture(app, "One saved document milestone")
     }
+    func testSampleSyncStaysVisibleAcrossTabsAndRefreshesPassport() {
+        for flags in [["--locale", "en", "--standard-type"], ["--locale", "ar", "--preview-dark", "--large-type"]] {
+            let app = launch(flags + ["--sample-sync-slow"])
+            let samples = app.buttons["build-sample-native-sample-student"]
+            reveal(samples, app); samples.tap()
+            XCTAssertTrue(app.buttons["consent-agree"].waitForExistence(timeout: 5)); app.buttons["consent-agree"].tap()
+            let banner = app.otherElements["sample-sync-banner"]
+            XCTAssertTrue(banner.waitForExistence(timeout: 5))
+            app.buttons["nav-collection"].tap()
+            XCTAssertTrue(banner.exists); XCTAssertFalse(app.alerts.firstMatch.exists)
+            XCTAssertTrue(app.staticTexts["sample-sync-detail"].exists)
+            capture(app, "Sample sync progress on Passport \(flags[1])")
+            app.buttons["nav-apps"].tap(); XCTAssertTrue(banner.exists)
+            let passport = app.buttons["sample-sync-passport"]
+            XCTAssertTrue(passport.waitForExistence(timeout: 30)); XCTAssertTrue(passport.isHittable)
+            XCTAssertFalse(app.buttons["sample-sync-retry"].exists)
+            XCTAssertTrue(app.staticTexts["sample-sync-detail"].label.contains("12"))
+            XCTAssertLessThanOrEqual(banner.frame.maxY, app.otherElements["bottom-navigation"].frame.minY + 1)
+            capture(app, "Sample sync completion on Apps \(flags[1])")
+            passport.tap(); XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'credential-sample-student-'" )).firstMatch.waitForExistence(timeout: 5))
+            XCTAssertFalse(app.alerts.firstMatch.exists)
+            app.buttons["sample-sync-dismiss"].tap(); XCTAssertFalse(banner.exists)
+            app.terminate()
+        }
+    }
+    func testPartialSampleSyncKeepsRetryAvailableAcrossTabs() {
+        let app = launch(["--locale", "en", "--standard-type", "--sample-sync-partial"])
+        let samples = app.buttons["build-sample-native-sample-student"]
+        reveal(samples, app); samples.tap()
+        XCTAssertTrue(app.buttons["consent-agree"].waitForExistence(timeout: 5)); app.buttons["consent-agree"].tap()
+        app.buttons["nav-collection"].tap()
+        let retry = app.buttons["sample-sync-retry"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 15)); capture(app, "Partial sample sync has a visible retry")
+        retry.tap()
+        XCTAssertTrue(app.buttons["sample-sync-passport"].waitForExistence(timeout: 15))
+        XCTAssertFalse(retry.exists)
+        XCTAssertTrue(app.staticTexts["sample-sync-detail"].label.contains("12")); XCTAssertFalse(app.alerts.firstMatch.exists)
+        capture(app, "Retried sample sync completed without duplicates")
+    }
     func testDocumentPickerCancellationReviewSaveAndPrivateViewer() {
         let app = launch(); capture(app, "Build native file routes")
         reveal(app.buttons["build-documents"], app); app.buttons["build-documents"].tap()

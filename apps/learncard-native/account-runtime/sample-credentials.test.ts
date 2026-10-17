@@ -107,6 +107,15 @@ function fixture() {
     } as unknown as ConsumerWallet;
     let active: ConsumerWallet | undefined = wallet;
     const source = { [id]: uri };
+    const commands = createSampleCredentialCommands(() => active, source);
+    const samples = {
+        ...commands,
+        samplesSync: async (raw: unknown) => {
+            let progress = await commands.samplesSyncBegin(raw);
+            while (!progress.done) progress = await commands.samplesSyncStep({ id: progress.id });
+            return { added: progress.added, existing: progress.existing, failed: progress.failed };
+        },
+    };
     return {
         state,
         contract,
@@ -116,7 +125,7 @@ function fixture() {
         clear: () => {
             active = undefined;
         },
-        samples: createSampleCredentialCommands(() => active, source),
+        samples,
         consumer: createConsumerCommands(() => active, source),
     };
 }
@@ -260,4 +269,29 @@ test('an index write whose reply is lost is recovered by URI without duplicating
     expect((await f.samples.samplesSync({ id: f.id })).failed).toBe(1);
     expect(await f.samples.samplesSync({ id: f.id })).toEqual({ added: 0, existing: 2, failed: 0 });
     expect(f.state.writes).toBe(2);
+});
+
+test('sample steps report progress and release the facade between originals; a lost begin reply resumes', async () => {
+    const f = fixture();
+    f.state.connected = true;
+    const start = await f.samples.samplesSyncBegin({ id: f.id });
+    expect(start).toMatchObject({ processed: 0, total: 2, done: false });
+    expect(f.state.writes).toBe(0);
+    const first = await f.samples.samplesSyncStep({ id: start.id });
+    expect(first).toMatchObject({ processed: 1, total: 2, added: 1, done: false });
+    expect(await f.wallet.index.LearnCloud.get({ uri: 'cred-1' })).toHaveLength(1);
+    expect(await f.samples.samplesSyncBegin({ id: f.id })).toEqual(first);
+    const last = await f.samples.samplesSyncStep({ id: start.id });
+    expect(last).toMatchObject({ processed: 2, added: 2, done: true });
+    expect(await f.samples.samplesSyncStep({ id: start.id })).toEqual(last);
+    expect(f.state.writes).toBe(2);
+});
+test('sample steps reject foreign jobs and account replacement without accepting another original', async () => {
+    const f = fixture();
+    f.state.connected = true;
+    const start = await f.samples.samplesSyncBegin({ id: f.id });
+    await expect(f.samples.samplesSyncStep({ id: 'other' })).rejects.toThrow('consumer:changed');
+    f.clear();
+    await expect(f.samples.samplesSyncStep({ id: start.id })).rejects.toThrow('consumer:signIn');
+    expect(f.state.writes).toBe(0);
 });

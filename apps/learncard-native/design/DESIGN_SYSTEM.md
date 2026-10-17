@@ -60,6 +60,10 @@ Depth follows the element's role, rather than the section it lives in. The Octob
 
 Do not spread credential lighting, sheen or tilting to generic panels. Keep real publisher imagery intact. A panel's color or shadow must never imply verified status, endorsement or access.
 
+## Long-running sync feedback
+
+Keep long-running receipt work visible outside its initiating screen. Sample sync uses a shared, in-layout strip above the bottom tray: a small activity indicator, checked/total count and permission to keep browsing. It becomes a short completion or incomplete/retry state, retained until dismissed. Final Passport refresh is its own named phase. Do not use an alert for ordinary progress, disappear with view navigation, cover the last scroll row or invent a percentage. Error/partial copy stays distinct from completion; refresh saved additions even after a later step fails.
+
 ## Credential identity and browsing
 
 Credential names are primary; issuer text always starts with localized **Issued by**. Show a known issue date as a quiet **Issued _date_** line below the category, rather than squeezing it beside a long title. Keep missing dates out of rows/cards and label them unavailable in detail. Issuer labels and category art do not imply trust. Passport places designed date/sort sheets behind compact controls below search; filters and non-default order show a result list while ordinary category browsing keeps its recent stack. See [the complete browsing contract](PASSPORT_BROWSING.md).

@@ -11,8 +11,25 @@ import Observation
     public private(set) var samples: [SampleCredentialBundle] = []
     public private(set) var samplesLoading = false
     public private(set) var sampleBusy = false
+    public private(set) var samplePreparing = false
+    public func beginSamplePreparation(id: String) {
+        guard !sampleBusy, !samplePreparing else { return }
+        samplePreparing = true; syncingSampleID = id; sampleNoticeDismissed = false
+        sampleResult = nil; sampleSyncError = nil; sampleError = nil; sampleProgress = nil
+    }
+    public func endSamplePreparation(id: String, error: ConsumerAppError?) {
+        guard samplePreparing, syncingSampleID == id else { return }
+        samplePreparing = false
+        if let error { sampleSyncError = error; sampleError = error }
+    }
     public private(set) var sampleError: ConsumerAppError?
+    public private(set) var sampleSyncError: ConsumerAppError?
     public private(set) var sampleResult: IntakeResult?
+    public private(set) var sampleProgress: SampleSyncProgress?
+    public private(set) var syncingSampleID: String?
+    public private(set) var sampleNoticeDismissed = false
+    public var hasSampleNotice: Bool { !sampleNoticeDismissed && (samplePreparing || sampleBusy || sampleResult != nil || sampleSyncError != nil) }
+    public func dismissSampleNotice() { if !samplePreparing && !sampleBusy { sampleNoticeDismissed = true } }
     public var selected = Set<String>()
     public private(set) var busy = false
     public private(set) var loading = false
@@ -32,13 +49,20 @@ import Observation
         catch { if expected == sampleGeneration, !Task.isCancelled { sampleError = error as? ConsumerAppError ?? .connection } }
     }
     public func syncSample(id: String) async {
-        guard !sampleBusy else { return }; let expected = sampleGeneration; sampleBusy = true; sampleError = nil; sampleResult = nil
+        guard !sampleBusy else { return }; let expected = sampleGeneration; sampleBusy = true; sampleError = nil; sampleSyncError = nil; sampleResult = nil; sampleNoticeDismissed = false; syncingSampleID = id
+        sampleProgress = SampleSyncProgress(processed: 0, total: samples.first(where: { $0.id == id })?.expected ?? 0)
         defer { if expected == sampleGeneration { sampleBusy = false } }
         do {
-            let value = try await service.syncSample(id: id); guard expected == sampleGeneration else { return }
+            let value = try await service.syncSample(id: id, progress: { [weak self] value in
+                await self?.receiveSampleProgress(value, generation: expected)
+            }); guard expected == sampleGeneration else { return }
             sampleResult = value
             await loadSamples()
-        } catch { if expected == sampleGeneration { sampleError = error as? ConsumerAppError ?? .connection } }
+        } catch { if expected == sampleGeneration { sampleSyncError = error as? ConsumerAppError ?? .connection; sampleError = sampleSyncError } }
+    }
+    private func receiveSampleProgress(_ value: SampleSyncProgress, generation: Int) {
+        guard generation == sampleGeneration, sampleBusy else { return }
+        sampleProgress = value
     }
     public var completedDocumentKinds: Int {
         IntakeKind.allCases.filter { $0 != .rawVC && (status?.counts[$0.rawValue] ?? 0) > 0 }.count
@@ -70,5 +94,5 @@ import Observation
         if let id = review?.id { let service = service; Task { await service.discard(id: id) } }
         generation += 1; busy = false; loading = false; review = nil; result = nil; selected = []; error = nil
     }
-    public func lock() { sampleGeneration += 1; samplesLoading = false; sampleBusy = false; clearReview(); status = nil; samples = []; sampleResult = nil; sampleError = nil }
+    public func lock() { sampleGeneration += 1; samplesLoading = false; sampleBusy = false; samplePreparing = false; clearReview(); status = nil; samples = []; sampleResult = nil; sampleError = nil; sampleSyncError = nil; sampleProgress = nil; syncingSampleID = nil; sampleNoticeDismissed = false }
 }

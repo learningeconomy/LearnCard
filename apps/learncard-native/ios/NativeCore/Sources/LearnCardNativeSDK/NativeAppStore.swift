@@ -18,6 +18,23 @@ public final class NativeAppStore {
     public let inbox: InboxStore
     public let people: PeopleStore
     public let intake: IntakeStore
+    public private(set) var sampleRefreshBusy = false
+    public var sampleSyncBusy: Bool { intake.samplePreparing || intake.sampleBusy || sampleRefreshBusy }
+    /// Shared across navigation; refresh Passport before presenting completion.
+    public func syncSample(id: String) async {
+        guard !sampleSyncBusy else { return }
+        sampleRefreshBusy = true
+        defer { sampleRefreshBusy = false }
+        await intake.syncSample(id: id)
+        guard intake.syncingSampleID == id,
+              intake.sampleResult != nil || (intake.sampleProgress?.processed ?? 0) > 0 else { return }
+        while isBusy {
+            do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
+            guard intake.syncingSampleID == id else { return }
+        }
+        guard intake.syncingSampleID == id else { return }
+        await refresh()
+    }
     public var demoClaimService: any ClaimService { DemoClaimService(service: service) }
     /// Matches the tray and Home; credential arrival notices must not count twice.
     public var unreadInboxUpdateCount: Int {

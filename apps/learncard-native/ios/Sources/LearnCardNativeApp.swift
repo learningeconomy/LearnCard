@@ -33,6 +33,11 @@ struct LearnCardNativeApp: App {
         } else if args.contains("--demo"), args.contains("--empty-page") {
             _store = State(initialValue: AppStore(service: DemoCredentialService(emptyFirstPage: true)))
         }
+        if args.contains("--demo"), args.contains("--sample-sync-slow") || args.contains("--sample-sync-partial") {
+            let credentials = DemoCredentialService(), consumer = DemoConsumerAppService()
+            _store = State(initialValue: AppStore(service: credentials, consumerService: consumer,
+                intakeService: DemoIntakeService(service: credentials, consumer: consumer, sampleDelay: args.contains("--sample-sync-slow") ? .seconds(1) : .milliseconds(100), failSampleOnce: args.contains("--sample-sync-partial"))))
+        }
         if let index = args.firstIndex(of: "--locale"), args.indices.contains(index + 1), NativeLanguage(rawValue: args[index + 1]) != nil {
             UserDefaults.standard.set(args[index + 1], forKey: NativeLanguage.preferenceKey)
         }

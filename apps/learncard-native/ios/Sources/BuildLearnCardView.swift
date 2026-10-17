@@ -49,8 +49,11 @@ struct BuildLearnCardView: View {
                 IntakeFileView(appStore: appStore, initialKind: mode)
             }
             .sheet(item: $sampleReview) { review in
-                NativeConsentView(appTitle: review.title, iconURL: nil, review: review, consumer: appStore.consumer) {
-                    Task { await intake.syncSample(id: review.listingID); await appStore.refresh() }
+                NativeConsentView(appTitle: review.title, iconURL: nil, review: review, consumer: appStore.consumer, activityChanged: { active in
+                    if active { intake.beginSamplePreparation(id: review.listingID) }
+                    else { intake.endSamplePreparation(id: review.listingID, error: appStore.consumer.error) }
+                }) {
+                    Task { await appStore.syncSample(id: review.listingID) }
                 }
             }
             .quickLookPreview($previewURL)
@@ -102,13 +105,13 @@ struct BuildLearnCardView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(NativeText.text("build.samplesTitle")).font(.title2.bold()).headingFlair(Palette.flairBlue)
             Text(NativeText.text("build.samplesBody")).font(.subheadline).foregroundStyle(Palette.secondary)
-            if intake.samplesLoading || intake.sampleBusy || reviewingSample {
+            if (intake.samplesLoading && !intake.sampleBusy) || reviewingSample {
                 ProgressView(NativeText.text(intake.sampleBusy ? "build.samplesSyncing" : "build.samplesLoading"))
             }
             ForEach(intake.samples) { bundle in
                 Button {
                     if bundle.connected {
-                        Task { await intake.syncSample(id: bundle.id); await appStore.refresh() }
+                        Task { await appStore.syncSample(id: bundle.id) }
                     } else {
                         Task {
                             reviewingSample = true; sampleReviewError = nil; appStore.consumer.error = nil; defer { reviewingSample = false }
@@ -120,14 +123,14 @@ struct BuildLearnCardView: View {
                     DrawnSettingsRow(title: NativeText.text(bundle.connected ? "build.samplesSync" : "build.samplesReview"),
                                      symbol: .credential, tint: Palette.pinkCard,
                                      subtitle: bundle.title)
-                }.buttonStyle(CredentialPressStyle()).disabled(intake.sampleBusy || reviewingSample || bundle.expected == 0)
+                }.buttonStyle(CredentialPressStyle()).disabled(appStore.sampleSyncBusy || reviewingSample || bundle.expected == 0)
                     .accessibilityIdentifier("build-sample-\(bundle.id)")
             }
-            if let result = intake.sampleResult {
+            if let result = intake.sampleResult, !appStore.sampleSyncBusy {
                 Text(result.failed > 0 ? NativeText.text("build.samplesPartial") : NativeText.format("build.samplesSaved", "\(result.added + result.existing)"))
                     .font(.subheadline.weight(.medium)).accessibilityIdentifier("build-sample-result")
             }
-            if let error = intake.sampleError ?? sampleReviewError {
+            if let error = intake.sampleSyncError ?? intake.sampleError ?? sampleReviewError {
                 Text(error.localizedDescription).font(.subheadline).foregroundStyle(Palette.errorInk)
                 Button(NativeText.literal("Try Again")) { Task { sampleReviewError = nil; await intake.loadSamples() } }
                     .frame(minHeight: 44).accessibilityIdentifier("build-samples-retry")

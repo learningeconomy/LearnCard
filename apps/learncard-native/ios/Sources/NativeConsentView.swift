@@ -11,11 +11,12 @@ struct NativeConsentView: View {
     let consumer: ConsumerAppsStore
     var addApp = false
     let completed: () -> Void
+    let activityChanged: (Bool) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var decision: ConsumerConsentDecision
     @State private var refreshing = false
-    init(appTitle: String, iconURL: URL?, review: ConsumerConsentReview, consumer: ConsumerAppsStore, addApp: Bool = false, completed: @escaping () -> Void) {
-        self.appTitle = appTitle; self.iconURL = iconURL; self.consumer = consumer; self.addApp = addApp; self.completed = completed
+    init(appTitle: String, iconURL: URL?, review: ConsumerConsentReview, consumer: ConsumerAppsStore, addApp: Bool = false, activityChanged: @escaping (Bool) -> Void = { _ in }, completed: @escaping () -> Void) {
+        self.appTitle = appTitle; self.iconURL = iconURL; self.consumer = consumer; self.addApp = addApp; self.activityChanged = activityChanged; self.completed = completed
         _review = State(initialValue: review)
         _decision = State(initialValue: ConsumerConsentDecision(review: review))
     }
@@ -101,7 +102,12 @@ struct NativeConsentView: View {
             }.background(Palette.paper)
                 .safeAreaInset(edge: .bottom) {
                     ConsumerActionButton(title: NativeText.text(addApp ? "consent.agreeAdd" : "consent.agree"), busy: consumer.actionBusy || refreshing, disabled: !decision.satisfies(review)) {
-                        Task { if await consumer.agree(decision, addApp: addApp) { completed(); dismiss() } }
+                        Task {
+                            activityChanged(true)
+                            let success = await consumer.agree(decision, addApp: addApp)
+                            activityChanged(false)
+                            if success { completed(); dismiss() }
+                        }
                     }.accessibilityIdentifier("consent-agree").padding(20).background(Palette.surface)
                 }
                 .navigationTitle(NativeText.text("consent.title")).navigationBarTitleDisplayMode(.inline)
