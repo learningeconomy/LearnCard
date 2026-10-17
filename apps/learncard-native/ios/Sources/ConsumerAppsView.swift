@@ -226,7 +226,7 @@ struct ConsumerAppDetailView: View {
                     }
                     Spacer(minLength: 0)
                 }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(AppRaisedPanel(accent: Palette.tealCard)).accessibilityIdentifier("app-detail-identity")
+                    .background(AppPanelSurface(accent: Palette.tealCard)).accessibilityIdentifier("app-detail-identity")
                 if let error = consumer.error { ConsumerErrorCard(error: error) { consumer.error = nil } }
                 if !app.launchable { Text(ConsumerAppError.unsupported.errorDescription ?? "").font(.subheadline).foregroundStyle(Palette.secondary) }
                 ConsumerActionButton(title: NativeText.text(consumer.error == .changed && consumer.isInstalled(app.id) ? "consent.title" : consumer.isInstalled(app.id) ? "apps.open" : "apps.add"), busy: reviewing || consumer.actionBusy, disabled: !app.launchable) {

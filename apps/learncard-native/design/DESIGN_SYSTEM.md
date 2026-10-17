@@ -1,6 +1,6 @@
 # LearnCard native design system
 
-Working rules, October 16, 2026. Applies to the SwiftUI consumer experiment. Use this with the approved [drawn shell](DRAWN_SHELL_BRIEF.md), [secondary screens](WHIMSY_EXPANSION_BRIEF.md), and [learner Home reference](LEARNER_HOME_BRIEF.md). Generated screens guide composition; shipping SwiftUI, accessibility and real data determine the final layout.
+Working rules, October 17, 2026. Applies to the SwiftUI consumer experiment. Use this with the approved [drawn shell](DRAWN_SHELL_BRIEF.md), [secondary screens](WHIMSY_EXPANSION_BRIEF.md), and [learner Home reference](LEARNER_HOME_BRIEF.md). Generated screens guide composition; shipping SwiftUI, accessibility and real data determine the final layout.
 
 ## Character
 
@@ -40,6 +40,20 @@ Colorful tiles stay opaque in dark mode, with navy `cardInk` and `cardSecondary`
 
 Filled primary actions use the pair `Palette.selection` for the fill and `Palette.selectionInk` **on the label**. Both invert together between light and dark appearances. Never rely on a parent foreground or `.tint` alone: the real reset continuation inherited navy text on a navy button and became unreadable. Keep a visible action verb and at least a 54-point primary-action height, expanding for wrapped text.
 
+## Surface depth
+
+Depth follows the element's role, rather than the section it lives in. The October 17 review keeps the rendered artwork while removing Apps-only diffuse card shadows. Use these rules when touching existing screens; a broader consistency audit is queued in [the plan](../PLAN.md#queued-design-system-consistency-audit--october-17).
+
+| Role                   | Treatment                                                                                           | Examples                                                                  |
+| ---------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Reading and actions    | Adaptive surface, no cast shadow or thick lower edge; separate with spacing or a quiet divider      | Home groups, Inbox rows, ordinary Apps cards, forms and permission groups |
+| Featured invitation    | Same flat surface, with a restrained tint or opaque Colorful fill and sparse drawn accents          | Featured app, Apps empty invitation                                       |
+| Illustrated object     | Depth inside the artwork; a small local shadow can anchor an app icon without lifting its whole row | App icons, rocket illustration, category artwork                          |
+| Credential hero/detail | Deliberately raised edge, artwork window, broad cast shadow and directional reflection              | Passport recent credential and isolated credential detail                 |
+| Overlay or shell       | System sheet elevation or established compact header treatment                                      | Presented sheets, Add/account island                                      |
+
+Do not spread credential lighting, sheen or tilting to generic panels. Keep real publisher imagery intact. A panel's color or shadow must never imply verified status, endorsement or access.
+
 ## Scale and rhythm
 
 Dimensions are logical points. Display pixel density is irrelevant to layout. `NativeLayout` provides the shared 20-point page inset, 24-point section gap/surface radius and 14-point row gap. Existing surfaces migrate to these tokens as they are touched.
@@ -57,6 +71,10 @@ Dimensions are logical points. Display pixel density is irrelevant to layout. `N
 | Typical grouped row    | At least 68 pt              | Content and accessibility text can increase height          |
 
 Use an 8-point minor spacing rhythm (4/8/12/16/24); 20-point outer insets and 14-point artwork gaps are deliberate optical exceptions. Group related actions into a surface with quiet separators instead of giving every row an oversized independent panel. Long translations wrap, never disappear.
+
+### Loading hierarchy
+
+The assembled painted mark and shared 32-point bold LearnCard wordmark are the main brand lockup. Below them, the greeting or operation title uses system title3 medium in secondary ink, followed by body-sized status copy. Do not place a large bold Welcome back headline beneath an equally bold brand name. The running view scales with Dynamic Type and remains scrollable; static launch retains the same brand lockup. No launch timing or motion change is implied by typography.
 
 ### Language previews
 
@@ -140,7 +158,7 @@ Design → Recipient → Review uses an artwork-led, category-colored preview, c
 
 ### Consumer Apps
 
-The [October 16 rendered Apps implementation](../APPS_REDESIGN.md) uses app-first hierarchy: installed app entries or an inviting Discover action, then quieter native utilities. Use shallow static edges/light/shadows for app frames and original empty-state art; preserve actual publisher art and keep permission text/toggles calm. No perpetual card tilt in Apps. Required scopes are fixed labeled rows; optional scopes retain explicit controls. Parent cards containing actions use accessibility containment so their identifiers do not override independent child buttons. The [boards and native captures](APPS_RENDERED_BRIEF.md) keep synthetic design facts distinct from live metadata. First-party Pathways/Journeys follow their [separate learner plan](../LEARNER_LEARNING_PLAN.md), without framework or Journey authoring.
+The [October 16 rendered Apps implementation](../APPS_REDESIGN.md) uses app-first hierarchy: installed app entries or an inviting Discover action, then quieter native utilities. Follow the surface-depth roles above: calm flat reading panels, restrained featured accents, rendered artwork and a small local app-icon shadow; preserve actual publisher art and keep permission text/toggles calm. No perpetual card tilt in Apps. Required scopes are fixed labeled rows; optional scopes retain explicit controls. Parent cards containing actions use accessibility containment so their identifiers do not override independent child buttons. The [boards and native captures](APPS_RENDERED_BRIEF.md) keep synthetic design facts distinct from live metadata. First-party Pathways/Journeys follow their [separate learner plan](../LEARNER_LEARNING_PLAN.md), without framework or Journey authoring.
 
 Check the actual view at ordinary and accessibility text sizes, light/dark appearance, and representative narrow/wide logical widths. Review supplied, loading, failed and missing art. Exercise destinations and account lifecycle behavior, not only snapshots. Confirm touch areas, semantic labels, reading order, honest counts and Reduced Motion behavior. Save representative simulator screenshots alongside test results; image-generation boards are not evidence that implementation matches.
 

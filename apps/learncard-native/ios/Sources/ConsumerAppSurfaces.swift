@@ -2,29 +2,25 @@ import SwiftUI
 import LearnCardNativeCore
 import LearnCardNativeSDK
 
-/// Static material for app chrome. Publisher artwork is never tinted or relit.
-struct AppRaisedPanel: View {
+/// Calm reading surface; depth belongs to the artwork, not the surrounding list.
+struct AppPanelSurface: View {
     @Environment(\.colorScheme) private var scheme
-    var accent: Color = Palette.blueCard
+    var accent: Color?
     var colorful = false
     var radius: CGFloat = NativeLayout.surfaceRadius
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        shape.fill(colorful ? accent : Palette.line).offset(y: 3)
-            .overlay {
-                ZStack {
-                    if colorful { CredentialCardSurface(tint: accent) }
-                    else {
-                        Palette.surface
-                        LinearGradient(colors: [accent.opacity(scheme == .dark ? 0.12 : 0.22), .clear],
-                                       startPoint: .topLeading, endPoint: .bottomTrailing)
-                        AppCornerLines().stroke(accent.opacity(scheme == .dark ? 0.25 : 0.32), lineWidth: 1)
-                    }
-                }.clipShape(shape)
-                    .overlay(shape.strokeBorder(.white.opacity(scheme == .dark ? 0.08 : 0.7), lineWidth: 1))
+        ZStack {
+            colorful ? (accent ?? Palette.tealCard) : Palette.surface
+            if let accent {
+                if !colorful {
+                    LinearGradient(colors: [accent.opacity(scheme == .dark ? 0.10 : 0.15), .clear],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+                AppCornerLines().stroke(accent.opacity(scheme == .dark ? 0.25 : 0.32), lineWidth: 1)
             }
-            .shadow(color: .black.opacity(scheme == .dark ? 0.16 : 0.07), radius: 9, x: 0, y: 7)
+        }.clipShape(shape)
             .accessibilityHidden(true).allowsHitTesting(false)
     }
 }
@@ -60,7 +56,7 @@ struct AppsEmptyCard: View {
                 }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("apps-empty-discover")
             }.frame(maxWidth: .infinity, alignment: .leading)
         }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
-            .background(AppRaisedPanel(accent: Palette.tealCard, colorful: true))
+            .background(AppPanelSurface(accent: Palette.tealCard, colorful: true))
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("apps-empty")
     }
@@ -140,7 +136,7 @@ struct ConsumerAppRow: View {
                 }.accessibilityLabel(NativeText.format("apps.viewNamed", app.title))
             }
         }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(AppRaisedPanel()).buttonStyle(CredentialPressStyle())
+            .background(AppPanelSurface()).buttonStyle(CredentialPressStyle())
     }
 }
 
@@ -160,6 +156,6 @@ struct ConsumerFeaturedApp: View {
                     .foregroundStyle(Palette.selectionInk).background(Palette.selection, in: RoundedRectangle(cornerRadius: 16))
             }.frame(maxWidth: .infinity, alignment: .leading)
         }.padding(20).frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
-            .background(AppRaisedPanel(accent: Palette.tealCard))
+            .background(AppPanelSurface(accent: Palette.tealCard))
     }
 }

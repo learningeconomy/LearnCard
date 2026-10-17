@@ -2,6 +2,12 @@
 
 Launch, reconnect, locked, sending-code, verification and account recovery use one native motion surface rather than a grouped form with a spinner. The painted mark starts **fully assembled at full size**, with **LearnCard** beneath it, in both the system splash and running view. There is no growth, separation or gathering sequence. The mark uses small held stop-motion poses at five frames per second: roughly ±1.6 points of translation and ±1.15° of rotation at the standard size, with less movement on the central L. Loose painted pieces are visible in both the system splash and loading screen; they ease into independent smooth paths in the outer corridors. Ordinary app pages keep their approved neutral backgrounds.
 
+## Copy hierarchy — October 17
+
+LearnCard remains the primary 32-point bold wordmark shared with static launch. The greeting or operation heading beneath it is now title3 medium in secondary ink, rather than a second large bold headline. Status remains body-sized. This applies to reconnect/locked and sending/verification/recovery/provider waiting states; launch still omits a duplicate brand heading. Dynamic Type, scrolling, artwork, timing and actual account controls remain unchanged. See [shared hierarchy and depth rules](design/DESIGN_SYSTEM.md).
+
+Actual native reconnect captures: [light](design/loading-hierarchy-light-native.png) and [dark with Reduce Motion](design/loading-hierarchy-dark-native.png). These are isolated motion-review fixtures, not evidence of a real account operation.
+
 ## Timing and ownership
 
 - All nine tiles are at their final coordinates, scale 1 and full opacity from the first frame, even if the app connects almost immediately. Only the tiny jiggle strength eases in over 0.4 seconds. Decorative motion never delays, initiates, retries or completes an account request.

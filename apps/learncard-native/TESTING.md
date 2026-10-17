@@ -1,5 +1,13 @@
 # Native regression checks
 
+## Surface and loading hierarchy — October 17, 2026
+
+All **six existing focused UI cases pass** in `artifacts/visual-hierarchy-ui-2026-10-17.xcresult`. The four account-motion cases cover shared launch/reconnect geometry, a single brand lockup, changing jiggle/backdrop pixels, still dark Reduce Motion pixels and Arabic accessibility Continue. The two Apps cases cover empty/Discover/search/reset/native Data Sharing and Arabic dark accessibility access review with optional choices off and cancellation without installation. Actual light/dark loading and Apps captures were visually inspected; the enlarged Arabic captures remain accessibility stress checks, not default font examples.
+
+Final Debug compilation and normal Native Lab installation pass (`artifacts/visual-hierarchy-debug-final.log`, `visual-hierarchy-review-install.log`). All **48 installed files match**, private configuration is unchanged byte-for-byte and build version remains **3** (`visual-hierarchy-install-proof.json`). Read-only native observation confirms the updated loading hierarchy, then signed-in Home and the retained test credential. A subsequent CUA Apps navigation/read timed out twice; no final live Apps-state claim is made. Synthetic Apps captures above were inspected successfully. The checks simulator is shut down. No live credential/app/access/account mutation or hosted native CI ran.
+
+Only SwiftUI appearance and design documentation changed. No new tests, localization keys or protocol changes were needed; the full Bun/core/UI suites and hosted native CI were not rerun. Credential hero/detail material, account readiness/lifecycle and browser/access decisions retain their existing code. See [surface rules](design/DESIGN_SYSTEM.md#surface-depth), [loading hierarchy](ACCOUNT_MOTION.md#copy-hierarchy--october-17) and [actual Apps captures](design/APPS_RENDERED_BRIEF.md#october-17-review-refinement).
+
 ## Rendered Apps — October 16, 2026
 
 Nine existing `ConsumerAppsTests` pass in `artifacts/apps-rendered-core-2026-10-16.log`, including account-generation locking, category races, install/removal/withdrawal independence, optional consent defaults and four-language copy. Catalog preparation validates **969 keys** across en/es/fr/ar.

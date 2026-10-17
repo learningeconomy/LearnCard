@@ -2,6 +2,15 @@
 
 The user selected Apps as the next redesign and requested new mockups using the [approved credential material](CREDENTIAL_DEPTH_BRIEF.md), then approved trying this direction. The native implementation now carries the app-first hierarchy and rendered material through My apps, Discover, listing detail and access review. Generated names/art/scopes remain illustrative; actual native captures below are separate evidence. See [the implementation contract](../APPS_REDESIGN.md).
 
+## October 17 review refinement
+
+The user likes the direction but found the diffuse card shadows inconsistent with ordinary app surfaces. The current implementation keeps rendered artwork and a small local app-icon shadow, removes raised edges/cast shadows from surrounding panels, and uses plain reading surfaces with restrained teal accents only for featured/detail/invitation panels. The boards and October 16 captures below record the earlier direction; follow [shared surface-depth rules](DESIGN_SYSTEM.md#surface-depth) for further work.
+
+Actual October 17 native captures use the same synthetic service boundaries as the earlier checks:
+
+- [Discover: calm cards and local icon depth](apps-surface-hierarchy-native.png)
+- [My apps: rendered rocket on a flat invitation](apps-surface-empty-native.png)
+
 ## New boards
 
 ![My apps empty, My apps installed, and Discover](apps-rendered-browse-concept-2026-10-16.png)

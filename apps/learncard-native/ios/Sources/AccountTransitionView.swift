@@ -79,8 +79,8 @@ struct AccountTransitionView: View {
                     }
                     VStack(spacing: 14) {
                         if mode != .launch {
-                            Text(NativeText.text(mode.titleKey)).font(.largeTitle.bold()).tracking(-0.8)
-                                .foregroundStyle(Palette.ink).multilineTextAlignment(.center).accessibilityAddTraits(.isHeader)
+                            Text(NativeText.text(mode.titleKey)).font(.title3.weight(.medium))
+                                .foregroundStyle(Palette.secondary).multilineTextAlignment(.center).accessibilityAddTraits(.isHeader)
                         }
                         Text(NativeText.text(mode.statusKey)).font(.body).foregroundStyle(Palette.secondary)
                             .multilineTextAlignment(.center).accessibilityIdentifier("account-loading")

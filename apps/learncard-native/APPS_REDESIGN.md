@@ -12,13 +12,13 @@ Installed cards have separate detail and direct Open actions. Both remain readab
 
 ## Material and artwork
 
-`ConsumerAppSurfaces.swift` owns static raised frames, shallow lower edges, directional light and corner contours. Reading surfaces use adaptive ink/backgrounds. The empty invitation uses an opaque Colorful teal surface with navy text. No card tilt loop is added to Apps.
+`ConsumerAppSurfaces.swift` owns calm reading panels and sparse featured corner accents. The October 17 review removes the diffuse panel shadows, lower edges and credential surface lighting: ordinary Apps rows now use the same flat adaptive surface as other app sections. Featured/detail panels retain a restrained teal tint; the empty invitation keeps an opaque Colorful teal fill with navy text. The rendered artwork and small local app-icon shadow remain. No card tilt loop is added to Apps. See [shared surface-depth roles](design/DESIGN_SYSTEM.md#surface-depth).
 
 `prepare-illustrations.ts` generates the original rocket/app-window empty illustration and the rendered generic app placeholder as editable SVG. Gradient lighting, highlights and geometric lower edges give the artwork depth without a screenshot crop or generated publisher identity. Existing publisher icons/screenshots stay intact; icon display now fits their aspect ratio instead of filling/cropping. Only their surrounding native frame has a border/edge/shadow.
 
 ## Detail and agreement
 
-Listing detail carries a raised identity panel, actual category, Add/Open state, supplied description/screenshots and existing permission summary/links. No catalog art means a generic app-window fallback rather than the board's invented globe/palette. No new catalog facts, rankings, reviews or trust badges are added.
+Listing detail carries a softly accented identity panel, actual category, Add/Open state, supplied description/screenshots and existing permission summary/links. No catalog art means a generic app-window fallback rather than the board's invented globe/palette. No new catalog facts, rankings, reviews or trust badges are added.
 
 Access review uses a compact app identity, readable groups, actual recipients and explicit selected-credential information. A duplicate contract title is omitted when it exactly equals the app name. Required scopes are fixed labeled rows with a selected mark; optional scopes retain independent toggles that start off. The underlying `ConsumerConsentDecision` and its validation are unchanged. Viewing or cancelling the sheet grants no access and installs nothing. The final agreement action retains contextual loading, blocked-state validation and stale-contract refresh.
 
