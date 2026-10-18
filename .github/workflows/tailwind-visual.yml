@@ -1,18 +1,10 @@
 name: Tailwind visual regression
 
 on:
-    pull_request:
-        types: [opened, synchronize, reopened]
-        paths:
-            - 'apps/learn-card-app/**'
-            - 'apps/scouts/src/tailwind.css'
-            - 'packages/learn-card-base/**'
-            - 'packages/react-learn-card/**'
-            - 'bun.lock'
-            - '.github/workflows/tailwind-visual.yml'
+    workflow_dispatch:
 
 concurrency:
-    group: tailwind-visual-${{ github.head_ref || github.ref }}
+    group: tailwind-visual-${{ github.ref }}
     cancel-in-progress: true
 
 env:
@@ -25,8 +17,6 @@ jobs:
         timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
-              with:
-                  ref: ${{ github.event.pull_request.head.sha }}
             - uses: actions/setup-node@v6
               with:
                   node-version-file: .nvmrc

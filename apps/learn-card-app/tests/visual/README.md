@@ -13,6 +13,10 @@ intentional difference first.
 
 ## Run
 
+The GitHub Actions workflow **Tailwind visual regression** is manual-only. Use
+**Run workflow** and select the branch to check; pull requests do not trigger it.
+The workflow uploads screenshots and traces for review.
+
 From the repository root, use the Bun version in `package.json`:
 
 ```sh
