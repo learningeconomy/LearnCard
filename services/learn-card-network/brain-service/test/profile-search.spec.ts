@@ -244,3 +244,64 @@ describe('Profile search (text-index backed, case-insensitive)', () => {
         ]);
     });
 });
+
+describe('Profile search normalization (context-independent casing)', () => {
+    beforeAll(async () => {
+        await Profile.delete({ detach: true, where: {} });
+
+        // Cypher toLower is context-sensitive for Greek: Σ becomes ς at the end of a word and σ
+        // elsewhere, so the stored name and a substring of it can lowercase differently.
+        await createProfile('anastasia', 'ΑΝΑΣΤΑΣΙΑ');
+        await createProfile('nikos', 'Νίκος Παππάς');
+    }, 30_000);
+
+    afterAll(async () => {
+        await Profile.delete({ detach: true, where: {} });
+    });
+
+    it('matches a Greek prefix whose last letter is a capital sigma', async () => {
+        // Stored as αναστασια; ΑΝΑΣ used to lowercase to ανας (final sigma) and miss
+        expect(ids(await noAuthClient.profile.searchProfiles({ input: 'ΑΝΑΣ' }))).toEqual([
+            'anastasia',
+        ]);
+        expect(ids(await noAuthClient.profile.searchProfiles({ input: 'ανας' }))).toEqual([
+            'anastasia',
+        ]);
+    });
+
+    it('matches Greek searches ending in a sigma, whichever sigma form either side uses', async () => {
+        // Mid-name: the input's trailing Σ is word-final, the stored one isn't
+        expect(ids(await noAuthClient.profile.searchProfiles({ input: 'ΣΤΑΣ' }))).toEqual([
+            'anastasia',
+        ]);
+        // Name suffix typed with a medial σ against a stored final ς (Νίκος, Παππάς)
+        expect(ids(await noAuthClient.profile.searchProfiles({ input: 'ίκοσ' }))).toEqual([
+            'nikos',
+        ]);
+        expect(ids(await noAuthClient.profile.searchProfiles({ input: 'ΠΠΆΣ' }))).toEqual([
+            'nikos',
+        ]);
+        expect(ids(await noAuthClient.profile.searchProfiles({ input: 'παππάσ' }))).toEqual([
+            'nikos',
+        ]);
+    });
+
+    it('backfills the normalized form over a copy written by the previous lowercasing', async () => {
+        // Simulate a profile written by the previous build: plain toLower, final sigma kept
+        await neogma.queryRunner.run(
+            'MATCH (p:Profile {profileId: "nikos"}) SET p.displayNameLower = toLower(p.displayName)'
+        );
+        expect(await noAuthClient.profile.searchProfiles({ input: 'ίκοσ' })).toHaveLength(0);
+
+        const session = neogma.driver.session();
+        try {
+            expect(await backfillProfileDisplayNameLower(query => session.run(query))).toBe(1);
+        } finally {
+            await session.close();
+        }
+
+        expect(ids(await noAuthClient.profile.searchProfiles({ input: 'ίκοσ' }))).toEqual([
+            'nikos',
+        ]);
+    });
+});

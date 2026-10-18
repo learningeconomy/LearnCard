@@ -1,18 +1,42 @@
 /**
  * Profile search runs `CONTAINS` against TEXT indexes, and TEXT index `CONTAINS` is case-sensitive.
  * `profileId` is already stored lowercased (`transformProfileId`), so it can be searched as-is.
- * `displayName` keeps the casing people typed, so we keep a lowercased copy of it in
+ * `displayName` keeps the casing people typed, so we keep a normalized copy of it in
  * `displayNameLower` (TEXT-indexed by `profile_displayname_lower_text_idx`) and search that.
  *
- * Every write that sets `displayName` must also set `displayNameLower`. Doing the lowercasing in
- * Cypher (`toLower`) on writes, on the backfill, and on the search input keeps all three on the
- * same lowercasing rules.
+ * Every write that sets `displayName` must also set `displayNameLower`, and writes, the backfill
+ * and the search input all go through the same Cypher expression, `normalizeProfileSearchText`.
  */
 export const PROFILE_DISPLAY_NAME_LOWER_FIELD = 'displayNameLower';
 
+/**
+ * The one search normalization for display names: Cypher `toLower`, then final sigma (ς, U+03C2)
+ * folded to σ (U+03C3).
+ *
+ * `toLower` alone isn't safe for substring matching because it's context-sensitive for Greek:
+ * a capital Σ becomes ς at the end of a word and σ everywhere else. So `ΑΝΑΣΤΑΣΙΑ` is stored as
+ * `αναστασια`, but the search input `ΑΝΑΣ` lowercases to `ανας` and no longer matches. Folding ς to
+ * σ afterwards makes the result the same for a letter wherever it sits in the string, so a
+ * substring of a name always normalizes to a substring of the normalized name.
+ *
+ * Use this for writes, the backfill and queries alike. Changing it means re-running the backfill.
+ */
+export const normalizeProfileSearchText = (expression: string): string =>
+    `replace(toLower(${expression}), '\u03C2', '\u03C3')`;
+
 /** Cypher fragment that keeps `displayNameLower` in sync with `displayName` for `identifier`. */
 export const syncProfileDisplayNameLower = (identifier: string): string =>
-    `${identifier}.${PROFILE_DISPLAY_NAME_LOWER_FIELD} = toLower(${identifier}.displayName)`;
+    `${identifier}.${PROFILE_DISPLAY_NAME_LOWER_FIELD} = ${normalizeProfileSearchText(
+        `${identifier}.displayName`
+    )}`;
+
+/** Cypher predicate: true for a profile whose `displayNameLower` is missing or stale. */
+export const profileDisplayNameLowerIsStale = (identifier: string): string =>
+    `${identifier}.displayName IS NOT NULL
+  AND (${identifier}.${PROFILE_DISPLAY_NAME_LOWER_FIELD} IS NULL
+       OR ${identifier}.${PROFILE_DISPLAY_NAME_LOWER_FIELD} <> ${normalizeProfileSearchText(
+           `${identifier}.displayName`
+       )})`;
 
 /**
  * One-pass, idempotent backfill for profiles written before `displayNameLower` existed (or whose
@@ -21,9 +45,7 @@ export const syncProfileDisplayNameLower = (identifier: string): string =>
  */
 export const buildBackfillProfileDisplayNameLowerQuery = (batchSize = 1000): string => `
 MATCH (profile:Profile)
-WHERE profile.displayName IS NOT NULL
-  AND (profile.${PROFILE_DISPLAY_NAME_LOWER_FIELD} IS NULL
-       OR profile.${PROFILE_DISPLAY_NAME_LOWER_FIELD} <> toLower(profile.displayName))
+WHERE ${profileDisplayNameLowerIsStale('profile')}
 CALL {
     WITH profile
     SET ${syncProfileDisplayNameLower('profile')}

@@ -13,6 +13,8 @@ import {
     upsertSkillEmbeddings,
     type UpdateSkillEmbeddingFn,
 } from '@helpers/skill-embedding.helpers';
+import { syncProfileDisplayNameLower } from '../accesslayer/profile/search-fields';
+
 // Inlined from @helpers/profile.helpers to avoid importing the access/model layer
 // (it transitively pulls in @models, which hits a circular-dependency TDZ under tsx).
 const transformProfileId = (rawInput: string): string =>
@@ -520,7 +522,7 @@ export const ensureSeedProfile = async (
                        p.profileVisibility = coalesce(p.profileVisibility, $profileVisibility),
                        p.approved = coalesce(p.approved, $approved),
                        p.isServiceProfile = coalesce(p.isServiceProfile, $isServiceProfile)
-         SET p.displayNameLower = toLower(p.displayName)`,
+         SET ${syncProfileDisplayNameLower('p')}`,
         {
             profileId: normalizedProfileId,
             displayName: DEFAULT_OWNER_DISPLAY_NAME,

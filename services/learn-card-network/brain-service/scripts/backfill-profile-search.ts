@@ -1,10 +1,12 @@
 #!/usr/bin/env bun
 /**
- * Backfills `Profile.displayNameLower`, the lowercased copy of `displayName` that case-insensitive
- * profile search reads through the `profile_displayname_lower_text_idx` TEXT index.
+ * Backfills `Profile.displayNameLower`, the normalized copy of `displayName` (see
+ * `normalizeProfileSearchText`) that case-insensitive profile search reads through the
+ * `profile_displayname_lower_text_idx` TEXT index.
  *
  * New and updated profiles get the field on write. Run this once per environment after the
- * release that adds it, so profiles created before then are findable by display name again.
+ * release that adds or changes it, and only once no instance of the previous build is still
+ * writing profiles, so profiles written before then are findable by display name again.
  * It's idempotent and only touches profiles whose copy is missing or out of date.
  *
  * Usage (from services/learn-card-network/brain-service):
@@ -20,6 +22,7 @@ import {
     PROFILE_DISPLAY_NAME_LOWER_FIELD,
     backfillProfileDisplayNameLower,
     buildBackfillProfileDisplayNameLowerQuery,
+    profileDisplayNameLowerIsStale,
 } from '../src/accesslayer/profile/search-fields';
 
 const getArg = (name: string): string | undefined => {
@@ -48,9 +51,7 @@ const main = async (): Promise<void> => {
         if (!write) {
             const result = await session.run(
                 `MATCH (profile:Profile)
-                 WHERE profile.displayName IS NOT NULL
-                   AND (profile.${PROFILE_DISPLAY_NAME_LOWER_FIELD} IS NULL
-                        OR profile.${PROFILE_DISPLAY_NAME_LOWER_FIELD} <> toLower(profile.displayName))
+                 WHERE ${profileDisplayNameLowerIsStale('profile')}
                  RETURN count(profile) AS pending`
             );
             console.log(

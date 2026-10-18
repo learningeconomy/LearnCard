@@ -3,7 +3,7 @@ import { Profile } from '@models';
 import { ProfileType, FlatProfileType } from 'types/profile';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
-import { PROFILE_DISPLAY_NAME_LOWER_FIELD } from './search-fields';
+import { PROFILE_DISPLAY_NAME_LOWER_FIELD, normalizeProfileSearchText } from './search-fields';
 
 export const getProfileByProfileId = async (profileId: string): Promise<ProfileType | null> => {
     const result = await new QueryBuilder()
@@ -112,7 +112,7 @@ export const searchProfiles = async (
         new BindParam({
             // profileId is stored lowercased by transformProfileId
             input: searchInput.toLowerCase(),
-            // displayNameLower is written with Cypher toLower, so lowercase the input the same way
+            // normalized in Cypher below with the same expression displayNameLower is written with
             displayNameInput: searchInput,
             blacklist,
         })
@@ -121,7 +121,9 @@ export const searchProfiles = async (
             `CALL {
     MATCH (profile:Profile) WHERE profile.profileId CONTAINS $input RETURN profile
     UNION
-    MATCH (profile:Profile) WHERE profile.${PROFILE_DISPLAY_NAME_LOWER_FIELD} CONTAINS toLower($displayNameInput) RETURN profile
+    MATCH (profile:Profile) WHERE profile.${PROFILE_DISPLAY_NAME_LOWER_FIELD} CONTAINS ${normalizeProfileSearchText(
+        '$displayNameInput'
+    )} RETURN profile
 }`
         )
         .with('profile')
