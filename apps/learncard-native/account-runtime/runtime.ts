@@ -14,6 +14,7 @@ import {
 } from './credential-draft';
 import { credentialCategoryForDisplay } from './credential-category';
 import { fingerprintShareRequest } from './share-request';
+import { checkCredentialStatus } from './credential-status';
 import {
     credentialDetailsForDisplay,
     signatureStateForDisplay,
@@ -429,6 +430,8 @@ const display = async (
     try {
         raw = supplied ?? object(await wallet.read.get(uri));
         if (Object.keys(raw).length) {
+            // Retain loaded source even if proof resolution fails; lifecycle reads are independent.
+            original.set(uri, raw);
             if (verify) {
                 const result = await wallet.invoke.verifyCredential(raw as never, {
                     checks: ['proof'],
@@ -436,7 +439,6 @@ const display = async (
                 signatureState = signatureStateForDisplay(result);
                 proofChecked = signatureState === 'verified';
             }
-            original.set(uri, raw);
         }
     } catch {
         /* Keep collection metadata visible when content or remote verification is unavailable. */
@@ -641,6 +643,23 @@ const commands = {
     },
     snapshot: async () => snapshot(),
     more: async () => snapshot(true),
+    credentialStatus: async (input: { uri: string }) => {
+        const current = wallet;
+        if (!current || typeof input?.uri !== 'string') throw new Error('Sign in first');
+        const raw = original.get(input.uri);
+        if (!raw) throw new Error('Credential unavailable');
+        const result = await checkCredentialStatus(
+            {
+                getStatuses: uris => current.invoke.getMyCredentialLifecycleStatuses({ uris }),
+                verify: (credential, checks) =>
+                    current.invoke.verifyCredential(credential as never, { checks }),
+            },
+            input.uri,
+            raw
+        );
+        if (wallet !== current) throw new Error('Account changed');
+        return result;
+    },
     claim: async (input: { uri: string }) => {
         if (!wallet) throw new Error('Sign in first');
         const raw = original.get(input.uri);

@@ -102,6 +102,9 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         guard ready else { throw AccountError.unavailable }
         return try await command(more ? "more" : "snapshot")
     }
+    public func credentialStatus(_ id: String) async throws -> CredentialStatusCheck {
+        try await command("credentialStatus", input: ["uri": id])
+    }
     public func claim(_ uri: String) async throws -> CollectionSnapshot { try await command("claim", input: ["uri": uri]) }
     public func create(title: String, summary: String, kind: CredentialKind) async throws -> CollectionSnapshot {
         try await command("create", input: ["title": title, "summary": summary, "kind": kind.rawValue])
@@ -201,6 +204,7 @@ public final class LiveCredentialService: CredentialService {
     private let runtime: AccountRuntime
     public init(runtime: AccountRuntime) { self.runtime = runtime }
     public func snapshot() async throws -> CollectionSnapshot { try await runtime.snapshot() }
+    public func credentialStatus(credentialID: String) async throws -> CredentialStatusCheck { try await runtime.credentialStatus(credentialID) }
     public func loadMore() async throws -> CollectionSnapshot { try await runtime.snapshot(more: true) }
     public func claim(offerID: String) async throws -> CollectionSnapshot { try await runtime.claim(offerID) }
     public func create(title: String, summary: String, kind: CredentialKind) async throws -> CollectionSnapshot { try await runtime.create(title: title, summary: summary, kind: kind) }

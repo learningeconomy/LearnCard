@@ -9,6 +9,7 @@ struct CredentialDetailView: View {
     let credential: Credential
     var isOffer = false
     var isCreation = false
+    @State private var status: CredentialStatusStore
     @State private var showSend = false
     @State private var showShare = false
     @State private var shareRequestID = UUID().uuidString
@@ -16,6 +17,11 @@ struct CredentialDetailView: View {
     @State private var showExport = false
     @State private var cardHeight: CGFloat = 240
     @State private var cardVisible = true
+
+    init(store: AppStore, credential: Credential, isOffer: Bool = false, isCreation: Bool = false) {
+        self.store = store; self.credential = credential; self.isOffer = isOffer; self.isCreation = isCreation
+        _status = State(initialValue: store.credentialStatusStore(id: credential.id))
+    }
 
     var body: some View {
         Group {
@@ -32,6 +38,7 @@ struct CredentialDetailView: View {
                 CredentialDetailCard(credential: credential, isVisible: cardVisible)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
                 CredentialVerificationView(credential: credential)
+                if !credential.isSample && !isCreation { CredentialLifecycleView(status: status) }
                 if !credential.summary.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(NativeText.text("credential.details.about")).font(.headline).foregroundStyle(Palette.ink)
@@ -87,6 +94,9 @@ struct CredentialDetailView: View {
             }
         }
         .background(SectionBackground(tint: Palette.paper))
+        .task(id: credential.id) {
+            if !credential.isSample && !isCreation { await status.check() }
+        }
         .onScrollGeometryChange(for: Bool.self) { geometry in
             let offset = geometry.contentOffset.y + geometry.contentInsets.top
             return offset < cardHeight + 24 && offset + geometry.containerSize.height > 24

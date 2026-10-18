@@ -2,11 +2,17 @@
 
 October 17–18, 2026. Preserve the rendered credential hero. Separate a compact verification panel, About, credential information and any supplied optional sections. Ordinary reading panels are flat; the credential remains the raised object. Body text uses subheadline scale, section titles use headline scale, and metadata uses secondary labels with stronger values.
 
-## Verification scope
+## Verification scope and revocation
 
-The runtime already calls `verifyCredential` with `checks: ['proof']`. Its new structured `signatureState` is `verified`, `notVerified` or `unavailable`. An empty errors array from that actual check establishes the first state. Resolution/network/proof errors do not identify revocation, suspension or issuer trust; a failed check says Signature not verified. Missing checks remain unavailable. Never derive a success badge from the old English summary string.
+The signature badge remains separate from lifecycle and issuer trust. `verifyCredential` with `checks: ['proof']` yields the structured `signatureState`: `verified`, `notVerified` or `unavailable`. Never derive success from the legacy English summary. Issuer trust remains unchecked; unsigned local samples keep their separate label.
 
-The green checkmark explicitly says **Signature verified**. Its visible caption says issuer trust and revocation were not checked; expanding the panel explains the scope. Unsigned local samples retain a separate label and never acquire a verified badge. This does not implement the web issuer registry, issuer endorsements or complete lifecycle verification.
+Opening a signed credential detail makes one read-only `credentialStatus` command for its cached original URI. The detail remains usable while Checking revocation is shown. The command prefers `getMyCredentialLifecycleStatuses({ uris: [uri] })`, the same authenticated holder status used by web. Known network records return active/revoked/suspended, including legacy records without a status list. Omitted records, an older deployment or a failed request fall back to the SDK's original-credential proof check followed by `credentialStatus` verification. No status reads are added to every Passport snapshot.
+
+The fallback binds structured results to the original entry type, purpose, list URL and index. It supports BitstringStatusListEntry, StatusList2021Entry and legacy RevocationList2020Status descriptors, including inner CertifiedBoost status metadata. A confirmed set revocation bit takes precedence over suspension. Active requires all supplied entries to have matching, successful supported results; it is scoped to the purposes actually checked. Missing, unsupported, partial, malformed, offline, timeout and proof-failure outcomes do not become active or revoked. Human-readable verification errors never select a lifecycle state.
+
+Native status UI distinguishes Not revoked, Not suspended, Not revoked or suspended, Credential revoked, Credential suspended, No status information and Status unavailable. Successful results show the source and localized check time. Check again reads current status; a failed retry keeps the last confirmed status/date with a visible stale-result notice. Suspension can return to active after a successful recheck. The detail owns transient state; it is not a persisted cross-account status cache. Cancelled reads do not publish a late result.
+
+Network status is a LearnCard network record, not an issuer-trust attestation. The status-list fallback uses the bundled verifier and the existing staging-only transport policy: external hosts are not newly permitted, so unsupported/unreachable external lists remain unavailable. Each remote attempt is bounded at eight seconds. Expiry is displayed independently in credential information. This pass does not remove, hide or mutate credentials, disable original-data sharing/export, change acceptance rules, or add issuer revocation controls. Endorsements and issuer trust remain separate follow-ups.
 
 ## Additional information
 
@@ -41,6 +47,8 @@ The user explicitly split endorsements into a later feature. Plan native counts 
 See [TESTING](TESTING.md) for actual runs and installed-build evidence. Core tests check old/new wire compatibility, fractional dates and preservation of the original payload. Runtime tests compare the projection with immutable originals and exercise the actual SDK proof check and existing encrypted presentation manifest. Native UI checks cover expanded source fields, pinned actions, secondary export, failure/pending/ready/reopen, sample sharing and Arabic accessibility text.
 
 ## Actual native screens
+
+The images below document the initial detail/share pass, before the separate lifecycle panel. Updated physical scroll/retry captures are pending the Mac unlock; see the current verification record in TESTING.
 
 These captures use isolated display fixtures and a nonfunctional `example.invalid` presentation URL. The green badge exercises a supplied signature-result fixture; it is not a claim about a real account. Real SDK cryptography is checked separately in the runtime tests.
 

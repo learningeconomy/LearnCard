@@ -105,6 +105,7 @@ public final class NativeAppStore {
     }
 
     public func creations(cursor: String? = nil) async throws -> CreationPage { try await service.creations(cursor: cursor) }
+    public func credentialStatusStore(id: String) -> CredentialStatusStore { CredentialStatusStore(service: service, credentialID: id) }
     public func searchRecipients(_ query: String) async throws -> [AccountRecipient] {
         if let live = service as? LiveCredentialService { return try await live.searchRecipients(query) }
         return [AccountRecipient(id: "Alex Morgan", name: "Alex Morgan"), AccountRecipient(id: "Jordan Lee", name: "Jordan Lee")]

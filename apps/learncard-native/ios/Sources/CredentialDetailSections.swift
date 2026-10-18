@@ -13,7 +13,6 @@ struct CredentialVerificationView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text(NativeText.text("credential.details.verificationScope"))
                 Label(NativeText.text("credential.details.issuerUnchecked"), systemImage: "person.crop.circle.badge.questionmark")
-                Label(NativeText.text("credential.details.statusUnchecked"), systemImage: "questionmark.circle")
             }.font(.footnote).foregroundStyle(Palette.secondary).padding(.top, 12)
                 .fixedSize(horizontal: false, vertical: true)
         } label: {

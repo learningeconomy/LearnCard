@@ -101,3 +101,7 @@ The additional bundled-command regression reproduced missing share/profile-updat
 ## Update 2026-10-15 — Profile photos
 
 Native Edit profile supports choosing, previewing, replacing and removing a photo. Upload occurs only on Save Profile. The existing public image uploader and network profile `image` field preserve web interoperability; unchanged photo edits omit the field, while removal sends an empty string. Generation guards span upload and profile update. See [profile-photo contracts and manual live gate](PROFILE_PHOTOS.md).
+
+## Credential lifecycle reads — October 18, 2026
+
+`LiveCredentialService.credentialStatus` uses a focused account command for a cached original URI. It prefers authenticated `getMyCredentialLifecycleStatuses`, then proof-checked structured status-list results. `CredentialStatusStore` belongs to the detail destination, keeps last-confirmed status during a failed retry, and discards cancelled reads. Original payloads, Passport snapshots, account readiness and existing staging transport limits remain unchanged. [Scope and states](CREDENTIAL_DETAILS.md#verification-scope-and-revocation).

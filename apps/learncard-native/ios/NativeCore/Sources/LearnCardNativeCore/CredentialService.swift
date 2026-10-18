@@ -10,9 +10,11 @@ public protocol CredentialService: Sendable {
     func send(credentialID: String, recipient: String) async throws -> CollectionSnapshot
     func share(credentialIDs: [String], title: String, requestID: String, passcode: String?) async throws -> CredentialShare
     func loadMore() async throws -> CollectionSnapshot
+    func credentialStatus(credentialID: String) async throws -> CredentialStatusCheck
 }
 
 public extension CredentialService {
+    func credentialStatus(credentialID: String) async throws -> CredentialStatusCheck { CredentialStatusCheck(state: .unavailable) }
     func loadMore() async throws -> CollectionSnapshot { try await snapshot() } }
 
 /// In-memory, unsigned samples. Restarting the app resets the experiment.

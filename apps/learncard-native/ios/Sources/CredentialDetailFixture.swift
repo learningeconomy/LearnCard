@@ -8,6 +8,7 @@ actor CredentialDetailFixture: CredentialService {
     private let demo = DemoCredentialService()
     private var attempts = 0
     private var request: String?
+    private var statusAttempts: [String: Int] = [:]
     func snapshot() -> CollectionSnapshot {
         var details = CredentialDetails()
         details.criteria = [CredentialNarrative(text: String(repeating: "Complete supervised community work, reflect on your progress, and demonstrate thoughtful leadership in a team. ", count: 6) + "Finish with a project reflection.", url: URL(string: "https://example.org/criteria"))]
@@ -28,7 +29,25 @@ actor CredentialDetailFixture: CredentialService {
             date: .now.addingTimeInterval(-100), isSample: false, signatureState: .unavailable)
         let failed = Credential(id: "detail-not-verified", title: "A signature to review", issuer: "Example issuer", summary: "No lifecycle status can be inferred from this result.", kind: .achievement,
             date: .now.addingTimeInterval(-200), isSample: false, signatureState: .notVerified)
-        return CollectionSnapshot(credentials: [rich, unavailable, failed], offers: [], activity: [])
+        let statuses = ["revoked", "suspended", "no-status"].enumerated().map { offset, name in
+            Credential(id: "detail-\(name)", title: "Status example: \(name)", issuer: "Example issuer", summary: "Isolated lifecycle fixture; no issuer status is changed.", kind: .achievement,
+                date: .now.addingTimeInterval(Double(-300 - offset)), isSample: false, signatureState: .verified)
+        }
+        return CollectionSnapshot(credentials: [rich, unavailable, failed] + statuses, offers: [], activity: [])
+    }
+    func credentialStatus(credentialID: String) async throws -> CredentialStatusCheck {
+        statusAttempts[credentialID, default: 0] += 1
+        try await Task.sleep(for: .milliseconds(650))
+        let state: CredentialStatusCheck.State
+        switch credentialID {
+        case "detail-rich": state = statusAttempts[credentialID] == 1 ? .active : .unavailable
+        case "detail-revoked": state = .revoked
+        case "detail-suspended": state = statusAttempts[credentialID] == 1 ? .suspended : .active
+        case "detail-no-status": state = .notProvided
+        default: state = .unavailable
+        }
+        return CredentialStatusCheck(state: state, source: [.active, .revoked, .suspended].contains(state) ? .network : nil,
+            checkedAt: [.active, .revoked, .suspended].contains(state) ? .now : nil, purposes: [.revocation, .suspension])
     }
     func claim(offerID: String) async throws -> CollectionSnapshot { throw AccountError.unavailable }
     func create(title: String, summary: String, kind: CredentialKind) async throws -> CollectionSnapshot { try await demo.create(title: title, summary: summary, kind: kind) }

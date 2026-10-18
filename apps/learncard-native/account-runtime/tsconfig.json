@@ -20,6 +20,7 @@
         "jsx": "react-jsx"
     },
     "files": [
+        "credential-status.ts",
         "credential-details.ts",
         "share-request.ts",
         "consumer-apps.ts",
