@@ -14,7 +14,7 @@ vi.mock('learn-card-base', async () => {
     return {
         ...metadata,
         BoostPageViewMode: { Card: 'card', List: 'list' },
-        BoostGenericCardWrapper: (props: { type?: string }) => {
+        BoostGenericCardWrapper: (props: { type?: string; categoryType?: string }) => {
             host.wrapper(props);
             return null;
         },
@@ -101,7 +101,9 @@ describe('BoostEarnedCard category fallback', () => {
 
             expect(host.wrapper).toHaveBeenCalled();
             expect(
-                host.wrapper.mock.calls.every(([props]) => props.categoryType === categoryType)
+                host.wrapper.mock.calls.every(
+                    ([props]) => props.categoryType === CredentialCategoryEnum.achievement
+                )
             ).toBe(true);
         }
     );

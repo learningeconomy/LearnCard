@@ -16,6 +16,7 @@ import {
     CredentialCategoryEnum,
     useModal,
     useGetVCInfo,
+    categoryMetadata,
     getCategoryMetadata,
     BoostCategoryOptionsEnum,
     ModalTypes,
@@ -61,16 +62,26 @@ type BoostEarnedCardProps = {
     branding?: BrandingEnum;
     loading?: boolean;
 };
+
+// Callers pass the credential's raw category, which can be missing or a value we don't know.
+// Normalize it once so everything downstream (card, list row, skeleton, modals) only ever sees a
+// known category, falling back to Achievement like getCategoryMetadata does.
+const normalizeCategory = (category?: string | null): CredentialCategory =>
+    (category && Object.hasOwn(categoryMetadata, category)
+        ? category
+        : CredentialCategoryEnum.achievement) as CredentialCategory;
+
 type BoostEarnedCardSkeletonProps = Pick<
     BoostEarnedCardProps,
     'categoryType' | 'boostPageViewMode' | 'branding'
 >;
 
 export const BoostEarnedCardSkeleton: React.FC<BoostEarnedCardSkeletonProps> = ({
-    categoryType,
+    categoryType: rawCategoryType,
     boostPageViewMode = BoostPageViewMode.Card,
     branding,
 }) => {
+    const categoryType = normalizeCategory(rawCategoryType);
     const isCardView = boostPageViewMode === BoostPageViewMode.Card;
     const type = getCategoryMetadata(categoryType).walletSubtype;
 
@@ -129,7 +140,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     credential: _credential,
     uri,
     defaultImg,
-    categoryType,
+    categoryType: rawCategoryType,
     useWrapper = true,
     onCheckMarkClick,
     initialCheckmarkState,
@@ -141,6 +152,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     branding,
     loading,
 }) => {
+    const categoryType = normalizeCategory(rawCategoryType);
     const {
         data: resolvedCredential,
         isFetching: credentialFetching,
