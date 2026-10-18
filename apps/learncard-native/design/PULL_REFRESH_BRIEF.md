@@ -1,6 +1,6 @@
 # Painted pull-to-refresh — October 17, 2026
 
-**October 18 design feedback:** the user rejected the compact motif/visible refresh label. A [full-width local-time sky study](SKY_REFRESH_BRIEF.md) explores a replacement. Detailed atmospheric skies were also rejected; the latest proposal uses sparse graphic shapes. The implementation below remains current until a replacement is built.
+**Superseded October 18:** the compact motif and visible refresh label have been replaced with the [implemented flat local-time sky strip](../SKY_REFRESH.md). The selected bird/balloon/plane/UFO scenes and rare cow cameo retain the native gesture/lifetime integration described below. The figure-eight drawing and its evidence are historical; see [current verification](../TESTING.md#local-time-sky-refresh--october-18-2026).
 
 Home, Passport, Inbox and Apps use eight painted pigment tiles weaving around a compact figure-eight. The header already carries the LearnCard logo, so this supporting motion borrows its colors and rounded square shapes without repeating the 3×3/L mark. Original painted tile assets supply the material; the center L asset is excluded. The earlier [generated motion board](pull-refresh-concept-2026-10-17.png) is historical direction for the superseded mosaic version.
 
@@ -17,7 +17,7 @@ The motif occupies 64×36 points, with ten-point painted tiles that grow/shrink 
 
 Keep operation presentation in a stable reference observed only by the artwork child. Updating value state on the scroll owner, or observing the operation in an outer accessibility modifier, can replace the native refresh action and cancel its read. The UIKit artwork uses `UIHostingConfiguration`, with tint/observation cleanup. Refresh-control subviews are omitted from SwiftUI's accessibility tree; do not add invisible duplicate elements to obtain test handles. XCTest waits for native refresh to finish before returning from a pull, so test awaited reads, retry and returned geometry there. Verify active artwork from actual simulator recordings, without assuming a fixed system refresh height.
 
-## Current native evidence
+## Historical figure-eight native evidence
 
 - [Actual nine-second figure-eight recording](pull-refresh-weave-native.mp4), cropped to the header, refresh area and page title. It includes the existing single header logo for context.
 - [Standard Home during refresh](pull-refresh-weave-home-native.png).
@@ -32,7 +32,7 @@ The moving crop changes 6,426 pixels above 24 RGB levels across 0.6 seconds; the
 - [Actual Arabic dark accessibility3 with Reduce Motion](pull-refresh-arabic-accessibility-native.png). This is an enlarged accessibility stress test, not the default Arabic type size.
 - [A failed read keeps cached credentials and inline retry](pull-refresh-retry-native.png).
 
-These captures show the earlier mosaic version and are retained as historical evidence of the native gesture/lifetime integration. The current figure-eight refinement uses the same integration. The board below was generated with built-in image_gen. [Original verification and boundaries](../TESTING.md#painted-pull-to-refresh--october-17-2026).
+These captures show the earlier mosaic version and are retained as historical evidence of the native gesture/lifetime integration. The later figure-eight and sky refinements use the same integration. The board below was generated with built-in image_gen. [Original verification and boundaries](../TESTING.md#painted-pull-to-refresh--october-17-2026).
 
 ## Original generated reference (superseded motif)
 

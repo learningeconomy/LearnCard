@@ -56,6 +56,7 @@ struct LearnCardNativeApp: App {
             Group {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("--keychain-probe") { KeychainProbeView() }
+                else if ProcessInfo.processInfo.arguments.contains("--demo"), ProcessInfo.processInfo.arguments.contains("--sky-gallery") { SkyRefreshReviewView() }
                 else if let index = ProcessInfo.processInfo.arguments.firstIndex(of: "--motion-review"), ProcessInfo.processInfo.arguments.indices.contains(index + 1),
                         let mode = AccountMotionMode(rawValue: ProcessInfo.processInfo.arguments[index + 1]) { AccountMotionReviewView(mode: mode) }
                 else { client }

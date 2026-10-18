@@ -31,8 +31,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: NativeLayout.sectionGap) {
                 VStack(alignment: .leading, spacing: 6) {
                     PageHeading(title: "Home", accent: Palette.flairYellow)
-                    Text(profileName.flatMap { $0.isEmpty ? nil : NativeText.format("home.greetingName", $0) } ?? NativeText.text("home.greeting"))
-                        .font(.title3).foregroundStyle(Palette.secondary)
+                    HomeGreeting(name: profileName)
                 }
                 if store.inboxCount > 0 || store.snapshot == nil || !store.inbox.loaded || store.inbox.error != nil { inboxCard }
                 passportSection

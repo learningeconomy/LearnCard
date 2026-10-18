@@ -22,7 +22,7 @@ The user split this feature from the current detail pass. Existing encrypted sha
 - [x] Provide still Reduce Motion/VoiceOver feedback, lifecycle pauses and localized status; keep inline error/retry and the cross-tab sample strip.
 - [x] Refine the duplicate-logo treatment into eight colored tiles weaving around a compact figure-eight. Keep the header as the only visible brand mark and record this distinction in the design system.
 
-See [the design and behavior contract](design/PULL_REFRESH_BRIEF.md). Verification is recorded in [TESTING](TESTING.md).
+This historical compact treatment is superseded by the [local-time sky strip](SKY_REFRESH.md) below. The native refresh gesture/lifetime integration remains. Verification is recorded in [TESTING](TESTING.md).
 
 ## Home deck and list-only Passport — October 17
 
@@ -408,6 +408,12 @@ The credential detail now reads the authenticated holder lifecycle status on ent
 
 User feedback makes About the first section after the hero. Signature and lifecycle checks should be secondary, compact expandable rows after credential information/optional content, rather than prominent status cards above the description. Keep revocation/suspension warnings and stale-result notices visible when collapsed; source, date, explanation and retry can expand. This presentation refinement is implemented and installed. Unlock review covers English and compact Arabic accessibility text, disclosure/scroll/retry, retained stale results and suspension reactivation; all four existing detail/share UI checks pass. Endorsements and issuer trust remain separate follow-ups.
 
-## Local-time refresh sky — design exploration, October 18, 2026
+## Local-time refresh sky — completed October 18, 2026
 
-Replace the small figure-eight/Refreshing label with a full-width reveal; pair Home with a local-time greeting. The user proposed day clouds/sun, dusk color and night stars/moon/meteor, with LearnCard-color particles. They rejected the first detailed atmospheric mockups as mismatched and obviously AI-generated. The user prefers the revised flat style. The latest [graphic concept and exact prompts](design/SKY_REFRESH_BRIEF.md) replace random blocks with one visitor per scene: morning bird, daytime hot-air balloon, evening plane and nighttime UFO. Palette accents can live on those objects but are optional. Keep each visitor visible from the first reveal, with restrained motion. The user likes this visitor direction and requests a rare one/two spotted-cow parachute cameo. Keep it unannounced, rare and stable through the refresh cycle; do not delay real completion for the joke. Cow frequency remains a design choice. No runtime change yet. Preserve native refresh gesture/lifetime, VoiceOver feedback and Reduced Motion behavior when implementing.
+- [x] Replace the compact weave/Refreshing label on Home, Passport, Inbox and Apps with a full-width flat sky using the native control bounds, with no idle spacer or extra inset.
+- [x] Add local-time morning/afternoon/evening/Hello greetings and four visitor scenes: bird, colored balloon, plane and UFO. Keep the first revealed pose complete.
+- [x] Add rare one/two spotted-cow parachutes: 2% combined selection, ten-minute cooldown shared across tabs in-process, stable through each pull/refresh, no completion delay.
+- [x] Preserve accessible native refresh, spoken operation feedback, still Reduce Motion/VoiceOver scenes, lifecycle pauses, cached data and inline retry.
+- [x] Verify real native gestures/collapse, deterministic day/cow review, moving/still drawings, four-language greetings and normal Debug installation.
+
+The user rejected the detailed atmospheric studies in favor of sparse flat graphics; the [selected concepts and exact prompts](design/SKY_REFRESH_BRIEF.md) preserve that correction. Production uses native Canvas shapes. [Behavior, scenes and actual motion](SKY_REFRESH.md); [test scope and install proof](TESTING.md#local-time-sky-refresh--october-18-2026). Existing endorsements, issuer-trust, learner-learning, design-system and organization-workspace queues remain separate.

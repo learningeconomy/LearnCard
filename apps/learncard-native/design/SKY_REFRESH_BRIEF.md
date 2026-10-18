@@ -1,6 +1,6 @@
 # Local-time sky refresh — design study, October 18, 2026
 
-**Status: the user likes the flat scene-visitor direction and requests a rare spotted-cow Easter egg; not implemented.** The user rejected the current compact figure-eight plus “Refreshing…” label. They proposed a full-width particle treatment or a shallow local-time sky reveal, paired with morning/afternoon/evening greetings on Home.
+**Status: implemented and installed in Native Lab.** The selected direction now uses native flat drawing, four clock-based visitors and a rare parachuting-cow cameo. See the [production contract and native captures](../SKY_REFRESH.md) and [verification](../TESTING.md#local-time-sky-refresh--october-18-2026). The studies below preserve the design history and exact prompts. The user rejected the current compact figure-eight plus “Refreshing…” label. They proposed a full-width particle treatment or a shallow local-time sky reveal, paired with morning/afternoon/evening greetings on Home.
 
 The first two atmospheric imagegen studies were rejected as too detailed, mismatched with the app, and visibly AI-generated. Keep that correction: use sparse, graphic forms closer to LearnCard’s outlined illustrations. The dimensional credential card remains its own emphasized object.
 
@@ -8,7 +8,7 @@ The first two atmospheric imagegen studies were rejected as too detailed, mismat
 
 The user prefers the flat style and suggested replacing arbitrary floating blocks with recognizable scene visitors. Brand colors are welcome where natural, not mandatory. [Earlier flat study](pull-refresh-sky-graphic-concept-2026-10-18.png).
 
-## Proposed visual direction
+## Selected visual direction
 
 - A shallow edge-to-edge strip appears between the shared header and page content during a pull/refresh. Idle pages reserve no decorative strip.
 - Morning: aqua field, yellow sun, simple cream clouds and one small gliding bird.
@@ -20,31 +20,31 @@ The user prefers the flat style and suggested replacing arbitrary floating block
 
 ### Rare spotted-cow visitor
 
-The user likes the visitor set and requested a random spotted-cow Easter egg: falling cows or one/two cows with parachutes. The proposed cameo uses a gentle parachute drift, with a small second cow only occasionally. Keep the normal local-time sky; temporarily replace its usual visitor. Broad LearnCard-color parachute panels are an optional accent.
+The user likes the visitor set and requested a random spotted-cow Easter egg: falling cows or one/two cows with parachutes. The implemented cameo uses a gentle parachute drift, with a small second cow only occasionally. Keep the normal local-time sky; temporarily replace its usual visitor. Broad LearnCard-color parachute panels are an optional accent.
 
 ![Rare parachuting spotted-cow concept](pull-refresh-sky-cow-concept-2026-10-18.png)
 
-Keep the joke unannounced in the product: no toast, badge, reward or extra copy. Select it rarely and keep the selection stable through the pull/release/working cycle rather than rerolling on animation frames. Frequency/cooldown is not fixed yet. A demo-only forced selection can make review deterministic without repeatedly refreshing a real account. Reduced Motion keeps the cameo still. The normal refresh completes with actual work; no delay is added so a cow can finish crossing.
+Keep the joke unannounced in the product: no toast, badge, reward or extra copy. Select it rarely and keep the selection stable through the pull/release/working cycle rather than rerolling on animation frames. The implementation uses 2% combined selection (1.8% one cow, 0.2% two) and a shared ten-minute in-process cooldown. Debug demo-only forced selection makes review deterministic without repeatedly refreshing a real account. Reduced Motion keeps the cameo still. The normal refresh completes with actual work; no delay is added so a cow can finish crossing.
 
 This illustration enlarges the cameo for review. Production should keep it subordinate to the shallow strip, use the same flat native shape language, and reuse the real header/credential components rather than generated UI pixels.
 
-The board shows a proposed shallow reveal, not measured production refresh geometry. Validate the available native height before implementation; crop/scale the illustration to the real reveal rather than forcing scroll insets.
+The generated boards show proposed proportions, not measured native geometry. Production fills the actual native control bounds (60 points high on the reviewed 402-point device), without forcing scroll insets. Objects scale and clip to the available height.
 
 ## Greeting and behavior audit
 
-Native Home currently uses static `home.greetingName` / `home.greeting` in `ios/Sources/HomeAppsView.swift`.
+Native Home now uses the isolated `HomeGreeting` clock view and localized named/unnamed `home.time.*` strings; this replaces static `home.greetingName` / `home.greeting` in `ios/Sources/HomeAppsView.swift`.
 
 The web dashboard helper is `apps/learn-card-app/src/pages/launchPad/LaunchPadHeader/launchPadHeader.helpers.ts`: morning 06:00–11:59, afternoon 12:00–17:59, evening 18:00–23:59, neutral Hello 00:00–05:59. Web Pathways Today has a different schedule and “Still here” late-night wording; do not conflate them.
 
-Use device-local time for a future greeting/sky implementation, updating on foreground/time changes. Illustration phase can distinguish dusk from night while retaining an appropriate evening greeting. Exact sky phase boundaries remain a design choice; this does not require location permission or a weather service.
+The implementation uses device-local time, updating the greeting on foreground/significant clock/timezone changes and at 30-second intervals while mounted. Dusk is 18:00–20:59; night is 21:00–05:59. Greeting hours match the dashboard, including Hello before 06:00. No location permission or weather service is used.
 
 Preserve the established native `.refreshable` gesture, accessible refresh action, asynchronous lifetime and failure/retry states. Keep VoiceOver’s spoken operation feedback even when visible refresh copy is removed. Reduced Motion uses a still illustration; stop animation offscreen/inactive. Do not replace the stable refresh-operation reference or observe it in an outer accessibility modifier, which previously cancelled native work. See [the existing integration contract](PULL_REFRESH_BRIEF.md).
 
-No app source, installed build, account data or tests change in this concept pass.
+The initial concept pass changed no runtime behavior. The subsequent approved implementation, native evidence and completed checks are recorded in [SKY_REFRESH](../SKY_REFRESH.md). Account data and refresh-operation semantics remain unchanged.
 
 ## Generation record
 
-Generated with the **built-in image_gen tool**. The current app screenshot was the composition reference. The flat style is preferred. The current board is the fourth revision, adding the user-suggested visitors and removing arbitrary blocks; visitor details/motion are still a proposal. The earlier detailed skies are rejected references, not approved assets.
+Generated with the **built-in image_gen tool**. The current app screenshot was the composition reference. The flat style is preferred. The current board is the fourth revision, adding the user-suggested visitors and removing arbitrary blocks; the production rendering is implemented as editable native shapes rather than generated UI pixels. The earlier detailed skies are rejected references, not approved assets.
 
 ### Initial study prompt
 

@@ -10,9 +10,6 @@ struct BrandRefreshScrollView<Content: View>: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
-    @Environment(\.locale) private var locale
-    @Environment(\.layoutDirection) private var direction
-    @Environment(\.dynamicTypeSize) private var textSize
     @State private var operation = RefreshOperation()
     @State private var visible = false
     let scope: String
@@ -25,8 +22,7 @@ struct BrandRefreshScrollView<Content: View>: View {
                 RefreshArtworkHost(operation: operation) { refreshing in
                     RefreshArtworkAttachment(refreshing: refreshing,
                         active: visible && scenePhase == .active,
-                        reduced: reduceMotion || voiceOver || ProcessInfo.processInfo.arguments.contains("--motion-reduced"),
-                        locale: locale, direction: direction, textSize: textSize)
+                        reduced: reduceMotion || voiceOver || ProcessInfo.processInfo.arguments.contains("--motion-reduced"))
                 }
                     .allowsHitTesting(false).accessibilityHidden(true)
             }
@@ -63,9 +59,6 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
     let refreshing: Bool
     let active: Bool
     let reduced: Bool
-    let locale: Locale
-    let direction: LayoutDirection
-    let textSize: DynamicTypeSize
 
     func makeUIView(context: Context) -> RefreshAnchor {
         let view = RefreshAnchor()
@@ -87,7 +80,10 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
         private var host: (UIView & UIContentView)?
         private var originalTint: UIColor?
         private var began = Date.now
+        private var pausedElapsed: TimeInterval = 0
         private var wasRefreshing = false
+        private var cycle = RefreshSkyCycle()
+        private static var cameoPolicy = SkyCameoPolicy()
 
         init(configuration: RefreshArtworkAttachment) { self.configuration = configuration }
         func attach(from anchor: UIView) {
@@ -115,7 +111,7 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
             if control !== next {
                 removeArtwork()
                 control = next; originalTint = next.tintColor; next.tintColor = .clear
-                let host = contentConfiguration(progress: 0).makeContentView()
+                let host = contentConfiguration(moving: false).makeContentView()
                 host.backgroundColor = .clear
                 host.isUserInteractionEnabled = false
                 host.frame = next.bounds
@@ -124,23 +120,34 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
                 self.host = host
             }
             next.tintColor = .clear
-            if configuration.refreshing && !wasRefreshing { began = .now }
-            wasRefreshing = configuration.refreshing
+            let busy = configuration.refreshing || next.isRefreshing
             let pull = max(0, -(scroll.contentOffset.y + scroll.adjustedContentInset.top))
-            let shown = configuration.active && (configuration.refreshing || (scroll.isDragging && pull > 4))
+            if cycle.scene == nil && (busy || scroll.isDragging && pull > 4) {
+                began = .now
+                pausedElapsed = 0
+                let date = SkyReviewClock.date(.now)
+                let cameo = SkyReviewClock.cameo ?? Self.cameoPolicy.choose(roll: Int.random(in: 0..<1000), at: .now)
+                cycle.begin(sky: LocalDaytime(date: date).sky, cameo: cameo)
+            }
+            if busy && !wasRefreshing { began = .now; pausedElapsed = 0 }
+            if !busy && wasRefreshing { pausedElapsed = max(0, Date.now.timeIntervalSince(began)) }
+            wasRefreshing = busy
+            let shown = configuration.active && cycle.scene != nil && (busy || pull > 0.5)
             let updateArtwork = shown || host?.isHidden == false
             host?.isHidden = !shown
-            if updateArtwork { host?.configuration = contentConfiguration(progress: min(1, pull / 96)) }
+            // Bounds come from the actual public refresh control. Only its child
+            // artwork stretches; content insets/gesture lifetime stay native.
+            host?.frame = next.bounds
+            if updateArtwork { host?.configuration = contentConfiguration(moving: shown && busy && !configuration.reduced) }
+            if !busy && !scroll.isDragging && pull <= 0.5 { cycle.end() }
         }
-        private func contentConfiguration(progress: Double) -> any UIContentConfiguration {
-            let content = artwork(progress: progress)
-            return UIHostingConfiguration { content }.margins(.all, 0)
-        }
-        private func artwork(progress: Double) -> RefreshArtwork {
-            RefreshArtwork(progress: progress,
-                refreshing: configuration.refreshing, active: configuration.active,
-                reduced: configuration.reduced, began: began,
-                locale: configuration.locale, direction: configuration.direction, textSize: configuration.textSize)
+        private func contentConfiguration(moving: Bool) -> any UIContentConfiguration {
+            let scene = cycle.scene
+            let began = self.began
+            let pausedElapsed = configuration.reduced ? 0 : self.pausedElapsed
+            return UIHostingConfiguration {
+                RefreshSkyView(sky: scene?.sky ?? .morning, cameo: scene?.cameo ?? .none, began: began, moving: moving, pausedElapsed: pausedElapsed)
+            }.margins(.all, 0)
         }
         private func removeArtwork() {
             control?.tintColor = originalTint
@@ -149,7 +156,7 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
         }
         func detach() {
             offsetObservation?.invalidate(); offsetObservation = nil
-            removeArtwork(); scroll = nil; wasRefreshing = false
+            removeArtwork(); scroll = nil; wasRefreshing = false; cycle.end()
         }
     }
 }
@@ -158,45 +165,4 @@ private final class RefreshAnchor: UIView {
     weak var coordinator: RefreshArtworkAttachment.Coordinator?
     override func didMoveToWindow() { super.didMoveToWindow(); coordinator?.attach(from: self) }
     override func layoutSubviews() { super.layoutSubviews(); coordinator?.attach(from: self) }
-}
-
-private struct RefreshArtwork: View {
-    let progress: Double
-    let refreshing: Bool
-    let active: Bool
-    let reduced: Bool
-    let began: Date
-    let locale: Locale
-    let direction: LayoutDirection
-    let textSize: DynamicTypeSize
-    private var moves: Bool { refreshing && active && !reduced }
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !moves)) { tick in
-            HStack(spacing: 10) {
-                ZStack {
-                    ForEach(0..<RefreshMotion.tileCount, id: \.self) { index in
-                        let pose = RefreshMotion.tile(index, pull: progress,
-                            elapsed: tick.date.timeIntervalSince(began), refreshing: refreshing, animated: !reduced)
-                        // Reuse only the eight pigments; asset 4 is the center L.
-                        PigmentTile(index: index < 4 ? index : index + 1)
-                            .frame(width: 10, height: 10)
-                            .scaleEffect(pose.scale).rotationEffect(.degrees(pose.rotation))
-                            .offset(x: pose.x, y: pose.y)
-                            .zIndex(pose.depth)
-                    }
-                }.frame(width: 64, height: 36).environment(\.layoutDirection, .leftToRight)
-                    .accessibilityHidden(true)
-                Text(NativeText.text(refreshing ? "refresh.active" : "refresh.pull"))
-                    .font(.caption.weight(.medium)).foregroundStyle(Palette.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }.padding(.horizontal, 16).frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .environment(\.locale, locale)
-        .environment(\.layoutDirection, direction)
-        // A refresh control has a native, bounded height. Reading content still
-        // scales fully; its compact status caps at the largest ordinary size.
-        .environment(\.dynamicTypeSize, min(textSize, .xxxLarge))
-        .accessibilityHidden(true)
-    }
 }

@@ -5,6 +5,7 @@ import XCTest
     private func launch(_ flags: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "--standard-type", "--credential-refresh-slow", "--refresh-motion-review"]
+            + (flags.contains("--sky-cow") ? [] : ["--sky-cow", "none"])
             + (flags.contains("--locale") ? [] : ["--locale", "en"]) + flags
         app.launch()
         XCTAssertTrue(app.buttons["nav-home"].waitForExistence(timeout: 15))
@@ -39,7 +40,7 @@ import XCTest
     }
 
     func testHomeRefreshAwaitsReadAndFinishesWithoutLeavingSpace() {
-        let app = launch()
+        let app = launch(["--sky-phase", "afternoon", "--sky-cow", "two"])
         let title = app.staticTexts["page-title-home"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         let restingTop = restingPosition(title)
@@ -57,7 +58,7 @@ import XCTest
     }
 
     func testShortPullDoesNotRefreshAndFailureKeepsInlineRetry() {
-        let app = launch(["--credential-refresh-failure"])
+        let app = launch(["--credential-refresh-failure", "--sky-phase", "dusk"])
         app.buttons["nav-collection"].tap()
         let idle = app.buttons["passport-refresh"]
         XCTAssertTrue(idle.waitForExistence(timeout: 5))
@@ -110,5 +111,15 @@ import XCTest
         app.segmentedControls["apps-segment"].buttons["Discover"].tap()
         XCTAssertTrue(app.textFields["apps-search"].isHittable)
         XCTAssertFalse(app.alerts.firstMatch.exists)
+    }
+
+    func testLocalTimeGreetingsFollowSkyPhasesAndArabicLocale() {
+        for (phase, greeting) in [("morning", "Good morning"), ("afternoon", "Good afternoon"), ("dusk", "Good evening"), ("night", "Good evening")] {
+            let app = launch(["--sky-phase", phase])
+            XCTAssertEqual(app.staticTexts["home-greeting"].label, greeting)
+        }
+        let app = launch(["--sky-phase", "night", "--locale", "ar", "--large-type", "--preview-dark"])
+        XCTAssertEqual(app.staticTexts["home-greeting"].label, "مساء الخير")
+        capture(app, "Arabic local-time greeting with enlarged text")
     }
 }

@@ -53,6 +53,9 @@ enum Palette {
     static let flairBlue = Color(light: 0x3B82F6, dark: 0x93C5FD)
     static let flairTeal = Color(light: 0x14B8A6, dark: 0x5EEAD4)
     static let flairYellow = Color(light: 0xFACC15, dark: 0xFDE047)
+    // Illustration pigments stay constant across appearance; local time owns the sky.
+    static let skyMorning = Color(hex: 0xB1EDF0)
+    static let skyCloud = Color(hex: 0xFFFCED)
 
     static func familyTint(_ color: FamilyColor) -> Color {
         switch color { case .amber: familyCard; case .mint: studiesCard; case .blue: blueCard; case .lilac: lilacCard; case .pink: pinkCard }
