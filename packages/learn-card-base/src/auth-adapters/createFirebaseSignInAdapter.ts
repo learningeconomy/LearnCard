@@ -1,4 +1,4 @@
-import type { Auth } from 'firebase/auth';
+import type { Auth, User } from 'firebase/auth';
 import type { AuthUser, SignInAdapter } from '@learncard/types';
 import { getLogger } from '../logging/logger';
 import { createFirebasePhoneAuth } from './createFirebasePhoneAuth';
@@ -234,6 +234,18 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                     const currentUser = config.getAuth().currentUser;
                     if (!currentUser) throw new Error('No authenticated user after sign-in');
                     user = currentUser;
+                    // Apple's name arrives separately from the ID token on the first sign-in.
+                    // With skipNativeAuth, the plugin may return only user.displayName.
+                    const appleDisplayName = result.user?.displayName?.trim();
+                    if (appleDisplayName && !user.displayName) {
+                        try {
+                            const { updateProfile } = await loadFirebaseAuth();
+                            await updateProfile(user as User, { displayName: appleDisplayName });
+                        } catch (error) {
+                            // Profile enrichment must not turn a successful sign-in into a failure.
+                            log.warn('Could not save Apple display name', error);
+                        }
+                    }
                 } else {
                     const result = await signInWithPopup(auth(), provider);
                     if (!result) throw new Error('Missing popup result');

@@ -25,6 +25,7 @@ const sdk = vi.hoisted(() => ({
     ensureRecaptcha: vi.fn(),
     destroyRecaptcha: vi.fn(),
     getPlatform: vi.fn(),
+    updateProfile: vi.fn(),
 }));
 vi.mock('firebase/auth', () => ({
     ...sdk,
@@ -51,7 +52,7 @@ const user = {
     uid: 'user-1',
     email: 'test@example.org',
     phoneNumber: null,
-    displayName: null,
+    displayName: null as string | null,
     photoURL: null,
     metadata: { creationTime: '2024-01-01' },
     getIdToken: vi.fn(),
@@ -85,6 +86,10 @@ const create = (
 
 beforeEach(() => {
     vi.clearAllMocks();
+    user.displayName = null;
+    sdk.updateProfile.mockImplementation(async (target, profile) => {
+        Object.assign(target, profile);
+    });
     auth = { currentUser: user, signOut: vi.fn() };
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
@@ -403,6 +408,65 @@ describe('Firebase sign-in adapter', () => {
         await expect(create().checkRedirectResult?.()).resolves.toMatchObject({ id: user.uid });
         sdk.credentialFromResult.mockReturnValueOnce(null);
         await expect(create().checkRedirectResult?.()).resolves.toBeNull();
+    });
+
+    it('preserves the name-only native Apple result in the Firebase profile', async () => {
+        // skipNativeAuth can return just displayName without a native Firebase user.
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { displayName: 'Apple User' } as typeof nativeUser,
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        const adapter = create({ isNativePlatform: () => true });
+
+        await expect(adapter.signInWithApple()).resolves.toMatchObject({
+            displayName: 'Apple User',
+        });
+        expect(sdk.updateProfile).toHaveBeenCalledWith(user, { displayName: 'Apple User' });
+        expect(adapter.getCurrentUser()?.displayName).toBe('Apple User');
+    });
+
+    it('keeps the saved name when Apple does not return it again', async () => {
+        user.displayName = 'Saved Name';
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: null,
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+
+        await expect(
+            create({ isNativePlatform: () => true }).signInWithApple()
+        ).resolves.toMatchObject({
+            displayName: 'Saved Name',
+        });
+        expect(sdk.updateProfile).not.toHaveBeenCalled();
+    });
+
+    it('does not overwrite an existing name with Apple profile data', async () => {
+        user.displayName = 'Chosen Name';
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple Name' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+
+        await expect(
+            create({ isNativePlatform: () => true }).signInWithApple()
+        ).resolves.toMatchObject({
+            displayName: 'Chosen Name',
+        });
+        expect(sdk.updateProfile).not.toHaveBeenCalled();
+    });
+
+    it('still signs in if saving the Apple name fails', async () => {
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple User' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        sdk.updateProfile.mockRejectedValueOnce(new Error('Network unavailable'));
+
+        await expect(
+            create({ isNativePlatform: () => true }).signInWithApple()
+        ).resolves.toMatchObject({
+            id: user.uid,
+        });
     });
 
     it('exchanges custom/OIDC tokens and deletes the current SDK user', async () => {
