@@ -328,13 +328,18 @@ export const getBoostByUriWithDefaultClaimPermissions = async (
 const MATCH_BOOST_SENDS = `MATCH (source:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)`;
 
 /**
- * Same rows as MATCH_BOOST_SENDS, but the boost's credentials are collected before the sends are
- * matched, so the planner has to read the sends from those credentials.
+ * Same rows as MATCH_BOOST_SENDS, but the boost's credentials are collected first and the sends
+ * are then matched from each credential.
  *
- * Without the barrier, a range or IN predicate on `sent.date` / `sent.to` lets the planner start
- * from credential_sent_date_idx or credential_sent_to_idx across every boost and filter down to
- * this one afterwards. For a small boost that reads far more sends than the boost has. Reading
- * from the boost keeps the cost tied to that boost's own sends. `carry` lists variables from
+ * The aim is to keep the cost tied to this boost's own sends. With a range or IN predicate on
+ * `sent.date` / `sent.to`, the planner can otherwise start from credential_sent_date_idx or
+ * credential_sent_to_idx across every boost and filter down to this one afterwards, which for a
+ * small boost reads far more sends than the boost has.
+ *
+ * This nudges the planner toward expanding from each credential; it doesn't guarantee that plan.
+ * With unsampled or stale index statistics, Neo4j has still been seen to run a global
+ * credential_sent_date_idx scan once per credential. If a change here matters, check the real plan
+ * with PROFILE, and refresh index statistics if it shows that scan. `carry` lists variables from
  * earlier clauses that later clauses still need.
  */
 const matchBoostSendsFromBoost = (carry: string[] = []): string =>
@@ -421,7 +426,7 @@ export const getBoostRecipients = async (
     )
         .raw(
             // An equality on sent.to or the sender's profileId is selective enough to start from;
-            // otherwise read the sends from the boost (see matchBoostSendsFromBoost)
+            // otherwise try to read the sends from the boost (see matchBoostSendsFromBoost)
             sentToPrefilter || from ? MATCH_BOOST_SENDS : matchBoostSendsFromBoost()
         )
         .raw(sendFilters.length > 0 ? `WHERE ${sendFilters.join(' AND ')}` : '')
