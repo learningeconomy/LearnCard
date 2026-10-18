@@ -13,23 +13,22 @@ struct CredentialVerificationView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text(NativeText.text("credential.details.verificationScope"))
                 Label(NativeText.text("credential.details.issuerUnchecked"), systemImage: "person.crop.circle.badge.questionmark")
-            }.font(.footnote).foregroundStyle(Palette.secondary).padding(.top, 12)
+            }.font(.footnote).foregroundStyle(Palette.secondary)
+                .padding(.leading, 30).padding(.bottom, 12)
                 .fixedSize(horizontal: false, vertical: true)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Image(systemName: checked ? "checkmark.seal.fill" : credential.isSample ? "sparkles" : "questionmark.seal")
-                    .font(.title2).foregroundStyle(checked ? Palette.green : Palette.secondary)
-                    .frame(width: 44, height: 44).background(checked ? Palette.mint : Palette.paper, in: Circle())
+                    .font(.subheadline).foregroundStyle(checked ? Palette.green : Palette.secondary)
+                    .frame(width: 22)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(NativeText.text("credential.details.signature.\(state)"))
-                        .font(.subheadline.weight(.semibold)).foregroundStyle(Palette.ink)
-                        .accessibilityIdentifier("credential-verification-title")
-                    Text(NativeText.text(checked ? "credential.details.signatureScope" : "credential.details.verificationHint"))
-                        .font(.caption).foregroundStyle(Palette.secondary)
-                }.fixedSize(horizontal: false, vertical: true)
-            }.padding(.vertical, 2)
-        }.tint(Palette.secondary).padding(16).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+                Text(NativeText.text("credential.details.signature.\(state)"))
+                    .font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("credential-verification-title")
+            }.frame(minHeight: 44)
+        }.tint(Palette.secondary)
+            .accessibilityHint(NativeText.text("credential.details.verificationHint"))
             .accessibilityIdentifier("credential-verification")
     }
 }

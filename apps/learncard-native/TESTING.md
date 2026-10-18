@@ -1,5 +1,11 @@
 # Native regression checks
 
+## Compact credential status hierarchy — October 18, 2026
+
+About now appears immediately below the rendered credential. Credential information and optional content come before a single compact signature/lifecycle panel. Each status has a collapsed 44-point disclosure row; explanations, scope, source, localized check time and Check again appear on expansion. Revoked/suspended labels retain their red emphasis and stale results retain a visible notice while collapsed. Verification data and commands are unchanged.
+
+Normal Debug build and Native Lab installation pass: **48/48 files match**, the private configuration is preserved byte-for-byte and build remains **3** (`credential-compact-status-debug-final.log`, `credential-compact-status-install-proof.json`). `git diff --check` passes. This appearance-only change does not rerun the runtime, Swift-core or simulator suites; the earlier 215/210 results below belong to the unchanged verification logic. Computer control still reports **Mac locked**, so the updated hierarchy/disclosure scroll and retry visual check remains pending unlock. No real credential or account data was changed for testing.
+
 ## Credential revocation checks — October 18, 2026
 
 The final runtime suite passes **215 cases** (`credential-status-runtime-final.log`). Seven new lifecycle cases cover authenticated network active/revoked/suspended records, omission/outage/timeout, missing information, exact structured-result binding, partial/unsupported results, legacy descriptors and original-data preservation. The real bundled SDK signs and checks both set/unset revocation and suspension lists; altering a signed list in either direction remains unavailable. The new registered command also refuses signed-out access without transport. Native source contracts retain **14 owning-package diagnostics**; scoped lint has no errors and the two existing runtime shadow warnings.

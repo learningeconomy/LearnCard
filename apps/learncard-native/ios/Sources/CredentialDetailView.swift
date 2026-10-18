@@ -37,8 +37,6 @@ struct CredentialDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
                 CredentialDetailCard(credential: credential, isVisible: cardVisible)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
-                CredentialVerificationView(credential: credential)
-                if !credential.isSample && !isCreation { CredentialLifecycleView(status: status) }
                 if !credential.summary.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(NativeText.text("credential.details.about")).font(.headline).foregroundStyle(Palette.ink)
@@ -64,6 +62,14 @@ struct CredentialDetailView: View {
                     }
                 }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
                 if let details = credential.details { CredentialOptionalDetails(details: details) }
+                VStack(spacing: 0) {
+                    CredentialVerificationView(credential: credential)
+                    if !credential.isSample && !isCreation {
+                        Divider()
+                        CredentialLifecycleView(status: status)
+                    }
+                }.padding(.horizontal, 16).padding(.vertical, 4)
+                    .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
                 if credential.sampleBundleID != nil {
                     Text(NativeText.text("build.sampleNotice")).font(.subheadline).foregroundStyle(Palette.secondary)
                 }

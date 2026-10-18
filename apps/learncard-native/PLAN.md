@@ -403,3 +403,7 @@ The header keeps its mark and text slot fixed, crossfading LearnCard to the sect
 ## Credential revocation display — October 18, 2026
 
 The credential detail now reads the authenticated holder lifecycle status on entry, falls back to original signed status-list verification, and separates revoked/suspended/unknown results from the proof-only signature badge. Results show source/check time and explicit retry; a failed retry retains the last confirmed result with a stale notice. No Passport-wide extra reads, credential removal, issuer mutation or acceptance-policy change is introduced. See [detail contract](CREDENTIAL_DETAILS.md#verification-scope-and-revocation). Issuer trust/registry and the full endorsements feature remain separate follow-ups.
+
+## Credential content before status — October 18, 2026
+
+User feedback makes About the first section after the hero. Signature and lifecycle checks should be secondary, compact expandable rows after credential information/optional content, rather than prominent status cards above the description. Keep revocation/suspension warnings and stale-result notices visible when collapsed; source, date, explanation and retry can expand. This presentation refinement is implemented and installed; physical visual review awaits Mac unlock.

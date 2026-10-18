@@ -6,6 +6,7 @@ import LearnCardNativeSDK
 struct CredentialLifecycleView: View {
     @Environment(\.locale) private var locale
     let status: CredentialStatusStore
+    @State private var expanded = false
     private var state: CredentialStatusCheck.State {
         guard let result = status.result else { return .unavailable }
         if [.active, .revoked, .suspended].contains(result.state), !result.confirmed { return .unavailable }
@@ -31,41 +32,46 @@ struct CredentialLifecycleView: View {
         return state.rawValue
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
+        DisclosureGroup(isExpanded: $expanded) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(NativeText.text("credential.lifecycle.hint.\(status.loading && status.result == nil ? "checking" : state.rawValue)"))
+                    .font(.footnote).foregroundStyle(Palette.secondary)
+                if let result = status.result, result.confirmed, let date = result.checkedAt {
+                    Text(NativeText.text("credential.lifecycle.source.\(result.source!.rawValue)"))
+                        .font(.caption).foregroundStyle(Palette.secondary)
+                    Text(NativeText.format("credential.lifecycle.checked", date.formatted(.dateTime.month(.abbreviated).day().hour().minute().locale(locale))))
+                        .font(.caption).foregroundStyle(Palette.secondary).accessibilityIdentifier("credential-lifecycle-date")
+                }
+                Button { Task { await status.check() } } label: {
+                    HStack(spacing: 8) {
+                        if status.loading { ProgressView().tint(Palette.green) }
+                        else { Image(systemName: "arrow.clockwise") }
+                        Text(NativeText.text(status.loading ? "credential.lifecycle.checking" : "credential.lifecycle.recheck"))
+                    }.font(.subheadline.weight(.semibold)).foregroundStyle(Palette.green)
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }.buttonStyle(CredentialPressStyle()).disabled(status.loading)
+                    .accessibilityIdentifier("credential-lifecycle-recheck")
+            }.padding(.leading, 30).padding(.bottom, 8)
+                .fixedSize(horizontal: false, vertical: true)
+        } label: {
+            HStack(spacing: 8) {
                 Group {
-                    if status.loading && status.result == nil { ProgressView().tint(Palette.secondary) }
-                    else { Image(systemName: symbol).font(.title2).foregroundStyle(color) }
-                }.frame(width: 44, height: 44).background(color.opacity(0.08), in: Circle()).accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 5) {
+                    if status.loading { ProgressView().controlSize(.small).tint(color) }
+                    else { Image(systemName: symbol).font(.subheadline).foregroundStyle(color) }
+                }.frame(width: 22).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
                     Text(NativeText.text("credential.lifecycle.\(titleKey)"))
-                        .font(.subheadline.weight(.semibold)).foregroundStyle(color)
+                        .font(.subheadline.weight(caution ? .semibold : .medium))
+                        .foregroundStyle(caution ? color : Palette.secondary)
                         .accessibilityIdentifier("credential-lifecycle-title")
-                    Text(NativeText.text("credential.lifecycle.hint.\(status.loading && status.result == nil ? "checking" : state.rawValue)"))
-                        .font(.footnote).foregroundStyle(Palette.secondary)
+                    if status.refreshFailed && status.result?.confirmed == true {
+                        Text(NativeText.text("credential.lifecycle.stale"))
+                            .font(.caption).foregroundStyle(Palette.secondary)
+                            .accessibilityIdentifier("credential-lifecycle-stale")
+                    }
                 }.fixedSize(horizontal: false, vertical: true)
-            }
-            if let result = status.result, result.confirmed, let date = result.checkedAt {
-                Text(NativeText.text("credential.lifecycle.source.\(result.source!.rawValue)"))
-                    .font(.caption).foregroundStyle(Palette.secondary)
-                Text(NativeText.format("credential.lifecycle.checked", date.formatted(.dateTime.month(.abbreviated).day().hour().minute().locale(locale))))
-                    .font(.caption).foregroundStyle(Palette.secondary).accessibilityIdentifier("credential-lifecycle-date")
-            }
-            if status.refreshFailed && status.result?.confirmed == true {
-                Text(NativeText.text("credential.lifecycle.stale"))
-                    .font(.footnote).foregroundStyle(Palette.secondary).accessibilityIdentifier("credential-lifecycle-stale")
-            }
-            Button { Task { await status.check() } } label: {
-                HStack(spacing: 8) {
-                    if status.loading { ProgressView().tint(Palette.green) }
-                    else { Image(systemName: "arrow.clockwise") }
-                    Text(NativeText.text(status.loading ? "credential.lifecycle.checking" : "credential.lifecycle.recheck"))
-                }.font(.subheadline.weight(.semibold)).foregroundStyle(Palette.green)
-                    .frame(minHeight: 44).contentShape(Rectangle())
-            }.buttonStyle(CredentialPressStyle()).disabled(status.loading)
-                .accessibilityIdentifier("credential-lifecycle-recheck")
-        }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
+            }.frame(minHeight: 44).padding(.vertical, status.refreshFailed ? 4 : 0)
+        }.tint(Palette.secondary)
             .accessibilityElement(children: .contain).accessibilityIdentifier("credential-lifecycle")
     }
 }
