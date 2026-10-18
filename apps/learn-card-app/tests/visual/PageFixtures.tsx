@@ -5,6 +5,7 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import BoostPreview from '../../src/components/boost/boostCMS/BoostPreview/BoostPreview';
 import BoostDetailsSideMenu from '../../src/components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
 import LaunchPad from '../../src/pages/launchPad/LaunchPad';
+import MyAppsLanding from '../../src/pages/myApps/MyAppsLanding';
 import AppStoreDetailModal from '../../src/pages/launchPad/AppStoreDetailModal';
 import { personaCredentials } from '../../src/pages/dashboard/dashboard.personas';
 import { IssueVisualFixture } from './IssueVisualFixture';
@@ -15,6 +16,7 @@ export const additionalStates = [
     'issue',
     'issue-json',
     'apps',
+    'my-apps',
     'app-details',
 ] as const;
 
@@ -59,7 +61,7 @@ const listings: AppStoreListing[] = [
 ];
 
 /** Populate the real app-store hooks without connecting a wallet or changing account data. */
-export const seedPageQueries = (client: QueryClient): void => {
+export const seedPageQueries = (client: QueryClient, state?: string): void => {
     const installed = { ...listings[0], installed_at: '2026-10-01T09:00:00Z' };
     client.setQueryData(['appStore', 'browse', undefined, undefined, 50, undefined], {
         records: listings,
@@ -68,7 +70,10 @@ export const seedPageQueries = (client: QueryClient): void => {
     client.setQueryData(['appStore', 'featuredCarousel', null], [listings[1]]);
     client.setQueryData(['appStore', 'curatedList'], [listings[2]]);
     client.setQueryData(['appStore', 'installed', 50, undefined], {
-        records: [installed],
+        records:
+            state === 'my-apps'
+                ? listings.map(listing => ({ ...listing, installed_at: installed.installed_at }))
+                : [installed],
         hasMore: false,
     });
     for (const listing of listings) {
@@ -88,6 +93,7 @@ export const seedPageQueries = (client: QueryClient): void => {
 export const PageFixture: React.FC<{ state: string }> = ({ state }) => {
     if (state.startsWith('issue')) return <IssueVisualFixture />;
     if (state === 'apps') return <LaunchPad />;
+    if (state === 'my-apps') return <MyAppsLanding />;
     if (state === 'app-details') {
         return <AppStoreDetailModal listing={listings[0]} isInstalled isPreview />;
     }

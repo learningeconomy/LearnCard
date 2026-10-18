@@ -279,6 +279,57 @@
             "beforeSha256": "593d54fc1a4e5997476280cb9d889bc80d853e3db724796ed653ec821502b515",
             "afterSha256": "593d54fc1a4e5997476280cb9d889bc80d853e3db724796ed653ec821502b515",
             "capturedAt": "2026-10-16T18:49:39.570Z"
+        },
+        {
+            "project": "chromium-desktop",
+            "state": "my-apps",
+            "before": "../baselines/chromium-desktop/my-apps-darwin.png",
+            "after": "chromium-desktop/my-apps-tailwind4.png",
+            "beforeSha256": "fb600cf06ef0cff8194dbcb0cc0b090e1624d40b94c23279ae5c1d554e2f4793",
+            "afterSha256": "fb600cf06ef0cff8194dbcb0cc0b090e1624d40b94c23279ae5c1d554e2f4793",
+            "baselineCapturedAt": "2026-10-18T18:33:07.591064+00:00",
+            "capturedAt": "2026-10-18T18:35:33.598Z",
+            "fixtureProvenance": "myAppsCapture"
+        },
+        {
+            "project": "chromium-mobile",
+            "state": "my-apps",
+            "before": "../baselines/chromium-mobile/my-apps-darwin.png",
+            "after": "chromium-mobile/my-apps-tailwind4.png",
+            "beforeSha256": "9c1a761a8e15e08409c01ad6d9079a86261770ba28f20678d423ad1e20e6b3fa",
+            "afterSha256": "16e9b726ba235313c020f8b747fc76c3c53f49c70f509a369fa4000af9063ec4",
+            "baselineCapturedAt": "2026-10-18T18:33:11.812093+00:00",
+            "capturedAt": "2026-10-18T18:36:36.717Z",
+            "fixtureProvenance": "myAppsCapture"
+        },
+        {
+            "project": "webkit-mobile",
+            "state": "my-apps",
+            "before": "../baselines/webkit-mobile/my-apps-darwin.png",
+            "after": "webkit-mobile/my-apps-tailwind4.png",
+            "beforeSha256": "47538647e974e8afcbb665080e8f0caff669ef7cdb2f1634a6f8a0c7f30f815e",
+            "afterSha256": "f3f0bd19c23547794767c3f0df0726e54b1d2fedbf10f9a4924c3625138265d7",
+            "baselineCapturedAt": "2026-10-18T18:33:17.014936+00:00",
+            "capturedAt": "2026-10-18T18:37:33.007Z",
+            "fixtureProvenance": "myAppsCapture"
         }
-    ]
+    ],
+    "myAppsCapture": {
+        "description": "Current /launchpad MyAppsLanding page content, eight first-party shortcuts with Journeys rollout off and three fixed installed apps; signed-in sidebar/profile controls excluded.",
+        "baselineApplicationCommit": "1955fd40e5a1016c3fb494cf140099a7de6b9ed5",
+        "baselineTailwindVersion": "3.4.19",
+        "tailwindVersion": "4.3.3",
+        "baselineFixtureSha256": {
+            "main.tsx": "621f3034dd930baf68db0b4a99db1c3d4ded2810d64dcd76353ebcece118c1ca",
+            "PageFixtures.tsx": "b69d578c6143f61494cc2b4e826671ddda482ec94259e32af0d5fc3e50967270",
+            "IssueVisualFixture.tsx": "836419fcfc236bc41e08a52dbd50537f715482c135e483fd25eee7472d552e3b",
+            "tailwind.spec.ts": "79582a34cbdac83f2b7e6d377593173f5113ad321242c648aec9170eddb49510"
+        },
+        "upgradedFixtureSha256": {
+            "main.tsx": "ef8f20685e1562df0d0eb5ac2905f83b13a1cc0579c7d1dbb751afa31224cd3b",
+            "PageFixtures.tsx": "b69d578c6143f61494cc2b4e826671ddda482ec94259e32af0d5fc3e50967270",
+            "IssueVisualFixture.tsx": "836419fcfc236bc41e08a52dbd50537f715482c135e483fd25eee7472d552e3b",
+            "tailwind.spec.ts": "79582a34cbdac83f2b7e6d377593173f5113ad321242c648aec9170eddb49510"
+        }
+    }
 }

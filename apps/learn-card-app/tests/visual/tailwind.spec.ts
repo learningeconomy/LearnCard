@@ -57,6 +57,7 @@ for (const state of [
     'issue',
     'issue-json',
     'apps',
+    'my-apps',
     'app-details',
 ]) {
     test(`${state} preserves the Tailwind 3 layout`, async ({ page }, testInfo) => {
@@ -74,6 +75,7 @@ for (const state of [
                 'issue',
                 'issue-json',
                 'apps',
+                'my-apps',
                 'app-details',
             ].includes(state)
         ) {
@@ -103,10 +105,22 @@ for (const state of [
             }
             await expect(page.getByTestId('issue-submit')).toBeEnabled();
         }
-        if (state === 'apps' || state === 'app-details') {
+        if (state === 'apps' || state === 'app-details' || state === 'my-apps') {
             await expect(
                 fixture.getByText('Community Academy', { exact: true }).first()
             ).toBeVisible();
+        }
+        if (state === 'my-apps') {
+            await expect(
+                fixture.getByRole('heading', { name: 'My Apps', exact: true })
+            ).toBeVisible();
+            await expect(fixture.getByRole('heading', { name: 'LearnCard Apps' })).toBeVisible();
+            await expect(fixture.getByRole('heading', { name: 'More Apps' })).toBeVisible();
+            await expect(fixture.getByTestId('app-grid').first().getByRole('button')).toHaveCount(
+                8
+            );
+            await expect(fixture.getByTestId('app-grid').last().getByRole('button')).toHaveCount(3);
+            await expect(fixture.getByRole('button', { name: 'Browse More' })).toBeVisible();
         }
         if (state.startsWith('credential')) {
             await expect(
@@ -118,7 +132,7 @@ for (const state of [
         await page.addStyleTag({
             content: `${fonts}${expanded ? cardFonts : ''}\nhtml, body { position: static !important; overflow: auto !important; height: auto !important; scrollbar-width: none; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }`,
         });
-        if (['issue', 'issue-json', 'apps', 'app-details'].includes(state)) {
+        if (['issue', 'issue-json', 'apps', 'my-apps', 'app-details'].includes(state)) {
             // Expand Ionic's inner scroller for a complete page capture, including
             // the form fields below the fold. Keep the production layout/styles.
             await page.addStyleTag({

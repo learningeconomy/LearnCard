@@ -48,7 +48,7 @@ const client = new QueryClient({
 Object.entries(personaCredentials).forEach(([uri, credential]) => {
     client.setQueryData(['useGetResolvedCredential', uri], credential);
 });
-seedPageQueries(client);
+seedPageQueries(client, params.get('state') ?? undefined);
 
 const states = {
     active: 'Active learner',
@@ -100,7 +100,7 @@ createRoot(document.getElementById('root')!).render(
                 <QueryClientProvider client={client}>
                     <MemoryRouter
                         initialEntries={[
-                            state === 'apps'
+                            state === 'apps' || state === 'my-apps'
                                 ? '/launchpad'
                                 : state.startsWith('issue')
                                   ? '/issue'

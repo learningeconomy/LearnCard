@@ -25,7 +25,7 @@ The app's layouts and styles change frequently; those intentional changes would
 otherwise fail the snapshots and require routine reference updates. That review
 and maintenance cost limits the value of running this suite on every PR.
 
-The 30 comparisons cover only the fixtures listed below. Their JSON checks sample
+The 33 comparisons cover only the fixtures listed below. Their JSON checks sample
 computed styles; they do not compare every CSS property or every component. PNG
 comparisons are an optional local check, while the manual workflow uploads images
 for inspection. A passing run does not prove that every codemod change is correct.
@@ -54,16 +54,16 @@ is skipped here because the command has already compiled the catalog.
 
 Chromium desktop, Chromium mobile, and WebKit mobile cover populated, pending,
 empty, shared-card/form, credential preview/details, credential issuance form/JSON,
-and populated Apps browse/listing-detail states (30 comparisons). Every run compares computed CSS against the
-Tailwind 3 JSON references and attaches full-page screenshots to the HTML report.
+the current My Apps landing, and populated Apps browse/listing-detail states
+(33 comparisons). Every run compares computed CSS against the Tailwind 3 JSON references and attaches full-page screenshots to the HTML report.
 Locally bundled fonts, fixed dates, and deterministic external images keep the
 captures independent of Google Fonts and image CDNs.
 Expanded cases also bundle Jacques Francois, Sacramento, Mouse Memoirs, and
 Montserrat for the shared credential designs, and assert computed font families.
 
 The additional pages use the production `BoostPreview`, `BoostDetailsSideMenu`,
-`IssueCredentialView`, `LaunchPad`, and `AppStoreDetailModal` components. Issuance
-uses the same template/state composition as its Storybook story, with a fixed
+`IssueCredentialView`, `MyAppsLanding`, `LaunchPad`, and `AppStoreDetailModal`
+components. Issuance uses the same template/state composition as its Storybook story, with a fixed
 validity result and no signing action. App-store queries are primed with local
 listings. This exercises real UI rendering and the JSON toggle without changing
 an account or depending on a live backend.
@@ -74,6 +74,14 @@ has no category tabs. The browse UI is no longer used in LearnCard, so its
 comparison is omitted from the review gallery and PR screenshots. Its existing
 fixtures and references remain as migration evidence. Removing the obsolete browse
 components and checking their remaining routes/imports is a separate cleanup PR.
+
+The `my-apps` fixture renders the current `/launchpad` page (`MyAppsLanding`),
+with its eight LearnCard shortcut tiles and three fixed installed-app listings.
+The Journeys rollout flag remains off, matching the eight-tile layout. It captures
+page content, including the mobile header, without the signed-in app sidebar or
+profile/alerts controls. Those shell elements still need signed-in manual QA.
+Its three additional Tailwind 3 references were captured from the same original
+`1955fd40e` application source and styles, using the new fixture and pinned fonts.
 
 The first twelve references were committed before migration in `1955fd40e`.
 The eighteen expanded references were captured in a temporary checkout of that
