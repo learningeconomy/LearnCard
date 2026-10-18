@@ -8,7 +8,7 @@ The first two atmospheric imagegen studies were rejected as too detailed, mismat
 
 The user prefers the flat style and suggested replacing arbitrary floating blocks with recognizable scene visitors. Brand colors are welcome where natural, not mandatory. [Earlier flat study](pull-refresh-sky-graphic-concept-2026-10-18.png).
 
-The first native pass left the clouds moving too slowly and the celestial objects fixed. User feedback refined the production treatment into a shared sine wave through clouds, sun/moon, stars and visitors, with a smaller dusk-horizon ripple. The [current native motion](../SKY_REFRESH.md) supersedes the initial slow drift.
+The first native pass left the clouds moving too slowly and the celestial objects fixed. User feedback refined the production treatment into a shared sine wave through clouds, sun/moon, stars and visitors, with a smaller dusk-horizon ripple. The [current native motion](../SKY_REFRESH.md) supersedes the initial slow drift. Later feedback makes stars an explicit exception: fixed anchors, brightness twinkle and straight shooting stars. Visitors now travel twice as fast; added layered clouds/distant birds and small dusk fireworks fill the skies without changing their flat style.
 
 ## Selected visual direction
 

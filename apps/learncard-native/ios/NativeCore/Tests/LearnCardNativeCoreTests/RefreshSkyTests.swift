@@ -101,4 +101,42 @@ final class RefreshSkyTests: XCTestCase {
         }
         XCTAssertTrue(SkyMotion.wave(elapsed: 1, position: .nan, animated: true).isFinite)
     }
+    func testBothVisitorsMoveForwardAndOnlyWrapOutsideTheViewport() {
+        for second in [false, true] {
+            let first = SkyMotion.pose(elapsed: 0, animated: true, secondCow: second)
+            let later = SkyMotion.pose(elapsed: 4, animated: true, secondCow: second)
+            XCTAssertGreaterThan(later.x - first.x, 0.18)
+            var previous = first.x, wraps = 0
+            for tick in 1...780 {
+                let x = SkyMotion.pose(elapsed: Double(tick) / 30, animated: true, secondCow: second).x
+                if x < previous {
+                    XCTAssertGreaterThan(previous, 1.1); XCTAssertLessThan(x, -0.1)
+                    wraps += 1
+                }
+                previous = x
+            }
+            XCTAssertEqual(wraps, 1)
+        }
+    }
+    func testTwinkleAndStraightStreaksHaveQuietGapsAndStillPoses() {
+        XCTAssertNotEqual(SkyMotion.twinkle(elapsed: 0, index: 0, animated: true), SkyMotion.twinkle(elapsed: 1, index: 0, animated: true))
+        for t in [0.0, 0.3, 2, 45, -.infinity, .infinity, .nan] {
+            XCTAssertEqual(SkyMotion.twinkle(elapsed: t, index: 2, animated: false), SkyMotion.twinkle(elapsed: 0, index: 2, animated: false))
+            XCTAssertTrue((0.25...1).contains(SkyMotion.twinkle(elapsed: t, index: 2, animated: true)))
+            XCTAssertNil(SkyMotion.shootingStar(elapsed: t, animated: false))
+            XCTAssertNil(SkyMotion.fireworkProgress(elapsed: t, animated: false))
+        }
+        XCTAssertNil(SkyMotion.shootingStar(elapsed: 0, animated: true))
+        XCTAssertNil(SkyMotion.shootingStar(elapsed: 3, animated: true))
+        let early = SkyMotion.shootingStar(elapsed: 1.4, animated: true)!
+        let middle = SkyMotion.shootingStar(elapsed: 1.7, animated: true)!
+        let late = SkyMotion.shootingStar(elapsed: 2, animated: true)!
+        XCTAssertGreaterThan(middle.x, early.x); XCTAssertGreaterThan(late.x, middle.x)
+        XCTAssertEqual(middle.x - early.x, late.x - middle.x, accuracy: 0.000001)
+        XCTAssertEqual(middle.y - early.y, late.y - middle.y, accuracy: 0.000001)
+        XCTAssertNotNil(SkyMotion.shootingStar(elapsed: 6.6, animated: true, second: true))
+        XCTAssertNil(SkyMotion.fireworkProgress(elapsed: 0, animated: true))
+        XCTAssertNotNil(SkyMotion.fireworkProgress(elapsed: 1, animated: true))
+        XCTAssertNil(SkyMotion.fireworkProgress(elapsed: 3, animated: true))
+    }
 }

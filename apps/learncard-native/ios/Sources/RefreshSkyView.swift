@@ -39,19 +39,27 @@ struct RefreshSkyView: View {
         }
         context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(fill))
         if sky == .night {
-            let stars: [(CGFloat, CGFloat)] = [(0.07, 0.26), (0.22, 0.72), (0.41, 0.2), (0.53, 0.79), (0.71, 0.58), (0.95, 0.3)]
-            for (i, star) in stars.enumerated() {
-                var c = context
-                c.opacity = 0.72 + 0.28 * sin(elapsed / 2 + Double(i) * 1.8)
-                let point = skyPoint(x: star.0, y: star.1, size: size, elapsed: elapsed, strength: 0.55)
-                if i.isMultiple(of: 3) { sparkle(context: &c, at: point, radius: min(4, h * 0.06)) }
-                else { c.fill(Path(ellipseIn: CGRect(x: point.x, y: point.y, width: 2.4, height: 2.4)), with: .color(.white)) }
-            }
+            SkyAtmosphere.night(context: &context, size: size, elapsed: elapsed)
             let moon = skyPoint(x: 0.84, y: 0.35, size: size, elapsed: elapsed, strength: 0.75)
             let r = min(14, h * 0.19), x = moon.x, y = moon.y
             context.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
             context.fill(Path(ellipseIn: CGRect(x: x - r * 0.28, y: y - r * 1.24, width: r * 2, height: r * 2)), with: .color(fill))
             return
+        }
+        // Smaller translucent clouds sit behind the main visitor/cloud layer.
+        let far = skyPoint(x: sky == .afternoon ? 0.32 : 0.6, y: sky == .afternoon ? 0.4 : 0.2,
+                           size: size, elapsed: elapsed, strength: 0.45)
+        let low = skyPoint(x: 0.36, y: 0.83, size: size, elapsed: elapsed, strength: 0.6)
+        var distant = context; distant.opacity = 0.55
+        if sky == .afternoon {
+            let sun = skyPoint(x: 0.3, y: 0.26, size: size, elapsed: elapsed, strength: 0.6)
+            let r = h * 0.12
+            context.fill(Path(ellipseIn: CGRect(x: sun.x - r, y: sun.y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
+        }
+        cloud(context: &distant, x: far.x, y: far.y, unit: h * 0.3)
+        if sky != .dusk {
+            cloud(context: &distant, x: low.x, y: low.y, unit: h * 0.26)
+            SkyAtmosphere.distantBirds(context: &context, size: size, elapsed: elapsed)
         }
         if sky == .morning {
             let r = min(11, h * 0.15), point = skyPoint(x: 0.4, y: 0.4, size: size, elapsed: elapsed, strength: 0.75)
@@ -76,8 +84,7 @@ struct RefreshSkyView: View {
             horizon.addCurve(to: edge(1, 0.78), control1: edge(0.72, 0.75), control2: edge(0.84, 0.68))
             horizon.addLine(to: CGPoint(x: w, y: h)); horizon.addLine(to: CGPoint(x: 0, y: h)); horizon.closeSubpath()
             context.fill(horizon, with: .color(Palette.lilacCard))
-            sparkle(context: &context, at: skyPoint(x: 0.29, y: 0.26, size: size, elapsed: elapsed, strength: 0.55), radius: min(4, h * 0.07))
-            sparkle(context: &context, at: skyPoint(x: 0.9, y: 0.44, size: size, elapsed: elapsed, strength: 0.55), radius: min(3, h * 0.05))
+            SkyAtmosphere.dusk(context: &context, size: size, elapsed: elapsed)
         }
         let left = skyPoint(x: 0.1, y: 0.73, size: size, elapsed: elapsed)
         let right = skyPoint(x: 0.84, y: sky == .dusk ? 0.27 : 0.75, size: size, elapsed: elapsed, strength: 0.85)
@@ -96,15 +103,6 @@ struct RefreshSkyView: View {
         shape.addEllipse(in: CGRect(x: x - unit * 0.38, y: y - unit * 0.52, width: unit * 0.78, height: unit * 0.78))
         shape.addEllipse(in: CGRect(x: x + unit * 0.15, y: y - unit * 0.34, width: unit * 0.6, height: unit * 0.6))
         context.fill(shape, with: .color(Palette.skyCloud))
-    }
-    private func sparkle(context: inout GraphicsContext, at p: CGPoint, radius r: CGFloat) {
-        var path = Path()
-        path.move(to: CGPoint(x: p.x, y: p.y - r))
-        path.addQuadCurve(to: CGPoint(x: p.x + r, y: p.y), control: p)
-        path.addQuadCurve(to: CGPoint(x: p.x, y: p.y + r), control: p)
-        path.addQuadCurve(to: CGPoint(x: p.x - r, y: p.y), control: p)
-        path.addQuadCurve(to: CGPoint(x: p.x, y: p.y - r), control: p)
-        context.fill(path, with: .color(Palette.portfolioCard))
     }
     private func drawVisitor(context: GraphicsContext, size: CGSize, pose: SkyMotion.Pose, scale: CGFloat) {
         var c = context

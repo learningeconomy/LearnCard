@@ -1,5 +1,9 @@
 # Native experiment handoff — 2026-10-18
 
+**Fuller skies and faster visitors:** every main visitor and both cows now move left to right twice as fast. Daytime adds cloud layers, distant birds and a small afternoon sun; dusk adds restrained fireworks. Stars stay fixed and twinkle, while occasional shooting stars cross in straight streaks. [Current native gallery and behavior](SKY_REFRESH.md).
+
+Validation: **217 Swift** and **2/2 existing focused UI cases** pass. Native captures confirm brightness-only star twinkle, visible moving scenes and still Reduced Motion. Normal Debug is installed **48/48**, private configuration/build **3** preserved; retained signed-in Home is confirmed read-only. The checks device is shut down. Configured suite **578** plus live skip; no fresh full Bun/UI/Release/hosted CI pass is claimed. [Exact scope](TESTING.md#sky-visitors-stars-and-atmosphere--october-18-2026).
+
 **Whole-scene sky motion:** clouds, sun/moon, stars and visitors now follow a shared left-to-right sine wave, with a smaller ripple in the dusk horizon. Native recordings verify visible rise/fall beyond the visitors; Reduced Motion stays still. [Current native clips and contract](SKY_REFRESH.md).
 
 Validation: **215 Swift** and **2/2 existing focused UI cases** pass. Normal Debug is installed **48/48**, private configuration/build **3** preserved; read-only review confirms retained Home and the afternoon greeting. The checks device is shut down. Configured suite **576** plus live skip; no fresh full Bun/UI/Release/hosted CI result is claimed. [Exact scope](TESTING.md#whole-scene-sky-wave--october-18-2026).

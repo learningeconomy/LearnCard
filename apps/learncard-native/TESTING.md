@@ -1,5 +1,15 @@
 # Native regression checks
 
+## Sky visitors, stars and atmosphere — October 18, 2026
+
+Main visitors and both cows now travel left to right twice as fast, through a 26-second loop with wrap points outside the viewport. Clouds/sun/moon and visitors keep the shared wave, but dusk/night stars have fixed anchors and brightness-only twinkle. Night adds short straight shooting stars; dusk has small eight-ray blooms with quiet gaps. Additional translucent clouds, distant bird silhouettes and an afternoon sun fill the daytime scenes. The native refresh host/action is unchanged.
+
+The complete Swift suite passes **217 cases** (184 XCTest + 33 Swift Testing; `sky-atmosphere-core.log`). Two new cases cover forward motion for both visitors, offscreen-only wrapping, bounded/still twinkle, straight streak progress and quiet/still accent gaps. The existing Home awaited-read/collapse and Arabic dark accessibility3 Reduce Motion Inbox refresh/navigation cases pass **2/2**, zero failures/skips (`sky-atmosphere-ui-2026-10-18.xcresult`). The configured ordinary suite is **578** (215 unchanged Bun, 217 Swift, 146 UI), plus the live skip; catalog remains **1,093 keys**.
+
+The [actual native Home pull/read/collapse clip](design/sky-refresh-atmosphere-native.mp4) shows the faster cows and added daytime layers at the system control height. The [native drawing gallery clip](design/sky-refresh-atmosphere-gallery-native.mp4) covers a full accent cycle; its [running frame](design/sky-refresh-atmosphere-scenes-native.png) shows the dusk bloom and shooting-star trail. Visitors naturally cross the viewport edges during travel; this frame is not their initial pose. Gallery strips remain 72 points for comparison. All four moving scene regions change pixels, while all four Reduced Motion regions change **zero** (`sky-atmosphere-motion-proof.json`). An isolated star changes sampled intensity by **42.61%** between sampled frames while its weighted center shifts only **0.001 point**, confirming twinkle without wave displacement. Native-frame review confirms the linear streak and small local bloom.
+
+Normal Debug build/install passes **48/48**, private configuration preserved byte-for-byte and build **3** (`sky-atmosphere-debug-final.log`, `sky-atmosphere-install-proof.json`). Read-only review confirms retained signed-in Home, the afternoon greeting and existing remote credential artwork. The checks device is shut down. No account reset/sign-out, real credential/relationship write, new full Bun/UI suite, Release or hosted native CI run is included. [Current motion contract](SKY_REFRESH.md).
+
 ## Whole-scene sky wave — October 18, 2026
 
 The whole illustration now follows one 3.6-second left-to-right sine wave. Clouds, sun/moon and stars have staggered horizontal/vertical offsets; the dusk horizon has a smaller ripple. Visitors retain their glide and share the wave for bob/tilt. The native refresh host/lifetime is unchanged. Still and completion poses continue to use the same frozen elapsed value.

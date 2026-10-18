@@ -58,7 +58,7 @@ public enum SkyMotion {
         public let x: Double, y: Double, tilt: Double, wing: Double
     }
     /// A shared 3.6-second left-to-right pulse. Objects sample their horizontal
-    /// position so the whole scene moves in a wave rather than bouncing in sync.
+    /// position for staggered movement; stars use brightness instead of this wave.
     public static func wave(elapsed: Double, position: Double, animated: Bool) -> Double {
         let t = animated && elapsed.isFinite ? max(0, elapsed) : 0
         let x = position.isFinite ? position : 0
@@ -66,10 +66,41 @@ public enum SkyMotion {
     }
     public static func pose(elapsed: Double, animated: Bool, secondCow: Bool = false) -> Pose {
         let t = animated && elapsed.isFinite ? max(0, elapsed) : 0
-        let travel = (0.57 + t / 52).truncatingRemainder(dividingBy: 1)
-        let x = secondCow ? 0.19 + sin(t / 13) * 0.06 : travel * 1.3 - 0.15
+        let travel = ((secondCow ? 0.27 : 0.57) + t / 26).truncatingRemainder(dividingBy: 1)
+        let x = travel * 1.3 - 0.15
         let pulse = wave(elapsed: t, position: x, animated: animated)
         return Pose(x: x, y: (secondCow ? 0.38 : 0.52) + pulse * (secondCow ? 0.045 : 0.065),
                     tilt: pulse * 4, wing: sin(t * 3.4) * 0.18)
+    }
+
+    /// Brightness only: star anchors never follow the spatial wave.
+    public static func twinkle(elapsed: Double, index: Int, animated: Bool) -> Double {
+        let t = animated && elapsed.isFinite ? max(0, elapsed) : 0
+        let seed = Double(index % 13)
+        let phase = (t / (2.2 + seed * 0.13) + seed * 0.37).truncatingRemainder(dividingBy: 1)
+        let pulse = max(0, 1 - abs(phase - 0.5) * 2)
+        return 0.25 + 0.75 * pulse * pulse * (3 - 2 * pulse)
+    }
+
+    public struct ShootingStar: Equatable, Sendable {
+        public let x: Double, y: Double, opacity: Double
+    }
+    /// A short straight streak, with quiet gaps. A still first pose has no streak.
+    public static func shootingStar(elapsed: Double, animated: Bool, second: Bool = false) -> ShootingStar? {
+        guard let progress = accentProgress(elapsed: elapsed, animated: animated, period: 11,
+                                            delay: second ? 6.3 : 1.2, duration: 1.1) else { return nil }
+        return ShootingStar(x: (second ? 0.52 : 0.18) + progress * 0.34,
+                            y: (second ? 0.08 : 0.14) + progress * 0.42,
+                            opacity: min(1, progress / 0.12, (1 - progress) / 0.25))
+    }
+    /// A small expanding dusk bloom; no full-field flash or continuous burst.
+    public static func fireworkProgress(elapsed: Double, animated: Bool, second: Bool = false) -> Double? {
+        accentProgress(elapsed: elapsed, animated: animated, period: 10,
+                       delay: second ? 5.9 : 0.7, duration: 1.5)
+    }
+    private static func accentProgress(elapsed: Double, animated: Bool, period: Double, delay: Double, duration: Double) -> Double? {
+        let t = animated && elapsed.isFinite ? max(0, elapsed).truncatingRemainder(dividingBy: period) : 0
+        guard t >= delay, t < delay + duration else { return nil }
+        return (t - delay) / duration
     }
 }
