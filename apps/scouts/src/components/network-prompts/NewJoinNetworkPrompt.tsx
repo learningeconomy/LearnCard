@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSignInAdapter } from 'learn-card-base';
 import { z } from 'zod';
@@ -14,8 +14,6 @@ import {
     useGetCurrentLCNUser,
     useIsCurrentUserLCNUser,
     useGetProfile,
-    useModal,
-    ModalTypes,
 } from 'learn-card-base';
 
 import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
@@ -24,7 +22,6 @@ import { ProfilePicture } from 'learn-card-base/components/profilePicture/Profil
 import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import Pencil from '../svgs/Pencil';
-import ErrorLogout from './ErrorLogout';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { getLogger } from 'learn-card-base';
@@ -74,13 +71,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
 
-    const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
+    const isAppleLogin = authStore.use.typeOfLogin() === SocialLoginTypes.apple;
+    const [name, setName] = useState(
+        () => currentUser?.name || adapter.getCurrentUser()?.displayName || ''
+    );
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
 
     const [networkToggle, setNetworkToggle] = useState<boolean>(true);
     const [profileId, setProfileId] = useState<string | null | undefined>('');
-
-    const [walletDid, setWalletDid] = useState<string>('');
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [createLoading, setIsCreateLoading] = useState<boolean>(false);
@@ -92,29 +90,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
 
     const { data: lcNetworkProfile } = useGetProfile();
 
-    const { newModal: newErrorLogoutModal } = useModal({
-        mobile: ModalTypes.Cancel,
-        desktop: ModalTypes.Cancel,
-    });
-
-    const openErrorLogoutModal = () => {
-        newErrorLogoutModal(<ErrorLogout />);
-    };
-
-    // const presentLogoutErrorModal = () => {
-    //     newModal(<ErrorLogout />, { sectionClassName: '!max-w-[400px]' });
-    // };
-
-    useEffect(() => {
-        const getWalletDid = async () => {
-            const wallet = await initWallet();
-            setWalletDid(wallet?.id?.did());
-        };
-
-        if (!walletDid) {
-            getWalletDid();
-        }
-    }, [walletDid]);
+    const displayName =
+        name.trim() || (isAppleLogin ? lcNetworkProfile?.profileId || profileId || '' : '');
 
     const onUpload = (data: UploadRes) => {
         setPhoto(data?.url);
@@ -129,7 +106,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
 
     const validate = () => {
         const parsedData = StateValidator.safeParse({
-            name: name,
+            name: name.trim(),
         });
 
         if (parsedData.success) {
@@ -161,133 +138,62 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         return false;
     };
 
-    const handleStorageUpdate = async () => {
-        await updateCurrentUser(currentUser?.privateKey, {
-            name: (name ?? currentUser?.name ?? '') as string,
-            profileImage: (photo ?? currentUser?.profileImage ?? '') as string,
-        });
-        currentUserStore.set.currentUser({
-            ...currentUser,
-            name: name ?? currentUser?.name ?? '',
-            profileImage: photo ?? currentUser?.profileImage ?? '',
-        });
-    };
+    const handleUpdateUser = async (): Promise<void> => {
+        if (isLoading || (!isAppleLogin && !validate())) return;
+        if (!currentUser) {
+            setError(m['networkPrompts.profileSaveFailed']());
+            return;
+        }
+        if (!lcNetworkProfile?.profileId && !validateProfileID()) return;
 
-    const handleJoinLearnCardNetwork = async () => {
-        if (validateProfileID()) {
-            try {
-                setIsLoading(true);
-                setIsCreateLoading(true);
-                const wallet = await initWallet();
-                const didWeb = await wallet.invoke.createProfile({
-                    did: wallet.id.did(),
-                    profileId: profileId || '',
-                    displayName: name || '',
+        setIsLoading(true);
+        setIsCreateLoading(!lcNetworkProfile?.profileId);
+        setError('');
+
+        try {
+            const wallet = await initWallet();
+            if (authToken !== 'dummy') {
+                await adapter.updateProfile?.({ displayName, photoUrl: photo ?? '' });
+                await updateCurrentUser(currentUser?.uid, {
+                    name: displayName,
+                    profileImage: photo ?? '',
+                });
+            }
+            currentUserStore.set.currentUser({
+                ...currentUser,
+                name: displayName,
+                profileImage: photo ?? '',
+            });
+
+            if (lcNetworkProfile?.profileId) {
+                await wallet.invoke.updateProfile({
+                    displayName,
                     image: photo || undefined,
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
-
-                if (didWeb) {
-                    await refetchIsCurrentUserLCNUser();
-                    await wallet.invoke.resetLCAClient();
-                    await queryClient.resetQueries();
-                    await refetch(); // refetch to sync -> useGetCurrentLCNUser hook
-                    handleCloseModal();
-                    setIsLoading(false);
-                    setIsCreateLoading(false);
-                }
-            } catch (err: unknown) {
-                log.debug('createProfile::error', err);
-                setError(err instanceof Error ? err.message : String(err));
-                setIsLoading(false);
-                setIsCreateLoading(false);
+            } else {
+                const didWeb = await wallet.invoke.createProfile({
+                    profileId: profileId || '',
+                    displayName,
+                    shortBio: '',
+                    bio: '',
+                    image: photo || undefined,
+                    notificationsWebhook: getNotificationsEndpoint(),
+                });
+                if (!didWeb) throw new Error('Profile creation did not complete');
             }
-        }
-    };
 
-    const handleLCNetworkProfileUpdate = async () => {
-        const wallet = await initWallet();
-
-        if (lcNetworkProfile && lcNetworkProfile?.profileId) {
-            const updatedProfile = await wallet?.invoke?.updateProfile({
-                displayName: name || undefined,
-                image: photo || undefined,
-                notificationsWebhook: getNotificationsEndpoint(),
-            });
-        } else {
-            handleJoinLearnCardNetwork();
-        }
-    };
-
-    const handleUpdateUser = async () => {
-        const typeOfLogin = authStore.get.typeOfLogin();
-
-        // ! APPLE HOT FIX
-        if (typeOfLogin === SocialLoginTypes.apple) {
-            // ! apple's guidelines: name should NOT be required
-            await adapter.updateProfile?.({
-                displayName: name ?? '',
-                photoUrl: photo ?? '',
-            });
-
-            handleStorageUpdate();
-
-            // update LC network profile
-            await handleLCNetworkProfileUpdate();
-
-            setIsLoading(false);
+            await refetchIsCurrentUserLCNUser();
+            await wallet.invoke.resetLCAClient();
+            await queryClient.resetQueries();
+            await refetch();
             handleCloseModal();
-            // ! APPLE HOT FIX
-        } else {
-            if (validate()) {
-                setIsLoading(true);
-                try {
-                    if (authToken === 'dummy') {
-                        currentUserStore.set.currentUser({
-                            ...currentUser,
-                            name: name ?? currentUser?.name ?? '',
-                            profileImage: photo ?? currentUser?.profileImage ?? '',
-                        });
-
-                        // update LC network profile
-                        await handleLCNetworkProfileUpdate();
-
-                        setIsLoading(false);
-                        // handleCloseModal();
-                    } else {
-                        // update firebase profile
-                        try {
-                            await adapter.updateProfile?.({
-                                displayName: name,
-                                photoUrl: photo,
-                            });
-                        } catch (e) {
-                            openErrorLogoutModal();
-                            setError(
-                                m['networkPrompts.firebaseError']({ detail: e?.toString?.() ?? '' })
-                            );
-                        }
-
-                        // update LC network profile
-                        await handleLCNetworkProfileUpdate();
-
-                        // update sqlite + context store
-                        handleStorageUpdate();
-
-                        setIsLoading(false);
-                        // handleCloseModal();
-                    }
-                } catch (error) {
-                    setIsLoading(false);
-                    log.debug('updateProfile::error', error);
-                }
-            }
-        }
-    };
-
-    const handleClick = () => {
-        if (!isLoading) {
-            handleUpdateUser();
+        } catch (error) {
+            log.error('Could not finish profile setup', error);
+            setError(m['networkPrompts.profileSaveFailed']());
+        } finally {
+            setIsLoading(false);
+            setIsCreateLoading(false);
         }
     };
 
@@ -366,20 +272,23 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             />
                         )}
                         <div className="flex flex-col items-center justify-center w-full mb-4">
-                            <p className="text-grayscale-600  text-[13px] w-full text-left font-notoSans mt-2">
-                                <strong>{m['userProfile.fullName']()}</strong>
-                            </p>
-                            <IonInput
-                                autocapitalize="on"
-                                className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base ${
-                                    errors.name ? 'login-input-email-error' : ''
-                                }`}
-                                onIonInput={e => {
-                                    setName(e.detail.value);
-                                }}
+                            <label
+                                htmlFor="scoutpass-onboarding-name"
+                                className="text-xs font-medium text-grayscale-700 mb-1.5 w-full"
+                            >
+                                {isAppleLogin
+                                    ? m['userProfile.fullNameOptional']()
+                                    : m['userProfile.fullName']()}
+                            </label>
+                            <input
+                                id="scoutpass-onboarding-name"
+                                autoComplete="name"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                onChange={e => setName(e.target.value)}
                                 value={name}
                                 placeholder={m['userProfile.fullName']()}
                                 type="text"
+                                required={!isAppleLogin}
                             />
                             {errors.name && (
                                 <p className="p-0 m-0 w-full text-left mt-1 text-red-600">
@@ -464,11 +373,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
 
                     <IonRow className="w-full flex items-center justify-center mt-4">
                         <button
-                            onClick={handleClick}
+                            onClick={handleUpdateUser}
+                            disabled={isLoading}
+                            aria-busy={isLoading}
                             type="button"
-                            className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-sp-purple-base text-2xl w-full shadow-lg"
+                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm w-full hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {isLoading ? m['common.loading']() : m['networkPrompts.letsGo']()}
+                            {isLoading && <IonSpinner name="crescent" />}
+                            {isLoading ? m['common.saving']() : m['networkPrompts.letsGo']()}
                         </button>
                     </IonRow>
                 </div>

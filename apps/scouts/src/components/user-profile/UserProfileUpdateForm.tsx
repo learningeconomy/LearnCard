@@ -81,7 +81,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const { updateCurrentUser } = useSQLiteStorage();
     const { presentToast } = useToast();
 
-    const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
+    const isAppleLogin = authStore.use.typeOfLogin() === SocialLoginTypes.apple;
+    const [name, setName] = useState(
+        () => currentUser?.name || adapter.getCurrentUser()?.displayName || ''
+    );
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
     const [email, setEmail] = useState<string | null | undefined>(currentUser?.email ?? '');
     const [phone, setPhone] = useState<string | null | undefined>(currentUser?.phoneNumber ?? '');
@@ -92,6 +95,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
     const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
+    const displayName = name.trim() || (isAppleLogin ? lcNetworkProfile?.profileId || '' : '');
 
     useEffect(() => {
         const getWalletDid = async () => {
@@ -169,13 +173,14 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     };
 
     const handleStorageUpdate = async () => {
-        await updateCurrentUser(currentUser?.privateKey as string, {
-            name: name ?? currentUser?.name ?? '',
+        if (!currentUser) return;
+        await updateCurrentUser(currentUser?.uid, {
+            name: displayName,
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
         currentUserStore.set.currentUser({
             ...currentUser,
-            name: name ?? currentUser?.name ?? '',
+            name: displayName,
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
     };
@@ -185,7 +190,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
         if (lcNetworkProfile && lcNetworkProfile?.profileId) {
             await wallet?.invoke?.updateProfile({
-                displayName: name as string,
+                displayName,
                 image: photo as string,
                 notificationsWebhook: getNotificationsEndpoint(),
             });
@@ -193,24 +198,32 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     };
 
     const handleUpdateUser = async () => {
-        const typeOfLogin = authStore.get.typeOfLogin();
-
-        // ! APPLE HOT FIX
-        if (typeOfLogin === SocialLoginTypes.apple) {
-            // ! apple's guidelines: name should NOT be required
-            await adapter.updateProfile?.({
-                displayName: name ?? '',
-                photoUrl: photo ?? '',
+        if (isLoading) return;
+        if (!currentUser) {
+            presentToast(m['networkPrompts.profileSaveFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
+            return;
+        }
 
-            handleStorageUpdate();
-
-            // update LC network profile
-            await handleLCNetworkProfileUpdate();
-
-            setIsLoading(false);
-            handleCloseModal();
-            // ! APPLE HOT FIX
+        if (isAppleLogin) {
+            setIsLoading(true);
+            try {
+                await adapter.updateProfile?.({ displayName, photoUrl: photo ?? '' });
+                await handleLCNetworkProfileUpdate();
+                await handleStorageUpdate();
+                handleCloseModal();
+                if (showNetworkModal) presentNetworkModal();
+            } catch (error) {
+                log.error('Could not save Apple profile', error);
+                presentToast(m['networkPrompts.profileSaveFailed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            } finally {
+                setIsLoading(false);
+            }
         } else {
             if (validate()) {
                 setIsLoading(true);
@@ -218,7 +231,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     if (authToken === 'dummy') {
                         currentUserStore.set.currentUser({
                             ...currentUser,
-                            name: name ?? currentUser?.name ?? '',
+                            name: displayName,
                             profileImage: photo ?? currentUser?.profileImage ?? '',
                         });
 
@@ -233,7 +246,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     } else {
                         // update firebase profile
                         await adapter.updateProfile?.({
-                            displayName: name as string,
+                            displayName,
                             photoUrl: photo as string,
                         });
 
@@ -356,15 +369,23 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         />
                     )}
                     <div className="flex flex-col items-center justify-center w-full mb-4">
-                        <IonInput
-                            autocapitalize="on"
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
-                                errors.name ? 'login-input-email-error' : ''
-                            }`}
-                            onIonInput={e => setName(e.detail.value)}
-                            value={name as string}
+                        <label
+                            htmlFor="scoutpass-profile-name"
+                            className="text-xs font-medium text-grayscale-700 mb-1.5 w-full"
+                        >
+                            {isAppleLogin
+                                ? m['userProfile.fullNameOptional']()
+                                : m['userProfile.fullName']()}
+                        </label>
+                        <input
+                            id="scoutpass-profile-name"
+                            autoComplete="name"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            onChange={e => setName(e.target.value)}
+                            value={name}
                             placeholder={m['userProfile.fullName']()}
                             type="text"
+                            required={!isAppleLogin}
                         />
                         {errors.name && (
                             <p className="p-0 m-0 w-full text-left mt-1 text-red-600">
@@ -437,8 +458,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     <button
                         disabled={isLoading}
                         type="submit"
-                        className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-grayscale-900 text-2xl w-full shadow-lg"
+                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm w-full hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                     >
+                        {isLoading && <IonSpinner name="crescent" />}
                         {isLoading ? m['common.saving']() : m['common.save']()}
                     </button>
                 </IonRow>
