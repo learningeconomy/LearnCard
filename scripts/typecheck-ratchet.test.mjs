@@ -213,3 +213,77 @@ test('circular tsconfig references end instead of recursing forever', () => {
         rmSync(repo, { recursive: true, force: true });
     }
 });
+
+// A solution config whose references can't all be checked must fail, never shrink the count.
+const solutionOutcome = async files => {
+    const repo = fixture(files);
+    try {
+        const projects = toProjects(repo, [{ name: 'base', root: 'packages/base' }]);
+        assert.equal(projects.length, 1, 'the project must not disappear');
+        const result = await checkProject(projects[0]);
+        return {
+            result,
+            verdict: verdict([result], { base: 3 }),
+            next: nextBaseline([result], { base: 3 }, []),
+        };
+    } finally {
+        rmSync(repo, { recursive: true, force: true });
+    }
+};
+
+test('one missing reference among valid ones fails closed', async () => {
+    const {
+        result,
+        verdict: v,
+        next,
+    } = await solutionOutcome({
+        'packages/base/tsconfig.json': {
+            files: [],
+            references: [{ path: './tsconfig.lib.json' }, { path: './tsconfig.renamed.json' }],
+        },
+        'packages/base/tsconfig.lib.json': { include: ['src'] },
+    });
+    assert.match(
+        result.incomplete,
+        /missing referenced tsconfig packages\/base\/tsconfig\.renamed\.json/
+    );
+    assert.equal(v.pass, false);
+    assert.equal(v.lowered.length, 0);
+    assert.equal(next, null);
+});
+
+test('all references missing fails closed instead of dropping the project', async () => {
+    const {
+        result,
+        verdict: v,
+        next,
+    } = await solutionOutcome({
+        'packages/base/tsconfig.json': {
+            files: [],
+            references: [{ path: './missing.json' }, { path: './gone' }],
+        },
+    });
+    assert.match(
+        result.incomplete,
+        /packages\/base\/missing\.json, packages\/base\/gone\/tsconfig\.json/
+    );
+    assert.equal(v.pass, false);
+    assert.equal(next, null);
+});
+
+test('a cycle-only solution fails closed instead of dropping the project', async () => {
+    const {
+        result,
+        verdict: v,
+        next,
+    } = await solutionOutcome({
+        'packages/base/tsconfig.json': { files: [], references: [{ path: './tsconfig.b.json' }] },
+        'packages/base/tsconfig.b.json': { files: [], references: [{ path: './tsconfig.json' }] },
+    });
+    assert.match(
+        result.incomplete,
+        /packages\/base\/tsconfig\.json references no checkable tsconfig/
+    );
+    assert.equal(v.pass, false);
+    assert.equal(next, null);
+});

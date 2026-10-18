@@ -8,7 +8,7 @@
 //   - `--update` (bun run typecheck:baseline) rewrites the baseline from the current counts.
 // Counts depend on build state, so run it the way CI does: install, build the libraries
 // (`nx run-many -t build` over lib projects), compile Paraglide messages, then this script.
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir, cpus } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 // Data shapes:
-//   Project = { name, root, checks: Check[] }        Check = { cmd, args, cwd }
+//   Project = { name, root, checks: Check[], incomplete?: string }   Check = { cmd, args, cwd }
 //   Result  = { name, count, errors: string[], incomplete: string | null, tail: string[],
 //               configErrors: number }
 
@@ -53,8 +53,8 @@ export const leafConfigs = (path, seen = new Set()) => {
     if (!solution) return [path];
     return config.references.flatMap(ref => {
         const target = join(dirname(path), ref.path);
-        const isDir = existsSync(target) && statSync(target).isDirectory();
-        return leafConfigs(isDir ? join(target, 'tsconfig.json') : target, seen);
+        // Same rule as tsc: a reference that isn't a .json file names a directory.
+        return leafConfigs(target.endsWith('.json') ? target : join(target, 'tsconfig.json'), seen);
     });
 };
 
@@ -98,10 +98,31 @@ export const toProjects = (repo, list) =>
                 .map(f => join(repo, root, f))
                 .find(existsSync);
             if (!tsconfig) return { name, root, checks: [] };
-            const leaves = leafConfigs(tsconfig).filter(existsSync);
+            // A missing reference or a solution with no leaves is a coverage gap, not a clean
+            // project, so it fails like any other check that didn't finish.
+            const leaves = leafConfigs(tsconfig);
+            const missing = leaves
+                .filter(leaf => !existsSync(leaf))
+                .map(leaf => relative(repo, leaf));
+            if (missing.length) {
+                return {
+                    name,
+                    root,
+                    checks: [],
+                    incomplete: `missing referenced tsconfig ${missing.join(', ')}`,
+                };
+            }
+            if (!leaves.length) {
+                return {
+                    name,
+                    root,
+                    checks: [],
+                    incomplete: `${relative(repo, tsconfig)} references no checkable tsconfig`,
+                };
+            }
             return { name, root, checks: leaves.map(leaf => tscCheck(repo, relative(repo, leaf))) };
         })
-        .filter(p => p.checks.length);
+        .filter(p => p.checks.length || p.incomplete);
 
 export const run = ({ cmd, args, cwd }) =>
     new Promise(resolve => {
@@ -143,6 +164,16 @@ export const isConfigError = line =>
     !/^[^(]+\(\d+,\d+\): error/.test(line) || /tsconfig[^/]*\.json\(/.test(line);
 
 export const checkProject = async project => {
+    if (project.incomplete) {
+        return {
+            name: project.name,
+            count: null,
+            errors: [],
+            incomplete: project.incomplete,
+            tail: [],
+            configErrors: 0,
+        };
+    }
     const errors = new Set();
     for (const check of project.checks) {
         const ran = await run(check);
@@ -229,7 +260,9 @@ const main = async () => {
     }
 
     for (const r of incomplete) {
-        console.error(`\n${r.name}: typecheck did not finish (${r.incomplete}). Last output:`);
+        console.error(
+            `\n${r.name}: typecheck did not finish (${r.incomplete}).${r.tail.length ? ' Last output:' : ''}`
+        );
         for (const line of r.tail) console.error(`  ${line}`);
     }
 
