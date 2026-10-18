@@ -70,8 +70,10 @@ an account or depending on a live backend.
 
 The `apps` fixture renders `LaunchPad`, the catalogue at `/launchpad/browse`.
 It is not the current `/launchpad` My Apps landing page (`MyAppsLanding`), which
-has no category tabs. The older browse component remains reachable in this branch;
-its presence is not evidence that the current landing page has tabs.
+has no category tabs. The browse UI is no longer used in LearnCard, so its
+comparison is omitted from the review gallery and PR screenshots. Its existing
+fixtures and references remain as migration evidence. Removing the obsolete browse
+components and checking their remaining routes/imports is a separate cleanup PR.
 
 The first twelve references were committed before migration in `1955fd40e`.
 The eighteen expanded references were captured in a temporary checkout of that
