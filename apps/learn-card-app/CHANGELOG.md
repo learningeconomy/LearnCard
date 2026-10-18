@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.100.3
+
+### Patch Changes
+
+- [#1754](https://github.com/learningeconomy/LearnCard/pull/1754) [`7f68afd7f3bf30a07d42c18929ca90e1983825b7`](https://github.com/learningeconomy/LearnCard/commit/7f68afd7f3bf30a07d42c18929ca90e1983825b7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2284: perf(scouts): only look up troop ID status when the boost menu opens, and cache recipient lists
+
 ## 1.100.2
 
 ### Patch Changes
