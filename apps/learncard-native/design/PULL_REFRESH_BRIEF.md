@@ -1,5 +1,7 @@
 # Painted pull-to-refresh — October 17, 2026
 
+**October 18 design feedback:** the user rejected the compact motif/visible refresh label. A [full-width local-time sky study](SKY_REFRESH_BRIEF.md) explores a replacement. Detailed atmospheric skies were also rejected; the latest proposal uses sparse graphic shapes. The implementation below remains current until a replacement is built.
+
 Home, Passport, Inbox and Apps use eight painted pigment tiles weaving around a compact figure-eight. The header already carries the LearnCard logo, so this supporting motion borrows its colors and rounded square shapes without repeating the 3×3/L mark. Original painted tile assets supply the material; the center L asset is excluded. The earlier [generated motion board](pull-refresh-concept-2026-10-17.png) is historical direction for the superseded mosaic version.
 
 ## Interaction contract

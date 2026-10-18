@@ -407,3 +407,7 @@ The credential detail now reads the authenticated holder lifecycle status on ent
 ## Credential content before status — October 18, 2026
 
 User feedback makes About the first section after the hero. Signature and lifecycle checks should be secondary, compact expandable rows after credential information/optional content, rather than prominent status cards above the description. Keep revocation/suspension warnings and stale-result notices visible when collapsed; source, date, explanation and retry can expand. This presentation refinement is implemented and installed. Unlock review covers English and compact Arabic accessibility text, disclosure/scroll/retry, retained stale results and suspension reactivation; all four existing detail/share UI checks pass. Endorsements and issuer trust remain separate follow-ups.
+
+## Local-time refresh sky — design exploration, October 18, 2026
+
+Replace the small figure-eight/Refreshing label with a full-width reveal; pair Home with a local-time greeting. The user proposed day clouds/sun, dusk color and night stars/moon/meteor, with LearnCard-color particles. They rejected the first detailed atmospheric mockups as mismatched and obviously AI-generated. The revised [graphic concept and exact prompts](design/SKY_REFRESH_BRIEF.md) use simple clouds, flat celestial shapes and sparse details closer to the app’s icons. This is a proposal for feedback; no runtime change yet. Preserve native refresh gesture/lifetime, VoiceOver feedback and Reduced Motion behavior when implementing.
