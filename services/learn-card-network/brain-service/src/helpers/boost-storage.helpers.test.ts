@@ -65,7 +65,12 @@ vi.mock('@tracing', () => ({
     traceInternal: async (_name: string, action: () => unknown) => action(),
 }));
 
-import { issueClaimLinkBoost, prepareCredentialFromBoost, sendBoost } from './boost.helpers';
+import {
+    issueClaimLinkBoost,
+    prepareCredentialFromBoost,
+    sendBoost,
+    stampIssuanceDate,
+} from './boost.helpers';
 
 const vc = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -282,7 +287,7 @@ describe('boost payload storage', () => {
             }
         );
 
-        it('restamps a stale issuanceDate left on a VC 2.0 template', async () => {
+        it('drops a stale issuanceDate left on a VC 2.0 template', async () => {
             const before = Date.now();
             await issueClaimLinkBoost(
                 boostWith({ '@context': V2, issuanceDate: MALFORMED_DATE }),
@@ -293,10 +298,10 @@ describe('boost payload storage', () => {
             );
             const unsigned = mocks.signingAuthority.mock.calls[0]![1];
             expectFreshDate(unsigned.validFrom, before);
-            expectFreshDate(unsigned.issuanceDate, before);
+            expect(unsigned).not.toHaveProperty('issuanceDate');
         });
 
-        it('restamps a stale issuanceDate left on a VC 2.0 template for direct sends', async () => {
+        it('drops a stale issuanceDate left on a VC 2.0 template for direct sends', async () => {
             const before = Date.now();
             const credential = await prepareCredentialFromBoost(
                 boostWith({ '@context': V2, issuanceDate: MALFORMED_DATE }),
@@ -304,7 +309,35 @@ describe('boost payload storage', () => {
                 options.domain
             );
             expectFreshDate(credential.validFrom, before);
-            expectFreshDate(credential.issuanceDate, before);
+            expect(credential).not.toHaveProperty('issuanceDate');
+        });
+
+        describe('stampIssuanceDate', () => {
+            const NOW = '2026-10-18T05:00:00.000Z';
+
+            it('sets validFrom and removes issuanceDate on VC 2.0', () => {
+                const stamped = stampIssuanceDate(
+                    {
+                        ...vc,
+                        '@context': V2,
+                        validFrom: MALFORMED_DATE,
+                        issuanceDate: MALFORMED_DATE,
+                    },
+                    NOW
+                );
+
+                expect(stamped.validFrom).toBe(NOW);
+                expect(stamped).not.toHaveProperty('issuanceDate');
+            });
+
+            it('only sets issuanceDate on VC 1.1', () => {
+                const template = { ...vc, '@context': V1, issuanceDate: MALFORMED_DATE };
+
+                expect(stampIssuanceDate({ ...template }, NOW)).toEqual({
+                    ...template,
+                    issuanceDate: NOW,
+                });
+            });
         });
     });
 

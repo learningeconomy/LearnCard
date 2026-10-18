@@ -2031,8 +2031,8 @@ describe('Consent Flow Contracts', () => {
                 expect(records).toHaveLength(1);
             });
 
-            it('restamps a leftover issuanceDate on a VC 2.0 template', async () => {
-                const { unsigned, before } = await consentWithAutoBoost({
+            it('drops a leftover issuanceDate on a VC 2.0 template', async () => {
+                const { unsigned, records, before } = await consentWithAutoBoost({
                     '@context': [
                         'https://www.w3.org/ns/credentials/v2',
                         'https://ctx.learncard.com/boosts/1.0.1.json',
@@ -2045,10 +2045,10 @@ describe('Consent Flow Contracts', () => {
                     credentialSubject: { id: 'did:example:subject' },
                 });
 
-                // Only the stamp is checked: DIDKit still rejects issuanceDate under a VC 2.0
-                // context (undefined JSON-LD term), so this credential doesn't get signed.
                 expectFreshDate(unsigned.validFrom, before);
-                expectFreshDate(unsigned.issuanceDate, before);
+                // The VC 2.0 context doesn't define issuanceDate, so DIDKit won't sign with it.
+                expect(unsigned).not.toHaveProperty('issuanceDate');
+                expect(records).toHaveLength(1);
             });
         });
 

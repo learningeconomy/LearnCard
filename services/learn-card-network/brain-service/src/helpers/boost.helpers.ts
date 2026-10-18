@@ -93,8 +93,8 @@ export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<
  * A template's own issuanceDate/validFrom is when the template was written, not when this
  * credential is issued, and templates created through the API are not date-validated: a
  * malformed value (e.g. "2025-10-19+053008:18:16") makes DIDKit refuse to sign. VC 2.0
- * templates get validFrom, VC 1.1 templates get issuanceDate, and a leftover issuanceDate on
- * a VC 2.0 template is restamped too so it can't break signing.
+ * templates get validFrom and lose any leftover issuanceDate, which the VC 2.0 context doesn't
+ * define (DIDKit rejects it as an undefined JSON-LD term). VC 1.1 templates get issuanceDate.
  */
 export const stampIssuanceDate = <T extends UnsignedVC | VC>(
     credential: T,
@@ -102,7 +102,7 @@ export const stampIssuanceDate = <T extends UnsignedVC | VC>(
 ): T => {
     if (isVC2Format(credential)) {
         credential.validFrom = now;
-        if (credential.issuanceDate !== undefined) credential.issuanceDate = now;
+        delete credential.issuanceDate;
     } else {
         credential.issuanceDate = now;
     }
