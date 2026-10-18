@@ -30,6 +30,7 @@
         "families.ts",
         "inbox.ts",
         "intake.ts",
+        "learner.ts",
         "personal-creations.ts",
         "claims.ts",
         "profile-update.ts",

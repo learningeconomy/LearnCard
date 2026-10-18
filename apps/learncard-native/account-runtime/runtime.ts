@@ -65,6 +65,7 @@ import { createIntakeCommands, intakeErrorCode, documentKinds } from './intake';
 import { createFamilyCommands, familyErrorCode, type FamilyPinService } from './families';
 import { getClient as getAccountAPI } from '@learncard/lca-api-client';
 import { isFamilyCreation, sendPersonalCreation } from './personal-creations';
+import { createLearnerCommands, learnerErrorCode } from './learner';
 
 // This runtime's transport is staging-only; never use production sample contracts.
 const sampleContracts = Object.fromEntries(
@@ -521,6 +522,7 @@ const shares = new Map<
 >();
 
 const commands = {
+    ...createLearnerCommands(() => wallet, display),
     ...createClaimCommands(
         () => wallet,
         display,
@@ -973,21 +975,23 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
                             ? claimErrorCode(error)
                             : method.startsWith('people')
                               ? peopleErrorCode(error)
-                              : method.startsWith('intake')
-                                ? intakeErrorCode(error)
-                                : method.startsWith('inbox')
-                                  ? inboxErrorCode(error)
-                                  : method.startsWith('families')
-                                    ? familyErrorCode(error)
-                                    : method.startsWith('apps') ||
-                                        method.startsWith('samples') ||
-                                        method.startsWith('privacy')
-                                      ? consumerErrorCode(error)
-                                      : method === 'initialize'
-                                        ? 'connection'
-                                        : method === 'recover'
-                                          ? 'recovery'
-                                          : 'unavailable',
+                              : method.startsWith('skills') || method.startsWith('goals')
+                                ? learnerErrorCode(error)
+                                : method.startsWith('intake')
+                                  ? intakeErrorCode(error)
+                                  : method.startsWith('inbox')
+                                    ? inboxErrorCode(error)
+                                    : method.startsWith('families')
+                                      ? familyErrorCode(error)
+                                      : method.startsWith('apps') ||
+                                          method.startsWith('samples') ||
+                                          method.startsWith('privacy')
+                                        ? consumerErrorCode(error)
+                                        : method === 'initialize'
+                                          ? 'connection'
+                                          : method === 'recover'
+                                            ? 'recovery'
+                                            : 'unavailable',
                 });
             }
         },

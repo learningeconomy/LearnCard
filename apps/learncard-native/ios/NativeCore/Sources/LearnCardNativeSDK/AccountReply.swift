@@ -21,6 +21,8 @@ enum AccountReply {
                let failure = PeopleError(rawValue: String(code.dropFirst("people:".count))) { throw failure }
             if let code = envelope["error"] as? String, code.hasPrefix("intake:"),
                let failure = IntakeError(rawValue: String(code.dropFirst("intake:".count))) { throw failure }
+            if let code = envelope["error"] as? String, code.hasPrefix("learner:"),
+               let failure = LearnerError(rawValue: String(code.dropFirst("learner:".count))) { throw failure }
             throw method == "recover" ? AccountError.recovery : AccountError.unavailable
         }
         let decoder = JSONDecoder()

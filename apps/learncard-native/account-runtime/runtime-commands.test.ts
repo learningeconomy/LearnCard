@@ -227,3 +227,14 @@ test.each(['intakeStatus', 'intakePrepare', 'intakeCommit', 'intakeDocument', 'i
         expect(bridgeCalls).toBe(0);
     }
 );
+
+test.each(['skillsPage', 'skillsSource', 'goalsRead', 'goalsSave'])(
+    'registered %s refuses signed-out learner data without transport',
+    async method => {
+        expect(JSON.parse(await account.call(method, {}))).toEqual({
+            ok: false,
+            error: 'learner:signIn',
+        });
+        expect(bridgeCalls).toBe(0);
+    }
+);

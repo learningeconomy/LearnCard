@@ -150,6 +150,10 @@ struct AppsView: View {
     }
     private var learnCardTools: some View {
         VStack(alignment: .leading, spacing: 12) {
+            Text(NativeText.text("skills.learningGroup")).font(.title3.bold()).foregroundStyle(Palette.ink).accessibilityAddTraits(.isHeader)
+            NavigationLink { SkillsView(appStore: store) } label: {
+                ConsumerToolRow(title: NativeText.text("skills.title"), subtitle: NativeText.text("skills.entryBody"), symbol: .skill, tint: Palette.lilacCard)
+            }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22)).accessibilityIdentifier("apps-skills")
             Text(NativeText.text("apps.tools")).font(.title3.bold()).foregroundStyle(Palette.ink)
                 .accessibilityAddTraits(.isHeader).accessibilityIdentifier("apps-tools-heading")
             VStack(spacing: 0) {

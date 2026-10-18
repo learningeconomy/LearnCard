@@ -2,6 +2,14 @@
 
 The user asked to resume the planned learner-learning features. This first design pass follows the [learning queue](../LEARNER_LEARNING_PLAN.md) and [source audit/implementation contract](../LEARNER_SKILLS.md). It uses the approved rendered artwork, flat reading panels, small heading rays and existing four-tab shell. These are generated concepts with sample data, not native screenshots or live personalized results.
 
+## October 18 implementation refinement
+
+The user approved proceeding but found some new graphics inconsistent with the rest of the app. The implemented Skills/goals slice therefore uses the existing outlined category star and Drawn credential/share tiles. Flat panels, heading rays and navigation remain shared. The generated glossy medallions/compass are composition studies, not production assets. Career exploration stays a subsequent integration.
+
+The goal form also uses a smaller title and places its Add action beside the field, keeping it visible when the keyboard opens. Actual native captures and verification are linked below after the generated references.
+
+Live account reads exposed a much longer Skills list than the sample board. The native hub places a compact goal summary above search/list content, with a first-goal preview and total count; the editor shows all saved goals. This keeps goals discoverable without forcing the learner through the whole list.
+
 ## Personal Skills and goals
 
 ![First visit, your skills, skill sources and personal goals](learner-skills-concept-2026-10-18.png)
@@ -44,3 +52,19 @@ Exact prompt sequence:
 5. [Career cleanup](LEARNER_CAREER_CLEANUP_PROMPT.txt), removing the repeated sharing heading. The result above is selected.
 
 The credential reference was used for artwork/material only; its older detail hierarchy is not a proposed information order for these screens. No production icons or runtime assets were replaced. Native implementation, account round-trip testing and real provider results remain subsequent work.
+
+## Implemented native screens
+
+The first Skills/goals slice uses established native artwork and actual production views/stores with isolated synthetic services. These captures contain sample credentials/goals, not the retained review account's personal data. See [behavior and remaining integrations](../LEARNER_SKILLS.md) and [exact local checks](../TESTING.md#personal-skills-and-goals--october-18-2026).
+
+| Native Skills                                  | Source detail                                   | Personal goal draft                                |
+| ---------------------------------------------- | ----------------------------------------------- | -------------------------------------------------- |
+| ![Skills overview](skills-overview-native.png) | ![Credential sources](skill-sources-native.png) | ![Personal goal editor](personal-goals-native.png) |
+
+| Arabic dark accessibility3 Skills                                                | Arabic dark accessibility3 goal sheet                                                         |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| ![Empty Skills and optional goals](skills-empty-arabic-accessibility-native.png) | ![Correctly mirrored and enlarged goal sheet](personal-goals-arabic-accessibility-native.png) |
+
+The goal Add button is beside the field at standard type sizes and remains on its mirrored side in RTL. Disabled controls use reduced opacity. The sheet explicitly receives locale, direction and text size from the presenting screen; translated labels alone are insufficient evidence. Shared heading rays hide at accessibility sizes. Career-result artwork/screens above remain unimplemented concepts.
+
+[Compact 375-point goal editor](personal-goals-compact-native.png): the capture is scrolled after adding a draft, so its upper heading is naturally under the navigation bar. The saved-goal/reopen/discard check passes with the keyboard and fixed footer on this shorter viewport.

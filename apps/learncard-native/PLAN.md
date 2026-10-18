@@ -95,10 +95,11 @@ The user explicitly asked to queue the missing learning experiences. [The native
 
 - [x] Audit current personal profile storage/schema, skill provenance/self-assessment writes, AI gates and existing sharing side effects. [Implementation contract](LEARNER_SKILLS.md).
 - [x] Generate seven sample-data concept screens for Skills/goals and career exploration, preserving the four-tab shell and rendered artwork on flat panels. [Boards and exact prompts](design/LEARNER_SKILLS_BRIEF.md).
-- [ ] Complete missing state designs, implement credential-linked Skills reads and goals read/explicit-save, then resolve safe self-assigned-skill replacement and occupation/provider contracts before their integrations.
+- [x] Implement credential-linked Skills/source reads and optional goal read/explicit-save, including bounded paging, failed/partial versus empty states, source provenance, draft/discard and uncertain-save reconciliation. Reuse existing artwork per the user's style correction. [Native behavior and verification](LEARNER_SKILLS.md).
+- [ ] Complete remaining career/picker states, resolve safe self-assigned-skill replacement and occupation/provider contracts before their integrations. Native automatic profile sharing/insight refresh and a live cross-client UI round trip remain explicit follow-ups.
 - [ ] Establish account-owned Journey persistence and real dispatch/endpoints before native Today/map/progress; fetched upstream defaults remain local/scripted.
 
-This first slice is design/source analysis only. The installed Native Lab app remains the approved sky-refresh build. Endorsements/issuer trust and the broader design-system consistency audit remain queued separately; organization workspaces retain their later plan.
+The first runtime slice is personal Skills and goals; career exploration, Journeys and Sessions/Insights remain separate integrations. Endorsements/issuer trust and the broader design-system consistency audit remain queued separately; organization workspaces retain their later plan.
 
 ## Complete logo from first frame — October 16
 
