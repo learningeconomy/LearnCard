@@ -324,6 +324,54 @@ export const getBoostByUriWithDefaultClaimPermissions = async (
     };
 };
 
+/** Every send of the boost bound as `$boostId`: binds `source`, `credential`, `sent`, `sender`. */
+const MATCH_BOOST_SENDS = `MATCH (source:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)`;
+
+/**
+ * Same rows as MATCH_BOOST_SENDS, but the boost's credentials are collected before the sends are
+ * matched, so the planner has to read the sends from those credentials.
+ *
+ * Without the barrier, a range or IN predicate on `sent.date` / `sent.to` lets the planner start
+ * from credential_sent_date_idx or credential_sent_to_idx across every boost and filter down to
+ * this one afterwards. For a small boost that reads far more sends than the boost has. Reading
+ * from the boost keeps the cost tied to that boost's own sends. `carry` lists variables from
+ * earlier clauses that later clauses still need.
+ */
+const matchBoostSendsFromBoost = (carry: string[] = []): string =>
+    `MATCH (source:Boost {id: $boostId})<-[:INSTANCE_OF]-(boostCredential:Credential)
+    WITH ${[...carry, 'collect(boostCredential) AS boostCredentials'].join(', ')}
+    UNWIND boostCredentials AS credential
+    MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)`;
+
+/**
+ * When a recipient profile query pins `profileId` to a value (or an `$in` list), the join
+ * `recipient.profileId = sent.to` means the same condition holds for `sent.to`. Applying it to
+ * the send first lets the query skip the Profile lookup for every other send.
+ *
+ * Mirrors buildWhereClause: a document-level `$or` ignores every other key, so no prefilter then.
+ */
+const getSentToPrefilter = (
+    convertedQuery: Record<string, unknown>
+): { clause: string; params: Record<string, unknown> } | undefined => {
+    if (!convertedQuery || '$or' in convertedQuery) return undefined;
+
+    const value = convertedQuery.profileId;
+
+    if (typeof value === 'string') {
+        return { clause: 'sent.to = $sentToPrefilter', params: { sentToPrefilter: value } };
+    }
+
+    if (value && typeof value === 'object' && Object.keys(value).length === 1) {
+        const inList = (value as { $in?: unknown }).$in;
+
+        if (Array.isArray(inList)) {
+            return { clause: 'sent.to IN $sentToPrefilter', params: { sentToPrefilter: inList } };
+        }
+    }
+
+    return undefined;
+};
+
 /**
  * Query to get the recipients of a boost. Cipher Code is:
  * MATCH (source:`Boost` { id: $id })<-[instanceOf:INSTANCE_OF]-(credential:`Credential`)-[received:CREDENTIAL_RECEIVED]->(recipient:`Profile`)
@@ -352,26 +400,35 @@ export const getBoostRecipients = async (
         convertedQuery as any
     );
 
-    const _query = new QueryBuilder(new BindParam({ cursor, from, ...queryParams }))
-        .match({
-            related: [
-                { identifier: 'source', model: Boost, where: { id: boost.id } },
-                {
-                    ...Credential.getRelationshipByAlias('instanceOf'),
-                    identifier: 'instanceOf',
-                    direction: 'in',
-                },
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Profile.getRelationshipByAlias('credentialSent'),
-                    identifier: 'sent',
-                    direction: 'in',
-                },
-                { identifier: 'sender', model: Profile },
-            ],
+    const sentToPrefilter = getSentToPrefilter(convertedQuery);
+
+    // Filter and sort the sends before touching recipient Profiles. The Profile lookup and the
+    // CREDENTIAL_RECEIVED expand then only run until LIMIT is satisfied, instead of once per send.
+    const sendFilters = [
+        ...(from ? ['sender.profileId = $from'] : []),
+        ...(cursor ? ['sent.date > $cursor'] : []),
+        ...(sentToPrefilter ? [sentToPrefilter.clause] : []),
+    ];
+
+    const query = new QueryBuilder(
+        new BindParam({
+            boostId: boost.id,
+            cursor,
+            from,
+            ...queryParams,
+            ...sentToPrefilter?.params,
         })
+    )
+        .raw(
+            // An equality on sent.to or the sender's profileId is selective enough to start from;
+            // otherwise read the sends from the boost (see matchBoostSendsFromBoost)
+            sentToPrefilter || from ? MATCH_BOOST_SENDS : matchBoostSendsFromBoost()
+        )
+        .raw(sendFilters.length > 0 ? `WHERE ${sendFilters.join(' AND ')}` : '')
+        .with('sender, sent, credential')
+        .orderBy('sent.date')
         .match({ model: Profile, identifier: 'recipient' })
-        .where(`recipient.profileId = sent.to${from ? ' AND sender.profileId = $from' : ''}`)
+        .where('recipient.profileId = sent.to')
         .match({
             optional: includeUnacceptedBoosts,
             related: [
@@ -390,8 +447,6 @@ export const getBoostRecipients = async (
                 whereClause ? ' AND ' + whereClause : ''
             }`
         );
-
-    const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -414,10 +469,7 @@ export const getBoostRecipients = async (
         received: received?.date,
         ...(credential && { uri: getCredentialUri(credential.id, domain) }),
         status: coalesceStatus(sent.status, received?.status) as
-            | 'active'
-            | 'revoked'
-            | 'suspended'
-            | undefined,
+            'active' | 'revoked' | 'suspended' | undefined,
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -512,10 +564,7 @@ export const getBoostRecipientsSkipLimit = async (
         received: received?.date,
         ...(credential && { uri: getCredentialUri(credential.id, domain) }),
         status: coalesceStatus(sent.status, received?.status) as
-            | 'active'
-            | 'revoked'
-            | 'suspended'
-            | undefined,
+            'active' | 'revoked' | 'suspended' | undefined,
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -990,7 +1039,7 @@ export const getConnectedBoostRecipients = async (
         convertedQuery as any
     );
 
-    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
+    const query = new QueryBuilder(new BindParam({ boostId: boost.id, cursor, ...queryParams }))
         // Build connection list
         .match({
             model: Profile,
@@ -1141,23 +1190,11 @@ export const getConnectedBoostRecipients = async (
         .unwind('allConnectedProfiles AS conn')
         .with('COLLECT(DISTINCT conn.profileId) AS connectionIds')
         // --- Boost recipient matching ---
-        .match({
-            related: [
-                { identifier: 'source', model: Boost, where: { id: boost.id } },
-                {
-                    ...Credential.getRelationshipByAlias('instanceOf'),
-                    identifier: 'instanceOf',
-                    direction: 'in',
-                },
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Profile.getRelationshipByAlias('credentialSent'),
-                    identifier: 'sent',
-                    direction: 'in',
-                },
-                { identifier: 'sender', model: Profile },
-            ],
-        })
+        .raw(matchBoostSendsFromBoost(['connectionIds']))
+        // Narrow and sort the sends first so the Profile lookup only runs until LIMIT is met
+        .raw(`WHERE sent.to IN connectionIds${cursor ? ' AND sent.date > $cursor' : ''}`)
+        .with('sender, sent, credential')
+        .orderBy('sent.date')
         .match({ model: Profile, identifier: 'recipient' })
         .where('recipient.profileId = sent.to')
         .match({
@@ -1171,10 +1208,8 @@ export const getConnectedBoostRecipients = async (
                 { identifier: 'recipient' },
             ],
         })
-        .with('sender, sent, received, recipient, credential, connectionIds')
-        .where(`sent.to IN connectionIds AND ${recipientWhereClause}`);
-
-    const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
+        .with('sender, sent, received, recipient, credential')
+        .where(recipientWhereClause);
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -1209,6 +1244,44 @@ export const getConnectedBoostRecipients = async (
 };
 
 /**
+ * Tail of a recipient count, continuing from a MATCH that bound `credential` and `sent`.
+ * Produces one `to` row per distinct recipient profileId, ready for `RETURN COUNT(to)`.
+ *
+ * Same answer as joining `(recipient:Profile {profileId: sent.to})` (plus the CREDENTIAL_RECEIVED
+ * edge into it when unaccepted sends are excluded) on every send and counting distinct ids, but it
+ * looks each profile up once per distinct id and stops at the first match.
+ */
+const buildDistinctRecipientCount = ({
+    includeUnacceptedBoosts,
+    recipientWhereClause,
+    profileKnownToExist,
+}: {
+    includeUnacceptedBoosts: boolean;
+    recipientWhereClause: string;
+    profileKnownToExist: boolean;
+}): string => {
+    const hasProfileFilter = Boolean(recipientWhereClause) && recipientWhereClause !== 'true';
+    const profileFilter = hasProfileFilter ? ` AND ${recipientWhereClause}` : '';
+
+    if (!includeUnacceptedBoosts) {
+        return `WITH DISTINCT credential, sent.to AS to
+            WHERE EXISTS {
+                MATCH (credential)-[:CREDENTIAL_RECEIVED]->(recipient:Profile)
+                WHERE recipient.profileId = to${profileFilter}
+            }
+            WITH DISTINCT to`;
+    }
+
+    if (profileKnownToExist && !hasProfileFilter) return 'WITH DISTINCT sent.to AS to';
+
+    return `WITH DISTINCT sent.to AS to
+        WHERE EXISTS {
+            MATCH (recipient:Profile)
+            WHERE recipient.profileId = to${profileFilter}
+        }`;
+};
+
+/**
  * Count boost recipients that are connected with the requesting profile
  */
 export const countConnectedBoostRecipients = async (
@@ -1223,7 +1296,7 @@ export const countConnectedBoostRecipients = async (
     const { whereClause: countRecipientWhereClause, params: countQueryParams } =
         buildWhereForQueryBuilder('recipient', convertedQuery as any);
 
-    const countQuery = new QueryBuilder(new BindParam({ ...countQueryParams }))
+    const countQuery = new QueryBuilder(new BindParam({ boostId: boost.id, ...countQueryParams }))
         // Build connection list
         .match({
             model: Profile,
@@ -1374,40 +1447,18 @@ export const countConnectedBoostRecipients = async (
         .unwind('allConnectedProfiles AS conn')
         .with('COLLECT(DISTINCT conn.profileId) AS connectionIds')
         // --- Boost recipient matching ---
-        .match({
-            related: [
-                { identifier: 'source', model: Boost, where: { id: boost.id } },
-                {
-                    ...Credential.getRelationshipByAlias('instanceOf'),
-                    identifier: 'instanceOf',
-                    direction: 'in',
-                },
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Profile.getRelationshipByAlias('credentialSent'),
-                    identifier: 'sent',
-                    direction: 'in',
-                },
-                { identifier: 'sender', model: Profile },
-            ],
-        })
-        .match({ model: Profile, identifier: 'recipient' })
-        .where('recipient.profileId = sent.to')
-        .match({
-            optional: includeUnacceptedBoosts,
-            related: [
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Credential.getRelationshipByAlias('credentialReceived'),
-                    identifier: 'received',
-                },
-                { identifier: 'recipient' },
-            ],
-        })
-        .with('sender, sent, received, recipient, credential, connectionIds')
-        .where(`sent.to IN connectionIds AND ${countRecipientWhereClause}`);
+        .raw(matchBoostSendsFromBoost(['connectionIds']))
+        .raw('WHERE sent.to IN connectionIds')
+        .raw(
+            buildDistinctRecipientCount({
+                includeUnacceptedBoosts,
+                recipientWhereClause: countRecipientWhereClause,
+                // Every id in connectionIds was read off a Profile node, so the Profile always exists
+                profileKnownToExist: true,
+            })
+        );
 
-    const result = await countQuery.return('COUNT(DISTINCT sent.to) AS count').run();
+    const result = await countQuery.return('COUNT(to) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0);
 };
@@ -1493,31 +1544,26 @@ export const getBoostRecipientsWithChildren = async (
                 { identifier: 'sender', model: Profile },
             ],
         })
-        .match({ model: Profile, identifier: 'recipient' })
-        .where('recipient.profileId = sent.to')
-        // Optional match for received credentials
-        .match({
-            optional: includeUnacceptedBoosts,
-            related: [
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Credential.getRelationshipByAlias('credentialReceived'),
-                    identifier: 'received',
-                },
-                { identifier: 'recipient' },
-            ],
-        })
-        // Group by recipient and collect boost data first
+        // Read the received edge off the credential (one hop) rather than looking up a Profile
+        // for every send. The recipient Profile is only looked up per page row further down.
+        .raw(
+            `${includeUnacceptedBoosts ? 'OPTIONAL ' : ''}MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(receivedBy:Profile)
+            WHERE receivedBy.profileId = sent.to`
+        )
+        // Group by recipient profileId and collect boost data first
         .with(
-            `recipient, 
+            `sent.to AS to,
                COLLECT(DISTINCT {relevantBoost: relevantBoost, sender: sender, sent: sent, received: received, credential: credential}) AS boostData`
         )
+        .raw(cursor ? 'WHERE NOT to <= $cursor' : '')
+        .orderBy('to ASC')
+        .match({ model: Profile, identifier: 'recipient' })
+        .where('recipient.profileId = to')
+        .with('to, recipient, boostData')
         // Apply profile query filtering after grouping
         .where(profileWhereClause)
-        // Add cursor filtering if provided
-        .raw(cursor ? 'AND recipient.profileId > $cursor' : '')
         // Order by profileId and limit profiles (not individual boost relationships)
-        .orderBy('recipient.profileId ASC')
+        .orderBy('to ASC')
         .limit(limit)
         .unwind('boostData AS data')
         .return(
@@ -1547,10 +1593,7 @@ export const getBoostRecipientsWithChildren = async (
                 boostUri: getBoostUri(boostId, domain),
                 ...(credential && { uri: getCredentialUri(credential.id, domain) }),
                 status: coalesceStatus(sent.status, received?.status) as
-                    | 'active'
-                    | 'revoked'
-                    | 'suspended'
-                    | undefined,
+                    'active' | 'revoked' | 'suspended' | undefined,
             };
         });
 
@@ -1663,26 +1706,15 @@ export const countBoostRecipientsWithChildren = async (
                 { identifier: 'sender', model: Profile },
             ],
         })
-        .match({ model: Profile, identifier: 'recipient' })
-        .where('recipient.profileId = sent.to')
-        // Optional match for received credentials
-        .match({
-            optional: includeUnacceptedBoosts,
-            related: [
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Credential.getRelationshipByAlias('credentialReceived'),
-                    identifier: 'received',
-                },
-                { identifier: 'recipient' },
-            ],
-        })
-        // Reduce to recipient before applying filter to ensure it doesn't attach to OPTIONAL MATCH
-        .with('recipient')
-        // Apply profile query filtering after WITH so it filters rows, not optional pattern
-        .where(countProfileWhereClause);
+        .raw(
+            buildDistinctRecipientCount({
+                includeUnacceptedBoosts,
+                recipientWhereClause: countProfileWhereClause,
+                profileKnownToExist: false,
+            })
+        );
 
-    const result = await _query.return('COUNT(DISTINCT recipient.profileId) AS count').run();
+    const result = await _query.return('COUNT(to) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0);
 };
