@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { VC } from '@learncard/types';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router-dom';
 
@@ -70,7 +71,9 @@ import {
     BoostCategoryOptionsEnum,
     useToast,
     ToastTypeEnum,
+    invalidateBoostRecipientQueries,
 } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppearance/BoostCMSAchievementTypeSelectorButton';
 import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSMembersForm';
@@ -89,6 +92,7 @@ const UpdateBoostCMS: React.FC = () => {
     const { track } = useAnalytics();
 
     const { initWallet, addVCtoWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const { data: profile } = useGetProfile();
     const _boostCategoryType = query.get('boostCategoryType') as BoostCategoryOptionsEnum;
@@ -120,7 +124,9 @@ const UpdateBoostCMS: React.FC = () => {
             displayType: getDefaultDisplayType(_boostCategoryType) || 'certificate',
         },
     });
-    const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
+    const [customTypes, setCustomTypes] = useState<
+        Record<string, { title: string; type: string | null }[]>
+    >(initialCustomBoostTypesState);
 
     const [isEditDisabled, setIsEditDisabled] = useState<boolean>(false);
     const [currentStep, setCurrentStep] = useState<BoostCMSStepsEnum>(BoostCMSStepsEnum.create);
@@ -142,7 +148,7 @@ const UpdateBoostCMS: React.FC = () => {
                 getBoostAdmin(wallet, uri),
                 wallet?.invoke?.getBoost(uri),
             ]);
-            const _boostVC = unwrapBoostCredential(boostVC as any);
+            const _boostVC = unwrapBoostCredential(boostVC as VC | undefined);
             const filteredAdmin = admin?.records?.filter(
                 record => record.profileId !== profile?.profileId
             );
@@ -218,7 +224,7 @@ const UpdateBoostCMS: React.FC = () => {
                             longitude: _boostVC?.address?.geo?.longitude,
                         },
                     },
-                    mediaAttachments: [...state?.mediaAttachments, ...boostVcAttachments],
+                    mediaAttachments: [...(state?.mediaAttachments ?? []), ...boostVcAttachments],
                     alignments: derivedAlignments,
                     boostPermissions: {
                         canView:
@@ -284,7 +290,7 @@ const UpdateBoostCMS: React.FC = () => {
                 return {
                     ...prevState,
                     [_boostCategoryType]: [
-                        ...prevState?.[_boostCategoryType],
+                        ...(prevState?.[_boostCategoryType] ?? []),
                         {
                             title: customTypeTitle,
                             type: _boostSubCategoryType,
@@ -555,6 +561,8 @@ const UpdateBoostCMS: React.FC = () => {
                     })
                 );
 
+                void invalidateBoostRecipientQueries(queryClient, _boostUri);
+
                 if (uris.length > 0) {
                     setIsLoading(false);
                     presentToast(m['toasts.boost.boostIssuedSuccess'](), {
@@ -585,7 +593,7 @@ const UpdateBoostCMS: React.FC = () => {
         }
     };
 
-    let previewDisplay = null;
+    let previewDisplay: React.ReactNode;
     if (isDisplayID) {
         previewDisplay = (
             <BoostCMSIDCard
@@ -667,7 +675,7 @@ const UpdateBoostCMS: React.FC = () => {
     };
 
     let activeBoostCMSStep: null | React.ReactNode = null;
-    let appearanceControllerDisplay = null;
+    let appearanceControllerDisplay: React.ReactNode;
     if (isDisplayID) {
         appearanceControllerDisplay = (
             <BoostCMSIDAppearanceController

@@ -36,11 +36,16 @@ export type TroopIdCredentialStatus = 'valid' | 'pending' | 'revoked' | undefine
 /**
  * Check the status of a troop ID credential.
  * Returns: 'valid' (claimed), 'pending' (sent but not claimed), 'revoked', or undefined (loading)
+ *
+ * Pass enabled=false to skip the recipient lookups entirely (returns undefined). Each lookup
+ * is a getBoostRecipients call on brain-service, so callers that don't need the status yet
+ * (e.g. a card whose menu isn't open) shouldn't pay for it.
  */
 export const useTroopIDStatus = (
     credential: VC,
     otherUserProfileID?: string,
-    boostUri?: string
+    boostUri?: string,
+    enabled = true
 ): TroopIdCredentialStatus => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const profileId = otherUserProfileID ?? currentLCNUser?.profileId;
@@ -49,19 +54,25 @@ export const useTroopIDStatus = (
     // Unconditional (rules of hooks) — used for pre-Feb-13 backcompat check below
     const { data: walletIds } = useGetIDs();
 
+    // Deliberately gated on `enabled` only. With no URI the query throws client-side before
+    // touching the wallet (so no brain-service call), and after retries that error resolves to
+    // 'revoked', which callers rely on. Gating on the URI too would park those callers on
+    // undefined forever, and TroopIdStatusButton would render "Valid ID" instead.
     // Query 1: Get claimed recipients only (default: includeUnacceptedBoosts=false)
     const {
         data: claimedRecipients,
         isLoading: isLoadingClaimed,
         isError: isClaimedError,
-    } = useGetBoostRecipients(_boostUri, true, false);
+    } = useGetBoostRecipients(_boostUri, enabled, false);
 
     // Query 2: Get all recipients including pending (includeUnacceptedBoosts=true)
     const {
         data: allRecipients,
         isLoading: isLoadingAll,
         isError: isAllError,
-    } = useGetBoostRecipients(_boostUri, true, true);
+    } = useGetBoostRecipients(_boostUri, enabled, true);
+
+    if (!enabled) return undefined;
 
     // Still loading
     if (isLoadingClaimed || isLoadingAll) return undefined;
@@ -91,9 +102,10 @@ export const useTroopIDStatus = (
             const credBoostId = credential?.boostId;
             const isInWallet =
                 credBoostId &&
-                walletIds.some(
-                    (id: any) => id?.boostId === credBoostId || id?.vc?.boostId === credBoostId
-                );
+                walletIds.some(walletId => {
+                    const id = walletId as { boostId?: string; vc?: { boostId?: string } };
+                    return id?.boostId === credBoostId || id?.vc?.boostId === credBoostId;
+                });
             if (isInWallet) return 'valid';
         }
         return 'pending';
@@ -118,7 +130,7 @@ export const useIsTroopIDRevoked = (
 export const useIsTroopIDRevokedFake = (
     credential: VC,
     _isError: boolean,
-    _error: any,
+    _error: unknown,
     otherUserProfileID?: string,
     boostUri?: string
 ): boolean => {

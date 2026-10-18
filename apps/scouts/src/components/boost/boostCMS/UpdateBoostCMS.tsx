@@ -78,7 +78,9 @@ import {
     BoostCategoryOptionsEnum,
     useToast,
     ToastTypeEnum,
+    invalidateBoostRecipientQueries,
 } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
@@ -121,6 +123,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const { data: profile } = useGetProfile();
     const _boostCategoryType =
@@ -158,7 +161,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             badgeThumbnail: boostCategoryOptions[_boostCategoryType].CategoryImage,
         },
     });
-    const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
+    const [customTypes, setCustomTypes] = useState<
+        Record<string, { title: string; type: string | null }[]>
+    >(initialCustomBoostTypesState);
 
     const [isEditDisabled, setIsEditDisabled] = useState<boolean>(true);
     const [currentStep, setCurrentStep] = useState<BoostCMSStepsEnum>(BoostCMSStepsEnum.create);
@@ -608,6 +613,8 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     })
                 );
 
+                void invalidateBoostRecipientQueries(queryClient, _boostUri);
+
                 if (uris.length > 0) {
                     setIsLoading(false);
                     presentToast(m['boostCMS.issuedOk'](), {
@@ -663,7 +670,8 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             : { sectionClassName: 'bg-white' };
 
         const categoryTypeEnum =
-            (state?.basicInfo?.type as any) || BoostCategoryOptionsEnum.achievement;
+            (state?.basicInfo?.type as BoostCategoryOptionsEnum) ||
+            BoostCategoryOptionsEnum.achievement;
 
         const previewCredential = getBoostCredentialPreview(state) as unknown as VC;
 
