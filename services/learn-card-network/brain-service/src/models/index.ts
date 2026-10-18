@@ -240,11 +240,16 @@ const runIndexQuery = async (query: string): Promise<void> => {
 };
 
 if (shouldCreateIndices) {
-    void ensureCredentialRefreshConstraints().catch(err => {
-        console.error('Error creating credential refresh constraints:', err);
-    });
-
     (async function createIndices() {
+        // Constraints first, then indexes, one schema statement at a time. Running the two
+        // lists concurrently made every cold start contend with itself for schema locks.
+        // The readiness promise is memoized, so refresh routes awaiting it later reuse this run.
+        try {
+            await ensureCredentialRefreshConstraints();
+        } catch (err) {
+            console.error('Error creating credential refresh constraints:', err);
+        }
+
         try {
             for (const query of indexQueries) {
                 await runIndexQuery(query);
