@@ -3,6 +3,7 @@ import { Profile } from '@models';
 import { ProfileType, FlatProfileType } from 'types/profile';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
+import { PROFILE_DISPLAY_NAME_LOWER_FIELD } from './search-fields';
 
 export const getProfileByProfileId = async (profileId: string): Promise<ProfileType | null> => {
     const result = await new QueryBuilder()
@@ -86,6 +87,15 @@ export const checkIfProfileExists = async ({
     return false;
 };
 
+/**
+ * Case-insensitive substring search over `profileId` and `displayName`.
+ *
+ * Each branch of the `UNION` is a single `CONTAINS` predicate so the planner can seek a TEXT
+ * index for it (`profileId_text_idx` and `profile_displayname_lower_text_idx`) instead of
+ * scanning every `Profile`. `UNION` (not `UNION ALL`) dedupes a profile that matches both.
+ * The visibility/private/service/blacklist filters, ordering and limit are applied to the
+ * merged set, same as before.
+ */
 export const searchProfiles = async (
     searchInput: string,
     {
@@ -100,15 +110,23 @@ export const searchProfiles = async (
 ): Promise<ProfileType[]> => {
     const result = await new QueryBuilder(
         new BindParam({
+            // profileId is stored lowercased by transformProfileId
             input: searchInput.toLowerCase(),
-            inputRegex: `(?i).*${searchInput}.*`,
+            // displayNameLower is written with Cypher toLower, so lowercase the input the same way
+            displayNameInput: searchInput,
             blacklist,
         })
     )
-        .match({ identifier: 'profile', model: Profile })
+        .raw(
+            `CALL {
+    MATCH (profile:Profile) WHERE profile.profileId CONTAINS $input RETURN profile
+    UNION
+    MATCH (profile:Profile) WHERE profile.${PROFILE_DISPLAY_NAME_LOWER_FIELD} CONTAINS toLower($displayNameInput) RETURN profile
+}`
+        )
+        .with('profile')
         .where(
             `
-(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex) AND 
 (
     profile.profileVisibility IS NULL OR
     profile.profileVisibility = "public"

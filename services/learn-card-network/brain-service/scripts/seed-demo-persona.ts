@@ -237,7 +237,8 @@ const main = async (): Promise<void> => {
                  SET p.displayName = $displayName,
                      p.shortBio = $shortBio,
                      p.image = $image,
-                     p.did = $did
+                     p.did = $did,
+                     p.displayNameLower = toLower($displayName)
                  RETURN p.did AS did`,
                 {
                     profileId: issuer.profileId,

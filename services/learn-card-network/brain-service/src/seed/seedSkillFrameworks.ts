@@ -519,7 +519,8 @@ export const ensureSeedProfile = async (
                        p.shortBio = coalesce(p.shortBio, $shortBio),
                        p.profileVisibility = coalesce(p.profileVisibility, $profileVisibility),
                        p.approved = coalesce(p.approved, $approved),
-                       p.isServiceProfile = coalesce(p.isServiceProfile, $isServiceProfile)`,
+                       p.isServiceProfile = coalesce(p.isServiceProfile, $isServiceProfile)
+         SET p.displayNameLower = toLower(p.displayName)`,
         {
             profileId: normalizedProfileId,
             displayName: DEFAULT_OWNER_DISPLAY_NAME,
