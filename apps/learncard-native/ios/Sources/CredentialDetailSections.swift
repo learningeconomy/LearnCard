@@ -26,7 +26,7 @@ struct CredentialVerificationView: View {
                     .font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("credential-verification-title")
-            }.frame(minHeight: 44)
+            }.multilineTextAlignment(.leading).frame(minHeight: 44)
         }.tint(Palette.secondary)
             .accessibilityHint(NativeText.text("credential.details.verificationHint"))
             .accessibilityIdentifier("credential-verification")

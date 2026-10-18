@@ -69,7 +69,7 @@ struct CredentialLifecycleView: View {
                             .font(.caption).foregroundStyle(Palette.secondary)
                             .accessibilityIdentifier("credential-lifecycle-stale")
                     }
-                }.fixedSize(horizontal: false, vertical: true)
+                }.multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
             }.frame(minHeight: 44).padding(.vertical, status.refreshFailed ? 4 : 0)
         }.tint(Palette.secondary)
             .accessibilityElement(children: .contain).accessibilityIdentifier("credential-lifecycle")

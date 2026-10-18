@@ -31,8 +31,8 @@ import XCTest
 
     func testOptionalDetailsExpandWithoutDisplacingPrimaryShareAndExportIsSecondary() {
         let app = open()
-        XCTAssertTrue(app.staticTexts["credential-verification-title"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["credential-verification-title"].label, "Signature verified")
+        XCTAssertTrue(app.buttons["credential-verification"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["credential-verification"].label, "Signature verified")
         XCTAssertTrue(app.buttons["share"].isHittable)
         XCTAssertLessThanOrEqual(app.buttons["share"].frame.maxY, app.otherElements["bottom-navigation"].frame.minY)
         capture(app, "Credential detail hierarchy and scoped signature fixture")
@@ -78,10 +78,10 @@ import XCTest
     func testUnavailableAndUnverifiedSignaturesDoNotBecomeTrustedOrRevoked() {
         let app = open(); app.navigationBars.buttons.firstMatch.tap()
         app.buttons["credential-detail-not-verified"].tap()
-        XCTAssertEqual(app.staticTexts["credential-verification-title"].label, "Signature not verified")
+        XCTAssertEqual(app.buttons["credential-verification"].label, "Signature not verified")
         XCTAssertFalse(app.staticTexts["Revoked"].exists); XCTAssertFalse(app.staticTexts["Suspended"].exists)
         app.navigationBars.buttons.firstMatch.tap(); app.buttons["credential-detail-unavailable"].tap()
-        XCTAssertEqual(app.staticTexts["credential-verification-title"].label, "Verification unavailable")
+        XCTAssertEqual(app.buttons["credential-verification"].label, "Verification unavailable")
         XCTAssertFalse(app.buttons["share"].exists)
         XCTAssertFalse(app.otherElements["credential-criteria"].exists)
     }

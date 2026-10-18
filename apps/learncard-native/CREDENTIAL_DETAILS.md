@@ -48,7 +48,13 @@ See [TESTING](TESTING.md) for actual runs and installed-build evidence. Core tes
 
 ## Actual native screens
 
-The images below document the initial detail/share pass, before lifecycle checks and the About-first compact status hierarchy. Updated physical scroll/retry captures are pending the Mac unlock; see the current verification record in TESTING.
+The current About-first hierarchy and compact status disclosures are shown below. The 375-point Arabic example uses dark mode and enlarged accessibility text; the retry remains reachable above the root tray. Direct review also checks last-confirmed retention after a failed refresh and suspension reactivation after retry. See the current verification record in TESTING.
+
+| About first                                                                                    | Revocation details                                                                                         | Arabic accessibility text                                                                                               |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| ![About directly below the native credential](design/credential-detail-about-first-native.png) | ![Expanded revoked fixture with source, check time and retry](design/credential-status-revoked-native.png) | ![Arabic compact dark accessibility revoked status and retry](design/credential-status-arabic-accessibility-native.png) |
+
+The earlier detail/share screenshots below predate the compact lifecycle panel.
 
 These captures use isolated display fixtures and a nonfunctional `example.invalid` presentation URL. The green badge exercises a supplied signature-result fixture; it is not a claim about a real account. Real SDK cryptography is checked separately in the runtime tests.
 
