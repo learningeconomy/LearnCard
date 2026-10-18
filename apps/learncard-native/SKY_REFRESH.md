@@ -20,7 +20,7 @@ These are illustrative time periods, not a weather or astronomical-sunset claim.
 
 The strip fills its actual native refresh-control bounds. It adds no permanent page space, horizontal inset, extra gesture recognizer or manually imposed scroll inset. Native scrolling controls its reveal and collapse. Scene drawing clips to those bounds; visitors scale to the available height.
 
-Simple flat shapes provide pill clouds, a bird, a colored balloon, a plane and a small UFO. Clouds drift gently; the bird has a small wing motion, visitors glide/bob and sparse stars twinkle. Each starts in a complete visible pose. No second mosaic, arbitrary blocks, visible refresh words, progress percentage or illustrated success claim appear.
+Simple flat shapes provide pill clouds, a bird, a colored balloon, a plane and a small UFO. A shared 3.6-second sine wave rolls from left to right through the clouds, sun, moon, stars and visitors, with staggered phases and small horizontal/vertical offsets. The dusk horizon gently follows the same wave. Visitors also glide, the bird has a small wing motion and sparse stars twinkle. Each starts in a complete visible pose. No second mosaic, arbitrary blocks, visible refresh words, progress percentage or illustrated success claim appear.
 
 The scene and visitor are latched for the pull/release/refresh cycle, including a time-period boundary. They are not chosen on animation frames. Animation runs at up to 30 fps only during visible active refresh work. On completion it holds its last pose while the native space collapses. Offscreen/inactive animation pauses. Reduce Motion and VoiceOver keep a still scene; the existing native accessible refresh action and spoken refresh-start announcement remain.
 
@@ -45,8 +45,8 @@ Debug demo launches accept **--sky-phase morning|afternoon|dusk|night** and **--
 
 These captures use isolated demo service fixtures and the production drawing. Forced scenes/cows are Debug review settings; normal refresh chooses its scene from local time and its cameo from the rare policy.
 
-- [Actual native pull, awaited read and collapse](design/sky-refresh-pull-native.mp4), ten seconds cropped to the header/strip/Home content.
+- [Actual native pull, awaited read and collapse](design/sky-refresh-wave-native.mp4), ten seconds cropped to the header/strip/Home content.
 - [Cow cameo during Home refresh](design/sky-refresh-cow-home-native.png) and [dusk plane during Passport refresh](design/sky-refresh-dusk-passport-native.png), at the actual native control height.
-- [All four scenes and the cameo in the isolated drawing gallery](design/sky-refresh-scenes-native.png), with [gallery motion](design/sky-refresh-gallery-native.mp4). The gallery uses 72-point strips for comparison; it does not establish native gesture geometry.
+- [All four scenes and the cameo in the isolated drawing gallery](design/sky-refresh-wave-scenes-native.png), with [gallery motion](design/sky-refresh-wave-gallery-native.mp4). The gallery uses 72-point strips for comparison; it does not establish native gesture geometry.
 
 See [TESTING](TESTING.md#local-time-sky-refresh--october-18-2026) for final checks, installed-build proof and limitations. Broader changes to app sign-in, account/credential data, sharing, backend polling and native hosted CI are outside this visual pass.

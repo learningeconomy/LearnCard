@@ -1,5 +1,15 @@
 # Native regression checks
 
+## Whole-scene sky wave — October 18, 2026
+
+The whole illustration now follows one 3.6-second left-to-right sine wave. Clouds, sun/moon and stars have staggered horizontal/vertical offsets; the dusk horizon has a smaller ripple. Visitors retain their glide and share the wave for bob/tilt. The native refresh host/lifetime is unchanged. Still and completion poses continue to use the same frozen elapsed value.
+
+The complete Swift suite passes **215 cases** (182 XCTest + 33 Swift Testing; `sky-wave-core.log`). The new regression checks spatial phase propagation, repeatability, bounded/nonfinite inputs and still Reduced Motion values. The two existing native cases pass **2/2**, zero failures/skips (`sky-wave-ui-2026-10-18.xcresult`): awaited Home refresh/collapse with the cow fixture, and Arabic dark accessibility3 Reduce Motion Inbox refresh/navigation. No UI case is added. The configured ordinary suite is **576** (215 unchanged Bun, 215 Swift, 146 UI), plus the live skip; catalog remains **1,093 keys**.
+
+The [actual native Home gesture/read/collapse clip](design/sky-refresh-wave-native.mp4) confirms the updated scene in the real control. The [production drawing gallery](design/sky-refresh-wave-gallery-native.mp4) and [scene capture](design/sky-refresh-wave-scenes-native.png) compare all four scenes and the cameo at 72 points. Comparing only left-side sky regions, excluding visitors, changes 418/478/1,110/260 pixels for morning/afternoon/dusk/night; the same Reduced Motion regions change zero (`sky-wave-motion-proof.json`). Across the recorded cycle, cloud centroids travel 9.27/9.53/9.24 points vertically and the first night star travels 5.33 points. H.264 star analysis uses yellow-hue separation rather than an exact PNG color match because chroma subsampling changes tiny star pixels. These gallery measurements establish visible wave motion, not native refresh-control height.
+
+Normal Debug build/install passes **48/48**, with private configuration preserved byte-for-byte and build **3** (`sky-wave-debug-final.log`, `sky-wave-install-proof.json`). Read-only review confirms retained signed-in Home, the afternoon greeting and remote credential artwork. The checks device is shut down. Formatting/scoped lint and link checks are recorded with the commit. No real credential/account reset, relationship mutation, full Bun/UI, Release or hosted native CI run is included. [Current motion contract](SKY_REFRESH.md).
+
 ## Local-time sky refresh — October 18, 2026
 
 The complete Swift suite passes **214 cases** (181 XCTest + 33 Swift Testing; `sky-refresh-core.log`). Six new core cases replace the three weave-motion cases: local-hour boundaries/timezones, scene latching, rare-cameo frequency/cooldown/clock rollback, initial still pose and finite bounded motion. One new SDK case covers named/unnamed greetings and placeholder insertion in en/es/fr/ar. Catalog preparation validates **1,093 keys**. Configured ordinary suite: **575 cases** (215 unchanged Bun, 214 Swift, 146 simulator), plus the opt-in live skip. Only the Swift suite and focused simulator cases are freshly run for this pass.

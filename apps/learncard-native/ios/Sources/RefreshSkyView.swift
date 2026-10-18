@@ -43,17 +43,18 @@ struct RefreshSkyView: View {
             for (i, star) in stars.enumerated() {
                 var c = context
                 c.opacity = 0.72 + 0.28 * sin(elapsed / 2 + Double(i) * 1.8)
-                let point = CGPoint(x: star.0 * w, y: star.1 * h)
+                let point = skyPoint(x: star.0, y: star.1, size: size, elapsed: elapsed, strength: 0.55)
                 if i.isMultiple(of: 3) { sparkle(context: &c, at: point, radius: min(4, h * 0.06)) }
                 else { c.fill(Path(ellipseIn: CGRect(x: point.x, y: point.y, width: 2.4, height: 2.4)), with: .color(.white)) }
             }
-            let r = min(14, h * 0.19), x = w * 0.84, y = h * 0.32
+            let moon = skyPoint(x: 0.84, y: 0.35, size: size, elapsed: elapsed, strength: 0.75)
+            let r = min(14, h * 0.19), x = moon.x, y = moon.y
             context.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
             context.fill(Path(ellipseIn: CGRect(x: x - r * 0.28, y: y - r * 1.24, width: r * 2, height: r * 2)), with: .color(fill))
             return
         }
         if sky == .morning {
-            let r = min(11, h * 0.15), point = CGPoint(x: w * 0.4, y: h * 0.34)
+            let r = min(11, h * 0.15), point = skyPoint(x: 0.4, y: 0.4, size: size, elapsed: elapsed, strength: 0.75)
             context.fill(Path(ellipseIn: CGRect(x: point.x - r, y: point.y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
             for angle in [-2.5, -1.6, -0.65, 0.12] {
                 var ray = Path()
@@ -64,19 +65,30 @@ struct RefreshSkyView: View {
         }
         if sky == .dusk {
             let r = min(19, h * 0.27)
-            context.fill(Path(ellipseIn: CGRect(x: w * 0.42 - r, y: h * 0.87 - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
+            let sun = skyPoint(x: 0.42, y: 0.87, size: size, elapsed: elapsed, strength: 0.75)
+            context.fill(Path(ellipseIn: CGRect(x: sun.x - r, y: sun.y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
             var horizon = Path()
-            horizon.move(to: CGPoint(x: 0, y: h * 0.74))
-            horizon.addCurve(to: CGPoint(x: w * 0.52, y: h * 0.99), control1: CGPoint(x: w * 0.2, y: h * 0.58), control2: CGPoint(x: w * 0.3, y: h * 1.1))
-            horizon.addCurve(to: CGPoint(x: w, y: h * 0.78), control1: CGPoint(x: w * 0.72, y: h * 0.75), control2: CGPoint(x: w * 0.84, y: h * 0.68))
+            func edge(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+                CGPoint(x: x * w, y: y * h + CGFloat(SkyMotion.wave(elapsed: elapsed, position: Double(x), animated: true)) * h * 0.025)
+            }
+            horizon.move(to: edge(0, 0.74))
+            horizon.addCurve(to: edge(0.52, 0.99), control1: edge(0.2, 0.58), control2: edge(0.3, 1.1))
+            horizon.addCurve(to: edge(1, 0.78), control1: edge(0.72, 0.75), control2: edge(0.84, 0.68))
             horizon.addLine(to: CGPoint(x: w, y: h)); horizon.addLine(to: CGPoint(x: 0, y: h)); horizon.closeSubpath()
             context.fill(horizon, with: .color(Palette.lilacCard))
-            sparkle(context: &context, at: CGPoint(x: w * 0.29, y: h * 0.26), radius: min(4, h * 0.07))
-            sparkle(context: &context, at: CGPoint(x: w * 0.9, y: h * 0.44), radius: min(3, h * 0.05))
+            sparkle(context: &context, at: skyPoint(x: 0.29, y: 0.26, size: size, elapsed: elapsed, strength: 0.55), radius: min(4, h * 0.07))
+            sparkle(context: &context, at: skyPoint(x: 0.9, y: 0.44, size: size, elapsed: elapsed, strength: 0.55), radius: min(3, h * 0.05))
         }
-        let drift = sin(elapsed / 12) * w * 0.035
-        cloud(context: &context, x: w * 0.1 + drift, y: h * 0.73, unit: h * 0.6)
-        cloud(context: &context, x: w * 0.84 - drift * 0.65, y: sky == .dusk ? h * 0.27 : h * 0.75, unit: h * 0.44)
+        let left = skyPoint(x: 0.1, y: 0.73, size: size, elapsed: elapsed)
+        let right = skyPoint(x: 0.84, y: sky == .dusk ? 0.27 : 0.75, size: size, elapsed: elapsed, strength: 0.85)
+        cloud(context: &context, x: left.x, y: left.y, unit: h * 0.6)
+        cloud(context: &context, x: right.x, y: right.y, unit: h * 0.44)
+    }
+
+    private func skyPoint(x: CGFloat, y: CGFloat, size: CGSize, elapsed: Double, strength: CGFloat = 1) -> CGPoint {
+        let pulse = CGFloat(SkyMotion.wave(elapsed: elapsed, position: Double(x), animated: true)) * strength
+        return CGPoint(x: x * size.width + pulse * size.width * 0.008,
+                       y: y * size.height + pulse * size.height * 0.065)
     }
 
     private func cloud(context: inout GraphicsContext, x: CGFloat, y: CGFloat, unit: CGFloat) {

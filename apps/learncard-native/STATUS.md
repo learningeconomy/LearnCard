@@ -1,5 +1,9 @@
 # Native experiment handoff — 2026-10-18
 
+**Whole-scene sky motion:** clouds, sun/moon, stars and visitors now follow a shared left-to-right sine wave, with a smaller ripple in the dusk horizon. Native recordings verify visible rise/fall beyond the visitors; Reduced Motion stays still. [Current native clips and contract](SKY_REFRESH.md).
+
+Validation: **215 Swift** and **2/2 existing focused UI cases** pass. Normal Debug is installed **48/48**, private configuration/build **3** preserved; read-only review confirms retained Home and the afternoon greeting. The checks device is shut down. Configured suite **576** plus live skip; no fresh full Bun/UI/Release/hosted CI result is claimed. [Exact scope](TESTING.md#whole-scene-sky-wave--october-18-2026).
+
 **Local-time sky refresh:** Home, Passport, Inbox and Apps now reveal a shallow full-width flat sky with a bird, colored balloon, dusk plane or night UFO. Home's localized greeting follows device-local time. Rare spotted cows drift under parachutes, with per-cycle selection and a shared cooldown. Visitors start fully visible; Reduce Motion/VoiceOver keep a still scene. Native gestures, refresh completion, idle geometry and inline retry remain. [Production contract and native clips](SKY_REFRESH.md).
 
 Validation: **214 Swift cases** and **5/5 focused UI cases** pass, with a final **2/2** Home/Passport repeat after resetting the next-pull pose. Catalog **1,093 keys**; configured ordinary suite **575** plus the live skip. Moving/still native captures confirm animation and Reduced Motion. Normal Debug is installed **48/48**, private configuration/build **3** preserved. Read-only review confirms retained signed-in Home, the morning greeting and remote credential artwork; the checks device is shut down. No new Bun/full UI/Release/hosted CI result or live account mutation is claimed. [Exact verification](TESTING.md#local-time-sky-refresh--october-18-2026).

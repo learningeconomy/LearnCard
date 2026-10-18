@@ -57,11 +57,19 @@ public enum SkyMotion {
     public struct Pose: Equatable, Sendable {
         public let x: Double, y: Double, tilt: Double, wing: Double
     }
+    /// A shared 3.6-second left-to-right pulse. Objects sample their horizontal
+    /// position so the whole scene moves in a wave rather than bouncing in sync.
+    public static func wave(elapsed: Double, position: Double, animated: Bool) -> Double {
+        let t = animated && elapsed.isFinite ? max(0, elapsed) : 0
+        let x = position.isFinite ? position : 0
+        return sin(t * (2 * .pi / 3.6) - x * .pi * 1.6)
+    }
     public static func pose(elapsed: Double, animated: Bool, secondCow: Bool = false) -> Pose {
         let t = animated && elapsed.isFinite ? max(0, elapsed) : 0
         let travel = (0.57 + t / 52).truncatingRemainder(dividingBy: 1)
-        return Pose(x: secondCow ? 0.19 + sin(t / 13) * 0.06 : travel * 1.3 - 0.15,
-                    y: (secondCow ? 0.38 : 0.52) + sin(t / 2.6) * 0.045,
-                    tilt: sin(t / 3.4) * 4, wing: sin(t * 3.4) * 0.18)
+        let x = secondCow ? 0.19 + sin(t / 13) * 0.06 : travel * 1.3 - 0.15
+        let pulse = wave(elapsed: t, position: x, animated: animated)
+        return Pose(x: x, y: (secondCow ? 0.38 : 0.52) + pulse * (secondCow ? 0.045 : 0.065),
+                    tilt: pulse * 4, wing: sin(t * 3.4) * 0.18)
     }
 }

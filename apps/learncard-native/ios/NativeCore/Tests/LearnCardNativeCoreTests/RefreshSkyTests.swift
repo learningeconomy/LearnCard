@@ -83,4 +83,22 @@ final class RefreshSkyTests: XCTestCase {
             }
         }
     }
+    func testSceneWaveTravelsAcrossElementsAndStaysStillForReducedMotion() {
+        let first = SkyMotion.wave(elapsed: 0, position: 0.1, animated: true)
+        XCTAssertNotEqual(first, SkyMotion.wave(elapsed: 0, position: 0.84, animated: true))
+        XCTAssertNotEqual(first, SkyMotion.wave(elapsed: 0.9, position: 0.1, animated: true))
+        XCTAssertEqual(first, SkyMotion.wave(elapsed: 3.6, position: 0.1, animated: true), accuracy: 0.000001)
+        // The same wave crest reaches an element farther right at a later time.
+        XCTAssertEqual(SkyMotion.wave(elapsed: 0.9, position: 0, animated: true),
+                       SkyMotion.wave(elapsed: 1.8, position: 0.3125, animated: true), accuracy: 0.000001)
+        for x in [0.1, 0.4, 0.84] {
+            let still = SkyMotion.wave(elapsed: 0, position: x, animated: false)
+            for t in [0.0, 0.3, 45, 900, -.infinity, .infinity, .nan] {
+                XCTAssertEqual(still, SkyMotion.wave(elapsed: t, position: x, animated: false))
+                let moving = SkyMotion.wave(elapsed: t, position: x, animated: true)
+                XCTAssertTrue(moving.isFinite && (-1...1).contains(moving))
+            }
+        }
+        XCTAssertTrue(SkyMotion.wave(elapsed: 1, position: .nan, animated: true).isFinite)
+    }
 }

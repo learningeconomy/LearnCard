@@ -415,5 +415,6 @@ User feedback makes About the first section after the hero. Signature and lifecy
 - [x] Add rare one/two spotted-cow parachutes: 2% combined selection, ten-minute cooldown shared across tabs in-process, stable through each pull/refresh, no completion delay.
 - [x] Preserve accessible native refresh, spoken operation feedback, still Reduce Motion/VoiceOver scenes, lifecycle pauses, cached data and inline retry.
 - [x] Verify real native gestures/collapse, deterministic day/cow review, moving/still drawings, four-language greetings and normal Debug installation.
+- [x] Refine the whole sky into a staggered left-to-right sine wave: clouds, sun/moon, stars, visitors and a smaller dusk-horizon ripple, keeping Reduced Motion still.
 
 The user rejected the detailed atmospheric studies in favor of sparse flat graphics; the [selected concepts and exact prompts](design/SKY_REFRESH_BRIEF.md) preserve that correction. Production uses native Canvas shapes. [Behavior, scenes and actual motion](SKY_REFRESH.md); [test scope and install proof](TESTING.md#local-time-sky-refresh--october-18-2026). Existing endorsements, issuer-trust, learner-learning, design-system and organization-workspace queues remain separate.
