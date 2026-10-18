@@ -1,5 +1,20 @@
 # LearnCard native client plan
 
+## Credential details and individual sharing — October 17
+
+- [x] Preserve the rendered credential hero and separate a compact scoped signature panel, About, metadata and supplied optional details.
+- [x] Project criteria, alignment references, evidence/attachments, activity/expiry fields and results without rewriting signed originals; expand long text/lists in place.
+- [x] Make Share the primary personal-credential action, with a one-record presentation-link review, matching QR/copy/iOS sharing, pending/retry and same-screen link reuse. Keep signed JSON export secondary.
+
+See [the field, verification and sharing contract](CREDENTIAL_DETAILS.md). Native checks and installed-build evidence are recorded in [TESTING](TESTING.md).
+
+## Queued: native endorsements
+
+- [ ] Design endorsement counts/list/details and their source-credential binding together, keeping signatures, issuer trust and endorsements distinct.
+- [ ] Add request/response routing and public/private visibility controls with explicit actions, then verify real-account interoperability separately.
+
+The user split this feature from the current detail pass. Existing encrypted sharing still includes public endorsements; no endorsement mutation is introduced here.
+
 ## Painted pull-to-refresh — October 17
 
 - [x] Generate a compact motion reference using the painted LearnCard mosaic.

@@ -1,5 +1,17 @@
 # Native regression checks
 
+## Credential detail fields and single sharing — October 18, 2026
+
+The full Swift suite passes **205 cases** (172 XCTest + 33 Swift Testing; `credential-detail-core.log`). New wire tests cover older credentials without structured verification, new optional fields/references, fractional timestamps and unchanged original payloads. The full runtime suite passes **207 cases** (`credential-detail-runtime-final-complete.log`): read-only projection, safe references/date handling, actual SDK signature success/tampering, original-preserving encrypted presentation and canonical retry fingerprints. Native source contracts pass with the same **14 owning-package diagnostics** (`credential-detail-types-final.log`). Catalog generation validates **1,066 keys** in four languages.
+
+There are **nine distinct passing focused simulator cases** across the reviewed runs: four new detail/share cases, the existing native system-share check, and all four Passport browse cases. Earlier combined runs passed **7/9**, exposing parent identifier propagation and partially covered center taps under the fixed footer. Explicit accessibility containers, 44-point label targets and a viewport-aware test helper address those issues. `credential-detail-checked-ui-2026-10-18.xcresult` then passes **4/5**; its remaining export check caught DisclosureGroup overwriting its child identifier. More options now has its own explicit header button. The final standard-phone detail/export case passes **1/1** (`credential-detail-export-ui-2026-10-18.xcresult`), and the final **375-point repeat passes 2/2** (`credential-detail-compact-ui-2026-10-18.xcresult`) for source expansion/export and failure/pending/QR/copy/reopen. Failed runs remain recorded as failures.
+
+[Actual native captures](CREDENTIAL_DETAILS.md#actual-native-screens) were visually reviewed, including Arabic dark accessibility text. Native screenshot QR decoding at both widths matches the entire expected presentation URL, including its fragment viewing key (`credential-detail-qr-proof.log`, `credential-detail-qr-compact-proof.log`). QR/retry UI tests use an isolated service and `example.invalid`, never a real account publication. The existing sample system-share flow still opens iOS's share sheet.
+
+Normal Debug build and Native Lab installation pass with **48/48 payload files**, original private configuration and build **3** matching (`credential-detail-install-proof.json`). The standard and compact checks devices are shut down; the new dedicated 375-point device is retained for future isolated checks to avoid repeated first-boot setup.
+
+Configured suite: **557 cases** (207 Bun, 205 Swift, 145 simulator), plus the opt-in live-exchange skip. The full simulator suite, Release and hosted native CI were not run. Verification remains proof-only; issuer trust/revocation and endorsement request/management UI are separate. No live share publication, endorsement mutation, account reset/sign-out or relationship write was used.
+
 ## Compact Passport filter row — October 17, 2026
 
 The sort control displays its current order beside arrows, retaining the full localized “Sort: …” VoiceOver label. Eight-point gaps leave space for the conditional 44-point reset alongside Issue date. Longer translations and accessibility text retain the two-row fallback without reducing text or touch targets.

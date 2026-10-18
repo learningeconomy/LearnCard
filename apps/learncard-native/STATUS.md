@@ -1,4 +1,8 @@
-# Native experiment handoff — 2026-10-17
+# Native experiment handoff — 2026-10-18
+
+**Credential details and individual Share:** The rendered hero is preserved. A scoped checkmark says Signature verified only after the existing proof check, with issuer trust/revocation explicitly unchecked. About, metadata, criteria, alignments, evidence/attachments, results and activity/expiry fields now have a tighter hierarchy; long text/lists expand. Share stays above the root tray and opens a one-record encrypted presentation-link review with matching QR/copy/iOS sharing, pending/retry and same-screen reuse. Signed JSON export is secondary. Endorsements are queued separately. [Contract and native captures](CREDENTIAL_DETAILS.md).
+
+Validation: **205 Swift**, **207 runtime**, native type contracts and **nine distinct focused UI cases** pass across the scoped runs, with **2/2 final compact repeats**. Native QR pixels decode to the exact URL/fragment at both widths. Catalog **1,066 keys**; configured suite **557 cases** plus live skip. Normal Debug is installed **48/48**, with original private configuration/build **3** preserved. Both isolated checks devices are shut down. Full simulator/Release/hosted native CI and live publication were not run. See [verification and retained failed-run details](TESTING.md).
 
 **Compact Passport controls:** Issue date, the current sort order and reset now share one line at 402/375-point standard text sizes. The redundant visible “Sort:” prefix is removed while VoiceOver keeps it. Longer translations and enlarged text retain the two-row fallback with full touch targets. All **4/4 Passport cases** and the **1/1 compact repeat** pass. Normal Debug is installed **48/48**, with private configuration/build **3** preserved; both test devices are cleaned up. No real account reset or relationship write was used. [Layout contract and compact native capture](design/PASSPORT_BROWSING.md); [verification](TESTING.md).
 

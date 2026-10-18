@@ -13,6 +13,12 @@ import {
     type NativeCredentialDraft,
 } from './credential-draft';
 import { credentialCategoryForDisplay } from './credential-category';
+import { fingerprintShareRequest } from './share-request';
+import {
+    credentialDetailsForDisplay,
+    signatureStateForDisplay,
+    type NativeSignatureState,
+} from './credential-details';
 import { resolveNativeAuthoring } from './credential-authoring';
 import { validateCollectionCursor } from './collection-pagination';
 import { nativeProfileUpdate } from './profile-update';
@@ -419,6 +425,7 @@ const display = async (
     const uri = string(record.uri);
     let raw: Record<string, unknown> = {};
     let proofChecked = false;
+    let signatureState: NativeSignatureState = 'unavailable';
     try {
         raw = supplied ?? object(await wallet.read.get(uri));
         if (Object.keys(raw).length) {
@@ -426,7 +433,8 @@ const display = async (
                 const result = await wallet.invoke.verifyCredential(raw as never, {
                     checks: ['proof'],
                 });
-                proofChecked = result.errors.length === 0;
+                signatureState = signatureStateForDisplay(result);
+                proofChecked = signatureState === 'verified';
             }
             original.set(uri, raw);
         }
@@ -458,6 +466,8 @@ const display = async (
         artworkURL: image(achievement.image) || image(raw.image),
         issuerLogoURL: image(issuer.image),
         signedPayload: Object.keys(raw).length ? JSON.stringify(raw) : undefined,
+        signatureState,
+        details: credentialDetailsForDisplay(raw),
         verificationSummary: proofChecked
             ? 'Signature checked. Issuer trust and status not checked.'
             : 'Verification unavailable.',
@@ -837,7 +847,7 @@ const commands = {
             (input.passcode && (input.passcode.length < 8 || input.passcode.length > 64))
         )
             throw new Error('Invalid sharing selection');
-        const fingerprint = JSON.stringify(input);
+        const fingerprint = fingerprintShareRequest(input);
         let saved = shares.get(input.requestID);
         if (saved && saved.fingerprint !== fingerprint)
             throw new Error('Sharing selection changed');

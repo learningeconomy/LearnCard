@@ -10,6 +10,29 @@ import { decryptSharePayload } from '../../../packages/learn-card-base/src/helpe
 import { validateShareManifest } from '../../../packages/learn-card-base/src/helpers/share-links/share-manifest';
 import { parseShareLinkUrl } from '../../../packages/learn-card-base/src/helpers/share-links/share-link-url';
 import { buildNativeTemplate } from './credential-draft';
+import { signatureStateForDisplay } from './credential-details';
+import { fingerprintShareRequest } from './share-request';
+
+test('link retries ignore native dictionary ordering but reject a changed selection or sharing options', () => {
+    const request = { uris: ['one', 'two'], title: 'Original', requestID: 'stable' };
+    expect(fingerprintShareRequest(request)).toBe(
+        fingerprintShareRequest({
+            requestID: 'stable',
+            title: 'Original',
+            uris: ['one', 'two'],
+            passcode: undefined,
+        })
+    );
+    expect(fingerprintShareRequest(request)).not.toBe(
+        fingerprintShareRequest({ ...request, uris: ['other'] })
+    );
+    expect(fingerprintShareRequest(request)).not.toBe(
+        fingerprintShareRequest({ ...request, title: 'Changed' })
+    );
+    expect(fingerprintShareRequest(request)).not.toBe(
+        fingerprintShareRequest({ ...request, passcode: 'changed-passcode' })
+    );
+});
 
 test('native selection uses web encryption, preserves signed originals, and keeps content key in fragment', async () => {
     const wasm = await readFile(
@@ -37,6 +60,18 @@ test('native selection uses web encryption, preserves signed originals, and keep
         credentialSubject: { ...template.credentialSubject, id: wallet.id.did() },
     });
     const refs = ['test:selected:one', 'test:selected:two'];
+    expect(
+        signatureStateForDisplay(
+            await wallet.invoke.verifyCredential(credential, { checks: ['proof'] })
+        )
+    ).toBe('verified');
+    const changed = structuredClone(credential);
+    changed.name = 'Changed after signing';
+    expect(
+        signatureStateForDisplay(
+            await wallet.invoke.verifyCredential(changed, { checks: ['proof'] })
+        )
+    ).toBe('notVerified');
     const adapter = shareWallet({
         ...wallet,
         read: {

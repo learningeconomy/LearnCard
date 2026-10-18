@@ -82,10 +82,13 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
     public let issuerLogoURL: URL?
     public let signedPayload: String?
     public let verificationSummary: String?
+    public let signatureState: CredentialSignatureState?
+    public let details: CredentialDetails?
 
     public init(id: String, title: String, issuer: String, summary: String,
                 kind: CredentialKind, date: Date, createdByMe: Bool = false, isSample: Bool = true,
-                artworkURL: URL? = nil, issuerLogoURL: URL? = nil, signedPayload: String? = nil, verificationSummary: String? = nil, category: String? = nil, sampleBundleID: String? = nil) {
+                artworkURL: URL? = nil, issuerLogoURL: URL? = nil, signedPayload: String? = nil, verificationSummary: String? = nil, category: String? = nil, sampleBundleID: String? = nil,
+                signatureState: CredentialSignatureState? = nil, details: CredentialDetails? = nil) {
         self.id = id
         self.title = title
         self.issuer = issuer
@@ -97,6 +100,7 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
         self.sampleBundleID = sampleBundleID
         self.isSample = isSample; self.artworkURL = artworkURL; self.issuerLogoURL = issuerLogoURL
         self.signedPayload = signedPayload; self.verificationSummary = verificationSummary
+        self.signatureState = signatureState; self.details = details
     }
 
     /// This prototype exports sample text, never a fabricated signed credential or presentation.

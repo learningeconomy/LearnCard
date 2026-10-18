@@ -2,6 +2,8 @@
 
 October 15, 2026. Entry: header **+ → Share credentials**. Applies to selecting personal credentials for an existing LearnCard share link, not issuing a reusable creation.
 
+The credential detail page also has a focused **Share** entry for one credential. It uses the same encrypted presentation-link flow without entering this picker, and offers a matching QR, copy and iOS share actions after explicit creation. See [individual sharing](CREDENTIAL_DETAILS.md#primary-actions-and-sharing).
+
 ## Interaction
 
 - Search title, issuer and description. Multiple words combine, ignoring case and accents.

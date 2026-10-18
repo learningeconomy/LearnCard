@@ -23,6 +23,9 @@ struct LearnCardNativeApp: App {
         if args.contains("--demo"), args.contains("--stack-fixtures") {
             _store = State(initialValue: AppStore(service: DemoCredentialService(includeCategorySamples: true, includeStackSamples: true)))
         }
+        if args.contains("--demo"), args.contains("--credential-detail-fixtures") {
+            _store = State(initialValue: AppStore(service: CredentialDetailFixture(), isLive: true, consumerService: DemoConsumerAppService()))
+        }
         if args.contains("--demo"), args.contains("--empty-apps") {
             _store = State(initialValue: AppStore(consumerService: DemoConsumerAppService(emptyInstalled: true)))
         } else if args.contains("--demo"), args.contains("--unavailable-apps") {

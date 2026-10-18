@@ -212,6 +212,9 @@ final class ExperimentUITests: XCTestCase {
         app.buttons["credential-design"].tap()
         app.swipeUp()
         app.buttons["share"].tap()
+        app.buttons["credential-share-create"].tap()
+        XCTAssertTrue(app.buttons["credential-share-system"].waitForExistence(timeout: 5))
+        app.buttons["credential-share-system"].tap()
         XCTAssertTrue(app.otherElements["ShareSheet.RemoteContainerView"].waitForExistence(timeout: 15), app.debugDescription)
         let copyAction = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Copy")).firstMatch
         XCTAssertTrue(copyAction.waitForExistence(timeout: 30), app.debugDescription)
