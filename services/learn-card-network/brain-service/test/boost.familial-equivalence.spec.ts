@@ -315,105 +315,119 @@ describe('Familial boosts match the previous query', () => {
         await neogma.queryRunner.run('MATCH (n:Thing) DETACH DELETE n', {});
     });
 
-    it(`counts match on ${cases.length} cases`, async () => {
-        const diffs: string[] = [];
-
-        for (const { start, generations, filterName, query } of cases) {
-            const expected = await referenceCountFamilialBoosts(start, generations, query);
-            const actual = await countFamilialBoosts(asBoost(start), { ...generations, query });
-
-            if (actual !== expected) {
-                diffs.push(
-                    `${start} ${genLabel(generations)} ${filterName}: ${actual} != ${expected}`
-                );
-            }
-        }
-
-        expect(diffs).toEqual([]);
+    it('covers every start, generation setting and filter', () => {
+        expect(cases.length).toBe(starts.length * generationSets.length * filters.length);
+        expect(cases.length).toBe(1224);
     });
 
-    it(`full result sets match on ${cases.length} cases`, async () => {
-        const diffs: string[] = [];
+    // Split per start so each case stays well under Vitest's 30 s timeout
+    describe.each(starts)('from %s', start => {
+        const startCases = cases.filter(c => c.start === start);
 
-        for (const { start, generations, filterName, query } of cases) {
-            const expected = await referenceGetFamilialBoosts(start, generations, {
-                limit: 1000,
-                query,
-            });
-            const actual = await getFamilialBoosts(asBoost(start), {
-                ...generations,
-                limit: 1000,
-                query,
-            });
+        it(`counts match on ${startCases.length} cases`, async () => {
+            const diffs: string[] = [];
 
-            const dates = actual.map(row => row.created);
-            const sortedDesc = [...dates].sort().reverse();
+            for (const { start, generations, filterName, query } of startCases) {
+                const expected = await referenceCountFamilialBoosts(start, generations, query);
+                const actual = await countFamilialBoosts(asBoost(start), { ...generations, query });
 
-            if (JSON.stringify(projection(actual)) !== JSON.stringify(projection(expected))) {
-                diffs.push(`${start} ${genLabel(generations)} ${filterName}: rows differ`);
-            } else if (JSON.stringify(dates) !== JSON.stringify(sortedDesc)) {
-                diffs.push(`${start} ${genLabel(generations)} ${filterName}: not date-ordered`);
+                if (actual !== expected) {
+                    diffs.push(
+                        `${start} ${genLabel(generations)} ${filterName}: ${actual} != ${expected}`
+                    );
+                }
             }
-        }
 
-        expect(diffs).toEqual([]);
-    });
+            expect(diffs).toEqual([]);
+        });
 
-    it('cursor pages of 2 match', async () => {
-        const diffs: string[] = [];
-        let pages = 0;
+        it(`full result sets match on ${startCases.length} cases`, async () => {
+            const diffs: string[] = [];
 
-        for (const { start, generations, filterName, query } of cases) {
-            const all = await referenceGetFamilialBoosts(start, generations, {
-                limit: 1000,
-                query,
-            });
-            const dateCounts = new Map<string, number>();
-            all.forEach(row => dateCounts.set(row.created, (dateCounts.get(row.created) ?? 0) + 1));
-
-            let cursor: string | undefined;
-
-            for (let page = 0; page < 8; page += 1) {
+            for (const { start, generations, filterName, query } of startCases) {
                 const expected = await referenceGetFamilialBoosts(start, generations, {
-                    limit: 2,
-                    cursor,
+                    limit: 1000,
                     query,
                 });
                 const actual = await getFamilialBoosts(asBoost(start), {
                     ...generations,
-                    limit: 2,
-                    cursor,
+                    limit: 1000,
                     query,
                 });
-                pages += 1;
 
-                const label = `${start} ${genLabel(generations)} ${filterName} page ${page}`;
-                const expectedDates = expected.map(row => row.created);
+                const dates = actual.map(row => row.created);
+                const sortedDesc = [...dates].sort().reverse();
 
-                if (
-                    JSON.stringify(actual.map(row => row.created)) !== JSON.stringify(expectedDates)
-                ) {
-                    diffs.push(`${label}: dates differ`);
-                    break;
+                if (JSON.stringify(projection(actual)) !== JSON.stringify(projection(expected))) {
+                    diffs.push(`${start} ${genLabel(generations)} ${filterName}: rows differ`);
+                } else if (JSON.stringify(dates) !== JSON.stringify(sortedDesc)) {
+                    diffs.push(`${start} ${genLabel(generations)} ${filterName}: not date-ordered`);
                 }
-
-                // Ids are only deterministic when no other row shares the date
-                const uniqueIds = (rows: typeof expected) =>
-                    rows.filter(row => dateCounts.get(row.created) === 1).map(row => row.id);
-
-                if (JSON.stringify(uniqueIds(actual)) !== JSON.stringify(uniqueIds(expected))) {
-                    diffs.push(`${label}: ids differ`);
-                    break;
-                }
-
-                if (expected.length < 2) break;
-
-                cursor = expected[expected.length - 1]!.created;
             }
-        }
 
-        expect(pages).toBeGreaterThan(cases.length);
-        expect(diffs).toEqual([]);
+            expect(diffs).toEqual([]);
+        });
+
+        it(`cursor pages of 2 match on ${startCases.length} cases`, async () => {
+            const diffs: string[] = [];
+            let pages = 0;
+
+            for (const { start, generations, filterName, query } of startCases) {
+                const all = await referenceGetFamilialBoosts(start, generations, {
+                    limit: 1000,
+                    query,
+                });
+                const dateCounts = new Map<string, number>();
+                all.forEach(row =>
+                    dateCounts.set(row.created, (dateCounts.get(row.created) ?? 0) + 1)
+                );
+
+                let cursor: string | undefined;
+
+                for (let page = 0; page < 8; page += 1) {
+                    const expected = await referenceGetFamilialBoosts(start, generations, {
+                        limit: 2,
+                        cursor,
+                        query,
+                    });
+                    const actual = await getFamilialBoosts(asBoost(start), {
+                        ...generations,
+                        limit: 2,
+                        cursor,
+                        query,
+                    });
+                    pages += 1;
+
+                    const label = `${start} ${genLabel(generations)} ${filterName} page ${page}`;
+                    const expectedDates = expected.map(row => row.created);
+
+                    if (
+                        JSON.stringify(actual.map(row => row.created)) !==
+                        JSON.stringify(expectedDates)
+                    ) {
+                        diffs.push(`${label}: dates differ`);
+                        break;
+                    }
+
+                    // Ids are only deterministic when no other row shares the date
+                    const uniqueIds = (rows: typeof expected) =>
+                        rows.filter(row => dateCounts.get(row.created) === 1).map(row => row.id);
+
+                    if (JSON.stringify(uniqueIds(actual)) !== JSON.stringify(uniqueIds(expected))) {
+                        diffs.push(`${label}: ids differ`);
+                        break;
+                    }
+
+                    if (expected.length < 2) break;
+
+                    cursor = expected[expected.length - 1]!.created;
+                }
+            }
+
+            // A missing or isolated start still fetches one (empty or short) page per case
+            expect(pages).toBeGreaterThanOrEqual(startCases.length);
+            expect(diffs).toEqual([]);
+        });
     });
 
     it.each([
