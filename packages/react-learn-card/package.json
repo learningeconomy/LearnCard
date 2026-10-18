@@ -58,7 +58,8 @@
         "style-loader": "^3.3.1",
         "tailwindcss": "^4.3.3",
         "vite": "^6.4.3",
-        "@tailwindcss/postcss": "^4.3.3"
+        "@tailwindcss/postcss": "^4.3.3",
+        "@tailwindcss/node": "^4.3.3"
     },
     "dependencies": {
         "@learncard/helpers": "workspace:*",

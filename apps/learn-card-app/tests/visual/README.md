@@ -17,6 +17,26 @@ The GitHub Actions workflow **Tailwind visual regression** is manual-only. Use
 **Run workflow** and select the branch to check; pull requests do not trigger it.
 The workflow uploads screenshots and traces for review.
 
+### Why this stays manual
+
+This suite checks that the Tailwind upgrade preserves a fixed set of pre-upgrade
+screens. It is migration evidence, not a permanent product-wide visual gate.
+The app's layouts and styles change frequently; those intentional changes would
+otherwise fail the snapshots and require routine reference updates. That review
+and maintenance cost limits the value of running this suite on every PR.
+
+The 30 comparisons cover only the fixtures listed below. Their JSON checks sample
+computed styles; they do not compare every CSS property or every component. PNG
+comparisons are an optional local check, while the manual workflow uploads images
+for inspection. A passing run does not prove that every codemod change is correct.
+
+For ongoing automation, prefer specific stable behavior contracts: a category
+tint keeps its alpha despite important theme classes, card colors do not inherit
+host palette tokens, and keyboard focus remains visible. Those checks can stay
+useful across layout changes. "Shared components" alone is not a useful coverage
+boundary; each test needs an explicit behavior and owner. The additional tint and
+Ionic-border browser checks assert such behavior without new layout snapshots.
+
 From the repository root, use the Bun version in `package.json`:
 
 ```sh
@@ -34,7 +54,7 @@ is skipped here because the command has already compiled the catalog.
 
 Chromium desktop, Chromium mobile, and WebKit mobile cover populated, pending,
 empty, shared-card/form, credential preview/details, credential issuance form/JSON,
-and populated Apps/listing-detail states (30 comparisons). Every run compares computed CSS against the
+and populated Apps browse/listing-detail states (30 comparisons). Every run compares computed CSS against the
 Tailwind 3 JSON references and attaches full-page screenshots to the HTML report.
 Locally bundled fonts, fixed dates, and deterministic external images keep the
 captures independent of Google Fonts and image CDNs.
@@ -47,6 +67,11 @@ uses the same template/state composition as its Storybook story, with a fixed
 validity result and no signing action. App-store queries are primed with local
 listings. This exercises real UI rendering and the JSON toggle without changing
 an account or depending on a live backend.
+
+The `apps` fixture renders `LaunchPad`, the catalogue at `/launchpad/browse`.
+It is not the current `/launchpad` My Apps landing page (`MyAppsLanding`), which
+has no category tabs. The older browse component remains reachable in this branch;
+its presence is not evidence that the current landing page has tabs.
 
 The first twelve references were committed before migration in `1955fd40e`.
 The eighteen expanded references were captured in a temporary checkout of that
@@ -98,6 +123,8 @@ tokens and utilities; its optional `base.css` export owns the reset. The common
 `tailwind-v3-theme.css` and `tailwind-v3-compat.css` preserve the existing palette,
 heading margins, button border behavior, and font-size/line-height precedence.
 The explicit named variants preserve the original mixed breakpoint order.
+The Ionic-only button border reset lives in the two apps' stylesheets, so it
+does not change the standalone package reset or the non-Ionic examples.
 Keep these named variants out of `--breakpoint-*` variables: those variables
 preregister the standard screens and change the resulting order. Autoprefixer
 continues to cover legacy Sass; Tailwind itself runs through the Vite plugin.
@@ -119,3 +146,16 @@ native clients; older installed iOS clients must not receive the Tailwind 4 bund
 The default OTA channels advance to `1.0.13` for LearnCard and `1.0.8` for ScoutPass
 so this bundle is isolated from existing native clients. Release the matching
 native builds before promoting bundles to those channels.
+
+### Native release checks
+
+- Sync and prepare both native apps with Android WebView minimum 111 and
+  `server.errorPath` pointing to the bundled `unsupported-browser.html`. LearnCard
+  tenant preparation reapplies these settings after copying tenant config.
+- Verify an older Android WebView opens the standalone update/retry notice and
+  a supported WebView opens the app. The fallback has no React, Tailwind, or remote
+  assets and includes English, Spanish, French, and Arabic text.
+- Check the actual browser engine on OEM/Huawei devices; Android API level and
+  vendor WebView version numbers alone do not establish Chromium compatibility.
+- Verify iOS 16.4+ and the new Capgo channels before native/OTA promotion. These
+  config and asset checks do not replace a native device test.

@@ -59,10 +59,7 @@ const Section: React.FC<{
             >
                 <div
                     style={{ backgroundColor: tailwindColorWithOpacity(iconColor, 10) }}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconColor.replace(
-                        'text-',
-                        'bg-'
-                    )}`}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
                 >
                     <Icon className={`w-4 h-4 ${iconColor}`} />
                 </div>
@@ -524,11 +521,12 @@ log.info('User consent records:', userConsentData.records);`,
                                         onClick={async () => {
                                             try {
                                                 const currentGuideState = (integration.guideState ||
-                                                    {}) as Record<string, any>;
+                                                    {}) as Partial<GuideState>;
                                                 const currentConfig =
                                                     currentGuideState.config || {};
                                                 const currentCfConfig =
-                                                    currentConfig.consentFlowConfig || {};
+                                                    (currentConfig.consentFlowConfig ||
+                                                        {}) as Record<string, unknown>;
 
                                                 await updateIntegration.mutateAsync({
                                                     id: integration.id,

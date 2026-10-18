@@ -114,7 +114,7 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
             window.removeEventListener('mouseup', resetDragState);
             window.removeEventListener('pointerup', resetDragState);
             window.removeEventListener('pointercancel', resetDragState);
-            window.removeEventListener('blur-sm', resetDragState);
+            window.removeEventListener('blur', resetDragState);
         };
     }, []);
 
@@ -141,7 +141,7 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
                         }}
                         className={`${borderRadius} px-[15px] py-[5px] z-9999 border-solid border font-poppins text-[14px] font-[600] leading-[130%] whitespace-nowrap shrink-0 ${
                             isActive
-                                ? `border-${primaryColorShade} bg-grayscale-50 text-${primaryColor}`
+                                ? `bg-grayscale-50 text-${primaryColor}`
                                 : 'border-transparent text-grayscale-600 xs:text-[12px]'
                         }`}
                     >

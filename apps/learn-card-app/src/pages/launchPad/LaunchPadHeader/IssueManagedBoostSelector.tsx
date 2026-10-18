@@ -75,7 +75,7 @@ const CategorySelectorModal: React.FC<{
                                 style={{
                                     backgroundColor: tailwindColorWithOpacity(meta.color, 10),
                                 }}
-                                className={`p-2 rounded-full bg-${meta.color} text-${meta.color}`}
+                                className={`p-2 rounded-full text-${meta.color}`}
                             >
                                 <Icon className="w-6 h-6" />
                             </div>
@@ -130,7 +130,7 @@ const IssueManagedBoostSelector: React.FC = () => {
         searchInput !== debouncedSearchInput || (boostsIsFetching && !boostsIsFetchingNextPage);
 
     const boostInfiniteScrollRef = useRef<HTMLDivElement>(null);
-    const boostsOnScreen = useOnScreen(boostInfiniteScrollRef as any, '200px', [
+    const boostsOnScreen = useOnScreen(boostInfiniteScrollRef, '200px', [
         boosts?.pages?.[0]?.records?.length,
     ]);
 
@@ -205,7 +205,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                         <div className="flex items-center gap-3">
                             <div
                                 style={{ backgroundColor: tailwindColorWithOpacity(metaColor, 10) }}
-                                className={`p-2 rounded-full bg-${metaColor} text-${metaTextColor}`}
+                                className={`p-2 rounded-full text-${metaTextColor}`}
                             >
                                 <CategoryIcon className="w-6 h-6" />
                             </div>

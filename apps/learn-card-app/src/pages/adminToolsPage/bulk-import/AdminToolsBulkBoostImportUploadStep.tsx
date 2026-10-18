@@ -106,7 +106,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
 
                 <div
                     style={{ backgroundColor: tailwindColorWithOpacity(primaryColor, 10) }}
-                    className={`w-full flex gap-[5px] rounded-[10px] bg-${primaryColor} justify-center ion-padding mt-4`}
+                    className="w-full flex gap-[5px] rounded-[10px] justify-center ion-padding mt-4"
                 >
                     <div className="flex flex-col">
                         <p

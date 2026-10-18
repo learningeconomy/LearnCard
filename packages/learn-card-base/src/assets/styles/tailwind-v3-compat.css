@@ -51,7 +51,3 @@ menu {
     margin: 0;
     padding: 0;
 }
-/* Ionic's legacy button reset used no border unless border-solid was explicit. */
-button {
-    --tw-border-style: none;
-}

@@ -41,11 +41,14 @@ export default defineConfig(async environment => {
             minify: false,
             reportCompressedSize: false,
             rollupOptions: {
-                input: path.resolve(import.meta.dirname, '../../tailwind-regression.html'),
+                input: path.resolve(import.meta.dirname, 'tailwind-regression.html'),
                 onwarn: config.build?.rollupOptions?.onwarn,
             },
         },
-        optimizeDeps: { ...config.optimizeDeps, entries: ['tailwind-regression.html'] },
+        optimizeDeps: {
+            ...config.optimizeDeps,
+            entries: ['tests/visual/tailwind-regression.html'],
+        },
         server: { ...config.server, host: '127.0.0.1', port: 3026, strictPort: true },
         preview: { host: '127.0.0.1', port: 3026, strictPort: true },
     };

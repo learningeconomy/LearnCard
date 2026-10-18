@@ -16,12 +16,14 @@
  *   environments/<tenant>/assets/config/capacitor.config.json
  */
 import type { CapacitorConfig } from '@capacitor/cli';
+import { nativeBrowserCompatibility } from '../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
 
 const config: CapacitorConfig = {
     appId: 'com.learncard.app',
     appName: 'LearnCard',
     webDir: 'build',
     bundledWebRuntime: false,
+    ...nativeBrowserCompatibility(),
     plugins: {
         SystemBars: {
             // Capacitor injects --safe-area-inset-* and keeps them synchronized

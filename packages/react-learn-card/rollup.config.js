@@ -68,7 +68,9 @@ export default [
         output: [{ dir: 'dist', assetFileNames: '[name][extname]' }],
         // Tailwind's Lightning CSS optimizer handles modern CSS math; the
         // legacy cssnano minifier cannot parse calc(infinity * 1px).
-        plugins: [styles({ mode: 'extract', minimize: false, modules: false })],
+        // Tailwind must resolve imports itself: the legacy resolver drops
+        // theme(inline reference), re-exporting palette tokens into the host.
+        plugins: [styles({ mode: 'extract', minimize: false, modules: false, import: false })],
     },
     {
         input: ['src/index.ts'],

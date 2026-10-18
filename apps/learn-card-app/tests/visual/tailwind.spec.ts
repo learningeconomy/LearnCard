@@ -63,7 +63,7 @@ for (const state of [
         const expanded = !['active', 'pending', 'empty', 'shared'].includes(state);
         const errors: string[] = [];
         page.on('pageerror', error => errors.push(error.message));
-        await page.goto(`/tailwind-regression.html?state=${state}`);
+        await page.goto(`/tests/visual/tailwind-regression.html?state=${state}`);
         const fixture = page.getByTestId('fixture');
         await expect(fixture).toBeVisible({ timeout: 90_000 });
         await expect(page.getByText('Something went wrong', { exact: true })).toHaveCount(0);

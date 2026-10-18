@@ -28,7 +28,7 @@ export type BoostPageViewModeType = (typeof BoostPageViewMode)[keyof typeof Boos
 
 type EarnedAndManagedTabsProps = {
     activeTab: CredentialListTabEnum | string;
-    handleActiveTab: (selectedTab: any) => void;
+    handleActiveTab: (selectedTab: CredentialListTabEnum) => void;
     className?: string;
     containerClassName?: string;
 
@@ -188,7 +188,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             aria-label={m['wallet.viewMode']()}
                             className={`fix-ripple p-1 rounded-[5px] flex w-fit items-center ${
                                 !showEarnedManaged ? 'mx-auto min-w-[82px]' : ''
-                            } ${className} ${tabColor}`}
+                            } ${className}`}
                             style={{ backgroundColor: tailwindColorWithOpacity(tabColor, 25) }}
                         >
                             <button

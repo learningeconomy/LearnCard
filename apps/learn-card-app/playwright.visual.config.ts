@@ -45,7 +45,7 @@ export default defineConfig({
             : {
                   command:
                       'bun run i18n:compile && bunx vite build --config tests/visual/vite.config.mts && bunx vite preview --config tests/visual/vite.config.mts',
-                  url: 'http://127.0.0.1:3026/tailwind-regression.html',
+                  url: 'http://127.0.0.1:3026/tests/visual/tailwind-regression.html',
                   timeout: 300_000,
                   reuseExistingServer: !process.env.CI,
               },

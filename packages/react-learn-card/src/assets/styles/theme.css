@@ -2,6 +2,8 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' source(none);
 @import '../../../../learn-card-base/src/assets/styles/tailwind-v3-theme.css';
+@import '../../../../learn-card-base/src/assets/styles/tailwind-v3-colors.css'
+    theme(inline reference);
 @source "../../**/*.{js,jsx,ts,tsx}";
 @source inline("bg-orange-200");
 @source inline("bg-orange-300");
@@ -10,7 +12,7 @@
 @source inline("text-orange-700");
 @source inline("text-orange-900");
 
-@theme static {
+@theme inline reference {
     --color-grayscale-50: #fbfbfc;
     --color-grayscale-100: #eff0f5;
     --color-grayscale-200: #e2e3e9;
@@ -66,11 +68,13 @@
     --color-orange-500: #ef5d35;
     --color-orange-800: #9a3412;
     --color-red-mastercard: #eb001b;
+}
+
+@theme static {
     --shadow-bottom: 0px 4px 0px rgba(0, 0, 0, 0.25);
     --shadow-3xl: 0px 0px 8px rgba(0, 0, 0, 0.25);
     --shadow-card-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);
     --spacing-25pct: 25%;
-    --text-shadow-DEFAULT: 1px 2px 0px rgb(0 0 0 / 35%);
 }
 
 /* Emit literal card font families, as V3 did. Host app tokens use the same

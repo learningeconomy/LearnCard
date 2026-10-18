@@ -1,13 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { nativeBrowserCompatibility } from '../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
 
 const config: CapacitorConfig = {
     appId: 'org.scoutpass.app',
     appName: 'ScoutPass',
     webDir: 'build',
     bundledWebRuntime: false,
-    android: {
-        adjustMarginsForEdgeToEdge: 'force',
-    },
+    ...nativeBrowserCompatibility({ android: { adjustMarginsForEdgeToEdge: 'force' } }),
     plugins: {
         SplashScreen: {
             launchShowDuration: 6000,

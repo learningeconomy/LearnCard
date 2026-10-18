@@ -64,7 +64,7 @@
                 "source",
                 "tests",
                 "{projectRoot}/playwright.visual.config.ts",
-                "{projectRoot}/tailwind-regression.html"
+                "{projectRoot}/tests/visual/tailwind-regression.html"
             ],
             "dependsOn": [
                 {

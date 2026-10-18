@@ -164,3 +164,8 @@
 @custom-variant max-desktop (@media (width < 992px));
 @custom-variant max-mobile (@media (width < 991px));
 @custom-variant max-sm (@media (width < 640px));
+
+/* Match Ionic's V3 button reset; explicit border-solid utilities still win. */
+button {
+    --tw-border-style: none;
+}

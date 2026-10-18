@@ -13,6 +13,9 @@ import { WalletCategoryTypes } from '../../../../packages/react-learn-card/src/t
 import { AnalyticsContextProvider } from '../../src/analytics';
 import { LocaleProvider } from '../../src/i18n';
 import DashboardView from '../../src/pages/dashboard/DashboardView';
+import NewBoostButton from '../../src/components/boost/NewBoostButton';
+import { CredentialCategoryEnum } from 'learn-card-base';
+import { BoostPageViewMode } from '../../src/components/EarnedAndManagedTabs/EarnedAndManagedTabs';
 import { additionalStates, PageFixture, seedPageQueries } from './PageFixtures';
 import {
     DASHBOARD_PERSONAS,
@@ -111,6 +114,34 @@ createRoot(document.getElementById('root')!).render(
                             >
                                 {additionalStates.some(name => name === state) ? (
                                     <PageFixture state={state} />
+                                ) : state === 'tints' ? (
+                                    <main>
+                                        <div data-testid="tint-card">
+                                            <NewBoostButton
+                                                credentialType={CredentialCategoryEnum.socialBadge}
+                                                onClick={() => undefined}
+                                            />
+                                        </div>
+                                        <div data-testid="tint-row">
+                                            <NewBoostButton
+                                                credentialType={CredentialCategoryEnum.socialBadge}
+                                                viewMode={BoostPageViewMode.List}
+                                                onClick={() => undefined}
+                                            />
+                                        </div>
+                                        <button
+                                            data-testid="ionic-border"
+                                            className="border border-grayscale-200"
+                                        >
+                                            Default border
+                                        </button>
+                                        <button
+                                            data-testid="solid-border"
+                                            className="border border-solid border-grayscale-200"
+                                        >
+                                            Explicit border
+                                        </button>
+                                    </main>
                                 ) : state === 'shared' ? (
                                     <SharedComponents />
                                 ) : (

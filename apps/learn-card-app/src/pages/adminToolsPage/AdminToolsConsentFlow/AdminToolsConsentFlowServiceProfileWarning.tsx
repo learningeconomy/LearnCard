@@ -13,7 +13,7 @@ export const AdminToolsConsentFlowServiceProfileWarning: React.FC = () => {
         <div className="flex flex-col items-start justify-center w-full px-4">
             <div
                 style={{ backgroundColor: tailwindColorWithOpacity(primaryColor, 10) }}
-                className={`flex gap-[5px] rounded-[10px] bg-${primaryColor} justify-center ion-padding mt-4`}
+                className="flex gap-[5px] rounded-[10px] justify-center ion-padding mt-4"
             >
                 <div className="w-full flex flex-col">
                     <p

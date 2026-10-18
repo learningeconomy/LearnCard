@@ -1451,6 +1451,7 @@
         "@storybook/react-vite": "8.6.18",
         "@storybook/test": "8.6.18",
         "@svgr/rollup": "^6.2.1",
+        "@tailwindcss/node": "^4.3.3",
         "@tailwindcss/postcss": "^4.3.3",
         "@testing-library/jest-dom": "^5.16.4",
         "@testing-library/react": "^13.0.0",

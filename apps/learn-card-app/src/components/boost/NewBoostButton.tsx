@@ -26,10 +26,9 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
     onClick,
     viewMode = BoostPageViewMode.Card,
 }) => {
-    const { theme, getThemedCategoryColors } = useTheme();
+    const { getThemedCategoryColors } = useTheme();
 
-    let { backgroundPrimaryColor, primaryColor, secondaryColor, headerTextColor } =
-        getThemedCategoryColors(credentialType);
+    const { backgroundPrimaryColor, headerTextColor } = getThemedCategoryColors(credentialType);
 
     const isId = credentialType === CredentialCategoryEnum.id;
 
@@ -52,7 +51,7 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
                     style={{
                         backgroundColor: tailwindColorWithOpacity(backgroundPrimaryColor, 30),
                     }}
-                    className={`h-full pt-[15px] rounded-[20px] flex flex-col items-center justify-center gap-[10px] w-[160px] min-h-[280px] ${backgroundPrimaryColor}`}
+                    className="h-full pt-[15px] rounded-[20px] flex flex-col items-center justify-center gap-[10px] w-[160px] min-h-[280px]"
                 >
                     <div className={`bg-white rounded-full p-[8px] w-fit h-fit shadow-soft-bottom`}>
                         <Plus className={`h-[20px] w-[20px]`} />
@@ -69,7 +68,7 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
 
     return (
         <IonRow
-            className={`rounded-[15px] flex gap-[10px] items-center w-full z-[2] ${backgroundPrimaryColor} ${
+            className={`rounded-[15px] flex gap-[10px] items-center w-full z-[2] ${
                 isId ? 'px-[8px] py-[17px]' : 'p-[8px]'
             }`}
             onClick={onClick}
