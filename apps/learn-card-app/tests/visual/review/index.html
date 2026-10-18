@@ -151,21 +151,36 @@
             const main = document.querySelector('main');
             const beforePane = document.getElementById('before-pane');
             const afterPane = document.getElementById('after-pane');
+            const browserNames = ['chromium-mobile', 'chromium-desktop', 'webkit-mobile'];
+            const screenNames = [
+                'active',
+                'pending',
+                'empty',
+                'shared',
+                'credential',
+                'credential-details',
+                'issue',
+                'issue-json',
+                'apps',
+                'app-details',
+            ];
+            // Build paths from trusted names rather than URL parameters or DOM values.
+            const selectName = (names, value) => names.find(name => name === value) ?? names[0];
             const params = new URLSearchParams(location.search);
-            if ([...browser.options].some(option => option.value === params.get('browser')))
-                browser.value = params.get('browser');
-            if ([...screen.options].some(option => option.value === params.get('screen')))
-                screen.value = params.get('screen');
+            browser.value = selectName(browserNames, params.get('browser'));
+            screen.value = selectName(screenNames, params.get('screen'));
             function update() {
-                const before = `../baselines/${browser.value}/${screen.value}-darwin.png`;
-                const after = `${browser.value}/${screen.value}-tailwind4.png`;
+                const browserName = selectName(browserNames, browser.value);
+                const screenName = selectName(screenNames, screen.value);
+                const before = `../baselines/${browserName}/${screenName}-darwin.png`;
+                const after = `${browserName}/${screenName}-tailwind4.png`;
                 document.getElementById('before').src = before;
                 document.getElementById('after').src = after;
                 document.getElementById('before-link').href = before;
                 document.getElementById('after-link').href = after;
                 beforePane.scrollTo(0, 0);
                 afterPane.scrollTo(0, 0);
-                history.replaceState(null, '', `?browser=${browser.value}&screen=${screen.value}`);
+                history.replaceState(null, '', `?browser=${browserName}&screen=${screenName}`);
             }
             browser.addEventListener('change', update);
             screen.addEventListener('change', update);
