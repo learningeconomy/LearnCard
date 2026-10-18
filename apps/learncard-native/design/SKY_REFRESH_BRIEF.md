@@ -1,6 +1,6 @@
 # Local-time sky refresh — design study, October 18, 2026
 
-**Status: flat style preferred by the user; scene-visitor refinement proposed, not implemented.** The user rejected the current compact figure-eight plus “Refreshing…” label. They proposed a full-width particle treatment or a shallow local-time sky reveal, paired with morning/afternoon/evening greetings on Home.
+**Status: the user likes the flat scene-visitor direction and requests a rare spotted-cow Easter egg; not implemented.** The user rejected the current compact figure-eight plus “Refreshing…” label. They proposed a full-width particle treatment or a shallow local-time sky reveal, paired with morning/afternoon/evening greetings on Home.
 
 The first two atmospheric imagegen studies were rejected as too detailed, mismatched with the app, and visibly AI-generated. Keep that correction: use sparse, graphic forms closer to LearnCard’s outlined illustrations. The dimensional credential card remains its own emphasized object.
 
@@ -17,6 +17,16 @@ The user prefers the flat style and suggested replacing arbitrary floating block
 - Night: deep navy, a small crescent, sparse stars and one drifting UFO. A few colored portholes echo the palette; omit the previous planet/meteor to keep this scene sparse.
 - Remove the arbitrary floating blocks. Brand colors can live on the bird, balloon, plane or UFO, without requiring every scene to include every color. The header keeps the only logo. No visible refresh label or progress percentage.
 - Motion should carry the effect: one slow visitor per scene, light cloud drift and restrained twinkle. Keep the visitor visible from the first revealed frame so a quick real refresh still has a complete composition. Avoid cinematic skies, volumetric clouds, glossy fantasy light, swarms and long arrival intros.
+
+### Rare spotted-cow visitor
+
+The user likes the visitor set and requested a random spotted-cow Easter egg: falling cows or one/two cows with parachutes. The proposed cameo uses a gentle parachute drift, with a small second cow only occasionally. Keep the normal local-time sky; temporarily replace its usual visitor. Broad LearnCard-color parachute panels are an optional accent.
+
+![Rare parachuting spotted-cow concept](pull-refresh-sky-cow-concept-2026-10-18.png)
+
+Keep the joke unannounced in the product: no toast, badge, reward or extra copy. Select it rarely and keep the selection stable through the pull/release/working cycle rather than rerolling on animation frames. Frequency/cooldown is not fixed yet. A demo-only forced selection can make review deterministic without repeatedly refreshing a real account. Reduced Motion keeps the cameo still. The normal refresh completes with actual work; no delay is added so a cow can finish crossing.
+
+This illustration enlarges the cameo for review. Production should keep it subordinate to the shallow strip, use the same flat native shape language, and reuse the real header/credential components rather than generated UI pixels.
 
 The board shows a proposed shallow reveal, not measured production refresh geometry. Validate the available native height before implementation; crop/scale the illustration to the real reveal rather than forcing scroll insets.
 
@@ -88,4 +98,15 @@ NIGHT: one friendly SMALL flat UFO: mint/aqua dome, navy outlined saucer with th
 Flat cut-paper/vector-like rendering throughout the sky strips: confident simple geometry, limited solid fills, consistent navy line details that match LearnCard's icons. No volumetric/AI fantasy/weather wallpaper detail, no photorealism, airbrush, grain, glows, or drop shadows on sky objects. Brand colors live naturally on the bird, balloon, plane and UFO; no confetti.
 Keep visitors modest in size (roughly 25–45 native points high within the strip), visible in the initial resting pose of a pull reveal, not dominating the page. This is a motion design concept: each would slowly cross/bob within its scene; no spinner, refresh word, progress percentage or extra permanent banner.
 Replace the four bottom motion captions verbatim with: MORNING: "Bird glides · clouds drift"; AFTERNOON: "Balloon bobs · clouds pass"; DUSK: "Plane cruises · dusk settles"; NIGHT: "UFO drifts · stars twinkle". Preserve the four time-of-day column labels. Make a polished coherent comparison board.
+```
+
+### Spotted-cow Easter egg prompt
+
+```text
+Use case: ui-mockup, rare Easter-egg variant.
+Reference image: the approved flat graphic LearnCard four-column sky refresh board. Use the AFTERNOON app panel as the UI/layout reference. Generate ONE portrait crop of that daytime Home screen, no phone hardware, not a four-column board.
+Primary request: a rare whimsical parachuting spotted-cow cameo in the shallow full-width sky refresh strip. Keep the approved very simple flat illustrated language. The sky visitor is a black-and-white spotted cow hanging safely beneath a small open parachute with broad mint/cyan/yellow/pink LearnCard-color panels, thin navy suspension lines. Cow body and head are readable compact flat cut-paper shapes, a few irregular black spots, small ears/horns and tiny dark hooves, not a realistic animal render. ONE primary cow in the middle of the strip, with a SECOND much smaller spotted cow and parachute only partly entering at an upper corner, a restrained rare double-cameo joke.
+Preserve the native LearnCard header exactly as in the reference, one mosaic wordmark, blue Add/profile pill; preserve Home heading with yellow ray accents, "Good afternoon, Timmy.", Recent credentials / All credentials row and the approved dimensional blue credential peek. Pale lavender paper canvas, navy typography. Keep the reveal strip roughly 80–100 native points tall and edge-to-edge. Blue sky, just one or two simple cream pill clouds behind the cow. Replace the usual hot-air balloon with this cow cameo.
+Important: NO visible caption or announcement inside the app about the Easter egg. No "Refreshing", spinner or percentage. No floating colored squares, confetti, beam, logos on parachutes, extra mascot, photorealism, 3D volume, airbrush, texture, glossy light or detailed scenery. A small navy outline can define the cow and ropes. The composition should read instantly at a shallow strip height, as a production native animation concept. The cow would drift diagonally and sway gently; do not draw motion arrows.
+Outside the app crop, a tiny board caption may say "Rare sky visitor".
 ```
