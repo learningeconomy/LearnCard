@@ -1,5 +1,9 @@
 # Native experiment handoff — 2026-10-18
 
+**Learner Skills/goals and career Pathways started:** [seven generated concept screens](design/LEARNER_SKILLS_BRIEF.md) cover Skills first visit/overview/source details/goals and career exploration/results/detail. The [source audit](LEARNER_SKILLS.md) records current encrypted profile schemas, provenance, self-assessment writes, existing sharing side effects and AI gates. Personal Skills and goals lead implementation; employment fields stay optional. Safe personal-skill replacement and occupation/provider contracts remain readiness work. Fetched upstream Journeys still defaults to local persistence/scripted dispatch; shared persistence/deployed endpoints need verification before native Today/map/progress.
+
+This slice changes concepts/planning only; no runtime/UI implementation, live writes, provider/flag changes or new native test result is claimed. Installed Native Lab remains the approved sky-refresh build below. [Updated delivery queue](LEARNER_LEARNING_PLAN.md).
+
 **Fuller skies and faster visitors:** every main visitor and both cows now move left to right twice as fast. Daytime adds cloud layers, distant birds and a small afternoon sun; dusk adds restrained fireworks. Stars stay fixed and twinkle, while occasional shooting stars cross in straight streaks. [Current native gallery and behavior](SKY_REFRESH.md).
 
 Validation: **217 Swift** and **2/2 existing focused UI cases** pass. Native captures confirm brightness-only star twinkle, visible moving scenes and still Reduced Motion. Normal Debug is installed **48/48**, private configuration/build **3** preserved; retained signed-in Home is confirmed read-only. The checks device is shut down. Configured suite **578** plus live skip; no fresh full Bun/UI/Release/hosted CI pass is claimed. [Exact scope](TESTING.md#sky-visitors-stars-and-atmosphere--october-18-2026).

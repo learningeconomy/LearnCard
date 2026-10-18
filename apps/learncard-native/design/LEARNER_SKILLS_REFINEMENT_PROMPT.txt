@@ -1,0 +1,9 @@
+Use case: ui-mockup refinement.
+Image 1 is the EDIT TARGET: the four-screen LearnCard Skills and goals concept board. Image 2 is STYLE REFERENCE ONLY: actual native LearnCard Apps UI.
+Keep all four screen compositions, wording, data/provenance distinctions, controls and outside labels from image 1. Make a narrow style-conformance pass:
+1. Restore the real colorful four-tab tray from image 2 on EVERY screen: outlined yellow house with pink roof for Home, light-blue passport/card for Passport, pink envelope for Inbox, teal rocket for Apps. Navy outlines and navy labels; Apps gets the short navy underline. No generic all-blue SF icon tray.
+2. Use the actual app's neutral paper #EFF0F5 and flat white reading panels. Keep regular text navy/secondary navy. Action labels use navy or the app's restrained teal rather than web-like electric-blue links. Buttons have the real large pill corners, particularly Add a skill, Open Passport and Save goals.
+3. Keep the rendered skill medallions, but soften the chrome-like shine into the app's saturated satin material with clean navy outlines, pressed edges and modest local artwork shadow. The primary blue/pink/teal/yellow/violet pigments stay vivid. No card-wide diffuse shadow.
+4. Move each three-ray heading accent to the trailing RIGHT of the English heading, as in image 2, keeping it small and decorative. Preserve a compact mobile heading hierarchy and comfortable spacing.
+5. Remove the dotted drag handles from the saved goal rows. Keep their remove controls and exact labels. Do not add any new content, feature, percentages, ratings or copy.
+Preserve all existing source labels, Self-assessed tag, the 35-character hint, optional career-details row, Review sharing settings and exterior Design concept · Sample data. Keep the clean four-screen board, no phone hardware and no fifth tab.

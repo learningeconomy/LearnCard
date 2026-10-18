@@ -2,7 +2,15 @@
 
 Planning checkpoint, October 16, 2026. The user explicitly asked to queue the missing learner experiences alongside the Apps redesign. Native UI should support discovering possibilities and following a personal learning journey; it does not need skill-framework creation/editing or institutional authoring tools.
 
-This supersedes earlier notes saying Journeys scope is unconfirmed. It authorizes planning the learner subset, not enabling web flags or claiming these features are already in the native app. [Apps composition](design/APPS_RENDERED_BRIEF.md) is the immediate visual task.
+This supersedes earlier notes saying Journeys scope is unconfirmed. It authorizes planning the learner subset, not enabling web flags or claiming these features are already in the native app. The Apps composition is implemented; the October 18 pass now starts the personal Skills/goals and career-exploration designs.
+
+## October 18 checkpoint
+
+The [source audit and first implementation contract](LEARNER_SKILLS.md) records current profile keys/wire format, credential-skill provenance, self-assessment writes, existing sharing side effects and AI availability. [Seven generated concept screens](design/LEARNER_SKILLS_BRIEF.md) cover Skills first visit/overview/sources/goals and career explore/results/detail. They are sample-data concepts, not installed screens. Missing state designs and the occupation/provider audit remain below.
+
+Next implementation: credential-linked Skills reads and personal goals read/explicit-save, followed by safe self-assigned-skill replacement and career exploration. The current web personal-skill writer deletes old records before confirming its replacement; resolve native retry/reconciliation without losing usable data. Goals use the current encrypted VC v2/index schema, not the older achievement-description format. Career/employment questions stay optional.
+
+Freshly fetched `origin/main` at `f7f37e319` still defaults to browser-local Journey persistence and scripted agent dispatch. Deployment overrides and real endpoints remain unverified; this checkpoint does not establish an interoperable Journey backend.
 
 ## Two distinct existing products
 
@@ -17,7 +25,7 @@ Career exploration and Journeys are learner features. They are not organization-
 
 ## Source-grounded findings
 
-Checked against this branch on October 16; this is not a claim about the latest upstream deployment.
+Initial findings were checked against this branch on October 16. The October 18 audit above refreshes personal profile/Skills details and fetched upstream Journeys defaults; neither establishes current deployment behavior.
 
 - [Web routes](../learn-card-app/src/routes.tsx) mount career Pathways separately from Journeys. The [career screen](../learn-card-app/src/pages/ai-pathways/AiPathways.tsx) includes My Skill Profile, career exploration and Grow Skills, plus links to sessions/skills/insights.
 - The personal profile uses encrypted self-issued verifiable data through [useVerifiableData](../../packages/learn-card-base/src/hooks/useVerifiableData.ts). [Profile progress](../learn-card-app/src/pages/ai-pathways/ai-pathways-skill-profile/SkillProfileProgressBar.tsx) reads goals, professional title, role experience, work history, salary, work-life balance, job stability and selected skills. Audit exact schemas/options at implementation time; do not invent a parallel native preference store. Optional salary/employment questions should not block a student's useful first experience.
@@ -37,15 +45,20 @@ Keep **Home / Passport / Inbox / Apps**. Add native Career Pathways and Journeys
 
 ### 1. Personal skills/goals and career exploration
 
-- [ ] Audit current exact data keys, schemas, SDK methods, policy gates, consent synchronization and external query services. Record which existing web behaviors require explicit opt-in.
-- [ ] Generate native learner mockups: first visit without insights, returning profile, career results/detail, no results, unavailable/disabled AI. Keep optional career/employment fields progressive rather than mandatory student onboarding.
-- [ ] Implement native read/explicit-save personal profile and career search/detail using existing interoperable storage. Do not conflate self-reported skills with institution-issued evidence.
+- [x] Audit current personal profile keys/schema/storage, credential-linked skill provenance, self-assessment lifecycle, AI gate and existing consent-sync side effects. See [the implementation contract](LEARNER_SKILLS.md).
+- [x] Generate initial learner concepts: Skills first visit, overview, sources and goals; career explore, results and detail. Keep optional career/employment fields progressive rather than mandatory student onboarding. See [the boards and caveats](design/LEARNER_SKILLS_BRIEF.md).
+- [ ] Design loading, partial/error, no-results, unavailable/disabled AI, skill-picker, expanded optional details and unsaved-change states before implementing their routes.
+- [ ] Audit occupation/resource query schemas, providers, pagination, availability and insight prerequisites. Resolve save-time insight refresh and sharing disclosures with existing choices; do not silently add consent.
+- [ ] Implement native credential-linked Skills reads and personal goals read/explicit-save using current interoperable storage. Preserve unknown/legacy fields and distinguish failed reads from empty data.
+- [ ] Resolve and implement safe self-assigned-skill replacement, preserving the previous usable data through failed/uncertain writes and retries. Do not conflate self-reported skills with institution-issued evidence.
+- [ ] Implement career search/detail once its services and policy contract are verified. Add a career goal through explicit editable review.
 - [ ] Route available learning resources into native detail or the browser as appropriate. Defer session creation until its own integration is ready; no dead CTA.
 - [ ] Verify web/native round trip, cancellation, no-change saves, unavailable upstream services, pagination, translations and account background/resume/sign-out isolation.
 
 ### 2. Journeys contract and storage checkpoint
 
-- [ ] Audit latest upstream source before integration, reconcile with this branch and identify real endpoints. Confirm whether persistence remains local-only and whether dispatch remains mock.
+- [x] Inspect freshly fetched upstream defaults: October 18 `origin/main` at `f7f37e319` still uses browser-local pathwayStore persistence and defaults dispatch to mockDispatch, with a boot-time override seam.
+- [ ] Reconcile deployed wiring and identify real endpoints before integration. A source-tree filename search is not proof that no service or deployment override exists elsewhere.
 - [ ] Decide the minimal account-owned shared document/index contract, schema/revision compatibility, optimistic conflict handling and lifecycle clearing. Reuse existing services where supported; explicitly record any missing backend work.
 - [ ] Define supported action descriptors (native destination, installed app, external URL, session), typed route validation and return/completion reconciliation. Do not widen the partner browser bridge with arbitrary native routes.
 - [ ] Define evidence/completion authority and credential binding. A personal completion tick or an app returning must not mean an issuer signed or verified an achievement.

@@ -89,9 +89,16 @@ The user-approved builder ray strokes now extend to the four main pane titles an
 
 Nine core and twelve distinct focused UI checks pass. The full suite and hosted CI were not run. Real account/partner writes, physical-device review and iPad remain separate gates.
 
-## Queued: learner Pathways, Journeys and related features — October 16
+## In progress: learner Skills, goals and career Pathways — October 18
 
 The user explicitly asked to queue the missing learning experiences. [The native learning plan](LEARNER_LEARNING_PLAN.md) distinguishes AI career Pathways from Journeys and stages personal skills/goals and career exploration, Journeys persistence/API work, learner Today/map/steps/progress, then Sessions/Insights and proposal/What-if review. Both products are learner features. Skill-framework editing/creation, Journey authoring and institutional management are excluded. This replaces the earlier “Journeys needs scope confirmation” backlog; it does not turn on rollout flags or add nonfunctional tiles.
+
+- [x] Audit current personal profile storage/schema, skill provenance/self-assessment writes, AI gates and existing sharing side effects. [Implementation contract](LEARNER_SKILLS.md).
+- [x] Generate seven sample-data concept screens for Skills/goals and career exploration, preserving the four-tab shell and rendered artwork on flat panels. [Boards and exact prompts](design/LEARNER_SKILLS_BRIEF.md).
+- [ ] Complete missing state designs, implement credential-linked Skills reads and goals read/explicit-save, then resolve safe self-assigned-skill replacement and occupation/provider contracts before their integrations.
+- [ ] Establish account-owned Journey persistence and real dispatch/endpoints before native Today/map/progress; fetched upstream defaults remain local/scripted.
+
+This first slice is design/source analysis only. The installed Native Lab app remains the approved sky-refresh build. Endorsements/issuer trust and the broader design-system consistency audit remain queued separately; organization workspaces retain their later plan.
 
 ## Complete logo from first frame — October 16
 
