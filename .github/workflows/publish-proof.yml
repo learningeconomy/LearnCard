@@ -5,6 +5,12 @@ on:
         workflows: ['LearnCard Verification']
         types: [completed]
 
+# One publisher at a time per branch; publish re-checks the PR head before editing, so a run that
+# finishes after a newer push skips instead of replacing newer proof.
+concurrency:
+    group: publish-proof-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+    cancel-in-progress: false
+
 permissions:
     contents: read
     actions: read
@@ -113,4 +119,5 @@ jobs:
                   RUN_URL: ${{ github.event.workflow_run.html_url }}
               run: |
                   bun scripts/proof.ts publish --pr "$PR" --from-run "$DIR" --head-sha "$HEAD_SHA" --update-pr \
+                    --images-only --skip-if-stale \
                     --note "Published by CI from LearnCard Verification run $RUN_URL"

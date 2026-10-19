@@ -105,7 +105,7 @@ jobs:
                       if (newest) console.log(join(root, newest));
                     ')
                     if [[ -n "$RUN_DIR" ]]; then
-                      bun scripts/proof.ts stage --from-run "$RUN_DIR" --out "$RUNNER_TEMP/lc-proof-media"
+                      bun scripts/proof.ts stage --from-run "$RUN_DIR" --out "$RUNNER_TEMP/lc-proof-media" --images-only
                     fi
                   fi
 

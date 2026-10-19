@@ -292,8 +292,17 @@ const durationOf = (result: Result): number =>
 const errorRecorded = (result: Result): boolean =>
     Boolean(result.hasError || result.error || result.evidenceError || result.cleanupError);
 
-export const stage = async (run: string, out: string): Promise<void> => {
-    const { media, report } = await collectMedia([], run);
+const onlyImages = (media: Media[]): Media[] =>
+    media.filter(item => item.type.startsWith('image/'));
+
+export const stage = async (
+    run: string,
+    out: string,
+    options: { imagesOnly?: boolean } = {}
+): Promise<void> => {
+    const collected = await collectMedia([], run);
+    const report = collected.report;
+    const media = options.imagesOnly ? onlyImages(collected.media) : collected.media;
     if (!report) throw new Error('Staging requires a report.');
     const root = await realpath(run);
     let destination = resolve(out);
@@ -443,19 +452,41 @@ const command = (args: string[], remedy: string, trim = true): string => {
     return trim ? output.trim() : output;
 };
 
-const readPrBody = (pr: string): string => {
+interface PullRequest {
+    body: string;
+    head: string;
+    state: string;
+}
+
+const readPr = (pr: string): PullRequest => {
     const response = object(
         JSON.parse(
             command(
-                ['gh', 'pr', 'view', pr, '--json', 'body'],
+                ['gh', 'pr', 'view', pr, '--json', 'body,headRefOid,state'],
                 'Run gh auth login and check the PR number.',
                 false
             )
         )
     );
-    if (typeof response.body !== 'string')
-        throw new Error('GitHub did not return a PR body. Check gh authentication and retry.');
-    return response.body;
+    if (
+        typeof response.body !== 'string' ||
+        typeof response.headRefOid !== 'string' ||
+        typeof response.state !== 'string'
+    )
+        throw new Error(
+            'GitHub did not return the PR body and head. Check gh authentication and retry.'
+        );
+    return { body: response.body, head: response.headRefOid.toLowerCase(), state: response.state };
+};
+
+export const staleReason = (
+    pr: Pick<PullRequest, 'head' | 'state'>,
+    tested: string
+): string | undefined => {
+    if (pr.state !== 'OPEN') return `PR is ${pr.state.toLowerCase()}`;
+    if (!pr.head.startsWith(tested.toLowerCase()))
+        return `PR head is ${pr.head.slice(0, 9)}, but this proof is for ${tested.slice(0, 9)}`;
+    return undefined;
 };
 
 const checkRepo = (): void => {
@@ -512,11 +543,14 @@ Usage: bun scripts/proof.ts ${subcommand === 'doctor' ? 'doctor [--json]' : subc
 
 doctor   Check cwd, S3 configuration/credentials, and gh auth status (no upload).
 publish  Publish only .png .jpg .jpeg .gif .webp .webm .mp4, at most 50 MB each.
-stage    --from-run <dir> --out <new directory> [--json]: selected media and sanitized report only.
+stage    --from-run <dir> --out <new directory> [--images-only] [--json]: selected media and sanitized report only.
 
 Publish options:
   --pr <n>              Required positive PR number; keys: pr-<n>/<short HEAD>/<feature|files>/<filename>
-  --head-sha <sha>      Override head label/key with a 7–40 character hex SHA (first 9 characters).
+  --head-sha <sha>      Tested commit (7–40 hex chars) instead of local HEAD; labels the proof and keys.
+  --images-only         Publish screenshots only; never videos (used by CI, where nobody reviews media first).
+  --skip-if-stale       With --update-pr: if the PR is closed or its head is not the tested commit,
+                        skip quietly (exit 0) instead of failing. Checked before upload and before editing.
   --from-run <dir>      Read report.json locally from runs/<runId> or scripts/<runId-name>.
                         Select final/after screenshot, failure/interruption screenshots, WebM videos.
   files...             Additional media files; no directory recursion. Use -- before dash-prefixed paths.
@@ -552,6 +586,8 @@ export const main = async (args: string[]): Promise<void> => {
             'from-run': { type: 'string' },
             out: { type: 'string' },
             'head-sha': { type: 'string' },
+            'images-only': { type: 'boolean' },
+            'skip-if-stale': { type: 'boolean' },
             note: { type: 'string' },
             'not-verified': { type: 'string' },
             'update-pr': { type: 'boolean' },
@@ -621,10 +657,14 @@ export const main = async (args: string[]): Promise<void> => {
             !values['from-run'] ||
             !values.out ||
             files.length ||
-            Object.keys(values).some(key => !['from-run', 'out', 'json'].includes(key))
+            Object.keys(values).some(
+                key => !['from-run', 'out', 'json', 'images-only'].includes(key)
+            )
         )
-            throw new Error('stage requires --from-run <dir> --out <new directory> [--json].');
-        await stage(values['from-run'], values.out);
+            throw new Error(
+                'stage requires --from-run <dir> --out <new directory> [--images-only] [--json].'
+            );
+        await stage(values['from-run'], values.out, { imagesOnly: Boolean(values['images-only']) });
         console.log(
             values.json
                 ? JSON.stringify({ ok: true, out: resolve(values.out) })
@@ -645,17 +685,18 @@ export const main = async (args: string[]): Promise<void> => {
     checkRepo();
     if (values['head-sha'] !== undefined && !/^[a-f0-9]{7,40}$/i.test(values['head-sha']))
         throw new Error('--head-sha must be 7–40 hexadecimal characters.');
-    const sha =
-        values['head-sha']?.slice(0, 9) ??
-        command(
-            ['git', 'rev-parse', '--short=9', 'HEAD'],
-            'Commit your work in this worktree first.'
-        );
+    const tested = (
+        values['head-sha'] ??
+        command(['git', 'rev-parse', 'HEAD'], 'Commit your work in this worktree first.')
+    ).toLowerCase();
+    const sha = tested.slice(0, 9);
     const dryRun = Boolean(values['dry-run']);
     const mediaDisabled = !dryRun && !uploadConfigured();
     const config = mediaDisabled ? undefined : configuration(dryRun);
     if (!dryRun && config) checkCredentials();
-    const { media, report, warnings } = await collectMedia(files, values['from-run']);
+    const collected = await collectMedia(files, values['from-run']);
+    const { report, warnings } = collected;
+    const media = values['images-only'] ? onlyImages(collected.media) : collected.media;
     if (mediaDisabled)
         warnings.push('Media upload disabled; CI will attach media. ' + MEDIA_DISABLED);
     if (dryRun && (!process.env.PROOF_S3_BUCKET || !process.env.PROOF_S3_REGION))
@@ -697,9 +738,21 @@ export const main = async (args: string[]): Promise<void> => {
         notVerified: values['not-verified'],
         mediaDisabled,
     });
+    const stale = (reason: string): boolean => {
+        if (!values['skip-if-stale'])
+            throw new Error(
+                `${reason}. Push the tested commit (or verify the PR's current head) and publish again. PR was not updated.`
+            );
+        console.error(`Skipping proof update: ${reason}.`);
+        if (values.json) console.log(JSON.stringify({ ok: true, skipped: reason, sha }));
+        return true;
+    };
     if (!dryRun) {
         if (values['update-pr']) {
-            replaceProof(readPrBody(values.pr), markdown);
+            const pr = readPr(values.pr);
+            const reason = staleReason(pr, tested);
+            if (reason && stale(reason)) return;
+            replaceProof(pr.body, markdown);
         }
         const client = config
             ? new S3Client({
@@ -725,9 +778,12 @@ export const main = async (args: string[]): Promise<void> => {
             }
         }
         if (values['update-pr']) {
+            const latest = readPr(values.pr);
+            const reason = staleReason(latest, tested);
+            if (reason && stale(reason)) return;
             let body: string;
             try {
-                body = replaceProof(readPrBody(values.pr), markdown);
+                body = replaceProof(latest.body, markdown);
             } catch {
                 throw new Error(
                     'Uploads retained, but the latest PR body could not be merged. Check gh auth and keep exactly one ordered proof marker pair, then rerun publish.'

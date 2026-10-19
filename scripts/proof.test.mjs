@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
@@ -224,7 +226,8 @@ test('mocked publishing merges the latest PR body and never edits after upload o
                     views++;
                     const body = mode === 'bad-markers' && views === 2 ? '<!-- proof:start -->' :
                         '  ' + (views === 1 ? 'Original' : 'Concurrent edit') + '\\n\\n';
-                    return {exitCode:0,stdout:Buffer.from(JSON.stringify({body}))};
+                    const headRefOid = spawn(['git','rev-parse','HEAD']).stdout.toString().trim();
+                    return {exitCode:0,stdout:Buffer.from(JSON.stringify({body, headRefOid, state:'OPEN'}))};
                 }
                 assert.equal(args[2], 'edit');
                 calls.push('edit');
@@ -327,7 +330,8 @@ test('no-credentials publish updates mocked PR table-only without S3 calls', asy
             Bun.spawnSync = (args, options) => {
                 if (args[0] === 'git') return spawn(args, options);
                 assert.equal(args[0], 'gh');
-                if (args[2] === 'view') return {exitCode:0,stdout:Buffer.from(JSON.stringify({body:'Existing description'}))};
+                if (args[2] === 'view') return {exitCode:0,stdout:Buffer.from(JSON.stringify({body:'Existing description',
+                    headRefOid: spawn(['git','rev-parse','HEAD']).stdout.toString().trim(), state:'OPEN'}))};
                 assert.equal(args[2], 'edit');
                 edited = readFileSync(args[5], 'utf8');
                 return {exitCode:0,stdout:Buffer.from('')};
@@ -391,12 +395,104 @@ test('--head-sha validates hexadecimal length and controls label and upload keys
             console.log = value => output = JSON.parse(value);
             for (const sha of ['abcdef1', 'ABCDEF1234567890', 'a'.repeat(40)]) {
                 await proof.main([...args, sha]);
-                assert.equal(output.sha, sha.slice(0,9));
-                assert.ok(output.markdown.includes('head ' + sha.slice(0,9)));
-                assert.ok(output.uploads.every(upload => upload.key.startsWith('pr-1741/' + sha.slice(0,9) + '/')));
+                const label = sha.slice(0,9).toLowerCase();
+                assert.equal(output.sha, label);
+                assert.ok(output.markdown.includes('head ' + label));
+                assert.ok(output.uploads.every(upload => upload.key.startsWith('pr-1741/' + label + '/')));
             }
         `);
     } finally {
         await rm(root, { recursive: true, force: true });
+    }
+});
+
+test('a PR that moves on or closes during publishing is never overwritten with stale proof', async () => {
+    const root = await createFixture();
+    try {
+        probe(`
+            import { S3Client } from 'bun';
+            process.env.PROOF_S3_BUCKET = 'proof-test';
+            process.env.PROOF_S3_REGION = 'us-east-1';
+            process.env.PROOF_AWS_ACCESS_KEY_ID = 'synthetic';
+            process.env.PROOF_AWS_SECRET_ACCESS_KEY = 'synthetic';
+            const tested = 'a'.repeat(40);
+            const newer = 'b'.repeat(40);
+            const spawn = Bun.spawnSync;
+            let calls = [];
+            let heads = [];
+            let state = 'OPEN';
+            S3Client.prototype.write = async () => { calls.push('upload'); return 1; };
+            Bun.spawnSync = (args, options) => {
+                if (args[0] === 'git') return spawn(args, options);
+                if (args[2] === 'view') {
+                    calls.push('view:' + heads[0].slice(0, 9));
+                    const headRefOid = heads.shift();
+                    return {exitCode:0,stdout:Buffer.from(JSON.stringify({body:'Body', headRefOid, state}))};
+                }
+                calls.push('edit');
+                return {exitCode:0,stdout:Buffer.from('')};
+            };
+            const output = [];
+            console.log = value => output.push(value);
+            console.error = () => {};
+            const base = ['publish','--pr','1741','--from-run',${JSON.stringify(root)},'--head-sha',tested,'--update-pr'];
+
+            // Head advances while media uploads: no edit, clear failure without the CI flag.
+            heads = [tested, newer];
+            await assert.rejects(proof.main(base), /PR head is bbbbbbbbb, but this proof is for aaaaaaaaa/);
+            assert.ok(!calls.includes('edit'));
+            assert.equal(calls.at(-1), 'view:bbbbbbbbb');
+
+            // CI mode: same race skips quietly, still no edit.
+            calls = []; heads = [tested, newer];
+            await proof.main([...base, '--skip-if-stale', '--json']);
+            assert.ok(!calls.includes('edit'));
+            assert.ok(JSON.parse(output.at(-1)).skipped.includes('bbbbbbbbb'));
+
+            // Already stale before upload: nothing uploaded, nothing edited.
+            calls = []; heads = [newer];
+            await proof.main([...base, '--skip-if-stale', '--json']);
+            assert.deepEqual(calls, ['view:bbbbbbbbb']);
+
+            // Closed PR: skipped before any upload.
+            calls = []; heads = [tested]; state = 'CLOSED';
+            await proof.main([...base, '--skip-if-stale', '--json']);
+            assert.deepEqual(calls, ['view:aaaaaaaaa']);
+            assert.match(JSON.parse(output.at(-1)).skipped, /closed/);
+
+            // Happy path still edits when the head is unchanged.
+            calls = []; heads = [tested, tested]; state = 'OPEN';
+            await proof.main([...base, '--json']);
+            assert.equal(calls.at(-1), 'edit');
+        `);
+    } finally {
+        await rm(root, { recursive: true, force: true });
+    }
+});
+
+test('--images-only never stages or publishes videos', async () => {
+    const root = await createFixture();
+    const staged = join(await mkdtemp(join(tmpdir(), 'proof-images-')), 'out');
+    try {
+        probe(`
+            import { readdirSync } from 'node:fs';
+            import { join } from 'node:path';
+            const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
+                entry.isDirectory() ? walk(join(dir, entry.name)) : [entry.name]);
+            await proof.stage(${JSON.stringify(root)}, ${JSON.stringify(staged)}, { imagesOnly: true });
+            const files = walk(${JSON.stringify(staged)});
+            assert.ok(files.some(name => name.endsWith('.png')));
+            assert.ok(!files.some(name => name.endsWith('.webm')));
+            let output;
+            console.log = value => output = JSON.parse(value);
+            await proof.main(['publish','--pr','1741','--from-run',${JSON.stringify(root)},'--dry-run','--json','--images-only']);
+            assert.ok(output.uploads.length > 0);
+            assert.ok(output.uploads.every(upload => upload.type.startsWith('image/')));
+            await proof.main(['publish','--pr','1741','--from-run',${JSON.stringify(root)},'--dry-run','--json']);
+            assert.ok(output.uploads.some(upload => upload.type === 'video/webm'), 'fixture has a video to exclude');
+        `);
+    } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(dirname(staged), { recursive: true, force: true });
     }
 });
