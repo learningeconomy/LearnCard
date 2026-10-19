@@ -1,14 +1,28 @@
 #!/usr/bin/env bun
 import { S3Client } from 'bun';
 import { existsSync } from 'node:fs';
-import { lstat, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
+import {
+    copyFile,
+    lstat,
+    mkdir,
+    mkdtemp,
+    readFile,
+    readdir,
+    realpath,
+    rm,
+    writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, extname, join, parse, resolve, sep } from 'node:path';
+import { basename, dirname, extname, join, parse, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 
 const START = '<!-- proof:start -->';
 const END = '<!-- proof:end -->';
 const MAX_BYTES = 50_000_000;
+const MEDIA_DISABLED =
+    'Screenshots/videos: not attached from this machine; the LearnCard Verification CI run attaches them when the PR is ready for review.';
+const uploadConfigured = (): boolean =>
+    Object.keys(process.env).some(key => /^(PROOF_S3_|PROOF_AWS_)/.test(key));
 const CONTENT_TYPES: Record<string, string> = {
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
@@ -29,6 +43,8 @@ interface Result {
     error?: string;
     evidenceError?: string;
     cleanupError?: string;
+    durationMs?: number;
+    hasError?: boolean;
 }
 
 interface Report {
@@ -62,8 +78,11 @@ const strings = (value: unknown): value is string[] =>
 
 export const parseReport = (value: unknown): Report => {
     const raw = object(value);
-    const script = typeof raw.script === 'string';
-    const rows = script ? [{ ...raw, feature: 'script', requiredEntries: [] }] : raw.results;
+    const script = typeof raw.script === 'string' || raw.script === true;
+    const rows =
+        typeof raw.script === 'string'
+            ? [{ ...raw, feature: 'script', requiredEntries: [] }]
+            : raw.results;
     if (
         typeof raw.status !== 'string' ||
         !['passed', 'failed', 'interrupted', 'running'].includes(raw.status) ||
@@ -81,6 +100,11 @@ export const parseReport = (value: unknown): Report => {
             !['passed', 'failed', 'interrupted', 'running'].includes(String(entry.status)) ||
             !strings(entry.requiredEntries) ||
             (entry.entries !== undefined && !strings(entry.entries)) ||
+            (entry.durationMs !== undefined &&
+                (typeof entry.durationMs !== 'number' ||
+                    !Number.isFinite(entry.durationMs) ||
+                    entry.durationMs < 0)) ||
+            (entry.hasError !== undefined && typeof entry.hasError !== 'boolean') ||
             ['startedAt', 'finishedAt', 'error', 'evidenceError', 'cleanupError'].some(
                 key => entry[key] !== undefined && typeof entry[key] !== 'string'
             )
@@ -95,7 +119,10 @@ export const parseReport = (value: unknown): Report => {
         throw new Error('Duplicate features in report.json; use an unmodified lc verify report.');
     }
     for (const key of ['notRun', 'notSelected']) {
-        if (raw[key] !== undefined && !strings(raw[key])) {
+        if (
+            raw[key] !== undefined &&
+            (!strings(raw[key]) || !raw[key].every(item => /^[a-zA-Z0-9_-]+$/.test(item)))
+        ) {
             throw new Error(`Invalid ${key} in report.json; use an unmodified lc verify report.`);
         }
     }
@@ -212,7 +239,9 @@ export const collectMedia = async (
                 'Do not publish sessions. Use a runs/<runId> or scripts/<runId-name> evidence directory.'
             );
         }
-        report = parseReport(JSON.parse(await readFile(join(root, 'report.json'), 'utf8')));
+        const reportPath = join(root, 'report.json');
+        if (await hasSymlink(reportPath)) throw new Error('Report must not be a symlink.');
+        report = parseReport(JSON.parse(await readFile(reportPath, 'utf8')));
         for (const result of report.results) {
             const directory = report.script ? root : join(root, result.feature);
             if (!existsSync(directory)) {
@@ -258,6 +287,60 @@ export const buildKey = (pr: string, sha: string, feature: string, filename: str
     return `pr-${pr}/${sha}/${feature}/${filename}`;
 };
 
+const durationOf = (result: Result): number =>
+    result.durationMs ?? Date.parse(result.finishedAt ?? '') - Date.parse(result.startedAt ?? '');
+const errorRecorded = (result: Result): boolean =>
+    Boolean(result.hasError || result.error || result.evidenceError || result.cleanupError);
+
+export const stage = async (run: string, out: string): Promise<void> => {
+    const { media, report } = await collectMedia([], run);
+    if (!report) throw new Error('Staging requires a report.');
+    const root = await realpath(run);
+    let destination = resolve(out);
+    if (destination === root || destination.startsWith(root + sep) || existsSync(destination))
+        throw new Error('Stage --out must be a new directory outside the run.');
+    await mkdir(dirname(destination), { recursive: true });
+    if (await hasSymlink(dirname(destination))) throw new Error('Stage output contains a symlink.');
+    destination = join(await realpath(dirname(destination)), basename(destination));
+    if (destination === root || destination.startsWith(root + sep))
+        throw new Error('Stage --out must be a new directory outside the run.');
+    await mkdir(destination, { mode: 0o700 });
+    try {
+        for (const item of media) {
+            const target = join(destination, relative(root, item.path));
+            if (!(await safeMedia(item.path, [])))
+                throw new Error('Evidence changed during staging.');
+            await mkdir(dirname(target), { recursive: true, mode: 0o700 });
+            await copyFile(item.path, target);
+        }
+        const sanitized = {
+            status: report.status,
+            script: report.script,
+            results: report.results.map(result => ({
+                feature: result.feature,
+                status: result.status,
+                requiredEntries: result.requiredEntries.map((_, index) => `entry-${index + 1}`),
+                entries: result.entries?.map((_, index) => `entry-${index + 1}`),
+                durationMs:
+                    Number.isFinite(durationOf(result)) && durationOf(result) >= 0
+                        ? durationOf(result)
+                        : undefined,
+                hasError: errorRecorded(result),
+            })),
+            notRun: report.notRun,
+            notSelected: report.notSelected,
+        };
+        await writeFile(
+            join(destination, 'report.json'),
+            JSON.stringify(sanitized, null, 2) + '\n',
+            { mode: 0o600 }
+        );
+    } catch (error) {
+        await rm(destination, { recursive: true, force: true });
+        throw error;
+    }
+};
+
 const text = (value: string): string =>
     value
         .replaceAll('&', '&amp;')
@@ -273,6 +356,7 @@ export const renderProof = (options: {
     report?: Report;
     note?: string;
     notVerified?: string;
+    mediaDisabled?: boolean;
 }): string => {
     const { sha, timestamp, uploads, report, note, notVerified } = options;
     const lines = [
@@ -290,8 +374,7 @@ export const renderProof = (options: {
             '| --- | --- | --- | --- |'
         );
         for (const result of report.results) {
-            const duration =
-                Date.parse(result.finishedAt ?? '') - Date.parse(result.startedAt ?? '');
+            const duration = durationOf(result);
             const entries = result.entries
                 ? `${result.entries.length}/${result.requiredEntries.length}`
                 : `unknown/${result.requiredEntries.length}`;
@@ -299,7 +382,7 @@ export const renderProof = (options: {
                 `| ${text(result.feature)} | ${text(result.status)} | ${report.script ? 'not cataloged' : entries} | ${Number.isFinite(duration) && duration >= 0 ? `${(duration / 1000).toFixed(1)}s` : 'unknown'} |`
             );
             // Raw error strings may contain seeds or bearer URLs; keep them local like the report.
-            if (result.error || result.evidenceError || result.cleanupError) {
+            if (errorRecorded(result)) {
                 lines.push(
                     `| ${text(result.feature)} details | Error recorded locally; inspect report.json | — | — |`
                 );
@@ -320,6 +403,7 @@ export const renderProof = (options: {
                 : `[${text(upload.feature)} video — ${text(basename(upload.path))}](<${upload.url}>)`
         );
     }
+    if (options.mediaDisabled) lines.push('', MEDIA_DISABLED);
     if (note) lines.push('', `Note: ${text(note)}`);
     if (notVerified !== undefined)
         lines.push(
@@ -424,13 +508,15 @@ const checkCredentials = (): void => {
 
 const help = (subcommand: string): string => `LearnCard proof publisher (Bun 1.4.x, repository root)
 
-Usage: bun scripts/proof.ts ${subcommand === 'doctor' ? 'doctor [--json]' : subcommand === 'publish' ? 'publish --pr <n> [--from-run <dir>] [files...] [options]' : '<doctor|publish> [options]'}
+Usage: bun scripts/proof.ts ${subcommand === 'doctor' ? 'doctor [--json]' : subcommand === 'publish' ? 'publish --pr <n> [--from-run <dir>] [files...] [options]' : '<doctor|publish|stage> [options]'}
 
 doctor   Check cwd, S3 configuration/credentials, and gh auth status (no upload).
 publish  Publish only .png .jpg .jpeg .gif .webp .webm .mp4, at most 50 MB each.
+stage    --from-run <dir> --out <new directory> [--json]: selected media and sanitized report only.
 
 Publish options:
   --pr <n>              Required positive PR number; keys: pr-<n>/<short HEAD>/<feature|files>/<filename>
+  --head-sha <sha>      Override head label/key with a 7–40 character hex SHA (first 9 characters).
   --from-run <dir>      Read report.json locally from runs/<runId> or scripts/<runId-name>.
                         Select final/after screenshot, failure/interruption screenshots, WebM videos.
   files...             Additional media files; no directory recursion. Use -- before dash-prefixed paths.
@@ -446,6 +532,7 @@ Environment: PROOF_S3_BUCKET, PROOF_S3_REGION, PROOF_AWS_ACCESS_KEY_ID, PROOF_AW
 PROOF_AWS_SESSION_TOKEN additionally for temporary credentials. PROOF_PUBLIC_BASE_URL optionally overrides
 https://<bucket>.s3.<region>.amazonaws.com. Bucket policy must allow public reads (no object ACLs set).
 Reports, sessions/, traces, JSON, logs, .env files and symlinks are never uploaded.
+With no PROOF_S3_* or PROOF_AWS_* configuration, publish writes table-only proof; CI attaches media.
 Inspect screenshots/videos for sensitive content before publishing; public URLs expire with bucket lifecycle.
 Raw report errors stay local because they may contain secrets. A report is not cryptographically bound to HEAD.
 
@@ -463,6 +550,8 @@ export const main = async (args: string[]): Promise<void> => {
         options: {
             pr: { type: 'string' },
             'from-run': { type: 'string' },
+            out: { type: 'string' },
+            'head-sha': { type: 'string' },
             note: { type: 'string' },
             'not-verified': { type: 'string' },
             'update-pr': { type: 'boolean' },
@@ -485,10 +574,12 @@ export const main = async (args: string[]): Promise<void> => {
             [
                 'S3 configuration',
                 () => {
-                    configuration(false);
+                    if (uploadConfigured()) {
+                        configuration(false);
+                        checkCredentials();
+                    }
                 },
             ],
-            ['AWS credentials', checkCredentials],
             [
                 'GitHub auth',
                 () => {
@@ -498,7 +589,14 @@ export const main = async (args: string[]): Promise<void> => {
         ] as const) {
             try {
                 check();
-                checks.push({ check: name, ok: true, message: 'OK' });
+                checks.push({
+                    check: name,
+                    ok: true,
+                    message:
+                        name === 'S3 configuration' && !uploadConfigured()
+                            ? 'WARNING: media upload disabled; CI will attach media'
+                            : 'OK',
+                });
             } catch (error) {
                 checks.push({
                     check: name,
@@ -518,6 +616,22 @@ export const main = async (args: string[]): Promise<void> => {
         if (!ok) process.exitCode = 1;
         return;
     }
+    if (subcommand === 'stage') {
+        if (
+            !values['from-run'] ||
+            !values.out ||
+            files.length ||
+            Object.keys(values).some(key => !['from-run', 'out', 'json'].includes(key))
+        )
+            throw new Error('stage requires --from-run <dir> --out <new directory> [--json].');
+        await stage(values['from-run'], values.out);
+        console.log(
+            values.json
+                ? JSON.stringify({ ok: true, out: resolve(values.out) })
+                : `Staged proof: ${resolve(values.out)}`
+        );
+        return;
+    }
     if (subcommand !== 'publish')
         throw new Error('Unknown command. Use bun scripts/proof.ts --help.');
     if (!values.pr || !/^[1-9]\d*$/.test(values.pr))
@@ -529,13 +643,21 @@ export const main = async (args: string[]): Promise<void> => {
             'Supply --from-run <evidence directory> and/or media files. Run lc verify first.'
         );
     checkRepo();
-    const sha = command(
-        ['git', 'rev-parse', '--short', 'HEAD'],
-        'Commit your work in this worktree first.'
-    );
+    if (values['head-sha'] !== undefined && !/^[a-f0-9]{7,40}$/i.test(values['head-sha']))
+        throw new Error('--head-sha must be 7–40 hexadecimal characters.');
+    const sha =
+        values['head-sha']?.slice(0, 9) ??
+        command(
+            ['git', 'rev-parse', '--short=9', 'HEAD'],
+            'Commit your work in this worktree first.'
+        );
     const dryRun = Boolean(values['dry-run']);
-    const config = configuration(dryRun);
+    const mediaDisabled = !dryRun && !uploadConfigured();
+    const config = mediaDisabled ? undefined : configuration(dryRun);
+    if (!dryRun && config) checkCredentials();
     const { media, report, warnings } = await collectMedia(files, values['from-run']);
+    if (mediaDisabled)
+        warnings.push('Media upload disabled; CI will attach media. ' + MEDIA_DISABLED);
     if (dryRun && (!process.env.PROOF_S3_BUCKET || !process.env.PROOF_S3_REGION))
         warnings.push(
             'S3 env missing: preview uses placeholder bucket/region, not a real upload destination.'
@@ -544,22 +666,24 @@ export const main = async (args: string[]): Promise<void> => {
         throw new Error(
             'No publishable media remains. Supply allowlisted files outside sessions/, each at most 50 MB.'
         );
-    const uploads = media.map(item => {
-        const key = buildKey(values.pr!, sha, item.feature, basename(item.path));
-        return {
-            ...item,
-            key,
-            url: `${config.base}/${key
-                .split('/')
-                .map(part =>
-                    encodeURIComponent(part).replace(
-                        /[!'()*]/g,
-                        char => `%${char.charCodeAt(0).toString(16)}`
-                    )
-                )
-                .join('/')}`,
-        };
-    });
+    const uploads = config
+        ? media.map(item => {
+              const key = buildKey(values.pr!, sha, item.feature, basename(item.path));
+              return {
+                  ...item,
+                  key,
+                  url: `${config.base}/${key
+                      .split('/')
+                      .map(part =>
+                          encodeURIComponent(part).replace(
+                              /[!'()*]/g,
+                              char => `%${char.charCodeAt(0).toString(16)}`
+                          )
+                      )
+                      .join('/')}`,
+              };
+          })
+        : [];
     if (new Set(uploads.map(item => item.key)).size !== uploads.length)
         throw new Error(
             'Media filenames collide within a feature. Rename the duplicate files before publishing; no uploads performed.'
@@ -571,27 +695,29 @@ export const main = async (args: string[]): Promise<void> => {
         report,
         note: values.note,
         notVerified: values['not-verified'],
+        mediaDisabled,
     });
     if (!dryRun) {
-        checkCredentials();
         if (values['update-pr']) {
             replaceProof(readPrBody(values.pr), markdown);
         }
-        const client = new S3Client({
-            bucket: config.bucket,
-            region: config.region,
-            endpoint: `https://s3.${config.region}.amazonaws.com`,
-            accessKeyId: process.env.PROOF_AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.PROOF_AWS_SECRET_ACCESS_KEY,
-            sessionToken: process.env.PROOF_AWS_SESSION_TOKEN ?? '',
-        });
+        const client = config
+            ? new S3Client({
+                  bucket: config.bucket,
+                  region: config.region,
+                  endpoint: `https://s3.${config.region}.amazonaws.com`,
+                  accessKeyId: process.env.PROOF_AWS_ACCESS_KEY_ID,
+                  secretAccessKey: process.env.PROOF_AWS_SECRET_ACCESS_KEY,
+                  sessionToken: process.env.PROOF_AWS_SESSION_TOKEN ?? '',
+              })
+            : undefined;
         for (const upload of uploads) {
             if (!(await safeMedia(upload.path, warnings)))
                 throw new Error(
                     'Evidence changed during publishing. Stop editing it and rerun publish.'
                 );
             try {
-                await client.write(upload.key, Bun.file(upload.path), { type: upload.type });
+                await client!.write(upload.key, Bun.file(upload.path), { type: upload.type });
             } catch {
                 throw new Error(
                     `Upload failed for ${basename(upload.path)}. Check S3 credentials, bucket region and PutObject permissions; rerun publish. PR was not updated.`

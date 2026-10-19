@@ -15,6 +15,7 @@ const probe = code => {
             `
         import assert from 'node:assert/strict';
         import * as proof from './scripts/proof.ts';
+        for (const key of Object.keys(process.env)) if (key.startsWith('PROOF_')) delete process.env[key];
         ${code}
     `,
         ],
@@ -243,6 +244,157 @@ test('mocked publishing merges the latest PR body and never edits after upload o
             calls.length = 0; views = 0; mode = 'bad-markers';
             await assert.rejects(proof.main(args), /Uploads retained/);
             assert.deepEqual(calls, ['view','upload','view']);
+        `);
+    } finally {
+        await rm(root, { recursive: true, force: true });
+    }
+});
+
+test('stage copies only selected media and sanitized rendering data, preserving markdown', async () => {
+    const root = await createFixture();
+    const out = root + '-staged';
+    try {
+        probe(`
+            import { readdir, readFile, writeFile, symlink, rm } from 'node:fs/promises';
+            const root = ${JSON.stringify(root)}, out = ${JSON.stringify(out)};
+            const raw = JSON.parse(await readFile(root + '/report.json', 'utf8'));
+            raw.results[0].requiredEntries = ['/absolute/private/seed'];
+            raw.results[0].entries = ['https://private.test/bearer'];
+            raw.results[0].env = { SECRET: 'PRIVATE_SENTINEL' };
+            await writeFile(root + '/report.json', JSON.stringify(raw));
+            await proof.stage(root, out);
+            const paths = (await readdir(out, {recursive:true})).sort();
+            assert.deepEqual(paths, ['account','account/0-learner-video','account/0-learner-video/recording.webm',
+                'account/003-wallet-after.png','report.json','sharing','sharing/002-share-failure.png','sharing/003-failure-state-0-learner.png'].sort());
+            const json = await readFile(out + '/report.json', 'utf8');
+            for (const forbidden of ['PRIVATE_SENTINEL', '/absolute', 'https:', 'SECRET', 'startedAt', 'error"']) assert.ok(!json.includes(forbidden), forbidden);
+            const logs = [];
+            console.log = value => logs.push(JSON.parse(value));
+            for (const dir of [root, out]) await proof.main(['publish','--pr','1741','--from-run',dir,'--dry-run','--json']);
+            const normalize = md => md.replace(/ · [^\\n]+/, ' · TIMESTAMP');
+            assert.equal(normalize(logs[0].markdown), normalize(logs[1].markdown));
+            await assert.rejects(proof.stage(root, out), /new directory/);
+            await assert.rejects(proof.stage(root, root + '/nested-output'), /outside the run/);
+            await rm(out + '/account/003-wallet-after.png');
+            await symlink(root + '/sessions/private.png', out + '/account/003-wallet-after.png');
+            const collected = await proof.collectMedia([], out);
+            assert.equal(collected.media.length, 3);
+            await rm(out + '/report.json');
+            await symlink(root + '/report.json', out + '/report.json');
+            await assert.rejects(proof.collectMedia([], out), /symlink/);
+        `);
+    } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(out, { recursive: true, force: true });
+    }
+});
+
+test('staging ad-hoc script reports preserves layout and not-cataloged rendering', async () => {
+    const root = await createFixture();
+    const out = root + '-script';
+    try {
+        probe(`
+            import { writeFile } from 'node:fs/promises';
+            const run = ${JSON.stringify(root + '/account')};
+            await writeFile(run + '/report.json', JSON.stringify({script:'/private/custom.ts',status:'passed',
+                startedAt:'2026-10-19T00:00:00Z',finishedAt:'2026-10-19T00:00:01Z'}));
+            await proof.stage(run, ${JSON.stringify(out)});
+            const original = await proof.collectMedia([], run);
+            const staged = await proof.collectMedia([], ${JSON.stringify(out)});
+            assert.equal(staged.media.length, original.media.length);
+            const render = report => proof.renderProof({report,sha:'abcdef123',timestamp:'now',uploads:[]});
+            assert.equal(render(staged.report), render(original.report));
+            assert.ok(render(staged.report).includes('not cataloged'));
+        `);
+    } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(out, { recursive: true, force: true });
+    }
+});
+
+test('no-credentials publish updates mocked PR table-only without S3 calls', async () => {
+    const root = await createFixture();
+    try {
+        probe(`
+            import { S3Client } from 'bun';
+            import { readFileSync } from 'node:fs';
+            S3Client.prototype.write = () => { throw new Error('S3 forbidden'); };
+            globalThis.fetch = () => { throw new Error('Network forbidden'); };
+            process.env.AWS_ACCESS_KEY_ID = 'ignored';
+            process.env.AWS_SECRET_ACCESS_KEY = 'ignored';
+            const spawn = Bun.spawnSync;
+            let edited;
+            Bun.spawnSync = (args, options) => {
+                if (args[0] === 'git') return spawn(args, options);
+                assert.equal(args[0], 'gh');
+                if (args[2] === 'view') return {exitCode:0,stdout:Buffer.from(JSON.stringify({body:'Existing description'}))};
+                assert.equal(args[2], 'edit');
+                edited = readFileSync(args[5], 'utf8');
+                return {exitCode:0,stdout:Buffer.from('')};
+            };
+            let output;
+            console.log = value => output = JSON.parse(value);
+            await proof.main(['publish','--pr','1741','--from-run',${JSON.stringify(root)},'--update-pr','--json','--note','Local tests','--not-verified','Linux CI pending']);
+            assert.equal(output.updatedPr, true);
+            assert.deepEqual(output.uploads, []);
+            assert.ok(output.warnings.some(warning => warning.includes('disabled')));
+            for (const text of ['Existing description','<!-- proof:start -->','| account | passed',
+                'Screenshots/videos: not attached','Note: Local tests','Not verified: Linux CI pending']) assert.ok(edited.includes(text), text);
+            assert.ok(!edited.includes('!['));
+            assert.ok(!process.exitCode);
+        `);
+    } finally {
+        await rm(root, { recursive: true, force: true });
+    }
+});
+
+test('partial configuration fails and doctor treats absent upload config as a warning', async () => {
+    const root = await createFixture();
+    try {
+        probe(`
+            const spawn = Bun.spawnSync;
+            Bun.spawnSync = (args, options) => {
+                if (args[0] === 'git') return spawn(args, options);
+                assert.deepEqual(args, ['gh','auth','status']);
+                return {exitCode:0,stdout:Buffer.from('')};
+            };
+            let output;
+            console.log = value => output = JSON.parse(value);
+            await proof.main(['doctor','--json']);
+            assert.equal(output.ok, true);
+            assert.ok(output.checks.some(check => check.message.includes('WARNING: media upload disabled')));
+            assert.ok(!process.exitCode);
+            for (const config of [{PROOF_S3_BUCKET:'proof-test'}, {PROOF_AWS_ACCESS_KEY_ID:'synthetic'},
+                {PROOF_AWS_SESSION_TOKEN:'synthetic'}, {PROOF_S3_BUCKET:'proof-test',PROOF_S3_REGION:'us-east-1'}]) {
+                Object.assign(process.env, config);
+                await assert.rejects(proof.main(['publish','--pr','1741','--from-run',${JSON.stringify(root)}]), /PROOF_/);
+                await proof.main(['doctor','--json']);
+                assert.equal(output.ok, false);
+                assert.equal(process.exitCode, 1);
+                process.exitCode = 0;
+                for (const key of Object.keys(config)) delete process.env[key];
+            }
+        `);
+    } finally {
+        await rm(root, { recursive: true, force: true });
+    }
+});
+
+test('--head-sha validates hexadecimal length and controls label and upload keys', async () => {
+    const root = await createFixture();
+    try {
+        probe(`
+            const args = ['publish','--pr','1741','--from-run',${JSON.stringify(root)},'--dry-run','--json','--head-sha'];
+            for (const sha of ['', 'abc123', 'g'.repeat(40), 'a'.repeat(41), 'abc1234\\n'])
+                await assert.rejects(proof.main([...args, sha]), /head-sha/);
+            let output;
+            console.log = value => output = JSON.parse(value);
+            for (const sha of ['abcdef1', 'ABCDEF1234567890', 'a'.repeat(40)]) {
+                await proof.main([...args, sha]);
+                assert.equal(output.sha, sha.slice(0,9));
+                assert.ok(output.markdown.includes('head ' + sha.slice(0,9)));
+                assert.ok(output.uploads.every(upload => upload.key.startsWith('pr-1741/' + sha.slice(0,9) + '/')));
+            }
         `);
     } finally {
         await rm(root, { recursive: true, force: true });
