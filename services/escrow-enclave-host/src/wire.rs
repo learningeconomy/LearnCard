@@ -48,6 +48,11 @@ pub struct SignedHoldRecord {
     deny_unknown_fields
 )]
 pub enum Request {
+    HoldState {
+        expected_did: String,
+        hold: SignedHoldRecord,
+        nonce: String,
+    },
     EnrollmentState {
         expected_did: String,
         nonce: String,
@@ -157,6 +162,9 @@ pub enum Mode {
 pub enum ErrorCode {
     Policy,
     PinMismatch,
+    CodeMismatch,
+    CodeExpired,
+    CodeLocked,
     Blob,
     Unavailable,
     Ledger,
@@ -170,6 +178,9 @@ pub enum ErrorCode {
     deny_unknown_fields
 )]
 pub enum Response {
+    HoldState {
+        proof: serde_json::Value,
+    },
     EnrollmentState {
         state: serde_json::Value,
         proof: serde_json::Value,
@@ -191,6 +202,8 @@ pub enum Response {
     },
     CreateHold {
         hold: SignedHoldRecord,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        delivery: Option<serde_json::Value>,
     },
     VerifyBlob {
         ok: bool,

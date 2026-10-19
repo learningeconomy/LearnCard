@@ -1965,6 +1965,10 @@
             "useInstead": "Usar mi PIN de recuperación"
         },
         "confirmCode": {
+            "mismatch": "Ese código no es correcto. Inténtalo de nuevo.",
+            "expired": "Ese código ha caducado. Envía uno nuevo.",
+            "locked": "Demasiados intentos. Envía un código nuevo.",
+            "notSent": "No pudimos enviar tu código. Espera un minuto antes de reenviarlo.",
             "title": "Revisa tu correo",
             "description": "Ingresa el código que enviamos para confirmar esta solicitud.",
             "confirming": "Confirmando...",
