@@ -34,6 +34,7 @@
 <!-- proof:end -->
 
 Generate with `bun scripts/proof.ts publish --pr <n> --from-run <run dir> --update-pr`.
+Media is optional locally; LearnCard Verification CI attaches it when the PR is ready for review (drafts are skipped).
 
 #### 🔬 How Can Someone QA This?
 

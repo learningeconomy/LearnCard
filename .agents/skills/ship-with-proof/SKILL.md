@@ -14,11 +14,11 @@ description: Use when asked to be done, open a PR, ship, prove, fix bug, or buil
     bun scripts/proof.ts publish --pr <n> --from-run <run dir> --update-pr
     ```
 
-    Use the exact retained `runs/<runId>` directory (or `scripts/<runId-name>` for an ad-hoc script), not the stack root. Use `--dry-run` to preview without network, `--note` for context, and `--not-verified "..."` for gaps. Reports do not record a tested Git SHA: the publisher labels the current head, so never reuse stale evidence as proof of a new head. Missing credentials or a failed check is a blocker, not permission to invent proof. Keep raw sessions, traces, JSON reports and logs private. Treat the verification feature map's JSON/error attachment guidance as local/private diagnostics only; public PR evidence must use the generated section, never raw JSON or error strings.
+    Use the exact retained `runs/<runId>` directory (or `scripts/<runId-name>` for an ad-hoc script), not the stack root. Use `--dry-run` to preview without network, `--note` for context, and `--not-verified "..."` for gaps. Never reuse stale evidence for a new head. No upload credentials means table-only proof; LearnCard Verification CI attaches media when the PR is marked ready (drafts are skipped). Partial configuration or a failed check is a blocker. macOS/Windows agents unable to run `lc verify` rely on that CI run and say so under **Not verified**; do not fabricate a local report. Keep sessions, traces, raw JSON reports and logs private.
 
 4. **Leave a reviewable PR description:**
     - **What & why:** two plain sentences explaining the change and reason.
     - **Proof:** the generated `<!-- proof:start -->` / `<!-- proof:end -->` section, plus actual repo-check commands/results outside the markers.
     - **Not verified:** explicit, honest gaps and blockers (or explicitly none, only when justified).
     - **How to try it:** short reproducible steps.
-5. **Finish with the draft PR URL and proof summary.** Keep it draft when proof is missing or red. Mark ready for review only when proof is green and required checks really ran; never claim verification you did not run. Publishing a failed report is useful evidence, not a passing gate.
+5. **Finish with the PR URL and proof summary.** Keep it draft while local checks are missing or red. When local checks pass, mark ready to trigger required Linux CI, explicitly noting pending verification; do not claim readiness checks passed until CI is green. Never claim verification you did not run. Publishing a failed report is useful evidence, not a passing gate.
