@@ -24,6 +24,9 @@ export interface SmokeScheduleResponse {
     cron?: string;
     timezone?: string;
     nextRunAt?: string;
+    /** Trigger.dev's schedule window and assigned start, when the response carries them. */
+    window?: string;
+    nextRunEffectiveAt?: string;
 }
 
 export interface SmokeTriggerTarget {
@@ -36,6 +39,9 @@ export interface SmokeTriggerTarget {
  * prompt and owner never leak into the log. The Trigger.dev target is what the deploy expected;
  * the API response doesn't say which project the service actually synced to.
  */
+const runsAt = (value: string | undefined, scheduledAt: Date): boolean =>
+    value ? Date.parse(value) === scheduledAt.getTime() : false;
+
 export const describeScheduleCreated = (
     schedule: SmokeScheduleResponse | undefined,
     scheduledAt: Date,
@@ -47,9 +53,12 @@ export const describeScheduleCreated = (
     cron: schedule?.cron,
     timezone: schedule?.timezone,
     nextRunAt: schedule?.nextRunAt,
-    nextRunMatchesScheduledAt: schedule?.nextRunAt
-        ? Date.parse(schedule.nextRunAt) === scheduledAt.getTime()
-        : false,
+    window: schedule?.window,
+    nextRunEffectiveAt: schedule?.nextRunEffectiveAt,
+    nextRunMatchesScheduledAt: runsAt(
+        schedule?.nextRunEffectiveAt ?? schedule?.nextRunAt,
+        scheduledAt
+    ),
     expectedTriggerEnvironment: target.environment,
     expectedTriggerProjectRef: target.projectRef,
 });

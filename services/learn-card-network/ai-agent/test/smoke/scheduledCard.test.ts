@@ -172,6 +172,8 @@ describe('describeScheduleCreated', () => {
             cron: '47 18 * * 1',
             timezone: 'UTC',
             nextRunAt: '2026-10-19T18:47:00.000Z',
+            window: undefined,
+            nextRunEffectiveAt: undefined,
             nextRunMatchesScheduledAt: true,
             expectedTriggerEnvironment: 'staging',
             expectedTriggerProjectRef: 'proj_example',
@@ -183,6 +185,44 @@ describe('describeScheduleCreated', () => {
             describeScheduleCreated({ nextRunAt: '2026-10-26T18:47:00.000Z' }, scheduledAt, {})
                 .nextRunMatchesScheduledAt
         ).toBe(false);
+    });
+});
+
+describe('describeScheduleCreated with a Trigger.dev window', () => {
+    // From the staging schedule that never fired: nominal 21:23, assigned 21:43:30.8 by a 1h window.
+    const tick = new Date('2026-10-19T21:23:00.000Z');
+
+    it('flags an assigned start that drifts past the scheduled minute', () => {
+        const summary = describeScheduleCreated(
+            {
+                id: 'schedule-123',
+                nextRunAt: '2026-10-19T21:23:00.000Z',
+                window: '1h',
+                nextRunEffectiveAt: '2026-10-19T21:43:30.800Z',
+            },
+            tick,
+            {}
+        );
+
+        expect(summary).toMatchObject({
+            window: '1h',
+            nextRunEffectiveAt: '2026-10-19T21:43:30.800Z',
+            nextRunMatchesScheduledAt: false,
+        });
+    });
+
+    it('passes when a 0m window fires at the scheduled minute', () => {
+        expect(
+            describeScheduleCreated(
+                {
+                    nextRunAt: '2026-10-19T21:23:00.000Z',
+                    window: '0m',
+                    nextRunEffectiveAt: '2026-10-19T21:23:00.000Z',
+                },
+                tick,
+                {}
+            ).nextRunMatchesScheduledAt
+        ).toBe(true);
     });
 });
 

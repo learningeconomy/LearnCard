@@ -302,6 +302,13 @@ personal access token to the task environment. The deployment workflow uses that
 dedicated-project secret. CloudFormation requires both the Trigger and LaunchDarkly secret
 references when enabling schedules, in staging or production.
 
+The service creates and updates every Trigger.dev schedule with `window: "0m"`, so runs start
+at the cron minute. Trigger.dev otherwise gives new schedules a 60-minute window and starts
+each run at a fixed offset inside it. Schedules synced before this change keep that 1h window
+until they're saved again (any schedule update re-syncs them); in the Trigger.dev dashboard,
+`nextRunEffectiveAt` later than `nextRun` means a schedule still has a window. On a free
+Trigger.dev plan the 60-minute minimum applies regardless (`appliedSchedulePolicy`).
+
 ## Staging test-account setup
 
 `AI_AGENT_SMOKE_SEED` must belong to a dedicated, non-human staging profile that has accepted the configured ConsentFlow contract. Give it minimal synthetic credentials only.
