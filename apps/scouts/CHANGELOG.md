@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.90.44
+
+### Patch Changes
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
+- [#1750](https://github.com/learningeconomy/LearnCard/pull/1750) [`2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f`](https://github.com/learningeconomy/LearnCard/commit/2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Only run the contacts search when there is a search term. The address book used to send an empty profile search on every open even though results are only shown while searching.
+
 ## 1.90.43
 
 ### Patch Changes
