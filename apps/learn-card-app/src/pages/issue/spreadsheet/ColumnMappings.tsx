@@ -37,7 +37,7 @@ const TARGETS: MappingTarget[] = [
     'awardedDate',
 ];
 const INPUT =
-    'w-full min-w-0 bg-white text-grayscale-900 border border-grayscale-300 rounded-xl px-3 py-3 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500';
+    'w-full min-w-0 bg-white text-grayscale-900 border border-grayscale-300 rounded-xl px-3 py-3 text-base sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500';
 export interface ColumnMappingsProps {
     source: ParsedSpreadsheet;
     template: OBv3CredentialTemplate | null;
@@ -96,7 +96,7 @@ export const ColumnMappings: React.FC<ColumnMappingsProps> = props => {
     const open = useSpreadsheetDialog(close => <ColumnMappingsEditor {...props} onClose={close} />);
     if (!columns.length) return null;
     return (
-        <section className="space-y-4 rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins">
+        <section className="space-y-v3-4 rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins">
             <div className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                     <IonIcon icon={swapHorizontalOutline} className="h-6 w-6" aria-hidden="true" />
@@ -186,7 +186,7 @@ export const ColumnMappingsEditor: React.FC<
                 </div>
             }
         >
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <p className="text-sm leading-relaxed text-grayscale-600">
                     {template
                         ? m['issueFlow.sheet.design.mappingHint']()
@@ -209,7 +209,7 @@ export const ColumnMappingsEditor: React.FC<
                         {m['issueFlow.sheet.design.columnsReadOnly']()}
                     </p>
                 ) : null}
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {columns.map(column => {
                         const selected = activeMapping(props, column.label);
                         const target =
