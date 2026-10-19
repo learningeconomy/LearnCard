@@ -32,6 +32,14 @@ See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility
 
 ---
 
+## Setting up your profile with Apple
+
+After **Sign in with Apple**, ScoutPass fills in your name when it is available. **Full Name (optional)** can be left blank or cleared in profile setup and account settings. Choose an available public username to finish setup; ScoutPass uses that username as your display name when the name is blank. You do not need to re-enter your Apple email address.
+
+If saving fails, the form stays open so you can try again.
+
+---
+
 ## Scanning QR codes
 
 Open your profile QR card and select **Scan**. Boost codes open the claim flow, and supported profile codes open the contact view. Other HTTP or HTTPS website links open in the browser.

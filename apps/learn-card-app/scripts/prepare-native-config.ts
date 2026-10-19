@@ -65,6 +65,7 @@ import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchem
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
 import { deepMerge } from 'learn-card-base/src/config/deepMerge';
 import type { TenantConfig } from 'learn-card-base/src/config/tenantConfigSchema';
+import { renderTenantHtml } from './render-tenant-html';
 
 const requireFromHere = createRequire(import.meta.url);
 const { readDefaultChannel } = requireFromHere('../../../tools/capgo/readDefaultChannel.cjs') as {
@@ -1097,24 +1098,10 @@ if (existsSync(indexHtmlPath)) {
     log.info('\n📄 Patching index.html with tenant branding...');
 
     try {
-        let html = readFileSync(indexHtmlPath, 'utf-8');
-
-        // Patch <title>
-        html = html.replace(/<title>[^<]*<\/title>/, `<title>${manifestName}</title>`);
-
-        // Patch apple-mobile-web-app-title
-        html = html.replace(
-            /(<meta\s+name="apple-mobile-web-app-title"\s+content=")[^"]*(")/,
-            `$1${manifestShortName}$2`
+        const html = renderTenantHtml(
+            readFileSync(indexHtmlPath, 'utf-8'),
+            validatedConfig.branding
         );
-
-        // Add apple-touch-icon link if missing
-        if (!html.includes('apple-touch-icon')) {
-            html = html.replace(
-                /(<link rel="shortcut icon"[^>]*>)/,
-                '$1\n        <link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png" />'
-            );
-        }
 
         writeFileSync(indexHtmlPath, html, 'utf-8');
         log.info(`   ✓ <title>${manifestName}</title>`);
