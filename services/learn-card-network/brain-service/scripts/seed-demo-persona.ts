@@ -33,6 +33,10 @@ import {
 } from '@learncard/credential-library';
 import type { UnsignedVC } from '@learncard/types';
 import { flattenObject } from '../src/helpers/objects.helpers';
+import {
+    PROFILE_DISPLAY_NAME_LOWER_FIELD,
+    normalizeProfileSearchText,
+} from '../src/accesslayer/profile/search-fields';
 
 dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 
@@ -237,7 +241,8 @@ const main = async (): Promise<void> => {
                  SET p.displayName = $displayName,
                      p.shortBio = $shortBio,
                      p.image = $image,
-                     p.did = $did
+                     p.did = $did,
+                     p.${PROFILE_DISPLAY_NAME_LOWER_FIELD} = ${normalizeProfileSearchText('$displayName')}
                  RETURN p.did AS did`,
                 {
                     profileId: issuer.profileId,
