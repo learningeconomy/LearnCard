@@ -19,6 +19,7 @@
         "test:profile-search": "vitest run --config vitest.profile-search-neo4j.config.ts",
         "test:integration:watch": "vitest --config vitest.integration.config.ts",
         "test:docker": "vitest run --config vitest.integration.config.ts",
+        "test:boost-recipients": "vitest run --config vitest.boost-recipients-neo4j.config.ts",
         "seed:dev-app": "bun scripts/seed-dev-app.ts",
         "seed:demo-persona": "bun --conditions=development scripts/seed-demo-persona.ts",
         "skill-frameworks": "bun scripts/skill-frameworks.ts",

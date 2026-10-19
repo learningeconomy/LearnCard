@@ -211,6 +211,23 @@ jobs:
             - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
               run: bunx nx run network-brain-service:test:inbox:e2e
 
+    boost-recipients:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+            - name: Test boost recipient lists, counts and pagination with Neo4j
+              run: bunx nx run network-brain-service:test:boost-recipients
+
     # Temporary manual fallback during the hosted-runner cutover.
     # Remove after one sprint of stable GitHub-hosted E2E operation.
     e2e-tests:

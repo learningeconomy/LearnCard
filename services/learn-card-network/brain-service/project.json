@@ -126,6 +126,15 @@
             "options": {
                 "script": "test:integration"
             }
+        },
+        "test:boost-recipients": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "dependsOn": ["^build"],
+            "inputs": ["source", "tests", "{projectRoot}/vitest.boost-recipients-neo4j.config.ts"],
+            "options": {
+                "script": "test:boost-recipients"
+            }
         }
     }
 }
