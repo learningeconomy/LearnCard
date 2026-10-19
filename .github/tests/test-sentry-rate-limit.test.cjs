@@ -24,6 +24,38 @@ const hookFor = async (callbacks, options = {}) => {
     return (result = { errors: [] }) => onEnd(result);
 };
 
+test('wrapped setup retains inherited and non-enumerable build API properties', async () => {
+    const options = { metafile: false };
+    const starts = [];
+    let onEnd;
+    let uploads = 0;
+    const build = Object.create({ onStart: callback => starts.push(callback) });
+    Object.defineProperties(build, {
+        initialOptions: { value: options },
+        // A read-only original registration method must still be interceptable.
+        onEnd: {
+            value: callback => {
+                onEnd = callback;
+            },
+        },
+    });
+    await withSentryRateLimitRetry({
+        name: 'build-api-contract',
+        setup(api) {
+            assert.equal(api.initialOptions, options);
+            api.initialOptions.metafile = true;
+            api.onStart(() => 'started');
+            api.onEnd(() => {
+                uploads++;
+            });
+        },
+    }).setup(build);
+    assert.equal(options.metafile, true);
+    assert.equal(starts[0](), 'started');
+    await onEnd({ errors: [] });
+    assert.equal(uploads, 1);
+});
+
 test('concurrent bundles serialize Sentry hooks, including the cooldown', async () => {
     const events = [];
     let finishCooldown;
@@ -127,12 +159,44 @@ test('compilation errors skip Sentry API work and hook diagnostics survive', asy
         },
         () => ({ errors: [{ text: 'upload failed' }] }),
     ]);
-    await hook({ errors: [{ text: 'compile failed' }] });
+    assert.deepEqual(await hook({ errors: [{ text: 'compile failed' }] }), {
+        errors: [],
+        warnings: [],
+    });
     assert.equal(calls, 0);
     assert.deepEqual(await hook(), {
         errors: [{ text: 'upload failed' }],
         warnings: [{ text: 'upload warning' }],
     });
+});
+
+test('real esbuild preserves compilation diagnostics and skips Sentry API work', async () => {
+    const { build } = require('esbuild');
+    let calls = 0;
+    await assert.rejects(
+        build({
+            stdin: { contents: 'const =', sourcefile: 'broken.js' },
+            write: false,
+            logLevel: 'silent',
+            plugins: [
+                withSentryRateLimitRetry({
+                    name: 'compile-error-contract',
+                    setup(api) {
+                        api.onEnd(() => {
+                            calls++;
+                        });
+                    },
+                }),
+            ],
+        }),
+        error => {
+            assert.equal(error.errors.length, 1);
+            assert.equal(error.errors[0].location.file, 'broken.js');
+            assert.match(error.errors[0].text, /Expected identifier/);
+            return true;
+        }
+    );
+    assert.equal(calls, 0);
 });
 
 // Exercise each service's configured plugin and actual CLI through real esbuild

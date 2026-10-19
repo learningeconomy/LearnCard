@@ -19,11 +19,16 @@ const withSentryRateLimitRetry = (
     ...plugin,
     async setup(build) {
         const callbacks = [];
-        await plugin.setup({ ...build, onEnd: callback => callbacks.push(callback) });
+        // Preserve the complete build API, including inherited/non-enumerable
+        // properties. Only intercept registration of the Sentry end hooks.
+        const intercepted = Object.create(build, {
+            onEnd: { value: callback => callbacks.push(callback) },
+        });
+        await plugin.setup(intercepted);
         if (!callbacks.length) return;
 
         build.onEnd(result => {
-            if (result.errors.length) return;
+            if (result.errors.length) return { errors: [], warnings: [] };
             const work = pending.then(async () => {
                 const diagnostics = { errors: [], warnings: [] };
                 for (const callback of callbacks) {
