@@ -468,6 +468,46 @@ describe('Firebase sign-in adapter', () => {
         unsubscribe();
     });
 
+    it('keeps duplicate callback subscriptions independent during enrichment', async () => {
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple User' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        const adapter = create({ isNativePlatform: () => true });
+        const listener = vi.fn();
+        const first = adapter.subscribe(listener);
+        const second = adapter.subscribe(listener);
+        first();
+        first(); // Cleanup is idempotent and must not remove the second subscription.
+        await adapter.signInWithApple();
+        expect(listener).toHaveBeenCalledOnce();
+        second();
+        user.displayName = null;
+        await adapter.signInWithApple();
+        expect(listener).toHaveBeenCalledOnce();
+    });
+
+    it('cleans up fresh inline callbacks across Strict Mode style resubscriptions', async () => {
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple User' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        const adapter = create({ isNativePlatform: () => true });
+        const stale = vi.fn();
+        for (let index = 0; index < 3; index += 1) {
+            adapter.subscribe(profile => stale(profile))();
+        }
+        const active = vi.fn();
+        const unsubscribe = adapter.subscribe(profile => active(profile));
+        await adapter.signInWithApple();
+        expect(stale).not.toHaveBeenCalled();
+        expect(active).toHaveBeenCalledOnce();
+        unsubscribe();
+        user.displayName = null;
+        await adapter.signInWithApple();
+        expect(active).toHaveBeenCalledOnce();
+    });
+
     it('keeps the saved name when Apple does not return it again', async () => {
         user.displayName = 'Saved Name';
         vi.mocked(native.signInWithApple).mockResolvedValue({

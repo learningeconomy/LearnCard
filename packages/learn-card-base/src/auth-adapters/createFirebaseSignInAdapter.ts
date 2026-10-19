@@ -99,7 +99,9 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
             deleteAccount: true,
         }),
         subscribe: (onUser): (() => void) => {
-            profileListeners.add(onUser);
+            // Each subscription owns its entry, even when callbacks are shared.
+            const onProfile = (user: AuthUser | null): void => onUser(user);
+            profileListeners.add(onProfile);
             let unsubscribe: (() => void) | undefined;
             let cancelled = false;
             void loadFirebaseAuth()
@@ -112,8 +114,9 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                 })
                 .catch(() => log.error('Unable to subscribe to Firebase auth state'));
             return (): void => {
+                if (cancelled) return;
                 cancelled = true;
-                profileListeners.delete(onUser);
+                profileListeners.delete(onProfile);
                 unsubscribe?.();
             };
         },
