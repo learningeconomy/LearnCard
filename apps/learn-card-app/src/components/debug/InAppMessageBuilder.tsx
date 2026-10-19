@@ -20,6 +20,7 @@ import { Eye, Plus, Trash2 } from 'lucide-react';
 
 import { inAppMessageValidator, type InAppMessage } from '@learncard/types';
 import { setInAppMessageOverride } from 'learn-card-base';
+import { InAppMessageRichFields } from './InAppMessageRichFields';
 
 import {
     IN_APP_MESSAGE_TEMPLATES,
@@ -220,6 +221,8 @@ export const InAppMessageBuilder: React.FC<{
                     <option value="modal">modal</option>
                     <option value="banner">banner</option>
                     <option value="toast">toast</option>
+                    <option value="story">story</option>
+                    <option value="iframe">iframe</option>
                 </select>
 
                 <label className="flex items-center gap-1 text-[9px] text-gray-500 ml-1">
@@ -346,6 +349,10 @@ export const InAppMessageBuilder: React.FC<{
                 </div>
             )}
 
+            <InAppMessageRichFields
+                state={state}
+                onChange={patch => setState(current => ({ ...current, ...patch }))}
+            />
             <FieldRow label="media">
                 <select
                     value={state.mediaType}

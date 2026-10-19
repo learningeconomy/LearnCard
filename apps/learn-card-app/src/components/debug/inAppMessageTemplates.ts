@@ -33,6 +33,46 @@ export interface InAppMessageTemplate {
 
 export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
     {
+        key: 'story-test',
+        label: 'Story walkthrough',
+        category: 'Basics',
+        description: 'Two screens with a translated title and final action.',
+        json: {
+            id: 'debug-story',
+            title: 'Explore your achievements',
+            presentation: 'story',
+            frequency: 'always',
+            steps: [
+                {
+                    title: 'Your achievements, together',
+                    body: 'Keep a record of what you have learned.',
+                },
+                { title: 'Choose your next step', body: 'You are ready to explore.' },
+            ],
+            actions: [{ label: 'Done', style: 'primary', action: { type: 'dismiss' } }],
+            locales: {
+                es: {
+                    title: 'Explora tus logros',
+                    steps: [{ title: 'Tus logros, juntos' }, { title: 'Elige tu próximo paso' }],
+                    actionLabels: ['Listo'],
+                },
+            },
+        },
+    },
+    {
+        key: 'iframe-test',
+        label: 'Embedded HTTPS page',
+        category: 'Basics',
+        description: 'Replace the example URL with your separately hosted HTTPS bridge example.',
+        json: {
+            id: 'debug-iframe',
+            title: 'Learn more',
+            presentation: 'iframe',
+            frequency: 'always',
+            iframe: { url: 'https://example.com/', loadTimeoutMs: 10000 },
+        },
+    },
+    {
         key: 'smoke-test',
         label: 'Simple test message',
         description: 'Minimal dismissible modal — quickest way to eyeball styling.',

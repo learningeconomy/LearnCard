@@ -1,9 +1,15 @@
-import { inAppMessagePredicateValidator, type InAppMessage } from '@learncard/types';
+import {
+    inAppMessagePredicateValidator,
+    inAppMessageLocalesValidator,
+    type InAppMessage,
+    type InAppMessageAction,
+} from '@learncard/types';
 
 export type BuilderActionType =
     'internalLink' | 'externalLink' | 'appStore' | 'capgoUpdate' | 'dismiss';
 
 export interface BuilderAction {
+    original?: InAppMessageAction;
     label: string;
     style: 'primary' | 'secondary' | 'positive' | 'dismiss';
     type: BuilderActionType;
@@ -34,7 +40,12 @@ export interface BuilderState {
     id: string;
     title: string;
     body: string;
-    presentation: 'modal' | 'banner' | 'toast';
+    presentation: InAppMessage['presentation'];
+    steps: NonNullable<InAppMessage['steps']>;
+    iframeUrl: string;
+    iframeTitle: string;
+    iframeTimeout: string;
+    localesJson: string;
     frequency: 'once' | 'session' | 'always' | 'everyDays';
     everyDays: string;
     priority: string;
@@ -86,6 +97,11 @@ export const initialState: BuilderState = {
     title: '',
     body: '',
     presentation: 'modal',
+    steps: [],
+    iframeUrl: '',
+    iframeTitle: '',
+    iframeTimeout: '10000',
+    localesJson: '',
     frequency: 'once',
     everyDays: '3',
     priority: '0',
@@ -155,6 +171,14 @@ const conditionToPredicate = (c: BuilderCondition): Record<string, unknown> | nu
 };
 
 export const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
+    let locales: unknown;
+    if (s.localesJson.trim()) {
+        try {
+            locales = JSON.parse(s.localesJson);
+        } catch {
+            locales = 'Invalid locales JSON';
+        }
+    }
     const predicates = s.conditions
         .map(condition => {
             const predicate = conditionToPredicate(condition);
@@ -170,6 +194,7 @@ export const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
               : { [s.combinator]: predicates };
 
     const actions = s.actions.map(a => ({
+        ...a.original,
         label: a.label,
         style: a.style,
         action:
@@ -177,7 +202,10 @@ export const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
                 ? { type: a.type, path: a.path }
                 : a.type === 'externalLink'
                   ? { type: a.type, url: a.url }
-                  : { type: a.type },
+                  : {
+                        ...(a.original?.action.type === a.type ? a.original.action : {}),
+                        type: a.type,
+                    },
     }));
     const triggerWhere = {
         ...(csvToList(s.triggerNestedIssuers).length
@@ -201,6 +229,17 @@ export const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
         title: s.title,
         ...(s.body ? { body: s.body } : {}),
         presentation: s.presentation,
+        ...(s.steps.length ? { steps: s.steps } : {}),
+        ...(s.presentation === 'iframe'
+            ? {
+                  iframe: {
+                      url: s.iframeUrl,
+                      ...(s.iframeTitle ? { title: s.iframeTitle } : {}),
+                      loadTimeoutMs: Number(s.iframeTimeout),
+                  },
+              }
+            : {}),
+        ...(locales !== undefined ? { locales } : {}),
         frequency: s.frequency === 'everyDays' ? { everyDays: Number(s.everyDays) } : s.frequency,
         priority: Number(s.priority),
         dismissible: s.dismissible,
@@ -314,6 +353,11 @@ export const messageToBuilderState = (m: InAppMessage): BuilderState => {
         title: m.title,
         body: m.body ?? '',
         presentation: m.presentation,
+        steps: structuredClone(m.steps ?? []),
+        iframeUrl: m.iframe?.url ?? '',
+        iframeTitle: m.iframe?.title ?? '',
+        iframeTimeout: String(m.iframe?.loadTimeoutMs ?? 10000),
+        localesJson: m.locales ? JSON.stringify(m.locales, null, 2) : '',
         frequency: typeof m.frequency === 'object' ? 'everyDays' : m.frequency,
         everyDays: typeof m.frequency === 'object' ? String(m.frequency.everyDays) : '3',
         priority: String(m.priority),
@@ -325,6 +369,7 @@ export const messageToBuilderState = (m: InAppMessage): BuilderState => {
         combinator: targeting && 'any' in targeting ? 'any' : 'all',
         conditions,
         actions: m.actions.map(a => ({
+            original: a,
             label: a.label,
             style: a.style,
             type: a.action.type,
@@ -340,4 +385,32 @@ export const messageToBuilderState = (m: InAppMessage): BuilderState => {
         triggerIssuedWithinDays: m.trigger?.where?.issuedWithinDays?.toString() ?? '',
         triggerWindowMinutes: String(m.trigger?.windowMinutes ?? 10),
     };
+};
+
+/** Keep positional translations attached to their screen during reorder and removal. */
+export const remapStoryScreens = (
+    state: BuilderState,
+    order: number[]
+): Pick<BuilderState, 'steps' | 'localesJson'> => {
+    let localesJson = state.localesJson;
+    try {
+        const result = inAppMessageLocalesValidator.safeParse(JSON.parse(localesJson));
+        if (result.success) {
+            const locales = Object.fromEntries(
+                Object.entries(result.data).map(([locale, value]) => [
+                    locale,
+                    {
+                        ...value,
+                        ...(value.steps
+                            ? { steps: order.map(index => value.steps?.[index] ?? null) }
+                            : {}),
+                    },
+                ])
+            );
+            localesJson = JSON.stringify(locales, null, 2);
+        }
+    } catch {
+        // Preserve invalid editor input; validation continues to block preview/export.
+    }
+    return { steps: order.map(index => state.steps[index]), localesJson };
 };
