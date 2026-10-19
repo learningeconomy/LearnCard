@@ -16,6 +16,7 @@ import {
 import {
     EscrowBlobError,
     EscrowPinMismatchError,
+    EscrowCodeError,
     EscrowPolicyError,
     EscrowUnavailableError,
     type CarryPinVerifierInput,
@@ -115,6 +116,9 @@ const releaseResponseValidator = z.object({
 const errorCodeValidator = z.enum([
     'policy',
     'pinMismatch',
+    'codeMismatch',
+    'codeExpired',
+    'codeLocked',
     'blob',
     'unavailable',
     'ledger',
@@ -125,6 +129,8 @@ const errorResponseValidator = z.object({ code: errorCodeValidator, message: z.s
 const errorForCode = (code: z.infer<typeof errorCodeValidator>): Error => {
     if (code === 'policy') return new EscrowPolicyError();
     if (code === 'pinMismatch') return new EscrowPinMismatchError();
+    if (code === 'codeMismatch' || code === 'codeExpired' || code === 'codeLocked')
+        return new EscrowCodeError(code);
     if (code === 'blob') return new EscrowBlobError();
     return new EscrowUnavailableError(code); // 'unavailable' | 'ledger' | 'time'
 };
@@ -186,7 +192,10 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
         let data: unknown;
         try {
             const response = await transport.post(`${config.baseUrl}${path}`, body, {
-                headers: { Authorization: `Bearer ${config.token}` },
+                headers: {
+                    Authorization: `Bearer ${config.token}`,
+                    ...(path === '/v1/create-hold' ? { 'X-Escrow-Delivery-Evidence': '1' } : {}),
+                },
                 timeout: config.timeoutMs,
             });
             status = response.status;
@@ -264,24 +273,33 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 throw new EscrowUnavailableError('invalid_response');
             return { envelope: result.envelope, authority: result };
         },
-        createHold: async input => ({
-            holdRecord: validatedHold(
-                await call(
-                    '/v1/create-hold',
-                    {
-                        envelope: input.envelope,
-                        holdId: input.holdId,
-                        expectedDid: input.expectedDid,
-                        expectedShareVersion: input.expectedShareVersion,
-                        enrollmentEpoch: input.enrollmentEpoch,
-                        releasePolicy: input.releasePolicy,
-                        clientEphemeralPublicKey: input.clientEphemeralPublicKey,
-                    },
-                    holdRecordValidator
-                ),
-                'invalid_response'
-            ),
-        }),
+        createHold: async input => {
+            const result = await call(
+                '/v1/create-hold',
+                {
+                    envelope: input.envelope,
+                    holdId: input.holdId,
+                    expectedDid: input.expectedDid,
+                    expectedShareVersion: input.expectedShareVersion,
+                    enrollmentEpoch: input.enrollmentEpoch,
+                    releasePolicy: input.releasePolicy,
+                    clientEphemeralPublicKey: input.clientEphemeralPublicKey,
+                },
+                holdRecordValidator.extend({
+                    delivery: z
+                        .object({
+                            codeSent: z.boolean(),
+                            proof: AuthorityHoldReceiptValidator,
+                        })
+                        .optional(),
+                })
+            );
+            // Response-only evidence must not be echoed into strict old-image hold DTOs.
+            const { delivery, ...holdRecord } = result;
+            return { holdRecord: validatedHold(holdRecord, 'invalid_response'), delivery };
+        },
+        getHoldState: async input =>
+            call('/v1/hold-state', input, z.object({ proof: AuthorityHoldReceiptValidator })),
         cancelHold: async input => {
             const result = await call(
                 '/v1/cancel-hold',

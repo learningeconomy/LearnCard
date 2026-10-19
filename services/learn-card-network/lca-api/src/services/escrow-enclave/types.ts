@@ -127,7 +127,15 @@ export interface EscrowEnclave {
         input: RewrapEscrowBlobInput
     ): Promise<{ envelope: EscrowEnvelope; authority?: AuthorityMutationResult }>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
-    createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
+    createHold(input: EnclaveCreateHoldInput): Promise<{
+        holdRecord: EscrowHoldRecord;
+        delivery?: { codeSent: boolean; proof: AuthorityHoldReceipt };
+    }>;
+    getHoldState?(input: {
+        expectedDid: string;
+        hold: EscrowHoldRecord;
+        nonce: string;
+    }): Promise<{ proof: AuthorityRecord }>;
     cancelHold(input: CancelHoldRequest): Promise<void | { receipt: AuthorityRecord }>;
     /** P9.1 (attack C): authority (nitro) mode only — software mode never
      * produces an awaiting-confirmation hold, so it has nothing to confirm.
@@ -148,6 +156,12 @@ export class EscrowPolicyError extends Error {
     constructor() {
         super('Escrow recovery is not permitted.');
         this.name = 'EscrowPolicyError';
+    }
+}
+export class EscrowCodeError extends Error {
+    constructor(public readonly reason: 'codeMismatch' | 'codeExpired' | 'codeLocked') {
+        super(reason);
+        this.name = 'EscrowCodeError';
     }
 }
 export class EscrowPinMismatchError extends Error {

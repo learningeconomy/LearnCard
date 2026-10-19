@@ -19,6 +19,211 @@ use std::sync::{
 };
 use tokio::sync::Notify;
 
+// Frozen pre-roll HoldItem wire definition. Unknown fields are deliberately refused.
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct PreRollHoldItem {
+    hold_id: String,
+    enrollment_version: Counter,
+    epoch: Counter,
+    blob_identity: Hash,
+    signed_hold_digest: Hash,
+    created_revision: Counter,
+    updated_revision: Counter,
+    status: HoldStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    code_hash: Option<Hash>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    code_expires_lo_ms: Option<u64>,
+    #[serde(default)]
+    code_guesses_used: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    confirmed_hi_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    release_warning_sent_hi_ms: Option<u64>,
+}
+
+#[tokio::test]
+async fn pre_roll_confirmed_hold_survives_restart_reconfirm_release_and_cancel() {
+    for cancel in [false, true] {
+        let f = Fixture::new();
+        let mut old = f.policy(false);
+        let env = f.enroll(&mut old, false).await;
+        let hold = f.hold(&mut old, &env, ReleasePolicy::Hold).await;
+        let bytes = serde_json::to_vec(&f.hold_item("old").await).unwrap();
+        let legacy: PreRollHoldItem = serde_json::from_slice(&bytes).unwrap();
+        let old_bytes = serde_json::to_vec(&legacy).unwrap();
+        assert_eq!(bytes, old_bytes);
+        let decoded: HoldItem = serde_json::from_slice(&old_bytes).unwrap();
+        assert!(decoded.status == HoldStatus::Pending);
+        drop(old);
+        let mut new = f.policy(false);
+        new.confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "reconfirm",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: "00000000",
+        })
+        .await
+        .unwrap();
+        let nonce = "ab".repeat(32);
+        let proof = new
+            .authority_read_hold(&f.did, &hold, &nonce)
+            .await
+            .unwrap();
+        proof.verify(&new.ledger_public_key()).unwrap();
+        let payload: serde_json::Value =
+            serde_json::from_slice(&STANDARD.decode(proof.payload).unwrap()).unwrap();
+        assert_eq!(payload[1], nonce);
+        assert_eq!(payload[7], "pending");
+        assert_eq!(payload[8], decoded.confirmed_hi_ms.unwrap());
+        assert_eq!(payload[9], decoded.release_warning_sent_hi_ms.unwrap());
+        assert_eq!(payload[11], "unknown");
+        *f.time.0.lock().unwrap() += HOLD_DURATION_MS;
+        if cancel {
+            new.cancel_hold(f.release(&env, &hold, "cancel-new", None))
+                .await
+                .unwrap();
+        } else {
+            new.release_hold(f.release(&env, &hold, "release-new", None))
+                .await
+                .unwrap();
+        }
+        let proof = new
+            .authority_read_hold(&f.did, &hold, &"cd".repeat(32))
+            .await
+            .unwrap();
+        let payload: serde_json::Value =
+            serde_json::from_slice(&STANDARD.decode(proof.payload).unwrap()).unwrap();
+        assert_eq!(payload[7], if cancel { "cancelled" } else { "released" });
+        assert!(new
+            .authority_read_hold("did:key:other", &hold, &nonce)
+            .await
+            .is_err());
+        assert!(new
+            .authority_read_hold(&f.did, &hold, "invalid")
+            .await
+            .is_err());
+    }
+}
+
+#[tokio::test]
+async fn confirmation_errors_distinguish_budget_expiry_and_mismatch_without_refunding() {
+    for expired in [false, true] {
+        let f = Fixture::new();
+        let mut p = f.policy(false);
+        let env = f.enroll(&mut p, false).await;
+        let hold = f.awaiting_hold(&mut p, &env).await;
+        let code = f.last_sent_code();
+        let wrong = if code.starts_with('0') {
+            "19999999"
+        } else {
+            "09999999"
+        };
+        if expired {
+            *f.time.0.lock().unwrap() += CODE_TTL_MS + 1;
+        }
+        for i in 0..6 {
+            let result = p
+                .confirm_hold(ConfirmHoldRequest {
+                    envelope: &env,
+                    hold: &hold,
+                    request_id: &format!("guess-{i}"),
+                    expected_did: &f.did,
+                    client_ephemeral_public_key: &f.client.public_key,
+                    code: if expired { &code } else { wrong },
+                })
+                .await;
+            assert_eq!(
+                result.err(),
+                Some(if i >= 4 {
+                    ErrorCode::CodeLocked
+                } else if expired {
+                    ErrorCode::CodeExpired
+                } else {
+                    ErrorCode::CodeMismatch
+                })
+            );
+        }
+        assert_eq!(
+            f.hold_item("budget").await.code_guesses_used,
+            MAX_CODE_GUESSES
+        );
+        assert!(f.hold_status("status").await == HoldStatus::AwaitingConfirmation);
+    }
+}
+
+#[tokio::test]
+async fn failed_code_send_returns_signed_hold_and_resend_remains_available() {
+    for unknown in [false, true] {
+        let f = Fixture::new();
+        let mut p = f.policy(false);
+        let envelope = f.enroll(&mut p, false).await;
+        f.email.unknown.store(unknown, Ordering::SeqCst);
+        f.email.reject.store(!unknown, Ordering::SeqCst);
+        let (hold, delivery) = p
+            .create_hold_with_delivery(CreateHoldRequest {
+                envelope: &envelope,
+                hold_id: "hold",
+                request_id: "create",
+                expected_did: &f.did,
+                expected_share_version: 1,
+                enrollment_epoch: 1,
+                release_policy: ReleasePolicy::Hold,
+                client_ephemeral_public_key: &f.client.public_key,
+            })
+            .await
+            .unwrap();
+        let delivery = delivery.unwrap();
+        assert!(!delivery.code_sent);
+        p.ledger.verify_authority_record(&delivery.proof).unwrap();
+        let payload: serde_json::Value =
+            serde_json::from_slice(&STANDARD.decode(&delivery.proof.payload).unwrap()).unwrap();
+        assert_eq!(payload[3], hex::encode(hold_hash("tenant", &hold).unwrap()));
+        assert_eq!(payload[4], false);
+        assert!(f.hold_status("failed-send").await == HoldStatus::AwaitingConfirmation);
+        assert!(p
+            .release_hold(f.release(&envelope, &hold, "release-unsent", None))
+            .await
+            .is_err());
+        f.email.unknown.store(false, Ordering::SeqCst);
+        f.email.reject.store(false, Ordering::SeqCst);
+        *f.time.0.lock().unwrap() += 60_001;
+        p.resend_code(ResendCodeRequest {
+            envelope: &envelope,
+            hold: &hold,
+            request_id: "resend",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+        let code = f
+            .email
+            .sent
+            .lock()
+            .unwrap()
+            .last()
+            .unwrap()
+            .code
+            .clone()
+            .unwrap();
+        p.confirm_hold(ConfirmHoldRequest {
+            envelope: &envelope,
+            hold: &hold,
+            request_id: "confirm",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: &code,
+        })
+        .await
+        .unwrap();
+        assert!(f.hold_status("confirmed").await == HoldStatus::Pending);
+    }
+}
+
 struct Clock(Mutex<u64>);
 impl TimeSource for Clock {
     fn now(&self, _: Option<u64>) -> TimeFuture<'_, TimeEvidence> {

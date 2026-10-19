@@ -3,6 +3,7 @@ import type { EscrowEnvelope } from '@learncard/sss-key-manager';
 import { createRemoteEnclave, type RemoteEnclaveTransportResponse } from './remoteEnclave';
 import {
     EscrowBlobError,
+    EscrowCodeError,
     EscrowPinMismatchError,
     EscrowPolicyError,
     EscrowUnavailableError,
@@ -112,6 +113,40 @@ describe('createRemoteEnclave', () => {
             { nonce: [1, 2, 3] },
             { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs }
         );
+    });
+
+    it.each(['codeMismatch', 'codeExpired', 'codeLocked'] as const)(
+        'maps %s without forwarding diagnostic text',
+        async code => {
+            const post = vi
+                .fn()
+                .mockResolvedValue(respond(403, { code, message: 'sensitive diagnostic' }));
+            const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+            await expect(enclave.confirmHold!(confirmInput)).rejects.toEqual(
+                new EscrowCodeError(code)
+            );
+        }
+    );
+
+    it('separates delivery evidence from the signed hold before subsequent requests', async () => {
+        const delivery = { codeSent: false, proof: snapshotReceipt };
+        const post = vi.fn().mockResolvedValue(respond(200, { ...hold, delivery }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        await expect(enclave.createHold(createInput)).resolves.toEqual({
+            holdRecord: hold,
+            delivery,
+        });
+    });
+
+    it('forwards fresh hold-state nonces under the existing bearer authentication', async () => {
+        const post = vi.fn().mockResolvedValue(respond(200, { proof: snapshotReceipt }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        const input = { expectedDid: hold.hold.did, hold, nonce: 'ab'.repeat(32) };
+        await expect(enclave.getHoldState!(input)).resolves.toEqual({ proof: snapshotReceipt });
+        expect(post).toHaveBeenCalledWith(`${baseUrl}/v1/hold-state`, input, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: timeoutMs,
+        });
     });
 
     it('sends an empty nonce array when none is given', async () => {
@@ -685,7 +720,10 @@ describe('createRemoteEnclave', () => {
         const created = await enclave.createHold(createInput);
         expect(created).toEqual({ holdRecord: opaque });
         const config = { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs };
-        expect(post).toHaveBeenNthCalledWith(1, `${baseUrl}/v1/create-hold`, createInput, config);
+        expect(post).toHaveBeenNthCalledWith(1, `${baseUrl}/v1/create-hold`, createInput, {
+            ...config,
+            headers: { ...config.headers, 'X-Escrow-Delivery-Evidence': '1' },
+        });
         await expect(
             enclave.cancelHold({ ...cancelInput, hold: created.holdRecord })
         ).resolves.toBeUndefined();

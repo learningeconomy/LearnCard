@@ -4,6 +4,26 @@ This document provides a comprehensive security overview of the Escrow Enclave s
 
 ## System Overview and Trust Boundaries
 
+**2026-10-16 hold evidence update:** returned SES failures no longer discard a
+durably created hold. Response-only, ledger-signed delivery evidence binds its
+unchanged digest; `codeSent: false` includes ambiguous acceptance. It never starts
+the seven-day wait or changes the send/guess budgets. A lost whole response or
+outer timeout remains an availability risk. The new bearer-authenticated
+`/v1/hold-state` read signs a caller nonce and the exact hold identity, generation,
+state, confirmation/warning times and remaining guesses. Persisted state does not
+record send acceptance, so reads conservatively report `unknown`, not success
+inferred from a throttle. Clients must verify against attested ledger evidence and
+fresh nonces; a signature is not an assurance of subsequent state stability.
+
+`codeMismatch`, `codeExpired`, and `codeLocked` disclose only public policy outcomes
+after hold-binding checks. They reveal no digits, secret hashes or unmetered
+equality oracle; the fifth failed guess locks, expired attempts remain consumed,
+and malformed/binding failures remain generic. Bearer-only cancellation still
+permits a compromised API to cause durable DoS, not disclosure. See
+[ENROLLMENT-AUTHORITY §§11–12](ENROLLMENT-AUTHORITY.md#11-hold-delivery-evidence-and-state-reads-2026-10-16)
+for wire details, new-host-first compatibility, the unchanged persisted format,
+and the recommended future owner-signature cancellation design (not implemented).
+
 **PR 2 / Design 2 status:** the enrollment blocker is resolved **only in configured
 authority mode**, with the measured authority/credential configuration, attested
 writer unsealing, both verified Organizations guardrails, owner intent verification,

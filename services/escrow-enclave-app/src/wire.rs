@@ -10,6 +10,14 @@ pub mod v1 {
     use crate::authority::{intent::SignedEnrollmentIntent, record::SignedAuthorityRecord};
     use crate::policy::SignedHoldRecord;
 
+    /// Advisory delivery evidence, outside the immutable hold digest.
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    pub struct CodeDelivery {
+        pub code_sent: bool,
+        pub proof: SignedAuthorityRecord,
+    }
+
     #[derive(Debug, Clone, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase", deny_unknown_fields)]
     pub struct AuthorityState {
@@ -44,6 +52,11 @@ pub mod v1 {
         deny_unknown_fields
     )]
     pub enum Request {
+        HoldState {
+            expected_did: String,
+            hold: SignedHoldRecord,
+            nonce: String,
+        },
         EnrollmentState {
             expected_did: String,
             nonce: String,
@@ -144,6 +157,9 @@ pub mod v1 {
         deny_unknown_fields
     )]
     pub enum Response {
+        HoldState {
+            proof: SignedAuthorityRecord,
+        },
         EnrollmentState {
             state: AuthorityState,
             proof: SignedAuthorityRecord,
@@ -181,6 +197,8 @@ pub mod v1 {
         },
         CreateHold {
             hold: SignedHoldRecord,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            delivery: Option<CodeDelivery>,
         },
         Release {
             sealed: EscrowEnvelope,
@@ -331,6 +349,9 @@ pub enum Request {
 pub enum ErrorCode {
     Policy,
     PinMismatch,
+    CodeMismatch,
+    CodeExpired,
+    CodeLocked,
     Blob,
     Unavailable,
     Ledger,
