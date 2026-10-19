@@ -55,7 +55,7 @@ const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\
 
 export const getLockedPodVersion = (lockfile: string, podName: string): string | undefined => {
     const match = lockfile.match(
-        new RegExp(`^\\s+- ${escapeRegExp(podName)} \\((\\d+(?:\\.\\d+){0,2})\\)`, 'm')
+        new RegExp(`^\\s+- ${escapeRegExp(podName)} \\((\\d+(?:\\.\\d+)*)\\)`, 'm')
     );
 
     return match?.[1];
@@ -74,7 +74,7 @@ export const getRequiredPodVersion = (
 ): PodRequirement | undefined => {
     const match = podspec.match(
         new RegExp(
-            `^\\s*s\\.dependency\\s+['"]${escapeRegExp(podName)}['"]\\s*,\\s*(?:spec\\s*=\\s*)?['"](~>\\s*|=\\s*)?(\\d+(?:\\.\\d+){0,2})['"]\\s*(?:#.*)?$`,
+            `^\\s*s\\.dependency\\s+['"]${escapeRegExp(podName)}['"]\\s*,\\s*(?:spec\\s*=\\s*)?['"](~>\\s*|=\\s*)?(\\d+(?:\\.\\d+)*)['"]\\s*(?:#.*)?$`,
             'm'
         )
     );
@@ -104,7 +104,8 @@ export const findIncompatiblePods = (
         const comparison = compareVersions(lockedParts, requiredParts);
         if (!required.pessimistic) return comparison === 0 ? [] : [name];
 
-        // ~> 2.0.1 permits < 2.1.0, while ~> 2.0 permits < 3.0.0.
+        // Ruby permits any number of numeric segments; ~> increments the penultimate one.
+        // ~> 2.0.1 permits < 2.1.0, while ~> 2.0.1.4 permits < 2.0.2.0.
         const upperBound = requiredParts.slice(0, Math.max(1, requiredParts.length - 1));
         upperBound[upperBound.length - 1]! += 1;
         return comparison < 0 || compareVersions(lockedParts, upperBound) >= 0 ? [name] : [];

@@ -14,6 +14,10 @@ const fileViewerPodspec = `s.dependency 'IONFileViewerLib', spec='~> 2.0.0'`;
 describe('iOS Podfile.lock compatibility guard', () => {
     it('reads locked versions and pessimistic requirements', () => {
         expect(getLockedPodVersion('  - IONCameraLib (1.0.5)', 'IONCameraLib')).toBe('1.0.5');
+        expect(getLockedPodVersion('  - IONCameraLib (1.2.3.4)', 'IONCameraLib')).toBe('1.2.3.4');
+        expect(
+            getRequiredPodVersion("s.dependency 'IONCameraLib', '~> 1.2.3.4'", 'IONCameraLib')
+        ).toEqual({ version: '1.2.3.4', pessimistic: true });
         expect(getRequiredPodVersion(cameraPodspec, 'IONCameraLib')).toEqual({
             version: '2.0.0',
             pessimistic: true,
@@ -52,6 +56,14 @@ describe('iOS Podfile.lock compatibility guard', () => {
         ['3.0.0', '~> 2.0', true],
         ['2.0.1', '= 2.0.1', false],
         ['2.0.0', '= 2.0.1', true],
+        ['1.2.3.4', '1.2.3.5', true],
+        ['1.2.3.4', '= 1.2.3.4', false],
+        ['1.2.3.3', '~> 1.2.3.4', true],
+        ['1.2.3.4', '~> 1.2.3.4', false],
+        ['1.2.3.9', '~> 1.2.3.4', false],
+        ['1.2.4.0', '~> 1.2.3.4', true],
+        ['1.2.3.4.5', '1.2.3.4.6', true],
+        ['1.2.3.4.5', '~> 1.2.3.4', false],
     ])('checks %s against %s (incompatible: %s)', (locked, required, incompatible) => {
         expect(
             findIncompatiblePods(`  - IONFilesystemLib (${locked})`, [
