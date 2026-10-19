@@ -43,6 +43,7 @@ export const InAppMessageStory: React.FC<
     if (!step) return null;
 
     return (
+        // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Delegates arrow keys from descendant controls; the container is not itself a widget.
         <div
             className="w-full min-h-full flex flex-col font-poppins bg-white/80 text-grayscale-900"
             onKeyDown={event => {
