@@ -201,7 +201,7 @@ export const ColumnMappingsEditor: React.FC<
                     </p>
                 )}
                 {template?.schemaType && template.schemaType !== 'obv3' ? (
-                    <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
+                    <p className="rounded-2xl bg-grayscale-100 p-3 text-sm text-grayscale-700">
                         {m['issueFlow.sheet.design.openBadgesOnly']()}
                     </p>
                 ) : disabled ? (

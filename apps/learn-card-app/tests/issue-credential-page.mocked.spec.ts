@@ -493,7 +493,10 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 mimeType: 'text/csv',
                 buffer: Buffer.from(csv),
             });
-            await page.screenshot({ path: testInfo.outputPath('import-review.png') });
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('import-review.png'),
+            });
             await page.getByRole('button', { name: 'Add People', exact: true }).click();
             await page.getByRole('button', { name: 'Map columns', exact: true }).click();
             await expect(
@@ -524,7 +527,13 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page.getByRole('button', { name: 'Include Evidence', exact: true }).click();
             await page.getByRole('button', { name: 'Include Portfolio', exact: true }).click();
             await page.getByRole('button', { name: 'Include Student Code', exact: true }).click();
-            await page.screenshot({ path: testInfo.outputPath('column-mapping.png') });
+            await page
+                .getByRole('region', { name: 'Quiz Score', exact: true })
+                .scrollIntoViewIfNeeded();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('column-mapping.png'),
+            });
             await page.getByRole('button', { name: 'Done', exact: true }).click();
             await expect(issueButton(page)).toBeEnabled();
             await page.getByRole('button', { name: 'Review people', exact: true }).click();
@@ -555,8 +564,18 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 await tableView.evaluate(element => {
                     element.scrollLeft = 0;
                 });
+                await tableView.press('ArrowRight');
+                await expect
+                    .poll(() => tableView.evaluate(element => element.scrollLeft))
+                    .toBeGreaterThan(0);
+                await tableView.evaluate(element => {
+                    element.scrollLeft = 0;
+                });
             }
-            await page.screenshot({ path: testInfo.outputPath('recipient-fields.png') });
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('recipient-fields.png'),
+            });
             await page.getByRole('button', { name: 'Done', exact: true }).click();
             await page.getByRole('button', { name: 'Map columns', exact: true }).click();
             await page.getByRole('button', { name: 'Remove Quiz Score', exact: true }).click();
@@ -584,6 +603,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             expect(json.awardedDate).toMatch(/sheet_completed_date/);
             expect(JSON.stringify(json['@context'])).not.toContain('ctx.learncard');
             await page.screenshot({
+                animations: 'disabled',
                 path: testInfo.outputPath('mapped-roster.png'),
                 fullPage: true,
             });
