@@ -129,9 +129,13 @@ test('replace/append preserves unrelated body and is idempotent on new heads', (
         assert.equal(proof.replaceProof('Description', block), 'Description\\n\\n' + block + '\\n');
         assert.equal(proof.replaceProof('', block), block + '\\n');
         for (const body of ['<!-- proof:start -->', '<!-- proof:end -->',
-            '<!-- proof:end --><!-- proof:start -->', block + block]) {
+            '<!-- proof:end -->\\n<!-- proof:start -->', block + '\\n' + block]) {
             assert.throws(() => proof.replaceProof(body, block));
         }
+        const prose = 'Writes one \`<!-- proof:start -->…<!-- proof:end -->\` section.';
+        assert.equal(proof.replaceProof(prose, block), prose + '\\n\\n' + block + '\\n');
+        const withSection = prose + '\\n\\n## Proof\\n<!-- proof:start -->\\nold\\n<!-- proof:end -->\\n';
+        assert.equal(proof.replaceProof(withSection, block), prose + '\\n\\n## Proof\\n' + block + '\\n');
     `);
 });
 

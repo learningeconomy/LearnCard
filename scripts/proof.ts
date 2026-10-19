@@ -330,17 +330,22 @@ export const renderProof = (options: {
     return lines.join('\n');
 };
 
+const markerLines = (lines: string[], marker: string): number[] =>
+    lines.flatMap((line, index) => (line.trim() === marker ? [index] : []));
+
+// Markers count only on their own line, so prose or code that mentions them is left alone.
 export const replaceProof = (body: string, block: string): string => {
-    const starts = body.split(START).length - 1;
-    const ends = body.split(END).length - 1;
-    if (starts === 0 && ends === 0)
+    const lines = body.split('\n');
+    const starts = markerLines(lines, START);
+    const ends = markerLines(lines, END);
+    if (starts.length === 0 && ends.length === 0)
         return `${body.trimEnd()}${body.trim() ? '\n\n' : ''}${block}\n`;
-    if (starts !== 1 || ends !== 1 || body.indexOf(END) < body.indexOf(START)) {
+    if (starts.length !== 1 || ends.length !== 1 || ends[0]! < starts[0]!) {
         throw new Error(
-            'PR has malformed or duplicate proof markers. Keep exactly one ordered proof:start/proof:end pair and retry.'
+            'PR has malformed or duplicate proof markers. Keep exactly one ordered proof:start/proof:end pair, each on its own line, and retry.'
         );
     }
-    return body.slice(0, body.indexOf(START)) + block + body.slice(body.indexOf(END) + END.length);
+    return [...lines.slice(0, starts[0]), block, ...lines.slice(ends[0]! + 1)].join('\n');
 };
 
 const command = (args: string[], remedy: string, trim = true): string => {
