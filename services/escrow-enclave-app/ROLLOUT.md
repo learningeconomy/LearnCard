@@ -4,6 +4,10 @@ This runbook governs turning on **automatic** escrow recovery enrollment for rea
 tenants, stage by stage. It is operator-facing, not implementation documentation —
 see `packages/learn-card-base/src/config/escrowRollout.ts` for the code.
 
+Before production infrastructure bring-up, complete [PRODUCTION.md](./PRODUCTION.md).
+Its authority Object Lock archiver/outbox gate is a **production launch blocker**;
+preparing infrastructure or passing offline Terraform tests does not close it.
+
 ## What this controls (and what it doesn't)
 
 Two independent tenant-config switches gate escrow:
