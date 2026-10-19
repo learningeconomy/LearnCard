@@ -4,6 +4,7 @@ import { createServer, loadConfigFromFile } from 'vite';
 import type { Plugin } from 'vite';
 import { z } from 'zod';
 import { APP_ROOT } from './constants';
+import { verificationBrandingPlugin } from './branding';
 import { readStackEndpoints } from './stack';
 import { processIdentity } from './process';
 
@@ -109,7 +110,7 @@ const start = async (): Promise<void> => {
             // template instead; /src imports still resolve against the real app root.
             entries: [join(app, 'index.template.html')],
         },
-        plugins: [overlay, ...(resolved.plugins ?? [])],
+        plugins: [overlay, verificationBrandingPlugin(), ...(resolved.plugins ?? [])],
         server: {
             ...resolved.server,
             host: '127.0.0.1',
