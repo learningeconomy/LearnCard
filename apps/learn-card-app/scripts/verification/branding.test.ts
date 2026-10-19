@@ -51,7 +51,7 @@ describe('verification branding assets', () => {
             const source = await readFile(
                 join(APP_ROOT, 'environments/learncard/assets/branding', filename)
             );
-            expect(Buffer.from(await response.arrayBuffer())).toEqual(source);
+            expect(Buffer.from(await response.arrayBuffer()).equals(source)).toBe(true);
         }
     });
 
