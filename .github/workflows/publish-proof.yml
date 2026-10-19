@@ -1,0 +1,123 @@
+name: Publish verification proof
+
+on:
+    workflow_run:
+        workflows: ['LearnCard Verification']
+        types: [completed]
+
+# One publisher at a time per branch; publish re-checks the PR head before editing, so a run that
+# finishes after a newer push skips instead of replacing newer proof.
+concurrency:
+    group: publish-proof-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+    actions: read
+    pull-requests: write
+    id-token: write
+
+jobs:
+    publish:
+        # Fork PRs run their own copy of verification.yml, so their artifact is not trusted media.
+        if: ${{ github.event.workflow_run.head_repository.full_name == github.repository }}
+        environment: agent-proof
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        steps:
+            - name: Checkout trusted default branch only
+              uses: actions/checkout@v7
+              with:
+                  ref: main
+                  persist-credentials: false
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: '1.4.2'
+
+            - name: Resolve current pull request
+              id: pr
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+                  EVENT_PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+                  EVENT_PRS: ${{ toJSON(github.event.workflow_run.pull_requests) }}
+                  HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+              run: |
+                  if [[ $(jq 'length' <<< "$EVENT_PRS") -gt 1 ]]; then
+                    echo '::notice::Skipping proof: run is associated with multiple PRs.'
+                    exit 0
+                  fi
+                  if [[ ! "$HEAD_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
+                    echo '::notice::Skipping proof: invalid run head SHA.'
+                    exit 0
+                  fi
+                  if [[ -n "$EVENT_PR" ]]; then
+                    PRS=$(gh api "repos/$GH_REPO/pulls/$EVENT_PR" | jq -c --arg sha "$HEAD_SHA" \
+                      '[select(.state == "open" and .head.sha == $sha) | .number]')
+                  else
+                    PRS=$(gh api --paginate --slurp "repos/$GH_REPO/pulls?state=open&per_page=100" | \
+                      jq -c --arg sha "$HEAD_SHA" '[.[][] | select(.head.sha == $sha) | .number] | unique')
+                  fi
+                  if [[ $(jq 'length' <<< "$PRS") != 1 ]]; then
+                    echo '::notice::Skipping proof: no unique open PR matching the run head.'
+                    exit 0
+                  fi
+                  PR=$(jq -r '.[0]' <<< "$PRS")
+                  [[ "$PR" =~ ^[1-9][0-9]*$ ]]
+                  echo "number=$PR" >> "$GITHUB_OUTPUT"
+
+            - name: Locate proof artifact
+              if: steps.pr.outputs.number != ''
+              id: artifact
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+                  RUN_ID: ${{ github.event.workflow_run.id }}
+              run: |
+                  COUNT=$(gh api --paginate --slurp "repos/$GH_REPO/actions/runs/$RUN_ID/artifacts?per_page=100" | \
+                    jq --arg name "lc-proof-media-$RUN_ID" '[.[].artifacts[] | select(.name == $name and .expired == false)] | length')
+                  if [[ "$COUNT" != 1 ]]; then
+                    echo '::notice::Skipping proof: media artifact missing or expired.'
+                    exit 0
+                  fi
+                  echo 'found=true' >> "$GITHUB_OUTPUT"
+
+            - name: Download untrusted proof data
+              if: steps.artifact.outputs.found == 'true'
+              uses: actions/download-artifact@v4
+              with:
+                  name: lc-proof-media-${{ github.event.workflow_run.id }}
+                  run-id: ${{ github.event.workflow_run.id }}
+                  github-token: ${{ github.token }}
+                  path: ${{ runner.temp }}/lc-proof-media
+
+            - name: Assume proof publisher role
+              if: steps.artifact.outputs.found == 'true'
+              id: aws
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::206533012615:role/learncard-agent-proof-publisher
+                  aws-region: us-east-1
+                  output-credentials: true
+                  output-env-credentials: false
+
+            - name: Publish proof with trusted code
+              if: steps.artifact.outputs.found == 'true'
+              env:
+                  PROOF_AWS_ACCESS_KEY_ID: ${{ steps.aws.outputs.aws-access-key-id }}
+                  PROOF_AWS_SECRET_ACCESS_KEY: ${{ steps.aws.outputs.aws-secret-access-key }}
+                  PROOF_AWS_SESSION_TOKEN: ${{ steps.aws.outputs.aws-session-token }}
+                  PROOF_S3_BUCKET: learncard-agent-proof-206533012615
+                  PROOF_S3_REGION: us-east-1
+                  PROOF_PUBLIC_BASE_URL: https://d3u69hk9v4jvp.cloudfront.net
+                  GH_TOKEN: ${{ github.token }}
+                  PR: ${{ steps.pr.outputs.number }}
+                  DIR: ${{ runner.temp }}/lc-proof-media
+                  HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+                  RUN_URL: ${{ github.event.workflow_run.html_url }}
+              run: |
+                  bun scripts/proof.ts publish --pr "$PR" --from-run "$DIR" --head-sha "$HEAD_SHA" --update-pr \
+                    --images-only --skip-if-stale \
+                    --note "Published by CI from LearnCard Verification run $RUN_URL"
