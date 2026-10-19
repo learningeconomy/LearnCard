@@ -224,7 +224,10 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
         const review = page.locator('#full-screen-modal.issue-spreadsheet-dialog.open').last();
         await expect(review).toBeVisible();
-        await page.screenshot({ path: testInfo.outputPath('mobile-import-review.png') });
+        await page.screenshot({
+            animations: 'disabled',
+            path: testInfo.outputPath('mobile-import-review.png'),
+        });
         expect(await review.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(
             true
         );
@@ -236,7 +239,10 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(
             true
         );
-        await page.screenshot({ path: testInfo.outputPath('mobile-recipient-editor.png') });
+        await page.screenshot({
+            animations: 'disabled',
+            path: testInfo.outputPath('mobile-recipient-editor.png'),
+        });
         await page.getByRole('button', { name: 'Needs attention · 1', exact: true }).click();
         await expect(page.getByRole('article')).toHaveCount(1);
         await page
@@ -363,6 +369,12 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         ).toBeVisible({ timeout: 30000 });
         expect(submissions.map(body => body.items.length)).toEqual([100, 100, 50]);
         expect(templateCount).toBe(1);
+        await page.getByRole('button', { name: 'Review delivery issues · 1', exact: true }).click();
+        await expect(
+            page.getByRole('heading', { name: 'Delivery issues', exact: true })
+        ).toBeVisible();
+        await expect(page.getByText('person7@test.com', { exact: true })).toBeVisible();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
         await page.getByRole('button', { name: 'Review people', exact: true }).click();
         const failedEmail = page.getByRole('textbox', { name: 'Email for Person 7', exact: true });
         await expect(failedEmail).toBeEnabled();

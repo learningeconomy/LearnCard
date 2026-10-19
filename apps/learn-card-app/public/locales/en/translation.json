@@ -9471,7 +9471,11 @@
                 "additionalEvidence": "Additional evidence",
                 "additionalEvidenceFor": "Additional evidence for {{name}}",
                 "emailFormatGood": "Email format looks good",
-                "emptyImport": "No people found. Check the email column and header row."
+                "emptyImport": "No people found. Check the email column and header row.",
+                "deliveryIssues": "Delivery issues",
+                "reviewDeliveryIssues": "Review delivery issues · {{count}}",
+                "deliveryIssuesHint": "Review unconfirmed sends here; edit failed recipients in Review people.",
+                "searchDeliveryIssues": "Search delivery issues"
             }
         }
     },

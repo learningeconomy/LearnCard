@@ -151,7 +151,7 @@ export const SpreadsheetReview: React.FC<{
                         })}
                     </span>
                     <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${invalid || !people.length ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-700'}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${invalid || !people.length ? 'bg-grayscale-100 text-grayscale-700' : 'bg-emerald-50 text-emerald-700'}`}
                     >
                         <IonIcon
                             icon={
@@ -159,6 +159,7 @@ export const SpreadsheetReview: React.FC<{
                                     ? alertCircleOutline
                                     : checkmarkCircleOutline
                             }
+                            className={invalid ? 'text-red-600' : undefined}
                             aria-hidden="true"
                         />
                         {!people.length
@@ -182,7 +183,7 @@ export const SpreadsheetReview: React.FC<{
                         {people.slice(0, 8).map(row => (
                             <div
                                 key={row.rowId}
-                                className={`flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-4 ${!isValidRosterEmail(row.email) ? 'bg-amber-50' : 'bg-white'}`}
+                                className={`flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-4 ${!isValidRosterEmail(row.email) ? 'border-s-2 border-red-300 bg-grayscale-10' : 'bg-white'}`}
                             >
                                 <span className="text-sm font-medium text-grayscale-900 sm:w-1/3">
                                     {row.displayName || m['issueFlow.sheet.recipient']()}
@@ -191,7 +192,7 @@ export const SpreadsheetReview: React.FC<{
                                     {row.email || m['issueFlow.sheet.invalidEmail']()}
                                 </span>
                                 {!isValidRosterEmail(row.email) && (
-                                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-amber-900">
+                                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-red-700">
                                         <IonIcon icon={alertCircleOutline} aria-hidden="true" />
                                         {m['issueFlow.sheet.invalidEmail']()}
                                     </span>

@@ -21,13 +21,16 @@ export const SpreadsheetDialog: React.FC<{
     title: string;
     subtitle?: string;
     icon: string;
+    iconTone?: 'positive' | 'neutral';
     onClose: () => void;
     children: React.ReactNode;
     footer?: React.ReactNode;
-}> = ({ title, subtitle, icon, onClose, children, footer }) => (
+}> = ({ title, subtitle, icon, iconTone = 'positive', onClose, children, footer }) => (
     <div className="flex h-full min-h-0 w-full flex-col bg-white font-poppins text-grayscale-900">
         <header className="flex shrink-0 items-start gap-3 border-b border-grayscale-200 px-5 py-5 sm:px-7">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+            <span
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconTone === 'neutral' ? 'bg-grayscale-100 text-grayscale-700' : 'bg-emerald-50 text-emerald-700'}`}
+            >
                 <IonIcon icon={icon} className="h-6 w-6" aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">

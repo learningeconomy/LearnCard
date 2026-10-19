@@ -71,10 +71,11 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                     {m['issueFlow.sheet.peopleSummary']({ count: props.recipients.length })}
                 </span>
                 <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${issues ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-700'}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${issues ? 'bg-grayscale-100 text-grayscale-700' : 'bg-emerald-50 text-emerald-700'}`}
                 >
                     <IonIcon
                         icon={issues ? alertCircleOutline : checkmarkCircleOutline}
+                        className={issues ? 'text-red-600' : undefined}
                         aria-hidden="true"
                     />
                     {issues
@@ -338,9 +339,13 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                 setOnlyIssues(true);
                                 setPage(0);
                             }}
-                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium ${onlyIssues ? 'bg-amber-100 text-amber-900' : 'bg-amber-50 text-amber-900'}`}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium ${onlyIssues ? 'bg-grayscale-200 text-grayscale-900' : 'bg-grayscale-100 text-grayscale-700'}`}
                         >
-                            <IonIcon icon={alertCircleOutline} aria-hidden="true" />
+                            <IonIcon
+                                icon={alertCircleOutline}
+                                className={issues ? 'text-red-600' : 'text-grayscale-500'}
+                                aria-hidden="true"
+                            />
                             {m['issueFlow.sheet.design.issueCount']({ count: issues })}
                         </button>
                     </div>
@@ -473,7 +478,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                         {...focusHandlers(recipient)}
                                         className={
                                             problems[recipientKey(recipient)]?.length
-                                                ? 'bg-red-50'
+                                                ? 'bg-grayscale-10'
                                                 : 'bg-white'
                                         }
                                     >
@@ -505,7 +510,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                             <article
                                 key={recipientKey(recipient)}
                                 {...focusHandlers(recipient)}
-                                className={`rounded-2xl border p-4 space-y-4 ${problems[recipientKey(recipient)]?.length ? 'border-red-100 bg-red-50' : 'border-grayscale-200 bg-white'}`}
+                                className={`rounded-2xl border p-4 space-y-4 ${problems[recipientKey(recipient)]?.length ? 'border-red-100 bg-grayscale-10' : 'border-grayscale-200 bg-white'}`}
                             >
                                 {identity(recipient)}
                                 {variables.map(name => (

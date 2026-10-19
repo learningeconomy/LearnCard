@@ -9420,7 +9420,11 @@
                 "additionalEvidence": "Evidencia adicional",
                 "additionalEvidenceFor": "Evidencia adicional para {{name}}",
                 "emailFormatGood": "El formato del correo es correcto",
-                "emptyImport": "No se encontraron personas. Revisa la columna de correo y la fila de encabezados."
+                "emptyImport": "No se encontraron personas. Revisa la columna de correo y la fila de encabezados.",
+                "deliveryIssues": "Problemas de entrega",
+                "reviewDeliveryIssues": "Revisar problemas de entrega · {{count}}",
+                "deliveryIssuesHint": "Revisa aquí los envíos sin confirmar; edita los destinatarios fallidos en Revisar personas.",
+                "searchDeliveryIssues": "Buscar problemas de entrega"
             }
         }
     },

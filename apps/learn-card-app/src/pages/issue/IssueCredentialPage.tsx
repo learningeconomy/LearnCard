@@ -963,7 +963,7 @@ const IssueCredentialPage: React.FC = () => {
                     </p>
                 )}
                 {roster.recoverable && !roster.run && (
-                    <div className="mb-4 p-4 bg-amber-50 rounded-2xl space-y-2">
+                    <div className="mb-4 p-4 bg-grayscale-100 border border-grayscale-200 rounded-2xl space-y-2">
                         <p className="text-sm text-grayscale-700">
                             {m['issueFlow.sheet.recoverable']()}
                         </p>
