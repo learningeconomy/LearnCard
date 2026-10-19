@@ -210,7 +210,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         if (isAppleLogin) {
             setIsLoading(true);
             try {
-                await adapter.updateProfile?.({ displayName, photoUrl: photo ?? '' });
+                if (adapter.getCurrentUser()) {
+                    await adapter.updateProfile?.({ displayName, photoUrl: photo ?? '' });
+                }
                 await handleLCNetworkProfileUpdate();
                 await handleStorageUpdate();
                 handleCloseModal();
@@ -245,16 +247,18 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         }
                     } else {
                         // update firebase profile
-                        await adapter.updateProfile?.({
-                            displayName,
-                            photoUrl: photo as string,
-                        });
+                        if (adapter.getCurrentUser()) {
+                            await adapter.updateProfile?.({
+                                displayName,
+                                photoUrl: photo as string,
+                            });
+                        }
 
                         // update LC network profile
                         await handleLCNetworkProfileUpdate();
 
                         // update sqlite + context store
-                        handleStorageUpdate();
+                        await handleStorageUpdate();
 
                         setIsLoading(false);
                         handleCloseModal();

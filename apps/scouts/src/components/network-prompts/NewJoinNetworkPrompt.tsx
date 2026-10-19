@@ -153,7 +153,10 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         try {
             const wallet = await initWallet();
             if (authToken !== 'dummy') {
-                await adapter.updateProfile?.({ displayName, photoUrl: photo ?? '' });
+                // Cached-key sessions can save a network profile without a live auth session.
+                if (adapter.getCurrentUser()) {
+                    await adapter.updateProfile?.({ displayName, photoUrl: photo ?? '' });
+                }
                 await updateCurrentUser(currentUser?.uid, {
                     name: displayName,
                     profileImage: photo ?? '',

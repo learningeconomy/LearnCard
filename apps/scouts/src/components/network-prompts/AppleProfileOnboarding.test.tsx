@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     loginType: 'apple',
     authName: '',
+    hasAuthUser: true,
     profile: null as { profileId: string } | null,
     createProfile: vi.fn(),
     updateNetworkProfile: vi.fn(),
@@ -18,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('learn-card-base', () => ({
     useSignInAdapter: () => ({
-        getCurrentUser: () => ({ displayName: mocks.authName }),
+        getCurrentUser: () => (mocks.hasAuthUser ? { displayName: mocks.authName } : null),
         updateProfile: mocks.updateAuthProfile,
     }),
     SocialLoginTypes: { apple: 'apple' },
@@ -110,6 +111,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.loginType = 'apple';
     mocks.authName = '';
+    mocks.hasAuthUser = true;
     mocks.profile = null;
     mocks.createProfile.mockResolvedValue('did:web:scout');
     mocks.updateAuthProfile.mockResolvedValue(undefined);
@@ -142,6 +144,33 @@ describe('ScoutPass Apple onboarding', () => {
             expect.objectContaining({ name: 'scout-handle' })
         );
     });
+
+    it.each(['apple', 'google'])(
+        'supports cached-key %s setup and retry without Firebase',
+        async loginType => {
+            mocks.loginType = loginType;
+            mocks.hasAuthUser = false;
+            mocks.updateAuthProfile.mockRejectedValue(new Error('No user to update'));
+            mocks.createProfile.mockRejectedValueOnce(new Error('Temporary network failure'));
+            render(<NewJoinNetworkPrompt handleCloseModal={mocks.close} />);
+            fireEvent.change(screen.getByLabelText(/Full Name/), {
+                target: { value: 'Scout User' },
+            });
+            enterUsername();
+            fireEvent.click(join());
+            await screen.findByText(m['networkPrompts.profileSaveFailed']());
+            expect(mocks.createProfile).toHaveBeenCalledOnce();
+            expect(mocks.close).not.toHaveBeenCalled();
+            fireEvent.click(join());
+            await waitFor(() => expect(mocks.close).toHaveBeenCalledOnce());
+            expect(mocks.createProfile).toHaveBeenCalledTimes(2);
+            expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
+            expect(mocks.updateCurrentUser).toHaveBeenLastCalledWith(
+                'scout-user',
+                expect.objectContaining({ name: 'Scout User' })
+            );
+        }
+    );
 
     it('prefills the Apple name and permits clearing it', async () => {
         mocks.authName = 'Apple Scout';
@@ -224,6 +253,30 @@ describe('ScoutPass Apple account settings', () => {
             expect.objectContaining({ name: 'existing-scout' })
         );
     });
+
+    it.each(['apple', 'google'])(
+        'saves cached-key %s account changes without Firebase',
+        async loginType => {
+            mocks.loginType = loginType;
+            mocks.hasAuthUser = false;
+            mocks.profile = { profileId: 'existing-scout' };
+            mocks.updateAuthProfile.mockRejectedValue(new Error('No user to update'));
+            renderAccount();
+            fireEvent.change(screen.getByLabelText(/Full Name/), {
+                target: { value: 'Scout User' },
+            });
+            fireEvent.click(screen.getByRole('button', { name: m['common.save']() }));
+            await waitFor(() => expect(mocks.close).toHaveBeenCalledOnce());
+            expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
+            expect(mocks.updateNetworkProfile).toHaveBeenCalledWith(
+                expect.objectContaining({ displayName: 'Scout User' })
+            );
+            expect(mocks.updateCurrentUser).toHaveBeenCalledWith(
+                'scout-user',
+                expect.objectContaining({ name: 'Scout User' })
+            );
+        }
+    );
 
     it('keeps the form open and reports Apple profile update failures', async () => {
         mocks.updateAuthProfile.mockRejectedValueOnce(new Error('Private server error'));
