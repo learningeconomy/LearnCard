@@ -55,7 +55,7 @@ export const ScoutsNewsList: React.FC = () => {
         return <ScoutNewsListItem key={node.node_id} data={node} />;
     });
     const bgClassName = isLoading && !data ? 'bg-white' : 'bg-[#EFF0F5]';
-    const sectionClassName = `${bgClassName} w-full flex items-center justify-start  bg-repeat p-[10px] flex justify-center h-full pb-[50px]`;
+    const sectionClassName = `${bgClassName} w-full flex items-center bg-repeat p-[10px] justify-center h-full pb-[50px]`;
 
     return (
         <section className={sectionClassName}>
