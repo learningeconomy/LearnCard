@@ -1236,6 +1236,7 @@
             "imA": "أنا ",
             "selectRole": "اختيار الدور",
             "fullName": "الاسم الكامل",
+            "fullNameOptional": "الاسم الكامل (اختياري)",
             "dateOfBirth": "تاريخ الميلاد",
             "age": "العمر: {{age}}",
             "countryOfResidence": "بلد الإقامة",
