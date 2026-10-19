@@ -106,8 +106,8 @@ export const DeliveryStatus: React.FC<{
                 </div>
             }
         >
-            <div className="mb-5 grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_240px]">
-                <div className="relative">
+            <div className="mb-5 grid min-w-0 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_240px]">
+                <div className="relative min-w-0">
                     <IonIcon
                         icon={searchOutline}
                         className="pointer-events-none absolute start-4 top-4 text-grayscale-500"
@@ -122,10 +122,10 @@ export const DeliveryStatus: React.FC<{
                         }}
                         aria-label={m['issueFlow.sheet.design.searchDeliveryStatus']()}
                         placeholder={m['issueFlow.sheet.design.searchDeliveryStatus']()}
-                        className="w-full rounded-xl border border-grayscale-300 bg-white py-3 pe-4 ps-11 text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent sm:text-sm"
+                        className="w-full min-w-0 rounded-xl border border-grayscale-300 bg-white py-3 pe-4 ps-11 text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent sm:text-sm"
                     />
                 </div>
-                <div>
+                <div className="min-w-0">
                     <label
                         htmlFor={filterId}
                         className="mb-1.5 block text-xs font-medium text-grayscale-700"
@@ -139,7 +139,7 @@ export const DeliveryStatus: React.FC<{
                             setFilter(event.target.value as StatusFilter);
                             setPage(0);
                         }}
-                        className="w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-base text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent sm:text-sm"
+                        className="w-full min-w-0 rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-base text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent sm:text-sm"
                     >
                         <option value="all">
                             {m['issueFlow.sheet.design.allDeliveryStatuses']({
