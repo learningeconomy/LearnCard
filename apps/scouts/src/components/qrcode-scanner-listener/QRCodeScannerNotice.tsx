@@ -37,14 +37,14 @@ export const QRCodeScannerNotice: React.FC<{
             <button
                 type="button"
                 onClick={onScanAgain}
-                className="w-full rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                className="w-full rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             >
                 {m['scanner.scanAnother']()}
             </button>
             <button
                 type="button"
                 onClick={onDismiss}
-                className="w-full rounded-[20px] px-4 py-3 text-sm font-medium text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="w-full rounded-[20px] px-4 py-3 text-sm font-medium text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
                 {m['common.done']()}
             </button>

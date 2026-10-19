@@ -192,7 +192,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                         data-testid="issue-submit"
                                         onClick={onIssue}
                                         disabled={!canIssue}
-                                        className="relative overflow-hidden py-2.5 px-4 sm:px-6 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:bg-grayscale-800 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-grayscale-900 shadow-sm hover:shadow-md active:scale-[0.98] shrink-0"
+                                        className="relative overflow-hidden py-2.5 px-4 sm:px-6 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:bg-grayscale-800 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-grayscale-900 shadow-xs hover:shadow-md active:scale-[0.98] shrink-0"
                                     >
                                         {isSubmitting ? (
                                             <span className="flex items-center justify-center gap-2">
@@ -269,8 +269,8 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                 )}
 
                                 {viewingJson && issuableJson ? (
-                                    <div className="space-y-5">
-                                        <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-4">
+                                    <div className="space-y-v3-5">
+                                        <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4">
                                             <RecipientPicker
                                                 mode={recipientMode}
                                                 onModeChange={onRecipientModeChange}
@@ -306,7 +306,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="space-y-5">
+                                    <div className="space-y-v3-5">
                                         <IssuePalette
                                             selectedType={selectedType}
                                             template={template}

@@ -248,8 +248,8 @@ const ShareCredentialsModal = ({
                         <div className="shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] p-[20px] m-[20px] rounded-[20px]">
                             <section className="professor-details flex items-center mb-[20px]">
                                 <ProfilePicture
-                                    customContainerClass="flex mr-[15px] flex-shrink-0 border-gray-300 border-[2px] w-[55px] h-[55px] items-center justify-center rounded-full overflow-hidden object-cover text-white font-medium text-4xl"
-                                    customImageClass="w-full h-full object-cover flex-shrink-0"
+                                    customContainerClass="flex mr-[15px] shrink-0 border-gray-300 border-2 w-[55px] h-[55px] items-center justify-center rounded-full overflow-hidden object-cover text-white font-medium text-4xl"
+                                    customImageClass="w-full h-full object-cover shrink-0"
                                     customSize={120}
                                 />
                                 <p className="text-xl text-left font-medium  w-full text-indigo-900">

@@ -74,7 +74,7 @@ const CopyBlock: React.FC<{ text: string; label: string; mono?: boolean }> = ({
                 </button>
             </div>
             <pre
-                className={`p-4 text-sm text-white/90 whitespace-pre-wrap break-words max-h-80 overflow-y-auto ${
+                className={`p-4 text-sm text-white/90 whitespace-pre-wrap wrap-break-word max-h-80 overflow-y-auto ${
                     mono ? 'font-mono' : 'font-poppins leading-relaxed'
                 }`}
             >
@@ -124,7 +124,7 @@ const MakeStep: React.FC<{
     const [mode, setMode] = useState<'ai' | 'code'>('ai');
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-v3-8">
             <div>
                 <h2 className="text-xl font-semibold text-grayscale-900">Make your app</h2>
                 <p className="text-sm text-grayscale-600 mt-1">
@@ -146,7 +146,7 @@ const MakeStep: React.FC<{
                     onChange={e => onIdeaChange(e.target.value)}
                     placeholder="e.g. a quiz game that helps kids practice fractions"
                     maxLength={200}
-                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
             </div>
 
@@ -214,7 +214,7 @@ const MakeStep: React.FC<{
                 </div>
 
                 {mode === 'ai' ? (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <p className="text-sm text-grayscale-600">
                             Paste this into Lovable, Bolt, v0, or any AI app builder.
                         </p>
@@ -225,7 +225,7 @@ const MakeStep: React.FC<{
                         />
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <p className="text-sm text-grayscale-600">
                             Works with any web app: React, Vue, plain HTML, and more.
                         </p>
@@ -254,7 +254,7 @@ const TRY_POINTS = [
 ];
 
 const TryStep: React.FC = () => (
-    <div className="space-y-6">
+    <div className="space-y-v3-6">
         <div>
             <h2 className="text-xl font-semibold text-grayscale-900">Try it in the preview</h2>
             <p className="text-sm text-grayscale-600 mt-1">
@@ -262,7 +262,7 @@ const TryStep: React.FC = () => (
                 nothing to set up.
             </p>
         </div>
-        <ul className="space-y-3">
+        <ul className="space-y-v3-3">
             {TRY_POINTS.map(point => (
                 <li key={point} className="flex items-start gap-3">
                     <IonIcon
@@ -281,7 +281,7 @@ const TryStep: React.FC = () => (
 );
 
 const PublishStep: React.FC<{ onDone: () => void }> = ({ onDone }) => (
-    <div className="space-y-6">
+    <div className="space-y-v3-6">
         <div>
             <h2 className="text-xl font-semibold text-grayscale-900">Publish to LearnCard</h2>
             <p className="text-sm text-grayscale-600 mt-1">
@@ -289,7 +289,7 @@ const PublishStep: React.FC<{ onDone: () => void }> = ({ onDone }) => (
                 button appears in the panel at the bottom-left of your app.
             </p>
         </div>
-        <ol className="space-y-3">
+        <ol className="space-y-v3-3">
             {[
                 'Click Publish to LearnCard in your app.',
                 'Add your store details: icon, description, screenshots.',

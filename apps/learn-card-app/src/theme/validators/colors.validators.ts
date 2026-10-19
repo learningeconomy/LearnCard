@@ -11,7 +11,7 @@ import { CredentialCategoryEnum } from 'learn-card-base';
  *
  * 2. **Full utility class** — a complete Tailwind class string with prefix.
  *    Components use it directly in `className`.
- *    Example values: `"text-white"`, `"!bg-cyan-400"`, `"bg-blue-300"`.
+ *    Example values: `"text-white"`, `"bg-cyan-400!"`, `"bg-blue-300"`.
  *
  * 3. **Raw hex** — a CSS hex color value (used only in `placeholders`).
  *    Passed directly to SVG fill/stroke props.
@@ -43,7 +43,7 @@ export const CategoryColorSchema = z
         /** Full utility class — applied directly. E.g. `"text-white"` */
         headerTextColor: z.string().optional().describe('Full Tailwind text class for header text'),
 
-        /** Full utility class — applied directly. E.g. `"!bg-cyan-400"`, `"!bg-white"` */
+        /** Full utility class — applied directly. E.g. `"bg-cyan-400!"`, `"bg-white!"` */
         backgroundPrimaryColor: z
             .string()
             .optional()

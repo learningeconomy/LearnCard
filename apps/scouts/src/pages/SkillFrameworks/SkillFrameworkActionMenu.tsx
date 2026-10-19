@@ -41,7 +41,7 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
         if (!frameworkId) return;
         closeModal();
         newModal(<EditFrameworkModal frameworkId={frameworkId} />, {
-            sectionClassName: '!bg-transparent !shadow-none',
+            sectionClassName: 'bg-transparent! shadow-none!',
             cancelButtonTextOverride: 'Back',
         });
     };

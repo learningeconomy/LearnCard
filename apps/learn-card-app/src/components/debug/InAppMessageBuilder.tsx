@@ -146,8 +146,8 @@ const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
         predicates.length === 0
             ? undefined
             : predicates.length === 1
-            ? predicates[0]
-            : { [s.combinator]: predicates };
+              ? predicates[0]
+              : { [s.combinator]: predicates };
 
     const actions = s.actions.map(a => ({
         label: a.label,
@@ -156,8 +156,8 @@ const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
             a.type === 'internalLink'
                 ? { type: a.type, path: a.path }
                 : a.type === 'externalLink'
-                ? { type: a.type, url: a.url }
-                : { type: a.type },
+                  ? { type: a.type, url: a.url }
+                  : { type: a.type },
     }));
 
     return {
@@ -176,7 +176,7 @@ const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
 };
 
 const fieldInputClass =
-    'flex-1 min-w-0 text-[10px] font-mono rounded px-1.5 py-1 placeholder:!text-gray-500 caret-sky-400 focus:outline-none focus:!border-sky-500 focus:ring-1 focus:ring-sky-500/40';
+    'flex-1 min-w-0 text-[10px] font-mono rounded-sm px-1.5 py-1 placeholder:text-gray-500! caret-sky-400 focus:outline-hidden focus:border-sky-500! focus:ring-1 focus:ring-sky-500/40';
 
 export const debugFieldInputStyle: React.CSSProperties = {
     backgroundColor: '#030712',
@@ -185,7 +185,7 @@ export const debugFieldInputStyle: React.CSSProperties = {
 };
 
 const fieldSelectClass =
-    'text-[10px] !bg-gray-950 border !border-gray-600 rounded px-1 py-1 !text-gray-100 focus:outline-none focus:!border-sky-500';
+    'text-[10px] bg-gray-950! border border-gray-600! rounded-sm px-1 py-1 text-gray-100! focus:outline-hidden focus:border-sky-500!';
 
 const FieldRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
     <div className="flex items-center gap-1.5">
@@ -234,10 +234,10 @@ export const InAppMessageBuilder: React.FC<{
         const rawPredicates: Record<string, unknown>[] = !targeting
             ? []
             : 'all' in targeting
-            ? (targeting.all as Record<string, unknown>[])
-            : 'any' in targeting
-            ? (targeting.any as Record<string, unknown>[])
-            : [targeting];
+              ? (targeting.all as Record<string, unknown>[])
+              : 'any' in targeting
+                ? (targeting.any as Record<string, unknown>[])
+                : [targeting];
 
         const conditions: BuilderCondition[] = rawPredicates.flatMap(p => {
             if ('platform' in p) {
@@ -342,7 +342,7 @@ export const InAppMessageBuilder: React.FC<{
     }, []);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <FieldRow label="template">
                 <select
                     defaultValue=""
@@ -485,7 +485,7 @@ export const InAppMessageBuilder: React.FC<{
             </FieldRow>
 
             {!state.mediaType && (
-                <div className="space-y-1">
+                <div className="space-y-v3-1">
                     <FieldRow label="emoji">
                         <input
                             type="text"
@@ -517,7 +517,7 @@ export const InAppMessageBuilder: React.FC<{
                 </div>
             )}
 
-            <div className="space-y-1 bg-gray-900/40 rounded p-2">
+            <div className="space-y-v3-1 bg-gray-900/40 rounded-sm p-2">
                 <div className="flex items-center justify-between">
                     <span className="text-[10px] text-gray-400 font-medium">Actions</span>
 
@@ -526,7 +526,7 @@ export const InAppMessageBuilder: React.FC<{
                         onClick={() =>
                             setState(s => ({ ...s, actions: [...s.actions, emptyAction()] }))
                         }
-                        className="p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                        className="p-0.5 rounded-sm hover:bg-gray-700 text-gray-500 hover:text-gray-300"
                         title="Add action"
                     >
                         <Plus className="w-3 h-3" />
@@ -601,7 +601,7 @@ export const InAppMessageBuilder: React.FC<{
                                     actions: s.actions.filter((_, j) => j !== i),
                                 }))
                             }
-                            className="p-0.5 rounded hover:bg-gray-700 text-gray-600 hover:text-red-400"
+                            className="p-0.5 rounded-sm hover:bg-gray-700 text-gray-600 hover:text-red-400"
                             title="Remove action"
                         >
                             <Trash2 className="w-2.5 h-2.5" />
@@ -610,7 +610,7 @@ export const InAppMessageBuilder: React.FC<{
                 ))}
             </div>
 
-            <div className="space-y-1 bg-gray-900/40 rounded p-2">
+            <div className="space-y-v3-1 bg-gray-900/40 rounded-sm p-2">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-gray-400 font-medium">Targeting</span>
@@ -635,7 +635,7 @@ export const InAppMessageBuilder: React.FC<{
                                 conditions: [...s.conditions, emptyCondition()],
                             }))
                         }
-                        className="p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                        className="p-0.5 rounded-sm hover:bg-gray-700 text-gray-500 hover:text-gray-300"
                         title="Add condition"
                     >
                         <Plus className="w-3 h-3" />
@@ -735,7 +735,7 @@ export const InAppMessageBuilder: React.FC<{
                                     conditions: s.conditions.filter((_, j) => j !== i),
                                 }))
                             }
-                            className="p-0.5 rounded hover:bg-gray-700 text-gray-600 hover:text-red-400"
+                            className="p-0.5 rounded-sm hover:bg-gray-700 text-gray-600 hover:text-red-400"
                             title="Remove condition"
                         >
                             <Trash2 className="w-2.5 h-2.5" />
@@ -745,7 +745,7 @@ export const InAppMessageBuilder: React.FC<{
             </div>
 
             {validationError && (
-                <p className="text-[9px] text-red-400 break-words">{validationError}</p>
+                <p className="text-[9px] text-red-400 wrap-break-word">{validationError}</p>
             )}
 
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -753,7 +753,7 @@ export const InAppMessageBuilder: React.FC<{
                     type="button"
                     onClick={handlePreview}
                     disabled={!parsed.success}
-                    className="flex items-center gap-1 text-[10px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white px-2 py-1 rounded transition-colors"
+                    className="flex items-center gap-1 text-[10px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white px-2 py-1 rounded-sm transition-colors"
                 >
                     <Eye className="w-3 h-3" />
                     Preview
@@ -763,7 +763,7 @@ export const InAppMessageBuilder: React.FC<{
                     type="button"
                     onClick={() => copyJson('message')}
                     disabled={!parsed.success}
-                    className="text-[10px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 disabled:cursor-not-allowed text-gray-200 px-2 py-1 rounded transition-colors"
+                    className="text-[10px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 disabled:cursor-not-allowed text-gray-200 px-2 py-1 rounded-sm transition-colors"
                 >
                     {copied === 'message' ? 'Copied!' : 'Copy message'}
                 </button>
@@ -772,7 +772,7 @@ export const InAppMessageBuilder: React.FC<{
                     type="button"
                     onClick={() => copyJson('flag')}
                     disabled={!parsed.success}
-                    className="text-[10px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 disabled:cursor-not-allowed text-gray-200 px-2 py-1 rounded transition-colors"
+                    className="text-[10px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 disabled:cursor-not-allowed text-gray-200 px-2 py-1 rounded-sm transition-colors"
                 >
                     {copied === 'flag' ? 'Copied!' : 'Copy flag JSON'}
                 </button>

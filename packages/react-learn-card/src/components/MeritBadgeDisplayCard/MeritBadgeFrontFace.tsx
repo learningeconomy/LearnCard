@@ -155,7 +155,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[92px] pb-[19px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[92px] pb-[19px] border-solid border-4 ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] w-full">
                     <div className="flex flex-col items-center text-grayscale-900">
@@ -204,7 +204,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                 )}
                 <div className="flex flex-col w-full">
                     <div className="text-[14px] text-grayscale-900 flex flex-col items-center w-full mb-[10px]">
-                        <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
+                        <span className="font-jacques flex gap-[5px] items-center w-full text-ellipsis whitespace-nowrap overflow-hidden justify-center">
                             {issueeName === '0 person' ? (
                                 'Not yet awarded'
                             ) : (
@@ -231,9 +231,9 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     </div> */}
 
                     <div className="flex flex-col gap-[5px] items-center w-full">
-                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center line-clamp-2 break-words scrollbar-hide">
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b border-solid border-grayscale-200 w-full text-center line-clamp-2 wrap-break-word scrollbar-hide">
                             {issuerDisplay.isDidValue ? (
-                                <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] w-full text-center line-clamp-2 break-words">
+                                <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] w-full text-center line-clamp-2 wrap-break-word">
                                     <span className="font-[600]">Digital ID:</span>
                                     <span className="text-grayscale-600">{issuerName}</span>
                                 </span>

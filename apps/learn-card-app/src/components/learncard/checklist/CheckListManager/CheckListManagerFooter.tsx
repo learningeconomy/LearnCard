@@ -19,7 +19,7 @@ const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: bool
     return (
         <IonFooter
             mode="ios"
-            className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white"
+            className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60"
             style={{
                 bottom: 0,
                 paddingBottom: 'var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px))',

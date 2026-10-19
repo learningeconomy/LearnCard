@@ -9,7 +9,7 @@ import ScanRecipientButton, {
 } from '../../../components/recipient-picker/ScanRecipientButton';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 
 const Avatar: React.FC<{
@@ -188,7 +188,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
     );
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {!hideHeader && (
                 <>
                     <h3 className="text-base font-semibold text-grayscale-900">
@@ -205,7 +205,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                     onClick={() => onModeChange('self')}
                     className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'self'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -216,7 +216,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                     onClick={() => onModeChange('people')}
                     className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'people'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -228,7 +228,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                     onClick={() => onModeChange('link')}
                     className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'link'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -238,7 +238,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
             </div>
 
             {mode === 'people' && (
-                <div className="space-y-3 animate-fade-in-up">
+                <div className="space-y-v3-3 animate-fade-in-up">
                     {recipients.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                             {recipients.map((recipient, index) => (
@@ -291,14 +291,14 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             autoCorrect="off"
                             className={`w-full py-3 pl-10 ${
                                 canScan ? 'pr-20' : 'pr-10'
-                            } border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white`}
+                            } border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white`}
                         />
                         {query && (
                             <button
                                 type="button"
                                 onClick={() => setQuery('')}
                                 className={`absolute ${
-                                    canScan ? 'end-11' : 'end-3'
+                                    canScan ? 'inset-e-11' : 'inset-e-3'
                                 } top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors`}
                                 aria-label={m['aiPathways.clearSearch']()}
                             >
@@ -308,7 +308,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                         <ScanRecipientButton
                             recipients={recipients}
                             onRecipientsChange={onRecipientsChange}
-                            className="end-1"
+                            className="inset-e-1"
                         />
 
                         {!inlineResults && showResults && (
@@ -330,7 +330,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
             )}
 
             {mode === 'link' && (
-                <div className="space-y-4 animate-fade-in-up">
+                <div className="space-y-v3-4 animate-fade-in-up">
                     <p className="text-sm text-grayscale-600">{m['issueFlow.linkOnIssue']()}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>

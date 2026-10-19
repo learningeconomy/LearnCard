@@ -43,7 +43,7 @@ export const AdminToolOptionsListItem: React.FC<{
             setTimeout(() => {
                 newModal(
                     <AdminToolsOptionsContainer option={option} />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                 );
             }, 500);
@@ -58,7 +58,7 @@ export const AdminToolOptionsListItem: React.FC<{
         setTimeout(() => {
             newModal(
                 <AdminToolsOptionsContainer option={option} />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
         }, 500);

@@ -369,7 +369,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
             {/* Content */}
             <div className="flex-1 p-6 overflow-auto">
-                <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex flex-col items-center text-center space-y-v3-4">
                     {/* App Icon */}
                     <div className="w-20 h-20 rounded-2xl overflow-hidden bg-grayscale-100 flex items-center justify-center shadow-md">
                         {appIcon ? (
@@ -422,14 +422,14 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                 {m['appInstall.willBeAbleTo']()}
                             </p>
 
-                            <ul className="space-y-3">
+                            <ul className="space-y-v3-3">
                                 {validPermissions.map(permission => {
                                     const info = getPermissionInfo(permission);
 
                                     return (
                                         <li key={permission} className="flex items-start text-sm">
                                             <svg
-                                                className="h-5 w-5 text-indigo-600 mr-3 flex-shrink-0 mt-0.5"
+                                                className="h-5 w-5 text-indigo-600 mr-3 shrink-0 mt-0.5"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                                 stroke="currentColor"
@@ -460,7 +460,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                         <div className="bg-green-50 rounded-lg p-4 w-full text-left">
                             <div className="flex items-center text-sm text-green-800">
                                 <svg
-                                    className="h-5 w-5 text-green-600 mr-2 flex-shrink-0"
+                                    className="h-5 w-5 text-green-600 mr-2 shrink-0"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -505,7 +505,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                     </button>
                                 </div>
                             ) : contractDetails ? (
-                                <div className="space-y-3">
+                                <div className="space-y-v3-3">
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm font-semibold text-grayscale-900">
                                             {m['dataSharing.dataAccessPermissions']()}

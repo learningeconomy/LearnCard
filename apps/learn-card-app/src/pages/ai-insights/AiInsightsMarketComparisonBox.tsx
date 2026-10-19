@@ -213,7 +213,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                 </p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <div className="relative h-[16px] px-[15px]" aria-hidden="true">
                     {tickValues.map((tickValue, index) => (
                         <span
@@ -259,7 +259,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                             }}
                             aria-hidden="true"
                         >
-                            <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
+                            <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-xs">
                                 <div className="h-4 w-4 rounded-full border-4 border-emerald-500 bg-white" />
                             </div>
                         </div>

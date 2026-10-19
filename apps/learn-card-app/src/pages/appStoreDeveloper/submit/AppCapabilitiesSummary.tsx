@@ -52,7 +52,7 @@ export const AppCapabilitiesSummary: React.FC<AppCapabilitiesSummaryProps> = ({
             </button>
 
             {open && (
-                <div className="px-6 pb-6 pt-5 border-t border-grayscale-100 space-y-4">
+                <div className="px-6 pb-6 pt-5 border-t border-grayscale-100 space-y-v3-4">
                     {children}
                 </div>
             )}

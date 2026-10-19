@@ -239,11 +239,11 @@ const BaselineCard: React.FC<{
     goal: string;
     baseline: SimulationSummary;
 }> = ({ goal, baseline }) => (
-    <section className="p-5 rounded-[20px] bg-white border border-grayscale-200 shadow-sm space-y-3">
+    <section className="p-5 rounded-[20px] bg-white border border-grayscale-200 shadow-xs space-y-v3-3">
         <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden />
 
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">
                 Your path today
             </p>
         </div>
@@ -368,7 +368,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
 
     return (
         <article
-            className={`relative p-4 sm:p-5 rounded-[20px] bg-white shadow-sm space-y-3 border transition-colors ${
+            className={`relative p-4 sm:p-5 rounded-[20px] bg-white shadow-xs space-y-v3-3 border transition-colors ${
                 comparisonSelected
                     ? 'border-indigo-300 ring-2 ring-indigo-100'
                     : standoutLabel
@@ -377,9 +377,9 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
             }`}
         >
             <header className="flex items-start justify-between gap-3">
-                <div className="space-y-1 min-w-0 flex-1">
+                <div className="space-y-v3-1 min-w-0 flex-1">
                     {standoutLabel && (
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">
                             ✨ {standoutLabel}
                         </p>
                     )}
@@ -475,7 +475,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
                     </button>
 
                     {detailsOpen && (
-                        <ul className="mt-2 space-y-2">
+                        <ul className="mt-2 space-y-v3-2">
                             {tradeoffs.map((t, i) => (
                                 <TradeoffDetailRow key={`${t.dimension}-${i}`} tradeoff={t} />
                             ))}
@@ -637,7 +637,7 @@ const ComparisonOverlay: React.FC<{
     return (
         <PathwayPortal>
             <div
-                className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-grayscale-900/40 backdrop-blur-sm font-poppins"
+                className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-grayscale-900/40 backdrop-blur-xs font-poppins"
                 style={{
                     overscrollBehavior: 'contain',
                     paddingTop: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))',
@@ -650,12 +650,12 @@ const ComparisonOverlay: React.FC<{
                 }}
             >
                 <div
-                    className="relative w-full max-w-2xl max-h-full overflow-y-auto bg-white rounded-[24px] shadow-2xl p-6 space-y-5"
+                    className="relative w-full max-w-2xl max-h-full overflow-y-auto bg-white rounded-[24px] shadow-2xl p-6 space-y-v3-5"
                     style={{ overscrollBehavior: 'contain' }}
                 >
                     <header className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-indigo-700">
+                        <div className="space-y-v3-1">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-indigo-700">
                                 Side by side
                             </p>
                             <h2 className="text-lg font-semibold text-grayscale-900 leading-snug">
@@ -726,10 +726,10 @@ const ComparisonColumn: React.FC<{
     etaDelta: number | null;
     stepsDelta: number | null;
 }> = ({ label, title, subtitle, pathway, currentRoute, proposedRoute, etaDelta, stepsDelta }) => (
-    <section className="p-4 rounded-2xl border border-grayscale-200 space-y-3">
+    <section className="p-4 rounded-2xl border border-grayscale-200 space-y-v3-3">
         <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-indigo-600">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-indigo-600">
                     {label}
                 </p>
                 <h3 className="text-sm font-semibold text-grayscale-900 leading-snug">{title}</h3>
@@ -780,7 +780,7 @@ const EmptyFrame: React.FC<{
     ctaLabel?: string;
     onCta?: () => void;
 }> = ({ title, body, ctaLabel, onCta }) => (
-    <div className="p-8 rounded-[20px] bg-grayscale-10 border border-grayscale-200 text-center space-y-3">
+    <div className="p-8 rounded-[20px] bg-grayscale-10 border border-grayscale-200 text-center space-y-v3-3">
         <div className="inline-flex w-11 h-11 items-center justify-center rounded-full bg-white border border-grayscale-200">
             <IonIcon icon={compassOutline} className="text-xl text-grayscale-500" />
         </div>
@@ -1052,7 +1052,7 @@ const WhatIfMode: React.FC = () => {
                     'linear-gradient(180deg, rgba(236, 253, 245, 0.4) 0%, rgba(251, 251, 252, 1) 40%, rgba(251, 251, 252, 1) 100%)',
             }}
         >
-            <div className="max-w-2xl mx-auto px-4 py-8 font-poppins space-y-5">
+            <div className="max-w-2xl mx-auto px-4 py-8 font-poppins space-y-v3-5">
                 {/*
                     Single-line invitational header. The previous
                     layout had an eyebrow + headline + subtitle that
@@ -1106,7 +1106,7 @@ const WhatIfMode: React.FC = () => {
                         body="There are no review, practice, or external steps here that a scenario could reshape. That's often a good thing."
                     />
                 ) : (
-                    <section className="space-y-3">
+                    <section className="space-y-v3-3">
                         <h2 className="text-sm font-semibold text-grayscale-700 px-1">
                             Other paths
                         </h2>
@@ -1117,7 +1117,7 @@ const WhatIfMode: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             {results.map(r => (
                                 <ScenarioCard
                                     key={r.scenario.id}

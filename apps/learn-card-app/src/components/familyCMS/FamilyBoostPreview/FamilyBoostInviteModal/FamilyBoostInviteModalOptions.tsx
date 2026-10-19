@@ -70,7 +70,7 @@ const FamilyBoostInviteModalOptions: React.FC<{
                         handleCloseModal();
                         openGuardianInviteModal();
                     }}
-                    className="w-full flex items-center justify-between px-2 border-b-grayscale-200 py-4 border-solid border-b-[1px]"
+                    className="w-full flex items-center justify-between px-2 border-b-grayscale-200 py-4 border-solid border-b"
                 >
                     <div className="flex flex-col items-start justify-center">
                         <p className="m-0 p-0 text-lg font-poppins text-grayscale-900">

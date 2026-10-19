@@ -228,7 +228,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                             </div>
                         )}
                         <div
-                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] z-[-50] ${bgFillerColor}`}
+                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
                     </IonCol>
                 </>

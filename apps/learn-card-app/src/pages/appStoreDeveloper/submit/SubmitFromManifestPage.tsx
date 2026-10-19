@@ -1321,7 +1321,7 @@ const SubmitManifest: React.FC = () => {
                         {manifest.counterKeys.map(k => (
                             <code
                                 key={k}
-                                className="px-1.5 py-0.5 bg-grayscale-100 text-grayscale-700 rounded text-[10px] font-mono"
+                                className="px-1.5 py-0.5 bg-grayscale-100 text-grayscale-700 rounded-sm text-[10px] font-mono"
                             >
                                 {k}
                             </code>
@@ -1381,7 +1381,7 @@ const SubmitManifest: React.FC = () => {
             <IonPage>
                 <AppStoreHeader />
                 <IonContent>
-                    <section className="m-6 mx-auto max-w-md rounded-[20px] bg-white p-8 font-poppins space-y-5">
+                    <section className="m-6 mx-auto max-w-md rounded-[20px] bg-white p-8 font-poppins space-y-v3-5">
                         <IonIcon
                             icon={alertCircleOutline}
                             aria-hidden="true"
@@ -1556,7 +1556,7 @@ const SubmitManifest: React.FC = () => {
                 <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
                     <IonIcon
                         icon={alertCircleOutline}
-                        className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+                        className="w-5 h-5 text-red-500 shrink-0 mt-0.5"
                     />
                     <p className="text-sm text-red-700">{formError}</p>
                 </div>
@@ -1588,7 +1588,7 @@ const SubmitManifest: React.FC = () => {
             )}
 
             {manifestDiff && manifestVersion && !diffApplied && (
-                <div className="mb-6 bg-white rounded-2xl border border-grayscale-300 p-6 shadow-sm">
+                <div className="mb-6 bg-white rounded-2xl border border-grayscale-300 p-6 shadow-xs">
                     <div className="flex items-start justify-between mb-4">
                         <div>
                             <h3 className="text-base font-semibold text-grayscale-900 mb-1">
@@ -1653,7 +1653,7 @@ const SubmitManifest: React.FC = () => {
             )}
 
             {!isDesktop && (
-                <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-xs flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                         <h3 className="text-base font-semibold text-grayscale-900 mb-1">
                             Try your app
@@ -1706,13 +1706,13 @@ const SubmitManifest: React.FC = () => {
                         <div
                             ref={iconFieldRef}
                             tabIndex={-1}
-                            className="flex flex-col items-center gap-1.5 w-20 shrink-0 outline-none"
+                            className="flex flex-col items-center gap-1.5 w-20 shrink-0 outline-hidden"
                         >
                             <div
                                 role="button"
                                 tabIndex={0}
                                 aria-label="Change app icon"
-                                className="relative group cursor-pointer w-16 h-16 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="relative group cursor-pointer w-16 h-16 rounded-2xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 onClick={handleIconUpload}
                                 onKeyDown={event => {
                                     if (event.key === 'Enter' || event.key === ' ') {
@@ -1745,7 +1745,7 @@ const SubmitManifest: React.FC = () => {
                                     <span className="text-[10px] font-medium">Change</span>
                                 </div>
                                 {isIconImported && (
-                                    <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm animate-fade-in-up">
+                                    <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-xs animate-fade-in-up">
                                         <IonIcon
                                             icon={checkmarkOutline}
                                             className="w-3 h-3 block"
@@ -1782,7 +1782,7 @@ const SubmitManifest: React.FC = () => {
                                     setHasEdits(true);
                                     setAppName(e.target.value);
                                 }}
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                 placeholder="My Awesome App"
                             />
                             {isLocalhost ? (
@@ -1807,7 +1807,7 @@ const SubmitManifest: React.FC = () => {
                                             setProductionUrl(e.target.value);
                                             if (prodUrlError) setProdUrlError(null);
                                         }}
-                                        className={`w-full py-2 px-3 border rounded-lg text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:border-transparent bg-white ${
+                                        className={`w-full py-2 px-3 border rounded-lg text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:border-transparent bg-white ${
                                             prodUrlError
                                                 ? 'border-red-300 focus:ring-red-500'
                                                 : 'border-amber-200 focus:ring-amber-500'
@@ -1851,7 +1851,7 @@ const SubmitManifest: React.FC = () => {
                                 setHasEdits(true);
                                 setTagline(e.target.value);
                             }}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             placeholder="One sentence about your app"
                         />
                     </div>
@@ -1875,7 +1875,7 @@ const SubmitManifest: React.FC = () => {
             </fieldset>
 
             {(integrationHints.length > 0 || showConsentSetup) && (
-                <div ref={consentSetupRef} className="mb-6 space-y-3 scroll-mt-6">
+                <div ref={consentSetupRef} className="mb-6 space-y-v3-3 scroll-mt-6">
                     {integrationHints.map(hint => {
                         if (hint.type === 'consent-not-configured') {
                             return (
@@ -1920,7 +1920,7 @@ const SubmitManifest: React.FC = () => {
                                     </pre>
                                     <button
                                         onClick={() => handleCopySnippet(hint.snippet, hint.type)}
-                                        className="absolute top-2 right-2 py-1.5 px-3 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors flex items-center gap-1.5 shadow-sm"
+                                        className="absolute top-2 right-2 py-1.5 px-3 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors flex items-center gap-1.5 shadow-xs"
                                     >
                                         {copiedHint === hint.type ? (
                                             <>
@@ -1989,7 +1989,7 @@ const SubmitManifest: React.FC = () => {
 
             <AppCapabilitiesSummary lines={describeManifest(manifest)} isWatching={isLive}>
                 {capabilityRows.length > 0 && (
-                    <div className="space-y-4">
+                    <div className="space-y-v3-4">
                         {capabilityRows.map(row => (
                             <div key={row.id} className="flex items-start gap-3" title={row.title}>
                                 <div
@@ -2050,7 +2050,7 @@ const SubmitManifest: React.FC = () => {
                         <p className="text-xs text-grayscale-500 mb-3">
                             Set up automatically the first time your app sends one.
                         </p>
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {manifest.templates.map(t => (
                                 <div
                                     key={t.alias}
@@ -2082,7 +2082,7 @@ const SubmitManifest: React.FC = () => {
                         <h4 className="text-xs font-medium text-grayscale-700 mb-3">
                             What it asks permission for
                         </h4>
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {manifest.consentRequests.map((c, i) => (
                                 <div
                                     key={i}
@@ -2184,7 +2184,7 @@ const SubmitManifest: React.FC = () => {
             )}
 
             <div
-                className="sticky bottom-0 z-10 -mx-1 mt-6 px-1 pt-3 bg-gradient-to-t from-white via-white to-white/0"
+                className="sticky bottom-0 z-10 -mx-1 mt-6 px-1 pt-3 bg-linear-to-t/srgb from-white via-white to-white/0"
                 style={{ paddingBottom: 'calc(1rem + var(--ion-safe-area-bottom, 0px))' }}
             >
                 <div className="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-grayscale-200 shadow-lg">
@@ -2264,7 +2264,7 @@ const SubmitManifest: React.FC = () => {
 
     const rightPaneContent = isDesktop && (
         <div className="sticky top-0 h-[calc(100vh-80px)] py-6 pr-6 pl-2 flex flex-col">
-            <div className="flex-1 rounded-[20px] border border-grayscale-200 bg-white shadow-sm overflow-hidden flex flex-col">
+            <div className="flex-1 rounded-[20px] border border-grayscale-200 bg-white shadow-xs overflow-hidden flex flex-col">
                 <div className="h-12 border-b border-grayscale-200 bg-grayscale-10 flex items-center justify-between px-3 shrink-0">
                     <div className="flex items-center gap-1 p-1 bg-grayscale-100 rounded-full">
                         <button

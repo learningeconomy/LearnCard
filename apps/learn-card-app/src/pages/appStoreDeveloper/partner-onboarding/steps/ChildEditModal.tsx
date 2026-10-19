@@ -88,13 +88,13 @@ export const ChildEditModal: React.FC<ChildEditModalProps> = ({
                     <div className="flex-1">
                         {validationStatus === 'invalid' && validationError && (
                             <div className="flex items-start gap-2 text-sm text-red-700">
-                                <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
                                 <span className="line-clamp-2">{validationError}</span>
                             </div>
                         )}
                         {validationStatus === 'unknown' && (
                             <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                <AlertCircle className="w-4 h-4 shrink-0" />
                                 <span>
                                     {m[
                                         'developerPortal.onboarding.templateBuilder.childValidateHint'
@@ -104,7 +104,7 @@ export const ChildEditModal: React.FC<ChildEditModalProps> = ({
                         )}
                         {validationStatus === 'valid' && (
                             <div className="flex items-center gap-2 text-sm text-emerald-600">
-                                <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                                <CheckCircle className="w-4 h-4 shrink-0" />
                                 <span>
                                     {m[
                                         'developerPortal.onboarding.templateBuilder.childValidated'

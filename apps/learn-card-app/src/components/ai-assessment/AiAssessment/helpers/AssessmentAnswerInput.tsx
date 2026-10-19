@@ -42,8 +42,8 @@ export const AssessmentAnswerInput: React.FC<{
         >
             <IonInput
                 onIonInput={e => setAnswer(e.detail.value)}
-                className={`bg-white text-grayscale-800 flex-1 w-full rounded-[16px] !px-4  ${
-                    isDesktop ? '' : 'border-solid border-[1px] border-grayscale-200'
+                className={`bg-white text-grayscale-800 flex-1 w-full rounded-[16px] px-4!  ${
+                    isDesktop ? '' : 'border-solid border border-grayscale-200'
                 }`}
                 placeholder="Answer... "
                 value={answer}

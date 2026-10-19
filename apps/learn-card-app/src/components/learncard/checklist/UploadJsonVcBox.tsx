@@ -16,7 +16,7 @@ const UploadJsonVcBox: React.FC = () => {
     const openUploadJsonVcModal = () => {
         newModal(
             <CheckListUploadRawVC />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };

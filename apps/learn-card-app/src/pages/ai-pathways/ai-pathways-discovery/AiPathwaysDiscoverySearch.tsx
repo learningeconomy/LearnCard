@@ -26,7 +26,7 @@ const AiPathwaysDiscoverySearch: React.FC<{
 
     return (
         <div className="flex items-center justify-center w-full rounded-[15px] px-4 max-w-[600px]">
-            <div className="w-full bg-white rounded-lg p-4 shadow-sm flex flex-col gap-4">
+            <div className="w-full bg-white rounded-lg p-4 shadow-xs flex flex-col gap-4">
                 <div className="w-full gap-2 flex flex-col">
                     <IonLabel className="text-grayscale-600 font-poppins text-sm">
                         {m['aiPathways.discovery.enterCareerKeyword']()}
@@ -44,7 +44,7 @@ const AiPathwaysDiscoverySearch: React.FC<{
                 <div className="flex gap-2">
                     <button
                         onClick={clearSearch}
-                        className="p-[11px] bg-white rounded-full text-grayscale-900 border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
+                        className="p-[11px] bg-white rounded-full text-grayscale-900 border-grayscale-300 border border-solid flex-1 font-poppins text-[17px]"
                     >
                         {m['common.clear']()}
                     </button>

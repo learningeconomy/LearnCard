@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
+import { nativeBrowserCompatibility } from '../../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
 const log = getLogger();
 
 /**
@@ -545,6 +546,15 @@ for (const { src, dests } of CONFIG_TEMPLATE_MAP) {
         const destPath = resolve(APP_ROOT, destRel);
         mkdirSync(dirname(destPath), { recursive: true });
         cpSync(srcPath, destPath);
+        if (src === 'config/capacitor.config.json') {
+            // Enforce the browser floor even for a tenant without native overrides.
+            const raw = JSON.parse(readFileSync(destPath, 'utf-8'));
+            writeFileSync(
+                destPath,
+                JSON.stringify({ ...raw, ...nativeBrowserCompatibility(raw) }, null, 2) + '\n',
+                'utf-8'
+            );
+        }
     }
 }
 

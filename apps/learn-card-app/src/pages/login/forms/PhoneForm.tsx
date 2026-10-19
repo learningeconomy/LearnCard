@@ -398,7 +398,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                     }}
                                     className={
                                         resendCodeButtonClassNameOverride ??
-                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b'
                                     }
                                 >
                                     {resendCodeButtonText}
@@ -409,7 +409,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                     disabled
                                     className={
                                         resendCodeButtonClassNameOverride ??
-                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b'
                                     }
                                 >
                                     {m['common.resendIn']({ seconds })}

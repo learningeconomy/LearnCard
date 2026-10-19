@@ -24,7 +24,7 @@ export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }
     };
 
     return (
-        <div className="mt-4 pt-4 border-t border-grayscale-100 space-y-2">
+        <div className="mt-4 pt-4 border-t border-grayscale-100 space-y-v3-2">
             <span className="block text-xs font-medium text-grayscale-400">
                 {m['issueFlow.alreadyHave']()}
             </span>

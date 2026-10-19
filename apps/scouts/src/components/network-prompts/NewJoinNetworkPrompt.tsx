@@ -234,7 +234,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
     return (
         <>
             {createLoading && (
-                <div className="absolute top-0 z-[10000] flex h-full w-full flex-col items-center justify-center gap-[5px] bg-white bg-opacity-70 backdrop-blur-[3px]">
+                <div className="absolute top-0 z-[10000] flex h-full w-full flex-col items-center justify-center gap-[5px] bg-white/70  backdrop-blur-[3px]">
                     <IonSpinner color="dark" />
                     <span className="text-grayscale-900">{m['networkPrompts.joiningNet']()}</span>
                 </div>
@@ -317,7 +317,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                             <input
                                 id="scoutpass-onboarding-name"
                                 autoComplete="name"
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                 onChange={e => {
                                     nameEditedRef.current = true;
                                     setName(e.target.value);
