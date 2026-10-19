@@ -443,6 +443,8 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                     <div
                         aria-label={m['issueFlow.sheet.design.reviewPeople']()}
                         role="region"
+                        // Keyboard users need a tab stop to scroll columns outside the viewport.
+                        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
                         tabIndex={0}
                         className="max-h-[52dvh] overflow-auto rounded-2xl border border-grayscale-200"
                     >
