@@ -96,7 +96,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
-    const { data: lcNetworkProfile } = useGetProfile();
+    const {
+        data: lcNetworkProfile,
+        isLoading: profileLoading,
+        refetch: refetchProfile,
+    } = useGetProfile();
 
     const displayName =
         name.trim() || (isAppleLogin ? lcNetworkProfile?.profileId || profileId || '' : '');
@@ -147,7 +151,13 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     };
 
     const handleUpdateUser = async (): Promise<void> => {
-        if (isLoading || (!isAppleLogin && !validate())) return;
+        if (isLoading || profileLoading || (!isAppleLogin && !validate())) return;
+        // undefined means the lookup has not succeeded; only null confirms no profile.
+        if (lcNetworkProfile === undefined) {
+            setError(m['networkPrompts.profileSaveFailed']());
+            void refetchProfile();
+            return;
+        }
         if (!currentUser) {
             setError(m['networkPrompts.profileSaveFailed']());
             return;
@@ -388,13 +398,17 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     <IonRow className="w-full flex items-center justify-center mt-4">
                         <button
                             onClick={handleUpdateUser}
-                            disabled={isLoading}
-                            aria-busy={isLoading}
+                            disabled={isLoading || profileLoading}
+                            aria-busy={isLoading || profileLoading}
                             type="button"
                             className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm w-full hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {isLoading && <IonSpinner name="crescent" />}
-                            {isLoading ? m['common.saving']() : m['networkPrompts.letsGo']()}
+                            {(isLoading || profileLoading) && <IonSpinner name="crescent" />}
+                            {profileLoading
+                                ? m['common.loading']()
+                                : isLoading
+                                  ? m['common.saving']()
+                                  : m['networkPrompts.letsGo']()}
                         </button>
                     </IonRow>
                 </div>

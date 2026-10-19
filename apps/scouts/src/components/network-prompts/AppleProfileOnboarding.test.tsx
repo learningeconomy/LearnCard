@@ -8,7 +8,10 @@ const mocks = vi.hoisted(() => ({
     authName: '',
     localName: '',
     hasAuthUser: true,
-    profile: null as { profileId: string } | null,
+    profile: null as { profileId: string } | null | undefined,
+    profileLoading: false,
+    refetchProfile: vi.fn(),
+    newModal: vi.fn(),
     createProfile: vi.fn(),
     updateNetworkProfile: vi.fn(),
     updateAuthProfile: vi.fn(),
@@ -39,12 +42,16 @@ vi.mock('learn-card-base', () => ({
             },
         }),
     }),
-    useGetProfile: () => ({ data: mocks.profile, isLoading: false }),
+    useGetProfile: () => ({
+        data: mocks.profile,
+        isLoading: mocks.profileLoading,
+        refetch: mocks.refetchProfile,
+    }),
     useGetCurrentLCNUser: () => ({ refetch: mocks.refetch }),
     useIsCurrentUserLCNUser: () => ({ refetch: mocks.refetch }),
     getNotificationsEndpoint: () => 'https://example.com/notifications',
     useImageUpload: () => ({ handleFileSelect: vi.fn(), isLoading: false }),
-    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    useModal: () => ({ newModal: mocks.newModal, closeModal: vi.fn() }),
     ModalTypes: {},
     useToast: () => ({ presentToast: mocks.toast }),
     ToastTypeEnum: { Error: 'error' },
@@ -117,6 +124,7 @@ beforeEach(() => {
     mocks.localName = '';
     mocks.hasAuthUser = true;
     mocks.profile = null;
+    mocks.profileLoading = false;
     mocks.createProfile.mockResolvedValue('did:web:scout');
     mocks.updateAuthProfile.mockResolvedValue(undefined);
     mocks.updateNetworkProfile.mockResolvedValue(undefined);
@@ -283,6 +291,7 @@ describe('ScoutPass Apple account settings', () => {
     );
 
     it('keeps the form open and reports Apple profile update failures', async () => {
+        mocks.profile = { profileId: 'existing-scout' };
         mocks.updateAuthProfile.mockRejectedValueOnce(new Error('Private server error'));
         renderAccount();
         fireEvent.click(screen.getByRole('button', { name: m['common.save']() }));
@@ -342,4 +351,80 @@ describe.each(['onboarding', 'account'])('ScoutPass %s name enrichment', surface
             expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe(editedName);
         }
     );
+});
+
+describe.each(['onboarding', 'account'])('ScoutPass %s profile lookup', surface => {
+    const form = () =>
+        surface === 'onboarding' ? (
+            <NewJoinNetworkPrompt handleCloseModal={mocks.close} />
+        ) : (
+            <UserProfileUpdateForm
+                handleCloseModal={mocks.close}
+                handleLogout={vi.fn()}
+                handleChapiInfo={vi.fn()}
+                showDeleteAccountButton={false}
+            />
+        );
+    const save = () =>
+        screen.getByRole('button', {
+            name: surface === 'onboarding' ? m['networkPrompts.letsGo']() : m['common.save'](),
+        });
+
+    it('waits for the returning profile and saves its username as the fallback', async () => {
+        mocks.profile = undefined;
+        mocks.profileLoading = true;
+        const view = render(form());
+        if (surface === 'onboarding') enterUsername('wrong-local-handle');
+        const loading = screen.getByRole('button', { name: new RegExp(m['common.loading']()) });
+        expect((loading as HTMLButtonElement).disabled).toBe(true);
+        fireEvent.click(loading);
+        // A form submit must also be guarded independently of the disabled button.
+        const htmlForm = view.container.querySelector('form');
+        if (htmlForm) fireEvent.submit(htmlForm);
+        expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
+        expect(mocks.createProfile).not.toHaveBeenCalled();
+        expect(mocks.updateCurrentUser).not.toHaveBeenCalled();
+        mocks.profile = { profileId: 'existing-scout' };
+        mocks.profileLoading = false;
+        view.rerender(form());
+        fireEvent.click(save());
+        await waitFor(() => expect(mocks.close).toHaveBeenCalledOnce());
+        expect(mocks.createProfile).not.toHaveBeenCalled();
+        expect(mocks.updateNetworkProfile).toHaveBeenCalledWith(
+            expect.objectContaining({ displayName: 'existing-scout' })
+        );
+        expect(mocks.updateAuthProfile).toHaveBeenCalledWith(
+            expect.objectContaining({ displayName: 'existing-scout' })
+        );
+        expect(mocks.updateCurrentUser).toHaveBeenCalledWith(
+            'scout-user',
+            expect.objectContaining({ name: 'existing-scout' })
+        );
+    });
+
+    it('does not treat a failed lookup as a missing profile and permits retry', async () => {
+        mocks.profile = undefined;
+        const view = render(form());
+        if (surface === 'onboarding') enterUsername('wrong-local-handle');
+        fireEvent.click(save());
+        expect(mocks.refetchProfile).toHaveBeenCalledOnce();
+        expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
+        expect(mocks.createProfile).not.toHaveBeenCalled();
+        expect(mocks.close).not.toHaveBeenCalled();
+        mocks.profile = { profileId: 'existing-scout' };
+        view.rerender(form());
+        fireEvent.click(save());
+        await waitFor(() => expect(mocks.close).toHaveBeenCalledOnce());
+        expect(mocks.updateNetworkProfile).toHaveBeenCalledWith(
+            expect.objectContaining({ displayName: 'existing-scout' })
+        );
+    });
+});
+
+it('routes an Apple account without a name or network profile to username setup', () => {
+    renderAccount();
+    fireEvent.click(screen.getByRole('button', { name: m['common.save']() }));
+    expect(mocks.newModal).toHaveBeenCalledOnce();
+    expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
+    expect(mocks.updateCurrentUser).not.toHaveBeenCalled();
 });

@@ -102,7 +102,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
-    const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
+    const {
+        data: lcNetworkProfile,
+        isLoading: profileLoading,
+        refetch: refetchProfile,
+    } = useGetProfile();
     const displayName = name.trim() || (isAppleLogin ? lcNetworkProfile?.profileId || '' : '');
 
     useEffect(() => {
@@ -206,7 +210,15 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     };
 
     const handleUpdateUser = async () => {
-        if (isLoading) return;
+        if (isLoading || profileLoading) return;
+        if (lcNetworkProfile === undefined) {
+            presentToast(m['networkPrompts.profileSaveFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            void refetchProfile();
+            return;
+        }
         if (!currentUser) {
             presentToast(m['networkPrompts.profileSaveFailed'](), {
                 type: ToastTypeEnum.Error,
@@ -216,6 +228,12 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         }
 
         if (isAppleLogin) {
+            // A new account needs a public username before it can use that as its name.
+            if (!displayName) {
+                handleCloseModal();
+                presentNetworkModal();
+                return;
+            }
             setIsLoading(true);
             try {
                 if (adapter.getCurrentUser()) {
@@ -471,12 +489,17 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
                 <IonRow className="w-full flex items-center justify-center mt-2">
                     <button
-                        disabled={isLoading}
+                        disabled={isLoading || profileLoading}
+                        aria-busy={isLoading || profileLoading}
                         type="submit"
                         className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm w-full hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {isLoading && <IonSpinner name="crescent" />}
-                        {isLoading ? m['common.saving']() : m['common.save']()}
+                        {(isLoading || profileLoading) && <IonSpinner name="crescent" />}
+                        {profileLoading
+                            ? m['common.loading']()
+                            : isLoading
+                              ? m['common.saving']()
+                              : m['common.save']()}
                     </button>
                 </IonRow>
             </form>
