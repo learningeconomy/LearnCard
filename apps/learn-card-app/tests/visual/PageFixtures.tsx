@@ -1,7 +1,16 @@
 import React from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import type { AppStoreListing } from '@learncard/types';
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import {
+    BoostCategoryOptionsEnum,
+    currentUserStore,
+    walletStore,
+    switchedProfileStore,
+    type BespokeLearnCard,
+} from 'learn-card-base';
+import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
+import { themeStore } from '../../src/theme/store/themeStore';
+import { SignedInLaunchpadFixture } from './SignedInLaunchpadFixture';
 import BoostPreview from '../../src/components/boost/boostCMS/BoostPreview/BoostPreview';
 import BoostDetailsSideMenu from '../../src/components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
 import LaunchPad from '../../src/pages/launchPad/LaunchPad';
@@ -17,6 +26,7 @@ export const additionalStates = [
     'issue-json',
     'apps',
     'my-apps',
+    'my-apps-signed-in',
     'app-details',
 ] as const;
 
@@ -62,6 +72,45 @@ const listings: AppStoreListing[] = [
 
 /** Populate the real app-store hooks without connecting a wallet or changing account data. */
 export const seedPageQueries = (client: QueryClient, state?: string): void => {
+    if (state === 'my-apps-signed-in') {
+        themeStore.set.theme('formal');
+        firstStartupStore.set.version('1.100.3');
+        const did = 'did:web:network.learncard.com:users:visual-jordan';
+        const profile = {
+            did,
+            profileId: 'visual-jordan',
+            displayName: 'Jordan Lee',
+            image: '',
+            dob: '1996-01-01',
+            country: 'US',
+        };
+        currentUserStore.set.currentUser({
+            uid: 'visual-jordan',
+            email: 'jordan@example.test',
+            phoneNumber: '',
+            name: 'Jordan Lee',
+            profileImage: '',
+            privateKey: 'visual-fixture-only-not-a-real-key',
+            baseColor: 'bg-grayscale-900',
+        });
+        switchedProfileStore.set.switchedDid(did);
+        // The public marker satisfies normal session hydration. This read-only
+        // fixture wallet has no signing methods and never connects to a service.
+        walletStore.set.wallet({ id: { did: () => did } } as unknown as BespokeLearnCard);
+        client.setQueryData(['getProfile', did, undefined], profile);
+        client.setQueryData(['getProfile', did, 'visual-jordan'], profile);
+        client.setQueryData(['useGetUnreadUserNotifications', did], { notifications: [] });
+        client.setQueryData(['useGetPreferencesForDid', did], {
+            aiEnabled: true,
+            theme: 'colorful',
+        });
+        for (const category of ['', 'AI Topic', 'Family']) {
+            client.setQueryData(['useGetCredentialList', did, category], {
+                pages: [{ records: [], hasMore: false }],
+                pageParams: [undefined],
+            });
+        }
+    }
     const installed = { ...listings[0], installed_at: '2026-10-01T09:00:00Z' };
     client.setQueryData(['appStore', 'browse', undefined, undefined, 50, undefined], {
         records: listings,
@@ -70,10 +119,9 @@ export const seedPageQueries = (client: QueryClient, state?: string): void => {
     client.setQueryData(['appStore', 'featuredCarousel', null], [listings[1]]);
     client.setQueryData(['appStore', 'curatedList'], [listings[2]]);
     client.setQueryData(['appStore', 'installed', 50, undefined], {
-        records:
-            state === 'my-apps'
-                ? listings.map(listing => ({ ...listing, installed_at: installed.installed_at }))
-                : [installed],
+        records: state?.startsWith('my-apps')
+            ? listings.map(listing => ({ ...listing, installed_at: installed.installed_at }))
+            : [installed],
         hasMore: false,
     });
     for (const listing of listings) {
@@ -93,6 +141,7 @@ export const seedPageQueries = (client: QueryClient, state?: string): void => {
 export const PageFixture: React.FC<{ state: string }> = ({ state }) => {
     if (state.startsWith('issue')) return <IssueVisualFixture />;
     if (state === 'apps') return <LaunchPad />;
+    if (state === 'my-apps-signed-in') return <SignedInLaunchpadFixture />;
     if (state === 'my-apps') return <MyAppsLanding />;
     if (state === 'app-details') {
         return <AppStoreDetailModal listing={listings[0]} isInstalled isPreview />;

@@ -25,7 +25,7 @@ The app's layouts and styles change frequently; those intentional changes would
 otherwise fail the snapshots and require routine reference updates. That review
 and maintenance cost limits the value of running this suite on every PR.
 
-The 33 comparisons cover only the fixtures listed below. Their JSON checks sample
+The 36 comparisons cover only the fixtures listed below. Their JSON checks sample
 computed styles; they do not compare every CSS property or every component. PNG
 comparisons are an optional local check, while the manual workflow uploads images
 for inspection. A passing run does not prove that every codemod change is correct.
@@ -36,6 +36,9 @@ host palette tokens, and keyboard focus remains visible. Those checks can stay
 useful across layout changes. "Shared components" alone is not a useful coverage
 boundary; each test needs an explicit behavior and owner. The additional tint and
 Ionic-border browser checks assert such behavior without new layout snapshots.
+The gutter check also preserves Ionic grid padding, 10px credential row/column
+gaps, custom-property overrides, and explicit zero-padding utilities. The full
+signed-in WebKit capture uses an iPhone user agent so Ionic renders its iOS mode.
 
 From the repository root, use the Bun version in `package.json`:
 
@@ -54,8 +57,8 @@ is skipped here because the command has already compiled the catalog.
 
 Chromium desktop, Chromium mobile, and WebKit mobile cover populated, pending,
 empty, shared-card/form, credential preview/details, credential issuance form/JSON,
-the current My Apps landing, and populated Apps browse/listing-detail states
-(33 comparisons). Every run compares computed CSS against the Tailwind 3 JSON references and attaches full-page screenshots to the HTML report.
+the current My Apps landing (page content and full signed-in chrome), and populated Apps browse/listing-detail states
+(36 comparisons). Every run compares computed CSS against the Tailwind 3 JSON references and attaches full-page screenshots to the HTML report.
 Locally bundled fonts, fixed dates, and deterministic external images keep the
 captures independent of Google Fonts and image CDNs.
 Expanded cases also bundle Jacques Francois, Sacramento, Mouse Memoirs, and
@@ -67,6 +70,13 @@ components. Issuance uses the same template/state composition as its Storybook s
 validity result and no signing action. App-store queries are primed with local
 listings. This exercises real UI rendering and the JSON toggle without changing
 an account or depending on a live backend.
+
+The full signed-in launchpad fixture renders the real SideMenu, MobileNavBar,
+MainHeader and profile/alerts controls around MyAppsLanding. Identity, installed
+apps and notification queries are fixed local data. Its read-only wallet has no
+signing methods. Fixture-only module boundaries disable logout, avoid unrelated
+authenticated routes and hide development-only menu entries; production code is
+unchanged. It does not verify real sign-in or profile actions.
 
 The `apps` fixture renders `LaunchPad`, the catalogue at `/launchpad/browse`.
 It is not the current `/launchpad` My Apps landing page (`MyAppsLanding`), which
@@ -133,6 +143,11 @@ tokens and utilities; its optional `base.css` export owns the reset. The common
 `tailwind-v3-theme.css` and `tailwind-v3-compat.css` preserve the existing palette,
 heading margins, button border behavior, and font-size/line-height precedence.
 The explicit named variants preserve the original mixed breakpoint order.
+`tailwind-ionic-compat.css` restores Ionic grid/column host padding and margins
+that Tailwind 4's new universal reset otherwise removes. Its zero-specificity
+selectors allow explicit utilities and app styles to win; Ionic still owns its
+responsive custom-property defaults. This preserves mobile header height and
+credential gutters without patching each screen.
 The Ionic-only button border reset lives in the two apps' stylesheets, so it
 does not change the standalone package reset or the non-Ionic examples.
 Keep these named variants out of `--breakpoint-*` variables: those variables

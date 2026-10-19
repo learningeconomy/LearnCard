@@ -121,6 +121,7 @@
                     <option value="issue">Issue credential form</option>
                     <option value="issue-json">Issue credential JSON</option>
                     <option value="my-apps">My Apps launchpad</option>
+                    <option value="my-apps-signed-in">My Apps · signed-in shell</option>
                     <option value="app-details">App listing details</option>
                 </select></label
             >
@@ -143,7 +144,10 @@
         <footer>
             Scrolling is linked.
             <a id="before-link" target="_blank" rel="noopener">Open before</a> ·
-            <a id="after-link" target="_blank" rel="noopener">Open after</a>
+            <a id="after-link" target="_blank" rel="noopener">Open after</a> ·
+            <a href="native/ios-tailwind4.mp4" target="_blank" rel="noopener"
+                >Native iOS recording</a
+            >
         </footer>
         <script>
             const browser = document.getElementById('browser');
@@ -162,6 +166,7 @@
                 'issue',
                 'issue-json',
                 'my-apps',
+                'my-apps-signed-in',
                 'app-details',
             ];
             // Build paths from trusted names rather than URL parameters or DOM values.

@@ -19,6 +19,29 @@ export default defineConfig(async environment => {
         // The command compiles messages once before Vite. Recompiling the entire
         // catalog in the plugin adds no coverage to these fixed-locale fixtures.
         plugins: [
+            {
+                name: 'visual-signed-in-boundaries',
+                enforce: 'pre',
+                resolveId(source, importer) {
+                    if (!importer || !source.startsWith('.')) return;
+                    const resolved = path.resolve(path.dirname(importer.split('?')[0]), source);
+                    if (
+                        importer.endsWith('/components/sidemenu/SideMenuRootLinks.tsx') &&
+                        resolved === path.resolve('src/config/environment')
+                    ) {
+                        return path.resolve(import.meta.dirname, 'signedInEnvironment.ts');
+                    }
+                    if (resolved === path.resolve('src/hooks/useLogout')) {
+                        return path.resolve(import.meta.dirname, 'disabledLogout.ts');
+                    }
+                    if (
+                        importer.endsWith('/components/mobile-nav-bar/MobileNavBar.tsx') &&
+                        resolved === path.resolve('src/Routes')
+                    ) {
+                        return path.resolve(import.meta.dirname, 'SignedInLaunchpadRoutes.tsx');
+                    }
+                },
+            },
             ...(config.plugins
                 ?.flat()
                 .filter(

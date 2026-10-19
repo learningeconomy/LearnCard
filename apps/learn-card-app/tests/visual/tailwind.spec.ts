@@ -58,12 +58,23 @@ for (const state of [
     'issue-json',
     'apps',
     'my-apps',
+    'my-apps-signed-in',
     'app-details',
 ]) {
     test(`${state} preserves the Tailwind 3 layout`, async ({ page }, testInfo) => {
         const expanded = !['active', 'pending', 'empty', 'shared'].includes(state);
         const errors: string[] = [];
         page.on('pageerror', error => errors.push(error.message));
+        if (state === 'my-apps-signed-in' && testInfo.project.name === 'webkit-mobile') {
+            // A mobile viewport alone leaves Ionic in MD mode. Exercise its
+            // actual iOS header/tab layout in the full signed-in capture.
+            await page.addInitScript(() => {
+                Object.defineProperty(navigator, 'userAgent', {
+                    get: () =>
+                        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 Version/16.4 Mobile/15E148 Safari/604.1',
+                });
+            });
+        }
         await page.goto(`/tests/visual/tailwind-regression.html?state=${state}`);
         const fixture = page.getByTestId('fixture');
         await expect(fixture).toBeVisible({ timeout: 90_000 });
@@ -76,6 +87,7 @@ for (const state of [
                 'issue-json',
                 'apps',
                 'my-apps',
+                'my-apps-signed-in',
                 'app-details',
             ].includes(state)
         ) {
@@ -105,12 +117,12 @@ for (const state of [
             }
             await expect(page.getByTestId('issue-submit')).toBeEnabled();
         }
-        if (state === 'apps' || state === 'app-details' || state === 'my-apps') {
+        if (state === 'apps' || state === 'app-details' || state.startsWith('my-apps')) {
             await expect(
                 fixture.getByText('Community Academy', { exact: true }).first()
             ).toBeVisible();
         }
-        if (state === 'my-apps') {
+        if (state.startsWith('my-apps')) {
             await expect(
                 fixture.getByRole('heading', { name: 'My Apps', exact: true })
             ).toBeVisible();
@@ -121,6 +133,36 @@ for (const state of [
             );
             await expect(fixture.getByTestId('app-grid').last().getByRole('button')).toHaveCount(3);
             await expect(fixture.getByRole('button', { name: 'Browse More' })).toBeVisible();
+        }
+        if (state === 'my-apps-signed-in') {
+            await expect(
+                fixture.getByRole('button', { name: 'Open profile', exact: true })
+            ).toBeVisible();
+            await expect(
+                fixture.getByRole('button', { name: 'Alerts', exact: true })
+            ).toBeVisible();
+            if (testInfo.project.name === 'chromium-desktop') {
+                await expect(
+                    fixture.getByRole('navigation', { name: 'Primary navigation' })
+                ).toBeVisible();
+                await expect(
+                    fixture.getByRole('link', { name: 'Apps', exact: true }).first()
+                ).toBeVisible();
+                await expect(
+                    fixture.getByRole('button', { name: 'Logout', exact: true })
+                ).toBeVisible();
+                await expect(
+                    fixture.getByRole('button', { name: 'Settings', exact: true })
+                ).toBeVisible();
+                await expect(
+                    fixture.getByRole('button', { name: 'Theme:', exact: false })
+                ).toBeVisible();
+            } else {
+                await expect(fixture.locator('ion-tab-bar').first()).toBeVisible();
+                const header = fixture.locator('.learn-card-header').first();
+                await expect(header.locator('ion-grid').first()).toHaveCSS('padding-top', '5px');
+                await expect(header.locator('ion-col').first()).toHaveCSS('padding-left', '5px');
+            }
         }
         if (state.startsWith('credential')) {
             await expect(
