@@ -9421,10 +9421,21 @@
                 "additionalEvidenceFor": "Evidencia adicional para {{name}}",
                 "emailFormatGood": "El formato del correo es correcto",
                 "emptyImport": "No se encontraron personas. Revisa la columna de correo y la fila de encabezados.",
-                "deliveryIssues": "Problemas de entrega",
                 "reviewDeliveryIssues": "Revisar problemas de entrega · {{count}}",
                 "deliveryIssuesHint": "Revisa aquí los envíos sin confirmar; edita los destinatarios fallidos en Revisar personas.",
-                "searchDeliveryIssues": "Buscar problemas de entrega"
+                "viewDeliveryStatus": "Ver estado de envío",
+                "deliveryStatus": "Estado de envío",
+                "deliveryStatusHint": "Los estados se actualizan durante el envío.",
+                "searchDeliveryStatus": "Buscar destinatarios",
+                "statusFilter": "Estado",
+                "allDeliveryStatuses": "Todos los destinatarios · {{count}}",
+                "deliveryState": {
+                    "ready": "Sin enviar",
+                    "queued": "En cola",
+                    "sent": "Enviado",
+                    "failed": "Fallido",
+                    "confirming": "Sin confirmar"
+                }
             }
         }
     },

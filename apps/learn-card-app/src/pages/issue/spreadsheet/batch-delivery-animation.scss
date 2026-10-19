@@ -1,0 +1,53 @@
+.batch-delivery-illustration {
+    .batch-delivery-card {
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    .batch-delivery-spark {
+        opacity: 0.55;
+    }
+
+    &--active {
+        .batch-delivery-card {
+            animation: batch-credential-flight 2.6s ease-in-out infinite;
+        }
+
+        .batch-delivery-spark {
+            animation: batch-delivery-glimmer 2.6s ease-in-out infinite;
+
+            &:nth-of-type(2) {
+                animation-delay: 0.4s;
+            }
+        }
+    }
+}
+
+@keyframes batch-credential-flight {
+    0%,
+    100% {
+        transform: translate(-2px, 2px) rotate(-5deg);
+    }
+    50% {
+        transform: translate(2px, -3px) rotate(4deg);
+    }
+}
+
+@keyframes batch-delivery-glimmer {
+    0%,
+    100% {
+        opacity: 0.35;
+    }
+    50% {
+        opacity: 0.85;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .batch-delivery-illustration--active {
+        .batch-delivery-card,
+        .batch-delivery-spark {
+            animation: none;
+        }
+    }
+}

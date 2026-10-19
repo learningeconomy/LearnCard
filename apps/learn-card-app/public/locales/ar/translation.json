@@ -9510,10 +9510,21 @@
                 "additionalEvidenceFor": "أدلة إضافية لـ {{name}}",
                 "emailFormatGood": "تنسيق البريد الإلكتروني صحيح",
                 "emptyImport": "لم يتم العثور على أشخاص. تحقق من عمود البريد الإلكتروني وصف العناوين.",
-                "deliveryIssues": "مشكلات التسليم",
                 "reviewDeliveryIssues": "مراجعة مشكلات التسليم · {{count}}",
                 "deliveryIssuesHint": "راجع الإرسالات غير المؤكدة هنا، وعدّل المستلمين الذين تعذر الإرسال إليهم في مراجعة الأشخاص.",
-                "searchDeliveryIssues": "البحث في مشكلات التسليم"
+                "viewDeliveryStatus": "عرض حالة الإرسال",
+                "deliveryStatus": "حالة الإرسال",
+                "deliveryStatusHint": "تُحدَّث الحالات أثناء الإرسال.",
+                "searchDeliveryStatus": "البحث عن المستلمين",
+                "statusFilter": "الحالة",
+                "allDeliveryStatuses": "جميع المستلمين · {{count}}",
+                "deliveryState": {
+                    "ready": "لم يُرسل",
+                    "queued": "قيد الانتظار",
+                    "sent": "تم الإرسال",
+                    "failed": "فشل",
+                    "confirming": "غير مؤكد"
+                }
             }
         }
     },

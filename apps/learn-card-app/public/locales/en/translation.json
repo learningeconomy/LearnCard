@@ -9472,10 +9472,21 @@
                 "additionalEvidenceFor": "Additional evidence for {{name}}",
                 "emailFormatGood": "Email format looks good",
                 "emptyImport": "No people found. Check the email column and header row.",
-                "deliveryIssues": "Delivery issues",
                 "reviewDeliveryIssues": "Review delivery issues · {{count}}",
                 "deliveryIssuesHint": "Review unconfirmed sends here; edit failed recipients in Review people.",
-                "searchDeliveryIssues": "Search delivery issues"
+                "viewDeliveryStatus": "View delivery status",
+                "deliveryStatus": "Delivery status",
+                "deliveryStatusHint": "Statuses update as this run sends.",
+                "searchDeliveryStatus": "Search recipients",
+                "statusFilter": "Status",
+                "allDeliveryStatuses": "All recipients · {{count}}",
+                "deliveryState": {
+                    "ready": "Not sent",
+                    "queued": "Queued",
+                    "sent": "Sent",
+                    "failed": "Failed",
+                    "confirming": "Unconfirmed"
+                }
             }
         }
     },

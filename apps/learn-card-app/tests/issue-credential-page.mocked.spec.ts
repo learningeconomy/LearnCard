@@ -297,6 +297,14 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         network.on('utilities.getChallenges', () =>
             Array.from({ length: 100 }, (_, i) => `test-challenge-${i}`)
         );
+        let releaseBatch!: () => void;
+        const batchGate = new Promise<void>(resolve => {
+            releaseBatch = resolve;
+        });
+        await page.route(/\/trpc\/.*inbox\.getBatch/, async route => {
+            await batchGate;
+            await route.fallback();
+        });
         const submissions: IssueInboxCredentialBatch[] = [];
         let templateCount = 0;
         network.on('boost.createBoost', () => {
@@ -349,61 +357,100 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 },
             } satisfies InboxBatchStatus;
         });
-        await selectBadgeType(page);
-        await fillName(page, 'Batch Badge');
-        await page.getByRole('button', { name: /specific people/i }).click();
-        await page.getByTestId('issue-spreadsheet-file').setInputFiles({
-            name: '250.csv',
-            mimeType: 'text/csv',
-            buffer: Buffer.from(
-                'Email,Name\n' +
-                    Array.from({ length: 250 }, (_, i) => `person${i}@test.com,Person ${i}`).join(
-                        '\n'
-                    )
-            ),
-        });
-        await page.getByRole('button', { name: 'Add People', exact: true }).click();
-        await issueButton(page).click();
-        await expect(
-            page.getByRole('heading', { name: '249 sent · 1 failed', exact: true })
-        ).toBeVisible({ timeout: 30000 });
-        expect(submissions.map(body => body.items.length)).toEqual([100, 100, 50]);
-        expect(templateCount).toBe(1);
-        await page.getByRole('button', { name: 'Review delivery issues · 1', exact: true }).click();
-        await expect(
-            page.getByRole('heading', { name: 'Delivery issues', exact: true })
-        ).toBeVisible();
-        await expect(page.getByText('person7@test.com', { exact: true })).toBeVisible();
-        await page.getByRole('button', { name: 'Done', exact: true }).click();
-        await page.getByRole('button', { name: 'Review people', exact: true }).click();
-        const failedEmail = page.getByRole('textbox', { name: 'Email for Person 7', exact: true });
-        await expect(failedEmail).toBeEnabled();
-        await expect(
-            page
-                .getByRole('row')
-                .filter({ has: failedEmail })
-                .getByRole('button', { name: 'Skip', exact: true })
-        ).toBeDisabled();
-        await page.getByRole('button', { name: 'Done', exact: true }).click();
-        await page.reload({ waitUntil: 'domcontentloaded' });
-        // The HAR seed login keeps its private key in memory; reauthenticate after reload.
-        await waitForAuthenticatedState(page, {
-            path: '/issue',
-            profileId: TEST_USER_PROFILE_ID,
-            waitUntil: 'domcontentloaded',
-        });
-        await waitForIssueReady(page);
-        await page
-            .getByRole('button', { name: 'Restore Saved Run', exact: true })
-            .click({ timeout: 30000 });
-        await page.getByRole('button', { name: 'Retry Failed', exact: true }).click();
-        await expect(
-            page.getByRole('heading', { name: '250 sent · 0 failed', exact: true })
-        ).toBeVisible({ timeout: 30000 });
-        expect(submissions[3].items).toHaveLength(1);
-        expect(submissions[3].items[0].idempotencyKey).toBe(submissions[0].items[7].idempotencyKey);
-        expect(submissions[3].requestId).not.toBe(submissions[0].requestId);
-        expect(templateCount).toBe(1);
+        try {
+            await selectBadgeType(page);
+            await fillName(page, 'Batch Badge');
+            await page.getByRole('button', { name: /specific people/i }).click();
+            await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+                name: '250.csv',
+                mimeType: 'text/csv',
+                buffer: Buffer.from(
+                    'Email,Name\n' +
+                        Array.from(
+                            { length: 250 },
+                            (_, i) => `person${i}@test.com,Person ${i}`
+                        ).join('\n')
+                ),
+            });
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await issueButton(page).click();
+            await expect.poll(() => submissions.length).toBe(1);
+            const flyer = page.locator('.batch-delivery-card');
+            await expect
+                .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
+                .not.toBe('none');
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await expect
+                .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
+                .toBe('none');
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.getByRole('button', { name: 'View delivery status', exact: true }).click();
+            await expect(
+                page.getByRole('heading', { name: 'Delivery status', exact: true })
+            ).toBeVisible();
+            const status = page.getByRole('combobox', { name: 'Status', exact: true });
+            await status.selectOption('queued');
+            await expect(page.getByText('Rows 1–25 of 100', { exact: true })).toBeVisible();
+            await status.selectOption('ready');
+            await expect(page.getByText('Rows 1–25 of 150', { exact: true })).toBeVisible();
+            await status.selectOption('sent');
+            await expect(page.getByText('Rows 0–0 of 0', { exact: true })).toBeVisible();
+            releaseBatch();
+            await expect(page.getByText('Rows 1–25 of 249', { exact: true })).toBeVisible({
+                timeout: 30000,
+            });
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await expect(
+                page.getByRole('heading', { name: '249 sent · 1 failed', exact: true })
+            ).toBeVisible({ timeout: 30000 });
+            expect(submissions.map(body => body.items.length)).toEqual([100, 100, 50]);
+            expect(templateCount).toBe(1);
+            await page
+                .getByRole('button', { name: 'Review delivery issues · 1', exact: true })
+                .click();
+            await expect(
+                page.getByRole('heading', { name: 'Delivery status', exact: true })
+            ).toBeVisible();
+            await expect(page.getByText('person7@test.com', { exact: true })).toBeVisible();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            const failedEmail = page.getByRole('textbox', {
+                name: 'Email for Person 7',
+                exact: true,
+            });
+            await expect(failedEmail).toBeEnabled();
+            await expect(
+                page
+                    .getByRole('row')
+                    .filter({ has: failedEmail })
+                    .getByRole('button', { name: 'Skip', exact: true })
+            ).toBeDisabled();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.reload({ waitUntil: 'domcontentloaded' });
+            // The HAR seed login keeps its private key in memory; reauthenticate after reload.
+            await waitForAuthenticatedState(page, {
+                path: '/issue',
+                profileId: TEST_USER_PROFILE_ID,
+                waitUntil: 'domcontentloaded',
+            });
+            await waitForIssueReady(page);
+            await page
+                .getByRole('button', { name: 'Restore Saved Run', exact: true })
+                .click({ timeout: 30000 });
+            await page.getByRole('button', { name: 'Retry Failed', exact: true }).click();
+            await expect(
+                page.getByRole('heading', { name: '250 sent · 0 failed', exact: true })
+            ).toBeVisible({ timeout: 30000 });
+            expect(submissions[3].items).toHaveLength(1);
+            expect(submissions[3].items[0].idempotencyKey).toBe(
+                submissions[0].items[7].idempotencyKey
+            );
+            expect(submissions[3].requestId).not.toBe(submissions[0].requestId);
+            expect(templateCount).toBe(1);
+        } finally {
+            releaseBatch();
+        }
     });
 
     // Completing an issuance (self / person / link) is a real signing +
