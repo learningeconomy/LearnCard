@@ -240,6 +240,8 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await page
             .getByRole('textbox', { name: 'Email for Person 0', exact: true })
             .fill('person0@test.com');
+        await expect(page.getByRole('article')).toHaveCount(1);
+        await page.getByRole('searchbox', { name: 'Search people' }).click();
         await expect(page.getByRole('article')).toHaveCount(0);
         await page.getByRole('button', { name: '60 people', exact: true }).click();
         await page.getByRole('button', { name: 'Next', exact: true }).click();

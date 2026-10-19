@@ -96,6 +96,20 @@ describe('roster review workspace', () => {
             'true'
         );
     });
+    it('keeps a corrected issue visible until the person leaves the row', () => {
+        vi.stubGlobal('innerWidth', 390);
+        const data = props(3);
+        const view = render(
+            <RosterEditor {...data} problems={{ 'row-1': ['email'] }} onClose={vi.fn()} />
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Needs attention · 1' }));
+        const input = screen.getByRole('textbox', { name: 'Email for Person1' });
+        fireEvent.focus(input);
+        view.rerender(<RosterEditor {...data} problems={{}} onClose={vi.fn()} />);
+        expect(screen.getAllByRole('article')).toHaveLength(1);
+        fireEvent.blur(input, { relatedTarget: screen.getByRole('searchbox') });
+        expect(screen.queryByRole('article')).toBeNull();
+    });
     it('keeps attempted failed rows editable but prevents removing their recovery history', () => {
         render(<RosterEditor {...props(1)} canRemove={() => false} onClose={vi.fn()} />);
         expect(screen.getByRole('button', { name: /^Skip$/ })).toBeDisabled();

@@ -99,6 +99,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
     const [page, setPage] = useState(0);
     const [query, setQuery] = useState('');
     const [onlyIssues, setOnlyIssues] = useState(false);
+    const [editing, setEditing] = useState<{ id: string; attention: boolean }>();
     const { recipients, variables, scopes, shared, values, evidence, problems, disabled } = props;
     const issues = recipients.filter(row => problems[recipientKey(row)]?.length).length;
     const sorted = [...recipients]
@@ -107,16 +108,41 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                 `${recipientDisplayName(row)} ${row.kind === 'email' ? row.email : row.profileId}`
                     .toLowerCase()
                     .includes(query.trim().toLowerCase());
-            return matches && (!onlyIssues || Boolean(problems[recipientKey(row)]?.length));
+            return (
+                editing?.id === recipientKey(row) ||
+                (matches && (!onlyIssues || Boolean(problems[recipientKey(row)]?.length)))
+            );
         })
         .sort(
             (a, b) =>
-                Number(Boolean(problems[recipientKey(b)]?.length)) -
-                Number(Boolean(problems[recipientKey(a)]?.length))
+                Number(
+                    Boolean(problems[recipientKey(b)]?.length) ||
+                        (editing?.id === recipientKey(b) && editing.attention)
+                ) -
+                Number(
+                    Boolean(problems[recipientKey(a)]?.length) ||
+                        (editing?.id === recipientKey(a) && editing.attention)
+                )
         );
     const pageSize = 25;
     const currentPage = Math.min(page, Math.max(0, Math.ceil(sorted.length / pageSize) - 1));
     const visible = sorted.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+    // A partially corrected email can become valid before the person finishes typing.
+    // Keep the focused row in its current issue group until focus leaves that row.
+    const focusHandlers = (row: Recipient) => ({
+        onFocusCapture: () =>
+            setEditing(previous =>
+                previous?.id === recipientKey(row)
+                    ? previous
+                    : {
+                          id: recipientKey(row),
+                          attention: Boolean(problems[recipientKey(row)]?.length),
+                      }
+            ),
+        onBlurCapture: (event: React.FocusEvent<HTMLElement>) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setEditing(undefined);
+        },
+    });
     const fieldLabel = (name: string): string => props.labels?.[name] ?? humanizeVariable(name);
     const input = (recipient: Recipient, name: string): React.ReactNode => (
         <input
@@ -425,6 +451,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                 {visible.map(recipient => (
                                     <tr
                                         key={recipientKey(recipient)}
+                                        {...focusHandlers(recipient)}
                                         className={
                                             problems[recipientKey(recipient)]?.length
                                                 ? 'bg-red-50'
@@ -458,6 +485,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                         {visible.map(recipient => (
                             <article
                                 key={recipientKey(recipient)}
+                                {...focusHandlers(recipient)}
                                 className={`rounded-2xl border p-4 space-y-4 ${problems[recipientKey(recipient)]?.length ? 'border-red-100 bg-red-50' : 'border-grayscale-200 bg-white'}`}
                             >
                                 {identity(recipient)}

@@ -271,11 +271,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                             <RecipientList
                                                 initial={recipients}
                                                 onChange={onRecipientsChange}
-                                                canRemove={row =>
-                                                    !spreadsheet?.busy &&
-                                                    (spreadsheet?.canRemove?.(recipientKey(row)) ??
-                                                        !spreadsheet?.locked?.(recipientKey(row)))
-                                                }
+                                                canRemove={() => true}
                                                 onClose={closeModal}
                                             />,
                                             {},
