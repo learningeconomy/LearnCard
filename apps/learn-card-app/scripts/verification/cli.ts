@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import net from 'node:net';
 
 import { chromium } from '@playwright/test';
+import { createTimings } from './timings';
 import type { Browser, BrowserContext } from '@playwright/test';
 
 import { verificationFeatures } from './catalog';
@@ -46,6 +47,7 @@ Scripted coverage
   lc verify list [--json]                Catalog features, surfaces, and required entries
   lc verify run [all|FEATURE...]         Run journeys (fresh stack unless --dir names a live one)
       [--dir DIR] [--fresh] [--keep] [--headed] [--video] [--json]
+      [--docker-builder NAME]           Use an explicitly local, prewarmed Buildx builder
       --fresh refuses an existing state; --json emits per-feature events and a final result
 
 Drive anything else (needs a live --dir)
@@ -357,16 +359,19 @@ const runFeatures = async (
     command: 'up' | 'run',
     directory: string,
     requested: string[],
-    values: { keep?: boolean; headed?: boolean; video?: boolean; json?: boolean; fresh?: boolean }
+    values: { keep?: boolean; headed?: boolean; video?: boolean; json?: boolean; fresh?: boolean },
+    builder?: string
 ): Promise<void> => {
     const selected = command === 'run' ? selectFeatures(requested) : [];
     const ownsStack = !existsSync(join(directory, 'state.json'));
     assert(!values.fresh || ownsStack, '--fresh requires a directory without existing stack state');
+    assert(!builder || ownsStack, '--docker-builder requires a new stack');
     const startup = new AbortController();
     let endpoints: StackEndpoints | undefined;
     let ready: Record<string, unknown> | undefined;
     const runId = newRunId();
     const artifacts = join(directory, 'runs', runId);
+    const measure = createTimings(join(artifacts, 'timings.json'));
     const results: Array<Record<string, unknown>> = [];
     const report = async (status: string): Promise<void> =>
         saveJson(join(artifacts, 'report.json'), {
@@ -414,16 +419,19 @@ const runFeatures = async (
     let failed = false;
     let failure: unknown;
     try {
-        await mkdir(directory, { recursive: true, mode: 0o700 });
+        await mkdir(artifacts, { recursive: true, mode: 0o700 });
         console.log(`Verification directory: ${directory}`);
         if (ownsStack)
-            await startStack(directory, {
-                signal: startup.signal,
-                onProgress: event =>
-                    values.json
-                        ? writeEvent(event)
-                        : console.error(`[lc verify] ${JSON.stringify(event)}`),
-            });
+            await measure('startup', () =>
+                startStack(directory, {
+                    builder,
+                    signal: startup.signal,
+                    onProgress: event =>
+                        values.json
+                            ? writeEvent(event)
+                            : console.error(`[lc verify] ${JSON.stringify(event)}`),
+                })
+            );
         else await requireStack(directory);
         endpoints = await readStackEndpoints(directory);
         assert(!interrupted, 'Verification interrupted');
@@ -457,82 +465,92 @@ const runFeatures = async (
             await report('running');
             await saveJson(join(artifacts, 'doctor.json'), await requireStack(directory));
             browser = await chromium.launch({ ...OWN_SIGNALS, headless: !values.headed });
-            for (const feature of selected) {
-                assert(!interrupted, 'Verification interrupted');
-                const harness = await createHarness(
-                    browser,
-                    join(artifacts, feature.id),
-                    `${runId}-${feature.id}`,
-                    { video: values.video, stackDirectory: directory }
-                );
-                assert(!interrupted, 'Verification interrupted');
-                current = harness;
-                const result: Record<string, unknown> = {
-                    feature: feature.id,
-                    surface: feature.surface,
-                    requiredEntries: feature.entries,
-                    startedAt: new Date().toISOString(),
-                };
-                console.log(`${feature.id}: running`);
-                if (values.json)
-                    writeEvent({ event: 'feature', feature: feature.id, status: 'running', runId });
-                let execution: Promise<FeatureResult> | undefined;
-                try {
-                    execution = feature.run(harness.context);
-                    const proof = await Promise.race([execution, interruption]);
+            const catalogBrowser = browser;
+            await measure('catalog', async () => {
+                for (const feature of selected) {
                     assert(!interrupted, 'Verification interrupted');
-                    const entries = feature.entries.filter(entry =>
-                        harness.completedSteps.includes(entry)
+                    const harness = await createHarness(
+                        catalogBrowser,
+                        join(artifacts, feature.id),
+                        `${runId}-${feature.id}`,
+                        { video: values.video, stackDirectory: directory }
                     );
-                    assert.deepEqual(
-                        entries,
-                        feature.entries,
-                        'Feature did not successfully execute every catalog entry step'
-                    );
-                    Object.assign(result, {
-                        status: 'passed',
-                        observations: proof.observations,
-                        entries,
-                    });
-                } catch (error) {
-                    failed = true;
-                    if (!interrupted) await harness.captureOpenPages('failure-state');
-                    Object.assign(result, {
-                        status: interrupted ? 'interrupted' : 'failed',
-                        error: error instanceof Error ? error.stack : String(error),
-                        hint: interrupted ? undefined : browserCrashHint(error),
-                    });
-                } finally {
-                    await interruptPromise;
-                    // Closing contexts/CLI children releases in-flight driver calls. Let the
-                    // journey's finally blocks reap auxiliaries (e.g. Astro) before the stack.
-                    if (interrupted) {
-                        await execution?.catch(error => {
-                            result.interruptedExecutionError = String(error);
+                    assert(!interrupted, 'Verification interrupted');
+                    current = harness;
+                    const featureStarted = performance.now();
+                    const result: Record<string, unknown> = {
+                        feature: feature.id,
+                        surface: feature.surface,
+                        requiredEntries: feature.entries,
+                        startedAt: new Date().toISOString(),
+                    };
+                    console.log(`${feature.id}: running`);
+                    if (values.json)
+                        writeEvent({
+                            event: 'feature',
+                            feature: feature.id,
+                            status: 'running',
+                            runId,
                         });
-                    }
+                    let execution: Promise<FeatureResult> | undefined;
                     try {
-                        await harness.close();
+                        execution = feature.run(harness.context);
+                        const proof = await Promise.race([execution, interruption]);
+                        assert(!interrupted, 'Verification interrupted');
+                        const entries = feature.entries.filter(entry =>
+                            harness.completedSteps.includes(entry)
+                        );
+                        assert.deepEqual(
+                            entries,
+                            feature.entries,
+                            'Feature did not successfully execute every catalog entry step'
+                        );
+                        Object.assign(result, {
+                            status: 'passed',
+                            observations: proof.observations,
+                            entries,
+                        });
                     } catch (error) {
                         failed = true;
-                        result.status = interrupted ? 'interrupted' : 'failed';
-                        result.evidenceError = String(error);
+                        if (!interrupted) await harness.captureOpenPages('failure-state');
+                        Object.assign(result, {
+                            status: interrupted ? 'interrupted' : 'failed',
+                            error: error instanceof Error ? error.stack : String(error),
+                            hint: interrupted ? undefined : browserCrashHint(error),
+                        });
+                    } finally {
+                        await interruptPromise;
+                        // Closing contexts/CLI children releases in-flight driver calls. Let the
+                        // journey's finally blocks reap auxiliaries (e.g. Astro) before the stack.
+                        if (interrupted) {
+                            await execution?.catch(error => {
+                                result.interruptedExecutionError = String(error);
+                            });
+                        }
+                        try {
+                            await harness.close();
+                        } catch (error) {
+                            failed = true;
+                            result.status = interrupted ? 'interrupted' : 'failed';
+                            result.evidenceError = String(error);
+                        }
+                        if (interrupted) result.status = 'interrupted';
+                        result.finishedAt = new Date().toISOString();
+                        result.durationMs = Math.round(performance.now() - featureStarted);
+                        results.push(result);
+                        await report(interrupted ? 'interrupted' : 'running');
+                        const firstLine = String(result.error ?? '').split('\n')[0];
+                        console.log(
+                            `${feature.id}: ${result.status}${firstLine ? ` — ${firstLine}` : ''}`
+                        );
+                        if (result.hint) console.log(`${feature.id}: ${result.hint}`);
+                        if (values.json) writeEvent({ event: 'feature', runId, ...result });
                     }
-                    if (interrupted) result.status = 'interrupted';
-                    result.finishedAt = new Date().toISOString();
-                    results.push(result);
-                    await report(interrupted ? 'interrupted' : 'running');
-                    const firstLine = String(result.error ?? '').split('\n')[0];
-                    console.log(
-                        `${feature.id}: ${result.status}${firstLine ? ` — ${firstLine}` : ''}`
-                    );
-                    if (result.hint) console.log(`${feature.id}: ${result.hint}`);
-                    if (values.json) writeEvent({ event: 'feature', runId, ...result });
                 }
-            }
-            assert(!interrupted, 'Verification interrupted');
-            await report(failed ? 'failed' : 'passed');
-            assert(!failed, `Verification failed; inspect ${join(artifacts, 'report.json')}`);
+                assert(!interrupted, 'Verification interrupted');
+                await report(failed ? 'failed' : 'passed');
+                assert(!failed, `Verification failed; inspect ${join(artifacts, 'report.json')}`);
+            });
         }
     } catch (error) {
         failed = true;
@@ -553,7 +571,7 @@ const runFeatures = async (
             cleanupErrors.push(error);
         }
         try {
-            if (teardown) await stopStack(directory);
+            if (teardown) await measure('teardown', () => stopStack(directory));
         } catch (error) {
             cleanupErrors.push(error);
         }
@@ -623,6 +641,7 @@ export const runVerificationCli = async (args: string[]): Promise<void> => {
             dir: { type: 'string' },
             keep: { type: 'boolean' },
             fresh: { type: 'boolean' },
+            'docker-builder': { type: 'string' },
             force: { type: 'boolean' },
             preflight: { type: 'boolean' },
             headed: { type: 'boolean' },
@@ -668,6 +687,10 @@ export const runVerificationCli = async (args: string[]): Promise<void> => {
         'logs',
     ];
     assert(known.includes(command), `Unknown verification command: ${command}; see lc verify help`);
+    assert(
+        !values['docker-builder'] || command === 'run' || command === 'up',
+        '--docker-builder requires run or up'
+    );
     assert(!values.fresh || command === 'run', '--fresh is only supported by run');
     assert(!values.force || command === 'down', '--force is only supported by down');
     assert(!values.preflight || command === 'doctor', '--preflight is only supported by doctor');
@@ -769,6 +792,12 @@ export const runVerificationCli = async (args: string[]): Promise<void> => {
             );
         }
         default:
-            return runFeatures(command as 'up' | 'run', directory, positionals.slice(1), values);
+            return runFeatures(
+                command as 'up' | 'run',
+                directory,
+                positionals.slice(1),
+                values,
+                values['docker-builder']
+            );
     }
 };
