@@ -168,6 +168,29 @@ test('dry-run JSON makes no S3 or gh calls even with --update-pr', async () => {
     }
 });
 
+test('publishing ignores generic AWS credentials and requires the PROOF_AWS_* pair', async () => {
+    const root = await createFixture();
+    try {
+        probe(`
+            import { S3Client } from 'bun';
+            S3Client.prototype.write = () => { throw new Error('Network upload forbidden'); };
+            process.env.PROOF_S3_BUCKET = 'proof-test';
+            process.env.PROOF_S3_REGION = 'us-east-1';
+            process.env.AWS_ACCESS_KEY_ID = 'generic';
+            process.env.AWS_SECRET_ACCESS_KEY = 'generic';
+            delete process.env.PROOF_AWS_ACCESS_KEY_ID;
+            delete process.env.PROOF_AWS_SECRET_ACCESS_KEY;
+            console.log = () => {};
+            await assert.rejects(
+                proof.main(['publish','--pr','1741','--from-run',${JSON.stringify(root)}]),
+                /PROOF_AWS_ACCESS_KEY_ID and PROOF_AWS_SECRET_ACCESS_KEY/
+            );
+        `);
+    } finally {
+        await rm(root, { recursive: true, force: true });
+    }
+});
+
 test('mocked publishing merges the latest PR body and never edits after upload or marker failures', async () => {
     const root = await createFixture();
     try {
@@ -176,8 +199,8 @@ test('mocked publishing merges the latest PR body and never edits after upload o
             import { readFileSync, existsSync } from 'node:fs';
             process.env.PROOF_S3_BUCKET = 'proof-test';
             process.env.PROOF_S3_REGION = 'us-east-1';
-            process.env.AWS_ACCESS_KEY_ID = 'synthetic';
-            process.env.AWS_SECRET_ACCESS_KEY = 'synthetic';
+            process.env.PROOF_AWS_ACCESS_KEY_ID = 'synthetic';
+            process.env.PROOF_AWS_SECRET_ACCESS_KEY = 'synthetic';
             delete process.env.PROOF_PUBLIC_BASE_URL;
             const spawn = Bun.spawnSync;
             const calls = [];

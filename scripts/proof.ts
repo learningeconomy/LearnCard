@@ -413,10 +413,12 @@ const configuration = (dryRun: boolean): { bucket: string; region: string; base:
 };
 
 const checkCredentials = (): void => {
-    const missing = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'].filter(key => !process.env[key]);
+    const missing = ['PROOF_AWS_ACCESS_KEY_ID', 'PROOF_AWS_SECRET_ACCESS_KEY'].filter(
+        key => !process.env[key]
+    );
     if (missing.length)
         throw new Error(
-            `Set ${missing.join(' and ')} (temporary credentials also require AWS_SESSION_TOKEN; a token alone is insufficient). Use --dry-run until credentials are injected.`
+            `Set ${missing.join(' and ')} (temporary credentials also require PROOF_AWS_SESSION_TOKEN; a token alone is insufficient). Use --dry-run until credentials are injected.`
         );
 };
 
@@ -440,8 +442,8 @@ Publish options:
   --json               One JSON object (markdown included); errors also JSON, exit nonzero.
   --help, -h           Show this help; no environment or network required.
 
-Environment: PROOF_S3_BUCKET, PROOF_S3_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY;
-AWS_SESSION_TOKEN additionally for temporary credentials. PROOF_PUBLIC_BASE_URL optionally overrides
+Environment: PROOF_S3_BUCKET, PROOF_S3_REGION, PROOF_AWS_ACCESS_KEY_ID, PROOF_AWS_SECRET_ACCESS_KEY;
+PROOF_AWS_SESSION_TOKEN additionally for temporary credentials. PROOF_PUBLIC_BASE_URL optionally overrides
 https://<bucket>.s3.<region>.amazonaws.com. Bucket policy must allow public reads (no object ACLs set).
 Reports, sessions/, traces, JSON, logs, .env files and symlinks are never uploaded.
 Inspect screenshots/videos for sensitive content before publishing; public URLs expire with bucket lifecycle.
@@ -579,9 +581,9 @@ export const main = async (args: string[]): Promise<void> => {
             bucket: config.bucket,
             region: config.region,
             endpoint: `https://s3.${config.region}.amazonaws.com`,
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            sessionToken: process.env.AWS_SESSION_TOKEN ?? '',
+            accessKeyId: process.env.PROOF_AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.PROOF_AWS_SECRET_ACCESS_KEY,
+            sessionToken: process.env.PROOF_AWS_SESSION_TOKEN ?? '',
         });
         for (const upload of uploads) {
             if (!(await safeMedia(upload.path, warnings)))
