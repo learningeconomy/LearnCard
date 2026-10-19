@@ -46,6 +46,7 @@ resource "aws_lb" "enclave_host" {
   subnets                          = var.private_subnet_ids
   security_groups                  = [aws_security_group.nlb.id]
   enable_cross_zone_load_balancing = true
+  enable_deletion_protection       = var.environment == "production"
 
   enforce_security_group_inbound_rules_on_private_link_traffic = local.privatelink_enabled ? "off" : null
 
