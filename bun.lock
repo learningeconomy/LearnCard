@@ -69,7 +69,7 @@
     },
     "apps/learn-card-app": {
       "name": "learn-card-app",
-      "version": "1.99.0",
+      "version": "1.100.0",
       "dependencies": {
         "@capacitor-community/in-app-review": "^8.0.0",
         "@capacitor-community/media": "9.1.0",
@@ -257,7 +257,7 @@
     },
     "apps/scouts": {
       "name": "scoutpass-app",
-      "version": "1.90.39",
+      "version": "1.90.40",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.1",
         "@capacitor-firebase/analytics": "8.5.2",
@@ -379,7 +379,7 @@
     },
     "examples/app-store-apps/1-basic-launchpad-app": {
       "name": "@learncard/app-store-demo-basic-launchpad",
-      "version": "0.0.45",
+      "version": "0.0.46",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -394,7 +394,7 @@
     },
     "examples/app-store-apps/2-lore-card-app": {
       "name": "@learncard/app-store-demo-lore-card",
-      "version": "0.0.46",
+      "version": "0.0.47",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -407,7 +407,7 @@
     },
     "examples/app-store-apps/3-mozilla-social-badges-app": {
       "name": "@learncard/app-store-demo-mozilla-social-badges",
-      "version": "0.0.46",
+      "version": "0.0.47",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -420,7 +420,7 @@
     },
     "examples/app-store-apps/4-request-learner-context-app": {
       "name": "@learncard/app-store-demo-request-learner-context",
-      "version": "1.0.22",
+      "version": "1.0.23",
       "dependencies": {
         "@learncard/partner-connect": "workspace:*",
         "astro": "^7.1.0",
@@ -432,7 +432,7 @@
     },
     "examples/app-store-apps/5-northstar-learning": {
       "name": "@learncard/app-store-demo-northstar-learning",
-      "version": "0.0.23",
+      "version": "0.0.24",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -445,7 +445,7 @@
     },
     "examples/app-store-apps/6-basic-sync-app": {
       "name": "@learncard/app-store-demo-basic-sync",
-      "version": "1.0.15",
+      "version": "1.0.16",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -459,7 +459,7 @@
     },
     "examples/consent-flow-test": {
       "name": "consent-flow-test",
-      "version": "1.0.35",
+      "version": "1.0.36",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/network-brain-client": "workspace:*",
@@ -468,7 +468,7 @@
     },
     "examples/consent-referral-demo": {
       "name": "consent-referral-demo",
-      "version": "0.0.0",
+      "version": "0.0.1",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
@@ -483,7 +483,7 @@
     },
     "examples/credential-viewer": {
       "name": "@learncard/credential-viewer",
-      "version": "0.0.29",
+      "version": "0.0.30",
       "dependencies": {
         "@learncard/credential-library": "workspace:*",
         "@learncard/init": "workspace:*",
@@ -543,7 +543,7 @@
     },
     "packages/credential-library": {
       "name": "@learncard/credential-library",
-      "version": "2.0.5",
+      "version": "2.1.0",
       "dependencies": {
         "@learncard/sd-jwt-vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -563,7 +563,7 @@
     },
     "packages/email-templates": {
       "name": "@learncard/email-templates",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "dependencies": {
         "@react-email/components": "^0.0.36",
         "@react-email/render": "^1.0.5",
@@ -578,7 +578,7 @@
     },
     "packages/holder-continuity-bundle": {
       "name": "@learncard/holder-continuity",
-      "version": "0.2.20",
+      "version": "0.2.21",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
@@ -613,7 +613,7 @@
     },
     "packages/learn-card-base": {
       "name": "learn-card-base",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor/app": "^8.1.0",
@@ -642,7 +642,7 @@
         "@web3auth/openlogin-adapter": "^8.12.4",
         "@web3auth/single-factor-auth": "^9.5.0",
         "async": "^3.2.6",
-        "axios": "^0.33.0",
+        "axios": "^0.34.0",
         "capacitor-plugin-safe-area": "^5.0.0",
         "class-variance-authority": "0.7.0",
         "clsx": "2.0.0",
@@ -685,7 +685,7 @@
     },
     "packages/learn-card-bridge-http": {
       "name": "@learncard/create-http-bridge",
-      "version": "1.1.258",
+      "version": "1.1.259",
       "bin": "dist/index.js",
       "dependencies": {
         "@learncard/init": "workspace:*",
@@ -731,7 +731,7 @@
     },
     "packages/learn-card-cli": {
       "name": "@learncard/cli",
-      "version": "3.6.1",
+      "version": "3.6.2",
       "bin": "dist/index.js",
       "dependencies": {
         "@learncard/core": "workspace:*",
@@ -769,7 +769,7 @@
     },
     "packages/learn-card-core": {
       "name": "@learncard/core",
-      "version": "9.4.37",
+      "version": "9.4.38",
       "dependencies": {
         "@learncard/helpers": "workspace:*",
         "abort-controller": "^3.0.0",
@@ -804,7 +804,7 @@
     },
     "packages/learn-card-helpers": {
       "name": "@learncard/helpers",
-      "version": "1.6.1",
+      "version": "1.6.2",
       "dependencies": {
         "@learncard/types": "workspace:*",
         "@noble/hashes": "^1.8.0",
@@ -825,7 +825,7 @@
     },
     "packages/learn-card-init": {
       "name": "@learncard/init",
-      "version": "2.5.1",
+      "version": "2.5.2",
       "dependencies": {
         "@learncard/chapi-plugin": "workspace:*",
         "@learncard/core": "workspace:*",
@@ -864,7 +864,7 @@
     },
     "packages/learn-card-network/brain-client": {
       "name": "@learncard/network-brain-client",
-      "version": "2.5.58",
+      "version": "2.5.59",
       "dependencies": {
         "@learncard/network-brain-service": "workspace:*",
         "@trpc/client": "11.8.0",
@@ -879,7 +879,7 @@
     },
     "packages/learn-card-network/cloud-client": {
       "name": "@learncard/learn-cloud-client",
-      "version": "1.6.43",
+      "version": "1.6.44",
       "dependencies": {
         "@learncard/learn-cloud-service": "workspace:*",
         "@trpc/client": "11.8.0",
@@ -893,7 +893,7 @@
     },
     "packages/learn-card-partner-connect-sdk": {
       "name": "@learncard/partner-connect",
-      "version": "0.5.2",
+      "version": "0.6.0",
       "dependencies": {
         "@learncard/partner-connect-core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -910,7 +910,7 @@
     },
     "packages/learn-card-types": {
       "name": "@learncard/types",
-      "version": "5.22.0",
+      "version": "5.23.0",
       "dependencies": {
         "zod": "^4.1.13",
       },
@@ -929,7 +929,7 @@
     },
     "packages/partner-connect-core": {
       "name": "@learncard/partner-connect-core",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "devDependencies": {
         "@rollup/plugin-commonjs": "^22.0.2",
         "@rollup/plugin-node-resolve": "^13.3.0",
@@ -942,7 +942,7 @@
     },
     "packages/plugins/ceramic": {
       "name": "@learncard/ceramic-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@ceramicnetwork/common": "2.13.0",
         "@ceramicnetwork/http-client": "2.7.0",
@@ -969,7 +969,7 @@
     },
     "packages/plugins/chapi": {
       "name": "@learncard/chapi-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -987,7 +987,7 @@
     },
     "packages/plugins/claimable-boosts": {
       "name": "@learncard/claimable-boosts-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1002,7 +1002,7 @@
     },
     "packages/plugins/crypto": {
       "name": "@learncard/crypto-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "isomorphic-webcrypto": "^2.3.8",
@@ -1017,7 +1017,7 @@
     },
     "packages/plugins/did-web-plugin": {
       "name": "@learncard/did-web-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
       },
@@ -1033,7 +1033,7 @@
     },
     "packages/plugins/didkey": {
       "name": "@learncard/didkey-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:^",
@@ -1050,7 +1050,7 @@
     },
     "packages/plugins/didkit": {
       "name": "@learncard/didkit-plugin",
-      "version": "1.10.2",
+      "version": "1.10.3",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1066,7 +1066,7 @@
     },
     "packages/plugins/didkit-plugin-node": {
       "name": "@learncard/didkit-plugin-node",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1079,7 +1079,7 @@
     },
     "packages/plugins/dynamic-loader": {
       "name": "@learncard/dynamic-loader-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
       },
@@ -1093,7 +1093,7 @@
     },
     "packages/plugins/encryption": {
       "name": "@learncard/encryption-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1108,7 +1108,7 @@
     },
     "packages/plugins/ethereum": {
       "name": "@learncard/ethereum-plugin",
-      "version": "1.1.38",
+      "version": "1.1.39",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@uniswap/default-token-list": "^4.1.0",
@@ -1124,7 +1124,7 @@
     },
     "packages/plugins/expiration": {
       "name": "@learncard/expiration-plugin",
-      "version": "1.2.37",
+      "version": "1.2.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/vc-plugin": "workspace:^",
@@ -1140,7 +1140,7 @@
     },
     "packages/plugins/idx": {
       "name": "@learncard/idx-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@ceramicnetwork/http-client": "2.7.0",
         "@ceramicnetwork/streamid": "2.7.0",
@@ -1160,7 +1160,7 @@
     },
     "packages/plugins/lca-api-plugin": {
       "name": "@learncard/lca-api-plugin",
-      "version": "2.0.7",
+      "version": "2.0.8",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1183,7 +1183,7 @@
     },
     "packages/plugins/learn-card": {
       "name": "@learncard/learn-card-plugin",
-      "version": "1.2.37",
+      "version": "1.2.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1200,7 +1200,7 @@
     },
     "packages/plugins/learn-card-network": {
       "name": "@learncard/network-plugin",
-      "version": "3.0.1",
+      "version": "3.1.0",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:*",
@@ -1222,7 +1222,7 @@
     },
     "packages/plugins/learn-cloud": {
       "name": "@learncard/learn-cloud-plugin",
-      "version": "2.3.43",
+      "version": "2.3.44",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1245,7 +1245,7 @@
     },
     "packages/plugins/ler-rs": {
       "name": "@learncard/ler-rs-plugin",
-      "version": "0.1.28",
+      "version": "0.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1261,7 +1261,7 @@
     },
     "packages/plugins/linked-claims": {
       "name": "@learncard/linked-claims-plugin",
-      "version": "0.2.37",
+      "version": "0.2.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1278,7 +1278,7 @@
     },
     "packages/plugins/open-badge-v2": {
       "name": "@learncard/open-badge-v2-plugin",
-      "version": "1.1.38",
+      "version": "1.1.39",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",
@@ -1295,7 +1295,7 @@
     },
     "packages/plugins/openid4vc": {
       "name": "@learncard/openid4vc-plugin",
-      "version": "0.3.10",
+      "version": "0.3.11",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1317,7 +1317,7 @@
     },
     "packages/plugins/render-method": {
       "name": "@learncard/render-method-plugin",
-      "version": "9.0.0",
+      "version": "10.0.0",
       "dependencies": {
         "@learncard/helpers": "workspace:*",
       },
@@ -1339,7 +1339,7 @@
     },
     "packages/plugins/sd-jwt-vc": {
       "name": "@learncard/sd-jwt-vc-plugin",
-      "version": "0.2.15",
+      "version": "0.2.16",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1360,7 +1360,7 @@
     },
     "packages/plugins/vc": {
       "name": "@learncard/vc-plugin",
-      "version": "1.6.3",
+      "version": "1.6.4",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1378,7 +1378,7 @@
     },
     "packages/plugins/vc-api": {
       "name": "@learncard/vc-api-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1393,7 +1393,7 @@
     },
     "packages/plugins/vc-templates": {
       "name": "@learncard/vc-templates-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1408,7 +1408,7 @@
     },
     "packages/plugins/vpqr": {
       "name": "@learncard/vpqr-plugin",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@digitalbazaar/vpqr": "^3.0.0",
         "@learncard/core": "workspace:*",
@@ -1424,7 +1424,7 @@
     },
     "packages/react-learn-card": {
       "name": "@learncard/react",
-      "version": "2.12.8",
+      "version": "2.12.9",
       "dependencies": {
         "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:*",
@@ -1483,7 +1483,7 @@
     },
     "packages/service-config": {
       "name": "@learncard/service-config",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@aws-sdk/client-secrets-manager": "^3.1139.0",
       },
@@ -1494,7 +1494,7 @@
     },
     "packages/sss-key-manager": {
       "name": "@learncard/sss-key-manager",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@learncard/types": "workspace:*",
         "@noble/ed25519": "^2.0.0",
@@ -1550,7 +1550,7 @@
     },
     "services/escrow-relay": {
       "name": "@learncard/escrow-relay-service",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "dependencies": {
         "@learncard/email-templates": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
@@ -1562,12 +1562,12 @@
         "serverless": "3.40.0",
         "serverless-esbuild": "1.55.0",
         "typescript": "^5.9.3",
-        "vitest": "4.1.10",
+        "vitest": "4.1.11",
       },
     },
     "services/learn-card-network/ai-agent": {
       "name": "@learncard/ai-agent-service",
-      "version": "0.0.6",
+      "version": "0.0.7",
       "dependencies": {
         "@aws-sdk/client-cloudwatch": "^3.1120.0",
         "@launchdarkly/node-server-sdk": "^9.13.1",
@@ -1576,7 +1576,7 @@
         "@learncard/init": "workspace:*",
         "@learncard/network-brain-client": "workspace:*",
         "@sentry/node": "7.61.0",
-        "@trigger.dev/sdk": "4.5.7",
+        "@trigger.dev/sdk": "4.5.9",
         "cors": "^2.8.5",
         "croner": "^10.0.1",
         "dotenv": "^16.0.3",
@@ -1587,17 +1587,17 @@
         "zod": "4.1.13",
       },
       "devDependencies": {
-        "@trigger.dev/build": "4.5.7",
+        "@trigger.dev/build": "4.5.9",
         "@types/cors": "^2.8.13",
         "@types/express": "^4.17.15",
         "@types/node": "^24.0.0",
-        "trigger.dev": "4.5.7",
+        "trigger.dev": "4.5.9",
         "vitest": "^4.1.11",
       },
     },
     "services/learn-card-network/brain-service": {
       "name": "@learncard/network-brain-service",
-      "version": "3.19.1",
+      "version": "4.0.0",
       "dependencies": {
         "@aws-sdk/client-sqs": "^3.379.1",
         "@digitalcredentials/issuer-registry-client": "^4.1.0",
@@ -1683,7 +1683,7 @@
     },
     "services/learn-card-network/lca-api": {
       "name": "@learncard/lca-api-service",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "dependencies": {
         "@aws-sdk/client-kms": "^3.1139.0",
         "@aws-sdk/client-secrets-manager": "^3.1139.0",
@@ -1706,7 +1706,7 @@
         "@types/jsonwebtoken": "^9.0.8",
         "@types/lodash": "^4.14.191",
         "@types/node-forge": "^1.3.11",
-        "axios": "^0.33.0",
+        "axios": "^0.34.0",
         "dag-jose-utils": "2.0.0",
         "did-jwt": "5.9.0",
         "dotenv": "^16.0.3",
@@ -1753,7 +1753,7 @@
     },
     "services/learn-card-network/learn-cloud-service": {
       "name": "@learncard/learn-cloud-service",
-      "version": "2.5.35",
+      "version": "2.5.36",
       "dependencies": {
         "@fastify/cors": "^11.2.0",
         "@fastify/rate-limit": "^10.2.0",
@@ -1829,7 +1829,7 @@
     },
     "services/learn-card-network/vc-api-service": {
       "name": "@learncard/vc-api-service",
-      "version": "1.0.7",
+      "version": "1.0.8",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",
@@ -2006,9 +2006,6 @@
     "@types/minimatch": "5.1.2",
     "@vitest/coverage-v8": "4.1.11",
     "@vitest/ui": "4.1.11",
-    "astro": {
-      "zod": "3.25.76",
-    },
     "basic-ftp": "5.3.1",
     "did-jwt": "5.9.0",
     "esbuild@>=0.27.3 <0.28.1": {
@@ -4644,13 +4641,13 @@
 
     "@traversable/zod-types": ["@traversable/zod-types@0.0.30", "", { "peerDependencies": { "@traversable/json": "^0.0.52", "@traversable/registry": "^0.0.49", "zod": "4" } }, "sha512-BbVyKLvxNpuVouwkLGf7NRNUuMauJBZFr3z4Qy1KZgiAFEryXTLZfJV1Sf98k+naDDj6zaHQD66NsTUTQ7upqw=="],
 
-    "@trigger.dev/build": ["@trigger.dev/build@4.5.7", "", { "dependencies": { "@prisma/config": "^6.10.0", "@trigger.dev/core": "4.5.7", "mlly": "^1.7.1", "pkg-types": "^1.1.3", "resolve": "^1.22.8", "tinyglobby": "^0.2.2", "tsconfck": "3.1.3" } }, "sha512-rlUhq0ivhCHRahB60g1agmj3ZNaVfcATvv71WnNd+28D3fcCsDaIx8+CajdghiQpccZUjhzvR/rnLJQyK3GjQQ=="],
+    "@trigger.dev/build": ["@trigger.dev/build@4.5.9", "", { "dependencies": { "@prisma/config": "^6.10.0", "@trigger.dev/core": "4.5.9", "mlly": "^1.7.1", "pkg-types": "^1.1.3", "resolve": "^1.22.8", "tinyglobby": "^0.2.2", "tsconfck": "3.1.3" } }, "sha512-CAZTBZBqErQSPjl0T0C/EB3vwS5pMNVGruYtzQIaCXnKXfg0abGRiH1sNrj7M2buGm+h8ttbpWfssyb/GlvGdA=="],
 
-    "@trigger.dev/core": ["@trigger.dev/core@4.5.7", "", { "dependencies": { "@bugsnag/cuid": "^3.1.1", "@electric-sql/client": "1.0.14", "@google-cloud/precise-date": "^4.0.0", "@jsonhero/path": "^1.0.21", "@opentelemetry/api": "1.9.1", "@opentelemetry/api-logs": "0.218.0", "@opentelemetry/core": "2.7.1", "@opentelemetry/exporter-logs-otlp-http": "0.218.0", "@opentelemetry/exporter-metrics-otlp-http": "0.218.0", "@opentelemetry/exporter-trace-otlp-http": "0.218.0", "@opentelemetry/host-metrics": "^0.38.3", "@opentelemetry/instrumentation": "0.218.0", "@opentelemetry/resources": "2.7.1", "@opentelemetry/sdk-logs": "0.218.0", "@opentelemetry/sdk-metrics": "2.7.1", "@opentelemetry/sdk-trace-base": "2.7.1", "@opentelemetry/sdk-trace-node": "2.7.1", "@opentelemetry/semantic-conventions": "1.41.1", "@s2-dev/streamstore": "0.22.10", "dequal": "^2.0.3", "eventsource": "^3.0.5", "eventsource-parser": "^3.0.0", "execa": "^8.0.1", "humanize-duration": "^3.27.3", "jose": "^5.4.0", "nanoid": "3.3.8", "prom-client": "^15.1.0", "socket.io": "4.7.4", "socket.io-client": "4.7.5", "std-env": "^3.8.1", "tinyexec": "^0.3.2", "uncrypto": "^0.1.3", "zod": "3.25.76", "zod-error": "1.5.0", "zod-validation-error": "^1.5.0" } }, "sha512-Q5vI1zLtIxZMLq3LzdbrWNHtLkhyIvUtQ1toX0Bayn71RdMraTl3zhB95I/6LHuz7ZS7HSyO/zDy6Cs0gIm5rw=="],
+    "@trigger.dev/core": ["@trigger.dev/core@4.5.9", "", { "dependencies": { "@bugsnag/cuid": "^3.1.1", "@electric-sql/client": "1.0.14", "@google-cloud/precise-date": "^4.0.0", "@jsonhero/path": "^1.0.21", "@opentelemetry/api": "1.9.1", "@opentelemetry/api-logs": "0.218.0", "@opentelemetry/core": "2.7.1", "@opentelemetry/exporter-logs-otlp-http": "0.218.0", "@opentelemetry/exporter-metrics-otlp-http": "0.218.0", "@opentelemetry/exporter-trace-otlp-http": "0.218.0", "@opentelemetry/host-metrics": "^0.38.3", "@opentelemetry/instrumentation": "0.218.0", "@opentelemetry/resources": "2.7.1", "@opentelemetry/sdk-logs": "0.218.0", "@opentelemetry/sdk-metrics": "2.7.1", "@opentelemetry/sdk-trace-base": "2.7.1", "@opentelemetry/sdk-trace-node": "2.7.1", "@opentelemetry/semantic-conventions": "1.41.1", "@s2-dev/streamstore": "0.22.10", "dequal": "^2.0.3", "eventsource": "^3.0.5", "eventsource-parser": "^3.0.0", "execa": "^8.0.1", "humanize-duration": "^3.27.3", "jose": "^5.4.0", "nanoid": "3.3.8", "prom-client": "^15.1.0", "socket.io": "4.7.4", "socket.io-client": "4.7.5", "std-env": "^3.8.1", "tinyexec": "^0.3.2", "uncrypto": "^0.1.3", "zod": "3.25.76", "zod-error": "1.5.0", "zod-validation-error": "^1.5.0" } }, "sha512-tXmIxg31Z5cPAXZozvTxLhHY8r8dbDNIFsaKZAcPYLSnaPMCK7uwJufYDLpvLmfNStPvs9x4DNAD4UW3ClyUIA=="],
 
-    "@trigger.dev/schema-to-json": ["@trigger.dev/schema-to-json@4.5.7", "", { "dependencies": { "@sodaru/yup-to-json-schema": "^2", "@trigger.dev/core": "4.5.7", "effect": "^3", "zod": "3.25.76", "zod-to-json-schema": "^3.24.0" }, "peerDependencies": { "@sinclair/typebox": ">=0.34.30", "arktype": ">=2.0.0", "runtypes": ">=5.0.0", "superstruct": ">=0.14.2", "valibot": ">=0.41.0" }, "optionalPeers": ["@sinclair/typebox", "arktype", "runtypes", "superstruct", "valibot"] }, "sha512-Dxf4Sne20faYzycLeycHGNyTLR5gXbqSB0xRQcz67KWzCeUhuNd5j+dIQ2+brwy6hFCoHbt8+Ar0MTIv8Ce1hQ=="],
+    "@trigger.dev/schema-to-json": ["@trigger.dev/schema-to-json@4.5.9", "", { "dependencies": { "@sodaru/yup-to-json-schema": "^2", "@trigger.dev/core": "4.5.9", "effect": "^3", "zod": "3.25.76", "zod-to-json-schema": "^3.24.0" }, "peerDependencies": { "@sinclair/typebox": ">=0.34.30", "arktype": ">=2.0.0", "runtypes": ">=5.0.0", "superstruct": ">=0.14.2", "valibot": ">=0.41.0" }, "optionalPeers": ["@sinclair/typebox", "arktype", "runtypes", "superstruct", "valibot"] }, "sha512-R3rZJFHVW92NMXRZtmxS1laP8sZdRTCioDBmLH4hsqXmsvnPwOZQEBSnW/7kJGIzW6B2DF/esLAAr6ArfGGwrg=="],
 
-    "@trigger.dev/sdk": ["@trigger.dev/sdk@4.5.7", "", { "dependencies": { "@opentelemetry/api": "1.9.1", "@opentelemetry/semantic-conventions": "1.41.1", "@trigger.dev/core": "4.5.7", "chalk": "^5.2.0", "cronstrue": "^2.21.0", "debug": "^4.3.4", "evt": "^2.4.13", "slug": "^6.0.0", "ulid": "^2.3.0", "uncrypto": "^0.1.3", "ws": "^8.11.0" }, "peerDependencies": { "@ai-sdk/otel": ">=1.0.0-0 <2", "ai": "^5.0.0 || ^6.0.0 || >=7.0.0-canary <8", "react": "^18.0 || ^19.0", "zod": "^3.0.0 || ^4.0.0" }, "optionalPeers": ["@ai-sdk/otel", "ai", "react"] }, "sha512-aYUQ/U6wyf96Bkm/beJte4HPO5E5bWTWIxQkF4Hjrj7r2M0iOuCdYZ0OOhVwUn9OmqCkBshGbzWTXF4IzNhQ5Q=="],
+    "@trigger.dev/sdk": ["@trigger.dev/sdk@4.5.9", "", { "dependencies": { "@opentelemetry/api": "1.9.1", "@opentelemetry/semantic-conventions": "1.41.1", "@trigger.dev/core": "4.5.9", "chalk": "^5.2.0", "cronstrue": "^2.21.0", "debug": "^4.3.4", "evt": "^2.4.13", "slug": "^6.0.0", "ulid": "^2.3.0", "uncrypto": "^0.1.3", "ws": "^8.11.0" }, "peerDependencies": { "@ai-sdk/otel": ">=1.0.0-0 <2", "ai": "^5.0.0 || ^6.0.0 || >=7.0.0-canary <8", "react": "^18.0 || ^19.0", "zod": "^3.0.0 || ^4.0.0" }, "optionalPeers": ["@ai-sdk/otel", "ai", "react"] }, "sha512-YZ7Re6ys6E52Pt0siWtDw5rJodUbSl0DieChHH57Wtvqx/UF6dm2v6cf2wzCbtFAHxkNg33kPiAmz+FI74ZrJg=="],
 
     "@trpc/client": ["@trpc/client@11.8.0", "", { "peerDependencies": { "@trpc/server": "11.8.0", "typescript": ">=5.7.2" } }, "sha512-imJQeESX1hAapDaC4JB91yvXg41AZfBuTh/scnEiN/hAubZa5s/ikp0n+w29q2GCf+hREkr3WptUFKFJoDAIug=="],
 
@@ -5354,7 +5351,7 @@
 
     "axe-core": ["axe-core@4.13.0", "", {}, "sha512-UzGt8zg7Ny8djbYMhxl2zuEevVa7r2gJjYY5Lwr1xM7+XU2nd6CkIWFTVcCIbAP63vSz71NaVyyuSk9lHKcy0A=="],
 
-    "axios": ["axios@0.33.0", "", { "dependencies": { "follow-redirects": "^1.15.4", "form-data": "^4.0.4", "proxy-from-env": "^1.1.0" } }, "sha512-juz19g7B3UWT9r3+tgRFQf2Bdy6IKDVroiyuVOUrkILVKHpqHL++K1l8ybvfdEP9B/VE72vk8vllbnedVCm/og=="],
+    "axios": ["axios@0.34.0", "", { "dependencies": { "follow-redirects": "^1.15.4", "form-data": "^4.0.4", "proxy-from-env": "^1.1.0" } }, "sha512-CkOmqy7BaT4VC9+wRUmSM3LVwCkKK3UYc7koEqIHWRpOTJypwdNctaVOgnOjhHP3599Ubq2K8KqYwfC7c8NdPQ=="],
 
     "axobject-query": ["axobject-query@4.1.0", "", {}, "sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ=="],
 
@@ -9450,7 +9447,7 @@
 
     "tree-kill": ["tree-kill@1.2.2", "", { "bin": { "tree-kill": "cli.js" } }, "sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A=="],
 
-    "trigger.dev": ["trigger.dev@4.5.7", "", { "dependencies": { "@clack/prompts": "0.11.0", "@depot/cli": "0.0.1-cli.2.80.0", "@modelcontextprotocol/sdk": "^1.25.2", "@opentelemetry/api": "1.9.1", "@opentelemetry/api-logs": "0.218.0", "@opentelemetry/exporter-trace-otlp-http": "0.218.0", "@opentelemetry/instrumentation": "0.218.0", "@opentelemetry/instrumentation-fetch": "0.218.0", "@opentelemetry/resources": "2.7.1", "@opentelemetry/sdk-trace-node": "2.7.1", "@opentelemetry/semantic-conventions": "1.41.1", "@s2-dev/streamstore": "^0.22.10", "@trigger.dev/build": "4.5.7", "@trigger.dev/core": "4.5.7", "@trigger.dev/schema-to-json": "4.5.7", "ansi-escapes": "^7.0.0", "braces": "^3.0.3", "c12": "^1.11.1", "chalk": "^5.2.0", "chokidar": "^3.6.0", "cli-table3": "^0.6.3", "commander": "^9.4.1", "confbox": "^0.2.2", "defu": "^6.1.4", "dotenv": "^16.4.5", "esbuild": "^0.23.0", "eventsource": "^3.0.2", "evt": "^2.4.13", "fast-npm-meta": "^0.2.2", "git-last-commit": "^1.0.1", "gradient-string": "^2.0.2", "has-flag": "^5.0.1", "ignore": "^7.0.5", "import-in-the-middle": "3.0.1", "import-meta-resolve": "^4.1.0", "ini": "^5.0.0", "json-stable-stringify": "^1.3.0", "jsonc-parser": "3.2.1", "magicast": "^0.3.4", "minimatch": "^10.0.1", "mlly": "^1.7.1", "nypm": "^0.5.4", "object-hash": "^3.0.0", "open": "^10.0.3", "p-limit": "^6.2.0", "p-retry": "^6.1.0", "partysocket": "^1.0.2", "pkg-types": "^1.1.3", "resolve": "^1.22.8", "semver": "^7.5.0", "signal-exit": "^4.1.0", "socket.io-client": "4.7.5", "source-map-support": "0.5.21", "std-env": "^3.7.0", "strip-ansi": "^7.1.0", "supports-color": "^10.0.0", "tar": "^7.5.13", "tiny-invariant": "^1.2.0", "tinyexec": "^0.3.1", "tinyglobby": "^0.2.10", "ws": "^8.18.0", "xdg-app-paths": "^8.3.0", "zod": "3.25.76", "zod-validation-error": "^1.5.0" }, "bin": { "trigger": "dist/esm/index.js" } }, "sha512-en27SYQh9zd4/xQ7UXZd8ycWZtZsPJMdMwjIZ2+9cFHxfKt/q+dF/L0OKi+uStsMZS193R9whcYkJW3fFYy46g=="],
+    "trigger.dev": ["trigger.dev@4.5.9", "", { "dependencies": { "@clack/prompts": "0.11.0", "@depot/cli": "0.0.1-cli.2.80.0", "@modelcontextprotocol/sdk": "^1.25.2", "@opentelemetry/api": "1.9.1", "@opentelemetry/api-logs": "0.218.0", "@opentelemetry/exporter-trace-otlp-http": "0.218.0", "@opentelemetry/instrumentation": "0.218.0", "@opentelemetry/instrumentation-fetch": "0.218.0", "@opentelemetry/resources": "2.7.1", "@opentelemetry/sdk-trace-node": "2.7.1", "@opentelemetry/semantic-conventions": "1.41.1", "@s2-dev/streamstore": "^0.22.10", "@trigger.dev/build": "4.5.9", "@trigger.dev/core": "4.5.9", "@trigger.dev/schema-to-json": "4.5.9", "ansi-escapes": "^7.0.0", "braces": "^3.0.3", "c12": "^1.11.1", "chalk": "^5.2.0", "chokidar": "^3.6.0", "cli-table3": "^0.6.3", "commander": "^9.4.1", "confbox": "^0.2.2", "defu": "^6.1.4", "dotenv": "^16.4.5", "esbuild": "^0.23.0", "eventsource": "^3.0.2", "evt": "^2.4.13", "fast-npm-meta": "^0.2.2", "git-last-commit": "^1.0.1", "gradient-string": "^2.0.2", "has-flag": "^5.0.1", "ignore": "^7.0.5", "import-in-the-middle": "3.0.1", "import-meta-resolve": "^4.1.0", "ini": "^5.0.0", "json-stable-stringify": "^1.3.0", "jsonc-parser": "3.2.1", "magicast": "^0.3.4", "minimatch": "^10.0.1", "mlly": "^1.7.1", "nypm": "^0.5.4", "object-hash": "^3.0.0", "open": "^10.0.3", "p-limit": "^6.2.0", "p-retry": "^6.1.0", "partysocket": "^1.0.2", "pkg-types": "^1.1.3", "resolve": "^1.22.8", "semver": "^7.5.0", "signal-exit": "^4.1.0", "socket.io-client": "4.7.5", "source-map-support": "0.5.21", "std-env": "^3.7.0", "strip-ansi": "^7.1.0", "supports-color": "^10.0.0", "tar": "^7.5.13", "tiny-invariant": "^1.2.0", "tinyexec": "^0.3.1", "tinyglobby": "^0.2.10", "ws": "^8.18.0", "xdg-app-paths": "^8.3.0", "zod": "3.25.76", "zod-validation-error": "^1.5.0" }, "bin": { "trigger": "dist/esm/index.js" } }, "sha512-2MgUqMD6CnUhmefFDRiYy86lQ0h/j/QFkL9NE3JgDNQfxrOVxWHYDLwclc6USUEn1liSiTAc7EqHfKyvNn2rUQ=="],
 
     "trim-lines": ["trim-lines@3.0.1", "", {}, "sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg=="],
 
@@ -11289,8 +11286,6 @@
     "astro/vite": ["vite@8.2.2", "", { "dependencies": { "lightningcss": "^1.33.0", "picomatch": "^4.0.5", "postcss": "^8.5.26", "rolldown": "~1.2.4", "tinyglobby": "^0.2.17" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "@vitejs/devtools": "^0.4.0 || ^0.5.0", "esbuild": "^0.27.0 || ^0.28.0", "jiti": ">=1.21.0", "less": "^4.0.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "@vitejs/devtools", "esbuild", "jiti", "less", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-cFKLV/PRgAUlIRm5WjMjJ86jrftzpqcgH+Us+DS8mI3CDNiH30Whrz8uHL3+MOLPAgqbMBAqWdAHAphOAM+z/Q=="],
 
     "astro/yargs-parser": ["yargs-parser@22.0.0", "", {}, "sha512-rwu/ClNdSMpkSrUb+d6BRsSkLUq1fmfsY6TOpYzTwvwkg1/NRG85KBy3kq++A8LKQwX6lsu+aWad+2khvuXrqw=="],
-
-    "astro/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "aws-cdk-lib/@aws-cdk/cloud-assembly-api": ["@aws-cdk/cloud-assembly-api@2.4.0", "", { "dependencies": { "json-source-map": "^0.6.1", "jsonschema": "^1.5.0", "semver": "^7.8.5" }, "peerDependencies": { "@aws-cdk/cloud-assembly-schema": ">=54.21.0" }, "bundled": true }, "sha512-ooStESI1uXNcFAx1IgG6XcN7SsMuenoaxSb1FHqcLqwy7Lq5HUMWM52mtIzrS/uJmoFNvoxQ7fGbk8MfCGIjlw=="],
 
