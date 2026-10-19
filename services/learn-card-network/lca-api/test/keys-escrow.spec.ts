@@ -2305,6 +2305,25 @@ describe('escrow PIN release', () => {
         expect((await getClient().escrow.getStatus(auth)).hold?.holdId).toBe(hold.holdId);
     });
 
+    it('logs an unexpected non-PIN mismatch once without refunding a PIN attempt', async () => {
+        await enroll();
+        const hold = await start();
+        advanceToRelease(hold);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const refund = vi.spyOn(models, 'refundEscrowPinAttempt');
+        vi.spyOn(getEscrowEnclave(), 'releaseEscrow').mockRejectedValueOnce(
+            new EscrowPinMismatchError()
+        );
+        await expect(getClient().escrow.completeRecovery(resume(hold))).rejects.toMatchObject({
+            code: 'INTERNAL_SERVER_ERROR',
+        });
+        expect(warn).toHaveBeenCalledExactlyOnceWith('[LCA escrow] enclave operation failed', {
+            reason: 'pin_mismatch',
+        });
+        expect(refund).not.toHaveBeenCalled();
+        expect(await findEscrowHoldById(hold.holdId)).toMatchObject({ status: 'pending' });
+    });
+
     it.each([new EscrowUnavailableError(), new EscrowBlobError()])(
         'refunds non-mismatch enclave failures: %s',
         async error => {

@@ -18,6 +18,9 @@ describe('escrow failure reasons', () => {
     it.each([
         [403, 'policy', 'policy'],
         [403, 'pinMismatch', 'pin_mismatch'],
+        [403, 'codeMismatch', 'code_mismatch'],
+        [403, 'codeExpired', 'code_expired'],
+        [403, 'codeLocked', 'code_locked'],
         [403, 'blob', 'blob'],
         [503, 'ledger', 'ledger'],
         [503, 'time', 'time'],

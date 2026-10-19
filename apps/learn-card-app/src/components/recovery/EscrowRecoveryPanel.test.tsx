@@ -147,6 +147,52 @@ describe('EscrowRecoveryPanel', () => {
         }
     );
 
+    it('clears stale errors after a failed retry followed by a successful retry', async () => {
+        const releaseAfter = new Date(Date.now() + 86400000).toISOString();
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId: expectations.holdId,
+            resumeToken: 'token',
+            clientEphemeralPrivateKey: 'key',
+            releaseAfter,
+            requiresConfirmation: true,
+            expectations,
+        });
+        let resolveRetry!: (value: unknown) => void;
+        const onStatus = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('mount failure'))
+            .mockRejectedValueOnce(new Error('retry failure'))
+            .mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        resolveRetry = resolve;
+                    })
+            );
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available
+                onStart={vi.fn()}
+                onStatus={onStatus}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Try Again' }));
+        await waitFor(() => expect(onStatus).toHaveBeenCalledTimes(2));
+        fireEvent.click(await screen.findByRole('button', { name: 'Try Again' }));
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        await act(async () => {
+            resolveRetry({ status: 'pending', confirmed: true, releaseAfter });
+        });
+        expect(await screen.findByRole('button', { name: 'Check status' })).toBeEnabled();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(
+            screen.queryByText('Something went wrong. Please try again.')
+        ).not.toBeInTheDocument();
+    });
+
     it.each(['cancelled', 'expired', 'completed', 'not found'])(
         'retries failed local cleanup after a %s status result',
         async status => {

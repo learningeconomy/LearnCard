@@ -258,6 +258,7 @@ export const EscrowRecoveryPanel = ({
         }
         setVerifiedHoldId(holdId);
         setStatusFailed(false);
+        setError('');
         // Monotonic for a given hold: once confirmed locally, never let a
         // stale confirmed: false revert it. Independent of the generation
         // check above as a second guard on the field a race would most
@@ -385,6 +386,7 @@ export const EscrowRecoveryPanel = ({
         const holdId = pending.holdId;
         const generation = beginStatusRead();
         let hold;
+        setError('');
         setStatusFailed(false);
         try {
             hold = await onStatus({
