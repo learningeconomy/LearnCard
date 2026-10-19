@@ -1,11 +1,18 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IssuanceResults } from './IssuanceResults';
 import { DeliveryStatus } from './DeliveryStatus';
 import { makeRun } from './fixtures.test-support';
 
 const modal = vi.hoisted(() => ({ open: vi.fn(() => ({ id: 1, generation: 1 })) }));
+const originalScroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView');
+afterEach(() => {
+    vi.unstubAllGlobals();
+    if (originalScroll)
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScroll);
+    else Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+});
 vi.mock('learn-card-base', () => ({
     useModal: () => ({ newModalWithToken: modal.open, forceCloseModalByToken: vi.fn() }),
     ModalTypes: { Center: 'center', FullScreen: 'fullscreen' },
@@ -25,6 +32,41 @@ const failedRun = () => {
 };
 
 describe('delivery status review', () => {
+    it.each([false, true])('reveals sending progress once (reduced motion: %s)', reduced => {
+        const scroll = vi.fn();
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+            configurable: true,
+            value: scroll,
+        });
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn(() => ({ matches: reduced }))
+        );
+        const run = makeRun(2);
+        const callbacks = {
+            onResume: vi.fn(),
+            onRetry: vi.fn(),
+            onDownload: vi.fn(),
+            onNew: vi.fn(),
+        };
+        const view = render(<IssuanceResults {...callbacks} run={run} busy={false} />);
+        expect(scroll).not.toHaveBeenCalled();
+        view.rerender(<IssuanceResults {...callbacks} run={run} busy />);
+        expect(scroll).toHaveBeenCalledWith({
+            block: 'center',
+            behavior: reduced ? 'auto' : 'smooth',
+        });
+        view.rerender(
+            <IssuanceResults
+                {...callbacks}
+                run={{ ...run, outcomes: { 'row-0': { state: 'sent' } } }}
+                busy
+            />
+        );
+        view.rerender(<IssuanceResults {...callbacks} run={run} busy={false} />);
+        view.rerender(<IssuanceResults {...callbacks} run={run} busy />);
+        expect(scroll).toHaveBeenCalledOnce();
+    });
     it('keeps 250 failures off the main page and retains retry and download actions', () => {
         const onRetry = vi.fn();
         const onDownload = vi.fn();

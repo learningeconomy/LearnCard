@@ -38,4 +38,4 @@ Duplicate protection applies when restoring the same saved run or re-importing i
 
 Open **Review delivery issues** to search failed or unconfirmed sends in pages of 25. Correct definite failures in **Review people** before retrying; unconfirmed sends retain their recovery safeguards.
 
-Choose **View delivery status** in the batch card to search every recipient and filter by Not sent, Queued, Sent, Failed, or Unconfirmed. The viewer updates as the active run receives results. The small delivery illustration respects your device’s reduced-motion setting.
+Choose **View delivery status** in the batch card to search every recipient and filter by Not sent, Queued, Sent, Failed, or Unconfirmed. The viewer updates as the active run receives results. The card comes into view once when sending starts; later updates leave your scroll position alone. The small delivery illustration and the initial scroll respect your device’s reduced-motion setting.

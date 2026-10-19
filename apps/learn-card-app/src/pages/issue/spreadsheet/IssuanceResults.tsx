@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, chevronForwardOutline } from 'ionicons/icons';
 import * as m from '../../../paraglide/messages.js';
@@ -15,6 +15,20 @@ export const IssuanceResults: React.FC<{
     onDownload: () => void;
     onNew: () => void;
 }> = ({ run, busy, onResume, onRetry, onDownload, onNew }) => {
+    const progress = useRef<HTMLElement>(null);
+    const revealedRun = useRef<string | undefined>(undefined);
+    useEffect(() => {
+        if (!busy || revealedRun.current === run.id) return;
+        revealedRun.current = run.id;
+        // Issuance can start from the sticky header while the form is scrolled down.
+        // Reveal progress once; polling must never pull people away from their review.
+        progress.current?.scrollIntoView?.({
+            block: 'center',
+            behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+                ? 'auto'
+                : 'smooth',
+        });
+    }, [busy, run.id]);
     const outcomes = Object.values(run.outcomes);
     const sent = outcomes.filter(row => row.state === 'sent').length;
     const failed = outcomes.filter(row => row.state === 'failed').length;
@@ -28,7 +42,11 @@ export const IssuanceResults: React.FC<{
     const BUTTON =
         'py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 disabled:opacity-40';
     return (
-        <section className="font-poppins bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4">
+        <section
+            ref={progress}
+            data-testid="issuance-progress"
+            className="font-poppins bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4"
+        >
             <div className="flex items-center gap-3">
                 <BatchDeliveryAnimation active={busy || (!ready && waiting > 0)} />
                 <div className="min-w-0 flex-1" aria-live="polite" role="status">

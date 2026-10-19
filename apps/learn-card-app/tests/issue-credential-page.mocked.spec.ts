@@ -373,10 +373,17 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 ),
             });
             await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page
+                .getByRole('button', { name: 'Review people', exact: true })
+                .scrollIntoViewIfNeeded();
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await issueButton(page).click();
             await expect.poll(() => submissions.length).toBe(1);
             const flyer = page.locator('.batch-delivery-card');
+            await expect(flyer).toBeInViewport();
+            await expect(
+                page.getByRole('button', { name: 'View delivery status', exact: true })
+            ).toBeInViewport();
             await expect
                 .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
                 .not.toBe('none');
