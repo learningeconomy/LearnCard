@@ -18,16 +18,16 @@ const safeWebUrl = (value?: string): string | undefined => {
 };
 
 const DetailRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div className="min-w-0 space-y-1">
+    <div className="min-w-0 space-y-v3-1">
         <dt className="text-xs font-medium text-grayscale-700">{label}</dt>
-        <dd className="m-0 whitespace-pre-wrap break-words text-sm text-grayscale-900 [overflow-wrap:anywhere]">
+        <dd className="m-0 whitespace-pre-wrap wrap-break-word text-sm text-grayscale-900 wrap-anywhere">
             {children}
         </dd>
     </div>
 );
 
 const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) => (
-    <dl className="space-y-3">
+    <dl className="space-y-v3-3">
         {identifiers.map(identifier => {
             const value = identifier.identifier?.value ?? identifier.identityHash?.value;
             if (!value) return null;
@@ -114,7 +114,7 @@ export const ClrRecordDetails = ({
         return null;
 
     return (
-        <div className="space-y-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins">
+        <div className="space-y-v3-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins">
             {prominentFields && primaryFields.length > 0 && (
                 <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {primaryFields.map(({ label, field }) => (
@@ -125,7 +125,7 @@ export const ClrRecordDetails = ({
                 </dl>
             )}
             {prominentFields && achievementIdentifiers.length > 0 && (
-                <section className="space-y-2">
+                <section className="space-y-v3-2">
                     <h4 className="text-sm font-semibold text-grayscale-900">
                         {m['clrTranscript.details.achievementIdentifiers']()}
                     </h4>
@@ -168,12 +168,12 @@ export const ClrRecordDetails = ({
                 </dl>
             )}
             {hasCriteria && (
-                <section className="space-y-2">
+                <section className="space-y-v3-2">
                     <h3 className="text-base font-semibold text-grayscale-900">
                         {m['clrTranscript.details.criteria']()}
                     </h3>
                     {criteria?.narrative?.value && (
-                        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-grayscale-600">
+                        <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-grayscale-600">
                             {criteria.narrative.value}
                         </p>
                     )}
@@ -200,7 +200,7 @@ export const ClrRecordDetails = ({
                     <summary className="cursor-pointer rounded-[20px] text-sm font-semibold text-grayscale-900 focus-visible:outline-emerald-600">
                         {m['clrTranscript.details.additionalDetails']()}
                     </summary>
-                    <div className="mt-4 space-y-4">
+                    <div className="mt-4 space-y-v3-4">
                         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             {metadata.map(({ label, field }) => (
                                 <DetailRow key={label} label={label}>
@@ -233,7 +233,7 @@ export const ClrRecordDetails = ({
                             )}
                         </dl>
                         {!prominentFields && achievementIdentifiers.length > 0 && (
-                            <section className="space-y-2">
+                            <section className="space-y-v3-2">
                                 <h4 className="text-sm font-semibold text-grayscale-900">
                                     {m['clrTranscript.details.achievementIdentifiers']()}
                                 </h4>
@@ -241,7 +241,7 @@ export const ClrRecordDetails = ({
                             </section>
                         )}
                         {subjectIdentifiers.length > 0 && (
-                            <section className="space-y-2">
+                            <section className="space-y-v3-2">
                                 <h4 className="text-sm font-semibold text-grayscale-900">
                                     {m['clrTranscript.details.learnerIdentifiers']()}
                                 </h4>

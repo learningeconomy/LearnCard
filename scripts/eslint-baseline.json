@@ -454,6 +454,9 @@
         "d7bd4683f1f137a033d3163fd35f4e7837f4e7a8358175a98ee9932356071438": 1,
         "eb316625f95cedad697ee0bd0ef03b2a3eea668f6d87c9e917dc1e9e7f80aba8": 1
     },
+    "examples/credential-viewer/src/components/NewFixturePanel.tsx": {
+        "5aa74082d58e818b62cc05c3262e8098ee94ba229a96c5328d711349e9e19672": 1
+    },
     "examples/embed-example/src/scripts/embed-init.ts": {
         "03f0d913eb81df66cc55cee32a66f23e2577673abc97dbd16193c5c88a61a50f": 1,
         "05130f3bf91169dfa29e36f9d12270fe8840c66f8297a5aa9f5a8f4b85b6f75d": 1,

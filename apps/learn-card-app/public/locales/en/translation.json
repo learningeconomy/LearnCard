@@ -9423,7 +9423,7 @@
             "emailColumn": "Recipient email column",
             "headerRow": "Column names row",
             "noHeader": "No column names",
-            "importSummary": "{{count}} people found · {{skipped}} rows skipped",
+            "importSummary": "People found: {{count}} · Rows skipped: {{skipped}}",
             "importing": "Reading spreadsheet...",
             "addPeople": "Add People",
             "upload": "Upload spreadsheet",

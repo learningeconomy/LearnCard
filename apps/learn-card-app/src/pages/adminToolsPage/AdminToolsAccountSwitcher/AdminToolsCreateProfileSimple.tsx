@@ -500,13 +500,13 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                                         : ''
                                 }`}
                             >
-                                <span className="pl-4 !pr-0 text-grayscale-500 select-none font-semibold">
+                                <span className="pl-4 pr-0! text-grayscale-500 select-none font-semibold">
                                     <HandleIcon className="w-[20px] h-[20px] text-grayscale-700" />
                                 </span>
                                 <IonInput
                                     style={placeholderStyles}
                                     autocapitalize="on"
-                                    className={`flex-1 bg-transparent text-grayscale-800 !pr-4 !pl-2 !py-[6px] font-medium tracking-widest text-base text-left `}
+                                    className={`flex-1 bg-transparent text-grayscale-800 pr-4! pl-2! py-[6px]! font-medium tracking-widest text-base text-left `}
                                     onIonInput={e => {
                                         handleProfileIdInput(e.detail.value);
                                     }}
@@ -568,7 +568,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                 <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 rounded-full bg-white text-grayscale-800 py-2 shadow-sm"
+                    className="flex-1 rounded-full bg-white text-grayscale-800 py-2 shadow-xs"
                 >
                     {m['common.close']()}
                 </button>
@@ -580,7 +580,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                             ? () => handleCreateChildAccount()
                             : () => createManagedServiceProfile()
                     }
-                    className="flex-1 rounded-full bg-grayscale-900 text-white py-2 shadow-sm disabled:bg-grayscale-500"
+                    className="flex-1 rounded-full bg-grayscale-900 text-white py-2 shadow-xs disabled:bg-grayscale-500"
                 >
                     {isLoading ? m['common.creating']() : m['common.create']()}
                 </button>

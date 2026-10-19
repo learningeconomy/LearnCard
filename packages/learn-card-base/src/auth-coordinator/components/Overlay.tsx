@@ -175,7 +175,7 @@ export const Overlay: React.FC<OverlayProps> = ({
         : (ariaLabel ?? (derivedTitleId ? undefined : 'Dialog'));
 
     return (
-        <div className="lc-auth-overlay fixed inset-0 z-[9999] flex flex-col overflow-y-auto bg-black/50 backdrop-blur-sm animate-fade-in-up font-poppins sm:p-4">
+        <div className="lc-auth-overlay fixed inset-0 z-[9999] flex flex-col overflow-y-auto bg-black/50 backdrop-blur-xs animate-fade-in-up font-poppins sm:p-4">
             <div
                 ref={handleDialogRef}
                 role="dialog"
@@ -184,7 +184,7 @@ export const Overlay: React.FC<OverlayProps> = ({
                 aria-labelledby={resolvedAriaLabelledBy}
                 aria-describedby={ariaDescribedBy}
                 tabIndex={-1}
-                className="lc-surface bg-white sm:rounded-[20px] shadow-2xl sm:max-w-[480px] w-full min-h-full sm:min-h-0 mx-auto sm:my-auto shrink-0 focus:outline-none"
+                className="lc-surface bg-white sm:rounded-[20px] shadow-2xl sm:max-w-[480px] w-full min-h-full sm:min-h-0 mx-auto sm:my-auto shrink-0 focus:outline-hidden"
             >
                 {children}
             </div>

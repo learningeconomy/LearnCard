@@ -20,7 +20,7 @@ import {
 } from './SpreadsheetDialog';
 
 const INPUT =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base sm:text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base sm:text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
 const BUTTON =
     'py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40';
 
@@ -77,7 +77,7 @@ export const SpreadsheetReview: React.FC<{
                 </div>
             }
         >
-            <div className="space-y-6">
+            <div className="space-y-v3-6">
                 <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 sm:p-5">
                     <h3 className="mb-4 text-sm font-semibold text-grayscale-900">
                         {m['issueFlow.sheet.design.importSetup']()}
@@ -267,7 +267,7 @@ export const SpreadsheetUpload: React.FC<{
         }
     };
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <input
                 data-testid="issue-spreadsheet-file"
                 ref={fileInput}

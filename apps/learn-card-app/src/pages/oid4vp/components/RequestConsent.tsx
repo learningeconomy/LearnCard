@@ -304,7 +304,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
             }}
         >
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden">
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-v3-5">
                     <div>
                         <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
                             Share credentials?
@@ -351,7 +351,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             Credentials to share
                         </p>
 
-                        <ul className="space-y-2">
+                        <ul className="space-y-v3-2">
                             {rows.map(row => {
                                 const pickedIndex = picks.row[row.id] ?? 0;
                                 const candidate = row.candidates[pickedIndex]?.candidate;
@@ -367,8 +367,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                         isParsingSdJwt={status?.isParsing}
                                         discloseFrame={
                                             picks.disclose[cacheKey] as
-                                                | Record<string, boolean>
-                                                | undefined
+                                                Record<string, boolean> | undefined
                                         }
                                         onClaimChange={(key, checked) =>
                                             handleClaimChange(cacheKey, key, checked)
@@ -400,7 +399,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         </div>
                     )}
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-v3-3 pt-1">
                         <button
                             onClick={() => onApprove(picks)}
                             disabled={!canShare}
@@ -476,7 +475,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
     const hasMultiple = row.candidates.length > 1;
 
     return (
-        <li className="rounded-xl border border-grayscale-200 bg-white p-4 space-y-3">
+        <li className="rounded-xl border border-grayscale-200 bg-white p-4 space-y-v3-3">
             <div>
                 <p className="text-sm font-semibold text-grayscale-900">{row.title}</p>
 
@@ -509,14 +508,14 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                             boostPageViewMode={BoostPageViewMode.Card}
                             useWrapper={false}
                             hideOptionsMenu
-                            className="!mt-0 shadow-md"
+                            className="mt-0! shadow-md"
                         />
                     </div>
                 </div>
             )}
 
             {hasCandidate && hasMultiple && (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <p className="text-xs text-grayscale-500">
                         You have {row.candidates.length} that match — tap one to share.
                     </p>
@@ -530,7 +529,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                                     type="button"
                                     onClick={() => onPick(i)}
                                     aria-pressed={isPicked}
-                                    className={`flex shrink-0 rounded-2xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                    className={`flex shrink-0 rounded-2xl transition-all focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                         isPicked
                                             ? 'ring-2 ring-emerald-500'
                                             : 'opacity-60 hover:opacity-90'
@@ -547,7 +546,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                                             boostPageViewMode={BoostPageViewMode.Card}
                                             useWrapper={false}
                                             hideOptionsMenu
-                                            className="!mt-0 shadow-md"
+                                            className="mt-0! shadow-md"
                                         />
                                     </div>
                                 </button>
@@ -567,7 +566,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                         </p>
 
                         {(parsedSdJwt.issuer || parsedSdJwt.vct || parsedSdJwt.expiresAt) && (
-                            <ul className="space-y-1 mb-3">
+                            <ul className="space-y-v3-1 mb-3">
                                 {parsedSdJwt.issuer && (
                                     <RequiredClaimRow
                                         label="Issuer"
@@ -596,7 +595,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                                     {verifierName}.
                                 </p>
 
-                                <ul className="space-y-1">
+                                <ul className="space-y-v3-1">
                                     {(parsedSdJwt.disclosureKeys || []).map((key: string) => {
                                         const val = parsedSdJwt.claims?.[key];
                                         const isChecked = discloseFrame?.[key] ?? true;

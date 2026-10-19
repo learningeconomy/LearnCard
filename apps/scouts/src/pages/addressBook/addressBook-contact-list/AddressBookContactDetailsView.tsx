@@ -151,7 +151,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
         ) {
             actionButton = (
                 <button
-                    className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
+                    className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-2 last:border-b-0"
                     onClick={e => {
                         e.stopPropagation();
                         showConfirmationAlert(m['addressBook.confirmConnection'](), async () => {
@@ -241,7 +241,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                     handlePresentBoostModal();
                                 }
                             }}
-                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-2 last:border-b-0"
                         >
                             <p className="text-grayscale-900">{m['addressBook.boostLabel']()}</p>
                             <div className="h-[30px] w-[30px] max-h-[30px] max-w-[30px]">
@@ -261,7 +261,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                     }
                                 );
                             }}
-                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-2 last:border-b-0"
                         >
                             <p className="text-grayscale-900">{m['addressBook.removeContact']()}</p>
                             <TrashBin className="h-[30px] w-[30px]" />
@@ -270,7 +270,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     {actionButton}
                     {showCancelButton && (
                         <button
-                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-2 last:border-b-0"
                             onClick={e => {
                                 e.stopPropagation();
                                 closeModal();
@@ -288,7 +288,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     )}
                     {showBlockButton && (
                         <button
-                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-2 last:border-b-0"
                             onClick={e => {
                                 e.stopPropagation();
                                 closeModal();
@@ -307,7 +307,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     )}
                     {showUnblockButton && (
                         <button
-                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-2 last:border-b-0"
                             onClick={e => {
                                 e.stopPropagation();
                                 closeModal();
@@ -346,7 +346,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             {sectionPortal &&
                 showAcceptButton &&
                 createPortal(
-                    <div className="flex flex-col justify-center items-center relative max-w-[400px] !border-none">
+                    <div className="flex flex-col justify-center items-center relative max-w-[400px] border-none!">
                         <button
                             onClick={e => {
                                 e.stopPropagation();

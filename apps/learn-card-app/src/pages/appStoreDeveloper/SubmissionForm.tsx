@@ -649,7 +649,7 @@ const SubmissionForm: React.FC = () => {
                     </div>
                     {submitError && (
                         <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                             <div>
                                 <p className="text-sm font-medium text-red-800">
                                     {m['developerPortal.submissionForm.error']()}
@@ -663,7 +663,7 @@ const SubmissionForm: React.FC = () => {
                             <>
                                 {location.state?.capturedManifest && (
                                     <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
-                                        <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
                                             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                                         </div>
                                         <div>

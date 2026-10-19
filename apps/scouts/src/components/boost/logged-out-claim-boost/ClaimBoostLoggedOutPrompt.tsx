@@ -146,7 +146,7 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
             <IonPage className="flex flex-col h-full" style={{ backgroundColor }}>
                 <IonContent
                     fullscreen
-                    className="flex flex-col flex-grow"
+                    className="flex flex-col grow"
                     style={{ '--background': backgroundColor } as React.CSSProperties}
                 >
                     <IonGrid
@@ -173,7 +173,7 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
         <IonPage className="flex flex-col h-full" style={{ backgroundColor }}>
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow"
+                className="flex flex-col grow"
                 style={{ '--background': backgroundColor } as React.CSSProperties}
             >
                 <IonGrid
@@ -220,7 +220,7 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
                     <img src={textLogo} alt="" className="max-w-[200px]" />
                 </div>
 
-                <h1 className="max-w-[310px] text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
+                <h1 className="max-w-[310px] text-[24px] font-semibold leading-snug text-white drop-shadow-xs">
                     {headline}
                 </h1>
             </div>
@@ -267,7 +267,7 @@ const ScoutsLoginColumn: React.FC = () => {
 
     return (
         <div className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-white text-grayscale-900">
-            <div className="relative flex items-center justify-center bg-sp-purple-base login-page-header !overflow-hidden">
+            <div className="relative flex items-center justify-center bg-sp-purple-base login-page-header overflow-hidden!">
                 <div className="flex flex-col items-center justify-center">
                     <img src={ScoutPassLogo} alt="" className="w-[55px]" />
                     <img src={ScoutPassTextLogo} alt="" className="mt-4" />
@@ -363,7 +363,7 @@ const ClaimBoostLoggedOutPromptMobile: React.FC<{
                     <img src={textLogo} alt="" className="max-w-[160px]" />
                 </div>
 
-                <h1 className="mb-2 max-w-[310px] text-[20px] font-semibold leading-snug text-white drop-shadow-sm">
+                <h1 className="mb-2 max-w-[310px] text-[20px] font-semibold leading-snug text-white drop-shadow-xs">
                     {headline}
                 </h1>
 

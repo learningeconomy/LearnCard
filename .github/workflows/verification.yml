@@ -83,7 +83,7 @@ jobs:
 
             - name: Check lifecycle, resolver and persistence boundaries
               run: |
-                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
+                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
                   bun run --cwd apps/learn-card-app test:unit src/helpers/queryPersistence.test.ts src/helpers/createQueryPersister.test.ts > "$PRIVATE_LOG_DIR/persistence.log" 2>&1
 
             - name: Run fresh serial catalog

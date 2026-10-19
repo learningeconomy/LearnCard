@@ -41,7 +41,7 @@ export const CredentialReceiveScreen = ({
         <IonPage>
             <IonContent fullscreen className="font-poppins [--background:#EFF0F5]">
                 <main className="mx-auto w-full max-w-[640px] px-4 py-6 sm:py-10">
-                    <div className="bg-white rounded-[20px] border border-grayscale-200 overflow-hidden shadow-sm">
+                    <div className="bg-white rounded-[20px] border border-grayscale-200 overflow-hidden shadow-xs">
                         <header className="p-6 border-b border-grayscale-200">
                             <div className="w-12 h-12 mb-4 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                                 <IonIcon
@@ -66,7 +66,7 @@ export const CredentialReceiveScreen = ({
                                 </p>
                             )}
                         </header>
-                        <div className="p-6 space-y-4" aria-live="polite">
+                        <div className="p-6 space-y-v3-4" aria-live="polite">
                             {loading && (
                                 <div
                                     role="status"
@@ -139,11 +139,11 @@ export const CredentialReceiveScreen = ({
                                             />
                                         </span>
                                         <span className="min-w-0 flex-1">
-                                            <span className="block text-sm font-medium text-grayscale-900 break-words">
+                                            <span className="block text-sm font-medium text-grayscale-900 wrap-break-word">
                                                 {getCredentialName(credential) ||
                                                     m['chapi.receive.credential']()}
                                             </span>
-                                            <span className="block text-xs text-grayscale-600 mt-1 break-words">
+                                            <span className="block text-xs text-grayscale-600 mt-1 wrap-break-word">
                                                 {getIssuerName(credential) ||
                                                     m['chapi.receive.issuerUnavailable']()}
                                             </span>

@@ -74,7 +74,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
 
     if (!pages) {
         return (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
+            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
                 {contacts?.map((contact, index) => {
                     return (
                         <AddressBookContactItem
@@ -105,7 +105,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
 
     return (
         <>
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
+            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
                 {pages?.flatMap(page => (
                     <>
                         {page?.records?.map((record: LCNProfile, index: number) => (

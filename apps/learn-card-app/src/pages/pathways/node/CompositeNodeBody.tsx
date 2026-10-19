@@ -64,10 +64,7 @@ interface CompositeNodeBodyProps {
 // Component
 // ---------------------------------------------------------------------------
 
-const CompositeNodeBody: React.FC<CompositeNodeBodyProps> = ({
-    parentPathway,
-    parentNode,
-}) => {
+const CompositeNodeBody: React.FC<CompositeNodeBodyProps> = ({ parentPathway, parentNode }) => {
     const history = useHistory();
     const analytics = useAnalytics();
 
@@ -109,12 +106,7 @@ const CompositeNodeBody: React.FC<CompositeNodeBodyProps> = ({
     // Missing-pathway state (applies to both render styles)
     // -----------------------------------------------------------------
     if (!nested) {
-        return (
-            <MissingPathwayCard
-                parentNodeTitle={parentNode.title}
-                onImport={handleImport}
-            />
-        );
+        return <MissingPathwayCard parentNodeTitle={parentNode.title} onImport={handleImport} />;
     }
 
     // -----------------------------------------------------------------
@@ -122,11 +114,7 @@ const CompositeNodeBody: React.FC<CompositeNodeBodyProps> = ({
     // -----------------------------------------------------------------
     if (style === 'link-out') {
         return (
-            <LinkOutCard
-                nested={nested}
-                parentNodeTitle={parentNode.title}
-                onEnter={handleEnter}
-            />
+            <LinkOutCard nested={nested} parentNodeTitle={parentNode.title} onEnter={handleEnter} />
         );
     }
 
@@ -182,9 +170,9 @@ const InlineExpandableCard: React.FC<{
                 </div>
             </header>
 
-            <div className="px-4 py-3 space-y-3">
+            <div className="px-4 py-3 space-y-v3-3">
                 {/* Progress bar + count */}
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     <div className="flex items-center justify-between text-[11px]">
                         <span className="text-grayscale-500">
                             {progress.total === 0
@@ -193,9 +181,7 @@ const InlineExpandableCard: React.FC<{
                         </span>
 
                         {progress.destinationCompleted && (
-                            <span className="text-emerald-700 font-medium">
-                                Destination earned
-                            </span>
+                            <span className="text-emerald-700 font-medium">Destination earned</span>
                         )}
                     </div>
 
@@ -213,23 +199,20 @@ const InlineExpandableCard: React.FC<{
 
                 {/* Step peek */}
                 {previewNodes.length > 0 && (
-                    <ul className="space-y-1">
+                    <ul className="space-y-v3-1">
                         {previewNodes.map(n => {
                             const isDestination = n.id === nested.destinationNodeId;
                             const done = n.progress.status === 'completed';
 
                             return (
-                                <li
-                                    key={n.id}
-                                    className="text-xs flex items-center gap-2"
-                                >
+                                <li key={n.id} className="text-xs flex items-center gap-2">
                                     <span
                                         className={`shrink-0 w-1.5 h-1.5 rounded-full ${
                                             done
                                                 ? 'bg-emerald-500'
                                                 : isDestination
-                                                    ? 'bg-grayscale-900'
-                                                    : 'bg-grayscale-300'
+                                                  ? 'bg-grayscale-900'
+                                                  : 'bg-grayscale-300'
                                         }`}
                                         aria-hidden
                                     />
@@ -269,13 +252,11 @@ const InlineExpandableCard: React.FC<{
                                flex items-center justify-center gap-1.5"
                 >
                     <IonIcon icon={trailSignOutline} className="text-base" aria-hidden />
-
                     {progress.completed > 0 ? 'Continue' : 'Start'} {nested.title}
                 </button>
 
                 <p className="text-[11px] text-grayscale-500 leading-relaxed">
-                    "{parentNodeTitle}" unlocks when you complete this pathway's
-                    destination.
+                    "{parentNodeTitle}" unlocks when you complete this pathway's destination.
                 </p>
             </div>
         </motion.div>
@@ -312,21 +293,17 @@ const LinkOutCard: React.FC<{
             >
                 <IonIcon
                     icon={locked ? lockClosedOutline : openOutline}
-                    className={`text-base ${
-                        locked ? 'text-grayscale-500' : 'text-emerald-700'
-                    }`}
+                    className={`text-base ${locked ? 'text-grayscale-500' : 'text-emerald-700'}`}
                 />
             </span>
 
-            <div className="min-w-0 flex-1 space-y-2">
+            <div className="min-w-0 flex-1 space-y-v3-2">
                 <div>
                     <div className="text-[10px] font-semibold text-grayscale-500 uppercase tracking-[0.08em]">
                         Separate pathway
                     </div>
 
-                    <div className="text-sm font-semibold text-grayscale-900">
-                        {nested.title}
-                    </div>
+                    <div className="text-sm font-semibold text-grayscale-900">{nested.title}</div>
                 </div>
 
                 <p className="text-xs text-grayscale-600 leading-relaxed">
@@ -350,7 +327,6 @@ const LinkOutCard: React.FC<{
                                transition-colors"
                 >
                     Open {nested.title}
-
                     <IonIcon icon={arrowForwardOutline} className="text-xs" aria-hidden />
                 </button>
             </div>
@@ -380,7 +356,7 @@ const MissingPathwayCard: React.FC<{
             <IonIcon icon={cloudDownloadOutline} className="text-amber-700 text-base" />
         </span>
 
-        <div className="min-w-0 flex-1 space-y-2">
+        <div className="min-w-0 flex-1 space-y-v3-2">
             <div>
                 <div className="text-[10px] font-semibold text-amber-700 uppercase tracking-[0.08em]">
                     Referenced pathway not loaded

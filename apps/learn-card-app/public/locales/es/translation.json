@@ -9372,7 +9372,7 @@
             "emailColumn": "Columna de correo del destinatario",
             "headerRow": "Fila de nombres de columnas",
             "noHeader": "Sin nombres de columnas",
-            "importSummary": "{{count}} personas encontradas · {{skipped}} filas omitidas",
+            "importSummary": "Personas encontradas: {{count}} · Filas omitidas: {{skipped}}",
             "importing": "Leyendo hoja...",
             "addPeople": "Añadir personas",
             "upload": "Subir hoja",

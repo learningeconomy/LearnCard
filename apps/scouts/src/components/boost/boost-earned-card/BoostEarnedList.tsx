@@ -135,20 +135,20 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                 ? m['common.searchResults.earnedCountOne']({ count: searchResultsCount })
                 : m['common.searchResults.earnedCountOther']({ count: searchResultsCount })
             : noSearchResults
-            ? m['common.searchResults.noEarned']({ query: searchString })
-            : searchResultsCount === 1
-            ? m['common.searchResults.foundOne']({
-                  count: searchResultsCount,
-                  query: searchString,
-              })
-            : m['common.searchResults.foundOther']({
-                  count: searchResultsCount,
-                  query: searchString,
-              });
+              ? m['common.searchResults.noEarned']({ query: searchString })
+              : searchResultsCount === 1
+                ? m['common.searchResults.foundOne']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  })
+                : m['common.searchResults.foundOther']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[15px]' : ''}`}>
-            <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
+            <span className="font-notoSans text-grayscale-900 text-[14px] font-bold">
                 {searchResultsText}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
@@ -221,7 +221,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                             </div>
                         )}
                         <div
-                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] z-[-50] ${bgFillerColor}`}
+                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
                     </IonCol>
                 </>

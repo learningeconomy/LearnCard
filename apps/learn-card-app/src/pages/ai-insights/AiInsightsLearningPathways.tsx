@@ -132,7 +132,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
 
     if (isLoading || aiInsightCredentialLoading) {
         return (
-            <div className="flex flex-col items-start justify-between w-full ion-padding border-solid border-[1px] border-grayscale-100 bg-white shadow-bottom-2-4 p-[15px] rounded-[15px]">
+            <div className="flex flex-col items-start justify-between w-full ion-padding border-solid border border-grayscale-100 bg-white shadow-bottom-2-4 p-[15px] rounded-[15px]">
                 <>
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="w-full mb-6">
@@ -148,7 +148,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                 />
                             </div>
 
-                            <div className="w-full mt-4 space-y-2">
+                            <div className="w-full mt-4 space-y-v3-2">
                                 <IonSkeletonText
                                     animated
                                     style={{ width: '100%', height: '14px' }}
@@ -163,7 +163,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                 />
                             </div>
 
-                            <div className="w-full overflow-x-auto whitespace-nowrap mt-4 flex space-x-2">
+                            <div className="w-full overflow-x-auto whitespace-nowrap mt-4 flex space-x-v3-2">
                                 {[...Array(3)].map((_, i) => (
                                     <div
                                         key={i}
@@ -206,7 +206,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                         <div
                             role="button"
                             key={`${pathwayUri || title}-${index}`}
-                            className="flex flex-col items-start justify-between bg-white h-full w-full ion-padding border-solid border-[1px] border-grayscale-100 rounded-[20px] cursor-pointer mb-4 mt-4"
+                            className="flex flex-col items-start justify-between bg-white h-full w-full ion-padding border-solid border border-grayscale-100 rounded-[20px] cursor-pointer mb-4 mt-4"
                             onClick={() =>
                                 handleStart({ title, description, skills, topicUri, pathwayUri })
                             }

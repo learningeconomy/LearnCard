@@ -37,7 +37,7 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
                 }`}
             >
                 <div className="flex items-end justify-center relative">
-                    <div className="w-[100px] h-[100px] rounded-[15px] border-[1px] border-grayscale-200 border-solid overflow-hidden">
+                    <div className="w-[100px] h-[100px] rounded-[15px] border border-grayscale-200 border-solid overflow-hidden">
                         {image ? (
                             <img
                                 src={image}
@@ -60,7 +60,7 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
                             </div>
 
                             {showCurrentUserPic && (
-                                <div className="w-[50px] h-[50px] rounded-full overflow-hidden border-solid border-white border-[2px] absolute bottom-[0px] right-[-40px]">
+                                <div className="w-[50px] h-[50px] rounded-full overflow-hidden border-solid border-white border-2 absolute bottom-[0px] right-[-40px]">
                                     <UserProfilePicture
                                         customContainerClass="w-full h-full text-white font-medium text-2xl"
                                         customImageClass="object-cover h-full w-full"
@@ -70,7 +70,7 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
                                 </div>
                             )}
                             {!showCurrentUserPic && (
-                                <div className="w-[50px] h-[50px] rounded-[10px] overflow-hidden border-solid border-white border-[2px] absolute bottom-[0px] right-[-40px] drop-shadow-bottom bg-white">
+                                <div className="w-[50px] h-[50px] rounded-[10px] overflow-hidden border-solid border-white border-2 absolute bottom-[0px] right-[-40px] drop-shadow-bottom bg-white">
                                     <img
                                         src={appIcon}
                                         alt="App Icon"

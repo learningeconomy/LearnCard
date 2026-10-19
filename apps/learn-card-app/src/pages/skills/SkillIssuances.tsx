@@ -98,7 +98,7 @@ const SkillIssuances: React.FC<SkillIssuancesProps> = ({ frameworkId, skillId, c
                                                     sizeMd={12}
                                                     sizeSm={12}
                                                     isInSkillsModal={true}
-                                                    className="!min-h-[310px]"
+                                                    className="min-h-[310px]!"
                                                 />
                                             )}
                                         </>

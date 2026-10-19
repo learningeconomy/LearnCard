@@ -90,10 +90,10 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
                 'developerPortal.credentialBuilder.linkedCredentials.signedBadge'
             ]()}`}
         >
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
                     <div className="flex items-start gap-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
 
                         <p className="text-xs text-emerald-800">
                             {m['developerPortal.credentialBuilder.linkedCredentials.description']()}
@@ -118,7 +118,7 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
                                 onClick={() => setExpandedIndex(isExpanded ? null : index)}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors"
                             >
-                                <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
                                     <FileText className="w-3.5 h-3.5 text-emerald-600" />
                                 </div>
 
@@ -143,7 +143,7 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
                                         )}
 
                                         {hasProof && (
-                                            <span className="text-xs bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">
+                                            <span className="text-xs bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-sm">
                                                 {m[
                                                     'developerPortal.credentialBuilder.linkedCredentials.signedBadge'
                                                 ]()}
@@ -153,9 +153,9 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
                                 </div>
 
                                 {isExpanded ? (
-                                    <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                    <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
                                 ) : (
-                                    <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                    <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
                                 )}
                             </button>
 

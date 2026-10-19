@@ -4,7 +4,7 @@ import * as m from '../../../paraglide/messages.js';
 
 /** Match the neighboring shared-link placeholders without showing a false empty state. */
 export const VerifierHistoryLoading: React.FC<{ initial?: boolean }> = ({ initial = false }) => (
-    <div role="status" aria-live="polite" aria-busy="true" className="space-y-3">
+    <div role="status" aria-live="polite" aria-busy="true" className="space-y-v3-3">
         <p className="flex items-center gap-2 text-sm text-grayscale-600">
             <span
                 aria-hidden="true"

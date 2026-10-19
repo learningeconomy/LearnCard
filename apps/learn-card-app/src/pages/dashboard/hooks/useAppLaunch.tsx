@@ -84,7 +84,7 @@ export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppL
                             contractDetails={contract}
                             redirectUrl={redirectUrl}
                         />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { sectionClassName: 'bg-transparent! shadow-none!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                     return;
@@ -110,9 +110,8 @@ export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppL
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
 
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',

@@ -92,7 +92,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 titleOverrides={categoryTitleOverrides}
             />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
             },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
@@ -108,7 +108,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 titleOverride={categoryTitleOverrides[category as CredentialCategoryEnum]}
             />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
             },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
@@ -124,13 +124,13 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         const settingsDisplayText = settings.required
             ? 'Required'
             : settings.defaultEnabled
-            ? 'Opt-out'
-            : 'Opt-in';
+              ? 'Opt-out'
+              : 'Opt-in';
 
         return (
             <div
                 onClick={() => handleOpenCategorySettings(category)}
-                className="flex gap-2 items-center w-full border-solid border-grayscale-200 border-b-[1px] py-2 last:border-b-0 last:mb-4"
+                className="flex gap-2 items-center w-full border-solid border-grayscale-200 border-b py-2 last:border-b-0 last:mb-4"
                 key={index}
             >
                 <p className="w-full flex items-center text-sm text-grayscale-800">
@@ -179,7 +179,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
             {inputs.length > 0 && <ul className="w-full flex flex-col gap-2">{inputs}</ul>}
             <button
                 onClick={() => handleOpenCategoryPickerModal()}
-                className="w-full rounded-full pl-1 pr-4 flex items-center justify-between border-[1px] border-solid border-grayscale-300 py-1"
+                className="w-full rounded-full pl-1 pr-4 flex items-center justify-between border border-solid border-grayscale-300 py-1"
                 type="button"
             >
                 <div className="flex items-center justify-start w-full">

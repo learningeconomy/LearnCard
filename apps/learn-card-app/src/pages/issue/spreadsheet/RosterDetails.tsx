@@ -22,7 +22,7 @@ import type { ColumnScopes } from './roster';
 import type { RowProblem } from './types';
 
 const INPUT =
-    'w-full min-w-[120px] py-3 px-4 border border-grayscale-300 rounded-xl text-base sm:text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:bg-grayscale-100';
+    'w-full min-w-[120px] py-3 px-4 border border-grayscale-300 rounded-xl text-base sm:text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:bg-grayscale-100';
 export interface RosterDetailsProps {
     recipients: Recipient[];
     attachments: Record<string, SimpleMediaAttachment[]>;
@@ -52,7 +52,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
     const open = useSpreadsheetDialog(close => <RosterEditor {...props} onClose={close} />);
     if (!props.recipients.length) return null;
     return (
-        <section className="rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins space-y-4">
+        <section className="rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins space-y-v3-4">
             <div className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                     <IonIcon icon={peopleOutline} className="h-6 w-6" aria-hidden="true" />
@@ -164,7 +164,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
         />
     );
     const identity = (recipient: Recipient): React.ReactNode => (
-        <div className="min-w-0 space-y-2">
+        <div className="min-w-0 space-y-v3-2">
             <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-grayscale-900">
                     {recipientDisplayName(recipient)}
@@ -218,7 +218,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
         </div>
     );
     const evidenceInput = (recipient: Recipient): React.ReactNode => (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <input
                 type="url"
                 aria-label={m['issueFlow.sheet.design.additionalEvidenceFor']({
@@ -312,7 +312,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                 </div>
             }
         >
-            <div className="space-y-5">
+            <div className="space-y-v3-5">
                 {props.saveError && (
                     <p
                         role="alert"
@@ -378,7 +378,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                 <label className="relative block">
                     <IonIcon
                         icon={searchOutline}
-                        className="pointer-events-none absolute start-4 top-4 text-grayscale-500"
+                        className="pointer-events-none absolute inset-s-4 top-4 text-grayscale-500"
                         aria-hidden="true"
                     />
                     <input
@@ -400,7 +400,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                         </summary>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
                             {variables.map(name => (
-                                <div key={name} className="space-y-2">
+                                <div key={name} className="space-y-v3-2">
                                     <label
                                         htmlFor={`scope-${name}`}
                                         className="block text-xs font-medium text-grayscale-700"
@@ -466,7 +466,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                     ].map((label, index) => (
                                         <th
                                             key={index}
-                                            className={`sticky top-0 border-b border-grayscale-200 bg-grayscale-100 px-4 py-3 text-xs font-medium text-grayscale-700 ${index === 0 ? 'start-0 z-30' : 'z-20'}`}
+                                            className={`sticky top-0 border-b border-grayscale-200 bg-grayscale-100 px-4 py-3 text-xs font-medium text-grayscale-700 ${index === 0 ? 'inset-s-0 z-30' : 'z-20'}`}
                                         >
                                             {label}
                                         </th>
@@ -484,7 +484,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                                 : 'bg-white'
                                         }
                                     >
-                                        <td className="sticky start-0 z-10 min-w-[270px] border-b border-grayscale-100 bg-inherit p-4 align-top">
+                                        <td className="sticky inset-s-0 z-10 min-w-[270px] border-b border-grayscale-100 bg-inherit p-4 align-top">
                                             {identity(recipient)}
                                         </td>
                                         {variables.map(name => (
@@ -507,24 +507,24 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                         </table>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         {visible.map(recipient => (
                             <article
                                 key={recipientKey(recipient)}
                                 {...focusHandlers(recipient)}
-                                className={`rounded-2xl border p-4 space-y-4 ${problems[recipientKey(recipient)]?.length ? 'border-red-100 bg-grayscale-10' : 'border-grayscale-200 bg-white'}`}
+                                className={`rounded-2xl border p-4 space-y-v3-4 ${problems[recipientKey(recipient)]?.length ? 'border-red-100 bg-grayscale-10' : 'border-grayscale-200 bg-white'}`}
                             >
                                 {identity(recipient)}
                                 {variables.map(name => (
                                     <label
                                         key={name}
-                                        className="block space-y-1.5 text-xs font-medium text-grayscale-700"
+                                        className="block space-y-v3-1.5 text-xs font-medium text-grayscale-700"
                                     >
                                         <span>{fieldLabel(name)}</span>
                                         {input(recipient, name)}
                                     </label>
                                 ))}
-                                <label className="block space-y-1.5 text-xs font-medium text-grayscale-700">
+                                <label className="block space-y-v3-1.5 text-xs font-medium text-grayscale-700">
                                     <span>{m['issueFlow.sheet.design.additionalEvidence']()}</span>
                                     {evidenceInput(recipient)}
                                 </label>
@@ -545,7 +545,7 @@ const RowAttachments: React.FC<{
 }> = ({ initial, onChange, onClose }) => {
     const [attachments, setAttachments] = useState(initial);
     return (
-        <div className="font-poppins bg-white p-6 space-y-4">
+        <div className="font-poppins bg-white p-6 space-y-v3-4">
             <MediaAttachments
                 attachments={attachments}
                 onChange={next => {

@@ -109,7 +109,7 @@ const PublishSignInGate: React.FC = () => {
                                         <p className="text-xs font-medium text-grayscale-700 mb-2.5">
                                             We saved what your app does
                                         </p>
-                                        <ul className="space-y-2">
+                                        <ul className="space-y-v3-2">
                                             {capturedLines.map(line => (
                                                 <li
                                                     key={line}

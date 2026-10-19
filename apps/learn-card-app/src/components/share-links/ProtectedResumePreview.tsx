@@ -17,7 +17,7 @@ export const ProtectedResumePreview = ({ credential, proof, onDownload, download
     const pdf = getProtectedResumePdf(credential);
     return (
         <article
-            className="bg-white rounded-[20px] p-6 md:p-8 space-y-5 border border-grayscale-200 sentry-block ph-no-capture"
+            className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-5 border border-grayscale-200 sentry-block ph-no-capture"
             data-feedback-exclude
         >
             <div className="flex items-center gap-4">
@@ -27,7 +27,7 @@ export const ProtectedResumePreview = ({ credential, proof, onDownload, download
                 >
                     <IonIcon icon={documentTextOutline} className="h-7 w-7" />
                 </span>
-                <div className="min-w-0 space-y-1">
+                <div className="min-w-0 space-y-v3-1">
                     <h2 className="text-lg font-semibold text-grayscale-900">
                         {m['resumePublishing.pdfHeading']()}
                     </h2>

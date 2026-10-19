@@ -9461,7 +9461,7 @@
             "emailColumn": "عمود بريد المستلم",
             "headerRow": "صف أسماء الأعمدة",
             "noHeader": "بدون أسماء أعمدة",
-            "importSummary": "تم العثور على {{count}} شخص · تم تخطي {{skipped}} صف",
+            "importSummary": "الأشخاص: {{count}} · الصفوف المتخطاة: {{skipped}}",
             "importing": "جارٍ قراءة الجدول...",
             "addPeople": "إضافة أشخاص",
             "upload": "رفع جدول بيانات",

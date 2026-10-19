@@ -248,7 +248,7 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <CheckListContainer />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                 );
                 return;
@@ -265,7 +265,7 @@ const ActionButton: React.FC<{
                             if (modalRef.token) forceCloseModalByToken(modalRef.token);
                         }}
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
@@ -280,7 +280,7 @@ const ActionButton: React.FC<{
                             if (modalRef.token) forceCloseModalByToken(modalRef.token);
                         }}
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
@@ -299,7 +299,7 @@ const ActionButton: React.FC<{
                         }}
                         onPlayerSwitch={() => closeAllModals()}
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
@@ -340,7 +340,7 @@ const ActionButton: React.FC<{
                     />,
                     {
                         sectionClassName:
-                            '!bg-transparent !border-none !shadow-none !max-w-[400px]',
+                            'bg-transparent! border-none! shadow-none! max-w-[400px]!',
                         hideButton: true,
                     }
                 );
@@ -350,7 +350,7 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <IssueManagedBoostSelector />,
-                    { hideButton: true, sectionClassName: '!max-w-[500px]' },
+                    { hideButton: true, sectionClassName: 'max-w-[500px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
@@ -420,7 +420,7 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <AiPassportPersonalizationContainer />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                 );
                 return;
@@ -455,7 +455,7 @@ const ActionButton: React.FC<{
                 !textColor ? 'text-grayscale-900' : ''
             } rounded-[20px] text-center border-solid border-[3px] ${
                 !borderColor ? 'border-white' : ''
-            } shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            } shadow-bottom-2-6`}
             style={{
                 ...(bgHex ? { backgroundColor: bgHex } : {}),
                 ...(textColor ? { color: textColor } : {}),
@@ -698,36 +698,36 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     ];
 
     const colorByLabel: Record<string, string> = {
-        'Customize AI Sessions': 'bg-[var(--ion-color-amber-300)]',
-        'New AI Tutoring Session': 'bg-[var(--ion-color-cyan-300)]',
-        'Understand My Skills': 'bg-[var(--ion-color-violet-300)]',
-        'Claim Credential': 'bg-[var(--ion-color-amber-300)]',
-        'Share Insights with Teacher': 'bg-[var(--ion-color-lime-300)]',
-        'Build My LearnCard': 'bg-[var(--ion-color-teal-200)]',
+        'Customize AI Sessions': 'bg-(--ion-color-amber-300)',
+        'New AI Tutoring Session': 'bg-(--ion-color-cyan-300)',
+        'Understand My Skills': 'bg-(--ion-color-violet-300)',
+        'Claim Credential': 'bg-(--ion-color-amber-300)',
+        'Share Insights with Teacher': 'bg-(--ion-color-lime-300)',
+        'Build My LearnCard': 'bg-(--ion-color-teal-200)',
         // Guardian role labels
-        'Create Family': 'bg-[var(--ion-color-spice-200)]',
-        'View Family': 'bg-[var(--ion-color-spice-200)]',
-        'Boost Child': 'bg-[var(--ion-color-blue-300)]',
-        'Add Child': 'bg-[var(--ion-color-cyan-200)]',
-        'Switch Child': 'bg-[var(--ion-color-yellow-300)]',
-        'View Child Insights': 'bg-[var(--ion-color-lime-300)]',
+        'Create Family': 'bg-(--ion-color-spice-200)',
+        'View Family': 'bg-(--ion-color-spice-200)',
+        'Boost Child': 'bg-(--ion-color-blue-300)',
+        'Add Child': 'bg-(--ion-color-cyan-200)',
+        'Switch Child': 'bg-(--ion-color-yellow-300)',
+        'View Child Insights': 'bg-(--ion-color-lime-300)',
         // Teacher role labels
-        'View Learner Insights': 'bg-[var(--ion-color-lime-300)]',
-        'Request Learner Insights': 'bg-[var(--ion-color-indigo-200)]',
-        'Issue Credential': 'bg-[var(--ion-color-cyan-200)]',
-        'Create Credential': 'bg-[var(--ion-color-amber-300)]',
-        'Edit Skills Frameworks': 'bg-[var(--ion-color-violet-300)]',
+        'View Learner Insights': 'bg-(--ion-color-lime-300)',
+        'Request Learner Insights': 'bg-(--ion-color-indigo-200)',
+        'Issue Credential': 'bg-(--ion-color-cyan-200)',
+        'Create Credential': 'bg-(--ion-color-amber-300)',
+        'Edit Skills Frameworks': 'bg-(--ion-color-violet-300)',
         // Admin role labels
-        'Import Credentials': 'bg-[var(--ion-color-blue-300)]',
-        'Create Organization': 'bg-[var(--ion-color-lime-300)]',
-        'Switch Account': 'bg-[var(--ion-color-cyan-200)]',
+        'Import Credentials': 'bg-(--ion-color-blue-300)',
+        'Create Organization': 'bg-(--ion-color-lime-300)',
+        'Switch Account': 'bg-(--ion-color-cyan-200)',
         // Developer role labels
-        'Create API Token': 'bg-[var(--ion-color-violet-300)]',
-        'Create Signing Authority': 'bg-[var(--ion-color-blue-200)]',
-        'Create ConsentFlow': 'bg-[var(--ion-color-lime-300)]',
-        'Switch Network': 'bg-[var(--ion-color-yellow-300)]',
-        'Read Docs': 'bg-[var(--ion-color-teal-200)]',
-        'Add to LearnCard': 'bg-[var(--ion-color-grayscale-100)]',
+        'Create API Token': 'bg-(--ion-color-violet-300)',
+        'Create Signing Authority': 'bg-(--ion-color-blue-200)',
+        'Create ConsentFlow': 'bg-(--ion-color-lime-300)',
+        'Switch Network': 'bg-(--ion-color-yellow-300)',
+        'Read Docs': 'bg-(--ion-color-teal-200)',
+        'Add to LearnCard': 'bg-(--ion-color-grayscale-100)',
     };
 
     const handleViewChildInsights = () => {
@@ -797,7 +797,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const handleAddToLearnCard = () => {
         newModal(
             <AddToPassportMenu />,
-            { sectionClassName: '!max-w-[500px]' },
+            { sectionClassName: 'max-w-[500px]!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
         );
     };
@@ -805,7 +805,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     return (
         <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[500px] mt-[20px]">
             <div
-                className={`relative text-center rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] p-[20px] ${
+                className={`relative text-center rounded-[15px] shadow-bottom-2-6 p-[20px] ${
                     !actionModalCardBgColor ? 'bg-white' : ''
                 }`}
                 style={
@@ -843,7 +843,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             </MenuButton>
                             <MenuItems
                                 anchor="bottom"
-                                className="bg-white rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] p-[8px] my-[6px] focus:outline-none z-[1000] min-w-[200px] flex flex-col gap-[4px]"
+                                className="bg-white rounded-[15px] shadow-bottom-2-6 p-[8px] my-[6px] focus:outline-hidden z-[1000] min-w-[200px] flex flex-col gap-[4px]"
                             >
                                 {visibleRoles.map(roleItem => {
                                     const isSelected = roleItem.type === activeRole;
@@ -896,7 +896,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                         setRole={handleRoleChange}
                                     />,
                                     {
-                                        sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]',
+                                        sectionClassName: 'max-w-[600px]! mx-auto! max-h-full!',
                                     },
                                     {
                                         mobile: ModalTypes.BottomSheet,

@@ -9372,7 +9372,7 @@
             "emailColumn": "Colonne e-mail du destinataire",
             "headerRow": "Ligne des noms de colonnes",
             "noHeader": "Sans noms de colonnes",
-            "importSummary": "{{count}} personnes trouvées · {{skipped}} lignes ignorées",
+            "importSummary": "Personnes trouvées : {{count}} · Lignes ignorées : {{skipped}}",
             "importing": "Lecture de la feuille...",
             "addPeople": "Ajouter des personnes",
             "upload": "Importer une feuille",

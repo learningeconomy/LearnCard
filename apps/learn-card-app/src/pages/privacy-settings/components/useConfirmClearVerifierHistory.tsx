@@ -20,7 +20,7 @@ const ClearConfirmation: React.FC<{
         <div
             data-testid="verifier-history-clear-confirmation"
             aria-labelledby={titleId}
-            className="sentry-block ph-no-capture bg-white p-6 space-y-5 font-poppins animate-fade-in-up"
+            className="sentry-block ph-no-capture bg-white p-6 space-y-v3-5 font-poppins animate-fade-in-up"
             data-html2canvas-ignore
             data-feedback-exclude
         >
@@ -44,7 +44,7 @@ const ClearConfirmation: React.FC<{
                 </button>
                 <button
                     type="button"
-                    className="min-h-[44px] py-3 px-4 rounded-[20px] bg-red-700 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="min-h-[44px] py-3 px-4 rounded-[20px] bg-red-700 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     onClick={onConfirm}
                 >
                     {m['verifierHistory.clear']()}
@@ -109,7 +109,7 @@ export const useConfirmClearVerifierHistory = (allowed: boolean) => {
                 }}
             />,
             {
-                sectionClassName: '!max-w-[480px]',
+                sectionClassName: 'max-w-[480px]!',
                 onClose: () => {
                     settled = true;
                     if (modal.current?.token === instance.token) modal.current = null;

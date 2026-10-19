@@ -28,7 +28,7 @@ export const IssuanceResults: React.FC<{
     const BUTTON =
         'py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 disabled:opacity-40';
     return (
-        <section className="font-poppins bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-4">
+        <section className="font-poppins bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4">
             <div className="flex items-center gap-3">
                 <BatchDeliveryAnimation active={busy || (!ready && waiting > 0)} />
                 <div className="min-w-0 flex-1" aria-live="polite" role="status">

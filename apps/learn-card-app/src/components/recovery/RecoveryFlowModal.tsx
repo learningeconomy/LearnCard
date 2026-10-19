@@ -312,7 +312,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     onChange={event => setRecoveryEmail(event.target.value)}
                     placeholder={m['recovery.identity.recoveryEmailPlaceholder']()}
                     autoComplete="email"
-                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
 
                 <button
@@ -373,7 +373,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     }
                     placeholder="000000"
                     autoComplete="one-time-code"
-                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-center tracking-[0.3em] text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-center tracking-[0.3em] text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
                 <button
                     onClick={async () => {
@@ -583,7 +583,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             />
                         )}
 
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {heroMethod && renderMethodButton(heroMethod, true)}
                             {remainingMethods.map(m => renderMethodButton(m, false))}
 
@@ -593,7 +593,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                         onClick={() => setShowMore(!showMore)}
                                         aria-expanded={showMore}
                                         aria-controls="unavailable-methods"
-                                        className="flex items-center gap-1.5 px-1 py-2 min-h-[44px] text-xs font-medium text-grayscale-500 hover:text-grayscale-800 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                        className="flex items-center gap-1.5 px-1 py-2 min-h-[44px] text-xs font-medium text-grayscale-500 hover:text-grayscale-800 transition-colors rounded-lg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
                                         <IonIcon
                                             icon={chevronDownOutline}
@@ -612,7 +612,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                     {showMore && (
                                         <div
                                             id="unavailable-methods"
-                                            className="space-y-2 animate-fade-in-up"
+                                            className="space-y-v3-2 animate-fade-in-up"
                                         >
                                             {unavailableMethodsList.map(m =>
                                                 renderMethodButton(m, false)
@@ -632,7 +632,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                 </p>
                                 <button
                                     onClick={() => setScreen(2)}
-                                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 >
                                     {m['recovery.getBackIntoAccount']()}
                                 </button>
@@ -665,7 +665,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             <h2
                                 ref={screen2HeadingRef}
                                 tabIndex={-1}
-                                className="text-xl font-semibold text-grayscale-900 mb-1 focus:outline-none"
+                                className="text-xl font-semibold text-grayscale-900 mb-1 focus:outline-hidden"
                             >
                                 {m['recovery.getBackIntoAccount']()}
                             </h2>
@@ -678,7 +678,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             <p className="text-sm font-medium text-amber-900 mb-2">
                                 {m['recovery.thisWill']()}
                             </p>
-                            <ul className="text-sm text-amber-800 space-y-1.5 list-disc pl-4">
+                            <ul className="text-sm text-amber-800 space-y-v3-1.5 list-disc pl-4">
                                 <li>{m['recovery.consequence.signOut']()}</li>
                                 <li>{m['recovery.consequence.turnOff']()}</li>
                             </ul>
@@ -735,7 +735,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'passkey' && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.method.passkey']()}
@@ -772,7 +772,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'phrase' && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.method.phrase']()}
@@ -805,7 +805,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             onChange={e => setPhrase(e.target.value)}
                             placeholder={m['recovery.placeholder.words']()}
                             rows={4}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
                         />
                     </div>
 
@@ -827,7 +827,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'device' && onRecoverWithDevice && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.signInFromDevice']()}
@@ -862,7 +862,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'email' && onRecoverWithEmail && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.method.setEmail']()}
@@ -877,12 +877,12 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         </p>
                     </div>
 
-                    <div className="p-4 bg-grayscale-100/60 rounded-2xl space-y-3">
+                    <div className="p-4 bg-grayscale-100/60 rounded-2xl space-y-v3-3">
                         <p className="text-xs font-medium text-grayscale-700">
                             {m['recovery.howToFindKey']()}
                         </p>
 
-                        <ol className="text-sm text-grayscale-600 leading-relaxed space-y-2 list-none">
+                        <ol className="text-sm text-grayscale-600 leading-relaxed space-y-v3-2 list-none">
                             <li className="flex items-start gap-2.5">
                                 <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">
                                     1
@@ -916,7 +916,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             onChange={e => setEmailShare(e.target.value)}
                             placeholder={m['recovery.placeholder.recoveryKey']()}
                             rows={3}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
                         />
 
                         <p className="mt-1.5 text-xs text-grayscale-400">
@@ -942,7 +942,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'backup' && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.method.backup']()}
@@ -1000,7 +1000,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             value={backupPassword}
                             onChange={e => setBackupPassword(e.target.value)}
                             placeholder={m['recovery.enterPassword']()}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                         />
                     </div>
 

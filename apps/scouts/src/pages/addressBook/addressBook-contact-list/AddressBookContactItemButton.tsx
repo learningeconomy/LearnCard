@@ -34,8 +34,8 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
         newModal(
             <NewBoostSelectMenu handleCloseModal={() => closeModal()} category={category} />,
             {
-                className: '!p-0',
-                sectionClassName: '!p-0',
+                className: 'p-0!',
+                sectionClassName: 'p-0!',
             },
             {
                 mobile: ModalTypes.FullScreen,
@@ -50,7 +50,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
                 <h1>{m['addressBook.chooseBoostType']()}</h1>
                 <div className="flex flex-col items-center justify-center">
                     <button
-                        className="flex items-center bg-white hover:border-solid hover:border-grayscale-200 hover:border-[1px] hover:bg-grayscale-100 hover:rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px] font-notoSans text-[17px] text-grayscale-800"
+                        className="flex items-center bg-white hover:border-solid hover:border-grayscale-200 hover:border hover:bg-grayscale-100 hover:rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px] font-notoSans text-[17px] text-grayscale-800"
                         onClick={() => {
                             closeModal();
                             handlePresentBoostModal(CredentialCategoryEnum.socialBadge);
@@ -60,7 +60,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
                         {m['addressBook.socialBoost']()}
                     </button>
                     <button
-                        className="flex items-center bg-white hover:border-solid hover:border-grayscale-200 hover:border-[1px] hover:bg-grayscale-100 hover:rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px]  font-notoSans text-[17px] text-grayscale-800"
+                        className="flex items-center bg-white hover:border-solid hover:border-grayscale-200 hover:border hover:bg-grayscale-100 hover:rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px]  font-notoSans text-[17px] text-grayscale-800"
                         onClick={() => {
                             closeModal();
                             handlePresentBoostModal(CredentialCategoryEnum.meritBadge);
@@ -71,7 +71,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
                     </button>
                 </div>
             </div>,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             {
                 desktop: ModalTypes.Cancel,
                 mobile: ModalTypes.Cancel,

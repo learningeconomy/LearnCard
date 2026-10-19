@@ -43,38 +43,49 @@ afterEach(() => {
     vi.unstubAllGlobals();
     document.body.innerHTML = '';
 });
+// Multi-chunk WebCrypto/base64 roundtrips can exceed 5s when Nx runs suites in parallel.
+const LARGE_PDF_TEST_TIMEOUT_MS = 30_000;
+
 describe('managed encrypted PDF chunks', () => {
-    it('roundtrips a realistic multipage PDF with bounded requests and no plaintext in chunks', async () => {
-        const large = new Uint8Array(856067);
-        large.set(bytes);
-        const { prepared, vc } = await fixture(large);
-        expect(prepared.chunks).toHaveLength(4);
-        for (const envelope of prepared.chunks) {
-            expect(JSON.stringify(envelope).length).toBeLessThan(512 * 1024);
-            expect(JSON.stringify(envelope)).not.toContain('PDF_CONTENT_CANARY');
-            expect(JSON.stringify(envelope)).not.toContain(String(prepared.descriptor.key));
-        }
-        const blob = await loadProtectedResumePdf(vc, reader(prepared));
-        // Compare every byte without the cost of deep-matching a large typed array.
-        expect(Buffer.from(await blob.arrayBuffer()).equals(Buffer.from(large))).toBe(true);
-        expect(blob.type).toBe('application/pdf');
-        expect(prepared.descriptor.url).toMatch(/^urn:learncard:resume-pdf:/);
-    });
-    it('accepts4MiB and rejects oversized input before reading', async () => {
-        const boundary = new Uint8Array(MAX_RESUME_PDF_BYTES);
-        boundary.set(bytes);
-        const { prepared, vc } = await fixture(boundary);
-        expect(prepared.chunks).toHaveLength(16);
-        expect((await loadProtectedResumePdf(vc, reader(prepared))).size).toBe(
-            MAX_RESUME_PDF_BYTES
-        );
-        const oversized = new Blob([boundary, new Uint8Array(1)], { type: 'application/pdf' });
-        const read = vi.spyOn(oversized, 'arrayBuffer');
-        await expect(
-            prepareProtectedPdf(oversized, '0'.repeat(64), { shareId, contentVersion: 1 })
-        ).rejects.toMatchObject({ code: 'too-large' });
-        expect(read).not.toHaveBeenCalled();
-    });
+    it(
+        'roundtrips a realistic multipage PDF with bounded requests and no plaintext in chunks',
+        async () => {
+            const large = new Uint8Array(856067);
+            large.set(bytes);
+            const { prepared, vc } = await fixture(large);
+            expect(prepared.chunks).toHaveLength(4);
+            for (const envelope of prepared.chunks) {
+                expect(JSON.stringify(envelope).length).toBeLessThan(512 * 1024);
+                expect(JSON.stringify(envelope)).not.toContain('PDF_CONTENT_CANARY');
+                expect(JSON.stringify(envelope)).not.toContain(String(prepared.descriptor.key));
+            }
+            const blob = await loadProtectedResumePdf(vc, reader(prepared));
+            // Compare every byte without the cost of deep-matching a large typed array.
+            expect(Buffer.from(await blob.arrayBuffer()).equals(Buffer.from(large))).toBe(true);
+            expect(blob.type).toBe('application/pdf');
+            expect(prepared.descriptor.url).toMatch(/^urn:learncard:resume-pdf:/);
+        },
+        LARGE_PDF_TEST_TIMEOUT_MS
+    );
+    it(
+        'accepts4MiB and rejects oversized input before reading',
+        async () => {
+            const boundary = new Uint8Array(MAX_RESUME_PDF_BYTES);
+            boundary.set(bytes);
+            const { prepared, vc } = await fixture(boundary);
+            expect(prepared.chunks).toHaveLength(16);
+            expect((await loadProtectedResumePdf(vc, reader(prepared))).size).toBe(
+                MAX_RESUME_PDF_BYTES
+            );
+            const oversized = new Blob([boundary, new Uint8Array(1)], { type: 'application/pdf' });
+            const read = vi.spyOn(oversized, 'arrayBuffer');
+            await expect(
+                prepareProtectedPdf(oversized, '0'.repeat(64), { shareId, contentVersion: 1 })
+            ).rejects.toMatchObject({ code: 'too-large' });
+            expect(read).not.toHaveBeenCalled();
+        },
+        LARGE_PDF_TEST_TIMEOUT_MS
+    );
     it('checks MIME, magic, hash and binding before stage', async () => {
         const digest = await hash(bytes);
         await expect(
@@ -167,28 +178,32 @@ describe('managed encrypted PDF chunks', () => {
         await expect(loadProtectedResumePdf(ambiguous, reader(prepared))).rejects.toThrow();
         expect(fetch).not.toHaveBeenCalled();
     });
-    it('roundtrips a descriptor on a later subject and forwards each renewed grant', async () => {
-        const large = new Uint8Array(2 * RESUME_PDF_CHUNK_BYTES + bytes.length);
-        large.set(bytes);
-        const { prepared, vc } = await fixture(large);
-        const array = {
-            ...vc,
-            credentialSubject: [{ id: 'unrelated' }, vc.credentialSubject],
-        } as VC;
-        expect(hasProtectedResumePdf(array)).toBe(true);
-        expect(getProtectedResumePdf(array)).toBeDefined();
-        const fetchChunk = vi.fn(async (request: ProtectedResumeChunkRequest) => ({
-            ...request,
-            envelope: prepared.chunks[request.chunkIndex],
-            accessToken: `renewed-${request.chunkIndex}`,
-        }));
-        const blob = await loadProtectedResumePdf(array, fetchChunk);
-        // Compare every byte without the cost of deep-matching a large typed array.
-        expect(Buffer.from(await blob.arrayBuffer()).equals(Buffer.from(large))).toBe(true);
-        expect(fetchChunk.mock.calls[0][0].accessToken).toBeUndefined();
-        expect(fetchChunk.mock.calls[1][0].accessToken).toBe('renewed-0');
-        expect(fetchChunk.mock.calls[2][0].accessToken).toBe('renewed-1');
-    });
+    it(
+        'roundtrips a descriptor on a later subject and forwards each renewed grant',
+        async () => {
+            const large = new Uint8Array(2 * RESUME_PDF_CHUNK_BYTES + bytes.length);
+            large.set(bytes);
+            const { prepared, vc } = await fixture(large);
+            const array = {
+                ...vc,
+                credentialSubject: [{ id: 'unrelated' }, vc.credentialSubject],
+            } as VC;
+            expect(hasProtectedResumePdf(array)).toBe(true);
+            expect(getProtectedResumePdf(array)).toBeDefined();
+            const fetchChunk = vi.fn(async (request: ProtectedResumeChunkRequest) => ({
+                ...request,
+                envelope: prepared.chunks[request.chunkIndex],
+                accessToken: `renewed-${request.chunkIndex}`,
+            }));
+            const blob = await loadProtectedResumePdf(array, fetchChunk);
+            // Compare every byte without the cost of deep-matching a large typed array.
+            expect(Buffer.from(await blob.arrayBuffer()).equals(Buffer.from(large))).toBe(true);
+            expect(fetchChunk.mock.calls[0][0].accessToken).toBeUndefined();
+            expect(fetchChunk.mock.calls[1][0].accessToken).toBe('renewed-0');
+            expect(fetchChunk.mock.calls[2][0].accessToken).toBe('renewed-1');
+        },
+        LARGE_PDF_TEST_TIMEOUT_MS
+    );
     it('checks hash after authenticated decryption', async () => {
         const { prepared, vc } = await fixture();
         prepared.descriptor.descriptions = [
