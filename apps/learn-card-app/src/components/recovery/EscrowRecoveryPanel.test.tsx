@@ -86,6 +86,62 @@ describe('EscrowRecoveryPanel', () => {
         vi.clearAllMocks();
     });
 
+    it.each([false, true])(
+        'expires a missing hold on first load (cleanup fails initially: %s)',
+        async cleanupFails => {
+            vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+                holdId: expectations.holdId,
+                resumeToken: 'token',
+                clientEphemeralPrivateKey: 'key',
+                releaseAfter: new Date(Date.now() + 86400000).toISOString(),
+                requiresConfirmation: true,
+                expectations,
+            });
+            if (cleanupFails) {
+                vi.mocked(clearPendingEscrowRecovery).mockRejectedValueOnce(
+                    new Error('storage unavailable')
+                );
+            }
+            const onStatus = vi.fn().mockResolvedValue(null);
+            render(
+                <EscrowRecoveryPanel
+                    view="status"
+                    available
+                    onStart={vi.fn()}
+                    onStatus={onStatus}
+                    onRecover={vi.fn()}
+                    onConfirmCode={vi.fn()}
+                    onResendCode={vi.fn()}
+                />
+            );
+            if (cleanupFails) {
+                expect(
+                    await screen.findByText("We couldn't check your request right now.")
+                ).toBeVisible();
+                expect(screen.queryByText(/This recovery request expired/)).not.toBeInTheDocument();
+                expect(logError).toHaveBeenCalledExactlyOnceWith('recovery.storage.clear.failed', {
+                    errorType: 'Error',
+                });
+                fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
+            }
+            expect(
+                await screen.findByText('This recovery request expired. Start a new one.')
+            ).toBeVisible();
+            expect(clearPendingEscrowRecovery).toHaveBeenCalledWith(expectations.holdId, 'default');
+            expect(clearPendingEscrowRecovery).toHaveBeenCalledTimes(cleanupFails ? 2 : 1);
+            expect(onStatus).toHaveBeenCalledTimes(cleanupFails ? 2 : 1);
+            expect(screen.queryByRole('button', { name: 'Try Again' })).not.toBeInTheDocument();
+            expect(
+                screen.queryByText("We couldn't check your request right now.")
+            ).not.toBeInTheDocument();
+            expect(logError).not.toHaveBeenCalledWith(
+                'recovery.status.load.failed',
+                expect.anything()
+            );
+            if (!cleanupFails) expect(logError).not.toHaveBeenCalled();
+        }
+    );
+
     it.each([true, undefined])(
         'clears the retry banner and handles cancellation (confirmation: %s)',
         async requiresConfirmation => {
