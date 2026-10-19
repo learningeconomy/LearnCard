@@ -919,6 +919,7 @@ const IssueCredentialPage: React.FC = () => {
         templateLocked: Boolean(roster.run?.templateUri),
         details: (
             <RosterDetails
+                saveError={roster.error}
                 attachments={recipientEvidence}
                 onAttachmentsChange={handleRecipientEvidenceChange}
                 recipients={recipients}

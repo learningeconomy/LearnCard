@@ -57,10 +57,12 @@ describe('roster review workspace', () => {
             ...data,
             recipients: [{ ...data.recipients[0], email: 'updated@test.com' }],
             onRecipientsChange: vi.fn(),
+            saveError: 'Changes could not be saved.',
         };
         parent.rerender(<RosterDetails {...next} />);
         const field = within(editor.container).getByRole('textbox', { name: 'Email for Updated' });
         expect(field).toHaveValue('updated@test.com');
+        expect(within(editor.container).getByRole('alert')).toHaveTextContent(next.saveError);
         fireEvent.change(field, { target: { value: 'corrected@test.com' } });
         expect(next.onRecipientsChange).toHaveBeenCalledWith([
             expect.objectContaining({ email: 'corrected@test.com' }),
@@ -129,6 +131,6 @@ describe('roster review workspace', () => {
         expect(screen.getByRole('textbox', { name: 'Person0 Score' })).toHaveValue('95');
         expect(screen.getByRole('textbox', { name: 'Person0 Score' })).toBeDisabled();
         expect(screen.getByRole('textbox', { name: /Email for/ })).toBeDisabled();
-        expect(screen.getByRole('textbox', { name: /Evidence for/ })).toBeDisabled();
+        expect(screen.getByRole('textbox', { name: /Additional evidence for/ })).toBeDisabled();
     });
 });

@@ -205,7 +205,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
 
     test('reviews a large roster in a fullscreen mobile workspace without horizontal overflow', async ({
         page,
-    }) => {
+    }, testInfo) => {
         test.setTimeout(180000);
         await page.setViewportSize({ width: 390, height: 844 });
         await selectBadgeType(page);
@@ -224,6 +224,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
         const review = page.locator('#full-screen-modal.issue-spreadsheet-dialog.open').last();
         await expect(review).toBeVisible();
+        await page.screenshot({ path: testInfo.outputPath('mobile-import-review.png') });
         expect(await review.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(
             true
         );
@@ -235,6 +236,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(
             true
         );
+        await page.screenshot({ path: testInfo.outputPath('mobile-recipient-editor.png') });
         await page.getByRole('button', { name: 'Needs attention · 1', exact: true }).click();
         await expect(page.getByRole('article')).toHaveCount(1);
         await page

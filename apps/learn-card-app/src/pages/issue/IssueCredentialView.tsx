@@ -177,6 +177,8 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                         <button
                                             type="button"
                                             onClick={onToggleJson}
+                                            aria-label={m['issueFlow.header.json']()}
+                                            aria-pressed={showJson}
                                             className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
                                                 showJson
                                                     ? 'bg-grayscale-900 text-white shadow-md'

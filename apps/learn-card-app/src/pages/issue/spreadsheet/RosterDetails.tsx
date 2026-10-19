@@ -22,7 +22,7 @@ import type { ColumnScopes } from './roster';
 import type { RowProblem } from './types';
 
 const INPUT =
-    'w-full min-w-[120px] py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:bg-grayscale-100';
+    'w-full min-w-[120px] py-3 px-4 border border-grayscale-300 rounded-xl text-base sm:text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:bg-grayscale-100';
 export interface RosterDetailsProps {
     recipients: Recipient[];
     attachments: Record<string, SimpleMediaAttachment[]>;
@@ -37,6 +37,7 @@ export interface RosterDetailsProps {
     locked: (rowId: string) => boolean;
     canRemove?: (rowId: string) => boolean;
     disabled?: boolean;
+    saveError?: string;
     onRecipientsChange: (recipients: Recipient[]) => void;
     onScopeChange: (name: string, scope: 'shared' | 'perRecipient') => void;
     onSharedChange: (name: string, value: string) => void;
@@ -175,6 +176,9 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
             </div>
             {recipient.kind === 'email' ? (
                 <input
+                    type="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
                     aria-label={m['issueFlow.sheet.emailFor']({
                         name: recipientDisplayName(recipient),
                     })}
@@ -214,7 +218,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
         <div className="space-y-2">
             <input
                 type="url"
-                aria-label={m['issueFlow.sheet.evidenceFor']({
+                aria-label={m['issueFlow.sheet.design.additionalEvidenceFor']({
                     name: recipientDisplayName(recipient),
                 })}
                 placeholder="https://"
@@ -265,7 +269,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
     return (
         <SpreadsheetDialog
             title={m['issueFlow.sheet.design.reviewPeople']()}
-            subtitle={m['issueFlow.sheet.design.editorHint']()}
+            subtitle={props.saveError ? undefined : m['issueFlow.sheet.design.editorHint']()}
             icon={peopleOutline}
             onClose={props.onClose}
             footer={
@@ -306,6 +310,14 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
             }
         >
             <div className="space-y-5">
+                {props.saveError && (
+                    <p
+                        role="alert"
+                        className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm text-red-700"
+                    >
+                        {props.saveError}
+                    </p>
+                )}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap gap-2">
                         <button
@@ -428,19 +440,24 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                         {m['issueFlow.sheet.design.noMatches']()}
                     </div>
                 ) : width > 991 ? (
-                    <div className="overflow-x-auto rounded-2xl border border-grayscale-200">
+                    <div
+                        aria-label={m['issueFlow.sheet.design.reviewPeople']()}
+                        role="region"
+                        tabIndex={0}
+                        className="max-h-[52dvh] overflow-auto rounded-2xl border border-grayscale-200"
+                    >
                         <table className="w-full border-separate border-spacing-0 text-start">
                             <thead className="bg-grayscale-100">
                                 <tr>
                                     {[
                                         m['issueFlow.sheet.recipient'](),
                                         ...variables.map(fieldLabel),
-                                        m['issueFlow.sheet.evidence'](),
+                                        m['issueFlow.sheet.design.additionalEvidence'](),
                                         '',
                                     ].map((label, index) => (
                                         <th
                                             key={index}
-                                            className="border-b border-grayscale-200 px-4 py-3 text-xs font-medium text-grayscale-700"
+                                            className={`sticky top-0 border-b border-grayscale-200 bg-grayscale-100 px-4 py-3 text-xs font-medium text-grayscale-700 ${index === 0 ? 'start-0 z-30' : 'z-20'}`}
                                         >
                                             {label}
                                         </th>
@@ -458,7 +475,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                                 : 'bg-white'
                                         }
                                     >
-                                        <td className="min-w-[270px] border-b border-grayscale-100 p-4 align-top">
+                                        <td className="sticky start-0 z-10 min-w-[270px] border-b border-grayscale-100 bg-inherit p-4 align-top">
                                             {identity(recipient)}
                                         </td>
                                         {variables.map(name => (
@@ -499,7 +516,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                     </label>
                                 ))}
                                 <label className="block space-y-1.5 text-xs font-medium text-grayscale-700">
-                                    <span>{m['issueFlow.sheet.evidence']()}</span>
+                                    <span>{m['issueFlow.sheet.design.additionalEvidence']()}</span>
                                     {evidenceInput(recipient)}
                                 </label>
                                 <div className="flex justify-end">{remove(recipient)}</div>

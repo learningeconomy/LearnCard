@@ -9,6 +9,22 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { Center: 'center', FullScreen: 'fullscreen' },
 }));
 describe('spreadsheet import review', () => {
+    it('does not import a header-only sheet or label it as valid', () => {
+        const onImport = vi.fn();
+        render(
+            <SpreadsheetReview
+                source={readSpreadsheetText('Email,Name')}
+                onImport={onImport}
+                onClose={vi.fn()}
+            />
+        );
+        expect(
+            screen.getByText('No people found. Check the email column and header row.')
+        ).toBeVisible();
+        expect(screen.queryByText('Email format looks good')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Add People' })).toBeDisabled();
+        expect(onImport).not.toHaveBeenCalled();
+    });
     it('bounds its preview and keeps invalid emails available for correction after import', async () => {
         const source = readSpreadsheetText(
             'Email,Name\n' +

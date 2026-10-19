@@ -9467,7 +9467,11 @@
                 "importHint": "You can correct recipient details after adding people.",
                 "importSetup": "Set up your import",
                 "previewPeople": "People preview",
-                "previewHint": "Showing {{count}} of {{total}} people."
+                "previewHint": "Showing {{count}} of {{total}} people.",
+                "additionalEvidence": "Additional evidence",
+                "additionalEvidenceFor": "Additional evidence for {{name}}",
+                "emailFormatGood": "Email format looks good",
+                "emptyImport": "No people found. Check the email column and header row."
             }
         }
     },

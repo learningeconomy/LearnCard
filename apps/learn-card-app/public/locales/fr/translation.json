@@ -9416,7 +9416,11 @@
                 "importHint": "Vous pourrez corriger les informations après avoir ajouté les personnes.",
                 "importSetup": "Configurer l’importation",
                 "previewPeople": "Aperçu des personnes",
-                "previewHint": "Affichage de {{count}} personnes sur {{total}}."
+                "previewHint": "Affichage de {{count}} personnes sur {{total}}.",
+                "additionalEvidence": "Preuves supplémentaires",
+                "additionalEvidenceFor": "Preuves supplémentaires pour {{name}}",
+                "emailFormatGood": "Le format des adresses e-mail est correct",
+                "emptyImport": "Aucune personne trouvée. Vérifiez la colonne e-mail et la ligne d’en-tête."
             }
         }
     },

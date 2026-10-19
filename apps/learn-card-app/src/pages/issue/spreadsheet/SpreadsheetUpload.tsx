@@ -20,7 +20,7 @@ import {
 } from './SpreadsheetDialog';
 
 const INPUT =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base sm:text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
 const BUTTON =
     'py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40';
 
@@ -62,7 +62,7 @@ export const SpreadsheetReview: React.FC<{
                     </p>
                     <button
                         type="button"
-                        disabled={busy || parsed.emailColumn === undefined}
+                        disabled={busy || parsed.emailColumn === undefined || !people.length}
                         onClick={submit}
                         className={`${BUTTON} shrink-0 inline-flex items-center justify-center gap-2`}
                     >
@@ -151,15 +151,21 @@ export const SpreadsheetReview: React.FC<{
                         })}
                     </span>
                     <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${invalid ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-700'}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${invalid || !people.length ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-700'}`}
                     >
                         <IonIcon
-                            icon={invalid ? alertCircleOutline : checkmarkCircleOutline}
+                            icon={
+                                invalid || !people.length
+                                    ? alertCircleOutline
+                                    : checkmarkCircleOutline
+                            }
                             aria-hidden="true"
                         />
-                        {invalid
-                            ? m['issueFlow.sheet.design.issueCount']({ count: invalid })
-                            : m['issueFlow.sheet.design.noIssues']()}
+                        {!people.length
+                            ? m['issueFlow.sheet.design.emptyImport']()
+                            : invalid
+                              ? m['issueFlow.sheet.design.issueCount']({ count: invalid })
+                              : m['issueFlow.sheet.design.emailFormatGood']()}
                     </span>
                 </div>
                 <div>
