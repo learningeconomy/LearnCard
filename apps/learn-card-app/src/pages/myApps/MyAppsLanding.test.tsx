@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 const push = vi.fn();
@@ -8,7 +8,7 @@ const replace = vi.fn();
 let mockLocation = { search: '' };
 
 vi.mock('react-router-dom', async orig => {
-    const actual = (await orig()) as any;
+    const actual = await orig<typeof import('react-router-dom')>();
     return { ...actual, useHistory: () => ({ push, replace }), useLocation: () => mockLocation };
 });
 
@@ -57,5 +57,13 @@ describe('MyAppsLanding', () => {
         expect(replace).toHaveBeenCalledWith(
             expect.stringContaining('/launchpad/browse?uri=spark%3A%2F%2Fx&foo=1')
         );
+    });
+
+    it('opens the full app catalog from Browse More', () => {
+        renderPage();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Browse More +' }));
+
+        expect(push).toHaveBeenCalledWith('/launchpad/browse?tab=All');
     });
 });
