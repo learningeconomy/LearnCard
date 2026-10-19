@@ -408,6 +408,7 @@
         "deletingAccount": "Suppression du compte...",
         "deleteForever": "Supprimer définitivement",
         "fullName": "Nom complet",
+        "fullNameOptional": "Nom complet (facultatif)",
         "emailAddress": "Adresse e-mail",
         "phoneNumber": "Numéro de téléphone",
         "userID": "Identifiant utilisateur",
@@ -631,6 +632,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "Nous n’avons pas pu enregistrer votre profil. Vérifiez votre connexion et réessayez.",
         "welcomeTo": "Bienvenue sur",
         "setupProf": "Configurez votre profil pour commencer !",
         "dataOwn": "Vous possédez vos propres données.",

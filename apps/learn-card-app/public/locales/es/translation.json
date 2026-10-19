@@ -1236,6 +1236,7 @@
             "imA": "Soy ",
             "selectRole": "Seleccionar rol",
             "fullName": "Nombre completo",
+            "fullNameOptional": "Nombre completo (opcional)",
             "dateOfBirth": "Fecha de nacimiento",
             "age": "Edad: {{age}}",
             "countryOfResidence": "País de residencia",

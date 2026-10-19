@@ -150,6 +150,8 @@ const indexQueries = [
     'CREATE INDEX profile_did_idx IF NOT EXISTS FOR (p:Profile) ON (p.did)',
     'CREATE TEXT INDEX profileId_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.profileId)',
     'CREATE TEXT INDEX profile_displayname_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.displayName)',
+    // Backs case-insensitive profile search (see accesslayer/profile/search-fields.ts)
+    'CREATE TEXT INDEX profile_displayname_lower_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.displayNameLower)',
     'CREATE INDEX boost_id_idx IF NOT EXISTS FOR (b:Boost) ON (b.id)',
     'CREATE INDEX boost_category_idx IF NOT EXISTS FOR (b:Boost) ON (b.category)',
     'CREATE INDEX boost_autoconnect_idx IF NOT EXISTS FOR (b:Boost) ON (b.autoConnectRecipients)',
@@ -244,11 +246,16 @@ const runIndexQuery = async (query: string): Promise<void> => {
 };
 
 if (shouldCreateIndices) {
-    void ensureCredentialRefreshConstraints().catch(err => {
-        console.error('Error creating credential refresh constraints:', err);
-    });
-
     (async function createIndices() {
+        // Constraints first, then indexes, one schema statement at a time. Running the two
+        // lists concurrently made every cold start contend with itself for schema locks.
+        // The readiness promise is memoized, so refresh routes awaiting it later reuse this run.
+        try {
+            await ensureCredentialRefreshConstraints();
+        } catch (err) {
+            console.error('Error creating credential refresh constraints:', err);
+        }
+
         try {
             for (const query of indexQueries) {
                 await runIndexQuery(query);

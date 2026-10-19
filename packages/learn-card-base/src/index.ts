@@ -116,6 +116,7 @@ export * from './config/TenantConfigProvider';
 export * from './config/brandingHelpers';
 export * from './storage/image-upload';
 export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapterProvider';
+export { useAuthSessionProvider } from './providers/useAuthSessionProvider';
 export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
 export type { SignInCapabilities, SocialSignInOptions } from './auth-adapters';
 export * from './hooks/useSocialLogins';

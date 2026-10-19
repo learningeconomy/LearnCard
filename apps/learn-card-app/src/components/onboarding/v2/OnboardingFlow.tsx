@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
-import { useSignInAdapter } from 'learn-card-base';
+import { authUserStore, useSignInAdapter } from 'learn-card-base';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
@@ -26,6 +26,8 @@ import {
     getLogger,
     Toggle,
     getSSSConfig,
+    authStore,
+    SocialLoginTypes,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -84,6 +86,7 @@ type OnboardingFlowProps = {
 
 const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const adapter = useSignInAdapter();
+    const authUser = authUserStore.use.currentUser();
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState, setupNewKey, setEscrowPin, authProvider } = useAppAuth();
     // Async handlers must read the live coordinator state, not their render-time snapshot.
@@ -108,6 +111,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const currentUser = useCurrentUser();
     const authToken = getAuthToken();
+    const loginType = authStore.use.typeOfLogin();
+    const isAppleLogin = loginType === SocialLoginTypes.apple;
 
     // Scroll focused input into view when keyboard opens on native
     const containerRef = useRef<HTMLDivElement>(null);
@@ -282,10 +287,15 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [euParentalConsentRequested, setEuParentalConsentRequested] = useState(false);
     const [guardianEmail, setGuardianEmail] = useState('');
 
-    const [name, setName] = useState(currentUser?.name ?? '');
+    const [name, setName] = useState(
+        () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
+    );
+    const nameEditedRef = useRef(false);
+    const [anonymousHandle] = useState(() => `learner-${generateRandomSuffix()}`);
     const [photo, setPhoto] = useState(currentUser?.profileImage ?? '');
     const [profileId, setProfileId] = useState('');
     const [isHandleManuallyEdited, setIsHandleManuallyEdited] = useState(false);
+    const displayName = name.trim() || (isAppleLogin ? profileId : '');
 
     const [privacyPreferences, setPrivacyPreferences] =
         useState<OnboardingPrivacyPreferences | null>(null);
@@ -331,7 +341,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
         const trimmed = name.trim();
         if (!trimmed) {
-            setProfileId('');
+            setProfileId(isAppleLogin ? anonymousHandle : '');
             return;
         }
 
@@ -343,7 +353,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         }, 400);
 
         return () => window.clearTimeout(timeout);
-    }, [name, isHandleManuallyEdited]);
+    }, [name, isHandleManuallyEdited, isAppleLogin, anonymousHandle]);
 
     // Handle collision resolution
     useEffect(() => {
@@ -361,14 +371,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         }
     }, [uniqueProfile, uniqueProfileFetching, isHandleManuallyEdited, profileId]);
 
-    // Pre-fill from Firebase
+    // Auth enrichment can finish after this form mounts. Preserve intentional edits.
     useEffect(() => {
         const fbUser = adapter.getCurrentUser();
-        if (fbUser) {
-            if (fbUser.displayName && !name) setName(fbUser.displayName);
-            if (fbUser.photoUrl && !photo) setPhoto(fbUser.photoUrl);
+        if (!nameEditedRef.current) {
+            setName(fbUser?.displayName?.trim() || currentUser?.name || '');
         }
-    }, [name, photo, adapter]);
+        if (fbUser?.photoUrl && !photo) setPhoto(fbUser.photoUrl);
+    }, [authUser?.displayName, currentUser?.name, loginType, photo, adapter]);
 
     // Photo Upload
     const onUpload = (data: UploadRes) => {
@@ -500,6 +510,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     // Screen 2 Logic
     const handleCreateProfile = async () => {
+        if (!isAppleLogin && !name.trim()) return;
+
         const parsedData = ProfileIDStateValidator.safeParse({ profileId });
         if (!parsedData.success) {
             setProfileIdError(
@@ -544,7 +556,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             const didWeb = await wallet.invoke.createProfile({
                 profileId,
-                displayName: name,
+                displayName,
                 shortBio: '',
                 bio: '',
                 image: photo,
@@ -618,7 +630,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         const fbUser = adapter.getCurrentUser();
                         if (fbUser) {
                             await adapter.updateProfile?.({
-                                displayName: name,
+                                displayName,
                                 photoUrl: photo,
                             });
                         }
@@ -628,10 +640,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 }
 
                 if (currentUser?.privateKey) {
-                    await updateCurrentUser(currentUser.uid, { name, profileImage: photo });
+                    await updateCurrentUser(currentUser.uid, {
+                        name: displayName,
+                        profileImage: photo,
+                    });
                     currentUserStore.set.currentUser({
                         ...currentUser,
-                        name,
+                        name: displayName,
                         profileImage: photo,
                     });
                 }
@@ -646,7 +661,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     try {
                         await autoConsentLearnCardAi({
                             enabled: aiEnabled && preferencesInitialized,
-                            userOverrides: { name, profileImage: photo },
+                            userOverrides: { name: displayName, profileImage: photo },
                         });
                     } catch (err) {
                         log.error('Failed to auto-consent LearnCard AI:', err);
@@ -1014,7 +1029,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                         </div>
                                         <div className="text-center relative z-10 w-full">
                                             <h2 className="text-xl font-semibold text-grayscale-900 truncate px-2">
-                                                {name || m['onboarding.v2.yourName']()}
+                                                {displayName || m['onboarding.v2.yourName']()}
                                             </h2>
                                             <p className="text-sm text-grayscale-600 font-medium truncate px-2">
                                                 @{profileId || m['onboarding.v2.username']()}
@@ -1031,13 +1046,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 htmlFor="onboarding-full-name"
                                                 className="block text-xs font-medium text-grayscale-700 mb-1.5"
                                             >
-                                                {m['onboarding.profile.fullName']()}
+                                                {isAppleLogin
+                                                    ? m['onboarding.profile.fullNameOptional']()
+                                                    : m['onboarding.profile.fullName']()}
                                             </label>
                                             <input
                                                 id="onboarding-full-name"
                                                 type="text"
                                                 value={name}
-                                                onChange={e => setName(e.target.value)}
+                                                onChange={e => {
+                                                    nameEditedRef.current = true;
+                                                    setName(e.target.value);
+                                                }}
+                                                required={!isAppleLogin}
+                                                autoComplete="name"
                                                 placeholder={m['onboarding.v2.yourName']()}
                                                 className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent bg-white/50 transition-all"
                                             />
@@ -1287,7 +1309,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 onClick={handleCreateProfile}
                                 disabled={
                                     isCreating ||
-                                    !name ||
+                                    (!isAppleLogin && !name.trim()) ||
                                     !profileId ||
                                     !isUniqueValid ||
                                     !isLengthValid ||
@@ -1370,7 +1392,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                         <div className="text-center relative z-10 w-full">
                             <h2 className="text-2xl font-semibold text-grayscale-900 truncate px-2">
-                                {name}
+                                {displayName}
                             </h2>
                             <p className="text-base text-grayscale-600 font-medium truncate px-2">
                                 @{profileId}
