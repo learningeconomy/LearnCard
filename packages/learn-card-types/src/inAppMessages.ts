@@ -203,7 +203,7 @@ export const inAppMessageFrequencyValidator = z
 export type InAppMessageFrequency = z.infer<typeof inAppMessageFrequencyValidator>;
 
 export const inAppMessagePresentationValidator = z
-    .enum(['modal', 'banner', 'toast'])
+    .enum(['modal', 'banner', 'toast', 'story', 'iframe'])
     .default('modal');
 export type InAppMessagePresentation = z.infer<typeof inAppMessagePresentationValidator>;
 
@@ -225,6 +225,60 @@ export const inAppMessageSettingsValidator = z
     .default({ maxBlockingPerSession: 1, blockingCooldownHours: 48 });
 export type InAppMessageSettings = z.infer<typeof inAppMessageSettingsValidator>;
 
+export const inAppMessageHttpsUrlValidator = z
+    .string()
+    .url()
+    .refine(value => {
+        try {
+            const url = new URL(value);
+            return url.protocol === 'https:' && !url.username && !url.password;
+        } catch {
+            return false;
+        }
+    }, 'An HTTPS URL without embedded credentials is required');
+
+export const inAppMessageStepValidator = z
+    .object({
+        title: z.string(),
+        body: z.string().optional(),
+        media: inAppMessageMediaValidator.optional(),
+        emoji: z.string().optional(),
+        actions: z.array(inAppMessageActionValidator).optional(),
+    })
+    .passthrough();
+export type InAppMessageStep = z.infer<typeof inAppMessageStepValidator>;
+
+export const inAppMessageIframeValidator = z
+    .object({
+        url: inAppMessageHttpsUrlValidator,
+        title: z.string().optional(),
+        loadTimeoutMs: z.number().int().positive().max(2147483647).default(10000),
+    })
+    .passthrough();
+
+export const inAppMessageLocalesValidator = z.record(
+    z.string(),
+    z
+        .object({
+            title: z.string().optional(),
+            body: z.string().optional(),
+            actionLabels: z.array(z.string().nullable()).optional(),
+            steps: z
+                .array(
+                    z
+                        .object({
+                            title: z.string().optional(),
+                            body: z.string().optional(),
+                        })
+                        .passthrough()
+                        .nullable()
+                )
+                .optional(),
+            iframeUrl: inAppMessageHttpsUrlValidator.optional(),
+        })
+        .passthrough()
+);
+
 export const inAppMessageValidator = z
     .object({
         /** Stable identifier — used to persist dismissal / frequency state. */
@@ -241,6 +295,9 @@ export const inAppMessageValidator = z
         title: z.string(),
         body: z.string().optional(),
         actions: z.array(inAppMessageActionValidator).default([]),
+        steps: z.array(inAppMessageStepValidator).optional(),
+        iframe: inAppMessageIframeValidator.optional(),
+        locales: inAppMessageLocalesValidator.optional(),
         /** Targeting predicate tree. Omitted → matches everyone. */
         targeting: inAppMessagePredicateValidator.optional(),
         /** Allow disabling a message without removing it from the flag. */
@@ -248,7 +305,23 @@ export const inAppMessageValidator = z
         trigger: inAppMessageTriggerValidator.optional(),
         bypassFatigue: z.boolean().default(false),
     })
-    .passthrough();
+    .passthrough()
+    .superRefine((message, ctx) => {
+        if (message.presentation === 'story' && !message.steps?.length) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['steps'],
+                message: 'Stories require at least one screen',
+            });
+        }
+        if (message.presentation === 'iframe' && !message.iframe) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['iframe'],
+                message: 'Iframe configuration is required',
+            });
+        }
+    });
 export type InAppMessage = z.infer<typeof inAppMessageValidator>;
 
 export const inAppMessagesFlagValidator = z
