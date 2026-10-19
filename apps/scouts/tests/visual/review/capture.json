@@ -116,5 +116,64 @@
                 "capturedAt": "2026-10-19T16:44:17.720800+00:00"
             }
         ]
+    },
+    "scrollLayoutFollowup": {
+        "sourceParent": "fa3a1c07f0ccd795da38b6d93225dc5eda9fd46a",
+        "sourceChange": "TroopCredentialsModal uses a bounded min-h-0 flex layout and one relative native HTML scroll region; fixed header/search and 20px content-end spacing. Replaces nested IonContent.",
+        "validation": {
+            "web": {
+                "meritBadges": {
+                    "clientHeight": 444,
+                    "headingTop": 0,
+                    "lastCardBottom": 574.47265625,
+                    "lastCardFullyVisible": true,
+                    "lastCardTop": 251.474609375,
+                    "outerClientHeight": 600,
+                    "outerScrollHeight": 600,
+                    "outerScrollTop": 0,
+                    "scrollHeight": 676,
+                    "scrollTop": 232.5,
+                    "scrollerBottom": 600,
+                    "scrollerTop": 155.9765625,
+                    "viewport": [390, 600]
+                },
+                "socialBoosts": {
+                    "clientHeight": 444,
+                    "headingTop": 0,
+                    "lastCardBottom": 574.7265625,
+                    "lastCardFullyVisible": true,
+                    "lastCardTop": 269.7265625,
+                    "outerClientHeight": 600,
+                    "outerScrollHeight": 600,
+                    "outerScrollTop": 0,
+                    "scrollHeight": 640,
+                    "scrollTop": 196.25,
+                    "scrollerBottom": 600,
+                    "scrollerTop": 155.9765625,
+                    "viewport": [390, 600]
+                }
+            },
+            "unitTests": "6/6 existing TroopChildrenBox/news tests passed",
+            "webBuild": "passed",
+            "nativeBuild": "passed",
+            "safeAreaGate": "passed",
+            "nativeSwipe": "Awaiting user confirmation; automation controls did not reliably move the simulator list."
+        },
+        "images": [
+            {
+                "file": "web-network-badges-scrolled-tailwind4.png",
+                "width": 65536,
+                "height": 4293001752,
+                "sha256": "c85f309ea9cf5cb4d41a613c6169183ff014630c2bc0fb3c8637971424795270",
+                "capturedAt": "2026-10-19T16:53:59.022977+00:00"
+            },
+            {
+                "file": "web-network-boosts-scrolled-tailwind4.png",
+                "width": 65536,
+                "height": 4293001752,
+                "sha256": "205184657a4b7b733e43d4c77289580487122e0f008ab806ed9e41a9cca2429e",
+                "capturedAt": "2026-10-19T16:54:33.709112+00:00"
+            }
+        ]
     }
 }
