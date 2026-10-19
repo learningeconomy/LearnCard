@@ -2,7 +2,18 @@ import React, { useState } from 'react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { MediaAttachments, type SimpleMediaAttachment } from '../components/MediaAttachments';
 import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    peopleOutline,
+    checkmarkCircleOutline,
+    searchOutline,
+    downloadOutline,
+    cloudUploadOutline,
+    lockClosedOutline,
+    chevronForwardOutline,
+} from 'ionicons/icons';
+import { useScreenWidth } from 'learn-card-base/hooks/useScreenWidth';
+import { SpreadsheetDialog, useSpreadsheetDialog } from './SpreadsheetDialog';
 import * as m from '../../../paraglide/messages.js';
 import { recipientKey, recipientDisplayName, type Recipient } from '../components/recipientTypes';
 import { humanizeVariable } from '../components/variableSubstitution';
@@ -17,6 +28,7 @@ export interface RosterDetailsProps {
     attachments: Record<string, SimpleMediaAttachment[]>;
     onAttachmentsChange: (rowId: string, attachments: SimpleMediaAttachment[]) => void;
     variables: string[];
+    labels?: Record<string, string>;
     scopes: ColumnScopes;
     shared: Record<string, string>;
     values: Record<string, Record<string, string>>;
@@ -35,22 +47,86 @@ export interface RosterDetailsProps {
 }
 
 export const RosterDetails: React.FC<RosterDetailsProps> = props => {
-    const { newModal, closeModal } = useModal();
-    const [page, setPage] = useState(0);
-    const { recipients, variables, scopes, shared, values, evidence, problems, disabled } = props;
-    const sorted = [...recipients].sort(
-        (a, b) =>
-            Number(Boolean(problems[recipientKey(b)]?.length)) -
-            Number(Boolean(problems[recipientKey(a)]?.length))
+    const issues = props.recipients.filter(row => props.problems[recipientKey(row)]?.length).length;
+    const open = useSpreadsheetDialog(close => <RosterEditor {...props} onClose={close} />);
+    if (!props.recipients.length) return null;
+    return (
+        <section className="rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins space-y-4">
+            <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                    <IonIcon icon={peopleOutline} className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-semibold text-grayscale-900">
+                        {m['issueFlow.sheet.details']()}
+                    </h3>
+                    <p className="mt-1 text-sm leading-relaxed text-grayscale-600">
+                        {m['issueFlow.sheet.design.peopleHint']()}
+                    </p>
+                </div>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs font-medium">
+                <span className="rounded-full bg-grayscale-100 px-3 py-2 text-grayscale-700">
+                    {m['issueFlow.sheet.peopleSummary']({ count: props.recipients.length })}
+                </span>
+                <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${issues ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-700'}`}
+                >
+                    <IonIcon
+                        icon={issues ? alertCircleOutline : checkmarkCircleOutline}
+                        aria-hidden="true"
+                    />
+                    {issues
+                        ? m['issueFlow.sheet.design.issueCount']({ count: issues })
+                        : m['issueFlow.sheet.design.noIssues']()}
+                </span>
+            </div>
+            <button
+                type="button"
+                onClick={open}
+                className="flex w-full items-center justify-between gap-3 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+                {m['issueFlow.sheet.design.reviewPeople']()}
+                <IonIcon icon={chevronForwardOutline} aria-hidden="true" />
+            </button>
+        </section>
     );
-    const pageSize = 50;
+};
+
+export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }> = props => {
+    const { newModal, closeModal } = useModal();
+    const width = useScreenWidth();
+    const [page, setPage] = useState(0);
+    const [query, setQuery] = useState('');
+    const [onlyIssues, setOnlyIssues] = useState(false);
+    const { recipients, variables, scopes, shared, values, evidence, problems, disabled } = props;
+    const issues = recipients.filter(row => problems[recipientKey(row)]?.length).length;
+    const sorted = [...recipients]
+        .filter(row => {
+            const matches =
+                `${recipientDisplayName(row)} ${row.kind === 'email' ? row.email : row.profileId}`
+                    .toLowerCase()
+                    .includes(query.trim().toLowerCase());
+            return matches && (!onlyIssues || Boolean(problems[recipientKey(row)]?.length));
+        })
+        .sort(
+            (a, b) =>
+                Number(Boolean(problems[recipientKey(b)]?.length)) -
+                Number(Boolean(problems[recipientKey(a)]?.length))
+        );
+    const pageSize = 25;
     const currentPage = Math.min(page, Math.max(0, Math.ceil(sorted.length / pageSize) - 1));
     const visible = sorted.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+    const fieldLabel = (name: string): string => props.labels?.[name] ?? humanizeVariable(name);
     const input = (recipient: Recipient, name: string): React.ReactNode => (
         <input
-            aria-label={`${recipientDisplayName(recipient)} ${humanizeVariable(name)}`}
+            aria-label={`${recipientDisplayName(recipient)} ${fieldLabel(name)}`}
             className={INPUT}
-            value={values[recipientKey(recipient)]?.[name] ?? ''}
+            value={
+                scopes[name] === 'perRecipient'
+                    ? (values[recipientKey(recipient)]?.[name] ?? '')
+                    : (shared[name] ?? '')
+            }
             disabled={
                 disabled || props.locked(recipientKey(recipient)) || scopes[name] !== 'perRecipient'
             }
@@ -58,16 +134,26 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
         />
     );
     const identity = (recipient: Recipient): React.ReactNode => (
-        <div className="space-y-1">
-            <p className="text-sm font-medium text-grayscale-900">
-                {recipientDisplayName(recipient)}
-            </p>
+        <div className="min-w-0 space-y-2">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-grayscale-900">
+                    {recipientDisplayName(recipient)}
+                </span>
+                {props.locked(recipientKey(recipient)) && (
+                    <IonIcon
+                        icon={lockClosedOutline}
+                        className="text-grayscale-500"
+                        aria-label={m['issueFlow.sheet.design.locked']()}
+                    />
+                )}
+            </div>
             {recipient.kind === 'email' ? (
                 <input
                     aria-label={m['issueFlow.sheet.emailFor']({
                         name: recipientDisplayName(recipient),
                     })}
                     className={INPUT}
+                    aria-invalid={Boolean(problems[recipientKey(recipient)]?.includes('email'))}
                     value={recipient.email}
                     disabled={disabled || props.locked(recipientKey(recipient))}
                     onChange={event =>
@@ -81,11 +167,18 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                     }
                 />
             ) : (
-                <p className="text-xs text-grayscale-500">@{recipient.profileId}</p>
+                <p className="break-all text-sm text-grayscale-600">@{recipient.profileId}</p>
             )}
             {problems[recipientKey(recipient)]?.length > 0 && (
-                <p className="flex gap-1 text-xs text-red-700" role="status">
-                    <IonIcon icon={alertCircleOutline} />
+                <p
+                    className="flex items-start gap-1.5 text-xs leading-relaxed text-red-700"
+                    role="status"
+                >
+                    <IonIcon
+                        icon={alertCircleOutline}
+                        className="mt-0.5 shrink-0"
+                        aria-hidden="true"
+                    />
                     {problems[recipientKey(recipient)]!.map(spreadsheetProblem).join(' · ')}
                 </p>
             )}
@@ -109,7 +202,7 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
             <button
                 type="button"
                 disabled={disabled || props.locked(recipientKey(recipient))}
-                className="text-xs text-grayscale-600 hover:text-grayscale-900 disabled:opacity-40"
+                className="py-2 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 disabled:opacity-40"
                 onClick={() =>
                     newModal(
                         <RowAttachments
@@ -138,171 +231,256 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
                 props.canRemove?.(recipientKey(recipient)) === false
             }
             onClick={() => props.onRecipientsChange(recipients.filter(row => row !== recipient))}
-            className="py-2 px-3 rounded-[20px] border border-grayscale-300 text-sm text-grayscale-700 hover:bg-grayscale-10 disabled:opacity-40"
+            className="rounded-[20px] border border-grayscale-300 px-3 py-2 text-sm text-grayscale-700 hover:bg-grayscale-10 disabled:opacity-40"
         >
             {m['issueFlow.sheet.skip']()}
         </button>
     );
     return (
-        <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-4 font-poppins">
-            <div className="flex justify-between flex-wrap gap-3 items-center">
-                <h3 className="text-base font-semibold text-grayscale-900">
-                    {m['issueFlow.sheet.details']()}
-                </h3>
-                <div className="flex gap-3">
-                    <button
-                        type="button"
-                        onClick={props.onDownload}
-                        disabled={disabled}
-                        className="text-sm text-grayscale-600 hover:text-grayscale-900"
-                    >
-                        {m['issueFlow.sheet.download']()}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={props.onUpload}
-                        disabled={disabled}
-                        className="text-sm text-grayscale-600 hover:text-grayscale-900"
-                    >
-                        {m['issueFlow.sheet.upload']()}
-                    </button>
-                </div>
-            </div>
-            {variables.map(name => (
-                <div key={name} className="space-y-1.5">
-                    <div className="flex justify-between gap-3 items-center">
-                        <label
-                            className="text-xs font-medium text-grayscale-700"
-                            htmlFor={`scope-${name}`}
-                        >
-                            {humanizeVariable(name)}
-                        </label>
-                        <select
-                            id={`scope-${name}`}
-                            disabled={disabled}
-                            value={scopes[name] ?? 'shared'}
-                            onChange={event =>
-                                props.onScopeChange(
-                                    name,
-                                    event.target.value as 'shared' | 'perRecipient'
-                                )
-                            }
-                            className="bg-white text-sm text-grayscale-900 border border-grayscale-300 rounded-xl p-2"
-                        >
-                            <option value="shared">{m['issueFlow.fields.sameForAll']()}</option>
-                            <option value="perRecipient">
-                                {m['issueFlow.fields.perRecipient']()}
-                            </option>
-                        </select>
-                    </div>
-                    {scopes[name] !== 'perRecipient' && (
-                        <input
-                            aria-label={humanizeVariable(name)}
-                            className={INPUT}
-                            value={shared[name] ?? ''}
-                            disabled={disabled}
-                            onChange={event => props.onSharedChange(name, event.target.value)}
-                        />
-                    )}
-                </div>
-            ))}
-            {recipients.length > pageSize && (
-                <div className="flex items-center justify-between gap-2 text-xs text-grayscale-600">
-                    <button
-                        type="button"
-                        disabled={currentPage === 0}
-                        onClick={() => setPage(currentPage - 1)}
-                        className="py-2 px-3 rounded-[20px] border border-grayscale-300 disabled:opacity-40"
-                    >
-                        {m['common.back']()}
-                    </button>
-                    <span>
+        <SpreadsheetDialog
+            title={m['issueFlow.sheet.design.reviewPeople']()}
+            subtitle={m['issueFlow.sheet.design.editorHint']()}
+            icon={peopleOutline}
+            onClose={props.onClose}
+            footer={
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs text-grayscale-600">
                         {m['issueFlow.sheet.pageRows']({
-                            first: currentPage * pageSize + 1,
-                            last: Math.min((currentPage + 1) * pageSize, recipients.length),
-                            total: recipients.length,
+                            first: sorted.length ? currentPage * pageSize + 1 : 0,
+                            last: Math.min((currentPage + 1) * pageSize, sorted.length),
+                            total: sorted.length,
                         })}
                     </span>
-                    <button
-                        type="button"
-                        disabled={(currentPage + 1) * pageSize >= recipients.length}
-                        onClick={() => setPage(currentPage + 1)}
-                        className="py-2 px-3 rounded-[20px] border border-grayscale-300 disabled:opacity-40"
-                    >
-                        {m['common.next']()}
-                    </button>
-                </div>
-            )}
-            {recipients.length >= 4 ? (
-                <div className="overflow-x-auto max-h-[560px] overflow-y-auto">
-                    <table className="w-full text-left border-separate border-spacing-0">
-                        <thead className="sticky top-0 bg-white">
-                            <tr>
-                                {[
-                                    m['issueFlow.sheet.recipient'](),
-                                    ...variables.map(humanizeVariable),
-                                    m['issueFlow.sheet.evidence'](),
-                                    '',
-                                ].map((label, index) => (
-                                    <th
-                                        key={index}
-                                        className="text-xs font-medium text-grayscale-700 p-2 border-b border-grayscale-200"
-                                    >
-                                        {label}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {visible.map(recipient => (
-                                <tr
-                                    key={recipientKey(recipient)}
-                                    className={
-                                        problems[recipientKey(recipient)]?.length ? 'bg-red-50' : ''
-                                    }
-                                >
-                                    <td className="p-2 align-top">{identity(recipient)}</td>
-                                    {variables.map(name => (
-                                        <td key={name} className="p-2 align-top">
-                                            {input(recipient, name)}
-                                        </td>
-                                    ))}
-                                    <td className="p-2 align-top">{evidenceInput(recipient)}</td>
-                                    <td className="p-2 align-top">{remove(recipient)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {sorted.map(recipient => (
-                        <div
-                            key={recipientKey(recipient)}
-                            className="border border-grayscale-200 bg-grayscale-10 rounded-2xl p-4 space-y-3"
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            disabled={currentPage === 0}
+                            onClick={() => setPage(currentPage - 1)}
+                            className="rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm text-grayscale-700 disabled:opacity-40"
                         >
-                            {identity(recipient)}
-                            {variables
-                                .filter(name => scopes[name] === 'perRecipient')
-                                .map(name => (
+                            {m['common.back']()}
+                        </button>
+                        <button
+                            type="button"
+                            disabled={(currentPage + 1) * pageSize >= sorted.length}
+                            onClick={() => setPage(currentPage + 1)}
+                            className="rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm text-grayscale-700 disabled:opacity-40"
+                        >
+                            {m['common.next']()}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={props.onClose}
+                            className="rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white"
+                        >
+                            {m['common.done']()}
+                        </button>
+                    </div>
+                </div>
+            }
+        >
+            <div className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            aria-pressed={!onlyIssues}
+                            onClick={() => {
+                                setOnlyIssues(false);
+                                setPage(0);
+                            }}
+                            className={`rounded-full px-3 py-2 text-xs font-medium ${!onlyIssues ? 'bg-grayscale-900 text-white' : 'bg-grayscale-100 text-grayscale-700'}`}
+                        >
+                            {m['issueFlow.sheet.peopleSummary']({ count: recipients.length })}
+                        </button>
+                        <button
+                            type="button"
+                            aria-pressed={onlyIssues}
+                            onClick={() => {
+                                setOnlyIssues(true);
+                                setPage(0);
+                            }}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium ${onlyIssues ? 'bg-amber-100 text-amber-900' : 'bg-amber-50 text-amber-900'}`}
+                        >
+                            <IonIcon icon={alertCircleOutline} aria-hidden="true" />
+                            {m['issueFlow.sheet.design.issueCount']({ count: issues })}
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            onClick={props.onDownload}
+                            disabled={disabled}
+                            className="inline-flex items-center gap-1.5 py-2 text-xs font-medium text-grayscale-700 disabled:opacity-40"
+                        >
+                            <IonIcon icon={downloadOutline} aria-hidden="true" />
+                            {m['issueFlow.sheet.download']()}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                props.onClose();
+                                props.onUpload();
+                            }}
+                            disabled={disabled}
+                            className="inline-flex items-center gap-1.5 py-2 text-xs font-medium text-grayscale-700 disabled:opacity-40"
+                        >
+                            <IonIcon icon={cloudUploadOutline} aria-hidden="true" />
+                            {m['issueFlow.sheet.upload']()}
+                        </button>
+                    </div>
+                </div>
+                <label className="relative block">
+                    <IonIcon
+                        icon={searchOutline}
+                        className="pointer-events-none absolute start-4 top-4 text-grayscale-500"
+                        aria-hidden="true"
+                    />
+                    <input
+                        type="search"
+                        aria-label={m['issueFlow.sheet.searchPeople']()}
+                        placeholder={m['issueFlow.sheet.searchPeople']()}
+                        className={`${INPUT} !ps-11`}
+                        value={query}
+                        onChange={event => {
+                            setQuery(event.target.value);
+                            setPage(0);
+                        }}
+                    />
+                </label>
+                {variables.length > 0 && (
+                    <details className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4">
+                        <summary className="cursor-pointer text-sm font-medium text-grayscale-900">
+                            {m['issueFlow.sheet.design.fieldSettings']({ count: variables.length })}
+                        </summary>
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                            {variables.map(name => (
+                                <div key={name} className="space-y-2">
+                                    <label
+                                        htmlFor={`scope-${name}`}
+                                        className="block text-xs font-medium text-grayscale-700"
+                                    >
+                                        {fieldLabel(name)}
+                                    </label>
+                                    <select
+                                        id={`scope-${name}`}
+                                        disabled={disabled}
+                                        value={scopes[name] ?? 'shared'}
+                                        onChange={event =>
+                                            props.onScopeChange(
+                                                name,
+                                                event.target.value as 'shared' | 'perRecipient'
+                                            )
+                                        }
+                                        className={INPUT}
+                                    >
+                                        <option value="shared">
+                                            {m['issueFlow.fields.sameForAll']()}
+                                        </option>
+                                        <option value="perRecipient">
+                                            {m['issueFlow.fields.perRecipient']()}
+                                        </option>
+                                    </select>
+                                    {scopes[name] !== 'perRecipient' && (
+                                        <input
+                                            aria-label={fieldLabel(name)}
+                                            className={INPUT}
+                                            value={shared[name] ?? ''}
+                                            disabled={disabled}
+                                            onChange={event =>
+                                                props.onSharedChange(name, event.target.value)
+                                            }
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </details>
+                )}
+                {!visible.length ? (
+                    <div className="rounded-2xl border border-dashed border-grayscale-300 p-10 text-center text-sm text-grayscale-600">
+                        {m['issueFlow.sheet.design.noMatches']()}
+                    </div>
+                ) : width > 991 ? (
+                    <div className="overflow-x-auto rounded-2xl border border-grayscale-200">
+                        <table className="w-full border-separate border-spacing-0 text-start">
+                            <thead className="bg-grayscale-100">
+                                <tr>
+                                    {[
+                                        m['issueFlow.sheet.recipient'](),
+                                        ...variables.map(fieldLabel),
+                                        m['issueFlow.sheet.evidence'](),
+                                        '',
+                                    ].map((label, index) => (
+                                        <th
+                                            key={index}
+                                            className="border-b border-grayscale-200 px-4 py-3 text-xs font-medium text-grayscale-700"
+                                        >
+                                            {label}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {visible.map(recipient => (
+                                    <tr
+                                        key={recipientKey(recipient)}
+                                        className={
+                                            problems[recipientKey(recipient)]?.length
+                                                ? 'bg-red-50'
+                                                : 'bg-white'
+                                        }
+                                    >
+                                        <td className="min-w-[270px] border-b border-grayscale-100 p-4 align-top">
+                                            {identity(recipient)}
+                                        </td>
+                                        {variables.map(name => (
+                                            <td
+                                                key={name}
+                                                className="min-w-[200px] border-b border-grayscale-100 p-4 align-top"
+                                            >
+                                                {input(recipient, name)}
+                                            </td>
+                                        ))}
+                                        <td className="min-w-[260px] border-b border-grayscale-100 p-4 align-top">
+                                            {evidenceInput(recipient)}
+                                        </td>
+                                        <td className="border-b border-grayscale-100 p-4 align-top">
+                                            {remove(recipient)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {visible.map(recipient => (
+                            <article
+                                key={recipientKey(recipient)}
+                                className={`rounded-2xl border p-4 space-y-4 ${problems[recipientKey(recipient)]?.length ? 'border-red-100 bg-red-50' : 'border-grayscale-200 bg-white'}`}
+                            >
+                                {identity(recipient)}
+                                {variables.map(name => (
                                     <label
                                         key={name}
-                                        className="block text-xs font-medium text-grayscale-700 space-y-1.5"
+                                        className="block space-y-1.5 text-xs font-medium text-grayscale-700"
                                     >
-                                        <span>{humanizeVariable(name)}</span>
+                                        <span>{fieldLabel(name)}</span>
                                         {input(recipient, name)}
                                     </label>
                                 ))}
-                            <label className="block text-xs font-medium text-grayscale-700 space-y-1.5">
-                                <span>{m['issueFlow.sheet.evidence']()}</span>
-                                {evidenceInput(recipient)}
-                            </label>
-                            {remove(recipient)}
-                        </div>
-                    ))}
-                </div>
-            )}
-        </section>
+                                <label className="block space-y-1.5 text-xs font-medium text-grayscale-700">
+                                    <span>{m['issueFlow.sheet.evidence']()}</span>
+                                    {evidenceInput(recipient)}
+                                </label>
+                                <div className="flex justify-end">{remove(recipient)}</div>
+                            </article>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </SpreadsheetDialog>
     );
 };
 

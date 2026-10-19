@@ -9403,7 +9403,21 @@
             "viewAll": "Ver todas",
             "searchPeople": "Buscar personas",
             "pageRows": "Filas {{first}}–{{last}} de {{total}}",
-            "needsConfirmation": "Necesita confirmación"
+            "needsConfirmation": "Necesita confirmación",
+            "design": {
+                "peopleHint": "Revisa los destinatarios, corrige errores y personaliza sus credenciales.",
+                "issueCount": "Necesitan revisión · {{count}}",
+                "noIssues": "Sin problemas detectados",
+                "reviewPeople": "Revisar personas",
+                "editorHint": "Los cambios se guardan en el borrador mientras editas.",
+                "locked": "Ya enviado o en curso",
+                "fieldSettings": "Campos de la credencial · {{count}}",
+                "noMatches": "No hay personas que coincidan con esta vista.",
+                "importHint": "Puedes corregir los datos después de añadir a las personas.",
+                "importSetup": "Configura la importación",
+                "previewPeople": "Vista previa de personas",
+                "previewHint": "Mostrando {{count}} de {{total}} personas."
+            }
         }
     },
     "connectivity": {

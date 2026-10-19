@@ -9454,7 +9454,21 @@
             "viewAll": "View All",
             "searchPeople": "Search people",
             "pageRows": "Rows {{first}}–{{last}} of {{total}}",
-            "needsConfirmation": "Needs confirmation"
+            "needsConfirmation": "Needs confirmation",
+            "design": {
+                "peopleHint": "Review recipients, fix issues, and personalize their credential fields.",
+                "issueCount": "Needs attention · {{count}}",
+                "noIssues": "No issues found",
+                "reviewPeople": "Review people",
+                "editorHint": "Changes are saved to your draft as you edit.",
+                "locked": "Already sent or in progress",
+                "fieldSettings": "Credential fields · {{count}}",
+                "noMatches": "No people match this view.",
+                "importHint": "You can correct recipient details after adding people.",
+                "importSetup": "Set up your import",
+                "previewPeople": "People preview",
+                "previewHint": "Showing {{count}} of {{total}} people."
+            }
         }
     },
     "connectivity": {

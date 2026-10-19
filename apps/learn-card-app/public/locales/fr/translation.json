@@ -9403,7 +9403,21 @@
             "viewAll": "Tout voir",
             "searchPeople": "Rechercher des personnes",
             "pageRows": "Lignes {{first}}–{{last}} sur {{total}}",
-            "needsConfirmation": "À confirmer"
+            "needsConfirmation": "À confirmer",
+            "design": {
+                "peopleHint": "Vérifiez les destinataires, corrigez les erreurs et personnalisez leurs attestations.",
+                "issueCount": "À vérifier · {{count}}",
+                "noIssues": "Aucun problème détecté",
+                "reviewPeople": "Vérifier les personnes",
+                "editorHint": "Les modifications sont enregistrées dans le brouillon pendant la saisie.",
+                "locked": "Déjà envoyé ou en cours",
+                "fieldSettings": "Champs de l’attestation · {{count}}",
+                "noMatches": "Aucune personne ne correspond à cette vue.",
+                "importHint": "Vous pourrez corriger les informations après avoir ajouté les personnes.",
+                "importSetup": "Configurer l’importation",
+                "previewPeople": "Aperçu des personnes",
+                "previewHint": "Affichage de {{count}} personnes sur {{total}}."
+            }
         }
     },
     "connectivity": {

@@ -174,27 +174,83 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
         await page.getByRole('button', { name: 'Add People', exact: true }).click();
         await expect(page.getByText('10 people · people.csv', { exact: true })).toBeVisible();
-        await expect(page.getByRole('table')).toBeVisible();
+        await expect(page.getByRole('table')).toHaveCount(0);
         await expect(issueButton(page)).toBeDisabled();
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
+        await expect(page.getByRole('table')).toBeVisible();
         await page
             .getByRole('textbox', { name: 'Email for Person 0', exact: true })
             .fill('person0@test.com');
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
         await expect(issueButton(page)).toBeEnabled();
         await page.getByRole('button', { name: 'Next person', exact: true }).click();
         await expect(page.getByText('2 of 10 · Person 1', { exact: true })).toBeVisible();
-        await page.getByRole('button', { name: 'View All', exact: true }).click();
-        await page.getByRole('textbox', { name: 'Search people', exact: true }).fill('Person 9');
-        await expect(page.getByRole('listitem').filter({ hasText: 'Person 9' })).toBeVisible();
-        await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
+        await page.getByRole('searchbox', { name: 'Search people', exact: true }).fill('Person 9');
+        await expect(
+            page.getByRole('textbox', { name: 'Email for Person 9', exact: true })
+        ).toBeVisible();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
         await expect(page.getByText('Draft saved on this device', { exact: true })).toBeVisible();
         await page.reload({ waitUntil: 'domcontentloaded' });
         await waitForIssueReady(page);
         await page
             .getByRole('button', { name: 'Restore Saved Run', exact: true })
             .click({ timeout: 30000 });
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
         await expect(
             page.getByRole('textbox', { name: 'Email for Person 0', exact: true })
         ).toHaveValue('person0@test.com');
+    });
+
+    test('reviews a large roster in a fullscreen mobile workspace without horizontal overflow', async ({
+        page,
+    }) => {
+        test.setTimeout(180000);
+        await page.setViewportSize({ width: 390, height: 844 });
+        await selectBadgeType(page);
+        await page.getByRole('button', { name: 'People', exact: true }).click();
+        await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+            name: 'mobile.csv',
+            mimeType: 'text/csv',
+            buffer: Buffer.from(
+                'Email,Name\n' +
+                    Array.from(
+                        { length: 60 },
+                        (_, i) => `${i === 0 ? 'invalid' : `person${i}@test.com`},Person ${i}`
+                    ).join('\n')
+            ),
+        });
+        await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
+        const review = page.locator('#full-screen-modal.issue-spreadsheet-dialog.open').last();
+        await expect(review).toBeVisible();
+        expect(await review.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(
+            true
+        );
+        await page.getByRole('button', { name: 'Add People', exact: true }).click();
+        await expect(page.getByRole('table')).toHaveCount(0);
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
+        await expect(page.getByRole('article')).toHaveCount(25);
+        const dialog = page.locator('#full-screen-modal.issue-spreadsheet-dialog.open').last();
+        expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(
+            true
+        );
+        await page.getByRole('button', { name: 'Needs attention · 1', exact: true }).click();
+        await expect(page.getByRole('article')).toHaveCount(1);
+        await page
+            .getByRole('textbox', { name: 'Email for Person 0', exact: true })
+            .fill('person0@test.com');
+        await expect(page.getByRole('article')).toHaveCount(0);
+        await page.getByRole('button', { name: '60 people', exact: true }).click();
+        await page.getByRole('button', { name: 'Next', exact: true }).click();
+        await expect(page.getByText('Rows 26–50 of 60', { exact: true })).toBeVisible();
+        const done = page.getByRole('button', { name: 'Done', exact: true });
+        const rect = await done.boundingBox();
+        expect(rect && rect.y + rect.height <= 844).toBeTruthy();
+        await done.click();
+        await expect(page.getByRole('heading', { name: 'Review people', exact: true })).toHaveCount(
+            0
+        );
     });
 
     test('pastes a headerless spreadsheet into the people search', async ({ page }) => {
@@ -209,6 +265,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         });
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
         await page.getByRole('button', { name: 'Add People', exact: true }).click();
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
         await expect(page.getByRole('textbox', { name: /Email for Ada/i })).toBeVisible();
     });
 
@@ -302,6 +359,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         ).toBeVisible({ timeout: 30000 });
         expect(submissions.map(body => body.items.length)).toEqual([100, 100, 50]);
         expect(templateCount).toBe(1);
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
         const failedEmail = page.getByRole('textbox', { name: 'Email for Person 7', exact: true });
         await expect(failedEmail).toBeEnabled();
         await expect(
@@ -310,14 +368,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 .filter({ has: failedEmail })
                 .getByRole('button', { name: 'Skip', exact: true })
         ).toBeDisabled();
-        await page.getByRole('button', { name: 'View All', exact: true }).click();
-        await expect(
-            page
-                .getByRole('listitem')
-                .filter({ has: page.getByText('Person 7', { exact: true }) })
-                .getByRole('button', { name: 'Skip', exact: true })
-        ).toBeDisabled();
-        await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
         await page.reload({ waitUntil: 'domcontentloaded' });
         // The HAR seed login keeps its private key in memory; reauthenticate after reload.
         await waitForAuthenticatedState(page, {

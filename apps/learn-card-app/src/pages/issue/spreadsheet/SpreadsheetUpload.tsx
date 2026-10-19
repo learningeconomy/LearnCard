@@ -1,11 +1,23 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { IonIcon } from '@ionic/react';
-import { cloudUploadOutline, downloadOutline, closeOutline } from 'ionicons/icons';
-import { useModal, ModalTypes } from 'learn-card-base';
+import {
+    cloudUploadOutline,
+    downloadOutline,
+    gridOutline,
+    checkmarkCircleOutline,
+    alertCircleOutline,
+} from 'ionicons/icons';
+import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import { parseSpreadsheet, readSpreadsheetFile, readSpreadsheetText } from './parseSpreadsheet';
 import type { ParsedSpreadsheet, SpreadsheetSource } from './types';
 import { spreadsheetErrorMessage } from './messages';
+import { isValidRosterEmail } from './parseSpreadsheet';
+import {
+    SpreadsheetDialog,
+    SPREADSHEET_MODAL_OPTIONS,
+    SPREADSHEET_MODAL_TYPES,
+} from './SpreadsheetDialog';
 
 const INPUT =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
@@ -35,111 +47,163 @@ export const SpreadsheetReview: React.FC<{
             setBusy(false);
         }
     };
+    const people = parsed.rows.filter(row => !row.example || row.email !== 'person@example.com');
+    const invalid = people.filter(row => !isValidRosterEmail(row.email)).length;
     return (
-        <div className="font-poppins p-6 space-y-5 bg-white text-grayscale-900">
-            <div className="flex justify-between items-start gap-4">
-                <div>
-                    <h2 className="text-xl font-semibold">{m['issueFlow.sheet.review']()}</h2>
-                    <p className="text-sm text-grayscale-600 break-all">{source.name}</p>
-                </div>
-                <button
-                    type="button"
-                    aria-label={m['common.cancel']()}
-                    onClick={onClose}
-                    className="p-2 text-grayscale-600"
-                >
-                    <IonIcon icon={closeOutline} />
-                </button>
-            </div>
-            {Object.keys(source.sheets).length > 1 && (
-                <label className="block text-xs font-medium text-grayscale-700">
-                    {m['issueFlow.sheet.worksheet']()}
-                    <select
-                        className={`${INPUT} mt-1.5`}
-                        value={sheetName}
-                        onChange={event => {
-                            setSheetName(event.target.value);
-                            setEmailColumn(undefined);
-                            setHeaderRow(undefined);
-                        }}
+        <SpreadsheetDialog
+            title={m['issueFlow.sheet.review']()}
+            subtitle={source.name}
+            icon={gridOutline}
+            onClose={onClose}
+            footer={
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs leading-relaxed text-grayscale-600">
+                        {m['issueFlow.sheet.design.importHint']()}
+                    </p>
+                    <button
+                        type="button"
+                        disabled={busy || parsed.emailColumn === undefined}
+                        onClick={submit}
+                        className={`${BUTTON} shrink-0 inline-flex items-center justify-center gap-2`}
                     >
-                        {Object.keys(source.sheets).map(name => (
-                            <option key={name}>{name}</option>
+                        {busy && (
+                            <span
+                                className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                                aria-hidden="true"
+                            />
+                        )}
+                        {busy ? m['issueFlow.sheet.importing']() : m['issueFlow.sheet.addPeople']()}
+                    </button>
+                </div>
+            }
+        >
+            <div className="space-y-6">
+                <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 sm:p-5">
+                    <h3 className="mb-4 text-sm font-semibold text-grayscale-900">
+                        {m['issueFlow.sheet.design.importSetup']()}
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {Object.keys(source.sheets).length > 1 && (
+                            <label className="block text-xs font-medium text-grayscale-700 sm:col-span-2">
+                                {m['issueFlow.sheet.worksheet']()}
+                                <select
+                                    className={`${INPUT} mt-1.5`}
+                                    value={sheetName}
+                                    onChange={event => {
+                                        setSheetName(event.target.value);
+                                        setEmailColumn(undefined);
+                                        setHeaderRow(undefined);
+                                    }}
+                                >
+                                    {Object.keys(source.sheets).map(name => (
+                                        <option key={name}>{name}</option>
+                                    ))}
+                                </select>
+                            </label>
+                        )}
+                        <label className="block min-w-0 text-xs font-medium text-grayscale-700">
+                            {m['issueFlow.sheet.emailColumn']()}
+                            <select
+                                className={`${INPUT} mt-1.5`}
+                                value={parsed.emailColumn ?? ''}
+                                onChange={event =>
+                                    setEmailColumn(
+                                        event.target.value === ''
+                                            ? undefined
+                                            : Number(event.target.value)
+                                    )
+                                }
+                            >
+                                <option value="">{m['issueFlow.sheet.chooseEmail']()}</option>
+                                {parsed.columns.map(column => (
+                                    <option key={column.id} value={column.index}>
+                                        {column.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="block min-w-0 text-xs font-medium text-grayscale-700">
+                            {m['issueFlow.sheet.headerRow']()}
+                            <select
+                                className={`${INPUT} mt-1.5`}
+                                value={parsed.headerRow ?? -1}
+                                onChange={event => setHeaderRow(Number(event.target.value))}
+                            >
+                                <option value={-1}>{m['issueFlow.sheet.noHeader']()}</option>
+                                {source.sheets[parsed.sheetName]?.slice(0, 25).map((row, index) => (
+                                    <option key={index} value={index}>
+                                        {index + 1}:{' '}
+                                        {row
+                                            .map(cell => cell.text)
+                                            .join(' · ')
+                                            .slice(0, 90)}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs font-medium">
+                    <span className="rounded-full bg-grayscale-100 px-3 py-2 text-grayscale-700">
+                        {m['issueFlow.sheet.importSummary']({
+                            count: people.length,
+                            skipped: parsed.skipped,
+                        })}
+                    </span>
+                    <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${invalid ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-700'}`}
+                    >
+                        <IonIcon
+                            icon={invalid ? alertCircleOutline : checkmarkCircleOutline}
+                            aria-hidden="true"
+                        />
+                        {invalid
+                            ? m['issueFlow.sheet.design.issueCount']({ count: invalid })
+                            : m['issueFlow.sheet.design.noIssues']()}
+                    </span>
+                </div>
+                <div>
+                    <h3 className="text-sm font-semibold text-grayscale-900">
+                        {m['issueFlow.sheet.design.previewPeople']()}
+                    </h3>
+                    <p className="mb-3 mt-1 text-xs text-grayscale-500">
+                        {m['issueFlow.sheet.design.previewHint']({
+                            count: Math.min(8, people.length),
+                            total: people.length,
+                        })}
+                    </p>
+                    <div className="divide-y divide-grayscale-100 overflow-hidden rounded-2xl border border-grayscale-200">
+                        {people.slice(0, 8).map(row => (
+                            <div
+                                key={row.rowId}
+                                className={`flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-4 ${!isValidRosterEmail(row.email) ? 'bg-amber-50' : 'bg-white'}`}
+                            >
+                                <span className="text-sm font-medium text-grayscale-900 sm:w-1/3">
+                                    {row.displayName || m['issueFlow.sheet.recipient']()}
+                                </span>
+                                <span className="min-w-0 flex-1 break-all text-sm text-grayscale-600">
+                                    {row.email || m['issueFlow.sheet.invalidEmail']()}
+                                </span>
+                                {!isValidRosterEmail(row.email) && (
+                                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-amber-900">
+                                        <IonIcon icon={alertCircleOutline} aria-hidden="true" />
+                                        {m['issueFlow.sheet.invalidEmail']()}
+                                    </span>
+                                )}
+                            </div>
                         ))}
-                    </select>
-                </label>
-            )}
-            <label className="block text-xs font-medium text-grayscale-700">
-                {m['issueFlow.sheet.emailColumn']()}
-                <select
-                    className={`${INPUT} mt-1.5`}
-                    value={parsed.emailColumn ?? ''}
-                    onChange={event =>
-                        setEmailColumn(
-                            event.target.value === '' ? undefined : Number(event.target.value)
-                        )
-                    }
-                >
-                    <option value="">{m['issueFlow.sheet.chooseEmail']()}</option>
-                    {parsed.columns.map(column => (
-                        <option key={column.id} value={column.index}>
-                            {column.label} (
-                            {source.sheets[parsed.sheetName]
-                                ?.find(row => row[column.index]?.text.trim())
-                                ?.[column.index]?.text.slice(0, 40)}
-                            )
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label className="block text-xs font-medium text-grayscale-700">
-                {m['issueFlow.sheet.headerRow']()}
-                <select
-                    className={`${INPUT} mt-1.5`}
-                    value={parsed.headerRow ?? -1}
-                    onChange={event => setHeaderRow(Number(event.target.value))}
-                >
-                    <option value={-1}>{m['issueFlow.sheet.noHeader']()}</option>
-                    {source.sheets[parsed.sheetName]?.slice(0, 25).map((row, index) => (
-                        <option key={index} value={index}>
-                            {index + 1}:{' '}
-                            {row
-                                .map(cell => cell.text)
-                                .join(' · ')
-                                .slice(0, 90)}
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <p className="text-sm text-grayscale-600">
-                {m['issueFlow.sheet.importSummary']({
-                    count: parsed.rows.filter(
-                        row => !row.example || row.email !== 'person@example.com'
-                    ).length,
-                    skipped: parsed.skipped,
-                })}
-            </p>
-            <ul className="space-y-1 text-sm text-grayscale-700">
-                {parsed.rows.slice(0, 3).map(row => (
-                    <li key={row.rowId}>
-                        {row.displayName} {row.email}
-                    </li>
-                ))}
-            </ul>
-            {error && (
-                <p role="alert" className="p-3 bg-red-50 text-sm text-red-700 rounded-2xl">
-                    {error}
-                </p>
-            )}
-            <button
-                type="button"
-                disabled={busy || parsed.emailColumn === undefined}
-                onClick={submit}
-                className={`${BUTTON} w-full`}
-            >
-                {busy ? m['issueFlow.sheet.importing']() : m['issueFlow.sheet.addPeople']()}
-            </button>
-        </div>
+                    </div>
+                </div>
+                {error && (
+                    <p
+                        role="alert"
+                        className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm text-red-700"
+                    >
+                        {error}
+                    </p>
+                )}
+            </div>
+        </SpreadsheetDialog>
     );
 };
 
@@ -159,8 +223,8 @@ export const SpreadsheetUpload: React.FC<{
         parseSpreadsheet(source);
         newModal(
             <SpreadsheetReview source={source} onImport={onImport} onClose={closeModal} />,
-            {},
-            { mobile: ModalTypes.Freeform, desktop: ModalTypes.Center }
+            SPREADSHEET_MODAL_OPTIONS,
+            SPREADSHEET_MODAL_TYPES
         );
     };
     useEffect(() => {

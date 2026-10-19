@@ -262,28 +262,33 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                 {m['issueFlow.sheet.peopleSummary']({ count: recipients.length })}
                                 {spreadsheet?.sourceName ? ` · ${spreadsheet.sourceName}` : ''}
                             </span>
-                            <button
-                                type="button"
-                                className="py-2 px-3 rounded-[20px] border border-grayscale-300 hover:bg-grayscale-10"
-                                onClick={() =>
-                                    newModal(
-                                        <RecipientList
-                                            initial={recipients}
-                                            onChange={onRecipientsChange}
-                                            canRemove={row =>
-                                                !spreadsheet?.busy &&
-                                                (spreadsheet?.canRemove?.(recipientKey(row)) ??
-                                                    !spreadsheet?.locked?.(recipientKey(row)))
+                            {!spreadsheet && (
+                                <button
+                                    type="button"
+                                    className="py-2 px-3 rounded-[20px] border border-grayscale-300 hover:bg-grayscale-10"
+                                    onClick={() =>
+                                        newModal(
+                                            <RecipientList
+                                                initial={recipients}
+                                                onChange={onRecipientsChange}
+                                                canRemove={row =>
+                                                    !spreadsheet?.busy &&
+                                                    (spreadsheet?.canRemove?.(recipientKey(row)) ??
+                                                        !spreadsheet?.locked?.(recipientKey(row)))
+                                                }
+                                                onClose={closeModal}
+                                            />,
+                                            {},
+                                            {
+                                                mobile: ModalTypes.Freeform,
+                                                desktop: ModalTypes.Center,
                                             }
-                                            onClose={closeModal}
-                                        />,
-                                        {},
-                                        { mobile: ModalTypes.Freeform, desktop: ModalTypes.Center }
-                                    )
-                                }
-                            >
-                                {m['issueFlow.sheet.viewAll']()}
-                            </button>
+                                        )
+                                    }
+                                >
+                                    {m['issueFlow.sheet.viewAll']()}
+                                </button>
+                            )}
                         </div>
                     ) : (
                         recipients.length > 0 && (
