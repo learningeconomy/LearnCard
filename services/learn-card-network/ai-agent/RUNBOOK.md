@@ -328,7 +328,13 @@ It explicitly tells the agent not to write user data. A missing grant, unavailab
 3. Deploy the exact branch commit with the `Deploy` workflow command below.
 4. The deployment smoke creates an enabled schedule two or three minutes ahead, confirms both
    Trigger.dev tasks complete, verifies the Assistant feed receives a card with a scheduled
-   `sourceRunId`, and deletes the temporary schedule.
+   `sourceRunId`, and deletes the temporary schedule. It waits up to 480 seconds after the
+   scheduled time for that card (`AI_AGENT_SMOKE_SCHEDULE_WINDOW_SECONDS`, 60–1800, overrides
+   it). On failure it prints the scheduled time, deadline, schedule ID, poll count, and the
+   newest autonomous cards, and says whether no card appeared or one appeared with the wrong
+   title. It also logs the schedule-create response (schedule ID, cron, timezone, next run)
+   with the Trigger.dev environment and project the deploy expected. A passing run logs
+   `scheduledCardLatencySeconds`.
 
 Any DID receiving the flag's `false` variation must fail schedule creation before Trigger.dev
 creates a schedule. A missing flag or LaunchDarkly evaluation failure also fails closed and emits

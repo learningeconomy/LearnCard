@@ -1913,6 +1913,7 @@ jobs:
               env:
                   AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
                   AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
+                  AI_AGENT_SMOKE_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
               run: bun run --cwd services/learn-card-network/ai-agent smoke:staging
 
             - name: Verify readable CloudWatch application logs
