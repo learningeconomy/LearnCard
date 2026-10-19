@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ColumnMappings } from './ColumnMappings';
+import { ColumnMappings, ColumnMappingsEditor } from './ColumnMappings';
 import {
     mapSpreadsheetColumn,
     removeSpreadsheetMapping,
@@ -31,7 +31,8 @@ const Editor = () => {
     const [state, setState] = useState(createState);
     return (
         <>
-            <ColumnMappings
+            <ColumnMappingsEditor
+                onClose={vi.fn()}
                 source={state.draft.source!}
                 template={state.template}
                 mappings={state.draft.mappings ?? []}
@@ -58,11 +59,32 @@ const Editor = () => {
     );
 };
 
-describe('spreadsheet mapping chips', () => {
+vi.mock('learn-card-base', () => ({
+    useModal: () => ({ newModalWithToken: vi.fn(), forceCloseModalByToken: vi.fn() }),
+    ModalTypes: { Center: 'center', FullScreen: 'fullscreen' },
+}));
+
+describe('spreadsheet mapping workspace', () => {
+    it('shows a compact summary until the column workspace is opened', () => {
+        const state = createState();
+        render(
+            <ColumnMappings
+                source={state.draft.source!}
+                template={state.template}
+                mappings={[]}
+                disabled={false}
+                onAdd={vi.fn()}
+                onRemove={vi.fn()}
+            />
+        );
+        expect(screen.queryByRole('combobox')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Map columns' })).toBeVisible();
+        expect(screen.getByText('0 of 3 columns included')).toBeVisible();
+    });
     it('offers both evidence columns independently and removes one without removing the other', () => {
         render(<Editor />);
-        const evidence = screen.getByRole('button', { name: 'Evidence' });
-        const portfolio = screen.getByRole('button', { name: 'Portfolio' });
+        const evidence = screen.getByRole('button', { name: 'Include Evidence' });
+        const portfolio = screen.getByRole('button', { name: 'Include Portfolio' });
         expect(JSON.parse(screen.getByRole('status').textContent!).evidence).toBeUndefined();
         expect(screen.getByRole('combobox', { name: 'Use Evidence as' })).toHaveValue('evidence');
         fireEvent.click(evidence);
@@ -82,7 +104,8 @@ describe('spreadsheet mapping chips', () => {
             const state = createState();
             const onAdd = vi.fn();
             render(
-                <ColumnMappings
+                <ColumnMappingsEditor
+                    onClose={vi.fn()}
                     source={state.draft.source!}
                     template={{ ...state.template, schemaType }}
                     mappings={[]}
@@ -91,7 +114,7 @@ describe('spreadsheet mapping chips', () => {
                     onRemove={vi.fn()}
                 />
             );
-            const evidence = screen.getByRole('button', { name: 'Evidence' });
+            const evidence = screen.getByRole('button', { name: 'Include Evidence' });
             expect(evidence).toBeDisabled();
             fireEvent.click(evidence);
             expect(onAdd).not.toHaveBeenCalled();
@@ -127,7 +150,8 @@ describe('spreadsheet mapping chips', () => {
         expect(await validateCredentialJsonLd(json)).toEqual({ valid: true, errors: [] });
         const onAdd = vi.fn();
         render(
-            <ColumnMappings
+            <ColumnMappingsEditor
+                onClose={vi.fn()}
                 source={restored.source!}
                 template={state.template}
                 mappings={restored.mappings!}
@@ -137,6 +161,6 @@ describe('spreadsheet mapping chips', () => {
             />
         );
         expect(screen.queryByRole('button', { name: /^Evidence/ })).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Portfolio' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Include Portfolio' })).toBeNull();
     });
 });

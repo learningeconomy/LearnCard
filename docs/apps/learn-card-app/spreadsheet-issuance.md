@@ -28,7 +28,7 @@ flowchart LR
 
 You can also choose **Start from a link, file, or ID** before selecting a credential type. Upload a spreadsheet or paste its rows, review the recipient column, and choose **Add People**. The people and original cells remain available when choosing or changing the credential type.
 
-Under **Add spreadsheet columns**, choose how to use each column, then click its chip. Click a selected chip again to remove its mapping; the original cells remain available.
+Choose **Map columns** to open the column workspace. Each row shows the source column, example values, and its credential field. Choose **Include** to add it, or select an included column to remove it; the original cells remain available. Expand **Format options** for number and date settings.
 
 | Column         | Credential field                                                                                                      |
 | -------------- | --------------------------------------------------------------------------------------------------------------------- |

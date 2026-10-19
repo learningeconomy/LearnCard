@@ -484,43 +484,63 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             .getByTestId('issue-import-file')
             .setInputFiles({ name: 'grades.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
         await page.getByRole('button', { name: 'Add People', exact: true }).click();
-        await expect(page.getByRole('button', { name: 'Quiz Score', exact: true })).toBeDisabled();
+        await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+        await expect(
+            page.getByRole('button', { name: 'Include Quiz Score', exact: true })
+        ).toBeDisabled();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
         await selectBadgeType(page);
         await fillName(page, 'Spreadsheet Badge');
-        await page.getByRole('button', { name: 'Quiz Score', exact: true }).click();
-        await page.getByRole('button', { name: 'Final Grade', exact: true }).click();
+        await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+        await page.getByRole('button', { name: 'Include Quiz Score', exact: true }).click();
+        await page.getByRole('button', { name: 'Include Final Grade', exact: true }).click();
+        await page
+            .getByRole('combobox', { name: 'Use Hours as', exact: true })
+            .selectOption('credits');
+        await expect(
+            page.getByRole('button', { name: 'Include Hours', exact: true })
+        ).toBeDisabled();
+        await page.getByPlaceholder('For example, semester credit hours').fill('hours');
+        await page.getByRole('button', { name: 'Include Hours', exact: true }).click();
+        await page
+            .getByRole('region', { name: 'Completed Date', exact: true })
+            .getByText('Format options', { exact: true })
+            .click();
+        await page.getByRole('combobox', { name: /Spreadsheet date format/ }).selectOption('dmy');
+        await page.getByRole('button', { name: 'Include Completed Date', exact: true }).click();
+        await page.getByRole('button', { name: 'Include Evidence', exact: true }).click();
+        await page.getByRole('button', { name: 'Include Portfolio', exact: true }).click();
+        await page.getByRole('button', { name: 'Include Student Code', exact: true }).click();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
+        await expect(issueButton(page)).toBeEnabled();
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
         await expect(
             page.getByRole('textbox', { name: 'Ada Quiz Score', exact: true })
         ).toHaveValue('95');
         await expect(
             page.getByRole('textbox', { name: 'Ada Final Grade', exact: true })
         ).toHaveValue('A-');
-        await page
-            .getByRole('combobox', { name: 'Use Hours as', exact: true })
-            .selectOption('credits');
-        await expect(page.getByRole('button', { name: 'Hours', exact: true })).toBeDisabled();
-        await page.getByPlaceholder('For example, semester credit hours').fill('hours');
-        await page.getByRole('button', { name: 'Hours', exact: true }).click();
-        await page.getByRole('combobox', { name: /Spreadsheet date format/ }).selectOption('dmy');
-        await page.getByRole('button', { name: 'Completed Date', exact: true }).click();
-        await page.getByRole('button', { name: 'Evidence', exact: true }).click();
-        await page.getByRole('button', { name: 'Portfolio', exact: true }).click();
-        await page.getByRole('button', { name: 'Student Code', exact: true }).click();
         await expect(
             page.getByRole('textbox', { name: 'Ada Student Code', exact: true })
         ).toHaveValue('0012');
         await expect(
             page.getByRole('textbox', { name: 'Ada Completed Date', exact: true })
         ).toHaveValue('2024-04-03T00:00:00.000Z');
-        await expect(issueButton(page)).toBeEnabled();
-        await page.getByRole('button', { name: 'Quiz Score', exact: true }).click();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
+        await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+        await page.getByRole('button', { name: 'Remove Quiz Score', exact: true }).click();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
         await expect(
             page.getByRole('textbox', { name: 'Ada Quiz Score', exact: true })
         ).toHaveCount(0);
         await expect(
             page.getByRole('textbox', { name: 'Ada Final Grade', exact: true })
         ).toHaveValue('A-');
-        await page.getByRole('button', { name: 'Quiz Score', exact: true }).click();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
+        await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+        await page.getByRole('button', { name: 'Include Quiz Score', exact: true }).click();
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
         await page.getByRole('button', { name: 'Next person', exact: true }).click();
         await expect(page.getByText('2 of 4 · Bob', { exact: true })).toBeVisible();
         await page.getByRole('button', { name: 'JSON', exact: true }).click();
@@ -549,6 +569,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await page.getByRole('button', { name: /Bring it in/i }).click();
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
         await page.getByRole('button', { name: 'Add People', exact: true }).click();
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
         await expect(page.getByRole('textbox', { name: 'Email for Ada', exact: true })).toHaveValue(
             'ada@test.com'
         );
