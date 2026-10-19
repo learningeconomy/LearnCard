@@ -30,6 +30,8 @@ pub use aws::{AwsKmsClient, Credentials};
 mod fake;
 #[cfg(all(target_os = "linux", feature = "kms"))]
 pub mod vsock_forward;
+#[cfg(all(test, feature = "kms"))]
+pub(crate) use fake::wrap as wrap_test_payload;
 #[cfg(any(test, feature = "fake-kms"))]
 pub use fake::FakeKmsClient;
 

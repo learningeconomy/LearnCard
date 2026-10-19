@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.90.43
+
+### Patch Changes
+
+- [#1754](https://github.com/learningeconomy/LearnCard/pull/1754) [`7f68afd7f3bf30a07d42c18929ca90e1983825b7`](https://github.com/learningeconomy/LearnCard/commit/7f68afd7f3bf30a07d42c18929ca90e1983825b7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2284: perf(scouts): only look up troop ID status when the boost menu opens, and cache recipient lists
+
+## 1.90.42
+
+### Patch Changes
+
+- [#1736](https://github.com/learningeconomy/LearnCard/pull/1736) [`58b7eeb1adde1a16d15ccaff9c85acf8e99b0168`](https://github.com/learningeconomy/LearnCard/commit/58b7eeb1adde1a16d15ccaff9c85acf8e99b0168) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Keep the consent-flow sync running after its first save, and stop one unreadable credential or one failed accept from blocking the rest of the sync. ScoutPass also re-syncs when the native app resumes.
+
+- [#1721](https://github.com/learningeconomy/LearnCard/pull/1721) [`dc780c9ebf94cecec66116da7faa8f2f9482d3c4`](https://github.com/learningeconomy/LearnCard/commit/dc780c9ebf94cecec66116da7faa8f2f9482d3c4) Thanks [@Custard7](https://github.com/Custard7)! - Fix crashes when a credential has a missing or unknown category. Category metadata lookups now fall back to Achievement.
+
+- Updated dependencies []:
+    - @learncard/helpers@1.6.3
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/react@2.12.11
+    - @learncard/sss-key-manager@0.2.2
+
+## 1.90.41
+
+### Patch Changes
+
+- [#1716](https://github.com/learningeconomy/LearnCard/pull/1716) [`9cbeeb916a77d787be9a31e755269daf498478a1`](https://github.com/learningeconomy/LearnCard/commit/9cbeeb916a77d787be9a31e755269daf498478a1) Thanks [@goblincore](https://github.com/goblincore)! - Restrict ScoutPass competency framework administration to accounts with a Global Admin ID. Hide the Admin Panel and management actions for other users, guard editor entry points, and preserve competency selection when creating badges. Document the remaining shared API authorization gap.
+
+    Provide modal instance ownership to modal content so revoked competency access closes only the affected modal, including its fullscreen shell, without closing unrelated overlays or invoking save callbacks.
+
+- Updated dependencies []:
+    - @learncard/lca-api-plugin@2.0.9
+    - @learncard/react@2.12.10
+
 ## 1.90.40
 
 ### Patch Changes

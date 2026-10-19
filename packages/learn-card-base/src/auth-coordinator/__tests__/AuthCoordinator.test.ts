@@ -338,9 +338,15 @@ describe('AuthCoordinator', () => {
         });
         it('repairs enrollment without allowing rejection to change ready state', async () => {
             const ensureEscrowEnrollment = vi.fn().mockRejectedValue(new Error('unavailable'));
+            const getEscrowEnrollmentState = vi.fn().mockResolvedValue('enrolled');
+            const getEscrowRecoveryStatus = vi.fn().mockResolvedValue(null);
             const signDidAuthVp = vi.fn().mockResolvedValue('proof');
             const { coordinator } = setup({
-                keyDerivation: { ensureEscrowEnrollment },
+                keyDerivation: {
+                    ensureEscrowEnrollment,
+                    getEscrowEnrollmentState,
+                    getEscrowRecoveryStatus,
+                },
                 config: { signDidAuthVp },
             });
             await coordinator.initialize();
@@ -350,9 +356,12 @@ describe('AuthCoordinator', () => {
                     providerType: 'firebase',
                     privateKey: 'reconstructed-private-key',
                     signDidAuthVp,
+                    options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
                 })
             );
             expect(coordinator.getState().status).toBe('ready');
+            await vi.waitFor(() => expect(getEscrowRecoveryStatus).toHaveBeenCalled());
+            expect(getEscrowEnrollmentState).not.toHaveBeenCalled();
         });
         it('requires ready state and forwards automatic recovery controls with owner credentials', async () => {
             const disableEscrowRecovery = vi.fn().mockResolvedValue(undefined);
@@ -392,6 +401,7 @@ describe('AuthCoordinator', () => {
                 ...credentials,
                 privateKey: 'reconstructed-private-key',
                 signDidAuthVp,
+                options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
             });
             expect(getEscrowEnrollmentState).toHaveBeenCalledWith(credentials);
             disableEscrowRecovery.mockRejectedValueOnce(
@@ -526,6 +536,7 @@ describe('AuthCoordinator', () => {
                 privateKey: 'reconstructed-private-key',
                 signDidAuthVp,
                 pin: '135790',
+                options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
             });
 
             const loggingOut = coordinator.logout();
@@ -566,7 +577,9 @@ describe('AuthCoordinator', () => {
             expect(executeRecovery).toHaveBeenCalledWith({
                 token: 'mock-token',
                 providerType: 'firebase',
-                input,
+                // The DID independently known from needs_recovery fills in for
+                // PIN release, which has no persisted hold of its own to carry it.
+                input: { ...input, expectedDid: 'did:key:z123' },
                 didFromPrivateKey: expect.any(Function),
             });
         });
@@ -877,10 +890,60 @@ describe('AuthCoordinator', () => {
                 expect(startEscrowRecovery).toHaveBeenCalledWith({
                     token: 'mock-token',
                     providerType: 'firebase',
+                    // Independently known from the key-status lookup in initialize(),
+                    // not from any escrow response.
+                    expectedDid: 'did:key:z123',
                     options,
                 });
             }
         );
+        // The hold-start response's `expectations` (initiating-client bindings,
+        // persisted by the app alongside the resume token) are opaque to the
+        // coordinator -- it must pass them through to the strategy unchanged
+        // rather than deriving or stripping anything.
+        it('forwards expectations unchanged to getEscrowRecoveryStatus and confirmEscrowRecovery', async () => {
+            const expectations = {
+                tenant: 'learncard',
+                did: 'did:key:z123',
+                holdId: 'hold',
+                clientEphemeralPublicKey: 'ephemeral-pub',
+                blobHash: 'blob-hash',
+                authorityGeneration: 'generation-1',
+                holdDigest: 'hold-digest',
+                ledgerPublicKey: 'ledger-pub',
+                keyId: 'key-1',
+            };
+            const getEscrowRecoveryStatus = vi.fn().mockResolvedValue(null);
+            const confirmEscrowRecovery = vi.fn().mockResolvedValue({ success: true });
+            const { coordinator } = setup({
+                keyDerivation: { getEscrowRecoveryStatus, confirmEscrowRecovery },
+            });
+            await coordinator.initialize();
+
+            await coordinator.getEscrowRecoveryStatus({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                expectations,
+            });
+            expect(getEscrowRecoveryStatus).toHaveBeenCalledWith({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                expectations,
+            });
+
+            await coordinator.confirmEscrowRecovery({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                code: '12345678',
+                expectations,
+            });
+            expect(confirmEscrowRecovery).toHaveBeenCalledWith({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                code: '12345678',
+                expectations,
+            });
+        });
     });
     describe('initial state', () => {
         it('starts in idle state', () => {
@@ -1327,6 +1390,9 @@ describe('AuthCoordinator', () => {
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryMethods).toEqual(recoveryMethods);
                 expect(result.recoveryReason).toBe('new_device');
+                // Independently known from this key-status lookup -- required by
+                // Nitro escrow recovery (startEscrowRecovery, PIN release).
+                expect(result.expectedDid).toBe('did:key:z123');
             }
         });
 
@@ -1350,6 +1416,7 @@ describe('AuthCoordinator', () => {
 
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryReason).toBe('missing_server_data');
+                expect(result.expectedDid).toBe('did:key:z123');
             }
         });
 
@@ -1474,6 +1541,7 @@ describe('AuthCoordinator', () => {
 
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryReason).toBe('stale_local_key');
+                expect(result.expectedDid).toBe('did:key:zExpected');
             }
         });
 
@@ -2113,6 +2181,10 @@ describe('AuthCoordinator', () => {
             if (result.status === 'error') {
                 expect(result.error).toBe('No auth share found on server');
                 expect(result.previousState?.status).toBe('needs_recovery');
+                // retry() restores this previousState -- a cleared expectedDid
+                // would permanently strand Nitro escrow recovery after one
+                // unrelated failed attempt.
+                expect(result.previousState).toMatchObject({ expectedDid: 'did:key:z123' });
             }
         });
     });
@@ -2530,6 +2602,81 @@ describe('AuthCoordinator', () => {
             expect(coordinator.getState()).toEqual({
                 status: 'awaiting_rebind',
                 did: 'did:key:z123',
+            });
+        });
+
+        // Regression for the P1 finding: a verified no-provider identity-recovery
+        // session must still carry the account's DID into a Nitro escrow hold
+        // start/restart, since the server guard rejects every Nitro start without it.
+        it('forwards the verified DID to startEscrowRecovery on start and restart without a provider session', async () => {
+            const recoveryMethods = [{ type: 'escrow', createdAt: new Date() }];
+            const verifyIdentityRecovery = vi.fn().mockResolvedValue({
+                recoverySessionToken: 'recovery-session-token',
+                recoveryMethods,
+                primaryDid: 'did:key:zRecovered',
+            });
+            const startEscrowRecovery = vi.fn().mockResolvedValue({ holdId: 'hold' });
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                    verifyIdentityRecovery,
+                    startEscrowRecovery,
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            await coordinator.verifyIdentityRecoveryCode('123456');
+            expect(coordinator.getState()).toMatchObject({
+                status: 'identity_recovery',
+                phase: 'choose_method',
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+            });
+
+            await coordinator.startEscrowRecovery();
+            expect(startEscrowRecovery).toHaveBeenNthCalledWith(1, {
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+                options: undefined,
+            });
+
+            await coordinator.startEscrowRecovery({ restart: true });
+            expect(startEscrowRecovery).toHaveBeenNthCalledWith(2, {
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+                options: { restart: true },
+            });
+        });
+
+        it('normalizes a null verified DID to undefined rather than forwarding null', async () => {
+            const recoveryMethods = [{ type: 'escrow', createdAt: new Date() }];
+            const startEscrowRecovery = vi.fn().mockResolvedValue({ holdId: 'hold' });
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                    verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                        recoverySessionToken: 'recovery-session-token',
+                        recoveryMethods,
+                        primaryDid: null,
+                    }),
+                    startEscrowRecovery,
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            await coordinator.verifyIdentityRecoveryCode('123456');
+            expect(coordinator.getState().status).toBe('identity_recovery');
+            expect(
+                (coordinator.getState() as { expectedDid?: string }).expectedDid
+            ).toBeUndefined();
+
+            await coordinator.startEscrowRecovery();
+            expect(startEscrowRecovery).toHaveBeenCalledWith({
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: undefined,
+                options: undefined,
             });
         });
 

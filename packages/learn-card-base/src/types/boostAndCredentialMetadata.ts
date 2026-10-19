@@ -1197,6 +1197,16 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
     },
 };
 
+/**
+ * Safe lookup into `categoryMetadata`. Category strings from index records or
+ * props are not guaranteed to be valid enum keys; unknown or missing values fall
+ * back to the Achievement metadata instead of throwing.
+ */
+export const getCategoryMetadata = (category?: string | null): CredentialMetadata =>
+    category && Object.hasOwn(categoryMetadata, category)
+        ? categoryMetadata[category as CredentialCategoryEnum]
+        : categoryMetadata[CredentialCategoryEnum.achievement];
+
 export const walletSubtypeToCredentialCategory = (walletSubtype: WalletCategoryTypes) => {
     const category: CredentialCategoryEnum = Object.entries(categoryMetadata).find(
         ([key, value]) => value.walletSubtype === walletSubtype

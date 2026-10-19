@@ -3,6 +3,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EscrowHoldRestartThrottledError } from '@learncard/sss-key-manager';
 import { EscrowRecoveryPanel, formatTimeRemaining } from './EscrowRecoveryPanel';
+import {
+    clearPendingEscrowRecovery,
+    loadPendingEscrowRecovery,
+    savePendingEscrowRecovery,
+} from './escrowRecoveryStorage';
 
 vi.mock('./escrowRecoveryStorage', () => ({
     isEscrowRecoveryStorageAvailable: () => true,
@@ -20,6 +25,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={vi.fn()}
                 onStatus={vi.fn()}
                 onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
         expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
@@ -38,6 +45,8 @@ describe('EscrowRecoveryPanel', () => {
                     onStart={vi.fn()}
                     onStatus={vi.fn()}
                     onRecover={vi.fn().mockRejectedValue(error)}
+                    onConfirmCode={vi.fn()}
+                    onResendCode={vi.fn()}
                 />
             );
             fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
@@ -55,6 +64,20 @@ describe('EscrowRecoveryPanel', () => {
     const mockOnStart = vi.fn();
     const mockOnStatus = vi.fn();
     const mockOnRecover = vi.fn();
+    // Fixture initiating-client bindings for an authority-mode (Nitro) hold;
+    // shared so every test that needs a non-legacy `requiresConfirmation`
+    // record uses the same shape as production's `EscrowRecoveryExpectations`.
+    const expectations = {
+        tenant: 'learncard',
+        did: 'did:key:z6Mkexample',
+        holdId: 'hold-confirm-1',
+        clientEphemeralPublicKey: 'ephemeral-pub',
+        blobHash: 'blob-hash',
+        authorityGeneration: 'generation-1',
+        holdDigest: 'hold-digest',
+        ledgerPublicKey: 'ledger-pub',
+        keyId: 'key-1',
+    };
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -69,6 +92,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -90,6 +115,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -114,6 +141,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
         fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
@@ -141,6 +170,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -173,6 +204,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -187,6 +220,80 @@ describe('EscrowRecoveryPanel', () => {
         expect(screen.getByText(/Started .* · ready .*/)).toBeInTheDocument();
         expect(screen.getByText('Lost that browser?')).toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument(); // No error banner
+    });
+
+    it('retains the code step and offers resend after a failed initial send', async () => {
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce(undefined);
+        mockOnStart.mockResolvedValueOnce({
+            holdId: expectations.holdId,
+            resumeToken: 'resume',
+            clientEphemeralPrivateKey: 'private',
+            requestedAt: new Date().toISOString(),
+            releaseAfter: new Date(Date.now() + 604800000).toISOString(),
+            requiresConfirmation: true,
+            codeSent: false,
+            expectations,
+        });
+        mockOnStatus.mockResolvedValue(null);
+        const resend = vi.fn().mockResolvedValue({ success: true });
+        render(
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={resend}
+            />
+        );
+        fireEvent.click(await screen.findByText('Start a 7-day recovery'));
+        expect(
+            await screen.findByText("We couldn't send your code. Wait a minute before resending.")
+        ).toBeInTheDocument();
+        expect(screen.getAllByLabelText(/Code digit/)).toHaveLength(8);
+        fireEvent.click(screen.getByText('Resend code'));
+        await waitFor(() =>
+            expect(resend).toHaveBeenCalledWith({
+                holdId: expectations.holdId,
+                resumeToken: 'resume',
+            })
+        );
+    });
+
+    it.each([
+        ['codeMismatch', "That code isn't right. Try again."],
+        ['codeExpired', 'That code has expired. Send a new one.'],
+        ['codeLocked', 'Too many tries. Send a new code.'],
+    ])('shows actionable copy for %s', async (reason, message) => {
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId: expectations.holdId,
+            resumeToken: 'resume',
+            clientEphemeralPrivateKey: 'private',
+            requestedAt: new Date().toISOString(),
+            releaseAfter: new Date(Date.now() + 604800000).toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+        mockOnStatus.mockResolvedValue(null);
+        const confirm = vi.fn().mockRejectedValue({ status: 403, reason, message: 'secret' });
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={confirm}
+                onResendCode={vi.fn()}
+            />
+        );
+        await screen.findByText('Check your email');
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+        expect(await screen.findByText(message)).toBeInTheDocument();
+        expect(screen.queryByText('secret')).not.toBeInTheDocument();
     });
 
     it('calls onStart with restart: true when clicking Start over', async () => {
@@ -206,6 +313,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -249,6 +358,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -290,6 +401,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -319,12 +432,831 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
         fireEvent.click(screen.getByText("I don't have a PIN"));
 
         expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
+    });
+
+    // [B] releaseAfter can move after the start-time estimate (e.g. an
+    // overdue release-warning send advances it, or confirmation corrects
+    // it) — the panel must adopt the server's current value on "Check
+    // status" rather than keep showing a countdown to the stale one.
+    it('[B] refreshes releaseAfter from the server when clicking Check status', async () => {
+        const staleReleaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const freshReleaseAfter = new Date(Date.now() - 1000).toISOString();
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId: 'hold-1',
+            resumeToken: 'resume-token',
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: staleReleaseAfter,
+            requestedAt: new Date(Date.now() - 1000).toISOString(),
+        });
+        mockOnStatus.mockResolvedValue({
+            holdId: 'hold-1',
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt: new Date(Date.now() - 1000).toISOString(),
+            releaseAfter: freshReleaseAfter,
+        });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check status')).toBeInTheDocument();
+        expect(screen.queryByText('Ready to restore')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Check status'));
+
+        expect(await screen.findByText('Ready to restore')).toBeInTheDocument();
+        expect(savePendingEscrowRecovery).toHaveBeenCalledWith(
+            expect.objectContaining({ releaseAfter: freshReleaseAfter }),
+            'default'
+        );
+    });
+
+    // [P2] Confirmation recomputes the deadline server-side, but the load
+    // effect only re-runs on `holdId` (which never changes here) — a delayed
+    // confirmation must refresh on its own rather than wait for a manual
+    // "Check status" click or a remount.
+    it('[P2] refreshes the countdown immediately after a delayed confirmation, without remounting', async () => {
+        const holdId = 'hold-confirm-1';
+        const resumeToken = 'resume-token-1';
+        const requestedAt = new Date(Date.now() - 1000).toISOString();
+        const creationEstimate = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+        const confirmedReleaseAfter = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: creationEstimate,
+            requestedAt,
+            requiresConfirmation: true,
+            expectations,
+        });
+        mockOnStatus
+            .mockResolvedValueOnce({
+                holdId,
+                status: 'pending' as const,
+                releasePolicy: 'hold' as const,
+                requestedAt,
+                releaseAfter: creationEstimate,
+                requiresConfirmation: true,
+                confirmed: false,
+            })
+            .mockResolvedValueOnce({
+                holdId,
+                status: 'pending' as const,
+                releasePolicy: 'hold' as const,
+                requestedAt,
+                releaseAfter: confirmedReleaseAfter,
+                confirmed: true,
+            });
+        const onConfirmCode = vi.fn().mockResolvedValue({ success: true });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        await waitFor(() => {
+            expect(onConfirmCode).toHaveBeenCalledWith({
+                holdId,
+                resumeToken,
+                code: '12345678',
+                expectations,
+            });
+        });
+
+        await waitFor(() => {
+            expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+            expect(
+                screen.getByText(
+                    new Intl.DateTimeFormat(undefined, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                    }).format(new Date(confirmedReleaseAfter))
+                )
+            ).toBeInTheDocument();
+        });
+        expect(mockOnStatus).toHaveBeenCalledTimes(2);
+    });
+
+    // [P2] The mount-time status effect is never cancelled by a successful
+    // confirmation (it only re-runs if `holdId` changes, and it never does
+    // here), so a slow mount-time response can resolve after confirmation
+    // and its own post-confirm refresh have already landed. Its stale
+    // confirmed: false must not drag the UI back to the code-entry screen.
+    it('[P2] ignores a deferred mount-time status response that resolves after confirmation already completed', async () => {
+        const holdId = 'hold-confirm-race-1';
+        const resumeToken = 'resume-token-race-1';
+        const requestedAt = new Date(Date.now() - 1000).toISOString();
+        const creationEstimate = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+        const confirmedReleaseAfter = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: creationEstimate,
+            requestedAt,
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        let resolveMountStatus!: (value: unknown) => void;
+        mockOnStatus
+            .mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        resolveMountStatus = resolve;
+                    })
+            )
+            .mockResolvedValueOnce({
+                holdId,
+                status: 'pending' as const,
+                releasePolicy: 'hold' as const,
+                requestedAt,
+                releaseAfter: confirmedReleaseAfter,
+                confirmed: true,
+            });
+        const onConfirmCode = vi.fn().mockResolvedValue({ success: true });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+        await waitFor(() => expect(mockOnStatus).toHaveBeenCalledTimes(1));
+
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        const confirmedFormatted = new Intl.DateTimeFormat(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        }).format(new Date(confirmedReleaseAfter));
+
+        // Confirmation and its post-confirm refresh have both landed.
+        await waitFor(() => {
+            expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+            expect(screen.getByText(confirmedFormatted)).toBeInTheDocument();
+        });
+
+        // The mount-time read -- started before confirmation, never
+        // cancelled -- finally resolves with its stale, pre-confirmation
+        // answer.
+        resolveMountStatus({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: creationEstimate,
+            requiresConfirmation: true,
+            confirmed: false,
+        });
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+        expect(screen.getByText(confirmedFormatted)).toBeInTheDocument();
+    });
+
+    // [P2] The generation guard protects `releaseAfter`, not just
+    // `confirmed`: a stale response can report confirmed: true (e.g. the
+    // user confirmed from another tab) while still carrying an outdated
+    // deadline, so staleness must be judged independently of the confirmed
+    // flag.
+    it('[P2] ignores a deferred status response whose releaseAfter is older than a newer refresh', async () => {
+        const holdId = 'hold-confirm-race-2';
+        const resumeToken = 'resume-token-race-2';
+        const requestedAt = new Date(Date.now() - 1000).toISOString();
+        const creationEstimate = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+        const olderReleaseAfter = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+        const newerReleaseAfter = new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: creationEstimate,
+            requestedAt,
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        let resolveMountStatus!: (value: unknown) => void;
+        mockOnStatus
+            .mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        resolveMountStatus = resolve;
+                    })
+            )
+            .mockResolvedValueOnce({
+                holdId,
+                status: 'pending' as const,
+                releasePolicy: 'hold' as const,
+                requestedAt,
+                releaseAfter: newerReleaseAfter,
+                confirmed: true,
+            });
+        const onConfirmCode = vi.fn().mockResolvedValue({ success: true });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+        await waitFor(() => expect(mockOnStatus).toHaveBeenCalledTimes(1));
+
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        const newerFormatted = new Intl.DateTimeFormat(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        }).format(new Date(newerReleaseAfter));
+        const olderFormatted = new Intl.DateTimeFormat(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        }).format(new Date(olderReleaseAfter));
+
+        await waitFor(() => {
+            expect(screen.getByText(newerFormatted)).toBeInTheDocument();
+        });
+
+        // A second, independent read -- started before this one and also
+        // reporting confirmed: true -- resolves after it with an older
+        // deadline (e.g. the mount-time check started before the user even
+        // entered the code). The newer deadline must win.
+        resolveMountStatus({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: olderReleaseAfter,
+            requiresConfirmation: true,
+            confirmed: true,
+        });
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(screen.getByText(newerFormatted)).toBeInTheDocument();
+        expect(screen.queryByText(olderFormatted)).not.toBeInTheDocument();
+    });
+
+    // [P2] checkStatus previously reported "ok to continue" from hold status
+    // alone (pending/cancelled/expired/completed), ignoring whether the
+    // *refreshed* releaseAfter had moved into the future — an already-open
+    // Restore click would call onRecover one tick too early.
+    it('[P2] does not call onRecover when the refreshed deadline moves into the future', async () => {
+        const holdId = 'hold-restore-1';
+        const resumeToken = 'resume-token-restore-1';
+        const requestedAt = new Date(Date.now() - 1000 * 60 * 60).toISOString();
+        const pastReleaseAfter = new Date(Date.now() - 1000).toISOString();
+        const futureReleaseAfter = new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: pastReleaseAfter,
+            requestedAt,
+        });
+        mockOnStatus.mockResolvedValue({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: futureReleaseAfter,
+        });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Restore my account')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Restore my account'));
+
+        await waitFor(() => {
+            expect(screen.getByText('Recovery in progress')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('Restore my account')).not.toBeInTheDocument();
+        expect(mockOnRecover).not.toHaveBeenCalled();
+    });
+
+    it('[P2] calls onRecover once when the refreshed deadline has already passed', async () => {
+        const holdId = 'hold-restore-2';
+        const resumeToken = 'resume-token-restore-2';
+        const requestedAt = new Date(Date.now() - 1000 * 60 * 60).toISOString();
+        const pastReleaseAfter = new Date(Date.now() - 1000).toISOString();
+        const refreshedPastReleaseAfter = new Date(Date.now() - 500).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: pastReleaseAfter,
+            requestedAt,
+        });
+        mockOnStatus.mockResolvedValue({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: refreshedPastReleaseAfter,
+        });
+        mockOnRecover.mockResolvedValue(undefined);
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Restore my account')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Restore my account'));
+
+        await waitFor(() => {
+            expect(mockOnRecover).toHaveBeenCalledTimes(1);
+        });
+        expect(mockOnRecover).toHaveBeenCalledWith({
+            method: 'escrow',
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+        });
+    });
+
+    it('[P2] keeps the previous deadline and does not crash when the post-confirm status is malformed', async () => {
+        const holdId = 'hold-confirm-2';
+        const resumeToken = 'resume-token-2';
+        const requestedAt = new Date(Date.now() - 1000).toISOString();
+        const creationEstimate = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: creationEstimate,
+            requestedAt,
+            requiresConfirmation: true,
+            expectations,
+        });
+        mockOnStatus
+            .mockResolvedValueOnce({
+                holdId,
+                status: 'pending' as const,
+                releasePolicy: 'hold' as const,
+                requestedAt,
+                releaseAfter: creationEstimate,
+                requiresConfirmation: true,
+                confirmed: false,
+            })
+            .mockResolvedValueOnce({
+                holdId,
+                status: 'pending' as const,
+                releasePolicy: 'hold' as const,
+                requestedAt,
+                releaseAfter: 'not-a-real-date',
+                confirmed: true,
+            });
+        const onConfirmCode = vi.fn().mockResolvedValue({ success: true });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        await waitFor(() => {
+            expect(onConfirmCode).toHaveBeenCalled();
+        });
+        await waitFor(() => {
+            expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+        });
+
+        expect(
+            screen.getByText(
+                new Intl.DateTimeFormat(undefined, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                }).format(new Date(creationEstimate))
+            )
+        ).toBeInTheDocument();
+    });
+
+    // Nitro escrow recovery binds every status/confirm/restore call to the
+    // bindings captured when the hold started; none of those calls' own
+    // responses ever carry `expectations`, so the panel must keep passing the
+    // *original* value through rather than ever treating a response's absence
+    // of the field as "clear it".
+    it('[expectations] retains the hold-start expectations across status, confirm, and restore calls', async () => {
+        const holdId = 'hold-expect-1';
+        const resumeToken = 'resume-expect-1';
+        const requestedAt = new Date(Date.now() - 1000).toISOString();
+        const pastReleaseAfter = new Date(Date.now() - 1000).toISOString();
+
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: pastReleaseAfter,
+            requestedAt,
+            requiresConfirmation: true,
+            expectations,
+        });
+        // Mount-time status check (requiresConfirmation effect): not yet confirmed.
+        mockOnStatus.mockResolvedValueOnce({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: pastReleaseAfter,
+            requiresConfirmation: true,
+            confirmed: false,
+        });
+        const onConfirmCode = vi.fn().mockResolvedValue({ success: true });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+        expect(mockOnStatus).toHaveBeenCalledWith(
+            expect.objectContaining({ holdId, resumeToken, expectations })
+        );
+
+        // Authoritative status refresh triggered by confirmation.
+        mockOnStatus.mockResolvedValueOnce({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: pastReleaseAfter,
+            confirmed: true,
+        });
+
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        await waitFor(() => {
+            expect(onConfirmCode).toHaveBeenCalledWith(
+                expect.objectContaining({ holdId, resumeToken, code: '12345678', expectations })
+            );
+        });
+        await waitFor(() => {
+            expect(screen.getByText('Restore my account')).toBeInTheDocument();
+        });
+
+        mockOnStatus.mockResolvedValueOnce({
+            holdId,
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt,
+            releaseAfter: pastReleaseAfter,
+            confirmed: true,
+        });
+        mockOnRecover.mockResolvedValueOnce(undefined);
+
+        fireEvent.click(screen.getByText('Restore my account'));
+
+        await waitFor(() => {
+            expect(mockOnRecover).toHaveBeenCalledWith(
+                expect.objectContaining({ method: 'escrow', holdId, resumeToken, expectations })
+            );
+        });
+        expect(mockOnStatus).toHaveBeenLastCalledWith(
+            expect.objectContaining({ holdId, resumeToken, expectations })
+        );
+    });
+
+    // Only authority (Nitro) mode ever reports `requiresConfirmation`, and that
+    // mode always returns `expectations` alongside a fresh hold (see
+    // EscrowRecoveryStart) -- a stored record with the former but not the
+    // latter predates this requirement and can never satisfy a Nitro
+    // status/confirm call, so it must be dropped rather than resumed.
+    it('[expectations] clears a legacy Nitro hold missing expectations and shows the start view', async () => {
+        const holdId = 'hold-legacy-1';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId,
+            resumeToken: 'resume-legacy-1',
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+        });
+
+        render(
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(
+            await screen.findByText('This recovery request is no longer valid. Start a new one.')
+        ).toBeInTheDocument();
+        expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+        await waitFor(() => expect(screen.getByText('Start a 7-day recovery')).not.toBeDisabled());
+        expect(clearPendingEscrowRecovery).toHaveBeenCalledWith(holdId, 'default');
+        expect(mockOnStatus).not.toHaveBeenCalled();
+    });
+
+    it('shows honest fallback error and hides raw error when confirm code fails', async () => {
+        const holdId = 'hold-123';
+        const resumeToken = 'token-123';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'priv-123',
+            releaseAfter: new Date(Date.now() + 100000).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        const rawErrorText = 'RAW_BACKEND_ERROR_TEXT_DO_NOT_SHOW';
+        const onConfirmCode = vi
+            .fn()
+            .mockRejectedValue(Object.assign(new Error(rawErrorText), { status: 403 }));
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={vi.fn()}
+                onStatus={vi.fn().mockResolvedValue({
+                    holdId,
+                    status: 'pending',
+                    releasePolicy: 'hold',
+                    requestedAt: new Date().toISOString(),
+                    releaseAfter: new Date(Date.now() + 100000).toISOString(),
+                    confirmed: false,
+                })}
+                onRecover={vi.fn()}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        await waitFor(() => {
+            expect(onConfirmCode).toHaveBeenCalled();
+        });
+
+        expect(
+            await screen.findByText(
+                "That code didn't work or expired. Check it and try again, or tap Resend code for a new one."
+            )
+        ).toBeInTheDocument();
+        expect(screen.queryByText(rawErrorText)).not.toBeInTheDocument();
+    });
+
+    it('shows network error and hides raw error when confirm code fails with non-403', async () => {
+        const holdId = 'hold-123';
+        const resumeToken = 'token-123';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'priv-123',
+            releaseAfter: new Date(Date.now() + 100000).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        const rawErrorText = 'RAW_BACKEND_ERROR_TEXT_DO_NOT_SHOW';
+        const onConfirmCode = vi.fn().mockRejectedValue(new Error(rawErrorText));
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={vi.fn()}
+                onStatus={vi.fn().mockResolvedValue({
+                    holdId,
+                    status: 'pending',
+                    releasePolicy: 'hold',
+                    requestedAt: new Date().toISOString(),
+                    releaseAfter: new Date(Date.now() + 100000).toISOString(),
+                    confirmed: false,
+                })}
+                onRecover={vi.fn()}
+                onConfirmCode={onConfirmCode}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.paste(screen.getAllByLabelText(/Code digit/)[0], {
+            clipboardData: { getData: () => '12345678' },
+        });
+
+        await waitFor(() => {
+            expect(onConfirmCode).toHaveBeenCalled();
+        });
+
+        expect(
+            await screen.findByText('Something went wrong. Check your connection and try again.')
+        ).toBeInTheDocument();
+        expect(screen.queryByText(rawErrorText)).not.toBeInTheDocument();
+    });
+
+    it('shows honest fallback error and hides raw error when resend code fails', async () => {
+        const holdId = 'hold-123';
+        const resumeToken = 'token-123';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'priv-123',
+            releaseAfter: new Date(Date.now() + 100000).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        const rawErrorText = 'RAW_BACKEND_ERROR_TEXT_DO_NOT_SHOW';
+        const onResendCode = vi
+            .fn()
+            .mockRejectedValue(Object.assign(new Error(rawErrorText), { status: 403 }));
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={vi.fn()}
+                onStatus={vi.fn().mockResolvedValue({
+                    holdId,
+                    status: 'pending',
+                    releasePolicy: 'hold',
+                    requestedAt: new Date().toISOString(),
+                    releaseAfter: new Date(Date.now() + 100000).toISOString(),
+                    confirmed: false,
+                })}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={onResendCode}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Resend code'));
+
+        await waitFor(() => {
+            expect(onResendCode).toHaveBeenCalled();
+        });
+
+        expect(
+            await screen.findByText(
+                "You've asked for several codes recently. Please wait a bit and try again."
+            )
+        ).toBeInTheDocument();
+        expect(screen.queryByText(rawErrorText)).not.toBeInTheDocument();
+    });
+
+    it('shows network error and hides raw error when resend code fails with non-403', async () => {
+        const holdId = 'hold-123';
+        const resumeToken = 'token-123';
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId,
+            resumeToken,
+            clientEphemeralPrivateKey: 'priv-123',
+            releaseAfter: new Date(Date.now() + 100000).toISOString(),
+            requestedAt: new Date().toISOString(),
+            requiresConfirmation: true,
+            expectations,
+        });
+
+        const rawErrorText = 'RAW_BACKEND_ERROR_TEXT_DO_NOT_SHOW';
+        const onResendCode = vi.fn().mockRejectedValue(new Error(rawErrorText));
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={vi.fn()}
+                onStatus={vi.fn().mockResolvedValue({
+                    holdId,
+                    status: 'pending',
+                    releasePolicy: 'hold',
+                    requestedAt: new Date().toISOString(),
+                    releaseAfter: new Date(Date.now() + 100000).toISOString(),
+                    confirmed: false,
+                })}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={onResendCode}
+            />
+        );
+
+        expect(await screen.findByText('Check your email')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Resend code'));
+
+        await waitFor(() => {
+            expect(onResendCode).toHaveBeenCalled();
+        });
+
+        expect(
+            await screen.findByText(
+                "We couldn't send a new code. Check your connection and try again."
+            )
+        ).toBeInTheDocument();
+        expect(screen.queryByText(rawErrorText)).not.toBeInTheDocument();
     });
 });
 

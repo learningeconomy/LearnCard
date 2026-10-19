@@ -19,6 +19,10 @@ pub struct Boot {
     pub access_key_id: String,
     pub secret_access_key: String,
     pub session_token: String,
+    #[serde(default)]
+    pub authority_credential_ciphertext: Option<String>,
+    #[serde(default)]
+    pub email_credential_ciphertext: Option<String>,
 }
 
 async fn request<S: AsyncWrite + Unpin>(
@@ -33,7 +37,24 @@ pub async fn boot<S: AsyncRead + AsyncWrite + Unpin>(
     key_id: &str,
 ) -> io::Result<Boot> {
     request(stream, json!({"method":"boot", "keyId":key_id})).await?;
-    serde_json::from_slice(&read_frame(stream).await?).map_err(|_| invalid())
+    let bytes = zeroize::Zeroizing::new(read_frame(stream).await?);
+    let boot: Boot = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
+    for ciphertext in [
+        &boot.authority_credential_ciphertext,
+        &boot.email_credential_ciphertext,
+    ]
+    .into_iter()
+    .flatten()
+    {
+        if ciphertext.is_empty() || ciphertext.len() > 8192 {
+            return Err(invalid());
+        }
+        let decoded = STANDARD.decode(ciphertext).map_err(|_| invalid())?;
+        if decoded.is_empty() || decoded.len() > 6144 {
+            return Err(invalid());
+        }
+    }
+    Ok(boot)
 }
 
 pub async fn persist_key<S: AsyncRead + AsyncWrite + Unpin>(
@@ -102,5 +123,30 @@ pub async fn append<S: AsyncRead + AsyncWrite + Unpin>(
         Ok(0) => Ok(()),
         Ok(1) => Err(AppendError::Conflict),
         _ => Err(AppendError::Unavailable),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn boot_rejects_invalid_credential_ciphertexts_and_plaintext_fields() {
+        for value in [
+            json!(""),
+            json!("not-base64!"),
+            json!("a".repeat(8193)),
+            json!({"accessKeyId":"plaintext"}),
+        ] {
+            let (mut host, mut enclave) = tokio::io::duplex(32768);
+            let response = json!({"sealed":null,"accessKeyId":"test","secretAccessKey":"test","sessionToken":"test","authorityCredentialCiphertext":value});
+            let task = tokio::spawn(async move {
+                read_frame(&mut host).await.unwrap();
+                write_frame(&mut host, &serde_json::to_vec(&response).unwrap())
+                    .await
+                    .unwrap();
+            });
+            assert!(boot(&mut enclave, "key").await.is_err());
+            task.await.unwrap();
+        }
     }
 }

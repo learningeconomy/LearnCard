@@ -1,5 +1,37 @@
 # @learncard/network-brain-service
 
+## 4.0.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/credential-library@2.1.2
+    - @learncard/core@9.4.39
+    - @learncard/helpers@1.6.3
+    - @learncard/did-web-plugin@1.1.39
+    - @learncard/didkey-plugin@1.1.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/didkit-plugin-node@0.3.4
+    - @learncard/encryption-plugin@1.1.39
+    - @learncard/learn-card-plugin@1.2.39
+    - @learncard/vc-plugin@1.6.5
+    - @learncard/vc-templates-plugin@1.1.39
+    - @learncard/crypto-plugin@1.1.39
+    - @learncard/dynamic-loader-plugin@1.1.39
+    - @learncard/expiration-plugin@1.2.39
+
+## 4.0.1
+
+### Patch Changes
+
+- [#1693](https://github.com/learningeconomy/LearnCard/pull/1693) [`cb23aae65e6c481768f57094619ff7059af04518`](https://github.com/learningeconomy/LearnCard/commit/cb23aae65e6c481768f57094619ff7059af04518) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2209] Upgrade Registry Client & Improve useKnownDIDRegistry Caching
+
+- [#1711](https://github.com/learningeconomy/LearnCard/pull/1711) [`63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae`](https://github.com/learningeconomy/LearnCard/commit/63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae) Thanks [@goblincore](https://github.com/goblincore)! - Exclude bundled service configuration from published service dependencies so public packages do not require the private service-config workspace package during installation. Keep runtime workspace dependencies for source-based service deployments.
+
+- Updated dependencies [[`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638)]:
+    - @learncard/credential-library@2.1.1
+
 ## 4.0.0
 
 ### Major Changes

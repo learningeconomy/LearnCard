@@ -25,6 +25,37 @@ PIN holds have zero duration. Mongo remains responsible for single-use/cancellat
 
 ## Nitro requirement
 
+### Authority protocol (PR 2 item e)
+
+Remote enrollment/removal now requires the account's signed intent; failures never
+fall back to unsigned or PIN-less enrollment. `/v1/apply-enrollment` verifies intent
+inside the enclave and returns the persisted, potentially resealed envelope plus a
+commit receipt. Mongo caches that returned envelope and authoritative generation,
+enrollment version and epoch—not the submitted ciphertext or a Mongo-derived epoch.
+Signed disablement uses `POST /keys/escrow/disable` so authorization and ciphertext
+stay in a request body, not DELETE query parameters. The legacy DELETE endpoint
+remains available only to software mode.
+The cache update is conditional; losing it does not roll back the authority commit.
+
+`/v1/enrollment-state` returns fresh nonce-bound signed state. The authenticated API
+route is `POST /keys/escrow/authority-state`; clients must verify the signature and
+nonce against an attested ledger key. API validators check shapes, not enclave trust.
+`/v1/authority-rewrap` requires delegated rewrap authorization. The background job
+reconciles a previously persisted output via fresh state if the earlier response was
+lost. No state is bootstrapped from Mongo or the legacy ledger.
+
+Policy-v2 holds retain the opaque signed record; release and cancellation return
+Commit artifacts. Cancellation confirmation persists that receipt before clearing
+`enclaveCancelPendingAt`. Old pending holds remain cancellable after rotation or
+disablement. Release attempts use a stable hold-bound request ID; ambiguous v2
+evaluations never refund the host's defense-in-depth counter. The authoritative
+counter is always in the enclave's conditional store.
+
+Do not roll out until client signing/verification and the independent authority
+monitor are integrated. Email confirmation remains PR 3; notifications are unchanged.
+
+### Legacy protocol background (unconfigured/compatibility path)
+
 In `remote` mode, the enclave-owned reserve → verify → commit ledger is the
 intended security boundary (`services/escrow-enclave-app/src/policy.rs` `release_pin`
 and `ledger.rs` `verify_pin`), pending full P1.8/P3.3 production wiring. The host-owned

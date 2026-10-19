@@ -414,6 +414,22 @@ creation can resume. Existing-account updates remain available.
 
 ## Error Handling
 
+### Escrow authority verification
+
+With Nitro escrow enabled, the SSS strategy verifies a fresh nonce-bound authority
+Snapshot and signs enrollment changes with the ready account's Ed25519 key. The
+strategy verifies the returned commit against the attested ledger key and retains
+only the verified persisted envelope. AuthCoordinator forwards owner credentials
+for enroll/carry/PIN changes/disable, drains writes on session end, and does not
+publish Mongo's enrolled flag after authority verification fails. A verified
+disabled authority stays opted out until explicit enablement; an empty disposable
+staging generation is re-enrolled rather than initialized from Mongo metadata.
+
+Starting or completing lost-key recovery does not require signing with that key.
+Any subsequent enrollment change happens only after successful reconstruction.
+Client integration alone is not a rollout approval: independent monitoring and
+the escrow staging/security checklist must also be completed.
+
 Errors are classified into two categories:
 
 1. **Auth session gone** (expired token, no Firebase user) → returns to `idle`, not `error`. This is a normal state — the user simply isn't logged in.
