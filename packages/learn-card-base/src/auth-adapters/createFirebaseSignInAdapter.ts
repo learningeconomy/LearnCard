@@ -80,6 +80,8 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
         return isSignInWithEmailLink(auth(), link);
     };
 
+    const profileListeners = new Set<(user: AuthUser | null) => void>();
+
     const nativePhoneAuth = isNative() ? config.getNativeAuth?.() : undefined;
 
     return {
@@ -97,6 +99,7 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
             deleteAccount: true,
         }),
         subscribe: (onUser): (() => void) => {
+            profileListeners.add(onUser);
             let unsubscribe: (() => void) | undefined;
             let cancelled = false;
             void loadFirebaseAuth()
@@ -110,6 +113,7 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                 .catch(() => log.error('Unable to subscribe to Firebase auth state'));
             return (): void => {
                 cancelled = true;
+                profileListeners.delete(onUser);
                 unsubscribe?.();
             };
         },
@@ -241,6 +245,16 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                         try {
                             const { updateProfile } = await loadFirebaseAuth();
                             await updateProfile(user as User, { displayName: appleDisplayName });
+                            // Re-read the live user: the SDK may replace its currentUser object.
+                            const updatedUser = config.getAuth().currentUser;
+                            if (updatedUser?.uid === user.uid) {
+                                user = updatedUser;
+                                // Same-UID profile updates do not emit onAuthStateChanged.
+                                const profile = mapFirebaseUser(user);
+                                profileListeners.forEach(listener =>
+                                    notify(() => listener(profile))
+                                );
+                            }
                         } catch (error) {
                             // Profile enrichment must not turn a successful sign-in into a failure.
                             log.warn('Could not save Apple display name', error);

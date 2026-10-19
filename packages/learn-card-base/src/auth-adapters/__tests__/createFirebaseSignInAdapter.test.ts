@@ -425,6 +425,49 @@ describe('Firebase sign-in adapter', () => {
         expect(adapter.getCurrentUser()?.displayName).toBe('Apple User');
     });
 
+    it('publishes delayed Apple enrichment and returns the live replacement user', async () => {
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple User' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        const adapter = create({ isNativePlatform: () => true });
+        const listener = vi.fn();
+        const removedListener = vi.fn();
+        const unsubscribe = adapter.subscribe(listener);
+        adapter.subscribe(removedListener)();
+        await vi.waitFor(() => expect(sdk.onAuthStateChanged).toHaveBeenCalled());
+        const publishAuth = sdk.onAuthStateChanged.mock.calls.at(-1)![1];
+        sdk.signInWithCredential.mockImplementationOnce(async () => {
+            publishAuth(user);
+            return { user };
+        });
+        let finishUpdate!: () => void;
+        sdk.updateProfile.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    finishUpdate = () => {
+                        // Do not mutate the object captured before the profile save.
+                        auth.currentUser = { ...user, displayName: 'Apple User' };
+                        resolve();
+                    };
+                })
+        );
+        const signIn = adapter.signInWithApple();
+        await vi.waitFor(() => expect(sdk.updateProfile).toHaveBeenCalled());
+        expect(listener).toHaveBeenLastCalledWith(
+            expect.objectContaining({ displayName: undefined })
+        );
+        finishUpdate();
+        await expect(signIn).resolves.toMatchObject({ displayName: 'Apple User' });
+        expect(user.displayName).toBeNull();
+        expect(listener).toHaveBeenLastCalledWith(
+            expect.objectContaining({ displayName: 'Apple User' })
+        );
+        expect(adapter.getCurrentUser()?.displayName).toBe('Apple User');
+        expect(removedListener).not.toHaveBeenCalled();
+        unsubscribe();
+    });
+
     it('keeps the saved name when Apple does not return it again', async () => {
         user.displayName = 'Saved Name';
         vi.mocked(native.signInWithApple).mockResolvedValue({

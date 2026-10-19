@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSignInAdapter } from 'learn-card-base';
+import { authUserStore, useSignInAdapter } from 'learn-card-base';
 import { z } from 'zod';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -62,6 +62,7 @@ type NewJoinNetworkPromptProps = {
 
 const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleCloseModal }) => {
     const adapter = useSignInAdapter();
+    const authUser = authUserStore.use.currentUser();
     const { initWallet } = useWallet();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
@@ -73,8 +74,15 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
 
     const isAppleLogin = authStore.use.typeOfLogin() === SocialLoginTypes.apple;
     const [name, setName] = useState(
-        () => currentUser?.name || adapter.getCurrentUser()?.displayName || ''
+        () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
     );
+    const nameEditedRef = useRef(false);
+    useEffect(() => {
+        if (!nameEditedRef.current) {
+            setName(adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || '');
+        }
+    }, [adapter, authUser?.displayName, currentUser?.name, isAppleLogin]);
+
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
 
     const [networkToggle, setNetworkToggle] = useState<boolean>(true);
@@ -287,7 +295,10 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 id="scoutpass-onboarding-name"
                                 autoComplete="name"
                                 className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                                onChange={e => setName(e.target.value)}
+                                onChange={e => {
+                                    nameEditedRef.current = true;
+                                    setName(e.target.value);
+                                }}
                                 value={name}
                                 placeholder={m['userProfile.fullName']()}
                                 type="text"

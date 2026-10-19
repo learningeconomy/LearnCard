@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     loginType: 'apple',
     authName: '',
+    localName: '',
     hasAuthUser: true,
     profile: null as { profileId: string } | null,
     createProfile: vi.fn(),
@@ -17,11 +18,13 @@ const mocks = vi.hoisted(() => ({
     toast: vi.fn(),
     refetch: vi.fn(),
 }));
+const stableAdapter = vi.hoisted(() => ({
+    getCurrentUser: () => (mocks.hasAuthUser ? { displayName: mocks.authName } : null),
+    updateProfile: mocks.updateAuthProfile,
+}));
 vi.mock('learn-card-base', () => ({
-    useSignInAdapter: () => ({
-        getCurrentUser: () => (mocks.hasAuthUser ? { displayName: mocks.authName } : null),
-        updateProfile: mocks.updateAuthProfile,
-    }),
+    useSignInAdapter: () => stableAdapter,
+    authUserStore: { use: { currentUser: () => ({ displayName: mocks.authName }) } },
     SocialLoginTypes: { apple: 'apple' },
     authStore: { use: { typeOfLogin: () => mocks.loginType } },
     currentUserStore: { set: { currentUser: mocks.setCurrentUser } },
@@ -48,7 +51,7 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: vi.fn(), debug: vi.fn() }),
 }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
-    default: () => ({ uid: 'scout-user', privateKey: 'test-key' }),
+    default: () => ({ uid: 'scout-user', privateKey: 'test-key', name: mocks.localName }),
 }));
 vi.mock('learn-card-base/helpers/authHelpers', () => ({ getAuthToken: () => 'test-token' }));
 vi.mock('learn-card-base/components/profilePicture/ProfilePicture', () => ({
@@ -111,6 +114,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.loginType = 'apple';
     mocks.authName = '';
+    mocks.localName = '';
     mocks.hasAuthUser = true;
     mocks.profile = null;
     mocks.createProfile.mockResolvedValue('did:web:scout');
@@ -290,4 +294,52 @@ describe('ScoutPass Apple account settings', () => {
         );
         expect(mocks.close).not.toHaveBeenCalled();
     });
+});
+
+describe.each(['onboarding', 'account'])('ScoutPass %s name enrichment', surface => {
+    const form = () =>
+        surface === 'onboarding' ? (
+            <NewJoinNetworkPrompt handleCloseModal={mocks.close} />
+        ) : (
+            <UserProfileUpdateForm
+                handleCloseModal={mocks.close}
+                handleLogout={vi.fn()}
+                handleChapiInfo={vi.fn()}
+                showDeleteAccountButton={false}
+            />
+        );
+
+    it('prefers the live name over stale local storage', () => {
+        mocks.localName = 'Stale Local Name';
+        mocks.authName = 'Live Apple Name';
+        render(form());
+        expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe(
+            'Live Apple Name'
+        );
+    });
+
+    it('replaces the untouched local fallback when Apple enrichment arrives', () => {
+        mocks.localName = 'Stale Local Name';
+        const view = render(form());
+        expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe(
+            'Stale Local Name'
+        );
+        mocks.authName = 'Late Apple Name';
+        view.rerender(form());
+        expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe(
+            'Late Apple Name'
+        );
+    });
+
+    it.each(['', 'Chosen Name'])(
+        'preserves the intentional edit %j after enrichment',
+        editedName => {
+            mocks.localName = 'Local Name';
+            const view = render(form());
+            fireEvent.change(screen.getByLabelText(/Full Name/), { target: { value: editedName } });
+            mocks.authName = 'Late Apple Name';
+            view.rerender(form());
+            expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe(editedName);
+        }
+    );
 });

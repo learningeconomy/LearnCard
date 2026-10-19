@@ -7,6 +7,7 @@ import * as m from '../../../paraglide/messages.js';
 const mocks = vi.hoisted(() => ({
     loginType: 'apple',
     authName: '',
+    localName: '',
     createProfile: vi.fn(),
     updateProfile: vi.fn(),
     updateCurrentUser: vi.fn(),
@@ -14,11 +15,13 @@ const mocks = vi.hoisted(() => ({
     track: vi.fn(),
     refetch: vi.fn(),
 }));
+const stableAdapter = vi.hoisted(() => ({
+    getCurrentUser: () => ({ displayName: mocks.authName }),
+    updateProfile: mocks.updateProfile,
+}));
 vi.mock('learn-card-base', () => ({
-    useSignInAdapter: () => ({
-        getCurrentUser: () => ({ displayName: mocks.authName }),
-        updateProfile: mocks.updateProfile,
-    }),
+    useSignInAdapter: () => stableAdapter,
+    authUserStore: { use: { currentUser: () => ({ displayName: mocks.authName }) } },
     authStore: { use: { typeOfLogin: () => mocks.loginType } },
     SocialLoginTypes: { apple: 'apple' },
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
@@ -45,7 +48,7 @@ vi.mock('learn-card-base', () => ({
     getSSSConfig: () => ({ escrowEnclaveMode: 'off' }),
 }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
-    default: () => ({ uid: 'user-1', privateKey: 'test-key' }),
+    default: () => ({ uid: 'user-1', privateKey: 'test-key', name: mocks.localName }),
 }));
 vi.mock('learn-card-base/helpers/authHelpers', () => ({ getAuthToken: () => 'test-token' }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({ getSigningLearnCard: vi.fn() }));
@@ -93,11 +96,12 @@ vi.mock('../onboardingNetworkForm/components/UnderageModalContent', () => ({
 vi.mock('../GuardianLinkedModal', () => ({ default: () => null }));
 vi.mock('../../../pages/issue/components/Confetti', () => ({ Confetti: () => null }));
 
-const openProfile = async (): Promise<void> => {
-    render(<OnboardingFlow />);
+const openProfile = async (): Promise<ReturnType<typeof render>> => {
+    const view = render(<OnboardingFlow />);
     fireEvent.click(screen.getByText('Set birthday'));
     fireEvent.click(screen.getByRole('button', { name: m['onboarding.v2.continue']() }));
     await screen.findByLabelText(/Full Name/);
+    return view;
 };
 const createButton = (): HTMLElement =>
     screen.getByRole('button', {
@@ -110,6 +114,7 @@ beforeEach(() => {
     localStorage.clear();
     mocks.loginType = 'apple';
     mocks.authName = '';
+    mocks.localName = '';
     mocks.createProfile.mockResolvedValue('did:web:example.com');
 });
 
@@ -134,6 +139,57 @@ describe('Apple profile onboarding', () => {
             )
         );
     });
+
+    it('prefers the live Apple name over a stale local name', async () => {
+        mocks.authName = 'Live Apple Name';
+        mocks.localName = 'Stale Local Name';
+        await openProfile();
+        expect(screen.getByLabelText(/Full Name/)).toHaveValue('Live Apple Name');
+    });
+
+    it.each(['', 'Stale Local Name'])(
+        'uses late Apple enrichment instead of the initial name %j',
+        async localName => {
+            mocks.loginType = 'google';
+            mocks.localName = localName;
+            const view = await openProfile();
+            mocks.authName = 'Late Apple Name';
+            mocks.loginType = 'apple';
+            view.rerender(<OnboardingFlow />);
+            expect(screen.getByLabelText(/Full Name/)).toHaveValue('Late Apple Name');
+            await waitFor(() => expect(createButton()).toBeEnabled());
+            fireEvent.click(createButton());
+            await waitFor(() =>
+                expect(mocks.createProfile).toHaveBeenCalledWith(
+                    expect.objectContaining({ displayName: 'Late Apple Name' })
+                )
+            );
+            await waitFor(() =>
+                expect(mocks.updateProfile).toHaveBeenCalledWith(
+                    expect.objectContaining({ displayName: 'Late Apple Name' })
+                )
+            );
+        }
+    );
+
+    it('observes enrichment even when the login type remains Apple', async () => {
+        const view = await openProfile();
+        mocks.authName = 'Late Apple Name';
+        view.rerender(<OnboardingFlow />);
+        expect(screen.getByLabelText(/Full Name/)).toHaveValue('Late Apple Name');
+    });
+
+    it.each(['', 'Chosen Name'])(
+        'preserves the intentional edit %j when Apple enrichment finishes',
+        async editedName => {
+            mocks.localName = 'Local Name';
+            const view = await openProfile();
+            fireEvent.change(screen.getByLabelText(/Full Name/), { target: { value: editedName } });
+            mocks.authName = 'Late Apple Name';
+            view.rerender(<OnboardingFlow />);
+            expect(screen.getByLabelText(/Full Name/)).toHaveValue(editedName);
+        }
+    );
 
     it('prefills the Apple name but lets the user clear it and choose a handle', async () => {
         mocks.authName = 'Apple User';

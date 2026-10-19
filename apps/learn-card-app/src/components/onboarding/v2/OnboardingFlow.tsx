@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
-import { useSignInAdapter } from 'learn-card-base';
+import { authUserStore, useSignInAdapter } from 'learn-card-base';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
@@ -86,6 +86,7 @@ type OnboardingFlowProps = {
 
 const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const adapter = useSignInAdapter();
+    const authUser = authUserStore.use.currentUser();
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState, setupNewKey, setEscrowPin, authProvider } = useAppAuth();
     // Async handlers must read the live coordinator state, not their render-time snapshot.
@@ -287,7 +288,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [guardianEmail, setGuardianEmail] = useState('');
 
     const [name, setName] = useState(
-        () => currentUser?.name || adapter.getCurrentUser()?.displayName || ''
+        () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
     );
     const nameEditedRef = useRef(false);
     const [anonymousHandle] = useState(() => `learner-${generateRandomSuffix()}`);
@@ -370,16 +371,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         }
     }, [uniqueProfile, uniqueProfileFetching, isHandleManuallyEdited, profileId]);
 
-    // Pre-fill from Firebase
+    // Auth enrichment can finish after this form mounts. Preserve intentional edits.
     useEffect(() => {
         const fbUser = adapter.getCurrentUser();
-        if (fbUser) {
-            if (fbUser.displayName && !name && !nameEditedRef.current) {
-                setName(fbUser.displayName);
-            }
-            if (fbUser.photoUrl && !photo) setPhoto(fbUser.photoUrl);
+        if (!nameEditedRef.current) {
+            setName(fbUser?.displayName?.trim() || currentUser?.name || '');
         }
-    }, [name, photo, adapter]);
+        if (fbUser?.photoUrl && !photo) setPhoto(fbUser.photoUrl);
+    }, [authUser?.displayName, currentUser?.name, loginType, photo, adapter]);
 
     // Photo Upload
     const onUpload = (data: UploadRes) => {

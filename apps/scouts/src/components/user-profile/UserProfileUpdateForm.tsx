@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSignInAdapter } from 'learn-card-base';
+import React, { useState, useEffect, useRef } from 'react';
+import { authUserStore, useSignInAdapter } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
 import { z } from 'zod';
 import { Clipboard } from '@capacitor/clipboard';
@@ -71,6 +71,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     children,
 }) => {
     const adapter = useSignInAdapter();
+    const authUser = authUserStore.use.currentUser();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -83,8 +84,15 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     const isAppleLogin = authStore.use.typeOfLogin() === SocialLoginTypes.apple;
     const [name, setName] = useState(
-        () => currentUser?.name || adapter.getCurrentUser()?.displayName || ''
+        () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
     );
+    const nameEditedRef = useRef(false);
+    useEffect(() => {
+        if (!nameEditedRef.current) {
+            setName(adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || '');
+        }
+    }, [adapter, authUser?.displayName, currentUser?.name, isAppleLogin]);
+
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
     const [email, setEmail] = useState<string | null | undefined>(currentUser?.email ?? '');
     const [phone, setPhone] = useState<string | null | undefined>(currentUser?.phoneNumber ?? '');
@@ -385,7 +393,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             id="scoutpass-profile-name"
                             autoComplete="name"
                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                            onChange={e => setName(e.target.value)}
+                            onChange={e => {
+                                nameEditedRef.current = true;
+                                setName(e.target.value);
+                            }}
                             value={name}
                             placeholder={m['userProfile.fullName']()}
                             type="text"
