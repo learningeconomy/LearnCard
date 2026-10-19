@@ -1,25 +1,29 @@
-import React, { useEffect, useRef } from 'react';
-import { InAppMessage } from '@learncard/types';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 
 import { useInAppMessageActions } from './useInAppMessageActions';
+import type { MessagePresentationProps } from './presentationTypes';
 
 const AUTO_DISMISS_MS = 5000;
 
-export interface InAppMessageToastProps {
-    message: InAppMessage;
-    onClose: () => void;
+export interface InAppMessageToastProps extends MessagePresentationProps {
     durationMs?: number;
 }
 
 export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
     message,
     onClose,
+    onAction,
     durationMs = AUTO_DISMISS_MS,
 }) => {
     const shouldReduceMotion = useReducedMotion();
     const { runAction } = useInAppMessageActions();
     const runningRef = useRef(false);
+    const completedRef = useRef(false);
+    const closeRef = useRef(onClose);
+    useLayoutEffect(() => {
+        closeRef.current = onClose;
+    }, [onClose]);
 
     // Tapping runs the first non-dismiss action (if any) — a toast can't host
     // buttons, so without this an actionable toast would look interactive but
@@ -29,21 +33,34 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
     );
 
     useEffect(() => {
-        const timer = setTimeout(onClose, durationMs);
+        const timer = setTimeout(() => {
+            if (completedRef.current) return;
+            completedRef.current = true;
+            closeRef.current('dismissed');
+        }, durationMs);
 
         return () => clearTimeout(timer);
-    }, [onClose, durationMs]);
+    }, [durationMs]);
 
     const handleTap = async () => {
-        if (runningRef.current) return;
+        if (runningRef.current || completedRef.current) return;
 
         runningRef.current = true;
+        completedRef.current = true;
 
         try {
-            if (primaryAction) await runAction(primaryAction.action);
+            if (primaryAction) {
+                onAction?.({
+                    actionIndex: message.actions.indexOf(primaryAction),
+                    actionType: primaryAction.action.type,
+                });
+                await runAction(primaryAction.action);
+            }
         } finally {
             runningRef.current = false;
-            onClose();
+            onClose(
+                primaryAction && primaryAction.action.type !== 'dismiss' ? 'action' : 'dismissed'
+            );
         }
     };
 

@@ -12,6 +12,8 @@ import { iamDebug } from '../debug';
 import { getInAppMessageFatigueState } from '../fatigueStore';
 import { getRecentInAppMessageEvents, resetInAppMessageEventSession } from '../inAppMessageEvents';
 import { setInAppMessageOverride } from '../debugOverrideStore';
+import type { MessagePresentationProps, InAppMessagePresentationEvent } from '../presentationTypes';
+import { I18nProvider } from '../../i18n';
 
 const state = vi.hoisted(() => ({
     gate: false,
@@ -48,8 +50,18 @@ vi.mock('../usePresentationGate', () => ({
 }));
 vi.mock('../debugGlobals', () => ({ installInAppMessagesDebugGlobals: () => undefined }));
 vi.mock('../InAppMessageModal', () => ({
-    InAppMessageModal: ({ message, onClose }: { message: InAppMessage; onClose: () => void }) => (
-        <button onClick={onClose}>{message.title}</button>
+    InAppMessageModal: ({ message, onClose, onAction }: MessagePresentationProps) => (
+        <>
+            <button onClick={() => onClose('dismissed')}>{message.title}</button>
+            <button
+                onClick={() => {
+                    onAction?.({ actionIndex: 0, actionType: 'internalLink' });
+                    onClose('action');
+                }}
+            >
+                Navigate
+            </button>
+        </>
     ),
 }));
 vi.mock('../InAppMessageBanner', () => ({ InAppMessageBanner: () => null }));
@@ -71,6 +83,66 @@ describe('message host impressions', () => {
         cleanup();
         setInAppMessageOverride(null);
         vi.restoreAllMocks();
+    });
+
+    it('records seen and fatigue before shown, localizes live, and emits no dismissal for navigation', async () => {
+        state.gate = true;
+        state.messages = [
+            inAppMessageValidator.parse({
+                id: 'localized',
+                title: 'Hello',
+                locales: { es: { title: 'Hola' } },
+            }),
+        ];
+        const impressions: Array<{ seen: boolean; count: number }> = [];
+        const onEvent = vi.fn((event: InAppMessagePresentationEvent) => {
+            if (event.type === 'shown') {
+                impressions.push({
+                    seen: shouldSuppressMessage('localized', 'once', Date.now(), 'alice'),
+                    count: getInAppMessageFatigueState('alice').blockingShownThisSession,
+                });
+            }
+        });
+        const view = render(
+            <I18nProvider locale="en" resolve={() => undefined}>
+                <InAppMessageHost onEvent={onEvent} />
+            </I18nProvider>
+        );
+        await screen.findByText('Hello');
+        expect(impressions).toEqual([{ seen: true, count: 1 }]);
+        view.rerender(
+            <I18nProvider locale="es" resolve={() => undefined}>
+                <InAppMessageHost onEvent={onEvent} />
+            </I18nProvider>
+        );
+        expect(screen.getByText('Hola')).toBeTruthy();
+        expect(onEvent.mock.calls.filter(([event]) => event.type === 'shown')).toHaveLength(1);
+        fireEvent.click(screen.getByText('Navigate'));
+        expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual(['shown', 'action']);
+        expect(onEvent).toHaveBeenLastCalledWith({
+            type: 'action',
+            messageId: 'localized',
+            presentation: 'modal',
+            source: 'flag',
+            actionIndex: 0,
+            actionType: 'internalLink',
+        });
+    });
+
+    it('reports override dismissal without writing impression state', async () => {
+        const onEvent = vi.fn();
+        act(() =>
+            setInAppMessageOverride(
+                inAppMessageValidator.parse({ id: 'preview-event', title: 'Preview event' })
+            )
+        );
+        render(<InAppMessageHost onEvent={onEvent} />);
+        fireEvent.click(await screen.findByText('Preview event'));
+        expect(onEvent.mock.calls.map(([event]) => [event.type, event.source])).toEqual([
+            ['shown', 'override'],
+            ['dismissed', 'override'],
+        ]);
+        expect(getInAppMessageFatigueState('alice').blockingShownThisSession).toBe(0);
     });
 
     it('waits for the gate, records one impression, and retains the visible message despite its own cap', async () => {

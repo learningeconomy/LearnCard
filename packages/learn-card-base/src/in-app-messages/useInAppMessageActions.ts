@@ -35,14 +35,15 @@ export const useInAppMessageActions = (): {
                     return 'closed';
                 }
 
-                case 'appStore':
-                    await openStoreLink(action, {
+                case 'appStore': {
+                    const opened = await openStoreLink(action, {
                         platform: Capacitor.getPlatform(),
                         appStoreUrl: links?.appStoreUrl,
                         playStoreUrl: links?.playStoreUrl,
                     });
 
-                    return 'closed';
+                    return opened ? 'closed' : 'noop';
+                }
 
                 case 'capgoUpdate':
                     return 'capgo';

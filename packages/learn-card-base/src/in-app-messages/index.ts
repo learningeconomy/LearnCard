@@ -20,3 +20,5 @@ export * from './InAppMessageModal';
 export * from './InAppMessageBanner';
 export * from './InAppMessageToast';
 export * from './InAppMessageHost';
+export * from './localizeMessage';
+export * from './presentationTypes';

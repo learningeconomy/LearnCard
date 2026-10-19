@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { closeOutline, checkmarkCircleOutline, alertCircleOutline } from 'ionicons/icons';
-import { InAppMessage, InAppMessageAction } from '@learncard/types';
+import { InAppMessageAction } from '@learncard/types';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { useInAppMessageActions } from './useInAppMessageActions';
 import { useCapgoUpdate } from './useCapgoUpdate';
+import type { MessagePresentationProps } from './presentationTypes';
+import { useT } from '../i18n';
 
-export interface InAppMessageBannerProps {
-    message: InAppMessage;
-    onClose: () => void;
-}
+export type InAppMessageBannerProps = MessagePresentationProps;
 
-export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message, onClose }) => {
+export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({
+    message,
+    onClose,
+    onAction,
+}) => {
     const { runAction } = useInAppMessageActions();
+    const t = useT();
     const capgo = useCapgoUpdate();
     const [isLoading, setIsLoading] = useState(false);
     const [isCapgoTarget, setIsCapgoTarget] = useState(false);
@@ -29,12 +33,16 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
 
         setIsLoading(true);
         try {
+            onAction?.({
+                actionIndex: message.actions.indexOf(action),
+                actionType: action.action.type,
+            });
             const outcome = await runAction(action.action);
             if (outcome === 'capgo') {
                 setIsCapgoTarget(true);
                 await capgo.startUpdate();
             } else if (action.closeOnComplete) {
-                onClose();
+                onClose(action.action.type === 'dismiss' ? 'dismissed' : 'action');
             }
         } finally {
             setIsLoading(false);
@@ -51,14 +59,14 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
                             className="text-red-400 text-base mt-0.5 shrink-0"
                         />
                         <span className="text-xs text-red-700 leading-relaxed">
-                            {capgo.error || 'Something went wrong. Please try again.'}
+                            {t('inAppMessages.error')}
                         </span>
                     </div>
                     <button
-                        onClick={onClose}
+                        onClick={() => onClose('dismissed')}
                         className="text-xs text-grayscale-500 hover:text-grayscale-900 transition-colors font-medium py-1"
                     >
-                        Close
+                        {t('common.close')}
                     </button>
                 </div>
             );
@@ -73,14 +81,14 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
                             className="text-emerald-500 text-base mt-0.5 shrink-0"
                         />
                         <span className="text-xs text-emerald-700 leading-relaxed">
-                            {"You're on the latest version."}
+                            {t('inAppMessages.upToDate')}
                         </span>
                     </div>
                     <button
-                        onClick={onClose}
+                        onClick={() => onClose('dismissed')}
                         className="text-xs text-grayscale-500 hover:text-grayscale-900 transition-colors font-medium py-1"
                     >
-                        Done
+                        {t('inAppMessages.done')}
                     </button>
                 </div>
             );
@@ -88,10 +96,10 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
 
         const progressText =
             capgo.status === 'checking'
-                ? 'Checking...'
+                ? t('inAppMessages.checking')
                 : capgo.status === 'downloading'
-                  ? `Downloading... ${Math.round(capgo.progress)}%`
-                  : 'Installing...';
+                  ? t('inAppMessages.downloading', { progress: Math.round(capgo.progress) })
+                  : t('inAppMessages.installing');
 
         return (
             <div className="mt-3 w-full py-2 px-3 rounded-[16px] bg-grayscale-900 text-white font-medium text-xs flex flex-col gap-1.5 overflow-hidden relative shadow-xs">
@@ -185,9 +193,9 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
 
                 {showCloseX && (
                     <button
-                        onClick={onClose}
+                        onClick={() => onClose('dismissed')}
                         className="absolute top-3 right-3 p-1.5 bg-white/60 backdrop-blur-sm border border-white/60 text-grayscale-400 hover:text-grayscale-900 transition-colors rounded-full hover:bg-white/80 shrink-0 z-10"
-                        aria-label="Close"
+                        aria-label={t('common.close')}
                     >
                         <IonIcon icon={closeOutline} className="text-lg block" />
                     </button>
