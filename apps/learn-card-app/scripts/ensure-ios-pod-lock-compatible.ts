@@ -18,6 +18,14 @@ const PODFILE_LOCK = resolve(IOS_APP_ROOT, 'Podfile.lock');
 
 const TRANSITIVE_PODS: PodDependency[] = [
     {
+        name: 'IONFilesystemLib',
+        owner: 'CapacitorFilesystem',
+        podspecPath: resolve(
+            MONOREPO_ROOT,
+            'node_modules/@capacitor/filesystem/CapacitorFilesystem.podspec'
+        ),
+    },
+    {
         name: 'IONCameraLib',
         owner: 'CapacitorCamera',
         podspecPath: resolve(
@@ -45,18 +53,41 @@ const TRANSITIVE_PODS: PodDependency[] = [
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export const getLockedPodMajor = (lockfile: string, podName: string): number | undefined => {
-    const match = lockfile.match(new RegExp(`^\\s+- ${escapeRegExp(podName)} \\((\\d+)\\.`, 'm'));
-
-    return match ? Number(match[1]) : undefined;
-};
-
-export const getRequiredPodMajor = (podspec: string, podName: string): number | undefined => {
-    const match = podspec.match(
-        new RegExp(`s\\.dependency\\s+['"]${escapeRegExp(podName)}['"][^\\n]*~>\\s*(\\d+)\\.`)
+export const getLockedPodVersion = (lockfile: string, podName: string): string | undefined => {
+    const match = lockfile.match(
+        new RegExp(`^\\s+- ${escapeRegExp(podName)} \\((\\d+(?:\\.\\d+)*)\\)`, 'm')
     );
 
-    return match ? Number(match[1]) : undefined;
+    return match?.[1];
+};
+
+interface PodRequirement {
+    version: string;
+    pessimistic: boolean;
+}
+
+// The tracked Capacitor podspecs use either exact versions or Ruby's ~> ranges.
+// Leave unsupported expressions to CocoaPods rather than guessing their meaning.
+export const getRequiredPodVersion = (
+    podspec: string,
+    podName: string
+): PodRequirement | undefined => {
+    const match = podspec.match(
+        new RegExp(
+            `^\\s*s\\.dependency\\s+['"]${escapeRegExp(podName)}['"]\\s*,\\s*(?:spec\\s*=\\s*)?['"](~>\\s*|=\\s*)?(\\d+(?:\\.\\d+)*)['"]\\s*(?:#.*)?$`,
+            'm'
+        )
+    );
+
+    return match ? { version: match[2]!, pessimistic: match[1]?.trim() === '~>' } : undefined;
+};
+
+const compareVersions = (left: number[], right: number[]): number => {
+    for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+        const difference = (left[index] ?? 0) - (right[index] ?? 0);
+        if (difference !== 0) return difference;
+    }
+    return 0;
 };
 
 export const findIncompatiblePods = (
@@ -64,14 +95,20 @@ export const findIncompatiblePods = (
     podspecs: Array<{ name: string; contents: string }>
 ): string[] =>
     podspecs.flatMap(({ name, contents }) => {
-        const lockedMajor = getLockedPodMajor(lockfile, name);
-        const requiredMajor = getRequiredPodMajor(contents, name);
+        const locked = getLockedPodVersion(lockfile, name);
+        const required = getRequiredPodVersion(contents, name);
+        if (!locked || !required) return [];
 
-        return lockedMajor !== undefined &&
-            requiredMajor !== undefined &&
-            lockedMajor !== requiredMajor
-            ? [name]
-            : [];
+        const lockedParts = locked.split('.').map(Number);
+        const requiredParts = required.version.split('.').map(Number);
+        const comparison = compareVersions(lockedParts, requiredParts);
+        if (!required.pessimistic) return comparison === 0 ? [] : [name];
+
+        // Ruby permits any number of numeric segments; ~> increments the penultimate one.
+        // ~> 2.0.1 permits < 2.1.0, while ~> 2.0.1.4 permits < 2.0.2.0.
+        const upperBound = requiredParts.slice(0, Math.max(1, requiredParts.length - 1));
+        upperBound[upperBound.length - 1]! += 1;
+        return comparison < 0 || compareVersions(lockedParts, upperBound) >= 0 ? [name] : [];
     });
 
 export const getPodUpdateTargets = (incompatiblePods: string[]): string[] =>

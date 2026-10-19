@@ -3,6 +3,7 @@ import type { EscrowEnvelope } from '@learncard/sss-key-manager';
 import { createRemoteEnclave, type RemoteEnclaveTransportResponse } from './remoteEnclave';
 import {
     EscrowBlobError,
+    EscrowCodeError,
     EscrowPinMismatchError,
     EscrowPolicyError,
     EscrowUnavailableError,
@@ -12,6 +13,35 @@ import {
 const baseUrl = 'https://enclave-host.internal';
 const token = 't'.repeat(32);
 const timeoutMs = 10_000;
+const receipt = {
+    version: 1 as const,
+    kind: 'commit' as const,
+    keyId: 'key-1',
+    measurement: Array(32).fill(0),
+    payload: 'AQ==',
+    signature: Buffer.alloc(64).toString('base64'),
+};
+
+// Real Rust shape for the idempotent-retry path (`authority_hold_snapshot`,
+// policy/authority.rs): a signed tuple, never an `AuthorityCommitValidator`.
+const snapshotReceipt = {
+    version: 1 as const,
+    kind: 'snapshot' as const,
+    keyId: 'key-1',
+    measurement: Array(32).fill(0),
+    payload: Buffer.from(
+        JSON.stringify([
+            'learncard-authority-hold-snapshot-v2',
+            'hold-1',
+            Array(32).fill(7),
+            'pending',
+            1700000000000,
+            1700086400000,
+            'g1',
+        ])
+    ).toString('base64'),
+    signature: Buffer.alloc(64).toString('base64'),
+};
 
 const envelope: EscrowEnvelope = {
     version: 1,
@@ -83,6 +113,40 @@ describe('createRemoteEnclave', () => {
             { nonce: [1, 2, 3] },
             { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs }
         );
+    });
+
+    it.each(['codeMismatch', 'codeExpired', 'codeLocked'] as const)(
+        'maps %s without forwarding diagnostic text',
+        async code => {
+            const post = vi
+                .fn()
+                .mockResolvedValue(respond(403, { code, message: 'sensitive diagnostic' }));
+            const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+            await expect(enclave.confirmHold!(confirmInput)).rejects.toEqual(
+                new EscrowCodeError(code)
+            );
+        }
+    );
+
+    it('separates delivery evidence from the signed hold before subsequent requests', async () => {
+        const delivery = { codeSent: false, proof: snapshotReceipt };
+        const post = vi.fn().mockResolvedValue(respond(200, { ...hold, delivery }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        await expect(enclave.createHold(createInput)).resolves.toEqual({
+            holdRecord: hold,
+            delivery,
+        });
+    });
+
+    it('forwards fresh hold-state nonces under the existing bearer authentication', async () => {
+        const post = vi.fn().mockResolvedValue(respond(200, { proof: snapshotReceipt }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        const input = { expectedDid: hold.hold.did, hold, nonce: 'ab'.repeat(32) };
+        await expect(enclave.getHoldState!(input)).resolves.toEqual({ proof: snapshotReceipt });
+        expect(post).toHaveBeenCalledWith(`${baseUrl}/v1/hold-state`, input, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: timeoutMs,
+        });
     });
 
     it('sends an empty nonce array when none is given', async () => {
@@ -223,7 +287,14 @@ describe('createRemoteEnclave', () => {
     });
 
     it('rewraps an escrow blob sealed under a previous key onto the current key', async () => {
-        const post = vi.fn().mockResolvedValue(respond(200, { envelope }));
+        const authority = {
+            envelope,
+            receipt,
+            authorityGeneration: 'g1',
+            enrollmentVersion: 2,
+            enrollmentEpoch: 1,
+        };
+        const post = vi.fn().mockResolvedValue(respond(200, { result: authority }));
         const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
         const input = {
             envelope,
@@ -232,10 +303,10 @@ describe('createRemoteEnclave', () => {
             sourceEnrollmentEpoch: 1,
         };
 
-        await expect(enclave.rewrapEscrowBlob(input)).resolves.toEqual({ envelope });
+        await expect(enclave.rewrapEscrowBlob(input)).resolves.toEqual({ envelope, authority });
 
         expect(post).toHaveBeenCalledWith(
-            `${baseUrl}/v1/rewrap-escrow-blob`,
+            `${baseUrl}/v1/authority-rewrap`,
             {
                 envelope,
                 expectedDid: 'did:example:alice',
@@ -243,6 +314,183 @@ describe('createRemoteEnclave', () => {
                 sourceEnrollmentEpoch: 1,
             },
             { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs }
+        );
+    });
+
+    it('preserves v2 cancellation receipts and stable release IDs, refusing absent commit evidence', async () => {
+        const v2 = {
+            ...hold,
+            hold: {
+                ...hold.hold,
+                policyVersion: 2,
+                signature: Buffer.from(JSON.stringify(receipt)).toString('base64'),
+            },
+        };
+        const post = vi.fn().mockResolvedValue(respond(200, { ok: true, receipt }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        const input = {
+            envelope,
+            hold: v2,
+            expectedDid: v2.hold.did,
+            clientEphemeralPublicKey: v2.hold.clientEphemeralPublicKey,
+            requestId: 'stable-id',
+        };
+        await expect(enclave.cancelHold(input)).resolves.toEqual({ receipt });
+        post.mockResolvedValue(respond(200, { sealed: envelope, receipt }));
+        await expect(enclave.releaseEscrow(input)).resolves.toEqual({ sealed: envelope, receipt });
+        expect(post.mock.calls.at(-1)?.[1]).toMatchObject({ requestId: 'stable-id' });
+        post.mockResolvedValue(respond(200, { sealed: envelope }));
+        await expect(enclave.releaseEscrow(input)).rejects.toBeInstanceOf(EscrowUnavailableError);
+        post.mockResolvedValue(respond(200, { ok: true }));
+        await expect(enclave.cancelHold(input)).rejects.toBeInstanceOf(EscrowUnavailableError);
+    });
+
+    // [A] confirm-hold/send-release-warning: a fresh call returns a signed
+    // `commit`; an idempotent retry (lost response, hourly job re-run)
+    // returns a signed `snapshot` instead — both are real response shapes
+    // the enclave can return, never a stub that only ever returns `commit`.
+    const confirmInput = {
+        envelope,
+        hold,
+        clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+        expectedDid: hold.hold.did,
+        code: '12345678',
+    };
+    it('confirmHold accepts a fresh commit receipt and returns the authoritative confirmation time', async () => {
+        const post = vi
+            .fn()
+            .mockResolvedValue(
+                respond(200, { confirmed: true, receipt, confirmedHiMs: 1700000000000 })
+            );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.confirmHold!(confirmInput)).resolves.toEqual({
+            receipt,
+            confirmedAtMs: 1700000000000,
+        });
+    });
+    it('confirmHold accepts a retry snapshot receipt (not a commit) and returns the SAME confirmation time', async () => {
+        const post = vi.fn().mockResolvedValue(
+            respond(200, {
+                confirmed: true,
+                receipt: snapshotReceipt,
+                confirmedHiMs: 1700000000000,
+            })
+        );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.confirmHold!(confirmInput)).resolves.toEqual({
+            receipt: snapshotReceipt,
+            confirmedAtMs: 1700000000000,
+        });
+    });
+    it('confirmHold fails closed when the receipt is neither a commit nor a snapshot', async () => {
+        const post = vi.fn().mockResolvedValue(
+            respond(200, {
+                confirmed: true,
+                receipt: { ...receipt, kind: 'proposal' },
+                confirmedHiMs: 1700000000000,
+            })
+        );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.confirmHold!(confirmInput)).rejects.toBeInstanceOf(
+            EscrowUnavailableError
+        );
+    });
+    it('confirmHold fails closed when confirmedHiMs is missing (pre-fix response shape)', async () => {
+        const post = vi.fn().mockResolvedValue(respond(200, { confirmed: true, receipt }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.confirmHold!(confirmInput)).rejects.toBeInstanceOf(
+            EscrowUnavailableError
+        );
+    });
+
+    const warningInput = { holdId: hold.hold.holdId, expectedDid: hold.hold.did };
+    it('sendReleaseWarning accepts a fresh commit receipt and returns the authoritative send time', async () => {
+        const post = vi
+            .fn()
+            .mockResolvedValue(
+                respond(200, { sent: true, receipt, releaseWarningSentHiMs: 1700086400000 })
+            );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.sendReleaseWarning!(warningInput)).resolves.toEqual({
+            receipt,
+            releaseWarningSentAtMs: 1700086400000,
+        });
+    });
+    it('sendReleaseWarning accepts a retry snapshot receipt (not a commit) and returns the SAME send time', async () => {
+        const post = vi.fn().mockResolvedValue(
+            respond(200, {
+                sent: true,
+                receipt: snapshotReceipt,
+                releaseWarningSentHiMs: 1700086400000,
+            })
+        );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.sendReleaseWarning!(warningInput)).resolves.toEqual({
+            receipt: snapshotReceipt,
+            releaseWarningSentAtMs: 1700086400000,
+        });
+    });
+    it('sendReleaseWarning fails closed when releaseWarningSentHiMs is missing (pre-fix response shape)', async () => {
+        const post = vi.fn().mockResolvedValue(respond(200, { sent: true, receipt }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.sendReleaseWarning!(warningInput)).rejects.toBeInstanceOf(
+            EscrowUnavailableError
+        );
+    });
+
+    it('forwards signed enrollment once and rejects a proposal or mismatched result generation', async () => {
+        const input = {
+            signedIntent: {
+                intent: {
+                    version: 2 as const,
+                    tenant: 'learncard',
+                    did: 'did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw',
+                    authorityGeneration: 'g1',
+                    expectedEnrollmentVersion: 0,
+                    action: 'enroll' as const,
+                    sourceBlobIdentity: null,
+                    targetBlobIdentity: 'ab'.repeat(32),
+                    pinAction: 'keep' as const,
+                    shareVersion: 1,
+                    enrollmentEpoch: 1,
+                    requestId: 'request',
+                    allowRewrap: true,
+                    recoveryEmail: 'owner@example.com',
+                    recoveryLanguage: 'en',
+                },
+                signature: Buffer.alloc(64).toString('base64'),
+            },
+            sourceEnvelope: null,
+            targetEnvelope: envelope,
+        };
+        const result = {
+            envelope,
+            receipt,
+            authorityGeneration: 'g1',
+            enrollmentVersion: 1,
+            enrollmentEpoch: 1,
+        };
+        const post = vi.fn().mockResolvedValue(respond(200, { result }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        await expect(enclave.applyEnrollmentIntent!(input)).resolves.toEqual(result);
+        expect(post).toHaveBeenCalledTimes(1);
+        expect(post.mock.calls[0]?.slice(0, 2)).toEqual([`${baseUrl}/v1/apply-enrollment`, input]);
+        post.mockResolvedValue(respond(200, { result: { ...result, authorityGeneration: 'g2' } }));
+        await expect(enclave.applyEnrollmentIntent!(input)).rejects.toBeInstanceOf(
+            EscrowUnavailableError
+        );
+        post.mockResolvedValue(
+            respond(200, { result: { ...result, receipt: { ...receipt, kind: 'proposal' } } })
+        );
+        await expect(enclave.applyEnrollmentIntent!(input)).rejects.toBeInstanceOf(
+            EscrowUnavailableError
         );
     });
 
@@ -412,7 +660,10 @@ describe('createRemoteEnclave', () => {
         const created = await enclave.createHold(createInput);
         expect(created).toEqual({ holdRecord: opaque });
         const config = { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs };
-        expect(post).toHaveBeenNthCalledWith(1, `${baseUrl}/v1/create-hold`, createInput, config);
+        expect(post).toHaveBeenNthCalledWith(1, `${baseUrl}/v1/create-hold`, createInput, {
+            ...config,
+            headers: { ...config.headers, 'X-Escrow-Delivery-Evidence': '1' },
+        });
         await expect(
             enclave.cancelHold({ ...cancelInput, hold: created.holdRecord })
         ).resolves.toBeUndefined();

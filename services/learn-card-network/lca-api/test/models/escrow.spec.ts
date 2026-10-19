@@ -547,6 +547,12 @@ describe('escrow model invariants', () => {
         const pinHold = await createHoldFor(now, 'pin');
         const completedHold = await createHoldFor(new Date(now.getTime() + 2 * hour));
         await completeEscrowHold(completedHold._id);
+        // P2-b (catch-up): an outage spanning the entire 24h reminder window
+        // must not permanently strand a hold — release still requires a
+        // successfully recorded warning (authority.rs), so a hold whose
+        // Mongo-estimated releaseAfter has already passed, and that was
+        // never reminded, must stay selected until it finally is.
+        const wayOverdueUnreminded = await createHoldFor(new Date(now.getTime() - 48 * hour));
 
         const due = await findEscrowHoldsDueForReminder(now, 200);
         const dueIds = due.map(hold => hold._id);
@@ -555,6 +561,13 @@ describe('escrow model invariants', () => {
         expect(dueIds).not.toContain(alreadyReminded._id);
         expect(dueIds).not.toContain(pinHold._id);
         expect(dueIds).not.toContain(completedHold._id);
+        expect(dueIds).toContain(wayOverdueUnreminded._id);
+        // Recovery: once the catch-up run finally records the reminder, the
+        // hold stops being selected, exactly like any other reminded hold.
+        await recordEscrowHoldNotification(wayOverdueUnreminded._id, 'reminder');
+        expect((await findEscrowHoldsDueForReminder(now, 200)).map(hold => hold._id)).not.toContain(
+            wayOverdueUnreminded._id
+        );
 
         // Two concurrent claims for the same hold: MongoDB serializes the
         // findOneAndUpdate CAS, so exactly one observes the pre-push state.

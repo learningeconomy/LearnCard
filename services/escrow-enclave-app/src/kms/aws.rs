@@ -1,10 +1,12 @@
 //! Explicit parent-provided temporary credentials; never consult enclave IMDS.
 use super::*;
+use crate::{aws_transport::RequestTime, time::TimeSource};
 use aws_sdk_kms::{
     config::{BehaviorVersion, Region},
     primitives::Blob,
     types::{DataKeySpec, KeyEncryptionMechanism, RecipientInfo},
 };
+use std::sync::Arc;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Parent wire integration supplies a fresh set for each boot/request (P1.8/P3.3).
@@ -17,7 +19,10 @@ pub struct Credentials {
 }
 
 pub struct AwsKmsClient {
-    client: aws_sdk_kms::Client,
+    credentials: Credentials,
+    region: String,
+    endpoint: String,
+    time: Arc<dyn TimeSource>,
     key_id: String,
 }
 
@@ -25,7 +30,12 @@ impl AwsKmsClient {
     /// `key_id` is the KMS CMK ARN, not the logical escrow keyId encryption context.
     /// Map kms.<region>.amazonaws.com to 127.0.0.1 in the enclave's /etc/hosts;
     /// TLS still validates the real AWS hostname through the byte-only forwarder.
-    pub fn new(credentials: Credentials, region: &str, key_id: String) -> Result<Self, KmsError> {
+    pub fn new(
+        credentials: Credentials,
+        region: &str,
+        key_id: String,
+        time: Arc<dyn TimeSource>,
+    ) -> Result<Self, KmsError> {
         if region.is_empty()
             || !region
                 .bytes()
@@ -38,23 +48,39 @@ impl AwsKmsClient {
             return Err(KmsError::Configuration);
         }
         let endpoint = kms_endpoint(region, std::env::var("ESCROW_KMS_ENDPOINT").ok().as_deref())?;
+        Ok(Self {
+            credentials,
+            region: region.to_owned(),
+            endpoint,
+            time,
+            key_id,
+        })
+    }
+
+    /// A fresh sample and TLS connection per operation. No connection, signing
+    /// skew correction, or session ticket can survive into the next operation.
+    async fn client(&self) -> Result<aws_sdk_kms::Client, KmsError> {
+        let time = RequestTime::acquire(self.time.as_ref()).await?;
+        Ok(aws_sdk_kms::Client::from_conf(self.config(time)?))
+    }
+
+    fn config(&self, time: RequestTime) -> Result<aws_sdk_kms::Config, KmsError> {
         let provider = aws_sdk_kms::config::Credentials::new(
-            credentials.access_key_id.clone(),
-            credentials.secret_access_key.clone(),
-            Some(credentials.session_token.clone()),
+            self.credentials.access_key_id.clone(),
+            self.credentials.secret_access_key.clone(),
+            Some(self.credentials.session_token.clone()),
             None,
             "enclave-parent-sts",
         );
-        let config = aws_sdk_kms::Config::builder()
+        Ok(aws_sdk_kms::Config::builder()
             .behavior_version(BehaviorVersion::latest())
-            .region(Region::new(region.to_owned()))
+            .region(Region::new(self.region.clone()))
             .credentials_provider(provider)
-            .endpoint_url(endpoint)
-            .build();
-        Ok(Self {
-            client: aws_sdk_kms::Client::from_conf(config),
-            key_id,
-        })
+            .endpoint_url(&self.endpoint)
+            .http_client(time.http_client(&self.endpoint)?)
+            .time_source(time)
+            .retry_config(aws_smithy_types::retry::RetryConfig::disabled())
+            .build())
     }
 }
 
@@ -99,7 +125,8 @@ impl KmsClient for AwsKmsClient {
     ) -> KmsFuture<'a> {
         Box::pin(async move {
             let output = self
-                .client
+                .client()
+                .await?
                 .decrypt()
                 .key_id(&self.key_id)
                 .ciphertext_blob(Blob::new(ciphertext))
@@ -124,7 +151,8 @@ impl KmsClient for AwsKmsClient {
     ) -> GenerateFuture<'a> {
         Box::pin(async move {
             let output = self
-                .client
+                .client()
+                .await?
                 .generate_data_key()
                 .key_id(&self.key_id)
                 .key_spec(DataKeySpec::Aes256)
@@ -167,7 +195,110 @@ fn generated_output(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::time::{TimeError, TimeEvidence, TimeFuture, TrustedInterval};
     use aws_sdk_kms::operation::decrypt::DecryptOutput;
+
+    struct Clock(bool);
+    impl TimeSource for Clock {
+        fn now(&self, _: Option<u64>) -> TimeFuture<'_, TimeEvidence> {
+            Box::pin(async {
+                if !self.0 {
+                    return Err(TimeError::Unavailable);
+                }
+                Ok(TimeEvidence {
+                    interval: TrustedInterval {
+                        lo_ms: 1_577_836_800_000,
+                        hi_ms: 1_577_836_800_000,
+                    },
+                    sources: vec![],
+                })
+            })
+        }
+    }
+
+    fn client(available: bool) -> AwsKmsClient {
+        AwsKmsClient::new(
+            Credentials {
+                access_key_id: "TEST-ONLY-ACCESS-KEY".into(),
+                secret_access_key: "TEST-ONLY-SECRET-KEY".into(),
+                session_token: "TEST-ONLY-SESSION".into(),
+            },
+            "us-east-1",
+            "test-key".into(),
+            Arc::new(Clock(available)),
+        )
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn missing_trusted_time_stops_both_kms_operations_before_network() {
+        let client = client(false);
+        let context = BTreeMap::new();
+        assert!(matches!(
+            client.decrypt_for_recipient(&[1], &context, &[2]).await,
+            Err(KmsError::Unavailable)
+        ));
+        assert!(matches!(
+            client.generate_data_key_for_recipient(&context, &[2]).await,
+            Err(KmsError::Unavailable)
+        ));
+    }
+
+    #[tokio::test]
+    async fn sdk_signs_with_evidence_time_and_does_not_retry_mutations() {
+        use aws_smithy_runtime_api::client::{
+            http::{http_client_fn, HttpConnector, HttpConnectorFuture, SharedHttpConnector},
+            orchestrator::{HttpRequest, HttpResponse},
+        };
+        use aws_smithy_types::body::SdkBody;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        #[derive(Debug)]
+        struct Capture(Arc<AtomicUsize>);
+        impl HttpConnector for Capture {
+            fn call(&self, request: HttpRequest) -> HttpConnectorFuture {
+                self.0.fetch_add(1, Ordering::SeqCst);
+                assert_eq!(
+                    request.headers().get("x-amz-date"),
+                    Some("20200101T000000Z")
+                );
+                let authorization = request.headers().get("authorization").unwrap();
+                assert!(authorization.contains("/20200101/us-east-1/kms/aws4_request"));
+                assert_eq!(
+                    request.headers().get("x-amz-security-token"),
+                    Some("TEST-ONLY-SESSION")
+                );
+                let response = hyper::Response::builder()
+                    .status(503)
+                    .header("date", "Tue, 01 Jan 2030 00:00:00 GMT")
+                    .body(SdkBody::from(
+                        "{\"__type\":\"ServiceUnavailableException\"}",
+                    ))
+                    .unwrap();
+                HttpConnectorFuture::ready(Ok(HttpResponse::try_from(response).unwrap()))
+            }
+        }
+        let client = client(true);
+        let count = Arc::new(AtomicUsize::new(0));
+        let connector = SharedHttpConnector::new(Capture(count.clone()));
+        let time = RequestTime::acquire(client.time.as_ref()).await.unwrap();
+        let config = client
+            .config(time)
+            .unwrap()
+            .to_builder()
+            .http_client(http_client_fn(move |_, _| connector.clone()))
+            .build();
+        assert_eq!(config.retry_config().unwrap().max_attempts(), 1);
+        let sdk = aws_sdk_kms::Client::from_conf(config);
+        assert!(sdk
+            .generate_data_key()
+            .key_id("test-key")
+            .key_spec(DataKeySpec::Aes256)
+            .send()
+            .await
+            .is_err());
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+    }
 
     #[test]
     fn endpoint_preserves_regional_tls_identity() {

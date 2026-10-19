@@ -2289,6 +2289,33 @@ const handleShortcuts = async (): Promise<boolean> => {
     if (!command) return false;
 
     switch (command) {
+        case 'verify': {
+            rl.close();
+            // A child process, so `--conditions=development` resolves workspace packages to
+            // source and the rest of lc never loads Playwright or the SDK.
+            const child = spawn(
+                process.execPath,
+                [
+                    '--conditions=development',
+                    resolve(__dirname, 'verification/main.ts'),
+                    ...args.slice(1),
+                ],
+                {
+                    stdio: 'inherit',
+                    env: { ...process.env, INIT_CWD: process.env.INIT_CWD ?? process.cwd() },
+                }
+            );
+            // The child owns interrupt handling (evidence-preserving cleanup). Forward signals so
+            // `kill -INT <this pid>` works, not only a terminal Ctrl-C to the process group; the
+            // child's handlers are idempotent, so receiving both is harmless.
+            process.on('SIGINT', () => child.kill('SIGINT'));
+            process.on('SIGTERM', () => child.kill('SIGTERM'));
+            const code = await new Promise<number>(accept =>
+                child.once('exit', (exitCode, signal) => accept(exitCode ?? (signal ? 1 : 0)))
+            );
+            process.exit(code);
+        }
+
         case 'help':
             printHelp();
             return true;
@@ -2610,6 +2637,16 @@ const printHelp = () => {
     log.info('');
     log.info(bold('  🛠 Tools'));
     log.info('');
+    log.info(
+        `  ${cyan('bun run lc verify run all')}           ${dim(
+            'Owned local stack, authenticated feature journeys, and retained proof'
+        )}`
+    );
+    log.info(
+        `  ${cyan('bun run lc verify help')}              ${dim(
+            'List features; start, inspect, drive, and stop a verification instance'
+        )}`
+    );
     log.info(
         `  ${cyan('bun run lc viewer')}                     ${dim('Launch the Credential Viewer')}`
     );

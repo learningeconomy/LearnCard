@@ -70,6 +70,8 @@ describe('RecoveryFlowModal', () => {
             .mockResolvedValue({ ...record, status: 'pending', requestedAt: '2026-09-01' }),
         onStatus: vi.fn().mockResolvedValue({ holdId: 'hold', status: 'pending' }),
         onRecover: vi.fn().mockResolvedValue(undefined),
+        onConfirmCode: vi.fn().mockResolvedValue({ success: true }),
+        onResendCode: vi.fn().mockResolvedValue({ success: true }),
     };
     it('requires durable browser storage before starting a hold', async () => {
         vi.mocked(isEscrowRecoveryStorageAvailable).mockReturnValue(false);
@@ -383,6 +385,8 @@ describe('RecoveryFlowModal sign-in picker', () => {
         onStart: vi.fn(),
         onStatus: vi.fn().mockResolvedValue({ holdId: 'hold', status: 'pending' }),
         onRecover: vi.fn().mockResolvedValue(undefined),
+        onConfirmCode: vi.fn().mockResolvedValue({ success: true }),
+        onResendCode: vi.fn().mockResolvedValue({ success: true }),
     };
     const methods = (...types: string[]) =>
         types.map(type => ({ type, createdAt: '2026-09-01', credentialId: `${type}-id` }));

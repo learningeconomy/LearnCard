@@ -1,0 +1,33 @@
+{
+    "description": "P2-d cross-language contract: the enclave authority policy (apply_enrollment_intent, authority.rs) rejects a Carry target blob whose PLAINTEXT already carries a non-null recoveryEmail/recoveryLanguage — on carry the enclave always fills those fields in from the source blob instead — but accepts the identical blob shape for Enroll/Replace (where the signed intent is required to bind a matching contact instead). Rust (policy/authority/tests.rs) builds and submits a real target blob with each case's fields and asserts apply_enrollment_intent's accept/reject outcome through the real enclave policy; TypeScript (escrow-authority.test.ts) asserts the same outcome via resolveEscrowEnrollmentAction plus the same rule the enclave enforces. Each case is independent: did/shareVersion/epoch are illustrative, not cross-referenced. recoveryEmail/recoveryLanguage are always both-null or both-set, matching the blob plaintext's own format invariant.",
+    "cases": [
+        {
+            "name": "enroll accepts a target with contact fields",
+            "action": "enroll",
+            "blobRecoveryEmail": "owner@example.com",
+            "blobRecoveryLanguage": "en",
+            "expected": "accept"
+        },
+        {
+            "name": "replace accepts a target with contact fields",
+            "action": "replace",
+            "blobRecoveryEmail": "owner@example.com",
+            "blobRecoveryLanguage": "en",
+            "expected": "accept"
+        },
+        {
+            "name": "carry rejects a target that already carries contact fields",
+            "action": "carry",
+            "blobRecoveryEmail": "owner@example.com",
+            "blobRecoveryLanguage": "en",
+            "expected": "reject"
+        },
+        {
+            "name": "carry accepts a target with no contact fields",
+            "action": "carry",
+            "blobRecoveryEmail": null,
+            "blobRecoveryLanguage": null,
+            "expected": "accept"
+        }
+    ]
+}

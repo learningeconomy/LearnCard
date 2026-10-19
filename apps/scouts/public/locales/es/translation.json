@@ -408,6 +408,7 @@
         "deletingAccount": "Eliminando Cuenta...",
         "deleteForever": "Eliminar Permanentemente",
         "fullName": "Nombre Completo",
+        "fullNameOptional": "Nombre completo (opcional)",
         "emailAddress": "Dirección de correo",
         "phoneNumber": "Número de Teléfono",
         "userID": "ID de Usuario",
@@ -631,6 +632,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "No pudimos guardar tu perfil. Comprueba tu conexión e inténtalo de nuevo.",
         "welcomeTo": "Bienvenido a",
         "setupProf": "¡Configura tu perfil para empezar!",
         "dataOwn": "Tus datos te pertenecen.",

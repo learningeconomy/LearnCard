@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import { useQueryClient } from '@tanstack/react-query';
 import { ModalTypes, useModal, useWallet } from 'learn-card-base';
 
@@ -69,4 +70,4 @@ const FrameworkOptionsModal: React.FC<FrameworkOptionsModalProps> = ({ framework
     );
 };
 
-export default FrameworkOptionsModal;
+export default withCompetencyAdmin(FrameworkOptionsModal);

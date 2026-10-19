@@ -52,6 +52,10 @@ impl Api {
 }
 pub fn router(api: Arc<Api>) -> Router {
     Router::new()
+        .route("/v1/enrollment-state", post(handle))
+        .route("/v1/hold-state", post(handle))
+        .route("/v1/apply-enrollment", post(handle))
+        .route("/v1/authority-rewrap", post(handle))
         .route("/v1/attest", post(handle))
         .route("/v1/verify-blob", post(handle))
         .route("/v1/carry-pin-verifier", post(handle))
@@ -59,6 +63,9 @@ pub fn router(api: Arc<Api>) -> Router {
         .route("/v1/release", post(handle))
         .route("/v1/create-hold", post(handle))
         .route("/v1/cancel-hold", post(handle))
+        .route("/v1/confirm-hold", post(handle))
+        .route("/v1/resend-code", post(handle))
+        .route("/v1/send-release-warning", post(handle))
         .with_state(api)
 }
 fn error(status: StatusCode, code: wire::ErrorCode) -> Response {
@@ -87,7 +94,17 @@ async fn handle(State(api): State<Arc<Api>>, request: Request) -> Response {
     }
 }
 async fn forward(api: &Api, request: Request) -> Response {
+    // Old API clients retain passthrough response fields inside SignedHoldRecord.
+    // Do not give them response-only evidence they would echo to a strict image.
+    let delivery_evidence = request
+        .headers()
+        .get("x-escrow-delivery-evidence")
+        .is_some_and(|value| value == "1");
     let method = match request.uri().path() {
+        "/v1/enrollment-state" => "enrollmentState",
+        "/v1/hold-state" => "holdState",
+        "/v1/apply-enrollment" => "applyEnrollment",
+        "/v1/authority-rewrap" => "authorityRewrap",
         "/v1/attest" => "attest",
         "/v1/verify-blob" => "verifyBlob",
         "/v1/carry-pin-verifier" => "carryPinVerifier",
@@ -95,6 +112,9 @@ async fn forward(api: &Api, request: Request) -> Response {
         "/v1/release" => "release",
         "/v1/create-hold" => "createHold",
         "/v1/cancel-hold" => "cancel",
+        "/v1/confirm-hold" => "confirmHold",
+        "/v1/resend-code" => "resendCode",
+        "/v1/send-release-warning" => "sendReleaseWarning",
         _ => return error(StatusCode::NOT_FOUND, wire::ErrorCode::Policy),
     };
     let body = match to_bytes(request.into_body(), MAX_FRAME).await {
@@ -110,7 +130,11 @@ async fn forward(api: &Api, request: Request) -> Response {
     value.insert("method".into(), json!(method));
     // P4.2 HTTP omits IDs. A fresh random operation ID spends a fresh attempt;
     // never hash a PIN proof into a public ID or retry a mutation automatically.
-    if matches!(method, "createHold" | "release" | "cancel") && !value.contains_key("requestId") {
+    if matches!(
+        method,
+        "createHold" | "release" | "cancel" | "confirmHold" | "resendCode" | "sendReleaseWarning"
+    ) && !value.contains_key("requestId")
+    {
         value.insert("requestId".into(), json!(uuid::Uuid::new_v4().to_string()));
     }
     let Ok(dto) = serde_json::from_value::<wire::Request>(Value::Object(value)) else {
@@ -143,6 +167,9 @@ async fn forward(api: &Api, request: Request) -> Response {
     if let wire::Response::Error { code, .. } = dto {
         let status = match code {
             wire::ErrorCode::Policy => StatusCode::FORBIDDEN,
+            wire::ErrorCode::CodeMismatch
+            | wire::ErrorCode::CodeExpired
+            | wire::ErrorCode::CodeLocked => StatusCode::FORBIDDEN,
             wire::ErrorCode::PinMismatch => StatusCode::UNAUTHORIZED,
             wire::ErrorCode::Blob => StatusCode::BAD_REQUEST,
             _ => StatusCode::SERVICE_UNAVAILABLE,
@@ -166,11 +193,21 @@ async fn forward(api: &Api, request: Request) -> Response {
         value.insert("reason".into(), json!("Invalid escrow payload."));
     }
     if method == "createHold" {
-        return Json(value.remove("hold").unwrap_or(Value::Null)).into_response();
+        let mut hold = value.remove("hold").unwrap_or(Value::Null);
+        if let (true, Some(object), Some(delivery)) = (
+            delivery_evidence,
+            hold.as_object_mut(),
+            value.remove("delivery"),
+        ) {
+            object.insert("delivery".into(), delivery);
+        }
+        return Json(hold).into_response();
     }
     if method == "cancel" {
         return if value.get("cancelled") == Some(&json!(true)) {
-            Json(json!({"ok":true})).into_response()
+            value.remove("cancelled");
+            value.insert("ok".into(), json!(true));
+            Json(value).into_response()
         } else {
             error(StatusCode::FORBIDDEN, wire::ErrorCode::Policy)
         };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -116,4 +117,4 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
     );
 };
 
-export default SkillFrameworkActionMenu;
+export default withCompetencyAdmin(SkillFrameworkActionMenu);

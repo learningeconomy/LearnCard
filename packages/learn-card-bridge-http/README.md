@@ -28,9 +28,13 @@ bridge copy, so local, CLI, and serverless execution cannot silently use differe
 
 ```bash
 cd lib/didkit/lib/web
-wasm-pack build --target=web && cd pkg && wasm-opt -Oz -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
+wasm-pack build --target=web && cd pkg && wasm-opt -Oz --enable-mutable-globals --enable-nontrapping-float-to-int --enable-bulk-memory --enable-sign-ext --enable-reference-types --enable-multivalue -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
 bun --cwd ../../../../packages/plugins/didkit run build
 ```
+
+Pass the explicit `--enable-*` feature flags to `wasm-opt`, matching
+`packages/plugins/didkit/scripts/build-wasm-from-submodules.sh`. Stripped DIDKit release builds
+have no `target_features` section, so a plain `wasm-opt -Oz` fails validation.
 
 Stop and restart any running bridge after rebuilding; it loads the DIDKit WASM during
 initialization.

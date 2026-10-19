@@ -47,6 +47,39 @@ fn sealed_key_path(key: String) -> io::Result<String> {
         Err(invalid())
     }
 }
+
+fn credential_object_path(key: &str, purpose: &str) -> io::Result<()> {
+    let prefix = format!("credentials/{purpose}/");
+    let generation = key.strip_prefix(&prefix).ok_or_else(invalid)?;
+    if generation.is_empty()
+        || generation.len() > 128
+        || !generation
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
+    {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
+fn credential_store(
+    name: &str,
+    purpose: &str,
+    s3: &aws_sdk_s3::Client,
+    bucket: &str,
+) -> io::Result<Option<SealedStore>> {
+    let key = match env::var(name) {
+        Ok(key) if !key.is_empty() => key,
+        Ok(_) | Err(env::VarError::NotPresent) => return Ok(None),
+        Err(_) => return Err(invalid()),
+    };
+    credential_object_path(&key, purpose)?;
+    Ok(Some(SealedStore {
+        s3: s3.clone(),
+        bucket: bucket.to_owned(),
+        key,
+    }))
+}
 #[tokio::main]
 async fn main() {
     // Do not install an SDK tracing subscriber: request/response diagnostics can contain secrets.
@@ -117,6 +150,18 @@ async fn start() -> io::Result<()> {
             )
         })
         .collect();
+    let authority_credentials = credential_store(
+        "ESCROW_AUTHORITY_CREDENTIAL_OBJECT",
+        "authority-writer",
+        &s3,
+        &artifacts_bucket,
+    )?;
+    let email_credentials = credential_store(
+        "ESCROW_EMAIL_CREDENTIAL_OBJECT",
+        "email-sender",
+        &s3,
+        &artifacts_bucket,
+    )?;
     let boot = Arc::new(Boot {
         credentials: config.credentials_provider().ok_or_else(invalid)?,
         sealed: SealedStore {
@@ -127,6 +172,8 @@ async fn start() -> io::Result<()> {
         key_id,
         allow_first_boot: env::var("ESCROW_ALLOW_FIRST_BOOT").as_deref() == Ok("true"),
         previous,
+        authority_credentials,
+        email_credentials,
     });
     let store = Arc::new(AwsStore {
         db: aws_sdk_dynamodb::Client::new(&config),
@@ -149,7 +196,10 @@ async fn start() -> io::Result<()> {
         &token,
         enclave,
         32,
-        Duration::from_secs(10),
+        // Outer budget: longer than the enclave's own 10s request deadline
+        // (escrow-enclave-app server.rs IO_TIMEOUT) so the host never gives up
+        // on a response the enclave is about to return; lca-api waits 15s.
+        Duration::from_secs(12),
     )));
     let health = Router::new().route(
         "/health",
@@ -197,6 +247,22 @@ async fn start() -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn credential_objects_are_read_only_purpose_and_generation_paths() {
+        assert!(
+            credential_object_path("credentials/authority-writer/g1", "authority-writer").is_ok()
+        );
+        assert!(credential_object_path("credentials/email-sender/g1", "email-sender").is_ok());
+        for path in [
+            "sealed-keys/g1",
+            "credentials/email-sender/g1",
+            "credentials/authority-writer/",
+            "credentials/authority-writer/../g1",
+            "credentials/authority-writer/g1/nested",
+        ] {
+            assert!(credential_object_path(path, "authority-writer").is_err());
+        }
+    }
     #[test]
     fn sealed_key_path_requires_sealed_keys_prefix() {
         assert_eq!(

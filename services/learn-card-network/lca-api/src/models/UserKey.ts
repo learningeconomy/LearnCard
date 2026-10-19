@@ -1,5 +1,11 @@
 import { z } from 'zod';
 import { escrowBlobIdentity } from '../services/escrow-enclave/blobIdentity';
+import {
+    AuthorityCommitValidator,
+    AuthorityRecordValidator,
+    type AuthorityMutationResult,
+    type AuthorityRecord,
+} from '../services/escrow-enclave/authorityContract';
 import type { Filter } from 'mongodb';
 import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
 import { EscrowPinStatusValidator as SharedEscrowPinStatusValidator } from '@learncard/types';
@@ -64,6 +70,12 @@ export const EscrowEnvelopeValidator = z
     .strict();
 
 export const EscrowBlobValidator = z.object({
+    authorityGeneration: z.string().min(1).max(128).optional(),
+    enrollmentVersion: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
+    commitReceipt: AuthorityCommitValidator.optional(),
+    authorityStateProof: AuthorityRecordValidator.extend({
+        kind: z.literal('snapshot'),
+    }).optional(),
     enrollmentEpoch: z.number().int().positive(),
     blobHash: z.string().regex(/^[0-9a-f]{64}$/),
     envelope: EscrowEnvelopeValidator,
@@ -738,7 +750,12 @@ export const setEscrowBlobByAuthProvider = async (
     blob: Omit<EscrowBlob, 'enrollmentEpoch' | 'blobHash'>,
     expectedShareVersion: number,
     pin?: { salt: string },
-    carryFrom?: { blob: EscrowBlob; pin: NonNullable<MongoUserKeyType['escrowPin']> }
+    carryFrom?: { blob: EscrowBlob; pin: NonNullable<MongoUserKeyType['escrowPin']> },
+    authority?: {
+        enrollmentEpoch: number;
+        expectedBlob?: EscrowBlob;
+        expectedPin?: MongoUserKeyType['escrowPin'];
+    }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
     const parsed = EscrowBlobValidator.omit({ enrollmentEpoch: true, blobHash: true }).safeParse(
@@ -749,7 +766,7 @@ export const setEscrowBlobByAuthProvider = async (
     const assembled = EscrowBlobValidator.safeParse({
         ...parsed.data,
         blobHash,
-        enrollmentEpoch: 1,
+        enrollmentEpoch: authority?.enrollmentEpoch ?? 1,
     });
     if (!assembled.success) throw new Error('Invalid escrow payload');
     const { enrollmentEpoch: _initialEpoch, ...validated } = assembled.data;
@@ -764,6 +781,12 @@ export const setEscrowBlobByAuthProvider = async (
             shareVersion: expectedShareVersion,
             escrowOptedOutAt: { $exists: false },
             ...(carryFrom ? { escrowBlob: carryFrom.blob, escrowPin: carryFrom.pin } : {}),
+            ...(authority
+                ? {
+                      escrowBlob: authority.expectedBlob ?? { $exists: false },
+                      escrowPin: authority.expectedPin ?? { $exists: false },
+                  }
+                : {}),
         },
         [
             {
@@ -772,9 +795,14 @@ export const setEscrowBlobByAuthProvider = async (
                         $mergeObjects: [
                             { $literal: validated },
                             {
-                                enrollmentEpoch: {
-                                    $add: [{ $ifNull: ['$escrowBlob.enrollmentEpoch', 0] }, 1],
-                                },
+                                enrollmentEpoch: authority
+                                    ? authority.enrollmentEpoch
+                                    : {
+                                          $add: [
+                                              { $ifNull: ['$escrowBlob.enrollmentEpoch', 0] },
+                                              1,
+                                          ],
+                                      },
                             },
                         ],
                     },
@@ -837,7 +865,11 @@ export const rewrapEscrowBlobByAuthProvider = async (
     oldBlob: EscrowBlob,
     oldPin: MongoUserKeyType['escrowPin'],
     newEnvelope: EscrowBlob['envelope'],
-    identity: Pick<EscrowBlob, 'enclaveKeyId' | 'enclaveMode' | 'measurements'>
+    identity: Pick<EscrowBlob, 'enclaveKeyId' | 'enclaveMode' | 'measurements'>,
+    authority?: Pick<AuthorityMutationResult, 'authorityGeneration' | 'enrollmentVersion'> & {
+        receipt?: AuthorityRecord;
+        stateProof?: AuthorityRecord;
+    }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
     const blobHash = escrowBlobIdentity(newEnvelope);
@@ -850,6 +882,14 @@ export const rewrapEscrowBlobByAuthProvider = async (
         blobHash,
         enrollmentEpoch: oldBlob.enrollmentEpoch,
         createdAt: now,
+        ...(authority
+            ? {
+                  authorityGeneration: authority.authorityGeneration,
+                  enrollmentVersion: authority.enrollmentVersion,
+                  commitReceipt: authority.receipt,
+                  authorityStateProof: authority.stateProof,
+              }
+            : {}),
     });
     if (!parsed.success || parsed.data.enclaveKeyId !== parsed.data.envelope.keyId) return null;
     const filter: Filter<MongoUserKeyType> = {
@@ -885,11 +925,22 @@ export const findUserKeysWithEscrowBlobKeyId = async (
 
 export const clearEscrowByAuthProvider = async (
     authProvider: AuthProviderMapping,
-    { optOut }: { optOut: boolean }
+    {
+        optOut,
+        expected,
+    }: { optOut: boolean; expected?: { blob?: EscrowBlob; pin?: MongoUserKeyType['escrowPin'] } }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
     return getUserKeysCollection().findOneAndUpdate(
-        getAuthProviderFilter(authProvider),
+        {
+            ...getAuthProviderFilter(authProvider),
+            ...(expected
+                ? {
+                      escrowBlob: expected.blob ?? { $exists: false },
+                      escrowPin: expected.pin ?? { $exists: false },
+                  }
+                : {}),
+        },
         {
             $unset: { escrowBlob: '', escrowPin: '' },
             $pull: { recoveryMethods: { type: 'escrow' } },

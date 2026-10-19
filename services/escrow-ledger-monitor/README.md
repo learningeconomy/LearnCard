@@ -1,11 +1,153 @@
-# Independent escrow ledger monitor (P7.1 A/B)
+# Independent escrow monitor (legacy ledger and Design 2 authority)
 
 Rust 1.93, one Lambda bootstrap with two entry points selected by event shape:
 DynamoDB `Records` invokes stream verification; `source=aws.events` and
 `detail-type=Scheduled Event` invokes the audit sweep. Terraform schedules it
 every 15 minutes and connects only the **records** stream. No network calls in tests.
 
-## Detection boundary
+## Authority audit path (PR 2)
+
+When `enable_enrollment_authority=true`, the existing 15-minute schedule also runs
+an independent, strongly consistent authority-table sweep. It receives only
+GetItem/Query/Scan on the exact table and GetParameter on the security-owned
+`/escrow-enclave-<environment>/authority-monitor-trust` String. It has **no authority
+writes, writer credentials, escrow-CMK or credential-CMK grant**. No new stream is
+needed; the original stream still covers legacy records. Legacy and authority
+sweeps run independently within the scheduled invocation.
+
+All three Lambda settings must be present together: `AUTHORITY_TABLE`,
+`AUTHORITY_GENERATION`, `AUTHORITY_TRUST_PARAMETER`. Partial configuration fails
+startup. The trust value is a bounded JSON object:
+
+```json
+{
+    "<keyId>": {
+        "publicKey": "<130 lowercase hex SEC1 characters>",
+        "measurements": ["<64 lowercase hex SHA-256 of PCR0||PCR1||PCR2 bytes>"]
+    }
+}
+```
+
+Security operators independently verify fresh NSM evidence before populating it;
+never use parent-supplied unverified keys or the public fake fixtures. Up to 32 key
+IDs/eight measurements per key/8192 bytes are accepted. Retain historical anchors
+for the lifetime of records, even after an old image/key loses decrypt approval.
+Use an Advanced SSM String when needed. Redeploy/recycle Lambda after trust changes
+because anchors load at cold start. The two SCPs protect the read exception, IAM
+role/PassRole, Lambda code/configuration and this fixed trust path. Both must be
+attached and independently checked before enabling the grant.
+
+The monitor shares **schemas and signature encoding**, not the enclave policy or
+writer implementation. It reconstructs revision, enrollment, PIN-generation and
+hold state independently. It verifies measurement/key-pinned Proposal signatures,
+immutable execution receipt bindings, gap-free operation revisions, allowed budget
+increments/resets, carry/rewrap preservation, terminal hold ordering and the latest
+operation/current-account rows. Every committed row must have matching execution
+evidence. Execution rows retain reservations even after operation rows change.
+Request IDs, public share version and rewrap delegation are included in signed
+proposals, so renaming an operation tombstone cannot evade correlation.
+
+RPC Commit/Snapshot records are not stored in the table. The common verifier can
+verify them against an explicitly expected kind, but they cannot substitute for
+a Proposal or an execution receipt. The monitor relies on **authenticated reads of
+the protected table** for receipt existence, not on treating a proposal signature
+as post-commit proof. Clients separately verify RPC signatures and nonces.
+
+Each account is read before and after paginated history collection. A changed fence
+retries as coverage failure, not a false tampering alarm. Orphan rows are discovered
+because the scan projects partition keys from **all** row types, not just accounts.
+Bounds: 100 items/page, 10,000 scan pages, 50,000 partitions, 4096 rows/32 MiB per
+account, and the Lambda's 900-second limit. Exceeding a bound never reports partial
+success: it raises coverage failure/missing heartbeat and requires capacity review
+or a separately reviewed sharded/checkpoint design before further rollout.
+
+Fixed metrics/notifications are `AuthorityIntegrityFailure`,
+`AuthorityCoverageFailure`, and `AuthoritySweepCompleted`, with only operator-owned
+Tenant dimensions. A separate authority heartbeat alarm treats missing data as
+breaching. Integrity findings may accompany a completed sweep; completion is a
+coverage signal, not an assertion that every row is valid. No historical release
+rate counters are emitted on every sweep (that would double-count history).
+
+This is not an external durable high-water mark. A coherent privileged purge to an
+old prefix or an empty table can evade a read-only snapshot sweep. Enforce the SCPs,
+resource IAM, no same-generation restore, and independent governance monitoring.
+An unused fresh generation is legitimately empty. Administrators able to change
+guardrails or disable alarm delivery remain a stated trust/operational risk.
+
+## Legacy detection boundary
+
+### Configured authority audit (PR 2)
+
+With `enable_enrollment_authority`, the scheduled invocation also independently
+scans the authority table. It projects **all partition keys**, not only account
+rows, so retained executions cannot hide behind a missing account. It then queries
+each partition with strongly consistent reads bracketed by identical account-row
+reads. Every legitimate transition changes that row; a changed fence fails with
+`AuthorityCoverageFailure` and no authority heartbeat, rather than a false tamper
+alarm. Scheduled retries repeat the whole sweep; no write permission or volatile
+checkpoint is needed. Periodic scans were chosen because immutable execution rows
+retain every phase (including abandoned reservations), without a stream-expiry or
+checkpoint dependency. This is bounded periodic detection, not real-time alerting.
+
+The verifier authenticates Proposal signatures using security-owned ledger-key and
+measurement pins, reconstructs revisions and per-generation PIN accounting, and
+matches current account, operation and hold rows to immutable execution receipts.
+Missing receipts/rows, invalid signatures, revision regressions and decreasing
+attempts alarm `AuthorityIntegrityFailure`. Proposal is never treated as Commit:
+the table contains signed proposals plus transaction receipts, **not** the portable
+post-readback Commit RPC artifact. The same kind-specific signature verifier checks
+Commit artifacts (covered by the shared Rust/client fixture); client verification
+of RPC commits remains separate from this independent table enumeration.
+
+### P9.1 (attack C): enclave-sent recovery email confirmation
+
+A Hold-policy `CreateHold` now starts `AwaitingConfirmation` instead of
+`Pending` (Pin-policy is unaffected — it never leaves `Pending`). `ConfirmHold`
+and `ResendCode` are only valid while still `AwaitingConfirmation`;
+`SendReleaseWarning` and `Release`/matched `PinAttempt` require `Pending`;
+`Cancel` accepts either. The verifier independently re-derives — purely from
+signed events, never from the unauthenticated stored `HoldItem` row's own
+`confirmedHiMs`/`releaseWarningSentHiMs` fields — whether a hold that started
+`AwaitingConfirmation` shows a matched `ConfirmHold` (the one whose resulting
+status is `Pending`, not one of the up-to-five rejected guesses) and a
+`SendReleaseWarning` at least 24 hours before the release event's own
+trusted-time lower bound. Either gap alarms `AuthorityIntegrityFailure` exactly
+like any other reconstructed-state violation; this mirrors (and independently
+re-checks, rather than trusts) the enclave's own `authority_release_with_receipt`
+gate.
+
+Limits: 10,000 scan pages of at most 100 items, 50,000 distinct partitions,
+4,096 rows / 32 MiB per account, and the shared 900-second Lambda deadline.
+Capacity/read failures alarm `AuthorityCoverageFailure`; incomplete sweeps never
+emit `AuthoritySweepCompleted`. Its missing-heartbeat alarm uses two 30-minute
+periods. A completed sweep can still have integrity findings: heartbeat means
+coverage, not clean data. Before these bounds are approached, implement durable
+partitioned coverage; do not increase limits blindly. The legacy sweep runs
+alongside this one and keeps its own heartbeat and stream handling.
+
+The observer receives only `GetItem`, `Query`, `Scan` on the exact authority table
+and `GetParameter` on `/${name_prefix}/authority-monitor-trust`. Both Organizations
+SCPs must be attached and independently verified; the second protects the observer
+role, Lambda code and trust parameter and forbids non-read authority APIs even if
+another identity policy grants them. It gets no writer credential or escrow CMK.
+
+Terraform sets `AUTHORITY_TABLE`, `AUTHORITY_GENERATION`, and
+`AUTHORITY_TRUST_PARAMETER` together; partial configuration fails cold start.
+Provision the separate SSM **String** from verified nonce-bound NSM evidence:
+`{"<keyId>":{"publicKey":"<130 lowercase SEC1 hex>","measurements":["<64 lowercase hex>"]}}`.
+The measurement is SHA-256 of raw PCR0 || PCR1 || PCR2. Bounds are 8,192 bytes,
+1–32 key IDs and 1–8 distinct measurements per key (use SSM Advanced tier above
+4 KiB). Retain historical key/measurement pairs while audit rows reference them;
+these are historical verification pins, not permission for retired images to run.
+Recycle Lambda environments after approved trust updates. This does not replace
+the existing legacy ledger parameter.
+
+A coherent privileged purge/rollback of **all** rows cannot be detected by this
+stateless read-only scan. There is no independent authority S3 outbox/checkpoint
+implemented here. Preserve PITR and independent governance evidence; never restore
+an old same-generation table. Authority protection trusts AWS and protected
+administration. On either integrity or prolonged coverage alarms, follow the manual
+incident procedure below; the API kill switch cannot stop a compromised host.
 
 This is D3/D13 **rollback detection, not prevention**. It cannot discover a
 parent's entirely suppressed writes or prove globally fresh enrollment, and it

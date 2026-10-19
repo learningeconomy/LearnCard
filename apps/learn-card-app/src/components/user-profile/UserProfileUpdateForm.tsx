@@ -58,6 +58,7 @@ import GlassCard from '../../pages/privacy-settings/components/GlassCard';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { useLocale } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
+import { persistQueryCacheNow } from '../../helpers/queryPersistence';
 
 const getStateValidator = () =>
     z.object({
@@ -245,10 +246,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     };
 
     const handleLCNetworkProfileUpdate = async () => {
+        const switchedDid = switchedProfileStore.get.switchedDid() ?? '';
         const wallet = await initWallet();
 
         if (lcNetworkProfile && lcNetworkProfile?.profileId) {
-            const updatedProfile = await wallet?.invoke?.updateProfile({
+            const updatedProfile = await wallet.invoke.updateProfile({
                 displayName: name ?? '',
                 image: photo ?? '',
                 notificationsWebhook: getNotificationsEndpoint(),
@@ -258,10 +260,30 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             });
             log.info('updatedProfile::res', updatedProfile);
 
-            // useGetProfile caches for 5 min and expects mutations to invalidate it.
-            // Without this, the reopened form (and displayName/image synced via
-            // useGetCurrentLCNUser) shows stale values, making saves appear to "not stick".
-            await queryClient.invalidateQueries({ queryKey: ['getProfile'] });
+            if (!updatedProfile) throw new Error('Network profile update failed');
+
+            // updateProfile refreshes this wallet's private self-profile cache. Read
+            // that same instance instead of refetching through a potentially replaced wallet.
+            const savedProfile = await wallet.invoke.getProfile();
+            if (!savedProfile) throw new Error('Updated network profile is unavailable');
+
+            const ownProfileKey = ['getProfile', switchedDid, undefined];
+            await queryClient.cancelQueries({
+                predicate: query =>
+                    query.queryKey[0] === 'getProfile' &&
+                    ((query.queryKey[1] === switchedDid && !query.queryKey[2]) ||
+                        query.queryKey[2] === lcNetworkProfile.profileId),
+            });
+            queryClient.setQueryData(ownProfileKey, savedProfile);
+            // Public lookups must refetch without copying private self-profile fields.
+            await queryClient.invalidateQueries({
+                predicate: query =>
+                    query.queryKey[0] === 'getProfile' &&
+                    query.queryKey[2] === lcNetworkProfile.profileId,
+            });
+            // Query invalidation does not wait for the throttled disk write. Do not
+            // announce success until reload can hydrate the saved self-profile.
+            await persistQueryCacheNow(queryClient);
 
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
@@ -343,7 +365,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 photoUrl: photo ?? '',
             });
 
-            handleStorageUpdate();
+            await handleStorageUpdate();
 
             // update LC network profile
             await handleLCNetworkProfileUpdate();
@@ -403,7 +425,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         await handleLCNetworkProfileUpdate();
 
                         // update sqlite + context store
-                        handleStorageUpdate();
+                        await handleStorageUpdate();
 
                         setIsLoading(false);
                         presentToast(m['profile.saved'](), {
