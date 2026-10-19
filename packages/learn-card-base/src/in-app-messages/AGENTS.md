@@ -18,7 +18,7 @@ LaunchDarkly `inAppMessages` (JSON)
         ├─ messageMatches()/evaluatePredicate()  (predicates.ts — PURE)
         └─ filterSuppressed()         (dismissalStore.ts)
    → InAppMessageHost                 (mounted in each app's FullApp.tsx)
-        → InAppMessageModal | InAppMessageBanner | toast
+        → modal | banner | toast | story | iframe
              ├─ useInAppMessageActions()  (internalLink/externalLink/appStore/dismiss)
              └─ useCapgoUpdate()          (capgoUpdate action: OTA download + progress)
 ```
@@ -52,6 +52,18 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
   Bookkeeping failure must not fail a claim. No event for a failed index write.
 
 ## How to extend
+
+### Rich presentations (LC-2263)
+
+- Localize the selected message with `localizeMessage` at the host, never in targeting or persisted state.
+- Stories and iframes use `InAppMessageSurface` / token-owned `useModal` cleanup; keep live content in
+  its React portal. Shared surfaces own insets and accessibility. Never close an unrelated top modal.
+- `MessageActions` owns modal/story button and Capgo behavior. Report accepted actions separately from
+  explicit dismissal; navigation completion, retries, and gate cleanup are not new impressions.
+- Iframe bridge input is untrusted: validate window, origin, envelope, and safe target before running
+  actions. No Capgo or identity APIs. Required frames ignore close/dismiss requests.
+- Presentation analytics use `InAppMessagePresentationEvent` (distinct from credential events).
+  Keep payloads allowlisted and exclude overrides from app analytics.
 
 ### Add a new action type (e.g. `share`)
 
@@ -120,7 +132,8 @@ Rules when touching this:
   `startsWith(prefix)` (over-matches `/connections` for `/connect`).
 - New critical routes → add to `DEFAULT_SUPPRESSED_ROUTE_PREFIXES` (covers both apps) or pass
   `suppressedRoutePrefixes` from the app mount for app-specific paths.
-- The host's gate props are optional; both apps currently mount `<InAppMessageHost />` bare.
+- The host's gate props are optional. LearnCard wraps it with the consent-aware analytics adapter;
+  both apps provide the shared i18n context for reactive presentation localization.
 
 ## Debugging
 

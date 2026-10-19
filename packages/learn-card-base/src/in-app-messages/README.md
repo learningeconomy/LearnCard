@@ -156,20 +156,20 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 
 ### Message
 
-| Field          | Type                                     | Default   | Notes                                                         |
-| -------------- | ---------------------------------------- | --------- | ------------------------------------------------------------- |
-| `id`           | `string`                                 | —         | Stable key; used to persist dismissal / frequency state       |
-| `priority`     | `number`                                 | `0`       | Highest matching message wins                                 |
-| `dismissible`  | `boolean`                                | `true`    | `false` = required/blocking (no close affordance)             |
-| `frequency`    | `"once" \| "session" \| "always" \| {…}` | `"once"`  | See [Frequency](#frequency)                                   |
-| `presentation` | `"modal" \| "banner" \| "toast"`         | `"modal"` | `toast` is a glass capsule, auto-dismisses; no media/actions  |
-| `media`        | `{ type, url, aspect?, alt? }`           | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`     |
-| `emoji`        | `string`                                 | —         | Hero glyph shown when `media` is not set (modal/banner/toast) |
-| `title`        | `string`                                 | —         | Required                                                      |
-| `body`         | `string`                                 | —         | Optional                                                      |
-| `actions`      | `Action[]`                               | `[]`      | See [Actions](#actions)                                       |
-| `targeting`    | `Predicate`                              | —         | Omitted → matches everyone                                    |
-| `enabled`      | `boolean`                                | `true`    | Set `false` to disable without removing from the flag         |
+| Field          | Type                                                    | Default   | Notes                                                         |
+| -------------- | ------------------------------------------------------- | --------- | ------------------------------------------------------------- |
+| `id`           | `string`                                                | —         | Stable key; used to persist dismissal / frequency state       |
+| `priority`     | `number`                                                | `0`       | Highest matching message wins                                 |
+| `dismissible`  | `boolean`                                               | `true`    | `false` = required/blocking (no close affordance)             |
+| `frequency`    | `"once" \| "session" \| "always" \| {…}`                | `"once"`  | See [Frequency](#frequency)                                   |
+| `presentation` | `"modal" \| "banner" \| "toast" \| "story" \| "iframe"` | `"modal"` | Stories require `steps`; iframes require `iframe.url`         |
+| `media`        | `{ type, url, aspect?, alt? }`                          | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`     |
+| `emoji`        | `string`                                                | —         | Hero glyph shown when `media` is not set (modal/banner/toast) |
+| `title`        | `string`                                                | —         | Required                                                      |
+| `body`         | `string`                                                | —         | Optional                                                      |
+| `actions`      | `Action[]`                                              | `[]`      | See [Actions](#actions)                                       |
+| `targeting`    | `Predicate`                                             | —         | Omitted → matches everyone                                    |
+| `enabled`      | `boolean`                                               | `true`    | Set `false` to disable without removing from the flag         |
 
 ### Actions
 
@@ -464,6 +464,126 @@ and fatigue bypass. Simulations do not add real credentials.
 Scouts has the same console APIs without requiring the LearnCard debug panel. The panel is lazy
 loaded only for dev/debug-enabled builds; normal production builds omit it.
 
+## Stories, embedded pages, and translations (LC-2263)
+
+`presentation` also accepts `story` and `iframe`. Existing modal/banner/toast payloads are unchanged.
+Targeting and triggers still run before presentation; both new formats use the existing blocking
+fatigue rules. Deploy supporting clients before enabling campaigns that use these values.
+
+```json
+{
+    "id": "achievement-intro",
+    "title": "Explore your achievements",
+    "presentation": "story",
+    "steps": [
+        {
+            "title": "Your achievements, together",
+            "body": "Keep a record of what you have learned."
+        },
+        { "title": "Choose your next step" }
+    ],
+    "actions": [{ "label": "Done", "action": { "type": "dismiss" } }],
+    "locales": {
+        "es": {
+            "title": "Explora tus logros",
+            "actionLabels": ["Listo"],
+            "steps": [{ "title": "Tus logros, juntos" }]
+        }
+    }
+}
+```
+
+Stories require at least one screen. Each screen supports `title`, `body`, `media`, `emoji`, and
+optional `actions`. Earlier screens show Next; the final screen uses `step.actions ?? message.actions`
+(an explicitly empty array suppresses inherited actions). There is no timer or wrapping. Tap the left
+third to go back, the right two thirds to continue, swipe horizontally, or use arrow keys. Interactive
+media and controls do not advance the story. Required stories should provide a completing final action.
+
+`locales` supports `title`, `body`, `actionLabels`, `steps` (title/body), and `iframeUrl`. Each field
+falls back independently: exact locale, language, original. Arrays are positional and never add
+screens/actions; `null` entries can skip positions. Only message-level action labels are translated by
+`actionLabels`, not screen-specific action labels. Empty strings are intentional overrides. Localization
+happens after winner selection and does not change targeting or consume another impression.
+
+```json
+{
+    "id": "embedded-guide",
+    "title": "Learn more",
+    "presentation": "iframe",
+    "iframe": {
+        "url": "https://your-content.example/guide.html",
+        "title": "Guide",
+        "loadTimeoutMs": 10000
+    }
+}
+```
+
+Iframe URLs (including translated URLs) must be HTTPS, without embedded credentials. Same-origin
+embeds are refused at runtime: a scripted same-origin page could access the parent app directly. The sandbox is
+fixed to `allow-scripts allow-same-origin allow-forms allow-popups`. The app owns the close control,
+loading skeleton, timeout/offline error, and retry. A browser load event or a valid `ready` message
+removes the skeleton; **load does not prove the remote page succeeded**. The remote server must allow
+embedding through its CSP `frame-ancestors` / X-Frame-Options policy. These restrictions cannot be
+bypassed by the app. Retry mounts a new frame; old listeners and completions are discarded.
+
+### Iframe protocol
+
+Send to the known parent origin, never `*`:
+
+```js
+parent.postMessage({ type: 'LC_IN_APP_MESSAGE', event: 'ready' }, parentOrigin);
+parent.postMessage({ type: 'LC_IN_APP_MESSAGE', event: 'close' }, parentOrigin);
+parent.postMessage(
+    {
+        type: 'LC_IN_APP_MESSAGE',
+        event: 'runAction',
+        action: { type: 'internalLink', path: '/passport' },
+    },
+    parentOrigin
+);
+```
+
+The app verifies the sender's window, the configured URL's exact origin, the envelope, and the action.
+Only existing actions are supported; `capgoUpdate` and future `openApp`/`openMessage` targets are
+rejected. Internal paths must start with a single `/` and contain no whitespace/backslashes;
+external/store overrides must use HTTPS. There is no identity, authentication, credential, or wallet
+API. Do not place private account data in authored URLs. The bridge has no response channel.
+
+For `dismissible:false`, neither `close` nor a `dismiss` action is honored. A successful navigation
+action can complete the message; no-op/failed actions cannot. During an error, a required iframe has
+retry but no close escape. Use required campaigns sparingly and test their recovery path first.
+
+The runnable [bridge example](examples/iframe.html) accepts a `parentOrigin` query parameter. Host it
+on a separate HTTPS origin you control; no hosting service is created by this PR.
+
+### Engagement and QA
+
+The host optionally calls `onEvent` with `type` (`shown`, `action`, `dismissed`), `messageId`,
+`presentation`, `source` (`flag`, `deepLink`, `override`), and optional zero-based `actionIndex`,
+`stepIndex`, and `actionType`. `deepLink` is reserved for LC-2264. Bridge actions have no authored
+action index. Seen state is recorded before fatigue, then shown is emitted. Screen changes and retries
+do not create new impressions. Navigation completion and lifecycle cleanup are not dismissals.
+LearnCard forwards these to `in_app_message_shown`, `in_app_message_action`, and
+`in_app_message_dismissed`, excluding previews. Payloads contain no credential data, URLs, or prose.
+
+1. In Dev Debug → Messages → Preview, choose **Story walkthrough**; verify Next/Previous, arrows,
+   final Done, mobile fullscreen, and desktop card layout.
+2. In Builder, add/reorder/remove screens; preview media and final actions. Enter valid and invalid
+   locale JSON and confirm invalid drafts cannot preview. Check Spanish fallback and Arabic chrome.
+3. Host the bridge example separately over HTTPS. Set its URL in **Embedded HTTPS page** and test
+   ready, close, and navigation. Repeat with `dismissible:false` and confirm close/dismiss are ignored.
+4. Test offline, timeout, retry, invalid messages, another source/origin, and stale frames. Check
+   Safari and iOS/Android webviews separately; browser load alone is not proof of embedding success.
+5. Test Tab/Shift-Tab focus trapping, Escape, focus restoration, reduced motion, and `?insets=47,34`.
+6. Use staging flag messages to verify one impression, fatigue, account isolation, and analytics.
+   Preview overrides intentionally exercise none of those persisted effects.
+
+Run `lc verify script packages/learn-card-base/src/in-app-messages/examples/verify-story.mjs`
+against an owned Linux stack (from the root via the app's `lc` command). This script verifies the
+real debug-preview story path, not flag delivery, analytics, or remote iframe hosting. Run the
+`language` / `sdk` catalog journeys and the full catalog near PR readiness. macOS needs a Linux host
+or the hosted verification workflow; ScoutPass and native webviews require separate checks.
+
 ## File map
 
 ```
@@ -486,7 +606,13 @@ in-app-messages/
 ├── debug.ts                  — debug toggle (global/localStorage/?iamDebug) + gated logger
 ├── debugGlobals.ts           — installs window.__inAppMessages dev-global
 ├── MessageMedia.tsx          — YouTube / image / GIF renderer
-├── InAppMessageModal.tsx     — Overlay-based modal (Apple-glass); inline Capgo progress
+├── MessageActions.tsx        — shared modal/story actions and Capgo progress
+├── localizeMessage.ts        — pure field-level locale fallback
+├── iframeBridge.ts           — secure bridge envelope and target validation
+├── InAppMessageSurface.tsx   — token-owned shared modal surface and portal
+├── InAppMessageStory.tsx     — bounded, accessible multi-screen presentation
+├── InAppMessageIframe.tsx    — sandboxed page with retry and bridge lifecycle
+├── InAppMessageModal.tsx     — existing glass modal, sharing MessageActions
 ├── InAppMessageBanner.tsx    — non-blocking top banner
 ├── InAppMessageHost.tsx      — mounts once per app; picks presentation, manages show/close
 └── __tests__/predicates.test.ts
