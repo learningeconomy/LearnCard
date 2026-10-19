@@ -158,6 +158,7 @@ export const CheckListUploadResume: React.FC = () => {
         if (!previous) return;
 
         setResume(null);
+        const restoreOutcome = clearFileUploadOutcome(previous.artifactId);
 
         void (async () => {
             try {
@@ -170,11 +171,11 @@ export const CheckListUploadResume: React.FC = () => {
                 if (!targetRecord) return;
 
                 await deleteCredentialRecord(targetRecord);
-                clearFileUploadOutcome(previous.artifactId);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteResume::error', error);
                 setResume(previous);
+                restoreOutcome();
                 presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
                     title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,

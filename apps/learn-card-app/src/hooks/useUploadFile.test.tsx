@@ -711,7 +711,7 @@ describe('useUploadFile persistence outcomes', () => {
         expect(records.get(artifact.id)?.uri).toBe(`original:${artifact.id}`);
     });
 
-    it('clears only the deleted document feedback when files have the same name', async () => {
+    it('optimistically clears one document and rolls back without affecting other files', async () => {
         uploadMutationMock.mockRejectedValue(new Error('PRIVATE_MODEL_ERROR'));
         const first = rawArtifact('deleted-document', 'resume.pdf');
         const second = rawArtifact('remaining-document', 'resume.pdf');
@@ -724,13 +724,27 @@ describe('useUploadFile persistence outcomes', () => {
             first.id,
             second.id,
         ]);
+        let restoreOutcome: (() => void) | undefined;
         await act(async () => {
-            result.current.clearFileUploadOutcome(first.id);
+            restoreOutcome = result.current.clearFileUploadOutcome(first.id);
         });
         expect(result.current.fileUploadOutcomes).toMatchObject([
             { artifact: { id: second.id }, status: 'extraction_failed' },
         ]);
         expect(records.get(second.id)?.uri).toBe(`original:${second.id}`);
+        const third = rawArtifact('new-document', 'resume.pdf');
+        await act(async () => {
+            await result.current.retryFileExtraction(third, UploadTypesEnum.Certificate);
+        });
+        await act(async () => {
+            restoreOutcome?.();
+            restoreOutcome?.();
+        });
+        expect(result.current.fileUploadOutcomes.map(item => item.artifact.id)).toEqual([
+            second.id,
+            third.id,
+            first.id,
+        ]);
     });
 
     it('preserves an original without model work when AI is disabled', async () => {

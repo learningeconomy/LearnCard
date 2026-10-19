@@ -132,6 +132,9 @@ You can also retry from a saved document after reopening its checklist step. New
 return to review and are not saved automatically. Retrying an older saved résumé does not
 replace the currently stored résumé.
 
+Deleting an original immediately removes its row and upload feedback together. If deletion
+fails, both return with an error. Other documents and their feedback remain unchanged.
+
 ### Publishing a Résumé
 
 Resume Builder publishes one managed link for each résumé. Republishing an active résumé updates that link. Find its entry in **Shared** to change the title, passcode or expiry, or stop access. Edit the résumé itself in Resume Builder.

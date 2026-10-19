@@ -166,6 +166,7 @@ export const CheckListTranscripts: React.FC = () => {
 
         // Optimistic synchronous UI update
         setTranscripts(prev => prev.filter(transcript => transcript?.id !== id));
+        const restoreOutcome = clearFileUploadOutcome(deleted.artifactId);
 
         // Fire-and-forget background work
         void (async () => {
@@ -177,12 +178,12 @@ export const CheckListTranscripts: React.FC = () => {
                 if (!targetRecord) return;
 
                 await deleteCredentialRecord(targetRecord);
-                clearFileUploadOutcome(deleted.artifactId);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteTranscript::error', error);
                 // Re-insert only the failed item so concurrent deletions aren't clobbered
                 setTranscripts(prev => (prev.some(t => t?.id === id) ? prev : [...prev, deleted]));
+                restoreOutcome();
                 presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
                     title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,

@@ -1034,10 +1034,21 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         fetchParsedCredentialsFromFiles,
         storeSelectedCredentials,
         fileUploadOutcomes,
-        clearFileUploadOutcome: (artifactId: string) =>
+        clearFileUploadOutcome: (artifactId: string) => {
+            const previous = fileUploadOutcomes.find(item => item.artifact.id === artifactId);
             setFileUploadOutcomes(current =>
                 current.filter(item => item.artifact.id !== artifactId)
-            ),
+            );
+            // Restore only this outcome if an optimistic deletion fails.
+            return () => {
+                if (!previous) return;
+                setFileUploadOutcomes(current =>
+                    current.some(item => item.artifact.id === artifactId)
+                        ? current
+                        : [...current, previous]
+                );
+            };
+        },
         retryFileExtraction,
         retryFileSave,
     };

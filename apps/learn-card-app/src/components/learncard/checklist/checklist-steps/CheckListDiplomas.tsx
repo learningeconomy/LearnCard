@@ -214,6 +214,7 @@ export const CheckListDiplomas: React.FC = () => {
 
         // Optimistic synchronous UI update
         setDiplomas(prev => prev.filter(diploma => diploma?.id !== id));
+        const restoreOutcome = clearFileUploadOutcome(deleted.artifactId);
 
         // Fire-and-forget background work
         void (async () => {
@@ -225,12 +226,12 @@ export const CheckListDiplomas: React.FC = () => {
                 if (!targetRecord) return;
 
                 await deleteCredentialRecord(targetRecord);
-                clearFileUploadOutcome(deleted.artifactId);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteDiploma::error', error);
                 // Re-insert only the failed item so concurrent deletions aren't clobbered
                 setDiplomas(prev => (prev.some(d => d?.id === id) ? prev : [...prev, deleted]));
+                restoreOutcome();
                 presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
                     title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,
