@@ -1,5 +1,11 @@
 # learn-card-base
 
+## 0.7.4
+
+### Patch Changes
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
 ## 0.7.3
 
 ### Patch Changes
