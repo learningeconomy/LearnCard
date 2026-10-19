@@ -90,6 +90,34 @@ jobs:
               id: catalog
               run: bun run --cwd apps/learn-card-app lc verify run all --fresh --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
 
+            # Public proof handoff: selected media and sanitized rendering data only.
+            - name: Stage proof media
+              if: ${{ always() }}
+              continue-on-error: true
+              run: |
+                  if [[ -d "$STACK_DIR/runs" ]]; then
+                    RUN_DIR=$(node --input-type=module -e '
+                      import { readdirSync } from "node:fs";
+                      import { join } from "node:path";
+                      const root = join(process.env.STACK_DIR, "runs");
+                      const newest = readdirSync(root, { withFileTypes: true })
+                        .filter(entry => entry.isDirectory()).map(entry => entry.name).sort().at(-1);
+                      if (newest) console.log(join(root, newest));
+                    ')
+                    if [[ -n "$RUN_DIR" ]]; then
+                      bun scripts/proof.ts stage --from-run "$RUN_DIR" --out "$RUNNER_TEMP/lc-proof-media"
+                    fi
+                  fi
+
+            - name: Retain proof media
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lc-proof-media-${{ github.run_id }}
+                  path: ${{ runner.temp }}/lc-proof-media
+                  retention-days: 14
+                  if-no-files-found: ignore
+
             - name: Always tear down owned resources
               id: teardown
               if: ${{ always() }}
