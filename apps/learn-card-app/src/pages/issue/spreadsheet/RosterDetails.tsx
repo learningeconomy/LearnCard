@@ -118,12 +118,14 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
         .sort(
             (a, b) =>
                 Number(
-                    Boolean(problems[recipientKey(b)]?.length) ||
-                        (editing?.id === recipientKey(b) && editing.attention)
+                    editing?.id === recipientKey(b)
+                        ? editing.attention
+                        : Boolean(problems[recipientKey(b)]?.length)
                 ) -
                 Number(
-                    Boolean(problems[recipientKey(a)]?.length) ||
-                        (editing?.id === recipientKey(a) && editing.attention)
+                    editing?.id === recipientKey(a)
+                        ? editing.attention
+                        : Boolean(problems[recipientKey(a)]?.length)
                 )
         );
     const pageSize = 25;
@@ -151,7 +153,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
             aria-label={`${recipientDisplayName(recipient)} ${fieldLabel(name)}`}
             className={INPUT}
             value={
-                scopes[name] === 'perRecipient'
+                props.locked(recipientKey(recipient)) || scopes[name] === 'perRecipient'
                     ? (values[recipientKey(recipient)]?.[name] ?? '')
                     : (shared[name] ?? '')
             }

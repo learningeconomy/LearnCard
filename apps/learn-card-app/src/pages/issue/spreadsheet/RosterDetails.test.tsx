@@ -117,12 +117,28 @@ describe('roster review workspace', () => {
         expect(screen.getByRole('button', { name: /^Skip$/ })).toBeDisabled();
         expect(screen.getByRole('textbox', { name: /Email for/ })).toBeEnabled();
     });
+    it('keeps a valid row on its current page while its email is being corrected', () => {
+        vi.stubGlobal('innerWidth', 1440);
+        const data = props(60);
+        const view = render(<RosterEditor {...data} onClose={vi.fn()} />);
+        fireEvent.click(screen.getByRole('button', { name: /^Next$/ }));
+        const input = screen.getByRole('textbox', { name: 'Email for Person40' });
+        fireEvent.focus(input);
+        view.rerender(
+            <RosterEditor {...data} problems={{ 'row-40': ['email'] }} onClose={vi.fn()} />
+        );
+        expect(screen.getByRole('textbox', { name: 'Email for Person40' })).toBe(input);
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        fireEvent.blur(input, { relatedTarget: screen.getByRole('searchbox') });
+        expect(screen.queryByRole('textbox', { name: 'Email for Person40' })).toBeNull();
+    });
     it('shows shared values consistently and preserves locked row controls', () => {
         render(
             <RosterEditor
                 {...props(1)}
                 variables={['score']}
-                shared={{ score: '95' }}
+                shared={{ score: '99' }}
+                values={{ 'row-0': { score: '95' } }}
                 scopes={{ score: 'shared' }}
                 locked={() => true}
                 onClose={vi.fn()}

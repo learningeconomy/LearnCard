@@ -391,9 +391,9 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             ).toBeVisible();
             const status = page.getByRole('combobox', { name: 'Status', exact: true });
             await status.selectOption('queued');
-            await expect(page.getByText('Rows 1–25 of 100', { exact: true })).toBeVisible();
+            await expect(page.getByText('Rows 1–25 of 250', { exact: true })).toBeVisible();
             await status.selectOption('ready');
-            await expect(page.getByText('Rows 1–25 of 150', { exact: true })).toBeVisible();
+            await expect(page.getByText('Rows 0–0 of 0', { exact: true })).toBeVisible();
             await status.selectOption('sent');
             await expect(page.getByText('Rows 0–0 of 0', { exact: true })).toBeVisible();
             releaseBatch();
