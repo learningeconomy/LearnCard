@@ -3724,6 +3724,20 @@
         "skillsHub": "Pôle de compétences"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Suivant",
+            "previous": "Précédent",
+            "done": "Terminé",
+            "progress": "Progression de la présentation",
+            "error": "Une erreur est survenue. Réessayez.",
+            "retry": "Réessayer",
+            "loading": "Chargement…",
+            "opening": "Ouverture…",
+            "checking": "Vérification…",
+            "downloading": "Téléchargement… {{progress}}%",
+            "installing": "Installation…",
+            "upToDate": "Vous utilisez la dernière version."
+        },
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",
