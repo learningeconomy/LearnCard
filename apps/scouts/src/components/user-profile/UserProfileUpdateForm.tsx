@@ -72,7 +72,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     children,
 }) => {
     const adapter = useSignInAdapter();
-    const authUser = authUserStore.use.currentUser();
+    authUserStore.use.currentUser(); // Re-render when live provider metadata changes.
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -83,16 +83,27 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const { updateCurrentUser } = useSQLiteStorage();
     const { presentToast } = useToast();
 
+    const {
+        data: lcNetworkProfile,
+        isLoading: profileLoading,
+        refetch: refetchProfile,
+    } = useGetProfile();
+    const providerName = adapter.getCurrentUser()?.displayName?.trim() || '';
+    // Only confirmed first-time setup prefers provider enrichment. Existing (or still
+    // loading) profiles keep local saves, which may be newer than Firebase/query cache.
+    const suggestedName =
+        lcNetworkProfile === null
+            ? providerName || currentUser?.name || ''
+            : currentUser?.name || lcNetworkProfile?.displayName || providerName;
+
     const isAppleLogin = authStore.use.typeOfLogin() === SocialLoginTypes.apple;
-    const [name, setName] = useState(
-        () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
-    );
+    const [name, setName] = useState(suggestedName);
     const nameEditedRef = useRef(false);
     useEffect(() => {
         if (!nameEditedRef.current) {
-            setName(adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || '');
+            setName(suggestedName);
         }
-    }, [adapter, authUser?.displayName, currentUser?.name, isAppleLogin]);
+    }, [suggestedName]);
 
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
     const [email, setEmail] = useState<string | null | undefined>(currentUser?.email ?? '');
@@ -103,11 +114,6 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
-    const {
-        data: lcNetworkProfile,
-        isLoading: profileLoading,
-        refetch: refetchProfile,
-    } = useGetProfile();
     const displayName = name.trim() || (isAppleLogin ? lcNetworkProfile?.profileId || '' : '');
 
     useEffect(() => {

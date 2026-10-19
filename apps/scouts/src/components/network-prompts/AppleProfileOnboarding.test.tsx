@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
     localName: '',
     hasAuthUser: true,
     hasCurrentUser: true,
-    profile: null as { profileId: string } | null | undefined,
+    profile: null as { profileId: string; displayName?: string } | null | undefined,
     profileLoading: false,
     refetchProfile: vi.fn(),
     newModal: vi.fn(),
@@ -480,4 +480,91 @@ it('does not start a save when the local user has not loaded', () => {
     expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
     expect(mocks.updateCurrentUser).not.toHaveBeenCalled();
     expect(mocks.close).not.toHaveBeenCalled();
+});
+
+describe.each(['onboarding', 'account'])('ScoutPass %s saved names', surface => {
+    const form = () =>
+        surface === 'onboarding' ? (
+            <NewJoinNetworkPrompt handleCloseModal={mocks.close} />
+        ) : (
+            <UserProfileUpdateForm
+                handleCloseModal={mocks.close}
+                handleLogout={vi.fn()}
+                handleChapiInfo={vi.fn()}
+                showDeleteAccountButton={false}
+            />
+        );
+    const save = () =>
+        screen.getByRole('button', {
+            name: surface === 'onboarding' ? m['networkPrompts.letsGo']() : m['common.save'](),
+        });
+
+    it.each(['apple', 'google'])(
+        'preserves a cached-key %s rename after Firebase reconnects',
+        async loginType => {
+            mocks.loginType = loginType;
+            mocks.hasAuthUser = false;
+            mocks.localName = 'Old Name';
+            mocks.profile = { profileId: 'existing-scout', displayName: 'Old Name' };
+            const view = render(form());
+            fireEvent.change(screen.getByLabelText(/Full Name/), {
+                target: { value: 'Chosen Name' },
+            });
+            fireEvent.click(save());
+            await waitFor(() => expect(mocks.close).toHaveBeenCalledOnce());
+            expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
+            expect(mocks.updateNetworkProfile).toHaveBeenCalledWith(
+                expect.objectContaining({ displayName: 'Chosen Name' })
+            );
+            mocks.localName = mocks.updateCurrentUser.mock.calls.at(-1)![1].name;
+            mocks.profile = { profileId: 'existing-scout', displayName: 'Chosen Name' };
+            view.unmount();
+            mocks.hasAuthUser = true;
+            mocks.authName = 'Old Name';
+            render(form());
+            expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe(
+                'Chosen Name'
+            );
+            fireEvent.click(save());
+            await waitFor(() => expect(mocks.close).toHaveBeenCalledTimes(2));
+            expect(mocks.updateNetworkProfile).toHaveBeenLastCalledWith(
+                expect.objectContaining({ displayName: 'Chosen Name' })
+            );
+            expect(mocks.updateAuthProfile).toHaveBeenCalledWith(
+                expect.objectContaining({ displayName: 'Chosen Name' })
+            );
+        }
+    );
+
+    it('keeps the locally saved name while lookup or its cached result is stale', () => {
+        mocks.localName = 'Chosen Name';
+        mocks.authName = 'Old Name';
+        mocks.profile = undefined;
+        mocks.profileLoading = true;
+        const view = render(form());
+        expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe('Chosen Name');
+        mocks.profile = { profileId: 'existing-scout', displayName: 'Old Name' };
+        mocks.profileLoading = false;
+        view.rerender(form());
+        expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe('Chosen Name');
+    });
+
+    it('uses the existing network name when the local name is unavailable', () => {
+        mocks.authName = 'Old Name';
+        mocks.profile = { profileId: 'existing-scout', displayName: 'Chosen Name' };
+        render(form());
+        expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe('Chosen Name');
+    });
+
+    it('uses Apple enrichment after lookup confirms first-time setup', () => {
+        mocks.localName = 'Stale Local Name';
+        mocks.authName = 'Apple Name';
+        mocks.profile = undefined;
+        mocks.profileLoading = true;
+        const view = render(form());
+        mocks.profile = null;
+        mocks.profileLoading = false;
+        view.rerender(form());
+        expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe('Apple Name');
+    });
 });

@@ -68,7 +68,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
     initialPhoto,
 }) => {
     const adapter = useSignInAdapter();
-    const authUser = authUserStore.use.currentUser();
+    authUserStore.use.currentUser(); // Re-render when live provider metadata changes.
     const { initWallet } = useWallet();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
@@ -78,18 +78,27 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
 
+    const {
+        data: lcNetworkProfile,
+        isLoading: profileLoading,
+        refetch: refetchProfile,
+    } = useGetProfile();
+    const providerName = adapter.getCurrentUser()?.displayName?.trim() || '';
+    // Only confirmed first-time setup prefers provider enrichment. Existing (or still
+    // loading) profiles keep local saves, which may be newer than Firebase/query cache.
+    const suggestedName =
+        lcNetworkProfile === null
+            ? providerName || currentUser?.name || ''
+            : currentUser?.name || lcNetworkProfile?.displayName || providerName;
+
     const isAppleLogin = authStore.use.typeOfLogin() === SocialLoginTypes.apple;
-    const [name, setName] = useState(
-        () =>
-            initialName ??
-            (adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || '')
-    );
+    const [name, setName] = useState(() => initialName ?? suggestedName);
     const nameEditedRef = useRef(initialName !== undefined);
     useEffect(() => {
         if (!nameEditedRef.current) {
-            setName(adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || '');
+            setName(suggestedName);
         }
-    }, [adapter, authUser?.displayName, currentUser?.name, isAppleLogin]);
+    }, [suggestedName]);
 
     const [photo, setPhoto] = useState<string | null | undefined>(
         initialPhoto ?? currentUser?.profileImage ?? ''
@@ -105,12 +114,6 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
     const [profileIdErrors, setProfileIdErrors] = useState<Record<string, string[]>>({});
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
-
-    const {
-        data: lcNetworkProfile,
-        isLoading: profileLoading,
-        refetch: refetchProfile,
-    } = useGetProfile();
 
     const displayName =
         name.trim() || (isAppleLogin ? lcNetworkProfile?.profileId || profileId || '' : '');
