@@ -5,11 +5,9 @@ import type { FileUploadOutcome } from '../../../../hooks/uploadFile.types';
 type UploadFileOutcomePanelProps = {
     message?: string;
     retryKind?: 'extraction' | 'save';
-    status?: FileUploadOutcome['status'];
+    status?: Exclude<FileUploadOutcome['status'], 'stored'>;
     fileName?: string;
     extractedCount?: number;
-    storedCount?: number;
-    selectedCount?: number;
     onRetry?: (button: HTMLButtonElement) => void;
     isRetrying?: boolean;
     disabled?: boolean;
@@ -21,14 +19,12 @@ export const UploadFileOutcomePanel: React.FC<UploadFileOutcomePanelProps> = ({
     status,
     fileName,
     extractedCount,
-    storedCount,
-    selectedCount,
     onRetry,
     isRetrying = false,
     disabled = false,
 }) => {
     const isFailure = status === 'save_failed' || retryKind === 'save';
-    const isReady = status === 'review' || status === 'stored';
+    const isReady = status === 'review';
     const isSavingOriginal = status === 'saving_original';
     const panelClass = isFailure
         ? 'border-red-200 bg-red-50 text-red-700'
@@ -43,15 +39,9 @@ export const UploadFileOutcomePanel: React.FC<UploadFileOutcomePanelProps> = ({
             ? m['passport.buildMyLearnCard.managers.credentialsReady']({
                   count: extractedCount ?? 0,
               })
-            : status === 'stored'
-              ? selectedCount === 0 && (extractedCount ?? 0) > 0
-                  ? m['passport.buildMyLearnCard.managers.documentNoSelection']()
-                  : m['passport.buildMyLearnCard.managers.documentAndCredentialsSaved']({
-                        count: storedCount ?? 0,
-                    })
-              : status === 'extraction_failed'
-                ? m['passport.buildMyLearnCard.managers.extractionFailedOriginalSaved']()
-                : m['passport.buildMyLearnCard.managers.saveOutcomeError']();
+            : status === 'extraction_failed'
+              ? m['passport.buildMyLearnCard.managers.extractionFailedOriginalSaved']()
+              : m['passport.buildMyLearnCard.managers.saveOutcomeError']();
 
     return (
         <div

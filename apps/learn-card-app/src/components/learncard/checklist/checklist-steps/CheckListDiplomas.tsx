@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-diplomas');
 
-import TrashBin from '../../../svgs/TrashBin';
-import DocIcon from 'learn-card-base/svgs/DocIcon';
 import ChecklistLoader from '../loader/ChecklistLoader';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import CheckListItemSkeleton from './CheckListItemSkeleton';
@@ -27,7 +25,6 @@ import {
     UploadTypesEnum,
 } from 'learn-card-base';
 
-import { useTheme } from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
 import type { LCR } from 'learn-card-base/types/credential-records';
 import { RawArtifactCredentialValidator } from 'learn-card-base/types/file-extraction';
@@ -69,9 +66,6 @@ export const CheckListDiplomas: React.FC = () => {
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
-
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -264,7 +258,7 @@ export const CheckListDiplomas: React.FC = () => {
             ? m['passport.buildMyLearnCard.managers.addMore']()
             : m['passport.buildMyLearnCard.managers.addButton']();
     buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
-    const buttonIcon = <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />;
+    const buttonIcon = <UploadIcon className="w-[25px] h-[26px] mr-2" />;
 
     return (
         <>
@@ -285,12 +279,12 @@ export const CheckListDiplomas: React.FC = () => {
                     {isParsing && !isSaving && (
                         <ChecklistLoader fileType={UploadTypesEnum.Diploma} />
                     )}
-                    <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
+                    <div className="w-full rounded-[20px] bg-white p-6 mt-4 font-poppins shadow-button-bottom">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
-                            <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
+                            <h4 className="text-xl font-semibold text-grayscale-900 text-left mb-2">
                                 {m['passport.buildMyLearnCard.managers.diplomas.title']()}
                             </h4>
-                            <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
+                            <p className="text-sm text-grayscale-600 text-left mb-4">
                                 {m['passport.buildMyLearnCard.managers.diplomas.description']()}
                             </p>
                             <UploadFileOutcomeList
@@ -316,81 +310,45 @@ export const CheckListDiplomas: React.FC = () => {
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                             />
-
-                            <button
-                                disabled={isUploading || isLoading || busy}
-                                onClick={triggerFileInput}
-                                className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-${primaryColor} text-white`}
-                            >
-                                {buttonIcon}
-                                {buttonText}
-                            </button>
                         </div>
 
                         {isLoading && <CheckListItemSkeleton />}
 
-                        {!isLoading &&
-                            diplomas?.length > 0 &&
-                            diplomas?.map?.((diploma: DiplomaType) => {
-                                return (
-                                    <div
-                                        key={diploma?.id}
-                                        className="flex flex-col w-full mt-4 relative pb-4"
-                                    >
-                                        <div className="flex items-center justify-start">
-                                            <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
-                                            <div className="flex items-start justify-center text-left flex-col pr-4">
-                                                <p className="text-grayscale-800 text-sm font-semibold text-left line-clamp-2">
-                                                    {diploma?.fileName}
-                                                </p>
-                                                <p className="w-full text-xs text-grayscale-600">
-                                                    {diploma?.fileType} • {diploma?.fileSize}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <UploadedOriginalDocument
-                                            fileName={diploma.fileName}
-                                            data={diploma.data}
-                                            disabled={busy}
-                                            onRetry={
-                                                fileUploadOutcomes.some(
-                                                    item =>
-                                                        item.artifact.id === diploma.artifactId &&
-                                                        item.status !== 'review' &&
-                                                        item.status !== 'stored'
-                                                )
-                                                    ? undefined
-                                                    : async () => {
-                                                          const wallet = await initWallet();
-                                                          const artifact =
-                                                              RawArtifactCredentialValidator.parse(
-                                                                  await wallet.read.get(diploma.uri)
-                                                              );
-                                                          const result = await retryFileExtraction(
-                                                              artifact,
-                                                              UploadTypesEnum.Diploma,
-                                                              diploma.uri
-                                                          );
-                                                          if (result.outcome.status === 'review') {
-                                                              setParsedCredentials(
-                                                                  result.credentials
-                                                              );
-                                                              setShowReview(true);
-                                                          }
-                                                      }
-                                            }
-                                        />
-
-                                        <button
-                                            onClick={() => confirmDelete(diploma?.id)}
-                                            disabled={busy}
-                                            className="bg-white overflow-hidden rounded-full shadow-bottom p-2 min-h-[35px] min-w-[35px]"
-                                        >
-                                            <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
-                                        </button>
-                                    </div>
-                                );
-                            })}
+                        {!isLoading && diplomas.length > 0 && (
+                            <div className="w-full space-y-3">
+                                {diplomas.map(diploma => (
+                                    <UploadedOriginalDocument
+                                        key={diploma.id}
+                                        fileName={diploma.fileName}
+                                        fileType={diploma.fileType}
+                                        fileSize={diploma.fileSize}
+                                        data={diploma.data}
+                                        addedCredentialCount={
+                                            fileUploadOutcomes.find(
+                                                item =>
+                                                    item.artifact.id === diploma.artifactId &&
+                                                    item.status === 'stored'
+                                            )?.storedCount
+                                        }
+                                        onDelete={() => confirmDelete(diploma.id)}
+                                        disabled={busy}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        <button
+                            type="button"
+                            disabled={isUploading || isLoading || busy}
+                            onClick={triggerFileInput}
+                            className={`mt-6 w-full flex min-h-[48px] rounded-[20px] items-center justify-center py-3 px-4 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                diplomas.length
+                                    ? 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                    : 'bg-grayscale-900 text-white hover:opacity-90'
+                            }`}
+                        >
+                            {buttonIcon}
+                            {buttonText}
+                        </button>
                     </div>
                     <CheckListManagerFooter loading={isSaving || isParsing} />
                 </>

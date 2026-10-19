@@ -80,12 +80,11 @@ export const UploadFileOutcomeList: React.FC<Props> = ({
     return (
         <div className="w-full">
             {outcomes.map(item => {
+                if (item.status === 'stored') return null;
                 const retryKind =
                     item.status === 'save_failed'
                         ? 'save'
-                        : item.status === 'stored' ||
-                            item.status === 'review' ||
-                            item.status === 'saving_original'
+                        : item.status === 'review' || item.status === 'saving_original'
                           ? undefined
                           : 'extraction';
                 return (
@@ -94,8 +93,6 @@ export const UploadFileOutcomeList: React.FC<Props> = ({
                         status={item.status}
                         fileName={item.artifact.rawArtifact.fileName}
                         extractedCount={item.extractedCount}
-                        selectedCount={item.selectedCount}
-                        storedCount={item.storedCount}
                         message={
                             failedId === item.artifact.id
                                 ? item.failedStage === 'credential_save'

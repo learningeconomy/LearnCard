@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { IonIcon } from '@ionic/react';
+import { checkmarkOutline, trashOutline } from 'ionicons/icons';
 import { ToastTypeEnum, useToast } from 'learn-card-base';
+import DocIcon from 'learn-card-base/svgs/DocIcon';
 import { Capacitor } from '@capacitor/core';
-import { Directory, Filesystem } from '@capacitor/filesystem';
 import { openAttachmentUrl } from 'learn-card-base/helpers/openAttachmentUrl';
 import * as m from '../../../../paraglide/messages.js';
 
@@ -16,23 +18,32 @@ const PREVIEW_EXTENSIONS: Record<string, string> = {
 
 type UploadedOriginalDocumentProps = {
     fileName: string;
+    fileType: string;
+    fileSize: string;
     data: string;
-    onRetry?: () => Promise<void>;
+    addedCredentialCount?: number;
+    onDelete: () => Promise<void>;
     disabled?: boolean;
 };
 
 export const UploadedOriginalDocument: React.FC<UploadedOriginalDocumentProps> = ({
     fileName,
+    fileType,
+    fileSize,
     data,
-    onRetry,
+    addedCredentialCount,
+    onDelete,
     disabled = false,
 }) => {
     const { presentToast } = useToast();
-    const [action, setAction] = useState<'open' | 'download' | 'extract' | null>(null);
+    const [opening, setOpening] = useState(false);
     const busy = useRef(false);
     const mounted = useRef(true);
-    const currentFile = useRef({ fileName, data });
-    currentFile.current = { fileName, data };
+    const focusToRestore = useRef<{
+        button: HTMLButtonElement;
+        fileName: string;
+        data: string;
+    } | null>(null);
 
     useEffect(() => {
         mounted.current = true;
@@ -41,63 +52,47 @@ export const UploadedOriginalDocument: React.FC<UploadedOriginalDocumentProps> =
         };
     }, []);
 
-    const performAction = async (
-        kind: 'open' | 'download' | 'extract',
-        event: React.MouseEvent<HTMLButtonElement>
-    ) => {
+    useEffect(() => {
+        if (opening || disabled || !focusToRestore.current) return;
+        const previous = focusToRestore.current;
+        focusToRestore.current = null;
+        if (
+            previous.button.isConnected &&
+            previous.fileName === fileName &&
+            previous.data === data &&
+            document.activeElement === document.body
+        ) {
+            previous.button.focus({ preventScroll: true });
+        }
+    }, [opening, disabled, fileName, data]);
+
+    const openDocument = async (event: React.MouseEvent<HTMLButtonElement>) => {
         if (busy.current || disabled || !data) return;
         const button = event.currentTarget;
         const ownedFocus = document.activeElement === button;
-        // Persisted artifact names are untrusted. Never use them as native paths.
-        const basename = (fileName.split(/[\\/]/).pop() ?? '')
-            .replace(/\p{Cc}/gu, '')
-            .slice(0, 120);
-        const safeName = basename && basename !== '.' && basename !== '..' ? basename : 'document';
         busy.current = true;
-        setAction(kind);
+        setOpening(true);
         try {
-            if (!/^data:[^,]*;base64,/i.test(data)) throw new Error('Invalid document data');
-            if (kind === 'extract') {
-                if (!onRetry) throw new Error('Extraction is unavailable');
-                await onRetry();
-            } else if (kind === 'open') {
-                // A same-origin HTML/SVG blob could execute uploaded scripts. Only open
-                // the supported document/image types; other originals remain downloadable.
-                if (
-                    !/^data:(?:application\/pdf|text\/plain|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|image\/(?:png|jpeg|webp));base64,/i.test(
-                        data
-                    )
-                ) {
-                    throw new Error('Unsupported preview type');
-                }
-                const mimeType = data.slice(5, data.indexOf(';')).toLowerCase();
-                await openAttachmentUrl(
-                    data,
-                    Capacitor.isNativePlatform()
-                        ? `upload-${crypto.randomUUID()}-${safeName.replace(/\.[^.]*$/, '')}${PREVIEW_EXTENSIONS[mimeType]}`
-                        : safeName
-                );
-            } else if (Capacitor.isNativePlatform()) {
-                const separator = data.indexOf(',');
-                if (!data.startsWith('data:') || separator < 0)
-                    throw new Error('Invalid document data');
-                await Filesystem.writeFile({
-                    path: `upload-${crypto.randomUUID()}-${safeName}`,
-                    data: data.slice(separator + 1),
-                    directory: Directory.Documents,
-                });
-                presentToast(m['passport.buildMyLearnCard.managers.downloadSaved'](), {
-                    type: ToastTypeEnum.Success,
-                    hasDismissButton: true,
-                });
-            } else {
-                const link = document.createElement('a');
-                link.href = data;
-                link.download = safeName;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
+            // Only supported documents may open; HTML/SVG blobs could execute uploaded scripts.
+            if (
+                !/^data:(?:application\/pdf|text\/plain|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|image\/(?:png|jpeg|webp));base64,/i.test(
+                    data
+                )
+            ) {
+                throw new Error('Unsupported preview type');
             }
+            const basename = (fileName.split(/[\\/]/).pop() ?? '')
+                .replace(/\p{Cc}/gu, '')
+                .slice(0, 120);
+            const safeName =
+                basename && basename !== '.' && basename !== '..' ? basename : 'document';
+            const mimeType = data.slice(5, data.indexOf(';')).toLowerCase();
+            await openAttachmentUrl(
+                data,
+                Capacitor.isNativePlatform()
+                    ? `upload-${crypto.randomUUID()}-${safeName.replace(/\.[^.]*$/, '')}${PREVIEW_EXTENSIONS[mimeType]}`
+                    : safeName
+            );
         } catch {
             presentToast(m['passport.buildMyLearnCard.managers.toastGenericError'](), {
                 type: ToastTypeEnum.Error,
@@ -105,88 +100,74 @@ export const UploadedOriginalDocument: React.FC<UploadedOriginalDocumentProps> =
             });
         } finally {
             busy.current = false;
-            if (mounted.current) setAction(null);
-            requestAnimationFrame(() => {
-                if (
-                    ownedFocus &&
-                    mounted.current &&
-                    button.isConnected &&
-                    currentFile.current.fileName === fileName &&
-                    currentFile.current.data === data &&
-                    document.activeElement === document.body
-                ) {
-                    button.focus({ preventScroll: true });
-                }
-            });
+            if (mounted.current) {
+                if (ownedFocus) focusToRestore.current = { button, fileName, data };
+                setOpening(false);
+            }
         }
     };
 
+    const hasAddedCredentials = (addedCredentialCount ?? 0) > 0;
+
     return (
-        <div className="w-full border border-grayscale-200 rounded-xl p-3 mb-3 font-poppins">
-            <p className="text-sm font-semibold text-grayscale-900">
-                {m['passport.buildMyLearnCard.managers.uploadedDocument']()}
-            </p>
-            <p className="text-xs text-grayscale-600 mb-3">
-                {m['passport.buildMyLearnCard.managers.providedNotVerified']()}
-            </p>
-            <div className="flex flex-wrap gap-2">
-                <button
-                    type="button"
-                    disabled={disabled || Boolean(action) || !data}
-                    onClick={event => void performAction('open', event)}
-                    className="rounded-[20px] border border-grayscale-300 px-4 py-2 text-sm font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        <section
+            aria-label={fileName}
+            className={`w-full rounded-2xl border p-4 font-poppins ${
+                hasAddedCredentials
+                    ? 'border-emerald-200 bg-emerald-50'
+                    : 'border-grayscale-200 bg-white'
+            }`}
+        >
+            {hasAddedCredentials && (
+                <div
+                    role="status"
+                    className="mb-4 flex items-center gap-2 text-lg font-semibold leading-snug text-emerald-700"
                 >
-                    <span className="flex items-center justify-center gap-2">
-                        {action === 'open' && (
-                            <span
-                                aria-hidden="true"
-                                className="h-4 w-4 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin"
-                            />
-                        )}
-                        {action === 'open'
-                            ? m['passport.buildMyLearnCard.managers.openingFile']()
-                            : m['passport.buildMyLearnCard.managers.openFile']()}
+                    <IonIcon
+                        icon={checkmarkOutline}
+                        aria-hidden="true"
+                        className="h-6 w-6 shrink-0"
+                    />
+                    <span>
+                        {addedCredentialCount === 1
+                            ? m['passport.buildMyLearnCard.managers.credentialAdded']()
+                            : m['passport.buildMyLearnCard.managers.credentialsAdded']({
+                                  count: addedCredentialCount ?? 0,
+                              })}
                     </span>
-                </button>
-                <button
-                    type="button"
-                    disabled={disabled || Boolean(action) || !data}
-                    onClick={event => void performAction('download', event)}
-                    className="rounded-[20px] border border-grayscale-300 px-4 py-2 text-sm font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    <span className="flex items-center justify-center gap-2">
-                        {action === 'download' && (
-                            <span
-                                aria-hidden="true"
-                                className="h-4 w-4 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin"
-                            />
-                        )}
-                        {action === 'download'
-                            ? m['passport.buildMyLearnCard.managers.downloadingFile']()
-                            : m['passport.buildMyLearnCard.managers.downloadFile']()}
-                    </span>
-                </button>
-                {onRetry && (
+                </div>
+            )}
+            <div className="flex items-center gap-3">
+                <DocIcon className="h-14 w-12 shrink-0 text-red-500" />
+                <div className="min-w-0 flex-1">
                     <button
                         type="button"
-                        disabled={disabled || Boolean(action) || !data}
-                        onClick={event => void performAction('extract', event)}
-                        className="rounded-[20px] bg-grayscale-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={event => void openDocument(event)}
+                        disabled={disabled || opening || !data}
+                        aria-label={`${m['passport.buildMyLearnCard.managers.openFile']()}: ${fileName}`}
+                        className="max-w-full rounded-[20px] text-left text-sm font-semibold text-grayscale-900 [overflow-wrap:anywhere] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait disabled:opacity-50"
                     >
-                        <span className="flex items-center justify-center gap-2">
-                            {action === 'extract' && (
-                                <span
-                                    aria-hidden="true"
-                                    className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
-                                />
-                            )}
-                            {action === 'extract'
-                                ? m['passport.buildMyLearnCard.managers.retrying']()
-                                : m['passport.buildMyLearnCard.managers.retryExtraction']()}
-                        </span>
+                        {fileName}
                     </button>
-                )}
+                    <p className="mt-0.5 text-xs text-grayscale-600">
+                        {fileType} • {fileSize}
+                    </p>
+                    {opening && (
+                        <p role="status" className="mt-1 text-xs text-grayscale-600">
+                            {m['passport.buildMyLearnCard.managers.openingFile']()}
+                        </p>
+                    )}
+                </div>
+                <button
+                    type="button"
+                    onClick={() => void onDelete()}
+                    disabled={disabled || opening}
+                    aria-label={`${m['common.delete']()}: ${fileName}`}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] border border-grayscale-200 bg-white text-grayscale-700 shadow-sm transition-colors hover:bg-grayscale-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                    <IonIcon icon={trashOutline} aria-hidden="true" className="h-5 w-5" />
+                </button>
             </div>
-        </div>
+        </section>
     );
 };

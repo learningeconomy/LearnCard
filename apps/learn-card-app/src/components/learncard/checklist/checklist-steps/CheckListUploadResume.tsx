@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-upload-resume');
 
-import TrashBin from '../../../svgs/TrashBin';
-import DocIcon from 'learn-card-base/svgs/DocIcon';
 import ChecklistLoader from '../loader/ChecklistLoader';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import RefreshIcon from 'learn-card-base/svgs/RefreshIcon';
@@ -28,7 +26,6 @@ import {
     UploadTypesEnum,
 } from 'learn-card-base';
 
-import { useTheme } from '../../../../theme/hooks/useTheme';
 import { UploadFileOutcomePanel } from './UploadFileOutcomePanel';
 import { UploadedOriginalDocument } from './UploadedOriginalDocument';
 import { UploadFileOutcomeList } from './UploadFileOutcomeList';
@@ -81,9 +78,6 @@ export const CheckListUploadResume: React.FC = () => {
         message: string;
         retryKind: 'extraction' | 'save';
     } | null>(null);
-
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
 
     const pendingReview = checklistStore.useTracked.pendingReview().resume;
     useEffect(() => {
@@ -227,17 +221,6 @@ export const CheckListUploadResume: React.FC = () => {
         }
     };
 
-    const retrySavedResume = async () => {
-        if (!resume) return;
-        const wallet = await initWallet();
-        const artifact = RawArtifactCredentialValidator.parse(await wallet.read.get(resume.uri));
-        const result = await retryFileExtraction(artifact, UploadTypesEnum.Resume, resume.uri);
-        if (result.outcome.status === 'review') {
-            setParsedCredentials(result.credentials);
-            setShowReview(true);
-        }
-    };
-
     const handleReviewBack = () => {
         // Keep pending review in store so user can return to it via the checklist
         setShowReview(false);
@@ -275,7 +258,7 @@ export const CheckListUploadResume: React.FC = () => {
         : m['passport.buildMyLearnCard.managers.addButton']();
     buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
     const buttonIcon = resume ? (
-        <RefreshIcon className={`w-[25px] h-[26px] text-${primaryColor} mr-2`} />
+        <RefreshIcon className="w-[25px] h-[26px] text-grayscale-700 mr-2" />
     ) : (
         <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />
     );
@@ -302,12 +285,12 @@ export const CheckListUploadResume: React.FC = () => {
                             onDismiss={() => setLoaderDismissed(true)}
                         />
                     )}
-                    <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
+                    <div className="w-full rounded-[20px] bg-white p-6 mt-4 font-poppins shadow-button-bottom">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
-                            <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
+                            <h4 className="text-xl font-semibold text-grayscale-900 text-left mb-2">
                                 {m['passport.buildMyLearnCard.managers.resume.title']()}
                             </h4>
-                            <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
+                            <p className="text-sm text-grayscale-600 text-left mb-4">
                                 {m['passport.buildMyLearnCard.managers.resume.description']()}
                             </p>
 
@@ -363,69 +346,46 @@ export const CheckListUploadResume: React.FC = () => {
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                             />
-
-                            <button
-                                disabled={
-                                    isUploading ||
-                                    isLoading ||
-                                    isSaving ||
-                                    isSavingSelected ||
-                                    isParsing
-                                }
-                                onClick={triggerFileInput}
-                                className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] ${
-                                    resume
-                                        ? `bg-grayscale-100 text-${primaryColor}`
-                                        : `bg-${primaryColor} text-white`
-                                }`}
-                            >
-                                {buttonIcon}
-                                {buttonText}
-                            </button>
                         </div>
 
                         {isLoading && <CheckListItemSkeleton />}
 
                         {resume && !isLoading && (
-                            <>
-                                <UploadedOriginalDocument
-                                    fileName={resume.fileName}
-                                    data={resume.data}
-                                    onRetry={
-                                        fileUploadOutcomes.some(
-                                            item =>
-                                                item.artifact.id === resume.artifactId &&
-                                                item.status !== 'review' &&
-                                                item.status !== 'stored'
-                                        )
-                                            ? undefined
-                                            : retrySavedResume
-                                    }
-                                    disabled={isParsing || isSaving || isSavingSelected}
-                                />
-                                <div className="flex items-center justify-between w-full mt-4 relative pb-4">
-                                    <div className="flex items-center justify-start overflow-hidden">
-                                        <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
-                                        <div className="flex flex-col overflow-hidden min-w-0 pr-4">
-                                            <p className="text-grayscale-800 text-sm font-semibold truncate">
-                                                {resume.fileName}
-                                            </p>
-                                            <p className="text-xs text-grayscale-600">
-                                                {resume.fileType} • {resume.fileSize}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={confirmDelete}
-                                        disabled={isParsing || isSaving || isSavingSelected}
-                                        className="bg-white overflow-hidden flex items-center justify-center rounded-full shadow-bottom p-2 min-h-[45px] min-w-[45px] h-[45px] w-[45px]"
-                                    >
-                                        <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
-                                    </button>
-                                </div>
-                            </>
+                            <UploadedOriginalDocument
+                                fileName={resume.fileName}
+                                fileType={resume.fileType}
+                                fileSize={resume.fileSize}
+                                data={resume.data}
+                                addedCredentialCount={
+                                    fileUploadOutcomes.find(
+                                        item =>
+                                            item.artifact.id === resume.artifactId &&
+                                            item.status === 'stored'
+                                    )?.storedCount
+                                }
+                                onDelete={confirmDelete}
+                                disabled={isParsing || isSaving || isSavingSelected}
+                            />
                         )}
+                        <button
+                            type="button"
+                            disabled={
+                                isUploading ||
+                                isLoading ||
+                                isSaving ||
+                                isSavingSelected ||
+                                isParsing
+                            }
+                            onClick={triggerFileInput}
+                            className={`mt-6 w-full flex min-h-[48px] rounded-[20px] items-center justify-center py-3 px-4 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                resume
+                                    ? 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                    : 'bg-grayscale-900 text-white hover:opacity-90'
+                            }`}
+                        >
+                            {buttonIcon}
+                            {buttonText}
+                        </button>
                     </div>
                     <CheckListManagerFooter
                         // handleSave={handleSaveResume}

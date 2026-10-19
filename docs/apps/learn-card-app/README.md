@@ -106,15 +106,13 @@ flowchart LR
     B -->|Processing failed| E[Save original only]
     D --> F{Save confirmed?}
     E --> F
-    F -->|Yes| G[Open or download original]
+    F -->|Yes| G[Open original by selecting its filename]
     F -->|No| H[Retry saving]
-    G --> I[Optional extraction retry]
-    I --> B
 ```
 
-The original is labeled **Provided by you · Not verified by an issuer**. It is not a
-verified achievement. **Open File** previews supported documents; **Download** saves the
-original bytes. On iOS, saved files are in LearnCard's Documents folder.
+The saved original appears in one document card. Select its filename to open it.
+When credentials are added, the card shows the confirmed count; there is no separate
+success banner or action box.
 
 An empty result or a file with no readable text does not create a credential or save a new
 original. Choose another file or retry extraction while the upload step remains open.
@@ -128,9 +126,9 @@ Review can be closed and reopened within the same app session. Selecting none st
 the original, but does not mean extraction found nothing. Saved counts include only confirmed
 selected credentials. Partial failures retain the review; retrying a save reuses confirmed writes.
 
-You can also retry from a saved document after reopening its checklist step. New results
-return to review and are not saved automatically. Retrying an older saved résumé does not
-replace the currently stored résumé.
+Use **Update** for another résumé or **Add More** for other documents. These actions sit
+below the saved document cards. Failed extraction and storage still have their own retry
+feedback. Reopening a manager shows saved originals without inventing a credential count.
 
 Deleting an original immediately removes its row and upload feedback together. If deletion
 fails, both return with an error. Other documents and their feedback remain unchanged.
