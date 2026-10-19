@@ -13,21 +13,47 @@ const CREDENTIAL_REFRESH_CONSTRAINT_QUERIES = [
 
 type Neo4jSchemaError = {
     code?: string;
+    retriable?: boolean;
 };
+
+const MAX_ATTEMPTS = 5;
+
+const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const isEquivalentSchemaRuleRace = (error: unknown): boolean =>
     (error as Neo4jSchemaError | undefined)?.code ===
     'Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists';
 
-const createCredentialRefreshConstraints = async (): Promise<void> => {
-    for (const query of CREDENTIAL_REFRESH_CONSTRAINT_QUERIES) {
+// Same retry rule as the index setup in models/index.ts: transient errors and deadlocks
+// (schema locks contended by other cold starts) are retried with a short backoff.
+const isRetriable = (error: unknown): boolean => {
+    const neo4jError = error as Neo4jSchemaError | undefined;
+
+    return (
+        neo4jError?.retriable === true ||
+        neo4jError?.code === 'Neo.TransientError.Transaction.DeadlockDetected'
+    );
+};
+
+const runConstraintQuery = async (query: string): Promise<void> => {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         try {
             await neogma.queryRunner.run(query);
+            return;
         } catch (error) {
             // Concurrent service starts can both observe a missing rule before one wins
             // creation. The losing CREATE is equivalent to the desired ready state.
-            if (!isEquivalentSchemaRuleRace(error)) throw error;
+            if (isEquivalentSchemaRuleRace(error)) return;
+            if (!isRetriable(error) || attempt === MAX_ATTEMPTS) throw error;
+
+            await wait(100 * attempt);
         }
+    }
+};
+
+const createCredentialRefreshConstraints = async (): Promise<void> => {
+    for (const query of CREDENTIAL_REFRESH_CONSTRAINT_QUERIES) {
+        await runConstraintQuery(query);
     }
 };
 
