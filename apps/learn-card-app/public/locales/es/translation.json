@@ -9412,7 +9412,7 @@
             "invalidNumber": "Usa un número con punto decimal, sin unidades.",
             "invalidDate": "Usa AAAA-MM-DD o una fecha y hora con zona horaria.",
             "invalidResult": "Revisa el resultado y su escala.",
-            "columns": "Añadir columnas de la hoja",
+            "columns": "Columnas de la hoja de cálculo",
             "columnsHint": "Elige qué columnas incluir en esta credencial.",
             "pickTypeForColumns": "Elige un tipo de credencial antes de añadir columnas.",
             "mappingFor": "Usar {{name}} como",
@@ -9479,7 +9479,9 @@
                     "confirming": "Sin confirmar"
                 },
                 "dateUtc": "UTC · cambiar la fecha conserva la hora",
-                "originalDate": "Valor original: {{value}}"
+                "originalDate": "Valor original: {{value}}",
+                "openBadgesOnly": "La asignación de columnas está disponible para credenciales Open Badges.",
+                "columnsReadOnly": "Las columnas de este envío son de solo lectura."
             }
         }
     },

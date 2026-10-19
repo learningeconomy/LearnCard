@@ -81,6 +81,24 @@ describe('spreadsheet mapping workspace', () => {
         expect(screen.getByRole('button', { name: 'Map columns' })).toBeVisible();
         expect(screen.getByText('0 of 3 columns included')).toBeVisible();
     });
+    it('shows a saving failure and explains a locked run inside the workspace', () => {
+        const state = createState();
+        render(
+            <ColumnMappingsEditor
+                source={state.draft.source!}
+                template={state.template}
+                mappings={[]}
+                disabled
+                saveError="Changes could not be saved."
+                onAdd={vi.fn()}
+                onRemove={vi.fn()}
+                onClose={vi.fn()}
+            />
+        );
+        expect(screen.getByRole('alert')).toHaveTextContent('Changes could not be saved.');
+        expect(screen.getByText('This run’s columns are read-only.')).toBeVisible();
+        expect(screen.getByRole('button', { name: 'Include Evidence' })).toBeDisabled();
+    });
     it('offers both evidence columns independently and removes one without removing the other', () => {
         render(<Editor />);
         const evidence = screen.getByRole('button', { name: 'Include Evidence' });
@@ -116,6 +134,9 @@ describe('spreadsheet mapping workspace', () => {
             );
             const evidence = screen.getByRole('button', { name: 'Include Evidence' });
             expect(evidence).toBeDisabled();
+            expect(
+                screen.getByText('Column mapping is available for Open Badges credentials.')
+            ).toBeVisible();
             fireEvent.click(evidence);
             expect(onAdd).not.toHaveBeenCalled();
         }

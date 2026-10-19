@@ -64,3 +64,5 @@ Choose **View delivery status** in the batch card to search every recipient and 
 Date fields use a calendar picker and a readable date. Timestamps are shown in UTC; changing the calendar date preserves the time. New dates use midnight UTC. Opening the workspace leaves the saved timestamp unchanged. Invalid source values stay visible until corrected.
 
 Column mapping currently supports Open Badges credentials. Choose each Evidence or Portfolio column separately to include its links; importing the sheet alone does not add these fields. Selected columns stay visible with a checkmark so they can be removed. Exported CSVs distinguish mapped columns from the table’s separate Evidence link and preserve both on re-import.
+
+The **Additional evidence** field and attachments in **Review people** supplement any evidence columns included through **Map columns**.

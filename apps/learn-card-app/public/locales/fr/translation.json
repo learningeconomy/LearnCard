@@ -9412,7 +9412,7 @@
             "invalidNumber": "Utilisez un nombre avec un point décimal, sans unité.",
             "invalidDate": "Utilisez AAAA-MM-JJ ou une date et heure avec fuseau horaire.",
             "invalidResult": "Vérifiez le résultat et son échelle.",
-            "columns": "Ajouter des colonnes",
+            "columns": "Colonnes du tableur",
             "columnsHint": "Choisissez les colonnes à inclure dans ce justificatif.",
             "pickTypeForColumns": "Choisissez un type de justificatif avant d’ajouter des colonnes.",
             "mappingFor": "Utiliser {{name}} comme",
@@ -9479,7 +9479,9 @@
                     "confirming": "Non confirmé"
                 },
                 "dateUtc": "UTC · changer la date conserve l’heure",
-                "originalDate": "Valeur d’origine : {{value}}"
+                "originalDate": "Valeur d’origine : {{value}}",
+                "openBadgesOnly": "Le mappage des colonnes est disponible pour les attestations Open Badges.",
+                "columnsReadOnly": "Les colonnes de cet envoi sont en lecture seule."
             }
         }
     },

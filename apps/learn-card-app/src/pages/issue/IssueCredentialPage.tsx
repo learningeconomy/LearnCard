@@ -917,6 +917,7 @@ const IssueCredentialPage: React.FC = () => {
         canRemove: roster.canRemove,
         mappings: roster.source ? (
             <ColumnMappings
+                saveError={roster.error}
                 key={roster.source.source.name}
                 source={roster.source}
                 template={template}

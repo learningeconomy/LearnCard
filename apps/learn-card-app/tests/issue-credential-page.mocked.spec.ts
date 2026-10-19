@@ -493,6 +493,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 mimeType: 'text/csv',
                 buffer: Buffer.from(csv),
             });
+            await page.screenshot({ path: testInfo.outputPath('import-review.png') });
             await page.getByRole('button', { name: 'Add People', exact: true }).click();
             await page.getByRole('button', { name: 'Map columns', exact: true }).click();
             await expect(
@@ -523,6 +524,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page.getByRole('button', { name: 'Include Evidence', exact: true }).click();
             await page.getByRole('button', { name: 'Include Portfolio', exact: true }).click();
             await page.getByRole('button', { name: 'Include Student Code', exact: true }).click();
+            await page.screenshot({ path: testInfo.outputPath('column-mapping.png') });
             await page.getByRole('button', { name: 'Done', exact: true }).click();
             await expect(issueButton(page)).toBeEnabled();
             await page.getByRole('button', { name: 'Review people', exact: true }).click();
@@ -538,6 +540,23 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expect(
                 page.getByRole('textbox', { name: 'Ada Completed Date', exact: true })
             ).toHaveValue('2024-04-03T00:00:00.000Z');
+            if (viewport.width > 991) {
+                const tableView = page.getByRole('region', { name: 'Review people', exact: true });
+                const email = page.getByRole('textbox', { name: 'Email for Ada', exact: true });
+                const before = await email.boundingBox();
+                await tableView.evaluate(element => {
+                    element.scrollLeft = element.scrollWidth;
+                });
+                await expect
+                    .poll(() => tableView.evaluate(element => element.scrollLeft))
+                    .toBeGreaterThan(0);
+                const after = await email.boundingBox();
+                expect(Math.abs(after!.x - before!.x)).toBeLessThan(2);
+                await tableView.evaluate(element => {
+                    element.scrollLeft = 0;
+                });
+            }
+            await page.screenshot({ path: testInfo.outputPath('recipient-fields.png') });
             await page.getByRole('button', { name: 'Done', exact: true }).click();
             await page.getByRole('button', { name: 'Map columns', exact: true }).click();
             await page.getByRole('button', { name: 'Remove Quiz Score', exact: true }).click();

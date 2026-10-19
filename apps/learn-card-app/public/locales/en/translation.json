@@ -9463,7 +9463,7 @@
             "invalidNumber": "Use a number with a decimal point, without units.",
             "invalidDate": "Use YYYY-MM-DD or a timestamp with a timezone.",
             "invalidResult": "Check the result value and its scale.",
-            "columns": "Add spreadsheet columns",
+            "columns": "Spreadsheet columns",
             "columnsHint": "Choose which columns to include in this credential.",
             "pickTypeForColumns": "Choose a credential type before adding columns.",
             "mappingFor": "Use {{name}} as",
@@ -9530,7 +9530,9 @@
                     "confirming": "Unconfirmed"
                 },
                 "dateUtc": "UTC · changing the date keeps the time",
-                "originalDate": "Original value: {{value}}"
+                "originalDate": "Original value: {{value}}",
+                "openBadgesOnly": "Column mapping is available for Open Badges credentials.",
+                "columnsReadOnly": "This run’s columns are read-only."
             }
         }
     },

@@ -43,6 +43,7 @@ export interface ColumnMappingsProps {
     template: OBv3CredentialTemplate | null;
     mappings: ColumnMapping[];
     disabled: boolean;
+    saveError?: string;
     onRemove: (variable: string) => void;
     onAdd: (
         columnId: string,
@@ -80,7 +81,8 @@ const activeMapping = (props: ColumnMappingsProps, label: string): ColumnMapping
     );
 };
 const fieldStyle = (target: MappingTarget): { icon: string; color: string } => {
-    if (target === 'evidence') return { icon: linkOutline, color: 'bg-amber-50 text-amber-900' };
+    if (target === 'evidence')
+        return { icon: linkOutline, color: 'bg-grayscale-100 text-grayscale-700' };
     if (target === 'awardedDate')
         return { icon: calendarOutline, color: 'bg-grayscale-100 text-grayscale-700' };
     if (target === 'description')
@@ -190,14 +192,23 @@ export const ColumnMappingsEditor: React.FC<
                         ? m['issueFlow.sheet.design.mappingHint']()
                         : m['issueFlow.sheet.pickTypeForColumns']()}
                 </p>
-                {error && (
+                {(error || props.saveError) && (
                     <p
                         role="alert"
                         className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm text-red-700"
                     >
-                        {error}
+                        {error || props.saveError}
                     </p>
                 )}
+                {template?.schemaType && template.schemaType !== 'obv3' ? (
+                    <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
+                        {m['issueFlow.sheet.design.openBadgesOnly']()}
+                    </p>
+                ) : disabled ? (
+                    <p className="rounded-2xl bg-grayscale-100 p-3 text-sm text-grayscale-700">
+                        {m['issueFlow.sheet.design.columnsReadOnly']()}
+                    </p>
+                ) : null}
                 <div className="space-y-3">
                     {columns.map(column => {
                         const selected = activeMapping(props, column.label);
@@ -217,6 +228,7 @@ export const ColumnMappingsEditor: React.FC<
                             .slice(0, 200)
                             .map(row => row.cells[column.id]?.text)
                             .filter(Boolean)
+                            .map(value => (value!.length > 64 ? `${value!.slice(0, 64)}…` : value))
                             .slice(0, 3)
                             .join(' · ');
                         const hasFormat = [
