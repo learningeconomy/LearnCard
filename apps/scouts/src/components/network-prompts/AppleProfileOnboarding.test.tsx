@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
     authName: '',
     localName: '',
     hasAuthUser: true,
+    hasCurrentUser: true,
     profile: null as { profileId: string } | null | undefined,
     profileLoading: false,
     refetchProfile: vi.fn(),
@@ -58,7 +59,10 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: vi.fn(), debug: vi.fn() }),
 }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
-    default: () => ({ uid: 'scout-user', privateKey: 'test-key', name: mocks.localName }),
+    default: () =>
+        mocks.hasCurrentUser
+            ? { uid: 'scout-user', privateKey: 'test-key', name: mocks.localName }
+            : null,
 }));
 vi.mock('learn-card-base/helpers/authHelpers', () => ({ getAuthToken: () => 'test-token' }));
 vi.mock('learn-card-base/components/profilePicture/ProfilePicture', () => ({
@@ -106,8 +110,8 @@ const enterUsername = (value = 'scout-handle'): void => {
         target: { value },
     });
 };
-const renderAccount = (): void => {
-    render(
+const renderAccount = (): ReturnType<typeof render> => {
+    return render(
         <UserProfileUpdateForm
             handleCloseModal={mocks.close}
             handleLogout={vi.fn()}
@@ -123,6 +127,7 @@ beforeEach(() => {
     mocks.authName = '';
     mocks.localName = '';
     mocks.hasAuthUser = true;
+    mocks.hasCurrentUser = true;
     mocks.profile = null;
     mocks.profileLoading = false;
     mocks.createProfile.mockResolvedValue('did:web:scout');
@@ -421,10 +426,58 @@ describe.each(['onboarding', 'account'])('ScoutPass %s profile lookup', surface 
     });
 });
 
-it('routes an Apple account without a name or network profile to username setup', () => {
+it.each(['', 'Typed Scout'])(
+    'completes missing-network setup from account settings with name %j',
+    async name => {
+        mocks.authName = 'Apple Scout';
+        const view = renderAccount();
+        fireEvent.change(screen.getByLabelText(/Full Name/), { target: { value: name } });
+        fireEvent.click(screen.getByRole('button', { name: m['common.save']() }));
+        expect(mocks.newModal).toHaveBeenCalledOnce();
+        expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
+        expect(mocks.updateCurrentUser).not.toHaveBeenCalled();
+        const setup = mocks.newModal.mock.calls[0][0];
+        expect(setup.type).toBe(NewJoinNetworkPrompt);
+        view.unmount();
+        render(setup);
+        expect((screen.getByLabelText(/Full Name/) as HTMLInputElement).value).toBe(name);
+        enterUsername();
+        fireEvent.click(join());
+        await waitFor(() =>
+            expect(mocks.createProfile).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    profileId: 'scout-handle',
+                    displayName: name || 'scout-handle',
+                })
+            )
+        );
+        expect(mocks.updateCurrentUser).toHaveBeenCalledWith(
+            'scout-user',
+            expect.objectContaining({ name: name || 'scout-handle' })
+        );
+    }
+);
+
+it('keeps account settings open if local persistence fails and allows retry', async () => {
+    mocks.profile = { profileId: 'existing-scout' };
+    mocks.updateCurrentUser.mockRejectedValueOnce(new Error('disk full'));
     renderAccount();
     fireEvent.click(screen.getByRole('button', { name: m['common.save']() }));
-    expect(mocks.newModal).toHaveBeenCalledOnce();
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalled());
+    expect(mocks.close).not.toHaveBeenCalled();
+    expect(mocks.setCurrentUser).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: m['common.save']() }));
+    await waitFor(() => expect(mocks.close).toHaveBeenCalledOnce());
+    expect(mocks.updateCurrentUser).toHaveBeenCalledTimes(2);
+});
+
+it('does not start a save when the local user has not loaded', () => {
+    mocks.profile = { profileId: 'existing-scout' };
+    mocks.hasCurrentUser = false;
+    renderAccount();
+    fireEvent.click(screen.getByRole('button', { name: m['common.save']() }));
+    expect(mocks.toast).toHaveBeenCalled();
     expect(mocks.updateAuthProfile).not.toHaveBeenCalled();
     expect(mocks.updateCurrentUser).not.toHaveBeenCalled();
+    expect(mocks.close).not.toHaveBeenCalled();
 });

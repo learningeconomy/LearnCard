@@ -50,6 +50,8 @@ const ProfileIDStateValidator = z.object({
 });
 
 type NewJoinNetworkPromptProps = {
+    initialName?: string;
+    initialPhoto?: string | null;
     title?: string;
     handleCloseModal: () => void;
     handleLogout?: () => void;
@@ -60,7 +62,11 @@ type NewJoinNetworkPromptProps = {
     children?: React.ReactNode;
 };
 
-const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleCloseModal }) => {
+const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
+    handleCloseModal,
+    initialName,
+    initialPhoto,
+}) => {
     const adapter = useSignInAdapter();
     const authUser = authUserStore.use.currentUser();
     const { initWallet } = useWallet();
@@ -74,16 +80,20 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
 
     const isAppleLogin = authStore.use.typeOfLogin() === SocialLoginTypes.apple;
     const [name, setName] = useState(
-        () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
+        () =>
+            initialName ??
+            (adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || '')
     );
-    const nameEditedRef = useRef(false);
+    const nameEditedRef = useRef(initialName !== undefined);
     useEffect(() => {
         if (!nameEditedRef.current) {
             setName(adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || '');
         }
     }, [adapter, authUser?.displayName, currentUser?.name, isAppleLogin]);
 
-    const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
+    const [photo, setPhoto] = useState<string | null | undefined>(
+        initialPhoto ?? currentUser?.profileImage ?? ''
+    );
 
     const [networkToggle, setNetworkToggle] = useState<boolean>(true);
     const [profileId, setProfileId] = useState<string | null | undefined>('');

@@ -29,6 +29,7 @@ import HandshakeIcon from '../svgs/HandshakeIcon';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import DeleteUserConfirmationPrompt from '../userOptions/DeleteUserConfirmationPrompt';
 import * as m from '../../paraglide/messages.js';
+import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
 import { JoinNetworkModalWrapper } from '../network-prompts/hooks/useJoinLCNetworkModal';
 
 import { useImageUpload, UploadRes } from 'learn-card-base';
@@ -184,16 +185,15 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         handleLogout();
     };
 
-    const handleStorageUpdate = async () => {
-        if (!currentUser) return;
-        await updateCurrentUser(currentUser?.uid, {
+    const handleStorageUpdate = async (user: NonNullable<typeof currentUser>) => {
+        await updateCurrentUser(user.uid, {
             name: displayName,
-            profileImage: photo ?? currentUser?.profileImage ?? '',
+            profileImage: photo ?? user.profileImage ?? '',
         });
         currentUserStore.set.currentUser({
-            ...currentUser,
+            ...user,
             name: displayName,
-            profileImage: photo ?? currentUser?.profileImage ?? '',
+            profileImage: photo ?? user.profileImage ?? '',
         });
     };
 
@@ -228,10 +228,18 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         }
 
         if (isAppleLogin) {
-            // A new account needs a public username before it can use that as its name.
-            if (!displayName) {
+            // Account settings has no username field. Finish creation in the setup form,
+            // preserving edits (including a deliberately blank name) until it succeeds.
+            if (!lcNetworkProfile?.profileId) {
                 handleCloseModal();
-                presentNetworkModal();
+                newModal(
+                    <NewJoinNetworkPrompt
+                        initialName={name}
+                        initialPhoto={photo}
+                        handleCloseModal={closeModal}
+                        showNotificationsModal={showNotificationsModal}
+                    />
+                );
                 return;
             }
             setIsLoading(true);
@@ -240,7 +248,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     await adapter.updateProfile?.({ displayName, photoUrl: photo ?? '' });
                 }
                 await handleLCNetworkProfileUpdate();
-                await handleStorageUpdate();
+                await handleStorageUpdate(currentUser);
                 handleCloseModal();
                 if (showNetworkModal) presentNetworkModal();
             } catch (error) {
@@ -284,7 +292,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         await handleLCNetworkProfileUpdate();
 
                         // update sqlite + context store
-                        await handleStorageUpdate();
+                        await handleStorageUpdate(currentUser);
 
                         setIsLoading(false);
                         handleCloseModal();
