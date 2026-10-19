@@ -159,7 +159,7 @@ export const preflightVerification = async (
     const warnings: string[] = [];
     if (memoryBytes < 16 * 1024 ** 3)
         warnings.push(
-            `Host has ${(memoryBytes / 1024 ** 3).toFixed(1)} GiB RAM; 16 GiB is recommended. An 8 GiB host was reported to swap heavily; this is not a proved minimum.`
+            `Host has ${(memoryBytes / 1024 ** 3).toFixed(1)} GiB RAM; 16 GiB is recommended. Below roughly 12-16 GiB, app-store and other browser journeys may crash ("Page crashed") when the kernel kills Chromium; an 8 GiB host was reported to swap heavily. This is not a proved minimum.`
         );
     return {
         ok: true,

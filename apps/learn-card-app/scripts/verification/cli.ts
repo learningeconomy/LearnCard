@@ -17,6 +17,7 @@ import { runLearnCardCli, stopLearnCardCommands } from './learncard-cli';
 import { createScriptContext, loadScript, writeInlineScript } from './script';
 import { doctorStack, readStackEndpoints, startStack, stopStack } from './stack';
 import { preflightVerification } from './preflight';
+import { browserCrashHint } from './crash';
 import { prepareVerification } from './prepare';
 import type { FeatureDefinition, FeatureResult, StackEndpoints, VerificationActor } from './types';
 import { getVerificationLearnCard } from './sdk';
@@ -499,6 +500,7 @@ const runFeatures = async (
                     Object.assign(result, {
                         status: interrupted ? 'interrupted' : 'failed',
                         error: error instanceof Error ? error.stack : String(error),
+                        hint: interrupted ? undefined : browserCrashHint(error),
                     });
                 } finally {
                     await interruptPromise;
@@ -524,6 +526,7 @@ const runFeatures = async (
                     console.log(
                         `${feature.id}: ${result.status}${firstLine ? ` — ${firstLine}` : ''}`
                     );
+                    if (result.hint) console.log(`${feature.id}: ${result.hint}`);
                     if (values.json) writeEvent({ event: 'feature', runId, ...result });
                 }
             }
