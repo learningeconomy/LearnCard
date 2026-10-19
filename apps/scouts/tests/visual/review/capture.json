@@ -115,7 +115,8 @@
                 "sha256": "db8776d68572310872eb9b4b6435a18a73f48f07f19aaa7b6057d6e3fdfb1400",
                 "capturedAt": "2026-10-19T16:44:17.720800+00:00"
             }
-        ]
+        ],
+        "status": "Intermediate background-only fix; superseded by fullHeightFollowup."
     },
     "scrollLayoutFollowup": {
         "sourceParent": "fa3a1c07f0ccd795da38b6d93225dc5eda9fd46a",
@@ -157,7 +158,7 @@
             "webBuild": "passed",
             "nativeBuild": "passed",
             "safeAreaGate": "passed",
-            "nativeSwipe": "Awaiting user confirmation; automation controls did not reliably move the simulator list."
+            "nativeSwipe": "User supplied scrolled native screenshots; final behavior confirmed after the full-height correction."
         },
         "images": [
             {
@@ -173,6 +174,29 @@
                 "height": 4293001752,
                 "sha256": "205184657a4b7b733e43d4c77289580487122e0f008ab806ed9e41a9cca2429e",
                 "capturedAt": "2026-10-19T16:54:33.709112+00:00"
+            }
+        ],
+        "status": "Intermediate bounded-scroll fix; superseded by fullHeightFollowup."
+    },
+    "fullHeightFollowup": {
+        "sourceParent": "3e25559ab41e46a26b81d5af7fd96eee9a28764c",
+        "sourceChange": "Opt-in lc-content-owns-bottom/lc-scroll-to-edge moves shared surface bottom clearance to end-of-scroll padding; pinned search has 8px bottom spacing and grid top padding is removed.",
+        "validation": {
+            "nativeInitialPosition": "Complete final Test badge and Award action visible without scrolling on iPhone 17 Pro, iOS 26.4. No permanent bottom clipping band.",
+            "userConfirmation": "cool yes it works as expected now",
+            "unitTests": "6 TroopChildrenBox/news + 6 AppModal tests passed",
+            "webBuild": "passed",
+            "nativeBuild": "passed",
+            "safeAreaGate": "passed"
+        },
+        "images": [
+            {
+                "file": "ios-network-badges-fullheight-tailwind4.png",
+                "width": 1206,
+                "height": 2622,
+                "sha256": "319dc03811d7b4a7de9c4540af33e07a500864ab6a5934d282d9d669767ac4fc",
+                "capturedAt": "2026-10-19T16:59:15.333591+00:00",
+                "scrollPosition": "Initial position; no scroll gesture after opening"
             }
         ]
     }

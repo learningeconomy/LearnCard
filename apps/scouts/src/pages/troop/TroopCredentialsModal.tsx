@@ -161,7 +161,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                 </button>
             </h1>
             <section className="bg-grayscale-100 flex-1 min-h-0 w-full flex flex-col items-center">
-                <div className="flex shrink-0 items-center justify-between w-full max-w-[600px] px-[15px]">
+                <div className="flex shrink-0 items-center justify-between w-full max-w-[600px] px-[15px] pb-[8px]">
                     <IonRow class="w-full max-w-[600px] mt-6 ion-no-padding">
                         <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
                             <IonInput
@@ -185,7 +185,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                     </IonRow>
                 </div>
                 <div
-                    className="relative flex-1 min-h-0 w-full overflow-y-auto pb-[20px]"
+                    className="lc-content-owns-bottom lc-scroll-to-edge relative flex-1 min-h-0 w-full overflow-y-auto [&>ion-grid]:pt-0"
                     role="region"
                     aria-label={title}
                     tabIndex={0}
