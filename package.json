@@ -123,7 +123,6 @@
         "uint8arrays": "^3.0.0",
         "serverless": "3.40.0",
         "zod": "4.4.3",
-        "astro>zod": "4.4.3",
         "zod-openapi": "5.4.5",
         "trpc-to-openapi": "3.3.0",
         "@ceramicnetwork/streamid": "2.7.0",
