@@ -88,5 +88,33 @@
             "sha256": "817ae83404296ce796880d618f2a4a52156263d793edfc28511577ea2cb8c125",
             "capturedAt": "2026-10-19T16:25:08.506022+00:00"
         }
-    ]
+    ],
+    "nestedModalFollowup": {
+        "sourceParent": "e4de3dd3a85ef3815547beceb726fefca6c7146d",
+        "sourceChange": "TroopChildrenBox passes bg-grayscale-100! to the child modal surface, painting its padded edge.",
+        "nativePlatform": "iPhone 17 Pro, iOS 26.4 Simulator, bundled Capacitor app",
+        "validation": {
+            "existingTroopChildrenBoxAndNewsTests": "6/6 passed",
+            "webBuild": "passed",
+            "nativeBuild": "passed",
+            "safeAreaGate": "passed",
+            "webSurfaceBackgroundBothCategories": "rgb(239, 240, 245)"
+        },
+        "images": [
+            {
+                "file": "ios-network-badges-tailwind4.png",
+                "width": 1206,
+                "height": 2622,
+                "sha256": "424934625ace1c9f7c853c64f4b274c36ab6018963bfe6d7cc7bd7a95f7e7548",
+                "capturedAt": "2026-10-19T16:43:42.286400+00:00"
+            },
+            {
+                "file": "ios-network-boosts-tailwind4.png",
+                "width": 1206,
+                "height": 2622,
+                "sha256": "db8776d68572310872eb9b4b6435a18a73f48f07f19aaa7b6057d6e3fdfb1400",
+                "capturedAt": "2026-10-19T16:44:17.720800+00:00"
+            }
+        ]
+    }
 }
