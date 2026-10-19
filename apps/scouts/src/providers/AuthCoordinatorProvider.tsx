@@ -33,7 +33,7 @@ import {
     createWeb3AuthStrategy,
     registerKeyDerivationFactory,
     resolveKeyDerivation,
-    resolveAuthProvider,
+    useAuthSessionProvider,
     SignInAdapterProvider,
     Overlay,
     ErrorOverlay,
@@ -1532,7 +1532,7 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
     }
 };
 
-export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProps> = ({
+const AuthCoordinatorSessionProvider: React.FC<ScoutsAuthCoordinatorProviderProps> = ({
     children,
 }) => {
     const authConfig = getAuthConfig();
@@ -1540,9 +1540,7 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
 
-    // Phase 2: authUserStore is written by SignInAdapterProvider's subscribe(),
-    // so we just read the generic store — no bridge needed.
-    const authUser = authUserStore.use.currentUser();
+    const authProvider = useAuthSessionProvider();
 
     // Ref for clearDB — useSQLiteStorage() returns a new function identity
     // on every render (not memoized), which would cascade through
@@ -1550,14 +1548,6 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     // infinite re-init loop. Using a ref keeps handleAppLogout stable.
     const clearDBRef = useRef(clearDB);
     clearDBRef.current = clearDB;
-
-    // Profile enrichment must not recreate the coordinator for the same account.
-    // Providers read live SDK state, so only an identity/provider change needs resolution.
-    const authUserId = authUser?.id;
-    const authProvider = useMemo(
-        () => (authUserId ? resolveAuthProvider(authConfig) : null),
-        [authUserId, authConfig.authProvider]
-    );
 
     // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
@@ -1651,23 +1641,29 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     }, [queryClient, keyDerivation]);
 
     return (
-        <SignInAdapterProvider>
-            <BaseAuthCoordinatorProvider
-                keyDerivation={keyDerivation}
-                authProvider={authProvider}
-                didFromPrivateKey={didFromPrivateKey}
-                signDidAuthVp={signDidAuthVp}
-                getCachedPrivateKey={getCachedPrivateKey}
-                onLogout={handleAppLogout}
-                onDebugEvent={handleDebugEvent}
-                legacyAccountThresholdMs={5 * 60 * 1000}
-                // Always enabled — switch backends via VITE_KEY_DERIVATION env var.
-                enabled={true}
-            >
-                <AuthSessionManager authProvider={authProvider}>{children}</AuthSessionManager>
-            </BaseAuthCoordinatorProvider>
-        </SignInAdapterProvider>
+        <BaseAuthCoordinatorProvider
+            keyDerivation={keyDerivation}
+            authProvider={authProvider}
+            didFromPrivateKey={didFromPrivateKey}
+            signDidAuthVp={signDidAuthVp}
+            getCachedPrivateKey={getCachedPrivateKey}
+            onLogout={handleAppLogout}
+            onDebugEvent={handleDebugEvent}
+            legacyAccountThresholdMs={5 * 60 * 1000}
+            // Always enabled — switch backends via VITE_KEY_DERIVATION env var.
+            enabled={true}
+        >
+            <AuthSessionManager authProvider={authProvider}>{children}</AuthSessionManager>
+        </BaseAuthCoordinatorProvider>
     );
 };
+
+export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProps> = ({
+    children,
+}) => (
+    <SignInAdapterProvider>
+        <AuthCoordinatorSessionProvider>{children}</AuthCoordinatorSessionProvider>
+    </SignInAdapterProvider>
+);
 
 export default AuthCoordinatorProvider;
