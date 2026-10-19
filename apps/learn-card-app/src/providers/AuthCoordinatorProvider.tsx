@@ -2097,10 +2097,12 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
     const clearDBRef = useRef(clearDB);
     clearDBRef.current = clearDB;
 
-    // Resolve auth provider from the registry (env-var driven via VITE_AUTH_PROVIDER)
+    // Profile enrichment must not recreate the coordinator for the same account.
+    // Providers read live SDK state, so only an identity/provider change needs resolution.
+    const authUserId = authUser?.id;
     const authProvider = useMemo(
-        () => (authUser ? resolveAuthProvider(authConfig) : null),
-        [authUser, authConfig.authProvider]
+        () => (authUserId ? resolveAuthProvider(authConfig) : null),
+        [authUserId, authConfig.authProvider]
     );
 
     // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
