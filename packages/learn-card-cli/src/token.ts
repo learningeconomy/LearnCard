@@ -11,7 +11,6 @@ import {
     resolveServices,
     withEnvTokenLoader,
 } from './project';
-import { SEND_SH } from './generated/snippets';
 import { out } from './out';
 
 // Route-derived resources documented in auth-grants-and-api-tokens.md (not the stale singular aliases).
@@ -114,6 +113,8 @@ export const runToken = async (
     out.log(token);
     const file = path.join(process.cwd(), 'send.sh');
     let wroteSendSh = false;
+    // Static import would make org schema validation require this absent-on-clean-checkout asset.
+    const { SEND_SH } = await import('./generated/snippets');
     try {
         await fs.writeFile(
             file,

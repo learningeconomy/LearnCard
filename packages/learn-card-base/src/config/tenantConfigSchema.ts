@@ -485,7 +485,8 @@ export const tenantConfigSchema = z
         email: tenantEmailConfigSchema.optional(),
         native: tenantNativeConfigSchema.optional(),
         ecosystem: tenantEcosystemConfigSchema.optional(),
-        registries: tenantRegistriesConfigSchema.default({}),
+        // Parse an absent block so each registry field receives its declared default.
+        registries: tenantRegistriesConfigSchema.prefault({}),
     })
     .passthrough();
 

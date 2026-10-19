@@ -70,6 +70,52 @@ may need to install some system dependencies. See the Playwright docs [here](htt
 
 After playwright is set up, you can simply run `bun run test` or `bunx nx test learn-card-app` to run the E2E tests!
 
+### Repeatable feature verification (`lc verify`)
+
+`lc verify` starts an owned, disposable local stack (Neo4j, MongoDB, Redis, ElasticMQ, brain,
+LearnCloud and LCA API built from this checkout, plus the Vite dev server) and proves behavior
+across the web app, SDK, `learncard` CLI, ConsentFlow, Partner Connect apps, and docs snippets.
+Use focused unit/mock checks and small scripts or the reusable signed-in browser in the edit loop.
+Run matching journeys near PR readiness, then the full serial catalog before marking cross-surface
+or network-touching work ready. From this app directory:
+
+```bash
+export LC_VERIFY_TRUST_LOCAL_DOCKER=1       # inspect/trust the local Docker daemon first
+bun run lc verify doctor --preflight       # actionable clean-checkout prerequisite checks
+bun run lc verify list                     # catalog; no running stack needed
+bun run lc verify up --dir /tmp/lcv --json  # self-prepare, start, authenticate; blocks until ready
+bun run lc verify run account --dir /tmp/lcv
+bun run lc verify script my-check.ts --dir /tmp/lcv
+bun run lc verify browser --dir /tmp/lcv --headed # reuse via a Playwright/CDP client
+bun run lc verify down --dir /tmp/lcv       # ownership-checked; evidence stays
+# One-shot gate: use a new directory, not the retained stack above
+bun run lc verify run all --fresh --json --dir /tmp/lcv-ready
+```
+
+Requires Linux (`/proc` ownership), the repo-pinned Node/Bun toolchain, installed workspace
+dependencies, a trusted local Docker Engine/default Unix socket with Compose v2, and Playwright
+Chromium. `up` prepares generated artifacts automatically; `prepare --dir <directory>` does it
+explicitly. Each directory allocates its own ports/configuration, so `lc dev` and independent stacks
+can coexist. Default to serial workers and one coordinator for shared-stack teardown; `down --force`
+recovers hung startup without bypassing ownership checks.
+
+Recommend **16 GiB RAM** and ample disk (preflight requires 10 GiB free before image/evidence growth).
+The reviewer's 8 GiB sandbox used roughly 4–5 GiB swap; this is not a proven minimum.
+Native macOS/Windows ownership is unsupported: run the secret-free
+[LearnCard Verification workflow](../../.github/workflows/verification.yml) from GitHub Actions
+(`gh workflow run verification.yml --ref <branch>`), or use a Linux VM/sandbox with local Docker.
+Hosted CI results are unobserved until actually triggered and completed.
+
+Evidence contains disposable secrets: keep raw reports, traces, sessions, logs and CLI `.env`
+files private. Hosted CI uploads only sanitized status/count summaries. The full guide is
+[`.agents/skills/verify-learncard/SKILL.md`](../../.agents/skills/verify-learncard/SKILL.md) and its
+[feature map](../../.agents/skills/verify-learncard/features/README.md).
+
+Browser query persistence uses localforage only. Native persistence waits for SQLite readiness and
+then uses SQLite exclusively, including across reloads; it never falls back to a stale localforage
+cache or reports a failed write as durable. Linux/browser verification does not prove native-device
+persistence; use the native test/device workflow for that claim.
+
 ## Managed Account Consent
 
 - Consent identity uses the parent account's Family name/photo records. Its cache is separate from profile lists and scoped to the parent account.
