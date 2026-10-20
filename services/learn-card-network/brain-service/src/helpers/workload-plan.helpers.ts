@@ -97,6 +97,13 @@ export const resolveWorkloadPlan = async (
     }
     // Host CPU architecture is deliberately checked by the phase-4 agent, not brain.
     return {
+        execution: {
+            components,
+            secretRefs: manifest.secretRefs.filter((secret): boolean =>
+                secret.consumers.some((id): boolean => componentIds.has(id))
+            ),
+            config,
+        },
         packageId: manifest.id,
         packageVersionId: version.versionId,
         version: manifest.version,

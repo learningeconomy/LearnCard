@@ -479,6 +479,15 @@ export type ApprovalArtifact = z.infer<typeof ApprovalArtifactValidator>;
 
 /** Review evidence only: no secret values or provisioning results. */
 export const WorkloadPlanValidator = z.object({
+    // Included in the approval hash. Legacy review-only plans cannot be executed.
+    execution: z
+        .object({
+            components: z.array(z.record(z.string(), z.unknown())),
+            secretRefs: z.array(z.record(z.string(), z.unknown())),
+            config: z.record(z.string(), z.unknown()),
+        })
+        .strict()
+        .optional(),
     packageId: z.string(),
     packageVersionId: z.string(),
     version: z.string(),

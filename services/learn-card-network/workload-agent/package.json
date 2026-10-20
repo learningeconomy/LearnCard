@@ -1,0 +1,25 @@
+{
+    "name": "@learncard/workload-agent",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "bun build src/index.ts --target=bun --outdir=dist",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "lint": "eslint src test",
+        "start": "bun src/index.ts"
+    },
+    "dependencies": {
+        "@trpc/client": "11.7.1",
+        "@trpc/server": "11.7.1",
+        "ioredis": "^5.2.2",
+        "zod": "4.4.3",
+        "yaml": "^2.8.0"
+    },
+    "devDependencies": {
+        "@types/node": "^18.19.68",
+        "typescript": "5.9.3",
+        "vitest": "4.1.11"
+    }
+}

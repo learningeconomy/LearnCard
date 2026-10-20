@@ -147,6 +147,8 @@
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "dev-console": "docker compose -f compose-local.yaml --profile console up --build",
         "dev-console:down": "docker compose -f compose-local.yaml --profile console down",
+        "dev-console:workloads": "docker compose -f compose-local.yaml -f compose-workloads.yaml --profile console --profile workloads up --build",
+        "dev-console:workloads:down": "docker compose -f compose-local.yaml -f compose-workloads.yaml --profile console --profile workloads down",
         "start": "vite --host",
         "i18n:check-ast": "eslint --config eslint-i18n.config.mjs src/pages/appStoreDeveloper src/pages/appStoreAdmin",
         "i18n:check-guides": "node scripts/check-i18n-guides.mjs",

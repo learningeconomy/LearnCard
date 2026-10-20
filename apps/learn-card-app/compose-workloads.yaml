@@ -1,0 +1,37 @@
+services:
+    brain:
+        ports: !override
+            - '127.0.0.1:4000:4000'
+        environment:
+            WORKLOAD_LOCAL_COMPOSE_ENABLED: 'true'
+            WORKLOAD_AGENT_TOKEN: ${WORKLOAD_AGENT_TOKEN:-disposable-local-workload-agent-token}
+
+    lcn-workload-agent:
+        image: lcn-workload-agent-local
+        container_name: lcn-workload-agent
+        profiles: ['workloads']
+        build:
+            context: ../../
+            dockerfile: services/learn-card-network/workload-agent/Dockerfile
+        depends_on:
+            brain:
+                condition: service_started
+        networks: [learn-card]
+        environment:
+            NODE_ENV: development
+            STAGE: ${STAGE:-local}
+            WORKLOAD_PRODUCTION: ${WORKLOAD_PRODUCTION:-false}
+            WORKLOAD_LOCAL_COMPOSE_ENABLED: 'true'
+            WORKLOAD_AGENT_TOKEN: ${WORKLOAD_AGENT_TOKEN:-disposable-local-workload-agent-token}
+            BRAIN_URL: http://brain:4000
+            WORKLOAD_REDIS_URL: redis://redis:6379
+            WORKLOAD_AGENT_POLL_MS: ${WORKLOAD_AGENT_POLL_MS:-5000}
+            WORKLOAD_SECRETS_DIR: /var/lib/lcn-workloads/secrets
+            WORKLOAD_IMAGE_ALLOWLIST: ${WORKLOAD_IMAGE_ALLOWLIST:-}
+            WORKLOAD_MAX_CPU_MILLIS: ${WORKLOAD_MAX_CPU_MILLIS:-2000}
+            WORKLOAD_MAX_MEMORY_MIB: ${WORKLOAD_MAX_MEMORY_MIB:-2048}
+            WORKLOAD_MAX_PIDS: ${WORKLOAD_MAX_PIDS:-512}
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ${WORKLOAD_HOST_SECRETS_DIR:-${HOME}/.lcn-workloads/secrets}:/var/lib/lcn-workloads/secrets
+        restart: unless-stopped
