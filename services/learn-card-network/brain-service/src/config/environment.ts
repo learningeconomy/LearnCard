@@ -30,6 +30,7 @@ export const brainServiceEnvironmentShape = {
     SIGNING_AUTHORITY_ENDPOINT: optionalEnvironmentUrl,
     APP_STORE_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     WORKLOAD_CURATOR_DIDS: optionalEnvironmentString,
+    WORKLOAD_AGENT_TOKEN: optionalEnvironmentString,
     WORKLOAD_LOCAL_COMPOSE_ENABLED: optionalEnvironmentBoolean.default(false),
     SKILL_FRAMEWORK_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID: optionalEnvironmentString,
@@ -126,6 +127,13 @@ export const brainServiceEnvironmentSchema = z
         CLIENT_APP_PORT: environment.CLIENT_APP_PORT ?? 3000,
     }))
     .superRefine((environment, context) => {
+        if (environment.WORKLOAD_LOCAL_COMPOSE_ENABLED && !environment.WORKLOAD_AGENT_TOKEN) {
+            context.addIssue({
+                code: 'custom',
+                path: ['WORKLOAD_AGENT_TOKEN'],
+                message: 'Required when WORKLOAD_LOCAL_COMPOSE_ENABLED=true',
+            });
+        }
         if (
             environment.NODE_ENV === 'production' &&
             !environment.IS_OFFLINE &&

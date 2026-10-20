@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export const WorkloadAuditActionEnum = z.enum([
+    'WORKLOAD_APPLY_QUEUED',
+    'WORKLOAD_READY',
+    'WORKLOAD_DEGRADED',
+    'WORKLOAD_FAILED',
+    'WORKLOAD_RETIRING',
+    'WORKLOAD_RETIRED_WITH_OBLIGATIONS',
+]);
+export type WorkloadAuditAction = z.infer<typeof WorkloadAuditActionEnum>;
+
 export const InstallIntentAuditEventValidator = z.object({
     id: z.string(),
     action: z.string(),

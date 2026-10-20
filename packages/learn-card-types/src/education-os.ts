@@ -773,7 +773,10 @@ export const EntitlementPolicyValidator = z.object({
 });
 export type EntitlementPolicy = z.infer<typeof EntitlementPolicyValidator>;
 
-export const InstallTargetStatusEnum = InstallIntentStatusPhaseEnum;
+export const InstallTargetStatusEnum = z.union([
+    InstallIntentStatusPhaseEnum,
+    z.enum(['PENDING', 'RETIRING', 'RETIRED']),
+]);
 export type InstallTargetStatus = z.infer<typeof InstallTargetStatusEnum>;
 
 export const InstallTargetValidator = z.object({

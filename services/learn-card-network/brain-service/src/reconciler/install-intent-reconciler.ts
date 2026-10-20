@@ -1,5 +1,14 @@
 import cache from '@cache';
 import {
+    createWorkloadDeployment,
+    readWorkloadDeployment,
+} from '@accesslayer/workload-deployment/store';
+import {
+    observeWorkloadDeployment,
+    submitWorkloadOperation,
+    reenqueueWorkloadOperations,
+} from '../workload/lifecycle';
+import {
     environment,
     getInstallIntentReconcilerRuntimeEnvironment as reconcilerConfig,
 } from '@environment';
@@ -500,7 +509,10 @@ const observeDrift = async (
     if (authorityDrift) return markDrift(intent, authorityDrift, actor, now);
 
     for (const expectedTarget of expectedTargets) {
-        const observedTarget = observedTargets.find(target => target.id === expectedTarget.id);
+        const observedTarget =
+            expectedTarget.targetType === 'WORKLOAD_DEPLOYMENT'
+                ? await observeWorkloadDeployment(expectedTarget.id, now)
+                : observedTargets.find(target => target.id === expectedTarget.id);
 
         if (!observedTarget) {
             return markDrift(
@@ -511,6 +523,23 @@ const observeDrift = async (
             );
         }
 
+        if (expectedTarget.config.optional === true && observedTarget.status === 'FAILED') continue;
+        if (observedTarget.status === 'FAILED')
+            return writeStatusWithAudit(
+                intent,
+                {
+                    intentId: intent.intentId,
+                    expectedStatusRevision: intent.statusRevision,
+                    phase: 'FAILED',
+                    cause: 'HEALTH',
+                    message: `Required target ${expectedTarget.id} failed.`,
+                    observedAt: iso(now),
+                    retryCount: 0,
+                },
+                actor
+            );
+        if (observedTarget.status === 'PENDING' || observedTarget.status === 'APPLYING')
+            return intent;
         if (observedTarget.status !== 'READY') {
             return markDrift(
                 intent,
@@ -568,7 +597,7 @@ const observeDrift = async (
         }
     }
 
-    if (intent.status?.phase === 'DEGRADED') {
+    if (intent.status?.phase === 'DEGRADED' || intent.status?.phase === 'APPLYING') {
         return markReady(intent, actor, now);
     }
 
@@ -600,6 +629,31 @@ const runInstallPass = async (
 
     for (const target of expectedTargetDescriptors(current)) {
         await assertKillSwitchNotEnabled(current.ecosystemId);
+        if (target.targetType === 'WORKLOAD_DEPLOYMENT') {
+            if (!target.workload)
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'Approved workload review is missing.',
+                });
+            const previous = await readWorkloadDeployment(target.id);
+            await createWorkloadDeployment({
+                id: target.id,
+                intentId: current.intentId,
+                ecosystemId: current.ecosystemId,
+                declarationId: getTargetDeclarationId(target),
+                desiredRevision: current.specRevision,
+                approvedSpec: target.workload,
+            });
+            await submitWorkloadOperation(
+                target.id,
+                previous && current.specRevision > (previous.desiredRevision ?? 0)
+                    ? 'UPGRADE'
+                    : previous?.operationRef?.endsWith(':UPGRADE')
+                      ? 'UPGRADE'
+                      : 'APPLY'
+            );
+            continue;
+        }
         if (target.targetType === 'INTEGRATION_INSTALL') {
             await provisionIntegrationServiceAccount(
                 {
@@ -701,6 +755,16 @@ const runAuthPass = async (
     }
 
     if (authCause) return markDrift(intent, authCause, actor, now);
+    if (
+        expectedTargets.some(target => {
+            const observed = observedTargets.find(candidate => candidate.id === target.id);
+            return (
+                observed?.status !== 'READY' &&
+                !(target.config.optional === true && observed?.status === 'FAILED')
+            );
+        })
+    )
+        return intent;
     return markReady(intent, actor, now);
 };
 
@@ -747,9 +811,18 @@ const runRemovePass = async (
     await revokeIntentServiceAccounts(current);
     await cascadeIntentBindingRevocations(current);
 
+    let retiring = false;
+    const retainedObligations = new Set<string>();
     for (const target of expectedTargetDescriptors(current)) {
-        await deleteInstallTargetInternal({ id: target.id, targetType: target.targetType });
+        if (target.targetType === 'WORKLOAD_DEPLOYMENT') {
+            await submitWorkloadOperation(target.id, 'RETIRE');
+            const deployment = await observeWorkloadDeployment(target.id, now);
+            if (deployment && deployment.status !== 'RETIRED') retiring = true;
+            for (const obligation of deployment?.retainedObligations ?? [])
+                retainedObligations.add(obligation);
+        } else await deleteInstallTargetInternal({ id: target.id, targetType: target.targetType });
     }
+    if (retiring) return current;
 
     return writeStatusWithAudit(
         current,
@@ -759,9 +832,11 @@ const runRemovePass = async (
             phase: 'REMOVED',
             cause: 'OPERATOR',
             message:
-                current.approval.state === 'APPROVED'
-                    ? current.approval.artifact.dispositionPolicy.mode
-                    : undefined,
+                retainedObligations.size > 0
+                    ? `Workloads retired; retained obligations: ${[...retainedObligations].join(', ')}.`
+                    : current.approval.state === 'APPROVED'
+                      ? current.approval.artifact.dispositionPolicy.mode
+                      : undefined,
             observedAt: iso(now),
             retryCount: 0,
         },
@@ -818,6 +893,7 @@ export const reconcileInstallIntent = async (
     options: ReconcileOptions = {}
 ): Promise<InstallIntentRecordType> => {
     assertInstallIntentCoordinationAvailable();
+    await reenqueueWorkloadOperations();
 
     const previous =
         intentQueues.get(intentId) ?? Promise.resolve<InstallIntentRecordType | null>(null);

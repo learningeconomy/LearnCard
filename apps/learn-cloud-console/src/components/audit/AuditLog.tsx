@@ -22,6 +22,15 @@ const isPlumbing = (action: string) => action.startsWith('STATUS_');
 
 // Human verb for the *decision* actions (ADR-008 install intents, ADR-008/011 bindings).
 const VERBS: Record<string, { verb: string; tone: Tone }> = {
+    WORKLOAD_APPLY_QUEUED: { verb: 'queued deployment of', tone: 'neutral' },
+    WORKLOAD_READY: { verb: 'confirmed healthy deployment of', tone: 'success' },
+    WORKLOAD_DEGRADED: { verb: 'detected reduced health for', tone: 'warning' },
+    WORKLOAD_FAILED: { verb: 'could not deploy', tone: 'destructive' },
+    WORKLOAD_RETIRING: { verb: 'started retirement of', tone: 'warning' },
+    WORKLOAD_RETIRED_WITH_OBLIGATIONS: {
+        verb: 'retired while preserving keys, data and status publication for',
+        tone: 'neutral',
+    },
     PLAN_CREATED: { verb: 'planned install of', tone: 'neutral' },
     APPROVED: { verb: 'approved install of', tone: 'success' },
     APPLIED: { verb: 'installed', tone: 'success' },

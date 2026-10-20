@@ -25,6 +25,24 @@ export type WalletEnablementType = z.infer<typeof WalletEnablementValidator>;
 
 export const WorkloadDeploymentValidator = CatalogAwareInstallTargetValidator.extend({
     targetType: z.literal('WORKLOAD_DEPLOYMENT'),
+    desiredRevision: z.number().optional(),
+    observedRevision: z.number().optional(),
+    lastAppliedRevision: z.number().optional(),
+    packageVersionId: z.string().optional(),
+    packageId: z.string().optional(),
+    manifestHash: z.string().optional(),
+    profiles: z.array(z.string()).optional(),
+    declarationId: z.string().optional(),
+    driver: z.enum(['local-compose', 'fake']).optional(),
+    componentHealth: z.string().optional(),
+    endpointsObserved: z.string().optional(),
+    failureCode: z.string().optional(),
+    failureMessage: z.string().optional(),
+    operationRef: z.string().optional(),
+    checkedAt: z.string().optional(),
+    retainedObligations: z.array(z.string()).optional(),
+    unhealthyObservations: z.number().optional(),
+    approvedSpec: z.string().optional(),
 });
 export type WorkloadDeploymentType = z.infer<typeof WorkloadDeploymentValidator>;
 

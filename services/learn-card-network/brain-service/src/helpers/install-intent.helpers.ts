@@ -582,7 +582,7 @@ export const materializeBundlePlan = (input: {
                 workload,
                 scopes: [],
                 consentTiers: [],
-                config: operatorConfig,
+                config: { ...operatorConfig, ...(member.optional ? { optional: true } : {}) },
                 entitlementRequirements: input.expandedBundle.entitlementRequirements,
             } satisfies InstallTargetSpec;
         }

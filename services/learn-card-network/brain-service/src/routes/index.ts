@@ -65,6 +65,7 @@ export type Context = {
     domain: string;
     tenant: ResolvedTenant;
     _guardianApprovalToken?: string;
+    workloadAgentToken?: string;
     /**
      * Caller IP, when the transport exposes one. Used to scope abuse limits on
      * pre-auth routes, where there is no DID to key a limit on. Best-effort:
@@ -226,7 +227,11 @@ export const createContext = async (
         }
     }
 
-    return { domain, tenant, _guardianApprovalToken, sourceIp, actAs };
+    const workloadAgentToken =
+        'get' in event.headers
+            ? (event.headers as Map<string, string>).get('x-workload-agent-token')
+            : (event.headers as Record<string, string | undefined>)['x-workload-agent-token'];
+    return { domain, tenant, _guardianApprovalToken, sourceIp, actAs, workloadAgentToken };
 };
 
 const sentryTransactionNameMiddleware = t.middleware(({ ctx, next, path }) => {

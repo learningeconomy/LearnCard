@@ -142,8 +142,10 @@ export const deleteInstallTargetInternal = async (
             await WalletEnablement.delete({ where: { id: input.id } });
             return;
         case 'WORKLOAD_DEPLOYMENT':
-            await WorkloadDeployment.delete({ where: { id: input.id } });
-            return;
+            throw new TRPCError({
+                code: 'PRECONDITION_FAILED',
+                message: 'Workloads must be retired; retained obligations cannot be deleted.',
+            });
         case 'REGISTRY_SUBSCRIPTION':
             await RegistrySubscription.delete({ where: { id: input.id } });
             return;
