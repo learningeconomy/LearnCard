@@ -1,47 +1,53 @@
 .batch-delivery-illustration {
+    // Decorative sky requested for this scene; controls keep the app palette.
+    background-color: #e5f4fc;
+
     // The full-width track makes the flight respond to the card, including on phones.
     .batch-delivery-flight {
-        transform: translateX(calc(50% - 56px));
+        transform: translateX(calc(50% - 64px));
     }
-    .batch-delivery-ufo {
+    .batch-delivery-bird {
         overflow: visible;
     }
+    .batch-delivery-wing {
+        transform-origin: 55px 44px;
+    }
     .batch-delivery-drop {
-        transform-origin: 56px 92px;
+        transform-origin: 63px 58px;
     }
     .batch-delivery-cloud--0 {
         inset-inline-start: 4%;
-        top: 15px;
+        top: 5px;
     }
     .batch-delivery-cloud--1 {
         inset-inline-start: 47%;
-        top: 83px;
+        top: 51px;
         opacity: 0.7;
     }
     .batch-delivery-cloud--2 {
         inset-inline-start: 82%;
-        top: 30px;
+        top: 16px;
     }
 
     &--active {
         .batch-delivery-flight {
             animation: batch-delivery-crossing 9s linear infinite;
         }
-        .batch-delivery-ufo {
+        .batch-delivery-bird {
             animation: batch-delivery-wave 3s ease-in-out infinite;
         }
         .batch-delivery-drop {
             animation: batch-delivery-release 1.8s ease-in infinite;
         }
-        .batch-delivery-beam {
-            animation: batch-delivery-beam 1.8s ease-in infinite;
+        .batch-delivery-wing {
+            animation: batch-delivery-flap 1.5s ease-in-out infinite;
         }
     }
 }
 
 @keyframes batch-delivery-crossing {
     from {
-        transform: translateX(-112px);
+        transform: translateX(-128px);
     }
     to {
         transform: translateX(100%);
@@ -53,12 +59,12 @@
         transform: translateY(4px) rotate(-3deg);
     }
     50% {
-        transform: translateY(19px) rotate(3deg);
+        transform: translateY(11px) rotate(3deg);
     }
 }
 @keyframes batch-delivery-release {
     0% {
-        transform: translateY(-23px) scale(0.7);
+        transform: translateY(-3px) scale(0.7);
         opacity: 0;
     }
     25% {
@@ -68,25 +74,25 @@
         opacity: 1;
     }
     100% {
-        transform: translateY(40px) rotate(12deg);
+        transform: translateY(25px) rotate(12deg);
         opacity: 0;
     }
 }
-@keyframes batch-delivery-beam {
+@keyframes batch-delivery-flap {
     0%,
     100% {
-        opacity: 0.15;
+        transform: rotate(-8deg) scaleY(1);
     }
-    40% {
-        opacity: 0.4;
+    50% {
+        transform: rotate(12deg) scaleY(0.55);
     }
 }
 @media (prefers-reduced-motion: reduce) {
     .batch-delivery-illustration--active {
         .batch-delivery-flight,
-        .batch-delivery-ufo,
+        .batch-delivery-bird,
         .batch-delivery-drop,
-        .batch-delivery-beam {
+        .batch-delivery-wing {
             animation: none;
         }
     }

@@ -5,7 +5,7 @@ import './batch-delivery-animation.scss';
 export const BatchDeliveryAnimation: React.FC<{ active: boolean }> = ({ active }) => (
     <div
         aria-hidden="true"
-        className={`batch-delivery-illustration relative h-36 w-full overflow-hidden rounded-2xl bg-emerald-50 text-grayscale-900 ${active ? 'batch-delivery-illustration--active' : ''}`}
+        className={`batch-delivery-illustration relative h-24 sm:h-28 w-full overflow-hidden rounded-2xl text-grayscale-900 ${active ? 'batch-delivery-illustration--active' : ''}`}
     >
         {[0, 1, 2].map(cloud => (
             <svg
@@ -20,8 +20,8 @@ export const BatchDeliveryAnimation: React.FC<{ active: boolean }> = ({ active }
         ))}
         <div className="batch-delivery-flight absolute inset-0">
             <svg
-                viewBox="0 0 112 128"
-                className="batch-delivery-ufo h-32 w-28"
+                viewBox="0 0 128 96"
+                className="batch-delivery-bird h-24 w-32"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.6"
@@ -30,43 +30,33 @@ export const BatchDeliveryAnimation: React.FC<{ active: boolean }> = ({ active }
                 focusable="false"
             >
                 <g className="batch-delivery-drop">
+                    <path d="M53 58h14l7 7v19H53Z" className="fill-white stroke-emerald-600" />
+                    <path d="M67 58v7h7M58 69h5" className="stroke-emerald-600" />
+                    <circle cx="63" cy="77" r="4" className="fill-emerald-100 stroke-emerald-600" />
+                    <path d="m61 77 1.5 1.5 3-3" className="stroke-emerald-700" />
+                </g>
+                {/* Long trailing legs and a curved neck give our courier a crane silhouette. */}
+                <path d="m37 48-24 6-7-2m33 0-24 9-7-1" className="stroke-grayscale-700" />
+                <path
+                    d="m27 37-13-7 8 17 16 6c13 5 25 0 31-9l8-15c2-4 8-5 12-2l5-3c-7-9-20-8-25 2L56 39c-8-8-20-9-29-2Z"
+                    className="fill-white stroke-grayscale-700"
+                />
+                <path d="m94 24 18 6-19 1" className="fill-emerald-300 stroke-emerald-700" />
+                <circle cx="87" cy="24" r="1.5" className="fill-grayscale-900 stroke-none" />
+                <path
+                    d="M76 19v-7c5-5 14-5 20 0l-1 8Z"
+                    className="fill-grayscale-900 stroke-grayscale-900"
+                />
+                <path d="M75 19h25" className="stroke-grayscale-900" strokeWidth="3" />
+                <path d="M82 12h8v5h-8Zm0 0 4 3 4-3" className="stroke-white" strokeWidth=".9" />
+                <g className="batch-delivery-wing">
                     <path
-                        d="M44 76h16l9 9v23a3 3 0 0 1-3 3H44a3 3 0 0 1-3-3V79a3 3 0 0 1 3-3Z"
-                        className="fill-white stroke-emerald-600"
+                        d="M56 43C47 26 37 14 24 12c1 10 5 15 10 20l-10-3c5 10 15 17 27 19"
+                        className="fill-white stroke-grayscale-700"
                     />
-                    <path d="M60 76v9h9M47 89h8" className="stroke-emerald-600" />
-                    <circle
-                        cx="55"
-                        cy="100"
-                        r="6"
-                        className="fill-emerald-100 stroke-emerald-600"
-                    />
-                    <path d="m52 100 2 2 4-4" className="stroke-emerald-700" />
+                    <path d="m33 23 14 17m-11-7 10 9" className="stroke-grayscale-300" />
                 </g>
-                <path
-                    d="m42 55-13 47h54L70 55Z"
-                    className="batch-delivery-beam fill-emerald-200 stroke-none"
-                    opacity=".35"
-                />
-                <path
-                    d="M24 34c-16 8-10 18 32 21 42-3 48-13 32-21-15-9-49-9-64 0Z"
-                    className="fill-grayscale-900"
-                />
-                <ellipse
-                    cx="56"
-                    cy="35"
-                    rx="35"
-                    ry="7"
-                    className="fill-white stroke-grayscale-900"
-                />
-                <path d="M34 35a22 22 0 0 1 44 0" className="fill-emerald-100 stroke-emerald-700" />
-                <path d="M43 25c2-5 7-8 12-8" className="stroke-white" strokeWidth="3" />
-                <g className="fill-emerald-300 stroke-none">
-                    <circle cx="30" cy="44" r="2" />
-                    <circle cx="47" cy="48" r="2" />
-                    <circle cx="65" cy="48" r="2" />
-                    <circle cx="82" cy="44" r="2" />
-                </g>
+                <path d="m54 51 7 7 7-3" className="stroke-grayscale-700" />
             </svg>
         </div>
     </div>

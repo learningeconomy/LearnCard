@@ -379,7 +379,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await issueButton(page).click();
             await expect.poll(() => submissions.length).toBe(1);
-            const flyer = page.locator('.batch-delivery-ufo');
+            const flyer = page.locator('.batch-delivery-bird');
             await expect(flyer).toBeInViewport();
             await expect(
                 page.getByRole('button', { name: 'View delivery status', exact: true })
@@ -391,6 +391,17 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expect
                 .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
                 .toBe('none');
+            const scene = page.locator('.batch-delivery-illustration');
+            await page.setViewportSize({ width: 390, height: 844 });
+            const phoneScene = await scene.boundingBox();
+            expect(phoneScene!.height).toBeLessThanOrEqual(96);
+            expect(phoneScene!.x).toBeGreaterThanOrEqual(0);
+            expect(phoneScene!.x + phoneScene!.width).toBeLessThanOrEqual(390);
+            expect(await scene.evaluate(el => getComputedStyle(el).backgroundColor)).toBe(
+                'rgb(229, 244, 252)'
+            );
+            await page.screenshot({ path: testInfo.outputPath('compact-crane-phone.png') });
+            await page.setViewportSize({ width: 1440, height: 1000 });
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await page.getByRole('button', { name: 'View delivery status', exact: true }).click();
             await expect(

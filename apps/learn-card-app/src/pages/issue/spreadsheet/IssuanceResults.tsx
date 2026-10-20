@@ -45,7 +45,7 @@ export const IssuanceResults: React.FC<{
         <section
             ref={progress}
             data-testid="issuance-progress"
-            className="font-poppins bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4"
+            className="font-poppins bg-white border border-grayscale-200 rounded-[20px] p-4 sm:p-5 space-y-3"
         >
             <BatchDeliveryAnimation active={busy || (!ready && waiting > 0)} />
             <div className="flex items-center gap-3">
