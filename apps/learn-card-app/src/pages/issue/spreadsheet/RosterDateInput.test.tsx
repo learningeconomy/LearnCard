@@ -31,7 +31,7 @@ describe('roster calendar editor', () => {
         fireEvent.change(input, { target: { value: '2026-10-03' } });
         expect(onChange).toHaveBeenCalledWith('2026-10-03T04:30:12.345Z');
     });
-    it('shows a readable date with a native picker and keeps calendar-only edits calendar-only', () => {
+    it('shows a readable date with a native picker and saves explicit calendar edits as credential timestamps', () => {
         const onChange = vi.fn();
         render(
             <RosterDateInput
@@ -45,7 +45,7 @@ describe('roster calendar editor', () => {
         const input = screen.getByLabelText('Completed date');
         expect(input).toHaveAttribute('type', 'date');
         fireEvent.change(input, { target: { value: '2026-10-04' } });
-        expect(onChange).toHaveBeenCalledWith('2026-10-04');
+        expect(onChange).toHaveBeenCalledWith('2026-10-04T00:00:00.000Z');
         expect(changeRosterDate('2026-10-01', '')).toBe('');
     });
     it('preserves invalid source text visibly and lets the picker correct it', () => {
@@ -64,7 +64,23 @@ describe('roster calendar editor', () => {
         fireEvent.change(screen.getByLabelText('Completed date'), {
             target: { value: '2026-10-01' },
         });
-        expect(onChange).toHaveBeenCalledWith('2026-10-01');
+        expect(onChange).toHaveBeenCalledWith('2026-10-01T00:00:00.000Z');
+    });
+    it('writes midnight UTC when choosing a date for an empty credential field', () => {
+        const onChange = vi.fn();
+        render(
+            <RosterDateInput
+                aria-label="Completed date"
+                value=""
+                onChange={onChange}
+                className=""
+            />
+        );
+        fireEvent.change(screen.getByLabelText('Completed date'), {
+            target: { value: '2026-10-01' },
+        });
+        expect(onChange).toHaveBeenCalledWith('2026-10-01T00:00:00.000Z');
+        expect(changeRosterDate('2026-10-01', '2026-10-01')).toBe('2026-10-01');
     });
     it('leaves submitted dates locked', () => {
         render(

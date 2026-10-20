@@ -21,7 +21,7 @@ export const changeRosterDate = (value: string, day: string): string => {
     if (!day) return '';
     const previous = parseRosterDate(value);
     if (previous?.toISOString().slice(0, 10) === day) return value;
-    if (!previous || value.length === 10) return day;
+    if (!previous || value.length === 10) return `${day}T00:00:00.000Z`;
     return `${day}T${previous.toISOString().slice(11)}`;
 };
 
