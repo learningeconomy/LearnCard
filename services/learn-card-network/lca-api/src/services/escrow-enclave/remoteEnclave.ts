@@ -92,15 +92,18 @@ const holdRecordValidator = z
         ledgerSeq: z.number().int().nonnegative(),
     })
     .passthrough();
-const validatedHold = (hold: ReleaseRequest['hold']): ReleaseRequest['hold'] => {
-    if (!holdRecordValidator.safeParse(hold).success) throw new EscrowUnavailableError();
+const validatedHold = (
+    hold: ReleaseRequest['hold'],
+    reason: 'invalid_hold' | 'invalid_response' = 'invalid_hold'
+): ReleaseRequest['hold'] => {
+    if (!holdRecordValidator.safeParse(hold).success) throw new EscrowUnavailableError(reason);
     if (hold.hold.policyVersion === 2) {
         try {
             AuthorityCommitValidator.parse(
                 JSON.parse(Buffer.from(hold.hold.signature, 'base64').toString('utf8'))
             );
         } catch {
-            throw new EscrowUnavailableError();
+            throw new EscrowUnavailableError(reason);
         }
     }
     return hold;
@@ -129,7 +132,7 @@ const errorForCode = (code: z.infer<typeof errorCodeValidator>): Error => {
     if (code === 'codeMismatch' || code === 'codeExpired' || code === 'codeLocked')
         return new EscrowCodeError(code);
     if (code === 'blob') return new EscrowBlobError();
-    return new EscrowUnavailableError(); // 'unavailable' | 'ledger' | 'time'
+    return new EscrowUnavailableError(code); // 'unavailable' | 'ledger' | 'time'
 };
 
 export interface RemoteEnclaveTransportResponse {
@@ -198,15 +201,15 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
             status = response.status;
             data = response.data;
         } catch {
-            throw new EscrowUnavailableError();
+            throw new EscrowUnavailableError('transport');
         }
         if (status < 200 || status >= 300) {
             const parsedError = errorResponseValidator.safeParse(data);
             if (parsedError.success) throw errorForCode(parsedError.data.code);
-            throw new EscrowUnavailableError();
+            throw new EscrowUnavailableError(status === 429 ? 'rate_limit' : 'http_refusal');
         }
         const parsed = validator.safeParse(data);
-        if (!parsed.success) throw new EscrowUnavailableError();
+        if (!parsed.success) throw new EscrowUnavailableError('invalid_response');
         return parsed.data;
     };
 
@@ -226,7 +229,7 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 result.enrollmentEpoch !== input.signedIntent.intent.enrollmentEpoch ||
                 (result.envelope === null) !== (input.signedIntent.intent.action === 'disable')
             )
-                throw new EscrowUnavailableError();
+                throw new EscrowUnavailableError('invalid_response');
             return result;
         },
         getAttestation: (nonce?: Uint8Array): Promise<EnclaveAttestation> =>
@@ -267,7 +270,7 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 z.object({ result: AuthorityMutationValidator }).strict()
             );
             if (!result.envelope || result.enrollmentEpoch !== input.sourceEnrollmentEpoch)
-                throw new EscrowUnavailableError();
+                throw new EscrowUnavailableError('invalid_response');
             return { envelope: result.envelope, authority: result };
         },
         createHold: async input => {
@@ -293,7 +296,7 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
             );
             // Response-only evidence must not be echoed into strict old-image hold DTOs.
             const { delivery, ...holdRecord } = result;
-            return { holdRecord: validatedHold(holdRecord), delivery };
+            return { holdRecord: validatedHold(holdRecord, 'invalid_response'), delivery };
         },
         getHoldState: async input =>
             call('/v1/hold-state', input, z.object({ proof: AuthorityHoldReceiptValidator })),
@@ -310,7 +313,7 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 z.object({ ok: z.literal(true), receipt: AuthorityCommitValidator.optional() })
             );
             if (input.hold.hold.policyVersion === 2 && !result.receipt)
-                throw new EscrowUnavailableError();
+                throw new EscrowUnavailableError('invalid_response');
             if (result.receipt) return { receipt: result.receipt };
             return undefined;
         },
@@ -381,7 +384,7 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 releaseResponseValidator
             );
             if (input.hold.hold.policyVersion === 2 && !result.receipt)
-                throw new EscrowUnavailableError();
+                throw new EscrowUnavailableError('invalid_response');
             return result;
         },
     };

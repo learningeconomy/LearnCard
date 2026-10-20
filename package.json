@@ -112,6 +112,7 @@
         "zod-openapi": "5.4.5"
     },
     "overrides": {
+        "@sentry/cli": "2.58.6",
         "vitest": "4.1.11",
         "@vitest/coverage-v8": "4.1.11",
         "@vitest/ui": "4.1.11",

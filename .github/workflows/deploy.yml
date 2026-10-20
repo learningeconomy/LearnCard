@@ -1913,7 +1913,11 @@ jobs:
               env:
                   AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
                   AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
-              run: bun run --cwd services/learn-card-network/ai-agent smoke:staging
+                  AI_AGENT_SMOKE_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+              run: |
+                  # The CloudWatch check below reads logs from here on; the scheduled-card wait can outlast its old 10-minute lookback.
+                  echo "AI_AGENT_SMOKE_STARTED_AT_MS=$(( $(date +%s) * 1000 - 60000 ))" >> "$GITHUB_ENV"
+                  bun run --cwd services/learn-card-network/ai-agent smoke:staging
 
             - name: Verify readable CloudWatch application logs
               if: always() && env.TARGET_ENVIRONMENT == 'staging'
@@ -1928,7 +1932,7 @@ jobs:
                         --stack-name '${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}' \
                         --query "Stacks[0].Outputs[?OutputKey=='ApplicationLogGroupName'].OutputValue | [0]" \
                         --output text)"
-                      START_TIME="$(( $(date +%s) * 1000 - 600000 ))"
+                      START_TIME="${AI_AGENT_SMOKE_STARTED_AT_MS:-$(( $(date +%s) * 1000 - 600000 ))}"
                       MESSAGES="$(aws logs filter-log-events \
                         --log-group-name "$LOG_GROUP" \
                         --start-time "$START_TIME" \
