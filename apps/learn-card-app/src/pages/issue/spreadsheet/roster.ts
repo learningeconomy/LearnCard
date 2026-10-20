@@ -233,6 +233,7 @@ export const mergeSpreadsheet = (
             recipients,
             values,
             evidence,
+            formulaCells,
             source: { ...sheet, rows: sourceRows, rowEvidenceColumn: evidenceColumn?.id },
         },
         mapped,

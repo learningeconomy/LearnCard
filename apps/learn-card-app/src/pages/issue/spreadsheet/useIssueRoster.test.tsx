@@ -1,9 +1,13 @@
 import { act, renderHook } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useIssueRoster } from './useIssueRoster';
 import { makeRun, statusFor } from './fixtures.test-support';
 import type { IssuanceRun } from './issuanceTypes';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { dynamicField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
+import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
+import { exportRosterCsv } from './roster';
 
 vi.mock('learn-card-base/stores/NetworkStore', () => ({
     networkStore: {
@@ -37,6 +41,76 @@ afterEach(() => {
 });
 
 describe('roster autosave and sending', () => {
+    it.each([false, true])('blocks formula errors after import (saved run: %s)', async saved => {
+        const original = makeRun();
+        original.template.credentialSubject.achievement.description = dynamicField('score');
+        original.scopes = { score: 'perRecipient' };
+        original.draft.values = { 'row-0': { score: '95' } };
+        const sheet = parseSpreadsheet(
+            readSpreadsheetText(
+                saved
+                    ? exportRosterCsv(original.draft, ['score'], original.scopes, {})
+                    : 'Email,score\nperson0@test.com,95'
+            )
+        );
+        const column = sheet.columns.find(column => column.label === 'score')!;
+        sheet.rows[0].cells[column.id] = { text: '#REF!', problem: 'formula' };
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(saved ? original : undefined);
+        store.save.mockResolvedValue(undefined);
+        Object.defineProperty(navigator, 'locks', {
+            configurable: true,
+            value: {
+                request: async (
+                    _name: string,
+                    _options: unknown,
+                    callback: (lock: object) => unknown
+                ) => callback({}),
+            },
+        });
+        const initWallet = vi.fn();
+        const variables = ['score'];
+        const { result } = renderHook(() => {
+            const [recipients, setRecipients] = useState(original.draft.recipients);
+            const [values, setValues] = useState(original.draft.values);
+            const [shared, setShared] = useState(original.shared);
+            const [attachments, setAttachments] = useState({});
+            return useIssueRoster({
+                issuer: original.scope.issuer,
+                recipients,
+                setRecipients,
+                values,
+                setValues,
+                shared,
+                setShared,
+                attachments,
+                setAttachments,
+                variables,
+                template: original.template,
+                onRestoreTemplate: vi.fn(),
+                onPeople: vi.fn(),
+                initWallet,
+                ensureSigningAuthority: vi.fn(),
+            });
+        });
+        await act(async () => {
+            await result.current.importSheet(sheet);
+        });
+        const key = result.current.draft.recipients[0].rowId!;
+        expect(result.current.problems[key]).toEqual(['formula']);
+        expect(result.current.hasProblems).toBe(true);
+        if (saved)
+            expect(store.save).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    draft: expect.objectContaining({ formulaCells: { [key]: { score: '#REF!' } } }),
+                })
+            );
+        await act(async () => {
+            await result.current.execute();
+        });
+        expect(initWallet).not.toHaveBeenCalled();
+        expect(result.current.error).not.toBe('');
+    });
     it.each(['send', 'reset'] as const)('%s during autosave', async action => {
         vi.useFakeTimers();
         let stored: IssuanceRun | undefined;
