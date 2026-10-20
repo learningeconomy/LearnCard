@@ -10,17 +10,33 @@ export const readXlsx = (bytes: ArrayBuffer, name: string): SpreadsheetSource =>
     } catch {
         throw new SpreadsheetError('malformed');
     }
-    const sheets: SpreadsheetSource['sheets'] = {};
+    const sheets: SpreadsheetSource['sheets'] = Object.create(null);
+    let expandedCells = 0;
     for (const [index, sheetName] of workbook.SheetNames.entries()) {
         if (workbook.Workbook?.Sheets?.[index]?.Hidden) continue;
         const sheet = workbook.Sheets[sheetName]!;
-        const range = utils.decode_range(sheet['!ref'] ?? 'A1');
-        if (range.e.r >= SPREADSHEET_LIMITS.rows + 100 || range.e.c >= SPREADSHEET_LIMITS.columns)
-            throw new SpreadsheetError('limit');
+        // !ref often includes whole formatted columns. Bound actual content before
+        // allocating a rectangular matrix; formatting-only cells don't extend it.
+        const end = { r: 0, c: 0 };
+        for (const address of Object.keys(sheet)) {
+            if (!/^[A-Z]+[1-9]\d*$/.test(address)) continue;
+            const cell = sheet[address];
+            if (!cell?.f && (cell?.v == null || String(cell.v).trim() === '')) continue;
+            const position = utils.decode_cell(address);
+            if (
+                position.r >= SPREADSHEET_LIMITS.rows + 100 ||
+                position.c >= SPREADSHEET_LIMITS.columns
+            )
+                throw new SpreadsheetError('limit');
+            end.r = Math.max(end.r, position.r);
+            end.c = Math.max(end.c, position.c);
+        }
+        expandedCells += (end.r + 1) * (end.c + 1);
+        if (expandedCells > SPREADSHEET_LIMITS.cells) throw new SpreadsheetError('limit');
         const matrix: SpreadsheetCell[][] = [];
-        for (let row = 0; row <= range.e.r; row++) {
+        for (let row = 0; row <= end.r; row++) {
             const cells: SpreadsheetCell[] = [];
-            for (let col = 0; col <= range.e.c; col++) {
+            for (let col = 0; col <= end.c; col++) {
                 const cell = sheet[utils.encode_cell({ r: row, c: col })];
                 if (!cell) {
                     cells.push({ text: '' });

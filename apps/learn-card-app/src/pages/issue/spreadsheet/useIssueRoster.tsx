@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import type { UnsignedVC } from '@learncard/types';
+import { AnalyticsEvents, newFlowId, useAnalytics } from '../../../analytics';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import {
@@ -38,7 +40,7 @@ import {
     type IssuanceRun,
     type IssuanceScope,
 } from './issuanceTypes';
-import { normalizeColumn, type ParsedSpreadsheet, type RosterDraft } from './types';
+import { normalizeColumn, normalizeEmail, type ParsedSpreadsheet, type RosterDraft } from './types';
 import { SpreadsheetError } from './parseSpreadsheet';
 import { spreadsheetErrorMessage } from './messages';
 import { getFriendlyIssueError } from '../issueErrors';
@@ -59,9 +61,11 @@ interface RosterOptions {
     onPeople: () => void;
     initWallet: () => Promise<BespokeLearnCard>;
     ensureSigningAuthority: (wallet: BespokeLearnCard) => Promise<unknown>;
+    entryPoint?: string;
 }
 
 export const useIssueRoster = (options: RosterOptions) => {
+    const { track } = useAnalytics();
     const network = networkStore.use.networkUrl();
     const tenant = networkStore.use.tenantId();
     const scope: IssuanceScope = { issuer: options.issuer, domain: network, tenant };
@@ -87,7 +91,9 @@ export const useIssueRoster = (options: RosterOptions) => {
     const runRef = useRef(run);
     runRef.current = run;
     const [recoverable, setRecoverable] = useState<IssuanceRun | null>(null);
+    const [dismissedRecoverable, setDismissedRecoverable] = useState<IssuanceRun | null>(null);
     const [busy, setBusy] = useState(false);
+    const [checking, setChecking] = useState(false);
     const executing = useRef(false);
     const draftSaveTimer = useRef<ReturnType<typeof setTimeout>>();
     const pendingDraftSaves = useRef(new Set<Promise<void>>());
@@ -166,6 +172,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         setRun(saved);
         runRef.current = saved;
         setRecoverable(null);
+        setDismissedRecoverable(null);
     };
     const reset = (): void => {
         abort.current?.abort();
@@ -180,6 +187,14 @@ export const useIssueRoster = (options: RosterOptions) => {
         setPreviewIndex(0);
         setError('');
     };
+    const restore = (saved: IssuanceRun): void => {
+        try {
+            apply(saved);
+            setError('');
+        } catch (reason) {
+            setError(spreadsheetErrorMessage(reason));
+        }
+    };
     const previousScope = useRef(scope);
     useEffect(() => {
         let active = true;
@@ -189,6 +204,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 setRun(null);
                 runRef.current = null;
                 setRecoverable(null);
+                setDismissedRecoverable(null);
                 changeDraftId(crypto.randomUUID());
                 setSource(undefined);
                 setFormulaCells({});
@@ -205,13 +221,13 @@ export const useIssueRoster = (options: RosterOptions) => {
         void listIssuanceRuns(scope)
             .then(runs => {
                 if (!active) return;
-                setRecoverable(
-                    runs.find(
-                        saved =>
-                            saved.attempts.some(attempt => !attempt.done) ||
-                            !Object.values(saved.outcomes).every(row => row.state === 'sent')
-                    ) ?? null
+                const pending = runs.filter(
+                    saved =>
+                        saved.attempts.some(attempt => !attempt.done) ||
+                        Object.values(saved.outcomes).some(row => row.state !== 'sent')
                 );
+                setRecoverable(pending.find(saved => !saved.dismissedAt) ?? null);
+                setDismissedRecoverable(pending.find(saved => saved.dismissedAt) ?? null);
                 void pruneIssuanceRuns(scope).catch(() => undefined);
             })
             .catch(reason => {
@@ -286,6 +302,20 @@ export const useIssueRoster = (options: RosterOptions) => {
         );
         return saving;
     };
+    const dismissRecovery = async (): Promise<void> => {
+        if (!recoverable || busy) return;
+        setBusy(true);
+        try {
+            const dismissed = { ...recoverable, dismissedAt: Date.now() };
+            await persistDraft(dismissed);
+            setDismissedRecoverable(dismissed);
+            setRecoverable(null);
+        } catch (reason) {
+            setError(spreadsheetErrorMessage(reason));
+        } finally {
+            if (mounted.current) setBusy(false);
+        }
+    };
     useEffect(() => {
         if (busy || !scope.issuer || !options.template || !options.recipients.length) return;
         const timer = setTimeout(() => {
@@ -359,7 +389,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 const incoming = sheet.rows.find(
                     row =>
                         row.exportedRowId === key ||
-                        (existing.kind === 'email' && existing.email === row.email)
+                        (existing.kind === 'email' && normalizeEmail(existing.email) === row.email)
                 );
                 if (!incoming) continue;
                 const before = effectiveRowValues(
@@ -371,11 +401,13 @@ export const useIssueRoster = (options: RosterOptions) => {
                 );
                 const after = merged.draft.values[key] ?? {};
                 if (
-                    (existing.kind === 'email' && incoming.email !== existing.email) ||
+                    (existing.kind === 'email' &&
+                        incoming.email !== normalizeEmail(existing.email)) ||
                     merged.mapped.some(name => after[name] !== before[name]) ||
-                    merged.draft.evidence[key] !== saved.draft.evidence[key]
+                    (merged.draft.evidence[key]?.trim() ?? '') !==
+                        (saved.draft.evidence[key]?.trim() ?? '')
                 )
-                    throw new IssuanceRecoveryError('busy');
+                    throw new IssuanceRecoveryError('locked');
                 merged.draft.recipients = merged.draft.recipients.map(row =>
                     recipientKey(row) === key ? existing : row
                 );
@@ -399,25 +431,54 @@ export const useIssueRoster = (options: RosterOptions) => {
             options.onPeople();
         }
     };
-    const execute = async (retryFailed = false, restore?: IssuanceRun): Promise<void> => {
+    const execute = async (
+        retryFailed = false,
+        restore?: IssuanceRun,
+        checkOnly = false
+    ): Promise<void> => {
         if (busy || executing.current) return;
         executing.current = true;
         clearTimeout(draftSaveTimer.current);
         setBusy(true);
+        setChecking(checkOnly);
         setError('');
         abort.current = new AbortController();
+        const startedAt = Date.now();
+        const analyticsTemplate = restore?.template ?? runRef.current?.template ?? options.template;
+        const metadata = {
+            flow_id: newFlowId(),
+            recipient_mode: 'people' as const,
+            credential_type:
+                analyticsTemplate?.credentialSubject.achievement.achievementType?.value,
+            category: undefined as string | undefined,
+            recipient_count: restore?.draft.recipients.length ?? options.recipients.length,
+        };
+        let step: 'jsonld_validation' | 'issuance' = 'jsonld_validation';
         try {
+            if (analyticsTemplate)
+                metadata.category =
+                    getDefaultCategoryForCredential(
+                        templateToJson(analyticsTemplate) as UnsignedVC
+                    ) || undefined;
+            if (!checkOnly)
+                track(AnalyticsEvents.CREDENTIAL_ISSUE_STARTED, {
+                    ...metadata,
+                    used_dynamic_variables: options.variables.length > 0,
+                    entry_point: options.entryPoint,
+                });
             // Finish this tab's autosave before capturing its revision. Other tabs
             // still fail the controller's lock/revision checks rather than overwrite it.
             await Promise.all([...pendingDraftSaves.current]);
             const saved = restore ?? capture();
             if (restore) apply(restore);
             const variables = extractVariablesByType(saved.template).dynamic;
-            const candidates = saved.draft.recipients.filter(row =>
-                (retryFailed ? ['ready', 'failed'] : ['ready']).includes(
-                    saved.outcomes[recipientKey(row)]?.state ?? 'ready'
-                )
-            );
+            const candidates = checkOnly
+                ? []
+                : saved.draft.recipients.filter(row =>
+                      (retryFailed ? ['ready', 'failed'] : ['ready']).includes(
+                          saved.outcomes[recipientKey(row)]?.state ?? 'ready'
+                      )
+                  );
             if (candidates.length) {
                 if (validateTemplate(saved.template).length)
                     throw new Error('Credential validation failed');
@@ -453,13 +514,14 @@ export const useIssueRoster = (options: RosterOptions) => {
                     checked.add(identity);
                 }
             }
+            step = 'issuance';
             const wallet = await options.initWallet();
             const activeProfile = await wallet.invoke.getProfile();
             if (activeProfile?.profileId !== saved.scope.issuer)
                 throw new IssuanceRecoveryError('context');
-            if (saved.draft.recipients.some(row => row.kind === 'email'))
+            if (!checkOnly && saved.draft.recipients.some(row => row.kind === 'email'))
                 await options.ensureSigningAuthority(wallet);
-            await executeIssuance(
+            const completed = await executeIssuance(
                 saved,
                 {
                     createTemplate: async () => {
@@ -489,6 +551,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 {
                     currentScope,
                     retryFailed,
+                    checkOnly,
                     onChange: next => {
                         if (
                             mounted.current &&
@@ -500,7 +563,38 @@ export const useIssueRoster = (options: RosterOptions) => {
                     },
                 }
             );
+            if (!checkOnly) {
+                const outcomes = Object.values(completed.outcomes);
+                const duration = Date.now() - startedAt;
+                if (outcomes.length && outcomes.every(row => row.state === 'sent')) {
+                    track(AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED, {
+                        ...metadata,
+                        duration_ms: duration,
+                    });
+                    track(AnalyticsEvents.SEND_BOOST, {
+                        category: metadata.category,
+                        boostType: metadata.credential_type,
+                        method: 'Issue Page',
+                        msSinceMethodStarted: duration,
+                    });
+                } else
+                    track(AnalyticsEvents.CREDENTIAL_ISSUE_FAILED, {
+                        ...metadata,
+                        step_id: 'issuance',
+                        duration_ms: duration,
+                        error_code: outcomes.some(row => row.state === 'confirming')
+                            ? 'UNCONFIRMED'
+                            : 'PARTIAL_FAILURE',
+                    });
+            }
         } catch (reason) {
+            if (!checkOnly)
+                track(AnalyticsEvents.CREDENTIAL_ISSUE_FAILED, {
+                    ...metadata,
+                    step_id: step,
+                    duration_ms: Date.now() - startedAt,
+                    error_code: reason instanceof IssuanceRecoveryError ? reason.code : undefined,
+                });
             if (mounted.current)
                 setError(
                     reason instanceof IssuanceRecoveryError || reason instanceof SpreadsheetError
@@ -509,7 +603,10 @@ export const useIssueRoster = (options: RosterOptions) => {
                 );
         } finally {
             executing.current = false;
-            if (mounted.current) setBusy(false);
+            if (mounted.current) {
+                setBusy(false);
+                setChecking(false);
+            }
         }
     };
     const locked = (rowId: string): boolean =>
@@ -595,7 +692,12 @@ export const useIssueRoster = (options: RosterOptions) => {
         setEvidence,
         run,
         recoverable,
+        dismissedRecoverable,
+        dismissRecovery,
+        restore,
+        checkStatus: () => execute(false, undefined, true),
         busy,
+        checking,
         error,
         setError,
         pastedText,

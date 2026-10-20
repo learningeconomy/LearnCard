@@ -33,9 +33,13 @@ describe('IndexedDB issuance recovery', () => {
         const uncertain = makeRun();
         uncertain.updatedAt = settled.updatedAt;
         uncertain.outcomes = { 'row-0': { state: 'confirming' } };
+        uncertain.dismissedAt = Date.now();
         await saveIssuanceRun(uncertain);
         await pruneIssuanceRuns(settled.scope);
         expect(await readIssuanceRun(settled.id, settled.scope)).toBeUndefined();
         expect(await readIssuanceRun(uncertain.id, uncertain.scope)).toBeTruthy();
+        expect((await readIssuanceRun(uncertain.id, uncertain.scope))?.dismissedAt).toBe(
+            uncertain.dismissedAt
+        );
     });
 });

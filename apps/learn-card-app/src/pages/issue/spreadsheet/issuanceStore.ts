@@ -23,6 +23,7 @@ const runValidator = z.object({
     scope: z.object({ issuer: z.string(), domain: z.string(), tenant: z.string() }),
     createdAt: z.number(),
     updatedAt: z.number(),
+    dismissedAt: z.number().optional(),
     draft: z
         .object({
             id: z.string(),

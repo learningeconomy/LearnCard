@@ -11,7 +11,12 @@ import {
     type SpreadsheetSource,
 } from './types';
 
-export const SPREADSHEET_LIMITS = { bytes: 10 * 1024 * 1024, rows: 10_000, columns: 200 };
+export const SPREADSHEET_LIMITS = {
+    bytes: 10 * 1024 * 1024,
+    rows: 10_000,
+    columns: 200,
+    cells: 2_000_000,
+};
 
 export type SpreadsheetErrorCode =
     'file' | 'limit' | 'malformed' | 'emailColumn' | 'mapping' | 'run';

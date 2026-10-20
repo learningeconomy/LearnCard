@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useIssueRoster } from './useIssueRoster';
@@ -8,6 +8,14 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { dynamicField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import { exportRosterCsv } from './roster';
+import { AnalyticsEvents } from '../../../analytics/events';
+
+const analytics = vi.hoisted(() => ({ track: vi.fn() }));
+vi.mock('../../../analytics', async () => ({
+    AnalyticsEvents: (await import('../../../analytics/events')).AnalyticsEvents,
+    newFlowId: () => 'issue-flow',
+    useAnalytics: () => ({ track: analytics.track }),
+}));
 
 vi.mock('learn-card-base/stores/NetworkStore', () => ({
     networkStore: {
@@ -41,6 +49,120 @@ afterEach(() => {
 });
 
 describe('roster autosave and sending', () => {
+    const emptyOptions = (run: IssuanceRun): Parameters<typeof useIssueRoster>[0] => ({
+        issuer: run.scope.issuer,
+        recipients: [],
+        setRecipients: vi.fn(),
+        values: {},
+        setValues: vi.fn(),
+        shared: {},
+        setShared: vi.fn(),
+        attachments: {},
+        setAttachments: vi.fn(),
+        variables: [],
+        template: null,
+        onRestoreTemplate: vi.fn(),
+        onPeople: vi.fn(),
+        initWallet: vi.fn(),
+        ensureSigningAuthority: vi.fn(),
+    });
+    it('hides a reminder durably without deleting uncertain recovery, and allows restoring it', async () => {
+        const run = makeRun();
+        run.outcomes = { 'row-0': { state: 'confirming' } };
+        store.list.mockResolvedValue([run]);
+        store.read.mockResolvedValue(run);
+        store.save.mockResolvedValue(undefined);
+        Object.defineProperty(navigator, 'locks', {
+            configurable: true,
+            value: {
+                request: async (
+                    _name: string,
+                    _options: unknown,
+                    callback: (lock: object) => unknown
+                ) => callback({}),
+            },
+        });
+        const options = emptyOptions(run);
+        const first = renderHook(() => useIssueRoster(options));
+        await waitFor(() => expect(first.result.current.recoverable?.id).toBe(run.id));
+        await act(async () => {
+            await first.result.current.dismissRecovery();
+        });
+        const saved = store.save.mock.calls.at(-1)![0] as IssuanceRun;
+        expect(saved.dismissedAt).toEqual(expect.any(Number));
+        expect(saved.outcomes).toEqual(run.outcomes);
+        expect(first.result.current.recoverable).toBeNull();
+        first.unmount();
+        store.list.mockResolvedValue([saved]);
+        const next = renderHook(() => useIssueRoster(options));
+        await waitFor(() => expect(next.result.current.dismissedRecoverable?.id).toBe(run.id));
+        expect(next.result.current.recoverable).toBeNull();
+        act(() => next.result.current.restore(next.result.current.dismissedRecoverable!));
+        expect(options.onRestoreTemplate).toHaveBeenCalledWith(run.template);
+        expect(next.result.current.run?.id).toBe(run.id);
+    });
+    it('reports a context error instead of throwing from Restore', async () => {
+        const run = makeRun();
+        const options = emptyOptions(run);
+        store.list.mockResolvedValue([]);
+        const { result } = renderHook(() => useIssueRoster(options));
+        act(() => result.current.restore({ ...run, scope: { ...run.scope, tenant: 'other' } }));
+        expect(result.current.error).not.toBe('');
+        expect(options.onRestoreTemplate).not.toHaveBeenCalled();
+        expect(result.current.run).toBeNull();
+    });
+    it('accepts normalized emails on locked-row imports but rejects real value changes', async () => {
+        const run = makeRun();
+        run.templateUri = 'template';
+        run.template.credentialSubject.achievement.description = dynamicField('score');
+        run.scopes = { score: 'perRecipient' };
+        run.draft.recipients[0] = { kind: 'email', rowId: 'row-0', email: ' PERSON0@TEST.COM ' };
+        run.draft.values = { 'row-0': { score: '95' } };
+        run.outcomes = { 'row-0': { state: 'sent' } };
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(run);
+        store.save.mockResolvedValue(undefined);
+        Object.defineProperty(navigator, 'locks', {
+            configurable: true,
+            value: {
+                request: async (
+                    _name: string,
+                    _options: unknown,
+                    callback: (lock: object) => unknown
+                ) => callback({}),
+            },
+        });
+        const options = emptyOptions(run);
+        const variables = ['score'];
+        const { result } = renderHook(() => {
+            const [recipients, setRecipients] = useState(options.recipients);
+            const [values, setValues] = useState(options.values);
+            const [shared, setShared] = useState(options.shared);
+            return useIssueRoster({
+                ...options,
+                recipients,
+                setRecipients,
+                values,
+                setValues,
+                shared,
+                setShared,
+                variables,
+                template: run.template,
+            });
+        });
+        const csv = exportRosterCsv(run.draft, ['score'], run.scopes, {});
+        await act(async () => {
+            await result.current.importSheet(parseSpreadsheet(readSpreadsheetText(csv)));
+        });
+        expect(result.current.run?.draft.recipients[0]).toEqual(run.draft.recipients[0]);
+        await act(async () => {
+            await expect(
+                result.current.importSheet(
+                    parseSpreadsheet(readSpreadsheetText(csv.replace('95', '96')))
+                )
+            ).rejects.toMatchObject({ code: 'locked' });
+        });
+    });
     it.each([false, true])('blocks formula errors after import (saved run: %s)', async saved => {
         const original = makeRun();
         original.template.credentialSubject.achievement.description = dynamicField('score');
@@ -110,106 +232,150 @@ describe('roster autosave and sending', () => {
         });
         expect(initWallet).not.toHaveBeenCalled();
         expect(result.current.error).not.toBe('');
+        expect(analytics.track).toHaveBeenCalledWith(
+            AnalyticsEvents.CREDENTIAL_ISSUE_FAILED,
+            expect.objectContaining({ step_id: 'jsonld_validation', recipient_count: 1 })
+        );
     });
-    it.each(['send', 'reset'] as const)('%s during autosave', async action => {
-        vi.useFakeTimers();
-        let stored: IssuanceRun | undefined;
-        let finishSave!: () => void;
-        const pending = new Promise<void>(resolve => {
-            finishSave = resolve;
-        });
-        store.list.mockResolvedValue([]);
-        store.read.mockImplementation(async () => stored && structuredClone(stored));
-        store.save.mockImplementation(async (run: IssuanceRun) => {
-            stored = structuredClone(run);
-        });
-        store.save.mockImplementationOnce(async (run: IssuanceRun) => {
-            await pending;
-            stored = structuredClone(run);
-        });
-        let held = false;
-        Object.defineProperty(navigator, 'locks', {
-            configurable: true,
-            value: {
-                request: vi.fn(
-                    async (
-                        _name: string,
-                        _options: unknown,
-                        callback: (lock: object | null) => Promise<unknown>
-                    ) => {
-                        if (held) return callback(null);
-                        held = true;
-                        try {
-                            return await callback({});
-                        } finally {
-                            held = false;
+    it.each(['send', 'reset', 'failed', 'unconfirmed', 'profile'] as const)(
+        '%s during autosave',
+        async action => {
+            vi.useFakeTimers();
+            let stored: IssuanceRun | undefined;
+            let finishSave!: () => void;
+            const pending = new Promise<void>(resolve => {
+                finishSave = resolve;
+            });
+            store.list.mockResolvedValue([]);
+            store.read.mockImplementation(async () => stored && structuredClone(stored));
+            store.save.mockImplementation(async (run: IssuanceRun) => {
+                stored = structuredClone(run);
+            });
+            store.save.mockImplementationOnce(async (run: IssuanceRun) => {
+                await pending;
+                stored = structuredClone(run);
+            });
+            let held = false;
+            Object.defineProperty(navigator, 'locks', {
+                configurable: true,
+                value: {
+                    request: vi.fn(
+                        async (
+                            _name: string,
+                            _options: unknown,
+                            callback: (lock: object | null) => Promise<unknown>
+                        ) => {
+                            if (held) return callback(null);
+                            held = true;
+                            try {
+                                return await callback({});
+                            } finally {
+                                held = false;
+                            }
                         }
-                    }
-                ),
-            },
-        });
-        const run = makeRun(2);
-        const submit = vi.fn(async () => ({
-            batchId: 'batch',
-            status: 'QUEUED',
-            createdAt: new Date().toISOString(),
-        }));
-        const wallet = {
-            id: { did: () => 'did:key:test' },
-            invoke: {
-                getProfile: vi.fn(async () => ({ profileId: run.scope.issuer })),
-                createBoost: vi.fn(async () => 'lc:network:example.com:boost:template'),
-                sendCredentialsViaInbox: submit,
-                waitForInboxCredentialBatch: vi.fn(async () => statusFor('batch', 2)),
-            },
-        } as unknown as BespokeLearnCard;
-        const options = {
-            issuer: run.scope.issuer,
-            recipients: run.draft.recipients,
-            template: run.template,
-            shared: {},
-            values: {},
-            attachments: {},
-            variables: [],
-            setRecipients: vi.fn(),
-            setShared: vi.fn(),
-            setValues: vi.fn(),
-            setAttachments: vi.fn(),
-            onRestoreTemplate: vi.fn(),
-            onPeople: vi.fn(),
-            initWallet: vi.fn(async () => wallet),
-            ensureSigningAuthority: vi.fn(async () => {}),
-        };
-        const { result } = renderHook(() => useIssueRoster(options));
-        await act(async () => {
-            await vi.advanceTimersByTimeAsync(600);
-        });
-        expect(store.save).toHaveBeenCalledTimes(1);
-        if (action === 'reset') {
-            const previousId = result.current.id;
-            act(() => result.current.reset());
+                    ),
+                },
+            });
+            const run = makeRun(2);
+            if (action === 'profile')
+                run.draft.recipients = [0, 1].map(index => ({
+                    kind: 'profile',
+                    rowId: `row-${index}`,
+                    profileId: `profile-${index}`,
+                    displayName: `Person ${index}`,
+                }));
+            const submit = vi.fn(async () => ({
+                batchId: 'batch',
+                status: 'QUEUED',
+                createdAt: new Date().toISOString(),
+            }));
+            const wallet = {
+                id: { did: () => 'did:key:test' },
+                invoke: {
+                    getProfile: vi.fn(async () => ({ profileId: run.scope.issuer })),
+                    createBoost: vi.fn(async () => 'lc:network:example.com:boost:template'),
+                    sendCredentialsViaInbox: submit,
+                    waitForInboxCredentialBatch: vi.fn(async () => {
+                        const status = statusFor('batch', 2, action === 'failed' ? [1] : []);
+                        if (action === 'unconfirmed')
+                            status.items[1].result = {
+                                success: false,
+                                index: 1,
+                                error: {
+                                    code: 'CONFLICT',
+                                    reason: 'UNCONFIRMED',
+                                    message: 'private detail',
+                                },
+                            };
+                        return status;
+                    }),
+                    send: vi.fn(async () => ({})),
+                },
+            } as unknown as BespokeLearnCard;
+            const options = {
+                issuer: run.scope.issuer,
+                recipients: run.draft.recipients,
+                template: run.template,
+                shared: {},
+                values: {},
+                attachments: {},
+                variables: [],
+                setRecipients: vi.fn(),
+                setShared: vi.fn(),
+                setValues: vi.fn(),
+                setAttachments: vi.fn(),
+                onRestoreTemplate: vi.fn(),
+                onPeople: vi.fn(),
+                initWallet: vi.fn(async () => wallet),
+                ensureSigningAuthority: vi.fn(async () => {}),
+            };
+            const { result } = renderHook(() => useIssueRoster(options));
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(600);
+            });
+            expect(store.save).toHaveBeenCalledTimes(1);
+            if (action === 'reset') {
+                const previousId = result.current.id;
+                act(() => result.current.reset());
+                await act(async () => {
+                    finishSave();
+                    await pending;
+                });
+                expect(result.current.id).not.toBe(previousId);
+                expect(result.current.run).toBeNull();
+                return;
+            }
+            let sending!: Promise<void>;
+            await act(async () => {
+                sending = result.current.execute();
+            });
+            expect(options.initWallet).not.toHaveBeenCalled();
             await act(async () => {
                 finishSave();
-                await pending;
+                await sending;
             });
-            expect(result.current.id).not.toBe(previousId);
-            expect(result.current.run).toBeNull();
-            return;
+            expect(submit).toHaveBeenCalledTimes(action === 'profile' ? 0 : 1);
+            expect(result.current.error).toBe('');
+            expect(Object.values(result.current.run!.outcomes).map(row => row.state)).toEqual([
+                'sent',
+                action === 'failed' ? 'failed' : action === 'unconfirmed' ? 'confirming' : 'sent',
+            ]);
+            expect(analytics.track).toHaveBeenCalledWith(
+                AnalyticsEvents.CREDENTIAL_ISSUE_STARTED,
+                expect.objectContaining({ recipient_mode: 'people', recipient_count: 2 })
+            );
+            expect(analytics.track).toHaveBeenCalledWith(
+                ['failed', 'unconfirmed'].includes(action)
+                    ? AnalyticsEvents.CREDENTIAL_ISSUE_FAILED
+                    : AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED,
+                expect.objectContaining({ flow_id: 'issue-flow', recipient_count: 2 })
+            );
+            expect(
+                analytics.track.mock.calls.some(([event]) => event === AnalyticsEvents.SEND_BOOST)
+            ).toBe(!['failed', 'unconfirmed'].includes(action));
+            const payload = JSON.stringify(analytics.track.mock.calls);
+            for (const row of run.draft.recipients)
+                expect(payload).not.toContain(row.kind === 'email' ? row.email : row.profileId);
         }
-        let sending!: Promise<void>;
-        await act(async () => {
-            sending = result.current.execute();
-        });
-        expect(options.initWallet).not.toHaveBeenCalled();
-        await act(async () => {
-            finishSave();
-            await sending;
-        });
-        expect(submit).toHaveBeenCalledTimes(1);
-        expect(result.current.error).toBe('');
-        expect(Object.values(result.current.run!.outcomes).map(row => row.state)).toEqual([
-            'sent',
-            'sent',
-        ]);
-    });
+    );
 });

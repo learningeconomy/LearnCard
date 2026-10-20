@@ -26,11 +26,15 @@ flowchart LR
 
 ## Resume an interrupted run
 
-Recovery data is saved in this browser's IndexedDB for the issuing account, network, and organization. Return to **Issue Credentials**, then choose **Restore Saved Run** and **Resume**. Stay on the original device and browser; clearing browser data removes recovery records. Recovery must save successfully before a send starts.
+Recovery data is saved in this browser's IndexedDB for the issuing account, network, and organization. Return to **Issue Credentials**, then choose **Restore Saved Run** and **Resume**. A draft that has not started is sent with **Issue Credential**. Stay on the original device and browser; clearing browser data or signing out removes recovery records, including unconfirmed sends. The server may still finish accepted work after sign-out, so check delivery before starting another run. Recovery must save successfully before a send starts.
+
+**Skip for Now** hides the restore banner without deleting its saved rows or delivery history. **View saved run** opens the hidden run later on this device. Editing a restored run makes it available for recovery again.
 
 Email issuance continues on the server after leaving the page. Resume observes an existing batch or recovers its receipt using the original request. It does not restart successful rows. An unconfirmed submission older than the 24-hour replay window requires checking its results before another issuance.
 
 **Retry Failed** and **Download Failed Rows** include only definite failures. Correct the exported failed rows and upload them into their saved run. Submitted rows remain in the run history and cannot be removed. Successful and uncertain rows are locked; definite failures remain editable for correction and retry. Sends that need confirmation are excluded from retry files; check their results before issuing again. Profile recipients are sent one at a time; a lost response needs confirmation because that send has no replay guarantee.
+
+**Check Again** refreshes known email batch receipts without submitting credentials or generating new keys. A completed batch can still contain unconfirmed items; replaying that same batch request only returns its existing receipt. If checking does not resolve them, contact support for reconciliation before issuing again. Profile sends cannot be safely replayed automatically and require manual confirmation.
 
 Settled recovery records are removed after 30 days. Unresolved records remain available for review. Use **Start Another Run** only when you intend a separate issuance.
 
@@ -41,3 +45,11 @@ Open **Review delivery issues** to search failed or unconfirmed sends in pages o
 Choose **View delivery status** in the batch card to search every recipient and filter by Not sent, Queued, Sent, Failed, or Unconfirmed. The viewer updates as the active run receives results. The card comes into view once when sending starts; later updates leave your scroll position alone. The compact, full-width scene of colorful credential sheets moving through drifting clouds and the initial scroll respect your device’s reduced-motion setting.
 
 Date fields use a calendar picker and a readable date. Timestamps are shown in UTC; changing the calendar date preserves the time. New dates use midnight UTC. Opening the workspace leaves the saved timestamp unchanged. Invalid source values stay visible until corrected.
+
+## Sending to people without a spreadsheet
+
+All **Specific people** sends use the same saved-run flow, including a single profile selected from the picker. This intentionally requires IndexedDB and the browser's Web Locks API: if recovery cannot be saved safely, sending stops. Each different filled credential is validated before any submission, so large personalized rosters can take longer to prepare. The sending state remains visible during validation. Profile sends have no automatic transport retry because a lost response can follow a successful send.
+
+Changing the credential type preserves recipient rows and their entered values. Only variables used by the selected template become credential fields; review those fields and previews before sending. Spreadsheet column mapping remains Open Badges only.
+
+Evidence uses standard Open Badges `Evidence` entries. Attachment names remain in the standard `name` field; the unsupported `EvidenceFile`, `fileName`, and `fileType` extensions are omitted from all issuance modes so credentials work without a LearnCard extension context.

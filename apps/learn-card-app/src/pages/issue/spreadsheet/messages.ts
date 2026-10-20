@@ -37,6 +37,8 @@ export const spreadsheetErrorMessage = (error: unknown): string => {
             return m['issueFlow.sheet.expired']();
         case 'busy':
             return m['issueFlow.sheet.busy']();
+        case 'locked':
+            return m['issueFlow.sheet.lockedRows']();
         case 'emailColumn':
             return m['issueFlow.sheet.chooseEmail']();
         case 'mapping':
