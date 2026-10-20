@@ -627,6 +627,15 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page.getByRole('button', { name: 'Map columns', exact: true }).click();
             await page.getByRole('button', { name: 'Include Quiz Score', exact: true }).click();
             await page.getByRole('button', { name: 'Done', exact: true }).click();
+            // Type changes rebuild mapping fields while preserving corrected cells.
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            await page.getByLabel('Ada Quiz Score', { exact: true }).fill('96');
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Certificate', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            await expect(page.getByLabel('Ada Quiz Score', { exact: true })).toHaveValue('96');
+            await expect(page.getByLabel('Ada Final Grade', { exact: true })).toHaveValue('A-');
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
             await page.getByRole('button', { name: 'Next person', exact: true }).click();
             await expect(page.getByText('2 of 4 · Bob', { exact: true })).toBeVisible();
             await page.getByRole('button', { name: 'JSON', exact: true }).click();

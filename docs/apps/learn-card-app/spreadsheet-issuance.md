@@ -78,3 +78,9 @@ All **Specific people** sends use the same saved-run flow, including a single pr
 Changing the credential type preserves recipient rows and their entered values. Only variables used by the selected template become credential fields; review those fields and previews before sending. Spreadsheet column mapping remains Open Badges only.
 
 Evidence uses standard Open Badges `Evidence` entries. Attachment names remain in the standard `name` field; the unsupported `EvidenceFile`, `fileName`, and `fileType` extensions are omitted from all issuance modes so credentials work without a LearnCard extension context.
+
+### Template and field boundaries
+
+Changing credential type re-applies the included spreadsheet mappings and preserves corrected mapped cells. Importing a replacement credential clears mappings and previous template values; the source spreadsheet remains available for mapping again. Shared values from an earlier template do not silently populate a replacement. Every included column is required for each active recipient; remove an optional column or skip a recipient when a cell should not be issued.
+
+Calendar award dates represent midnight UTC, so a generic local-time viewer may show the previous day. Timestamps require seconds and an explicit timezone and normalize to UTC before signing. Unsupported date spellings are rejected rather than guessed.

@@ -28,6 +28,17 @@ describe('standard credential materialization', () => {
         });
         expect(input.credentialSubject.creditsEarned).toBe('0');
     });
+    it.each(['', '   '])('omits blank optional credits %j without changing the input', value => {
+        const input = {
+            type: ['OpenBadgeCredential'],
+            credentialSubject: { creditsEarned: value, achievement: { creditsAvailable: value } },
+        };
+        expect(materializeCredentialFields(input)).toEqual({
+            type: ['OpenBadgeCredential'],
+            credentialSubject: { achievement: {} },
+        });
+        expect(input.credentialSubject.creditsEarned).toBe(value);
+    });
     it('does not modify signed credentials or embedded signed credentials', () => {
         const signed = {
             type: ['OpenBadgeCredential'],
@@ -59,8 +70,14 @@ describe('standard credential materialization', () => {
             '2024-02-29T23:30:00.123456Z'
         );
     });
-    it.each(['02/03/2024', '2023-02-29', '2024-04-31', '2024-01-01T12:00:00'])(
-        'rejects ambiguous or invalid dates %s',
-        value => expect(() => normalizeCredentialAwardDate(value)).toThrow('awardedDate')
+    it.each([
+        '02/03/2024',
+        '2023-02-29',
+        '2024-04-31',
+        '2024-01-01T12:00:00',
+        '2024-05-01T10:00Z',
+        '2024-05-01 10:00:00Z',
+    ])('rejects ambiguous or invalid dates %s', value =>
+        expect(() => normalizeCredentialAwardDate(value)).toThrow('awardedDate')
     );
 });

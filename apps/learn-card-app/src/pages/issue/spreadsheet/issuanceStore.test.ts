@@ -12,6 +12,12 @@ import {
 import { makeRun } from './fixtures.test-support';
 
 describe('IndexedDB issuance recovery', () => {
+    it('retains an explicit unselected template state for spreadsheet-first recovery', async () => {
+        const run = makeRun();
+        run.templateSelected = false;
+        await saveIssuanceRun(run);
+        expect((await readIssuanceRun(run.id, run.scope))?.templateSelected).toBe(false);
+    });
     it('retains failed row history through correction, recovery and a new retry attempt', async () => {
         const initial = makeRun(2);
         initial.templateUri = 'lc:network:example.com:boost:template';

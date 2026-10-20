@@ -7,6 +7,8 @@ import {
     materializePreview,
     normalizeMappedCell,
     removeSpreadsheetMapping,
+    replaceSpreadsheetTemplate,
+    suggestMapping,
 } from './columnMapping';
 import { makeRun } from './fixtures.test-support';
 import { readResultState, getResultValidationError } from '../components/resultField';
@@ -278,5 +280,70 @@ describe('opt-in standard credential column mappings', () => {
             [state.variable]
         );
         expect(roundtrip.draft.values).toEqual(merged.draft.values);
+    });
+});
+
+describe('template replacement boundaries', () => {
+    it('reapplies mappings to a new type, retaining corrected cells but dropping unrelated values', () => {
+        const original = sample();
+        const mapped = mapSpreadsheetColumn(
+            original.template,
+            original.draft,
+            original.draft.source!.columns[4],
+            'credits',
+            options
+        );
+        const row = mapped.draft.recipients[0].rowId!;
+        mapped.draft.values[row] = { [mapped.variable]: '1.5', stale_score: '99' };
+        const replaced = replaceSpreadsheetTemplate(
+            structuredClone(original.template),
+            mapped.draft,
+            true
+        );
+        const variable = replaced.draft.mappings![0].variable;
+        expect(replaced.template.credentialSubject.creditsEarned?.variableName).toBe(variable);
+        expect(replaced.draft.values[row]).toEqual({ [variable]: '1.5' });
+        expect(credentialRowProblems(replaced.template, replaced.draft.values[row])).toEqual([]);
+    });
+    it('clears old mappings and values on explicit credential import while keeping source cells', () => {
+        const original = sample();
+        const mapped = mapSpreadsheetColumn(
+            original.template,
+            original.draft,
+            original.draft.source!.columns[2],
+            'Percent',
+            options
+        );
+        const replaced = replaceSpreadsheetTemplate(original.template, mapped.draft, false);
+        expect(replaced.draft.mappings).toEqual([]);
+        expect(replaced.draft.values).toEqual({});
+        expect(replaced.draft.source).toBe(mapped.draft.source);
+        expect(replaced.template.credentialSubject.result).toBeUndefined();
+    });
+    it('removes generated labels from an edited description without deleting adjacent notes', () => {
+        const original = sample();
+        const mapped = mapSpreadsheetColumn(
+            original.template,
+            original.draft,
+            original.draft.source!.columns[8],
+            'description',
+            options
+        );
+        mapped.template.credentialSubject.achievement.description.value += ' Custom note';
+        const removed = removeSpreadsheetMapping(mapped.template, mapped.draft, mapped.variable);
+        expect(removed.template.credentialSubject.achievement.description.value).toContain(
+            'Custom note'
+        );
+        expect(removed.template.credentialSubject.achievement.description.value).not.toContain(
+            'Student Code:'
+        );
+        expect(removed.template.credentialSubject.achievement.description.value).not.toContain(
+            mapped.variable
+        );
+    });
+    it('suggests Credit Points as credits rather than a score', () => {
+        expect(suggestMapping({ id: 'credit', index: 0, label: 'Credit Points' }, [])).toBe(
+            'credits'
+        );
     });
 });

@@ -135,6 +135,7 @@ const runValidator = z
                     .passthrough(),
             })
             .passthrough(),
+        templateSelected: z.boolean().optional(),
         templateUri: z.string().optional(),
         scopes: z.record(z.string(), z.enum(['shared', 'perRecipient'])),
         shared: z.record(z.string(), z.string()),

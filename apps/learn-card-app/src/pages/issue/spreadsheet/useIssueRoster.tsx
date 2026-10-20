@@ -3,6 +3,7 @@ import {
     mapSpreadsheetColumn,
     credentialRowProblems,
     removeSpreadsheetMapping,
+    replaceSpreadsheetTemplate,
 } from './columnMapping';
 import type { ColumnMapping, MappingTarget } from './types';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -64,7 +65,7 @@ interface RosterOptions {
     setAttachments: Dispatch<SetStateAction<Record<string, SimpleMediaAttachment[]>>>;
     variables: string[];
     template: OBv3CredentialTemplate | null;
-    onRestoreTemplate: (template: OBv3CredentialTemplate) => void;
+    onRestoreTemplate: (template: OBv3CredentialTemplate | null) => void;
     onPeople: () => void;
     initWallet: () => Promise<BespokeLearnCard>;
     ensureSigningAuthority: (wallet: BespokeLearnCard) => Promise<unknown>;
@@ -177,7 +178,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         options.setValues(saved.draft.values);
         options.setShared(saved.shared);
         options.setAttachments(saved.draft.attachments ?? {});
-        options.onRestoreTemplate(saved.template);
+        options.onRestoreTemplate(saved.templateSelected === false ? null : saved.template);
         options.onPeople();
         setRun(saved);
         runRef.current = saved;
@@ -265,6 +266,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 ? base.template
                 : (options.template ??
                   buildSimpleTemplate({ credentialType: 'badge', name: '', description: '' })),
+            templateSelected: base?.templateUri ? true : Boolean(options.template),
             templateUri: base?.templateUri,
             draft,
             scopes: effectiveScopes,
@@ -735,6 +737,20 @@ export const useIssueRoster = (options: RosterOptions) => {
         options.onRestoreTemplate(result.template);
         setMappings(result.draft.mappings ?? []);
     };
+    const replaceTemplate = (template: OBv3CredentialTemplate, preserveMappings: boolean): void => {
+        if (busy || runRef.current?.templateUri) throw new IssuanceRecoveryError('locked');
+        const next = replaceSpreadsheetTemplate(template, draft, preserveMappings);
+        options.setShared({});
+        options.setValues(next.draft.values);
+        setFormulaCells(next.draft.formulaCells ?? {});
+        setMappings(next.draft.mappings ?? []);
+        setScopes(
+            Object.fromEntries(
+                (next.draft.mappings ?? []).map(mapping => [mapping.variable, 'perRecipient'])
+            )
+        );
+        options.onRestoreTemplate(next.template);
+    };
     const previewRecipient =
         options.recipients[Math.min(previewIndex, Math.max(0, options.recipients.length - 1))];
     const changeScope = (name: string, value: 'shared' | 'perRecipient'): void => {
@@ -765,6 +781,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         mappings,
         addColumn,
         removeColumn,
+        replaceTemplate,
         draft,
         scopes: effectiveScopes,
         evidence,

@@ -240,9 +240,11 @@ const IssueCredentialPage: React.FC = () => {
         onRestoreTemplate: saved => {
             setTemplate(saved);
             setSelectedType(
-                getTypeByObv3(
-                    saved.credentialSubject.achievement.achievementType?.value ?? 'Badge'
-                ) ?? null
+                saved
+                    ? (getTypeByObv3(
+                          saved?.credentialSubject.achievement.achievementType?.value ?? 'Badge'
+                      ) ?? null)
+                    : null
             );
         },
         onPeople: () => setRecipientMode('people'),
@@ -409,27 +411,33 @@ const IssueCredentialPage: React.FC = () => {
                     ? m['issueFlow.gate.addRecip']()
                     : null;
 
-    const handleSelectType = useCallback((entry: CredentialTypeEntry) => {
-        log.info('issue.type_selected', { obv3Type: entry.obv3Type });
-        setSelectedType(entry);
-        setTemplate(() => {
-            const base = buildSimpleTemplate({
-                credentialType: entry.baseSimpleType,
-                name: '',
-                description: '',
-            });
-            return {
-                ...base,
-                credentialSubject: {
-                    ...base.credentialSubject,
-                    achievement: {
-                        ...base.credentialSubject.achievement,
-                        achievementType: staticField(entry.obv3Type),
+    const handleSelectType = useCallback(
+        (entry: CredentialTypeEntry) => {
+            log.info('issue.type_selected', { obv3Type: entry.obv3Type });
+            setSelectedType(entry);
+            {
+                const base = buildSimpleTemplate({
+                    credentialType: entry.baseSimpleType,
+                    name: '',
+                    description: '',
+                });
+                roster.replaceTemplate(
+                    {
+                        ...base,
+                        credentialSubject: {
+                            ...base.credentialSubject,
+                            achievement: {
+                                ...base.credentialSubject.achievement,
+                                achievementType: staticField(entry.obv3Type),
+                            },
+                        },
                     },
-                },
-            };
-        });
-    }, []);
+                    true
+                );
+            }
+        },
+        [roster.replaceTemplate]
+    );
 
     const handleImport = useCallback(
         async (imported: IssueImportResult) => {
@@ -440,7 +448,7 @@ const IssueCredentialPage: React.FC = () => {
             const result = imported.value;
             log.info('issue.imported', { source: result.provenance.source });
             const { template: next, note } = prepareImportedTemplate(result);
-            setTemplate(next);
+            roster.replaceTemplate(next, false);
             const achievementType = next.credentialSubject.achievement.achievementType?.value;
             setSelectedType(
                 (achievementType ? getTypeByObv3(achievementType) : undefined) ??
@@ -453,7 +461,7 @@ const IssueCredentialPage: React.FC = () => {
                 presentToast(note, { type: ToastTypeEnum.Success, hasDismissButton: true });
             }
         },
-        [presentToast, roster.importSheet]
+        [presentToast, roster.importSheet, roster.replaceTemplate]
     );
 
     const handleResolvedSkillsChange = useCallback((resolved: ResolvedSkill[]) => {

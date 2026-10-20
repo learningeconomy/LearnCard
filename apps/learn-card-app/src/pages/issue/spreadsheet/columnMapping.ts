@@ -42,8 +42,8 @@ export const suggestMapping = (
         cells.filter(cell => cell.text.trim()).every(cell => /^[a-f][+-]?$/i.test(cell.text.trim()))
     )
         return 'LetterGrade';
-    if (/score|grade|points/.test(label)) return 'RawScore';
     if (/credit/.test(label)) return 'credits';
+    if (/score|grade|points/.test(label)) return 'RawScore';
     if (/date|awarded|completed/.test(label) || cells.some(cell => cell.date)) return 'awardedDate';
     if (cells.some(cell => /^https?:\/\//.test(cell.text.trim()))) return 'evidence';
     return 'description'; // Hours need an explicit credit-unit choice.
@@ -293,9 +293,45 @@ export const removeSpreadsheetMapping = (
         .split('\n')
         .filter(value => value !== line)
         .join('\n')
+        .replaceAll(line, '')
         .replaceAll(`{{${variable}}}`, '');
     return {
         template: next,
         draft: { ...draft, mappings: draft.mappings?.filter(item => item.variable !== variable) },
     };
+};
+
+/** Rebuild mappings on a new type without leaking values from the previous template. */
+export const replaceSpreadsheetTemplate = (
+    template: OBv3CredentialTemplate,
+    draft: RosterDraft,
+    preserveMappings: boolean
+): { template: OBv3CredentialTemplate; draft: RosterDraft } => {
+    let next = {
+        template,
+        draft: { ...draft, mappings: [], values: {}, formulaCells: {} } as RosterDraft,
+    };
+    if (!preserveMappings || (template.schemaType && template.schemaType !== 'obv3')) return next;
+    for (const mapping of draft.mappings ?? []) {
+        const column = draft.source?.columns.find(item => item.id === mapping.columnId);
+        if (!column) continue;
+        const mapped = mapSpreadsheetColumn(
+            next.template,
+            next.draft,
+            column,
+            mapping.target,
+            mapping
+        );
+        for (const row of draft.recipients) {
+            const key = recipientKey(row);
+            const value = draft.values[key]?.[mapping.variable];
+            if (value !== undefined)
+                mapped.draft.values[key] = {
+                    ...mapped.draft.values[key],
+                    [mapped.variable]: value,
+                };
+        }
+        next = mapped;
+    }
+    return next;
 };

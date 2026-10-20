@@ -101,6 +101,15 @@ describe('roster autosave and sending', () => {
         expect(options.onRestoreTemplate).toHaveBeenCalledWith(run.template);
         expect(next.result.current.run?.id).toBe(run.id);
     });
+    it('restores a spreadsheet-first draft without selecting the fallback badge', () => {
+        const run = makeRun();
+        run.templateSelected = false;
+        const options = emptyOptions(run);
+        const { result } = renderHook(() => useIssueRoster(options));
+        act(() => result.current.restore(run));
+        expect(options.onRestoreTemplate).toHaveBeenCalledWith(null);
+        expect(result.current.run?.id).toBe(run.id);
+    });
     it('reports a context error instead of throwing from Restore', async () => {
         const run = makeRun();
         const options = emptyOptions(run);

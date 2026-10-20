@@ -68,6 +68,10 @@ export const materializeCredentialFields = (
         field: 'creditsEarned' | 'creditsAvailable'
     ): void => {
         if (container[field] === undefined) return;
+        if (typeof container[field] === 'string' && !(container[field] as string).trim()) {
+            delete container[field];
+            return;
+        }
         try {
             container[field] = parseCredentialNumber(container[field]);
         } catch {
