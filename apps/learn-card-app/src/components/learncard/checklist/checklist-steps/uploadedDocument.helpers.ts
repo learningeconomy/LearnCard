@@ -1,4 +1,4 @@
-import { RawArtifactCredentialValidator } from 'learn-card-base/types/file-extraction';
+import { RawArtifactCredentialValidator } from 'learn-card-base/types/file-extraction-credentials';
 import type { RawArtifactCredential } from 'learn-card-base/types/file-extraction';
 import { getLogger } from 'learn-card-base/logging/logger';
 

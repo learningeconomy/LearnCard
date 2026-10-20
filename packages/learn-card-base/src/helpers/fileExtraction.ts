@@ -6,10 +6,10 @@ import type { DiagnosticCollectionContext } from '../logging/logger';
 import {
     FileExtractionAttemptValidator,
     FileExtractionDiagnosticValidator,
-    FileExtractionResponseValidator,
     FileProcessingMetadataValidator,
     FILE_KINDS,
 } from '../types/file-extraction';
+import { FileExtractionResponseValidator } from '../types/file-extraction-credentials';
 import type {
     FileExtractionAttempt,
     FileExtractionDiagnostic,

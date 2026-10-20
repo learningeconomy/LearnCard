@@ -15,6 +15,8 @@ const log = getLogger('my-feature');
 > ```ts
 > import { getLogger } from 'learn-card-base/src/logging/logger';
 > ```
+>
+> Logger initialization must not require built SDK artifacts. Operational extraction schemas live in `types/file-extraction.ts`; SDK-backed credential validators live in `types/file-extraction-credentials.ts` and are not runtime logging dependencies.
 
 ```ts
 const log = getLogger('my-feature');

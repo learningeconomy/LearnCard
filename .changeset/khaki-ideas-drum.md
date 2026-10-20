@@ -14,3 +14,5 @@ Keep readable legacy originals accessible alongside removable unavailable record
 Hide original-document records consistently from Recently Added and its full credential list without hiding issued credentials or published résumés.
 
 Preserve original-only uploads when AI is disabled, without calling the model or offering extraction retry; loading settings and service refusals leave saved originals unchanged.
+
+Keep CLI logging usable before SDK artifacts are built by separating operational diagnostics from SDK-backed credential validators.

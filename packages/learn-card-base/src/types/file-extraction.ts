@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { UnsignedVCValidator, type UnsignedVC } from '@learncard/types';
+import type { UnsignedVC } from '@learncard/types';
+import type {
+    FileExtractionResponseValidator,
+    RawArtifactCredentialValidator,
+} from './file-extraction-credentials';
+
+// The logger loads these operational schemas before SDK build artifacts exist.
 
 export const FILE_EXTRACTION_STAGES = [
     'input',
@@ -61,29 +67,6 @@ export const FileProcessingMetadataValidator = FileExtractionAttemptValidator.ex
 });
 export type FileProcessingMetadata = z.infer<typeof FileProcessingMetadataValidator>;
 
-export const FileExtractionResponseValidator = z
-    .object({
-        vcs: z
-            .array(
-                z.object({
-                    vc: UnsignedVCValidator,
-                    metadata: z.object({ name: z.string(), category: z.string() }).optional(),
-                })
-            )
-            .max(10_000),
-        processing: FileProcessingMetadataValidator,
-    })
-    .superRefine((response, context) => {
-        const empty = response.vcs.length === 0;
-        if (
-            response.processing.stage !== 'complete' ||
-            response.processing.outcome !== (empty ? 'empty' : 'success') ||
-            response.processing.code !== (empty ? 'ZERO_STRUCTURED_ITEMS' : 'OK') ||
-            response.processing.credentialCount !== response.vcs.length
-        ) {
-            context.addIssue({ code: 'custom', message: 'Inconsistent extraction outcome' });
-        }
-    });
 export type FileExtractionResponse = z.infer<typeof FileExtractionResponseValidator>;
 
 /** Operational fields only. Arbitrary provider messages and document fields never survive. */
@@ -137,16 +120,6 @@ export const FileExtractionDiagnosticValidator = FileExtractionAttemptValidator.
 });
 export type FileExtractionDiagnostic = z.infer<typeof FileExtractionDiagnosticValidator>;
 
-export const RawArtifactCredentialValidator = UnsignedVCValidator.extend({
-    id: z.string().min(1),
-    rawArtifact: z.object({
-        type: z.string(),
-        fileName: z.string(),
-        fileSize: z.string(),
-        fileType: z.string(),
-        data: z.string().min(1),
-    }),
-});
 export type RawArtifactCredential = z.infer<typeof RawArtifactCredentialValidator>;
 
 /** Editable draft plus its source, retained in the memory-only review store. */
