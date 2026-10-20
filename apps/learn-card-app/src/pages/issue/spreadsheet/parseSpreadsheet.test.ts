@@ -80,6 +80,66 @@ describe('spreadsheet parsing and editable roster', () => {
         expect(cells[2].date).toBe('2023-03-15');
         expect(cells[3].problem).toBe('formula');
     });
+    it.each([
+        { t: 'n', f: '1/0', expected: '', problems: ['required', 'formula'] },
+        { t: 'e', f: '1/0', v: 7, expected: '#DIV/0!', problems: ['formula'] },
+        { t: 'e', f: 'A99', v: 23, expected: '#REF!', problems: ['formula'] },
+        { t: 'n', f: 'SUM(90,5)', v: 95, expected: '95', problems: [] },
+    ] as const)('validates imported XLSX formula results: $expected', cell => {
+        const workbook = utils.book_new();
+        const worksheet = utils.aoa_to_sheet([
+            ['Email', 'Score'],
+            ['a@test.com', ''],
+        ]);
+        worksheet.B2 = { t: cell.t, f: cell.f, ...('v' in cell ? { v: cell.v } : {}) };
+        utils.book_append_sheet(workbook, worksheet, 'People');
+        const source = readXlsx(
+            write(workbook, { type: 'array', bookType: 'xlsx' }),
+            'people.xlsx'
+        );
+        const { draft } = mergeSpreadsheet(makeRun(0).draft, parseSpreadsheet(source), ['score']);
+        const key = draft.recipients[0].rowId!;
+        const problems = () =>
+            getRowProblems(
+                draft.recipients,
+                ['score'],
+                { score: 'perRecipient' },
+                {},
+                draft.values,
+                draft.evidence,
+                draft.formulaCells
+            );
+
+        expect(draft.values[key].score).toBe(cell.expected);
+        expect(problems()[key]).toEqual(cell.problems);
+        // An actual edit resolves the problem; a nonblank XLSX error is never valid by itself.
+        draft.values[key].score = '95';
+        expect(problems()[key]).toEqual([]);
+    });
+    it('clears formula flags on corrected re-import and retains flags on untouched rows', () => {
+        const original = makeRun(2).draft;
+        original.values = { 'row-0': { score: '#REF!' }, 'row-1': { score: '#DIV/0!' } };
+        original.formulaCells = {
+            'row-0': { score: '#REF!' },
+            'row-1': { score: '#DIV/0!' },
+        };
+        const { draft } = mergeSpreadsheet(original, parse('Email,Score\nperson0@test.com,95'), [
+            'score',
+        ]);
+        expect(
+            getRowProblems(
+                draft.recipients,
+                ['score'],
+                { score: 'perRecipient' },
+                {},
+                draft.values,
+                draft.evidence,
+                draft.formulaCells
+            )
+        ).toEqual({ 'row-0': [], 'row-1': ['formula'] });
+        expect(draft.formulaCells?.['row-0']).toEqual({});
+        expect(original.formulaCells['row-0']).toEqual({ score: '#REF!' });
+    });
     it('normalizes placeholder headers, preserves duplicates and validates evidence', () => {
         const run = makeRun(0);
         const { draft, mapped } = mergeSpreadsheet(

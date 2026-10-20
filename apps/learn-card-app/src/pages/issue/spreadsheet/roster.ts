@@ -182,6 +182,7 @@ export const mergeSpreadsheet = (
             recipients,
             values,
             evidence,
+            formulaCells,
             source: sheet,
         },
         mapped,
