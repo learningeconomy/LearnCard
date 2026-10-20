@@ -39,7 +39,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
             if (outcome === 'capgo') {
                 setCapgoActionIndex(index);
                 await capgo.startUpdate();
-            } else if (action.closeOnComplete) {
+            } else if (outcome === 'closed' && action.closeOnComplete) {
                 onClose(action.action.type === 'dismiss' ? 'dismissed' : 'action', { stepIndex });
             }
         } catch {

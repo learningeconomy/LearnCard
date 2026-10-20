@@ -39,13 +39,15 @@
             const raw = new URLSearchParams(location.search).get('parentOrigin');
             let parentOrigin;
             try {
-                const url = new URL(raw);
-                if (
-                    !['https:', 'http:', 'capacitor:'].includes(url.protocol) ||
-                    url.origin === 'null'
-                )
-                    throw new Error();
-                parentOrigin = url.origin;
+                if (raw === 'capacitor://localhost') {
+                    // URL.origin is "null" for Capacitor's custom iOS scheme.
+                    parentOrigin = raw;
+                } else {
+                    const url = new URL(raw);
+                    if (!['https:', 'http:'].includes(url.protocol) || url.origin === 'null')
+                        throw new Error();
+                    parentOrigin = url.origin;
+                }
             } catch {
                 status.textContent = 'Set the parentOrigin query parameter to your app origin.';
             }

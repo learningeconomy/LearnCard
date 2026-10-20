@@ -80,7 +80,8 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
             }
         };
         const node = frame.current;
-        node?.addEventListener('load', ready);
+        // A load event also fires for blocked/failed embeds; required frames need the handshake.
+        if (message.dismissible) node?.addEventListener('load', ready);
         window.addEventListener('message', receive);
         window.addEventListener('offline', fail);
         return () => {

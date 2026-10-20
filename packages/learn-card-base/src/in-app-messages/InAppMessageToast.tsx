@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 
 import { useInAppMessageActions } from './useInAppMessageActions';
@@ -20,6 +20,7 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
     const { runAction } = useInAppMessageActions();
     const runningRef = useRef(false);
     const completedRef = useRef(false);
+    const [expiryAttempt, setExpiryAttempt] = useState(0);
     const closeRef = useRef(onClose);
     useLayoutEffect(() => {
         closeRef.current = onClose;
@@ -40,13 +41,14 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
         }, durationMs);
 
         return () => clearTimeout(timer);
-    }, [durationMs]);
+    }, [durationMs, expiryAttempt]);
 
     const handleTap = async () => {
         if (runningRef.current || completedRef.current) return;
 
         runningRef.current = true;
         completedRef.current = true;
+        let completed = false;
 
         try {
             if (primaryAction) {
@@ -54,13 +56,19 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
                     actionIndex: message.actions.indexOf(primaryAction),
                     actionType: primaryAction.action.type,
                 });
-                await runAction(primaryAction.action);
+                const outcome = await runAction(primaryAction.action);
+                if (outcome !== 'closed') return;
             }
-        } finally {
-            runningRef.current = false;
+            completed = true;
             onClose(
                 primaryAction && primaryAction.action.type !== 'dismiss' ? 'action' : 'dismissed'
             );
+        } finally {
+            runningRef.current = false;
+            if (!completed) {
+                completedRef.current = false;
+                setExpiryAttempt(value => value + 1);
+            }
         }
     };
 

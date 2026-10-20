@@ -41,7 +41,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({
             if (outcome === 'capgo') {
                 setIsCapgoTarget(true);
                 await capgo.startUpdate();
-            } else if (action.closeOnComplete) {
+            } else if (outcome === 'closed' && action.closeOnComplete) {
                 onClose(action.action.type === 'dismiss' ? 'dismissed' : 'action');
             }
         } finally {

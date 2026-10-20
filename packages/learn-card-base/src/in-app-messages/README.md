@@ -521,8 +521,9 @@ happens after winner selection and does not change targeting or consume another 
 Iframe URLs (including translated URLs) must be HTTPS, without embedded credentials. Same-origin
 embeds are refused at runtime: a scripted same-origin page could access the parent app directly. The sandbox is
 fixed to `allow-scripts allow-same-origin allow-forms allow-popups`. The app owns the close control,
-loading skeleton, timeout/offline error, and retry. A browser load event or a valid `ready` message
-removes the skeleton; **load does not prove the remote page succeeded**. The remote server must allow
+loading skeleton, timeout/offline error, and retry. Dismissible frames accept a browser load event or
+a valid `ready` message. Required frames (`dismissible:false`) require the validated `ready` handshake
+to remove the skeleton and cancel the timeout; **load does not prove the remote page succeeded**. The remote server must allow
 embedding through its CSP `frame-ancestors` / X-Frame-Options policy. These restrictions cannot be
 bypassed by the app. Retry mounts a new frame; old listeners and completions are discarded.
 
@@ -554,7 +555,8 @@ action can complete the message; no-op/failed actions cannot. During an error, a
 retry but no close escape. Use required campaigns sparingly and test their recovery path first.
 
 The runnable [bridge example](examples/iframe.html) accepts a `parentOrigin` query parameter. Host it
-on a separate HTTPS origin you control; no hosting service is created by this PR.
+on a separate HTTPS origin you control; no hosting service is created by this PR. For iOS, use the
+exact `capacitor://localhost` origin; Android and web use their HTTP(S) app origins.
 
 ### Engagement and QA
 

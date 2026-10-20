@@ -7,6 +7,8 @@ import { inAppMessageValidator } from '@learncard/types';
 import { InAppMessageStory, getStorySwipeDirection } from '../InAppMessageStory';
 import { InAppMessageIframe } from '../InAppMessageIframe';
 import { InAppMessageToast } from '../InAppMessageToast';
+import { InAppMessageBanner } from '../InAppMessageBanner';
+import { InAppMessageModal } from '../InAppMessageModal';
 import { MessageActions } from '../MessageActions';
 
 const mocks = vi.hoisted(() => ({ runAction: vi.fn(), startUpdate: vi.fn(), status: 'idle' }));
@@ -157,6 +159,67 @@ describe('toast lifecycle', () => {
         await act(async () => resolve('closed'));
         expect(onClose).toHaveBeenCalledExactlyOnceWith('action');
     });
+
+    it('restores expiry after a no-op action even if the original timer elapsed', async () => {
+        vi.useFakeTimers();
+        let resolve: (value: string) => void = () => undefined;
+        mocks.runAction.mockImplementation(
+            () =>
+                new Promise<string>(done => {
+                    resolve = done;
+                })
+        );
+        const onClose = vi.fn();
+        render(
+            <InAppMessageToast
+                message={inAppMessageValidator.parse({
+                    ...message,
+                    actions: [{ label: 'Open store', action: { type: 'appStore' } }],
+                })}
+                onClose={onClose}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Saved' }));
+        act(() => vi.advanceTimersByTime(5000));
+        await act(async () => resolve('noop'));
+        expect(onClose).not.toHaveBeenCalled();
+        act(() => vi.advanceTimersByTime(5000));
+        expect(onClose).toHaveBeenCalledExactlyOnceWith('dismissed');
+    });
+});
+
+describe('action completion', () => {
+    it.each([
+        ['modal', InAppMessageModal],
+        ['story', InAppMessageStory],
+        ['banner', InAppMessageBanner],
+        ['toast', InAppMessageToast],
+    ] as const)(
+        'keeps a %s open after a no-op and allows a successful retry',
+        async (presentation, Component) => {
+            const message = inAppMessageValidator.parse({
+                id: 'store',
+                title: 'Update available',
+                presentation,
+                dismissible: false,
+                steps: [{ title: 'Update' }],
+                actions: [{ label: 'Open store', action: { type: 'appStore' } }],
+            });
+            const onClose = vi.fn();
+            mocks.runAction.mockResolvedValueOnce('noop').mockResolvedValueOnce('closed');
+            render(<Component message={message} onClose={onClose} />);
+            const actionButton = screen.getByRole('button', {
+                name: presentation === 'toast' ? 'Update available' : 'Open store',
+            });
+            await act(async () => fireEvent.click(actionButton));
+            expect(mocks.runAction).toHaveBeenCalledOnce();
+            expect(onClose).not.toHaveBeenCalled();
+            await act(async () => fireEvent.click(actionButton));
+            expect(mocks.runAction).toHaveBeenCalledTimes(2);
+            expect(onClose).toHaveBeenCalledOnce();
+            expect(onClose.mock.calls[0]?.[0]).toBe('action');
+        }
+    );
 });
 
 describe('iframe lifecycle', () => {
@@ -193,7 +256,7 @@ describe('iframe lifecycle', () => {
             )
         );
     };
-    it('accepts load or ready and rejects another origin', () => {
+    it('accepts ready and rejects another origin', () => {
         render(<InAppMessageIframe message={message} onClose={vi.fn()} />);
         const frame = screen.getByTitle('Embedded') as HTMLIFrameElement;
         expect(frame.getAttribute('sandbox')).toBe(
@@ -203,6 +266,30 @@ describe('iframe lifecycle', () => {
         expect(screen.getByRole('status')).toBeTruthy();
         send(frame, 'ready');
         expect(screen.queryByRole('status')).toBeNull();
+    });
+    it('keeps required frames recoverable after load without a valid ready handshake', () => {
+        vi.useFakeTimers();
+        const onClose = vi.fn();
+        render(
+            <InAppMessageIframe message={{ ...message, dismissible: false }} onClose={onClose} />
+        );
+        const frame = screen.getByTitle('Embedded') as HTMLIFrameElement;
+        fireEvent.load(frame);
+        send(frame, 'ready', undefined, 'https://other.example');
+        expect(screen.getByRole('status')).toBeTruthy();
+        act(() => vi.advanceTimersByTime(101));
+        expect(screen.getByRole('alert')).toBeTruthy();
+        send(frame, 'ready');
+        expect(screen.getByRole('alert')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
+        const retryFrame = screen.getByTitle('Embedded') as HTMLIFrameElement;
+        expect(retryFrame).not.toBe(frame);
+        send(retryFrame, 'ready');
+        expect(screen.queryByRole('status')).toBeNull();
+        expect(screen.queryByRole('alert')).toBeNull();
+        act(() => vi.advanceTimersByTime(101));
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(onClose).not.toHaveBeenCalled();
     });
     it('times out, retries with a fresh frame, and ignores late messages from the old frame', () => {
         vi.useFakeTimers();
