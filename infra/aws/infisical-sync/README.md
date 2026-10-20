@@ -24,9 +24,10 @@ The attached inline policy allows exactly:
   no secret values.
 - `secretsmanager:GetSecretValue`, `CreateSecret`, `UpdateSecret`,
   `PutSecretValue`, `DescribeSecret`, `TagResource`, and `UntagResource`, scoped
-  to this account/region secrets named
-  `lca-api/*/runtime-secrets-*`, `brain-service/*/runtime-secrets-*`, and
-  `learn-cloud-service/*/runtime-secrets-*`.
+  to this account's secrets named `lca-api/*/runtime-secrets-*`,
+  `brain-service/*/runtime-secrets-*`, and
+  `learn-cloud-service/*/runtime-secrets-*` in each region listed in
+  `secret_regions` (LearnCard `us-east-1`, ScoutPass `eu-west-1`).
 
 ## Disable Secret Deletion
 
@@ -42,13 +43,14 @@ compromise of the shared Infisical account destroy production runtime secrets.
 
 ## Inputs
 
-| Input                         | Default / purpose                                                                                                                                       |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `environment`                 | Required: staging or production                                                                                                                         |
-| `expected_account_id`         | Required, 12 digits; per-env file; provider allowlist and resource precondition                                                                         |
-| `aws_region`                  | us-east-1; region holding the synced secrets                                                                                                            |
-| `infisical_aws_principal_arn` | `arn:aws:iam::381492033652:root` (Infisical US); the assuming principal                                                                                 |
-| `infisical_project_id`        | Required; the Infisical project ID used as the `sts:ExternalId` guard (not secret, but supply via `TF_VAR_infisical_project_id` rather than committing) |
+| Input                         | Default / purpose                                                                                                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `environment`                 | Required: staging or production                                                                                                                                               |
+| `expected_account_id`         | Required, 12 digits; per-env file; provider allowlist and resource precondition                                                                                               |
+| `aws_region`                  | us-east-1; provider region (IAM is global)                                                                                                                                    |
+| `secret_regions`              | `["us-east-1", "eu-west-1"]`; regions whose runtime bundles the role may manage                                                                                               |
+| `infisical_aws_principal_arn` | `arn:aws:iam::381492033652:root` (Infisical US); the assuming principal                                                                                                       |
+| `infisical_project_id`        | Required; the **LearnCard Runtime** Infisical project ID used as the `sts:ExternalId` guard (not secret, but supply via `TF_VAR_infisical_project_id` rather than committing) |
 
 ## Outputs
 

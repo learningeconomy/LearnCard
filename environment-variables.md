@@ -298,9 +298,16 @@ no `DeleteSecret`; do not replace it with `secretsmanager:*`.
 
 ### Create the six sync integrations
 
-Create **six** Many-To-One auto-sync integrations — one per `(service, stage)`
-pair — each mapping an Infisical source folder to a single AWS secret. Use these
-settings on every integration:
+Runtime bundles live in a dedicated Infisical project, **LearnCard Runtime**,
+separate from the hand-organized LearnCard and ScoutPass projects that
+`pull-env.sh` reads. Its project ID (shown in the project's settings; supply it as
+`TF_VAR_infisical_project_id`, never commit it) is the `sts:ExternalId` the sync
+role trusts, so one project-level AWS connection serves both tenants.
+
+Create one Many-To-One auto-sync integration per `(tenant, service, stage)`,
+each mapping an Infisical source folder to a single AWS secret: six for
+LearnCard (us-east-1) and six for ScoutPass (eu-west-1). Use these settings on
+every integration:
 
 - **Sync behavior**: Many-To-One (all keys in the source folder → one JSON
   SecretString).
@@ -316,22 +323,29 @@ Infisical environment → stage mapping:
 
 Folder → AWS secret mapping:
 
-| Infisical source folder  | AWS Secrets Manager secret                    |
-| ------------------------ | --------------------------------------------- |
-| `/lca-api/runtime`       | `lca-api/<stage>/runtime-secrets`             |
-| `/brain-service/runtime` | `brain-service/<stage>/runtime-secrets`       |
-| `/cloud-service/runtime` | `learn-cloud-service/<stage>/runtime-secrets` |
+| Infisical source folder (LearnCard Runtime) | AWS Secrets Manager secret                    | Region      |
+| ------------------------------------------- | --------------------------------------------- | ----------- |
+| `/learncard/lca-api/runtime`                | `lca-api/<stage>/runtime-secrets`             | `us-east-1` |
+| `/learncard/brain-service/runtime`          | `brain-service/<stage>/runtime-secrets`       | `us-east-1` |
+| `/learncard/cloud-service/runtime`          | `learn-cloud-service/<stage>/runtime-secrets` | `us-east-1` |
+| `/scouts/lca-api/runtime`                   | `lca-api/<stage>/runtime-secrets`             | `eu-west-1` |
+| `/scouts/brain-service/runtime`             | `brain-service/<stage>/runtime-secrets`       | `eu-west-1` |
+| `/scouts/cloud-service/runtime`             | `learn-cloud-service/<stage>/runtime-secrets` | `eu-west-1` |
 
-With `staging` and `prod` each covering all three services, that is the full set
-of six integrations.
+ScoutPass reuses the same secret names because its services deploy to the same
+stage names in a different region; the region keeps the two tenants apart.
 
-These `/runtime` folders are dedicated sync sources to create, not the existing
-CLI export folders. `scripts/pull-env.sh` currently exports
-`/LearnCard/lca-api`, `/LearnCard/brain-service`, and `/LearnCard/cloud-service`;
-it does not export `/runtime`. Populate the sync sources with private runtime
-keys without disrupting those existing `.env` exports. In particular, the
-Infisical service name is `cloud-service`, while the AWS name is
-`learn-cloud-service`.
+These folders already exist in `staging` and `prod`; the project's `dev`
+environment is unused. They are dedicated sync sources, separate from the CLI
+export folders (`/LearnCard/lca-api`, `/LearnCard/brain-service`,
+`/LearnCard/cloud-service`) in the LearnCard project, which `scripts/pull-env.sh`
+keeps reading unchanged. The Infisical service name is `cloud-service`, while the
+AWS name is `learn-cloud-service`.
+
+When a bundle already exists in AWS (for example `lca-api/dev/runtime-secrets`),
+create its sync with initial behavior **Import, prioritize destination** so the
+existing keys are copied into the folder instead of overwritten. Use **Overwrite
+destination** only for bundles that do not exist yet, after populating the folder.
 
 ### Per-environment cutover
 

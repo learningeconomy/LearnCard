@@ -37,11 +37,14 @@ locals {
   partition  = data.aws_partition.current.partition
   account_id = data.aws_caller_identity.current.account_id
   # Secrets Manager ARNs are regional and account-scoped. Infisical only ever
-  # syncs the three runtime-secret namespaces; account-wide listing is a separate,
-  # value-less statement.
+  # syncs the three runtime-secret namespaces, in each tenant's region (LearnCard
+  # us-east-1, ScoutPass eu-west-1); account-wide listing is a separate,
+  # value-less statement. IAM is global, so one role serves every region.
   secret_name_prefixes = ["lca-api", "brain-service", "learn-cloud-service"]
-  managed_secret_arns = [
-    for prefix in local.secret_name_prefixes :
-    "arn:${local.partition}:secretsmanager:${var.aws_region}:${local.account_id}:secret:${prefix}/*/runtime-secrets-*"
-  ]
+  managed_secret_arns = flatten([
+    for region in var.secret_regions : [
+      for prefix in local.secret_name_prefixes :
+      "arn:${local.partition}:secretsmanager:${region}:${local.account_id}:secret:${prefix}/*/runtime-secrets-*"
+    ]
+  ])
 }
