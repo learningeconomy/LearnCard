@@ -56,7 +56,7 @@ Evidence uses standard Open Badges `Evidence` entries. Attachment names remain i
 
 ### CSV corrections and failure-only retries
 
-Re-uploading an unchanged exported CSV preserves unresolved Excel formula/error flags; correct the flagged value to clear it. Same-run exports restore the original recipient address when CSV formula protection added an apostrophe. Literal apostrophes in addresses remain intact.
+Re-uploading an unchanged exported CSV preserves unresolved Excel formula/error flags; correct the flagged value to clear it. Same-run exports restore the original recipient address when CSV formula protection added an apostrophe. Literal apostrophes in addresses and credential text remain intact. New exports mark their reversible escaping with `__lc_csv_encoding=apostrophe-v1`: formula-like values gain one apostrophe, and a literal leading apostrophe is doubled. When editing these exported CSV cells directly, retain that convention (for example, `''=SUM(A1:A2)` represents the literal text `'=SUM(A1:A2)`). Ordinary original spreadsheets without saved-run IDs are imported literally. Older unversioned exports decode only an exact escaped match to a saved value; edited or unknown apostrophe-prefixed text stays literal.
 
 Retry Failed includes only recipients with a confirmed failure. Newly added people remain unattempted until Issue or Resume. Resume and retry validate result ranges again before new submissions, including failures discovered while checking an existing receipt. Previously accepted requests keep their frozen contents for safe replay.
 

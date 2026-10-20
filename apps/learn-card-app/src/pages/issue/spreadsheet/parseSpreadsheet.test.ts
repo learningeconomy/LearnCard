@@ -237,6 +237,56 @@ describe('spreadsheet parsing and editable roster', () => {
             expect(arbitrary.recipients[0]).toMatchObject({ email: "'+ada@example.com" });
         }
     );
+    it.each([
+        "'=SUM(A1:A2)",
+        "''=SUM(A1:A2)",
+        "'plain",
+        '=SUM(A1:A2)',
+        '+note',
+        '-42',
+        '@coach',
+        '\ttext',
+        '\rtext',
+    ])('round-trips literal credential text %j without losing or adding apostrophes', value => {
+        const draft = makeRun().draft;
+        draft.values = { 'row-0': { score: value } };
+        const csv = exportRosterCsv(draft, ['score'], { score: 'perRecipient' }, {});
+        const imported = mergeSpreadsheet(draft, parse(csv), ['score']).draft;
+        expect(imported.values).toEqual(draft.values);
+        expect(mergeSpreadsheet(imported, imported.source!, ['score']).draft.values).toEqual(
+            draft.values
+        );
+    });
+    it.each([
+        ["'=NEW(A1)", "''=NEW(A1)"],
+        ["''literal", "'''literal"],
+        ['=NEW(A1)', "'=NEW(A1)"],
+        ['+new', "'+new"],
+    ])('decodes edited versioned CSV cells reversibly: %j', (value, encoded) => {
+        const draft = makeRun().draft;
+        draft.values = { 'row-0': { score: 'Original' } };
+        const csv = exportRosterCsv(draft, ['score'], { score: 'perRecipient' }, {});
+        const imported = mergeSpreadsheet(draft, parse(csv.replace('Original', encoded)), [
+            'score',
+        ]).draft;
+        expect(imported.values['row-0'].score).toBe(value);
+    });
+    it.each(["'=SUM(A1:A2)", '=SUM(A1:A2)', "'plain"])(
+        'restores legacy exports only when the saved value proves the encoding: %j',
+        value => {
+            const draft = makeRun().draft;
+            draft.values = { 'row-0': { score: value } };
+            const escaped = /^[=+\-@\t\r]/.test(value) ? "'" + value : value;
+            const legacy = `Recipient Email,score,__lc_run_id,__lc_row_id\nperson0@test.com,${escaped},${draft.id},row-0`;
+            expect(mergeSpreadsheet(draft, parse(legacy), ['score']).draft.values).toEqual(
+                draft.values
+            );
+            const edited = legacy.replace(escaped, "'=NEW(A1)");
+            expect(
+                mergeSpreadsheet(draft, parse(edited), ['score']).draft.values['row-0'].score
+            ).toBe("'=NEW(A1)");
+        }
+    );
     it('normalizes placeholder headers, preserves duplicates and validates evidence', () => {
         const run = makeRun(0);
         const { draft, mapped } = mergeSpreadsheet(
