@@ -39,6 +39,14 @@ describe('standard credential materialization', () => {
         });
         expect(input.credentialSubject.creditsEarned).toBe(value);
     });
+    it.each(['', '  '])(
+        'omits a blank optional awardedDate %j without mutating the source',
+        awardedDate => {
+            const input = { type: ['OpenBadgeCredential'], awardedDate, credentialSubject: {} };
+            expect(materializeCredentialFields(input)).not.toHaveProperty('awardedDate');
+            expect(input.awardedDate).toBe(awardedDate);
+        }
+    );
     it('does not modify signed credentials or embedded signed credentials', () => {
         const signed = {
             type: ['OpenBadgeCredential'],

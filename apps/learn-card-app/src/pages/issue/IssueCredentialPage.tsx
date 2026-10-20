@@ -411,58 +411,48 @@ const IssueCredentialPage: React.FC = () => {
                     ? m['issueFlow.gate.addRecip']()
                     : null;
 
-    const handleSelectType = useCallback(
-        (entry: CredentialTypeEntry) => {
-            log.info('issue.type_selected', { obv3Type: entry.obv3Type });
-            setSelectedType(entry);
+    const handleSelectType = (entry: CredentialTypeEntry): void => {
+        log.info('issue.type_selected', { obv3Type: entry.obv3Type });
+        const base = buildSimpleTemplate({
+            credentialType: entry.baseSimpleType,
+            name: '',
+            description: '',
+        });
+        // replaceTemplate commits the template and its selected type together after its lock guard.
+        roster.replaceTemplate(
             {
-                const base = buildSimpleTemplate({
-                    credentialType: entry.baseSimpleType,
-                    name: '',
-                    description: '',
-                });
-                roster.replaceTemplate(
-                    {
-                        ...base,
-                        credentialSubject: {
-                            ...base.credentialSubject,
-                            achievement: {
-                                ...base.credentialSubject.achievement,
-                                achievementType: staticField(entry.obv3Type),
-                            },
-                        },
+                ...base,
+                credentialSubject: {
+                    ...base.credentialSubject,
+                    achievement: {
+                        ...base.credentialSubject.achievement,
+                        achievementType: staticField(entry.obv3Type),
                     },
-                    true
-                );
-            }
-        },
-        [roster.replaceTemplate]
-    );
+                },
+            },
+            true
+        );
+    };
 
-    const handleImport = useCallback(
-        async (imported: IssueImportResult) => {
-            if (imported.kind === 'spreadsheet') {
-                await roster.importSheet(imported.sheet);
-                return;
-            }
-            const result = imported.value;
-            log.info('issue.imported', { source: result.provenance.source });
-            const { template: next, note } = prepareImportedTemplate(result);
-            roster.replaceTemplate(next, false);
-            const achievementType = next.credentialSubject.achievement.achievementType?.value;
-            setSelectedType(
-                (achievementType ? getTypeByObv3(achievementType) : undefined) ??
-                    getTypeByObv3('Badge') ??
-                    null
-            );
-            setProvenance(result.provenance);
-            setError(null);
-            if (note) {
-                presentToast(note, { type: ToastTypeEnum.Success, hasDismissButton: true });
-            }
-        },
-        [presentToast, roster.importSheet, roster.replaceTemplate]
-    );
+    const handleImport = async (imported: IssueImportResult): Promise<void> => {
+        if (imported.kind === 'spreadsheet') {
+            await roster.importSheet(imported.sheet);
+            return;
+        }
+        const result = imported.value;
+        log.info('issue.imported', { source: result.provenance.source });
+        const { template: next, note } = prepareImportedTemplate(result);
+        roster.replaceTemplate(next, false);
+        const achievementType = next.credentialSubject.achievement.achievementType?.value;
+        setSelectedType(
+            (achievementType ? getTypeByObv3(achievementType) : undefined) ??
+                getTypeByObv3('Badge') ??
+                null
+        );
+        setProvenance(result.provenance);
+        setError(null);
+        if (note) presentToast(note, { type: ToastTypeEnum.Success, hasDismissButton: true });
+    };
 
     const handleResolvedSkillsChange = useCallback((resolved: ResolvedSkill[]) => {
         setResolvedSkills(resolved);

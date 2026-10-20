@@ -94,9 +94,8 @@ export const materializeCredentialFields = (
         subject(value);
     if (result.awardedDate !== undefined) {
         if (typeof result.awardedDate !== 'string') throw new CredentialFieldError('awardedDate');
-        (result as Record<string, unknown>).awardedDate = normalizeCredentialAwardDate(
-            result.awardedDate
-        );
+        if (!result.awardedDate.trim()) delete result.awardedDate;
+        else result.awardedDate = normalizeCredentialAwardDate(result.awardedDate);
     }
     return result;
 };
