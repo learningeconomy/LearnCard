@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { utils, write } from 'xlsx';
 import JSZip from 'jszip';
+import Papa from 'papaparse';
 import {
     parseSpreadsheet,
     readSpreadsheetFile,
@@ -271,6 +272,50 @@ describe('spreadsheet parsing and editable roster', () => {
         ]).draft;
         expect(imported.values['row-0'].score).toBe(value);
     });
+    it.each(["'=SUM(A1:A2)", '=SUM(A1:A2)', "'plain"])(
+        'decodes copied versioned rows before matching or adding recipients: %j',
+        value => {
+            const draft = makeRun().draft;
+            draft.recipients[0] = {
+                kind: 'email',
+                rowId: 'row-0',
+                email: '+ada@example.com',
+                displayName: 'Ada',
+            };
+            draft.values = { 'row-0': { score: value } };
+            const exported = Papa.parse<Record<string, string>>(
+                exportRosterCsv(draft, ['score'], { score: 'perRecipient' }, {}),
+                { header: true, skipEmptyLines: true }
+            ).data;
+            const copied = {
+                ...exported[0],
+                'Recipient Email': "'+bob@example.com",
+                __lc_row_id: '',
+            };
+            const csv = Papa.unparse([...exported, copied]);
+            const imported = mergeSpreadsheet(draft, parse(csv), ['score']).draft;
+            expect(imported.recipients).toHaveLength(2);
+            const added = imported.recipients[1];
+            expect(added).toMatchObject({ kind: 'email', email: '+bob@example.com' });
+            const addedKey = added.kind === 'email' ? added.rowId! : '';
+            expect(imported.values[addedKey].score).toBe(value);
+            expect(mergeSpreadsheet(imported, imported.source!, ['score']).draft.values).toEqual(
+                imported.values
+            );
+            const matched = mergeSpreadsheet(imported, parse(csv), ['score']).draft;
+            expect(matched.recipients).toHaveLength(2);
+            expect(matched.recipients[1]).toEqual(added);
+            const external = { ...copied, __lc_run_id: '' };
+            const unmarked = mergeSpreadsheet(makeRun(0).draft, parse(Papa.unparse([external])), [
+                'score',
+            ]).draft;
+            expect(unmarked.recipients[0]).toMatchObject({ email: "'+bob@example.com" });
+            expect(Object.values(unmarked.values)[0].score).toBe(copied.score);
+            expect(() =>
+                mergeSpreadsheet(makeRun(0).draft, parse(Papa.unparse([copied])), ['score'])
+            ).toThrow('run');
+        }
+    );
     it.each(["'=SUM(A1:A2)", '=SUM(A1:A2)', "'plain"])(
         'restores legacy exports only when the saved value proves the encoding: %j',
         value => {

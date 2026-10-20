@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useState } from 'react';
+import Papa from 'papaparse';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useIssueRoster } from './useIssueRoster';
 import { makeRun, statusFor } from './fixtures.test-support';
@@ -360,6 +361,104 @@ describe('roster autosave and sending', () => {
             }
         }
     );
+    it('submits canonical addresses and literal text for a copied encoded row', async () => {
+        const run = makeRun();
+        run.templateUri = 'template';
+        run.template.credentialSubject.achievement.description = dynamicField('score');
+        run.scopes = { score: 'perRecipient' };
+        run.draft.recipients[0] = {
+            kind: 'email',
+            rowId: 'row-0',
+            email: '+ada@example.com',
+            displayName: 'Ada',
+        };
+        run.draft.values = { 'row-0': { score: "'=SUM(A1:A2)" } };
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(run);
+        store.save.mockResolvedValue(undefined);
+        const options = emptyOptions(run);
+        const variables = ['score'];
+        const submit = vi.fn(async () => ({
+            batchId: 'batch',
+            status: 'QUEUED',
+            createdAt: new Date().toISOString(),
+        }));
+        options.initWallet = vi.fn(
+            async () =>
+                ({
+                    id: { did: () => 'did:key:test' },
+                    invoke: {
+                        getProfile: vi.fn(async () => ({ profileId: run.scope.issuer })),
+                        sendCredentialsViaInbox: submit,
+                        waitForInboxCredentialBatch: vi.fn(async () => statusFor('batch', 2)),
+                    },
+                }) as unknown as BespokeLearnCard
+        );
+        const { result } = renderHook(() => {
+            const [recipients, setRecipients] = useState(options.recipients);
+            const [values, setValues] = useState(options.values);
+            const [shared, setShared] = useState(options.shared);
+            return useIssueRoster({
+                ...options,
+                recipients,
+                setRecipients,
+                values,
+                setValues,
+                shared,
+                setShared,
+                variables,
+                template: run.template,
+            });
+        });
+        const rows = Papa.parse<Record<string, string>>(exportIssuanceCsv(run, variables), {
+            header: true,
+            skipEmptyLines: true,
+        }).data;
+        const csv = Papa.unparse([
+            ...rows,
+            {
+                ...rows[0],
+                'Recipient Email': "'+bob@example.com",
+                __lc_row_id: '',
+            },
+        ]);
+        await act(async () => {
+            await result.current.importSheet(parseSpreadsheet(readSpreadsheetText(csv)));
+        });
+        expect(result.current.draft.recipients).toHaveLength(2);
+        expect(result.current.draft.recipients[1]).toMatchObject({ email: '+bob@example.com' });
+        expect(result.current.valuesForRow(result.current.draft.recipients[1])).toEqual({
+            score: "'=SUM(A1:A2)",
+        });
+        expect(result.current.hasProblems).toBe(false);
+        store.read.mockResolvedValue(result.current.run);
+        await act(async () => {
+            await result.current.execute();
+        });
+        expect(result.current.error).toBe('');
+        expect(submit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                items: [
+                    expect.objectContaining({
+                        recipient: { type: 'email', value: '+ada@example.com' },
+                        configuration: { templateData: { score: "'=SUM(A1:A2)" } },
+                    }),
+                    expect.objectContaining({
+                        recipient: { type: 'email', value: '+bob@example.com' },
+                        configuration: { templateData: { score: "'=SUM(A1:A2)" } },
+                    }),
+                ],
+            })
+        );
+        expect(validateCredentialJsonLd).toHaveBeenCalledWith(
+            expect.objectContaining({
+                credentialSubject: expect.objectContaining({
+                    achievement: expect.objectContaining({ description: "'=SUM(A1:A2)" }),
+                }),
+            }),
+            expect.anything()
+        );
+    });
     it('blocks source formula errors when a template variable is mapped after import', async () => {
         const run = makeRun();
         store.list.mockResolvedValue([]);

@@ -128,14 +128,13 @@ export const mergeSpreadsheet = (
     const assigned = new Set<string>();
     const encodingColumn = sheet.columns.find(column => column.label === EXPORT_ENCODING_COLUMN);
     const decodedRows = new WeakSet<ParsedSpreadsheet['rows'][number]>();
-    // Decode versioned cells only for verified saved rows. Legacy recipient
-    // addresses require an exact saved match; literal apostrophes are valid.
+    // The versioned codec applies to every row from this run, including copied
+    // rows added without an identity. Legacy addresses need an exact saved match.
     const rows = sheet.rows.map(row => {
-        const existing =
-            row.exportedRunId === draft.id && row.exportedRowId
-                ? draft.recipients.find(recipient => recipientKey(recipient) === row.exportedRowId)
-                : undefined;
-        if (!existing) return row;
+        if (row.exportedRunId !== draft.id) return row;
+        const existing = row.exportedRowId
+            ? draft.recipients.find(recipient => recipientKey(recipient) === row.exportedRowId)
+            : undefined;
         if (encodingColumn && row.cells[encodingColumn.id]?.text === CSV_ENCODING) {
             const decoded = {
                 ...row,
@@ -160,6 +159,7 @@ export const mergeSpreadsheet = (
             decodedRows.add(decoded);
             return decoded;
         }
+        if (!existing) return row;
         return {
             ...row,
             email:
