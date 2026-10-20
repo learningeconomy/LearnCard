@@ -1006,6 +1006,7 @@ const IssueCredentialPage: React.FC = () => {
                 {!roster.recoverable && !roster.run && roster.dismissedRecoverable && (
                     <button
                         type="button"
+                        disabled={roster.busy}
                         onClick={() => roster.restore(roster.dismissedRecoverable!)}
                         className="mb-4 text-sm text-grayscale-600 hover:text-grayscale-900"
                     >

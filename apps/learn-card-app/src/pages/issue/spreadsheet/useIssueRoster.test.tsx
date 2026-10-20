@@ -111,6 +111,50 @@ describe('roster autosave and sending', () => {
         expect(options.onRestoreTemplate).not.toHaveBeenCalled();
         expect(result.current.run).toBeNull();
     });
+    it('does not restore while a dismissal is saving or expose it after switching accounts', async () => {
+        const run = makeRun();
+        run.outcomes = { 'row-0': { state: 'confirming' } };
+        store.list.mockResolvedValue([run]);
+        store.read.mockResolvedValue(run);
+        let finish!: () => void;
+        store.save.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    finish = resolve;
+                })
+        );
+        Object.defineProperty(navigator, 'locks', {
+            configurable: true,
+            value: {
+                request: async (
+                    _name: string,
+                    _options: unknown,
+                    callback: (lock: object) => unknown
+                ) => callback({}),
+            },
+        });
+        const options = emptyOptions(run);
+        const { result, rerender } = renderHook(
+            ({ issuer }) => useIssueRoster({ ...options, issuer }),
+            { initialProps: { issuer: run.scope.issuer } }
+        );
+        await waitFor(() => expect(result.current.recoverable?.id).toBe(run.id));
+        let saving!: Promise<void>;
+        act(() => {
+            saving = result.current.dismissRecovery();
+        });
+        await waitFor(() => expect(store.save).toHaveBeenCalled());
+        act(() => result.current.restore(run));
+        expect(options.onRestoreTemplate).not.toHaveBeenCalled();
+        store.list.mockResolvedValue([]);
+        rerender({ issuer: 'other-issuer' });
+        await act(async () => {
+            finish();
+            await saving;
+        });
+        expect(result.current.dismissedRecoverable).toBeNull();
+        expect(result.current.recoverable).toBeNull();
+    });
     it('accepts normalized emails on locked-row imports but rejects real value changes', async () => {
         const run = makeRun();
         run.templateUri = 'template';

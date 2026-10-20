@@ -188,6 +188,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         setError('');
     };
     const restore = (saved: IssuanceRun): void => {
+        if (busy || executing.current) return;
         try {
             apply(saved);
             setError('');
@@ -303,16 +304,23 @@ export const useIssueRoster = (options: RosterOptions) => {
         return saving;
     };
     const dismissRecovery = async (): Promise<void> => {
-        if (!recoverable || busy) return;
+        if (!recoverable || busy || executing.current) return;
+        executing.current = true;
         setBusy(true);
         try {
             const dismissed = { ...recoverable, dismissedAt: Date.now() };
             await persistDraft(dismissed);
-            setDismissedRecoverable(dismissed);
-            setRecoverable(null);
+            if (
+                mounted.current &&
+                issuanceScopeKey(dismissed.scope) === issuanceScopeKey(currentScope())
+            ) {
+                setDismissedRecoverable(dismissed);
+                setRecoverable(null);
+            }
         } catch (reason) {
             setError(spreadsheetErrorMessage(reason));
         } finally {
+            executing.current = false;
             if (mounted.current) setBusy(false);
         }
     };
