@@ -109,7 +109,7 @@ describe('message host impressions', () => {
             </I18nProvider>
         );
         await screen.findByText('Hello');
-        expect(impressions).toEqual([{ seen: true, count: 1 }]);
+        await waitFor(() => expect(impressions).toEqual([{ seen: true, count: 1 }]));
         view.rerender(
             <I18nProvider locale="es" resolve={() => undefined}>
                 <InAppMessageHost onEvent={onEvent} />
