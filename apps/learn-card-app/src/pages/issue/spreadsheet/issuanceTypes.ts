@@ -31,6 +31,7 @@ export interface IssuanceRun {
     scope: IssuanceScope;
     createdAt: number;
     updatedAt: number;
+    dismissedAt?: number;
     draft: RosterDraft;
     template: OBv3CredentialTemplate;
     templateUri?: string;
@@ -45,7 +46,8 @@ export const issuanceScopeKey = (scope: IssuanceScope): string =>
 
 export class IssuanceRecoveryError extends Error {
     constructor(
-        readonly code: 'storage' | 'corrupt' | 'context' | 'expired' | 'oversize' | 'busy'
+        readonly code:
+            'storage' | 'corrupt' | 'context' | 'expired' | 'oversize' | 'busy' | 'locked'
     ) {
         super(code);
         this.name = 'IssuanceRecoveryError';

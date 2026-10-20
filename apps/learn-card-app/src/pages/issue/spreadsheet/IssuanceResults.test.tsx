@@ -32,6 +32,51 @@ const failedRun = () => {
 };
 
 describe('delivery status review', () => {
+    it('keeps Resume off a draft that has never submitted', () => {
+        const run = makeRun();
+        run.outcomes = { 'row-0': { state: 'ready' } };
+        render(
+            <IssuanceResults
+                run={run}
+                busy={false}
+                onResume={vi.fn()}
+                onRetry={vi.fn()}
+                onDownload={vi.fn()}
+                onNew={vi.fn()}
+            />
+        );
+        expect(screen.getByText('Draft saved on this device')).toBeVisible();
+        expect(screen.queryByRole('button', { name: 'Resume' })).toBeNull();
+    });
+    it('offers a receipt check for unconfirmed emails without enabling Retry failed', () => {
+        const run = makeRun();
+        run.outcomes = { 'row-0': { state: 'confirming' } };
+        run.attempts = [
+            {
+                id: 'attempt',
+                rowIds: ['row-0'],
+                body: { items: [] },
+                batchId: 'batch',
+                done: true,
+                createdAt: Date.now(),
+            },
+        ];
+        const onCheckStatus = vi.fn();
+        render(
+            <IssuanceResults
+                run={run}
+                busy={false}
+                onResume={vi.fn()}
+                onRetry={vi.fn()}
+                onDownload={vi.fn()}
+                onNew={vi.fn()}
+                onCheckStatus={onCheckStatus}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Check Again' }));
+        expect(onCheckStatus).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('button', { name: 'Retry Failed' })).toBeNull();
+    });
     it.each([false, true])('reveals sending progress once (reduced motion: %s)', reduced => {
         const scroll = vi.fn();
         Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {

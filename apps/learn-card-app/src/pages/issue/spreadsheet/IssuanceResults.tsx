@@ -6,6 +6,7 @@ import type { IssuanceRun } from './issuanceTypes';
 import { useSpreadsheetDialog } from './SpreadsheetDialog';
 import { DeliveryStatus } from './DeliveryStatus';
 import { BatchDeliveryAnimation } from './BatchDeliveryAnimation';
+import { canCheckIssuanceStatus } from './issuance';
 
 export const IssuanceResults: React.FC<{
     run: IssuanceRun;
@@ -14,7 +15,9 @@ export const IssuanceResults: React.FC<{
     onRetry: () => void;
     onDownload: () => void;
     onNew: () => void;
-}> = ({ run, busy, onResume, onRetry, onDownload, onNew }) => {
+    onCheckStatus?: () => void;
+    checking?: boolean;
+}> = ({ run, busy, onResume, onRetry, onDownload, onNew, onCheckStatus, checking }) => {
     const progress = useRef<HTMLElement>(null);
     const revealedRun = useRef<string | undefined>(undefined);
     useEffect(() => {
@@ -51,14 +54,16 @@ export const IssuanceResults: React.FC<{
             <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1" aria-live="polite" role="status">
                     <h3 className="text-base font-semibold text-grayscale-900">
-                        {busy
-                            ? m['issueFlow.sheet.sending']({
-                                  count: sent,
-                                  total: run.draft.recipients.length,
-                              })
-                            : ready
-                              ? m['issueFlow.sheet.savedDraft']()
-                              : m['issueFlow.sheet.results']({ sent, failed })}
+                        {checking
+                            ? m['issueFlow.sheet.checking']()
+                            : busy
+                              ? m['issueFlow.sheet.sending']({
+                                    count: sent,
+                                    total: run.draft.recipients.length,
+                                })
+                              : ready
+                                ? m['issueFlow.sheet.savedDraft']()
+                                : m['issueFlow.sheet.results']({ sent, failed })}
                     </h3>
                     {confirming > 0 && (
                         <p className="text-sm text-grayscale-700">
@@ -85,9 +90,27 @@ export const IssuanceResults: React.FC<{
                         aria-hidden="true"
                     />
                 </button>
-                {(waiting > 0 || run.attempts.some(attempt => !attempt.done)) && (
+                {!ready && (waiting > 0 || run.attempts.some(attempt => !attempt.done)) && (
                     <button type="button" disabled={busy} onClick={onResume} className={BUTTON}>
                         {m['issueFlow.sheet.resume']()}
+                    </button>
+                )}
+                {onCheckStatus && canCheckIssuanceStatus(run) && (
+                    <button
+                        type="button"
+                        disabled={busy}
+                        onClick={onCheckStatus}
+                        className={`${BUTTON} inline-flex items-center gap-2`}
+                    >
+                        {checking && (
+                            <span
+                                aria-hidden="true"
+                                className="h-4 w-4 rounded-full border-2 border-grayscale-300 border-t-grayscale-900 animate-spin"
+                            />
+                        )}
+                        {checking
+                            ? m['issueFlow.sheet.checking']()
+                            : m['issueFlow.sheet.checkStatus']()}
                     </button>
                 )}
                 {failed > 0 && (

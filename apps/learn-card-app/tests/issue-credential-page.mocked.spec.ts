@@ -194,9 +194,17 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await expect(page.getByText('Draft saved on this device', { exact: true })).toBeVisible();
         await page.reload({ waitUntil: 'domcontentloaded' });
         await waitForIssueReady(page);
-        await page
-            .getByRole('button', { name: 'Restore Saved Run', exact: true })
-            .click({ timeout: 30000 });
+        await expect(
+            page.getByRole('button', { name: 'Restore Saved Run', exact: true })
+        ).toBeVisible();
+        await page.getByRole('button', { name: 'Skip for Now', exact: true }).click();
+        await expect(
+            page.getByRole('button', { name: 'Restore Saved Run', exact: true })
+        ).toHaveCount(0);
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await waitForIssueReady(page);
+        await page.getByRole('button', { name: 'View saved run', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Resume', exact: true })).toHaveCount(0);
         await page.getByRole('button', { name: 'Review people', exact: true }).click();
         await expect(
             page.getByRole('textbox', { name: 'Email for Person 0', exact: true })

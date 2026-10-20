@@ -4,6 +4,7 @@ import {
     canRemoveIssuanceRow,
     canReplaceIssuanceRecipients,
     classifyInboxOutcome,
+    canCheckIssuanceStatus,
     executeIssuance,
     type IssuanceTransport,
 } from './issuance';
@@ -50,6 +51,54 @@ beforeEach(() => {
     });
 });
 describe('durable roster issuance', () => {
+    it('checks terminal unconfirmed receipts without submitting, retrying, or overwriting a newer attempt', async () => {
+        const run = makeRun(2);
+        const api = transport();
+        const opts = options(run);
+        const pending = statusFor('original', 2, [0, 1]);
+        pending.items[0].result = {
+            success: false,
+            index: 0,
+            error: { code: 'CONFLICT', reason: 'UNCONFIRMED', message: 'review' },
+        };
+        vi.mocked(api.wait).mockResolvedValueOnce(pending);
+        const initial = await executeIssuance(run, api, opts);
+        const retried = await executeIssuance(initial, api, { ...opts, retryFailed: true });
+        expect(retried.outcomes['row-1'].state).toBe('sent');
+        expect(canCheckIssuanceStatus(retried)).toBe(true);
+        // An unrelated unsent row and uncertain profile must not be sent by checking.
+        retried.draft.recipients.push({
+            kind: 'profile',
+            rowId: 'profile',
+            profileId: 'profile',
+            displayName: 'Profile',
+        });
+        retried.outcomes.profile = { state: 'confirming' };
+        retried.draft.recipients.push({ kind: 'email', rowId: 'new', email: 'new@test.com' });
+        retried.outcomes.new = { state: 'ready' };
+        const originalBodies = structuredClone(retried.attempts.map(attempt => attempt.body));
+        const reconciled = structuredClone(pending);
+        reconciled.items[0] = statusFor('original', 2).items[0];
+        vi.mocked(api.wait).mockResolvedValueOnce(reconciled);
+        const checked = await executeIssuance(retried, api, { ...opts, checkOnly: true });
+        expect(checked.outcomes['row-0'].state).toBe('sent');
+        expect(checked.outcomes['row-1'].state).toBe('sent');
+        expect(checked.outcomes.profile.state).toBe('confirming');
+        expect(checked.outcomes.new.state).toBe('ready');
+        expect(checked.attempts.map(attempt => attempt.body)).toEqual(originalBodies);
+        expect(api.submit).toHaveBeenCalledTimes(2);
+        expect(api.createTemplate).toHaveBeenCalledOnce();
+        expect(api.sendProfile).not.toHaveBeenCalled();
+        expect(canCheckIssuanceStatus(checked)).toBe(false);
+    });
+    it('does not create a template or send a profile while checking an unsent draft', async () => {
+        const run = makeRun();
+        const api = transport();
+        await executeIssuance(run, api, { ...options(run), checkOnly: true });
+        expect(api.createTemplate).not.toHaveBeenCalled();
+        expect(api.submit).not.toHaveBeenCalled();
+        expect(api.wait).not.toHaveBeenCalled();
+    });
     it('chunks by encoded tRPC wire size, including escaped text', () => {
         const run = makeRun(2);
         run.templateUri = 'template';

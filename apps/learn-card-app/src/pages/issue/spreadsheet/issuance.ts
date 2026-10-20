@@ -31,6 +31,21 @@ export interface IssuanceTransport {
     ) => Promise<unknown>;
 }
 
+const latestAttemptFor = (run: IssuanceRun, rowId: string): SubmissionAttempt | undefined =>
+    [...run.attempts].reverse().find(attempt => attempt.rowIds.includes(rowId));
+
+/** Recheck receipts only; an unconfirmed send never authorizes a new submission. */
+export const canCheckIssuanceStatus = (run: IssuanceRun): boolean =>
+    run.attempts.some(
+        attempt =>
+            Boolean(attempt.batchId) &&
+            attempt.rowIds.some(
+                rowId =>
+                    run.outcomes[rowId]?.state === 'confirming' &&
+                    latestAttemptFor(run, rowId) === attempt
+            )
+    );
+
 /** Attempted rows remain part of the recovery ledger, even after a definite failure. */
 export const canRemoveIssuanceRow = (run: IssuanceRun | null, rowId: string): boolean =>
     !run?.attempts.some(attempt => attempt.rowIds.includes(rowId)) &&
@@ -147,6 +162,7 @@ export const executeIssuance = async (
         currentScope: () => IssuanceScope;
         onChange: (run: IssuanceRun) => void;
         retryFailed?: boolean;
+        checkOnly?: boolean;
         save?: typeof saveIssuanceRun;
         read?: typeof readIssuanceRun;
     }
@@ -174,7 +190,7 @@ export const executeIssuance = async (
             options.onChange(structuredClone(run));
         };
         await persist();
-        if (!run.templateUri) {
+        if (!run.templateUri && !options.checkOnly) {
             assertScope();
             run.templateUri = await transport.createTemplate();
             await persist();
@@ -229,7 +245,8 @@ export const executeIssuance = async (
                 attempt.done = status.done;
                 for (const item of status.items) {
                     const rowId = attempt.rowIds[item.index];
-                    if (rowId) run.outcomes[rowId] = classifyInboxOutcome(item);
+                    if (rowId && latestAttemptFor(run, rowId) === attempt)
+                        run.outcomes[rowId] = classifyInboxOutcome(item);
                 }
                 options.onChange(structuredClone(run));
             };
@@ -237,6 +254,19 @@ export const executeIssuance = async (
             update(status);
             await persist();
         };
+        if (options.checkOnly) {
+            for (const attempt of run.attempts)
+                if (
+                    attempt.batchId &&
+                    attempt.rowIds.some(
+                        rowId =>
+                            run.outcomes[rowId]?.state === 'confirming' &&
+                            latestAttemptFor(run, rowId) === attempt
+                    )
+                )
+                    await observe(attempt);
+            return run;
+        }
         for (const attempt of run.attempts) if (!attempt.done) await observe(attempt);
         const previousAttempts = run.attempts.length;
         run = addSubmissionAttempts(run, options.retryFailed);

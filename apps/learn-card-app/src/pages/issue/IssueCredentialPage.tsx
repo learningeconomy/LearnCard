@@ -235,6 +235,7 @@ const IssueCredentialPage: React.FC = () => {
         attachments: recipientEvidence,
         setAttachments: setRecipientEvidence,
         variables: dynamicVars,
+        entryPoint: issueEntryPoint,
         template,
         onRestoreTemplate: saved => {
             setTemplate(saved);
@@ -1006,13 +1007,41 @@ const IssueCredentialPage: React.FC = () => {
                             type="button"
                             disabled={roster.busy}
                             onClick={() => {
-                                roster.apply(roster.recoverable!);
+                                roster.restore(roster.recoverable!);
                             }}
                             className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white text-sm"
                         >
                             {m['issueFlow.sheet.restore']()}
                         </button>
+                        <button
+                            type="button"
+                            disabled={roster.busy}
+                            onClick={() => {
+                                void roster.dismissRecovery();
+                            }}
+                            className="inline-flex items-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm disabled:opacity-40"
+                        >
+                            {roster.busy && (
+                                <span
+                                    aria-hidden="true"
+                                    className="h-4 w-4 rounded-full border-2 border-grayscale-300 border-t-grayscale-900 animate-spin"
+                                />
+                            )}
+                            {roster.busy
+                                ? m['issueFlow.sheet.saving']()
+                                : m['issueFlow.sheet.dismissRecovery']()}
+                        </button>
                     </div>
+                )}
+                {!roster.recoverable && !roster.run && roster.dismissedRecoverable && (
+                    <button
+                        type="button"
+                        disabled={roster.busy}
+                        onClick={() => roster.restore(roster.dismissedRecoverable!)}
+                        className="mb-4 text-sm text-grayscale-600 hover:text-grayscale-900"
+                    >
+                        {m['issueFlow.sheet.viewSaved']()}
+                    </button>
                 )}
                 {roster.run && (
                     <div className="mb-5">
@@ -1035,6 +1064,10 @@ const IssueCredentialPage: React.FC = () => {
                                     );
                             }}
                             onNew={handleIssueAnother}
+                            onCheckStatus={() => {
+                                void roster.checkStatus();
+                            }}
+                            checking={roster.checking}
                         />
                     </div>
                 )}

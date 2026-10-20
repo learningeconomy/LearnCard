@@ -1,6 +1,7 @@
 import canvasGradebook from './fixtures/canvas-gradebook.csv?raw';
 import { describe, it, expect } from 'vitest';
 import { utils, write } from 'xlsx';
+import JSZip from 'jszip';
 import {
     parseSpreadsheet,
     readSpreadsheetText,
@@ -124,6 +125,46 @@ describe('spreadsheet parsing and editable roster', () => {
         }
     });
 
+    it('ignores a full-sheet formatting range but still rejects distant actual data', async () => {
+        const workbook = utils.book_new();
+        const sheet = utils.aoa_to_sheet([
+            ['Email', 'Score'],
+            ['a@test.com', 0],
+        ]);
+        utils.book_append_sheet(workbook, sheet, 'People');
+        const zip = await JSZip.loadAsync(write(workbook, { type: 'array', bookType: 'xlsx' }));
+        const path = 'xl/worksheets/sheet1.xml';
+        const xml = (await zip.file(path)!.async('string')).replace(
+            /<dimension ref="[^"]+"\/>/,
+            '<dimension ref="A1:XFD1048576"/>'
+        );
+        zip.file(path, xml);
+        const bytes = await zip.generateAsync({ type: 'arraybuffer' });
+        const parsed = parseSpreadsheet(readXlsx(bytes, 'formatted.xlsx'));
+        expect(parsed.rows).toHaveLength(1);
+        expect(parsed.rows[0].cells['column-1'].text).toBe('0');
+        zip.file(
+            path,
+            xml.replace(
+                '</sheetData>',
+                '<row r="1048576"><c r="XFD1048576"><v>1</v></c></row></sheetData>'
+            )
+        );
+        const tooFar = await zip.generateAsync({ type: 'arraybuffer' });
+        expect(() => readXlsx(tooFar, 'too-far.xlsx')).toThrow('limit');
+    });
+    it('blocks duplicate profiles even when their stable row IDs differ', () => {
+        const rows = ['first', 'second'].map(rowId => ({
+            kind: 'profile' as const,
+            rowId,
+            profileId: 'same-profile',
+            displayName: 'Person',
+        }));
+        expect(getRowProblems(rows, [], {}, {}, {}, {})).toEqual({
+            first: ['duplicate'],
+            second: ['duplicate'],
+        });
+    });
     it.each([
         { t: 'n', f: '1/0', expected: '', problems: ['required', 'formula'] },
         { t: 'e', f: '1/0', v: 7, expected: '#DIV/0!', problems: ['formula'] },
