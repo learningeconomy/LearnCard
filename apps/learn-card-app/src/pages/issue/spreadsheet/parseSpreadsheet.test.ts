@@ -331,7 +331,7 @@ describe('spreadsheet parsing and editable roster', () => {
                 exportRosterCsv(draft, ['score'], { score: 'perRecipient' }, {}),
                 { header: true, skipEmptyLines: true }
             ).data;
-            const copied = {
+            const copied: Record<string, string> = {
                 ...exported[0],
                 'Recipient Email': "'+bob@example.com",
                 __lc_row_id: '',
