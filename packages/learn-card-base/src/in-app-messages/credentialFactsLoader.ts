@@ -48,11 +48,13 @@ export interface CredentialFactsLoader {
     refresh: (source: CredentialFactsSource, force?: boolean) => Promise<void>;
 }
 
+type RefreshOutcome = 'completed' | 'canceled';
+
 /** Create an isolated loader for one account. No credential facts enter React Query. */
 export const createCredentialFactsLoader = (did: string): CredentialFactsLoader => {
     let snapshot = emptySnapshot();
     let generation = 0;
-    let running: Promise<void> | null = null;
+    let running: Promise<RefreshOutcome> | null = null;
     let lastRefresh = 0;
     let cancelIdle: (() => void) | undefined;
     let releaseFactListener: (() => void) | undefined;
@@ -142,8 +144,11 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
 
     const refresh = async (source: CredentialFactsSource, force = false): Promise<void> => {
         if (running) {
-            await running;
-            if (force || (snapshot.summaries === null && source.isActive())) {
+            const outcome = await running;
+            if (
+                source.isActive() &&
+                (force || outcome === 'canceled' || snapshot.summaries === null)
+            ) {
                 return refresh(source, force);
             }
             return;
@@ -152,18 +157,18 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
         const refreshGeneration = generation;
         claimed.clear();
         const active = (): boolean => refreshGeneration === generation && source.isActive();
-        const run = async (): Promise<void> => {
+        const run = async (): Promise<RefreshOutcome> => {
             try {
                 const cached = await loadCredentialFacts(did);
-                if (!active()) return;
+                if (!active()) return 'canceled';
                 publish({ ...snapshot, summaries: cached, complete: false });
                 const indexWriteGeneration = getCredentialFactsWriteGeneration();
                 const records = await source.list();
-                if (!active()) return;
+                if (!active()) return 'canceled';
                 const unique = new Map(records.map(record => [record.uri, record]));
                 const uris = new Set([...unique.keys(), ...claimed.keys()]);
                 await removeMissingCredentialFacts(did, uris, indexWriteGeneration);
-                if (!active()) return;
+                if (!active()) return 'canceled';
                 const facts = new Map(
                     cached.filter(fact => uris.has(fact.uri)).map(fact => [fact.uri, fact])
                 );
@@ -182,7 +187,7 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                 };
                 // Categories can change without changing the encrypted credential URI.
                 for (const record of unique.values()) {
-                    if (!active()) return;
+                    if (!active()) return 'canceled';
                     const fact = facts.get(record.uri);
                     const indexedName = record.title?.trim() || null;
                     if (
@@ -207,7 +212,7 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                 publishFacts();
                 for (let offset = 0; offset < missing.length; offset += 4) {
                     await idle();
-                    if (!active()) return;
+                    if (!active()) return 'canceled';
                     await Promise.all(
                         missing.slice(offset, offset + 4).map(async record => {
                             if (claimed.has(record.uri)) return;
@@ -250,15 +255,20 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
                     );
                     publishFacts();
                 }
-                if (active()) lastRefresh = Date.now();
+                if (!active()) return 'canceled';
+                lastRefresh = Date.now();
             } catch {
-                if (active()) publish({ ...snapshot, complete: false });
+                if (!active()) return 'canceled';
+                publish({ ...snapshot, complete: false });
             }
+            return 'completed';
         };
         const currentRun = run();
         running = currentRun;
         try {
-            await currentRun;
+            const outcome = await currentRun;
+            // A canceled forced refresh must not leave active waiters behind an older throttle.
+            if (running === currentRun && outcome === 'canceled') lastRefresh = 0;
         } finally {
             if (running === currentRun) running = null;
         }

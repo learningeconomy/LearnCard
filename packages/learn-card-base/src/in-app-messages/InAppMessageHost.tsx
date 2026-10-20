@@ -37,6 +37,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
 
     const [closedIds, setClosedIds] = useState<Set<string>>(() => new Set());
     const shownRef = useRef<string | null>(null);
+    const shownOverrideRef = useRef<string | null>(null);
     const gateReasonRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -51,6 +52,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
             setClosedIds(new Set());
             setPresented(null);
             shownRef.current = null;
+            shownOverrideRef.current = null;
         });
     }, []);
 
@@ -117,22 +119,18 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     );
 
     useEffect(() => {
-        if (!active) {
-            // Only reset dedupe state for overrides: clearing a preview must
-            // allow the same draft (same id) to be previewed again, while real
-            // messages keep their once-per-appearance semantics intact.
-            if (shownRef.current?.startsWith('override:')) shownRef.current = null;
-
-            return;
-        }
+        // Clearing a preview permits another preview without forgetting the retained campaign.
+        if (!isOverride) shownOverrideRef.current = null;
+        if (!active) return;
 
         const key = isOverride
             ? `override:${active.id}:${active.presentation}`
             : `${accountDid ?? 'anonymous'}:${active.id}`;
 
-        if (shownRef.current === key) return;
+        const shown = isOverride ? shownOverrideRef : shownRef;
+        if (shown.current === key) return;
 
-        shownRef.current = key;
+        shown.current = key;
         iamDebug('shown', {
             id: active.id,
             presentation: active.presentation,

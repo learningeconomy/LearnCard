@@ -137,6 +137,121 @@ describe('credential facts backfill', () => {
         expect(source.read).toHaveBeenCalledTimes(2);
     });
 
+    it.each(['index', 'credential'] as const)(
+        'resumes an active consumer when the shared owner unmounts during the %s read',
+        async phase => {
+            const { createCredentialFactsLoader } = await import('../credentialFactsLoader');
+            const loader = createCredentialFactsLoader(did);
+            const releaseOwner = loader.acquire();
+            const releaseHost = loader.acquire();
+            let ownerActive = true;
+            let finish = (): void => undefined;
+            const pending = new Promise<void>(resolve => {
+                finish = resolve;
+            });
+            const owner = sourceFor(1);
+            const host = sourceFor(1);
+            owner.isActive = () => ownerActive;
+            if (phase === 'index') {
+                owner.list = vi.fn(async () => {
+                    await pending;
+                    return [{ uri: 'lc:0', category: 'Learning History' }];
+                });
+            } else {
+                owner.read = vi.fn(async () => {
+                    await pending;
+                    return vc;
+                });
+            }
+            const ownerRefresh = loader.refresh(owner);
+            await vi.waitFor(() =>
+                expect(phase === 'index' ? owner.list : owner.read).toHaveBeenCalledOnce()
+            );
+            expect(loader.getSnapshot()).toMatchObject({ summaries: [], complete: false });
+            const hostRefresh = loader.refresh(host);
+
+            ownerActive = false;
+            releaseOwner();
+            finish();
+            await Promise.all([ownerRefresh, hostRefresh]);
+
+            expect(host.list).toHaveBeenCalledOnce();
+            expect(host.read).toHaveBeenCalledOnce();
+            expect(loader.getSnapshot()).toMatchObject({
+                complete: true,
+                total: 1,
+                readsUsed: phase === 'index' ? 1 : 2,
+            });
+            releaseHost();
+        }
+    );
+
+    it('lets an active waiter resume a canceled forced refresh despite an earlier throttle', async () => {
+        const { createCredentialFactsLoader } = await import('../credentialFactsLoader');
+        const loader = createCredentialFactsLoader(did);
+        const releaseOwner = loader.acquire();
+        const releaseHost = loader.acquire();
+        await loader.refresh(sourceFor(0));
+        let ownerActive = true;
+        let finish = (): void => undefined;
+        const pending = new Promise<void>(resolve => {
+            finish = resolve;
+        });
+        const owner = sourceFor(1);
+        owner.isActive = () => ownerActive;
+        owner.list = vi.fn(async () => {
+            await pending;
+            return [{ uri: 'lc:0' }];
+        });
+        const host = sourceFor(1);
+        const ownerRefresh = loader.refresh(owner, true);
+        await vi.waitFor(() => expect(owner.list).toHaveBeenCalledOnce());
+        const hostRefresh = loader.refresh(host);
+
+        ownerActive = false;
+        releaseOwner();
+        finish();
+        await Promise.all([ownerRefresh, hostRefresh]);
+
+        expect(host.list).toHaveBeenCalledOnce();
+        expect(loader.getSnapshot()).toMatchObject({ complete: true, total: 1, readsUsed: 1 });
+        releaseHost();
+    });
+
+    it.each(['index', 'credential'] as const)(
+        'does not restart a shared refresh just because its %s read failed',
+        async phase => {
+            const { createCredentialFactsLoader } = await import('../credentialFactsLoader');
+            const loader = createCredentialFactsLoader(did);
+            const releaseOwner = loader.acquire();
+            const releaseHost = loader.acquire();
+            let fail = (_error: Error): void => undefined;
+            const pending = new Promise<never>((_resolve, reject) => {
+                fail = reject;
+            });
+            const owner = sourceFor(1);
+            if (phase === 'index') owner.list = vi.fn(() => pending);
+            else owner.read = vi.fn(() => pending);
+            const host = sourceFor(1);
+            const ownerRefresh = loader.refresh(owner);
+            await vi.waitFor(() =>
+                expect(phase === 'index' ? owner.list : owner.read).toHaveBeenCalledOnce()
+            );
+            const hostRefresh = loader.refresh(host);
+            fail(new Error('unreadable'));
+            await Promise.all([ownerRefresh, hostRefresh]);
+
+            expect(host.list).not.toHaveBeenCalled();
+            expect(host.read).not.toHaveBeenCalled();
+            expect(loader.getSnapshot()).toMatchObject({
+                complete: false,
+                readsUsed: phase === 'index' ? 0 : 1,
+            });
+            releaseOwner();
+            releaseHost();
+        }
+    );
+
     it('retains claims arriving during backfill and rejects results after stopping', async () => {
         const { createCredentialFactsLoader } = await import('../credentialFactsLoader');
         const { addCredentialSummary, loadCredentialFacts } =

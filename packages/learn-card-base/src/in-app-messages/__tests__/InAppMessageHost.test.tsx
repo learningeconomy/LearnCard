@@ -3,7 +3,12 @@ import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { inAppMessageValidator, type InAppMessage } from '@learncard/types';
 import { InAppMessageHost } from '../InAppMessageHost';
-import { resetInAppMessageDismissals, shouldSuppressMessage } from '../dismissalStore';
+import {
+    getMessageLastSeen,
+    resetInAppMessageDismissals,
+    shouldSuppressMessage,
+} from '../dismissalStore';
+import { iamDebug } from '../debug';
 import { getInAppMessageFatigueState } from '../fatigueStore';
 import { getRecentInAppMessageEvents, resetInAppMessageEventSession } from '../inAppMessageEvents';
 import { setInAppMessageOverride } from '../debugOverrideStore';
@@ -65,6 +70,7 @@ describe('message host impressions', () => {
     afterEach(() => {
         cleanup();
         setInAppMessageOverride(null);
+        vi.restoreAllMocks();
     });
 
     it('waits for the gate, records one impression, and retains the visible message despite its own cap', async () => {
@@ -166,6 +172,49 @@ describe('message host impressions', () => {
             state.messages = [required];
             rerender(<InAppMessageHost />);
             expect(screen.queryByText('Required action')).toBeNull();
+        }
+    );
+
+    it.each(['test', 'preview'])(
+        'preserves a retained campaign impression across repeated previews with id %s',
+        async previewId => {
+            const firstShown = Date.parse('2026-10-20T12:00:00Z');
+            const now = vi.spyOn(Date, 'now').mockReturnValue(firstShown);
+            vi.mocked(iamDebug).mockClear();
+            state.gate = true;
+            render(<InAppMessageHost />);
+            await waitFor(() => expect(screen.getByText('Claim complete')).toBeTruthy());
+            const fatigue = getInAppMessageFatigueState('alice');
+            expect(fatigue).toEqual({
+                blockingShownThisSession: 1,
+                lastBlockingShown: new Date(firstShown).toISOString(),
+            });
+            const preview = inAppMessageValidator.parse({ id: previewId, title: 'Preview' });
+
+            for (const offset of [1000, 2000]) {
+                now.mockReturnValue(firstShown + offset);
+                act(() => setInAppMessageOverride(preview));
+                expect(screen.getByText('Preview')).toBeTruthy();
+                expect(screen.queryByText('Claim complete')).toBeNull();
+                expect(getInAppMessageFatigueState('alice')).toEqual(fatigue);
+                fireEvent.click(screen.getByText('Preview'));
+                expect(screen.getByText('Claim complete')).toBeTruthy();
+                expect(getInAppMessageFatigueState('alice')).toEqual(fatigue);
+                expect(getMessageLastSeen('test', 'alice')).toBe(
+                    new Date(firstShown).toISOString()
+                );
+            }
+
+            const impressions = vi
+                .mocked(iamDebug)
+                .mock.calls.filter(([event]) => event === 'shown');
+            expect(impressions).toEqual([
+                ['shown', expect.objectContaining({ override: false })],
+                ['shown', expect.objectContaining({ override: true })],
+                ['shown', expect.objectContaining({ override: true })],
+            ]);
+            fireEvent.click(screen.getByText('Claim complete'));
+            expect(screen.queryByText('Claim complete')).toBeNull();
         }
     );
 
