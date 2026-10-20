@@ -565,11 +565,18 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             if (viewport.width > 991) {
                 const tableView = page.getByRole('region', { name: 'Review people', exact: true });
                 const email = page.getByRole('textbox', { name: 'Email for Ada', exact: true });
+                // The modal entrance moves the whole table. Wait for aligned positions
+                // rather than comparing two different animation frames.
+                await expect
+                    .poll(async () => {
+                        const emailBounds = await email.boundingBox();
+                        const dateBounds = await page
+                            .getByLabel('Ada Completed Date', { exact: true })
+                            .boundingBox();
+                        return Math.abs(emailBounds!.y - dateBounds!.y);
+                    })
+                    .toBeLessThan(2);
                 const before = await email.boundingBox();
-                const dateBounds = await page
-                    .getByLabel('Ada Completed Date', { exact: true })
-                    .boundingBox();
-                expect(Math.abs(before!.y - dateBounds!.y)).toBeLessThan(2);
                 await tableView.evaluate(element => {
                     element.scrollLeft = element.scrollWidth;
                 });
