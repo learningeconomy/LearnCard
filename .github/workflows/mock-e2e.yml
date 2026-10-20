@@ -17,6 +17,9 @@ concurrency:
 env:
     CI: true
 
+permissions:
+    contents: read
+
 jobs:
     mock-e2e:
         runs-on: ubuntu-latest

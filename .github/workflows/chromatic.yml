@@ -30,6 +30,10 @@ env:
     # i18n'd components pushed the build past the previous ceiling.)
     NODE_OPTIONS: '--max_old_space_size=8192'
 
+permissions:
+    contents: read
+    pull-requests: read
+
 jobs:
     changes:
         runs-on: ubuntu-latest

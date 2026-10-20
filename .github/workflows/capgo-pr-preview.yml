@@ -66,6 +66,16 @@ jobs:
                       });
                       const headSha = pr.head.sha;
 
+                      // Fork heads are attacker-controlled and can change after
+                      // review; never build them with this workflow's secrets.
+                      const baseRepo = `${context.repo.owner}/${context.repo.repo}`;
+                      if (pr.head.repo?.full_name !== baseRepo) {
+                          core.setFailed(
+                              `Refusing to build PR #${prNumber}: head is from ${pr.head.repo?.full_name ?? 'a deleted fork'}, not ${baseRepo}. Push the branch to ${baseRepo} to preview it.`
+                          );
+                          return;
+                      }
+
                       core.setOutput('pr_number', String(prNumber));
                       core.setOutput('head_sha', headSha);
                       core.setOutput('head_ref', pr.head.ref);
