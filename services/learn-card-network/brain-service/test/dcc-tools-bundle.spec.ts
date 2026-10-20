@@ -51,12 +51,14 @@ describe('DCC Tools catalog-only bundle', () => {
         expect(seeded.wallet.manifest.claimProtocols).not.toContain('oid4vci');
         expect(seeded.registryAdapter.manifest).toMatchObject({
             apiVersion: 'lc.integration/v1.3',
+            version: '1.1.0',
             scopes: [],
             consentRequirements: [],
             capabilities: { provided: ['registry-adapter'], consumed: [] },
             subscribes: DCC_REGISTRIES,
             consoleSurfaces: [],
         });
+        expect(seeded.bundle.manifest.version).toBe('1.1.0');
         expect(DCC_REGISTRIES).toHaveLength(5);
         expect(DCC_READINESS).toHaveLength(10);
 

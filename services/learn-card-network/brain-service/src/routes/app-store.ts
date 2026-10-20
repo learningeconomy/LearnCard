@@ -1386,7 +1386,7 @@ const handleCheckCredentialEvent = async (
         });
     }
 
-    let boost: { id: string } | null = null;
+    let boost: { id: string } | null;
     let boostUri: string;
 
     if (templateAlias) {
@@ -1474,7 +1474,7 @@ const handleCheckIssuanceStatusEvent = async (
         });
     }
 
-    let boost: BoostInstance | null = null;
+    let boost: BoostInstance | null;
     let boostUri: string;
 
     if (templateAlias) {
@@ -1569,8 +1569,7 @@ const handleGetTemplateRecipientsEvent = async (
         });
     }
 
-    let boost: BoostInstance | null = null;
-    let boostUri: string;
+    let boost: BoostInstance | null;
 
     if (templateAlias) {
         const boostResult = await getBoostForListingByTemplateAlias(
@@ -1584,10 +1583,8 @@ const handleGetTemplateRecipientsEvent = async (
         }
 
         boost = boostResult.boost;
-        boostUri = boostResult.boostUri;
     } else {
-        boostUri = boostUriInput as string;
-        boost = await getBoostByUri(boostUri);
+        boost = await getBoostByUri(boostUriInput as string);
 
         if (!boost) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
@@ -3287,6 +3284,34 @@ export const appStoreRouter = t.router({
                 ...member,
                 display_name: memberListings[index]?.display_name,
             }));
+        }),
+
+    getBundleManifestSummary: openRoute
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z.object({
+                readiness: BundleManifestValidator.shape.readiness,
+                defaultBindings: BundleManifestValidator.shape.defaultBindings,
+            })
+        )
+        .query(async ({ input }) => {
+            const listing = await readAppStoreListingById(input.listingId);
+            if (!listing || listing.app_listing_status !== 'LISTED') {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+            }
+            if (listing.kind !== 'BUNDLE') {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Listing is not a bundle' });
+            }
+            const version = (await readListingVersionsForListing(input.listingId)).find(
+                candidate => candidate.status === 'LISTED'
+            );
+            if (!version) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Bundle has no LISTED version' });
+            }
+            // ADR-009 D5 + ADR-008: only verified manifest evidence reaches operators.
+            const validated = await assertSignedListingVersionOrThrow(listing.kind, version);
+            const manifest = BundleManifestValidator.parse(validated);
+            return { readiness: manifest.readiness, defaultBindings: manifest.defaultBindings };
         }),
 
     getIntegrationManifestSummary: openRoute

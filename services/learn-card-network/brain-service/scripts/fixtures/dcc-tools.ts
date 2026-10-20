@@ -41,7 +41,7 @@ export const DCC_READINESS: CatalogReadinessGate[] = [
     {
         name: 'Registry subscription clarity',
         status: 'Passable',
-        note: 'DCC Member/Test Member OIDF and legacy Sandbox/Community/Member subset selected as advisory only. Exact OIDF/community URLs, refresh policy and authority review remain unverified; .invalid URLs are placeholders.',
+        note: 'URLs were verified against the digitalcredentials repos on 2026-10-20. DCC Member/Test Member OIDF and legacy Sandbox/Community/Member remain advisory only; refresh policy and authority review are still open.',
     },
     {
         name: 'Status-service production lane',
@@ -65,17 +65,15 @@ export const DCC_REGISTRIES: IntegrationManifest['subscribes'] = [
         declarationId: 'dcc-member-oidf',
         registryId: 'dcc-member-oidf',
         displayName: 'DCC Member Registry OIDF',
-        registryUrl: 'https://dcc-catalog-placeholder.invalid/member-oidf',
-        description:
-            'Advisory OIDF trust-anchor candidate. PLACEHOLDER URL: exact anchor unverified; never auto-trusted.',
+        registryUrl: 'https://registry.dcconsortium.org/.well-known/openid-federation',
+        description: 'Advisory OIDF trust-anchor candidate; never auto-trusted.',
     },
     {
         declarationId: 'dcc-test-member-oidf',
         registryId: 'dcc-test-member-oidf',
         displayName: 'Test DCC Member Registry OIDF',
-        registryUrl: 'https://dcc-catalog-placeholder.invalid/test-member-oidf',
-        description:
-            'Advisory, test-only OIDF candidate. PLACEHOLDER URL: exact anchor unverified; never auto-trusted.',
+        registryUrl: 'https://test.registry.dcconsortium.org/.well-known/openid-federation',
+        description: 'Advisory, test-only OIDF candidate; never auto-trusted.',
     },
     {
         declarationId: 'dcc-sandbox-legacy',
@@ -89,15 +87,14 @@ export const DCC_REGISTRIES: IntegrationManifest['subscribes'] = [
         declarationId: 'dcc-community-legacy',
         registryId: 'dcc-community-legacy',
         displayName: 'DCC Community Registry (legacy)',
-        registryUrl: 'https://dcc-catalog-placeholder.invalid/community-registry/registry.json',
-        description:
-            'Advisory backwards-compatibility candidate. PLACEHOLDER URL: exact artifact unverified. Not a signed manifest.',
+        registryUrl: 'https://digitalcredentials.github.io/community-registry/registry.json',
+        description: 'Advisory backwards-compatibility candidate. Not a signed manifest.',
     },
     {
         declarationId: 'dcc-member-legacy',
         registryId: 'dcc-member-legacy',
         displayName: 'DCC Member Registry (legacy)',
-        registryUrl: 'https://digitalcredentials.github.io/issuer-registry/registry.json',
+        registryUrl: 'https://digitalcredentials.github.io/dcc-registry/registry.json',
         description:
             'Advisory legacy issuer/member JSON; upstream issuer-registry is archived. Not a signed manifest or production trust authority.',
     },
@@ -127,7 +124,7 @@ export const dccRegistryManifest = (
 ): Omit<IntegrationManifest, 'signature'> => ({
     apiVersion: 'lc.integration/v1.3',
     id: 'org.dcc.registry-adapter',
-    version: '1.0.0',
+    version: '1.1.0',
     listingKind: 'INTEGRATION',
     publisherDid,
     category: 'registry-adapter',
@@ -147,7 +144,7 @@ export const dccBundleManifest = (
 ): Omit<BundleManifest, 'signature'> => ({
     apiVersion: 'lc.bundle/v1',
     id: 'org.dcc.tools',
-    version: '1.0.0',
+    version: '1.1.0',
     publisherDid,
     contains,
     preflight: [],

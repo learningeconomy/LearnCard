@@ -98,6 +98,7 @@ const steps: string[][] = [
         'ebsi|ebsi-tir|EBSI Trusted Issuers Registry|https://api-pilot.ebsi.eu/tir',
     ],
     ['seed:dev-wallets'],
+    ['seed:dcc-tools'],
     [
         'seed:dev-bundle',
         '--slug',

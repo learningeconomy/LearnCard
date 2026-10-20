@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'wouter';
 import { ArrowLeft, Package } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { InstallActions } from '../components/catalog/InstallActions';
@@ -15,6 +16,7 @@ import {
     type CatalogBundleMember,
     type CatalogEnablement,
     type CatalogListing,
+    type CatalogListingDetail,
     type DashboardSession,
 } from '../api';
 import { trpc } from '../trpc';
@@ -65,9 +67,13 @@ export function BundleDetail({ session }: BundleDetailProps) {
 
     const [listing, setListing] = useState<CatalogListing | null>(null);
     const [members, setMembers] = useState<CatalogBundleMember[]>([]);
+    const [bundleSummary, setBundleSummary] = useState<CatalogListingDetail['bundleSummary']>(null);
     const [memberListings, setMemberListings] = useState<Record<string, CatalogListing>>({});
     const [intents, setIntents] = useState<InstallIntent[]>([]);
     const [enablement, setEnablement] = useState<CatalogEnablement | null>(null);
+    const [activeTab, setActiveTab] = useState('included');
+    const [listingIconFailedUrl, setListingIconFailedUrl] = useState<string | null>(null);
+    const [failedMemberIcons, setFailedMemberIcons] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +93,7 @@ export function BundleDetail({ session }: BundleDetailProps) {
             ]);
 
             setListing(listingRes.listing);
+            setBundleSummary(listingRes.bundleSummary);
             setIntents(intentsRes as InstallIntent[]);
             setEnablement(enablementRes);
             setMembers(membersRes);
@@ -115,9 +122,12 @@ export function BundleDetail({ session }: BundleDetailProps) {
     }, [id, ecosystemId]);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        void loadData();
+        void Promise.resolve().then(loadData);
     }, [loadData]);
+
+    useEffect(() => {
+        void Promise.resolve().then(() => setActiveTab('included'));
+    }, [id]);
 
     if (!ecosystemId) {
         return <div className="p-6 text-muted-foreground">No ecosystem access.</div>;
@@ -162,6 +172,12 @@ export function BundleDetail({ session }: BundleDetailProps) {
     const includedLabel =
         installedCount > 0 ? `${installedCount}/${members.length}` : `${members.length}`;
 
+    const readiness = bundleSummary?.readiness ?? [];
+    const selectedTab =
+        activeTab === 'readiness' && readiness.length === 0 ? 'included' : activeTab;
+    const openGateCount = readiness.filter(gate => gate.status === 'OPEN').length;
+    const readinessSummary = `${openGateCount} of ${readiness.length} gates open${openGateCount > 0 ? ' — activation requires an owner to clear them' : ''}`;
+
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             <Link href="/bundles">
@@ -173,11 +189,12 @@ export function BundleDetail({ session }: BundleDetailProps) {
             <div className="rounded-xl border border-border overflow-hidden bg-gradient-to-br from-lc-blue/25 to-lc-pink/10">
                 <div className="p-5 md:p-7 flex flex-col md:flex-row md:items-center gap-4">
                     <div className="w-14 h-14 rounded-xl bg-background/70 flex items-center justify-center shrink-0 overflow-hidden">
-                        {listing.icon_url ? (
+                        {listing.icon_url && listingIconFailedUrl !== listing.icon_url ? (
                             <img
                                 src={listing.icon_url}
                                 alt={listing.display_name}
                                 className="w-full h-full object-cover"
+                                onError={() => setListingIconFailedUrl(listing.icon_url)}
                             />
                         ) : (
                             <Package className="w-8 h-8 text-foreground" />
@@ -224,14 +241,26 @@ export function BundleDetail({ session }: BundleDetailProps) {
                                 onChanged={loadData}
                             />
                         </div>
+                        {openGateCount > 0 && (
+                            <p className="text-sm text-muted-foreground max-w-sm">
+                                {readinessSummary}
+                            </p>
+                        )}
+                        {!bundleSummary && (
+                            <p className="text-sm text-muted-foreground max-w-sm">
+                                Readiness evidence unavailable — review the signed manifest before
+                                activation.
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
 
-            <Tabs defaultValue="included">
+            <Tabs defaultValue="included" value={selectedTab} onValueChange={setActiveTab}>
                 <TabsList>
                     <TabsTrigger value="included">Included ({includedLabel})</TabsTrigger>
                     <TabsTrigger value="about">About</TabsTrigger>
+                    {readiness.length > 0 && <TabsTrigger value="readiness">Readiness</TabsTrigger>}
                 </TabsList>
 
                 <TabsContent value="included" className="mt-4">
@@ -244,6 +273,9 @@ export function BundleDetail({ session }: BundleDetailProps) {
                             {members.map(member => {
                                 const section = SECTION_BY_TARGET_TYPE[member.targetType];
                                 const memberListing = memberListings[member.listingId];
+                                const memberIconUrl = memberListing?.icon_url;
+                                const memberIconFailed =
+                                    failedMemberIcons[member.listingId] === memberIconUrl;
                                 const installed = isMemberInstalled(member);
                                 const memberIntent = getActiveIntent(member.listingId);
                                 const name =
@@ -258,6 +290,13 @@ export function BundleDetail({ session }: BundleDetailProps) {
                                           : memberListing?.kind === 'BUNDLE'
                                             ? `/bundles/${member.listingId}`
                                             : `/apps/${member.listingId}`;
+                                const handleMemberIconError = (): void => {
+                                    if (!memberIconUrl) return;
+                                    setFailedMemberIcons(current => ({
+                                        ...current,
+                                        [member.listingId]: memberIconUrl,
+                                    }));
+                                };
 
                                 return (
                                     <div
@@ -297,11 +336,12 @@ export function BundleDetail({ session }: BundleDetailProps) {
                                                     'bg-muted text-muted-foreground'
                                                 }`}
                                             >
-                                                {memberListing?.icon_url ? (
+                                                {memberIconUrl && !memberIconFailed ? (
                                                     <img
-                                                        src={memberListing.icon_url}
+                                                        src={memberIconUrl}
                                                         alt={name}
                                                         className="w-full h-full object-cover"
+                                                        onError={handleMemberIconError}
                                                     />
                                                 ) : (
                                                     <Package className="w-4 h-4" />
@@ -353,6 +393,47 @@ export function BundleDetail({ session }: BundleDetailProps) {
                         </div>
                     )}
                 </TabsContent>
+
+                {/* // ADR-009 D5 + ADR-008: readiness gates are operator-facing evidence; they grant nothing */}
+                {readiness.length > 0 && (
+                    <TabsContent value="readiness" className="mt-4">
+                        <Card className="max-w-3xl">
+                            <CardHeader>
+                                <CardTitle>Readiness gates</CardTitle>
+                                <p className="text-sm text-muted-foreground">{readinessSummary}</p>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="divide-y divide-border">
+                                    {readiness.map((gate, index) => (
+                                        <li
+                                            key={`${gate.name}-${index}`}
+                                            className="py-4 space-y-2"
+                                        >
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="font-medium">{gate.name}</span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={
+                                                        gate.status === 'OPEN'
+                                                            ? 'bg-destructive/5 text-destructive border-destructive/30'
+                                                            : gate.status === 'Passable'
+                                                              ? 'bg-emerald/10 text-emerald border-emerald/30'
+                                                              : 'bg-muted text-muted-foreground'
+                                                    }
+                                                >
+                                                    {gate.status}
+                                                </Badge>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                                {gate.note}
+                                            </p>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
 
                 <TabsContent value="about" className="mt-4">
                     <div className="bg-card border border-border rounded-xl p-5 md:p-6 space-y-3 max-w-3xl">

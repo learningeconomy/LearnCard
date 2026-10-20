@@ -15,6 +15,8 @@ type SeededListing<T extends CatalogManifest> = {
     manifest: T;
 };
 
+const DCC_ICON_URL = 'https://placehold.co/250x250/navy/white?text=DCC';
+
 export const seedDccTools = async (
     publisherSeed = process.env.DCC_DEV_PUBLISHER_SEED ?? 'b'.repeat(64)
 ): Promise<{
@@ -52,7 +54,7 @@ export const seedDccTools = async (
                 display_name: name,
                 tagline: 'DCC Phase C catalog candidate — not a deployment or production approval',
                 full_description: notes,
-                icon_url: 'https://dcc-catalog-placeholder.invalid/icon.png',
+                icon_url: DCC_ICON_URL,
                 app_listing_status: 'DRAFT',
                 launch_type: 'SERVER_HEADLESS',
                 launch_config_json: '{}',
@@ -86,7 +88,10 @@ export const seedDccTools = async (
             }));
         await assertSignedListingVersionOrThrow(kind, version);
         if (version.status !== 'LISTED') throw new Error(`Existing ${slug} version is not LISTED.`);
-        await updateAppStoreListing(listing, { app_listing_status: 'LISTED' });
+        await updateAppStoreListing(listing, {
+            app_listing_status: 'LISTED',
+            icon_url: DCC_ICON_URL,
+        });
         return { listingId: listing.listing_id, versionId: version.version_id, manifest };
     };
 
@@ -95,14 +100,14 @@ export const seedDccTools = async (
         'dcc-lcw',
         'Learner Credential Wallet (LCW)',
         lcwManifest(publisherDid),
-        'LEF-authored dev catalog candidate; not signed or endorsed by DCC. Sanctioned-wallet review OPEN: preserve learner choice; verify VC-API/CHAPI/deep-link claims and exact build. Upstream: openwallet-foundation-labs/learner-credential-wallet (MIT, changelog 2.2.10). No evidenced OID4VCI. Claim/icon .invalid URLs are placeholders; health endpoint unknown. No customer credentials or deployment.'
+        'LEF-authored dev catalog candidate; not signed or endorsed by DCC. Sanctioned-wallet review OPEN: preserve learner choice; verify VC-API/CHAPI/deep-link claims and exact build. Upstream: openwallet-foundation-labs/learner-credential-wallet (MIT, changelog 2.2.10). No evidenced OID4VCI. Claim endpoint and health endpoint remain unverified. No customer credentials or deployment.'
     );
     const registryAdapter = await publish<IntegrationManifest>(
         'INTEGRATION',
         'dcc-registry-adapter',
         'DCC Registry Adapter',
         dccRegistryManifest(publisherDid),
-        'LEF-authored dev catalog-only subscription adapter, not a DCC-hosted service. Five advisory trust artifacts; test/legacy candidates are never auto-trusted. Raw upstream JSON is not a signed manifest. Exact OIDF/community endpoints and refresh policy need review; .invalid URLs are placeholders. No scopes, consent requirements, partner credentials or subject-data release.'
+        'LEF-authored dev catalog-only subscription adapter, not a DCC-hosted service. Five advisory trust artifacts; test/legacy candidates are never auto-trusted. Raw upstream JSON is not a signed manifest. Refresh policy and authority review remain open. No scopes, consent requirements, partner credentials or subject-data release.'
     );
     const bundle = await publish<BundleManifest>(
         'BUNDLE',

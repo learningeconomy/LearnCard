@@ -49,6 +49,7 @@ export function Bundles({ session }: BundlesProps) {
     );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [failedIcons, setFailedIcons] = useState<Record<string, string>>({});
 
     const ecosystemId = session.effectiveAccess.ecosystemRoles[0]?.ecosystemId;
 
@@ -92,7 +93,7 @@ export function Bundles({ session }: BundlesProps) {
     }, [ecosystemId]);
 
     useEffect(() => {
-        void loadData();
+        void Promise.resolve().then(loadData);
     }, [loadData]);
 
     if (!ecosystemId) {
@@ -146,11 +147,17 @@ export function Bundles({ session }: BundlesProps) {
             >
                 <div className="bg-gradient-to-br from-lc-blue/25 to-lc-pink/10 px-4 md:px-6 py-4 flex items-start gap-3 relative">
                     <div className="w-10 h-10 rounded-lg bg-background/70 flex items-center justify-center shrink-0 overflow-hidden">
-                        {bundle.icon_url ? (
+                        {bundle.icon_url && failedIcons[bundle.listing_id] !== bundle.icon_url ? (
                             <img
                                 src={bundle.icon_url}
                                 alt={bundle.display_name}
                                 className="w-full h-full object-cover"
+                                onError={() =>
+                                    setFailedIcons(current => ({
+                                        ...current,
+                                        [bundle.listing_id]: bundle.icon_url,
+                                    }))
+                                }
                             />
                         ) : (
                             <Package className="w-6 h-6 text-foreground" />

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ConsoleSurface } from '@learncard/types';
+import type { BundleManifest, ConsoleSurface } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import type { AppStoreListing, PaginatedAppStoreListings } from '@learncard/types';
 
@@ -18,7 +18,11 @@ export type CatalogListingVersion = {
 export type CatalogListingDetail = {
     listing: AppStoreListing;
     versions: CatalogListingVersion[];
+    bundleSummary: CatalogBundleManifestSummary | null;
 };
+
+/** Mirrors brain-service appStore.getBundleManifestSummary; its output validator is the source of truth. */
+type CatalogBundleManifestSummary = Pick<BundleManifest, 'readiness' | 'defaultBindings'>;
 
 /**
  * One entry of a BUNDLE listing's signed `lc.bundle` manifest (ADR-008). `targetType` is
@@ -280,7 +284,15 @@ export const catalogRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
             }
 
-            return { listing, versions: Array.isArray(versions) ? versions : [] };
+            const bundleSummary =
+                listing.kind === 'BUNDLE'
+                    ? await call<CatalogBundleManifestSummary>(
+                          'appStore.getBundleManifestSummary',
+                          input
+                      ).catch(() => null)
+                    : null;
+
+            return { listing, versions: Array.isArray(versions) ? versions : [], bundleSummary };
         }),
 
     getBundleMembers: protectedProcedure
