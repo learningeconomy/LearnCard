@@ -35,7 +35,7 @@ export const ThinnerShieldChevron: React.FC<{ className?: string }> = ({ classNa
 export const ThinnerLighterShieldChevron: React.FC<{ className?: string }> = ({
     className = '',
 }) => {
-    return <ShieldChevron className={`!text-[#353E64] ${className}`} strokeWidth="2.25" />;
+    return <ShieldChevron className={`text-[#353E64]! ${className}`} strokeWidth="2.25" />;
 };
 
 export default ShieldChevron;

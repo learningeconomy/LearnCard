@@ -294,51 +294,42 @@ export const useSQLiteStorage = () => {
                 // query user using stable identifiers (uid -> verifierId -> email)
                 let userExists;
                 if (currentUser?.uid) {
-                    userExists = await db.query(
-                        `SELECT * FROM users WHERE uid="${currentUser.uid}"`
-                    );
+                    userExists = await db.query('SELECT * FROM users WHERE uid = ?', [
+                        currentUser.uid,
+                    ]);
                 } else if ((currentUser as Partial<UserInfo>)?.verifierId) {
-                    userExists = await db.query(
-                        `SELECT * FROM users WHERE verifierId="${
-                            (currentUser as Partial<UserInfo>).verifierId
-                        }"`
-                    );
+                    userExists = await db.query('SELECT * FROM users WHERE verifierId = ?', [
+                        (currentUser as Partial<UserInfo>).verifierId,
+                    ]);
                 } else if (currentUser?.email) {
-                    userExists = await db.query(
-                        `SELECT * FROM users WHERE email="${currentUser.email}"`
-                    );
+                    userExists = await db.query('SELECT * FROM users WHERE email = ?', [
+                        currentUser.email,
+                    ]);
                 } else {
                     userExists = { values: [] } as any;
                 }
 
                 // check if user already exists
                 if (userExists.values?.length === 0) {
-                    await db.execute(`INSERT INTO users (
-                        email,
-                        name,
-                        profileImage,
-                        aggregateVerifier,
-                        verifier,
-                        verifierId,
-                        typeOfLogin,
-                        dappShare,
-                        baseColor,
-                        uid,
-                        phoneNumber
-                    ) VALUES (
-                        '${currentUser.email ?? ''}',
-                        '${currentUser.name ?? ''}',
-                        '${currentUser.profileImage ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).aggregateVerifier ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).verifier ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).verifierId ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).typeOfLogin ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).dappShare ?? ''}',
-                        '${currentUser.baseColor ?? ''}',
-                        '${(currentUser as any).uid ?? currentUser?.uid ?? ''}',
-                        '${(currentUser as any).phoneNumber ?? ''}'
-                    )`);
-                } else {
+                    await db.run(
+                        `INSERT INTO users (
+                            email, name, profileImage, aggregateVerifier, verifier, verifierId,
+                            typeOfLogin, dappShare, baseColor, uid, phoneNumber
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [
+                            currentUser.email ?? '',
+                            currentUser.name ?? '',
+                            currentUser.profileImage ?? '',
+                            (currentUser as Partial<UserInfo>).aggregateVerifier ?? '',
+                            (currentUser as Partial<UserInfo>).verifier ?? '',
+                            (currentUser as Partial<UserInfo>).verifierId ?? '',
+                            (currentUser as Partial<UserInfo>).typeOfLogin ?? '',
+                            (currentUser as Partial<UserInfo>).dappShare ?? '',
+                            currentUser.baseColor ?? '',
+                            currentUser.uid ?? '',
+                            currentUser.phoneNumber ?? '',
+                        ]
+                    );
                 }
                 await db.close();
             }
@@ -393,19 +384,17 @@ export const useSQLiteStorage = () => {
                 await ensureUserTableExists(db);
                 await db.open();
                 if (uid) {
-                    await db.execute(`
-                        UPDATE users
-                        SET 
-                        name="${payload.name}",
-                        profileImage="${payload.profileImage}"
-                        WHERE uid="${uid}"`);
+                    await db.run('UPDATE users SET name = ?, profileImage = ? WHERE uid = ?', [
+                        payload.name,
+                        payload.profileImage,
+                        uid,
+                    ]);
                 } else {
-                    // Fallback: update existing row(s) if uid is unavailable
-                    await db.execute(`
-                        UPDATE users
-                        SET 
-                        name="${payload.name}",
-                        profileImage="${payload.profileImage}"`);
+                    // Fallback: update existing row(s) if uid is unavailable.
+                    await db.run('UPDATE users SET name = ?, profileImage = ?', [
+                        payload.name,
+                        payload.profileImage,
+                    ]);
                 }
 
                 await db.close();
@@ -413,7 +402,8 @@ export const useSQLiteStorage = () => {
                 return;
             }
         } catch (e) {
-            log.warn('😵 useSQLiteStorage::getCurrentUser', e);
+            log.warn('useSQLiteStorage::updateCurrentUser', e);
+            throw e;
         } finally {
             if (db && (await db?.isDBOpen())?.result) {
                 await db?.close();

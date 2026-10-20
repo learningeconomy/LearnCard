@@ -14,9 +14,9 @@ const SparseAcademicRecordView: React.FC<{
     onSelectRecord?: (id: string) => void;
 }> = ({ model, showSource = false, onSelectRecord }) => {
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {model.assessments.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2">
                         <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
                             Assessments
@@ -43,7 +43,7 @@ const SparseAcademicRecordView: React.FC<{
                                 )}
                             </div>
 
-                            <div className="px-5 py-4 space-y-3">
+                            <div className="px-5 py-4 space-y-v3-3">
                                 {assessment.description?.value && (
                                     <p className="text-sm text-grayscale-600 leading-relaxed">
                                         {assessment.description.value}

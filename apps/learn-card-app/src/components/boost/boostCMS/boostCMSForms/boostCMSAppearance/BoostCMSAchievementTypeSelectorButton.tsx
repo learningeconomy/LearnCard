@@ -85,7 +85,7 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<AchievementTypeSelectorBut
                             customTypes={customTypes}
                             setCustomTypes={setCustomTypes}
                         />,
-                        { sectionClassName: '!max-w-[500px]', hideButton: true }
+                        { sectionClassName: 'max-w-[500px]!', hideButton: true }
                     )
                 }
                 disabled={disabled}

@@ -111,12 +111,12 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                         placeholder={m['issueFlow.browser.searchPlaceholder']()}
-                        className="w-full py-3 pl-10 pr-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                        className="w-full py-3 pl-10 pr-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                 </div>
             </div>
 
-            <div className="overflow-y-auto px-6 py-5 space-y-6">
+            <div className="overflow-y-auto px-6 py-5 space-y-v3-6">
                 {matches ? (
                     matches.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

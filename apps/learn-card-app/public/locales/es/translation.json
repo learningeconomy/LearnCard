@@ -1236,6 +1236,7 @@
             "imA": "Soy ",
             "selectRole": "Seleccionar rol",
             "fullName": "Nombre completo",
+            "fullNameOptional": "Nombre completo (opcional)",
             "dateOfBirth": "Fecha de nacimiento",
             "age": "Edad: {{age}}",
             "countryOfResidence": "País de residencia",
@@ -1965,6 +1966,10 @@
             "useInstead": "Usar mi PIN de recuperación"
         },
         "confirmCode": {
+            "mismatch": "Ese código no es correcto. Inténtalo de nuevo.",
+            "expired": "Ese código ha caducado. Envía uno nuevo.",
+            "locked": "Demasiados intentos. Envía un código nuevo.",
+            "notSent": "No pudimos enviar tu código. Espera un minuto antes de reenviarlo.",
             "title": "Revisa tu correo",
             "description": "Ingresa el código que enviamos para confirmar esta solicitud.",
             "confirming": "Confirmando...",
@@ -1977,6 +1982,9 @@
             "resendFailed": "No pudimos enviar un código nuevo. Comprueba tu conexión e inténtalo de nuevo."
         },
         "invalidRequest": "Esta solicitud de recuperación ya no es válida. Inicia una nueva.",
+        "status": {
+            "failed": "No pudimos comprobar tu solicitud en este momento."
+        },
         "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
         "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
         "error.invalidCode": "Ese código es incorrecto o ha expirado. Solicita uno nuevo e inténtalo de nuevo.",

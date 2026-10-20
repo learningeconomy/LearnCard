@@ -229,7 +229,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                     ) : (
                         <>
                             {isLoading && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-linear-to-br/srgb from-indigo-50 to-blue-50 z-10">
                                     <div className="flex flex-col items-center gap-4">
                                         {/* Animated spinner */}
                                         <div className="relative">

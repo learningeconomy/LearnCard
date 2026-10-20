@@ -41,6 +41,7 @@ import {
     registerKeyDerivationFactory,
     resolveKeyDerivation,
     resolveAuthProvider,
+    useAuthSessionProvider,
     SignInAdapterProvider,
     useSignInAdapter,
     authUserStore,
@@ -1311,7 +1312,7 @@ const AuthSessionManager: React.FC<{
             {children}
             {coordinator.state.status === 'ready' && (
                 <div
-                    className="fixed inset-x-4 z-[10000] max-w-md mx-auto space-y-2"
+                    className="fixed inset-x-4 z-[10000] max-w-md mx-auto space-y-v3-2"
                     style={{ top: 'calc(1.5rem + var(--ion-safe-area-top, 0px))' }}
                 >
                     {coordinator.state.pendingEscrowHold && (
@@ -1665,12 +1666,12 @@ const AuthSessionManager: React.FC<{
             {/* ── Migration in-progress overlay ──────────────────── */}
             {showMigrationLoading && (
                 <Overlay>
-                    <div className="p-8 text-center space-y-5">
+                    <div className="p-8 text-center space-y-v3-5">
                         <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
                             <div className="w-7 h-7 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             <h2 className="text-xl font-semibold text-grayscale-900">
                                 Upgrading Account
                             </h2>
@@ -1990,7 +1991,7 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
     }
 };
 
-export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> = ({
+const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> = ({
     children,
 }) => {
     const authConfig = getAuthConfig();
@@ -1998,9 +1999,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
 
-    // Phase 2: authUserStore is written by SignInAdapterProvider's subscribe(),
-    // so we just read the generic store — no bridge needed.
-    const authUser = authUserStore.use.currentUser();
+    const authProvider = useAuthSessionProvider();
 
     // Ref for clearDB — useSQLiteStorage() returns a new function identity
     // on every render (not memoized), which would cascade through
@@ -2008,12 +2007,6 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
     // infinite re-init loop. Using a ref keeps handleAppLogout stable.
     const clearDBRef = useRef(clearDB);
     clearDBRef.current = clearDB;
-
-    // Resolve auth provider from the registry (env-var driven via VITE_AUTH_PROVIDER)
-    const authProvider = useMemo(
-        () => (authUser ? resolveAuthProvider(authConfig) : null),
-        [authUser, authConfig.authProvider]
-    );
 
     // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
@@ -2135,29 +2128,35 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
     );
 
     return (
-        <SignInAdapterProvider>
-            <BaseAuthCoordinatorProvider
-                keyDerivation={keyDerivation}
-                authProvider={coordinatorAuthProvider}
-                didFromPrivateKey={didFromPrivateKey}
-                signDidAuthVp={signDidAuthVp}
-                getCachedPrivateKey={getCachedPrivateKey}
-                getRecoveryLanguage={getLocale}
-                onLogout={handleAppLogout}
-                clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
-                onDebugEvent={handleDebugEvent}
-                legacyAccountThresholdMs={5 * 60 * 1000}
-                // The coordinator is always enabled. To switch key derivation
-                // backends, set VITE_KEY_DERIVATION=web3auth or VITE_KEY_DERIVATION=sss.
-                // The old `coordinatorEnabled` kill-switch has been removed because
-                // there is no legacy fallback path — disabling the coordinator
-                // would silently break the app.
-                enabled={true}
-            >
-                <AuthSessionManager authProvider={authProvider}>{children}</AuthSessionManager>
-            </BaseAuthCoordinatorProvider>
-        </SignInAdapterProvider>
+        <BaseAuthCoordinatorProvider
+            keyDerivation={keyDerivation}
+            authProvider={coordinatorAuthProvider}
+            didFromPrivateKey={didFromPrivateKey}
+            signDidAuthVp={signDidAuthVp}
+            getCachedPrivateKey={getCachedPrivateKey}
+            getRecoveryLanguage={getLocale}
+            onLogout={handleAppLogout}
+            clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
+            onDebugEvent={handleDebugEvent}
+            legacyAccountThresholdMs={5 * 60 * 1000}
+            // The coordinator is always enabled. To switch key derivation
+            // backends, set VITE_KEY_DERIVATION=web3auth or VITE_KEY_DERIVATION=sss.
+            // The old `coordinatorEnabled` kill-switch has been removed because
+            // there is no legacy fallback path — disabling the coordinator
+            // would silently break the app.
+            enabled={true}
+        >
+            <AuthSessionManager authProvider={authProvider}>{children}</AuthSessionManager>
+        </BaseAuthCoordinatorProvider>
     );
 };
+
+export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> = ({
+    children,
+}) => (
+    <SignInAdapterProvider>
+        <AuthCoordinatorSessionProvider>{children}</AuthCoordinatorSessionProvider>
+    </SignInAdapterProvider>
+);
 
 export default AuthCoordinatorProvider;

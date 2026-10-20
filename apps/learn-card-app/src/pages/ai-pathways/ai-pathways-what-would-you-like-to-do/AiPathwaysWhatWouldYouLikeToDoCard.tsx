@@ -70,7 +70,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                                 option: AiPathwaysWhatWouldYouLikeToDoCardOptions.GrowSkills,
                             })
                         }
-                        className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
+                        className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border border-solid flex-1 font-poppins text-[17px]"
                     >
                         <ResolvedSkillsIcon className="w-[50px] h-[50px]" />
                         {m['growSkills.title']()}
@@ -83,7 +83,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                                 option: AiPathwaysWhatWouldYouLikeToDoCardOptions.FindRoles,
                             })
                         }
-                        className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
+                        className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border border-solid flex-1 font-poppins text-[17px]"
                     >
                         <ResolvedPathwaysIcon className="w-[50px] h-[50px]" />
                         {m['aiPathways.findRoles']()}

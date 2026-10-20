@@ -71,7 +71,7 @@ impl Fixture {
         )
         .await
         {
-            Response::CreateHold { hold } => hold,
+            Response::CreateHold { hold, .. } => hold,
             other => panic!("Unexpected response {other:?}"),
         }
     }
@@ -589,7 +589,7 @@ async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key
     )
     .await
     {
-        Response::CreateHold { hold } => hold,
+        Response::CreateHold { hold, .. } => hold,
         other => panic!("{other:?}"),
     };
     clock.0.fetch_add(HOLD_DURATION_MS, Ordering::SeqCst);

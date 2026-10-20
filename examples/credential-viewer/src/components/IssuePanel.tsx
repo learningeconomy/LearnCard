@@ -180,7 +180,7 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                                         setCategoryOverrides({});
                                     }
                                 }}
-                                className="bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                className="bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded px-2 py-0.5 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                             >
                                 <option value="">Auto-detect</option>
 
@@ -233,7 +233,7 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
 
                                                 setGlobalOverride('');
                                             }}
-                                            className={`bg-gray-800 border text-[11px] rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500/50 ${
+                                            className={`bg-gray-800 border text-[11px] rounded px-1.5 py-0.5 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50 ${
                                                 isOverridden
                                                     ? 'border-blue-600/50 text-blue-300'
                                                     : 'border-gray-700 text-gray-400'

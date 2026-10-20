@@ -6,6 +6,8 @@ import {
     verifyEscrowAuthorityState,
     verifyEscrowEnrollmentCommit,
     verifyEscrowHoldRecord,
+    verifyEscrowCodeDelivery,
+    verifyEscrowHoldState,
     verifyEscrowHoldConfirmation,
     createEscrowEnrollmentIntent,
     resolveEscrowEnrollmentAction,
@@ -434,6 +436,118 @@ describe('verifyEscrowHoldRecord / verifyEscrowHoldConfirmation (client-boundary
         },
         holdDurationMs: 604_800_000,
         ledgerSeq: 0,
+    });
+
+    it('authenticates delivery failure and rejects transplanted or altered delivery evidence', async () => {
+        const { sign, identity } = await makeSigner();
+        const expected = {
+            tenant: 'learncard',
+            authorityGeneration: 'g1',
+            holdDigest: 'ab'.repeat(32),
+        };
+        const proof = await sign('snapshot', [
+            'learncard-authority-code-delivery-v1',
+            expected.tenant,
+            expected.authorityGeneration,
+            expected.holdDigest,
+            false,
+        ]);
+        await expect(
+            verifyEscrowCodeDelivery({ codeSent: false, proof }, expected, identity)
+        ).resolves.toBe(false);
+        await expect(
+            verifyEscrowCodeDelivery({ codeSent: true, proof }, expected, identity)
+        ).rejects.toThrow();
+        for (const changed of [
+            { tenant: 'other' },
+            { authorityGeneration: 'g2' },
+            { holdDigest: '00'.repeat(32) },
+        ]) {
+            await expect(
+                verifyEscrowCodeDelivery(
+                    { codeSent: false, proof },
+                    { ...expected, ...changed },
+                    identity
+                )
+            ).rejects.toThrow();
+        }
+    });
+
+    it('verifies nonce-bound hold reads and rejects replay, scope substitution and malformed state', async () => {
+        const { sign, identity } = await makeSigner();
+        const nonce = 'ab'.repeat(32);
+        const expected = {
+            tenant: 'learncard',
+            authorityGeneration: 'g1',
+            did,
+            holdId: 'hold-1',
+            holdDigest: 'cd'.repeat(32),
+        };
+        const payload = [
+            'learncard-authority-hold-state-v3',
+            nonce,
+            expected.tenant,
+            expected.authorityGeneration,
+            did,
+            expected.holdId,
+            expected.holdDigest,
+            'pending',
+            1000,
+            2000,
+            4,
+            'unknown',
+        ];
+        const response = { proof: await sign('snapshot', payload) };
+        await expect(verifyEscrowHoldState(response, nonce, expected, identity)).resolves.toEqual({
+            status: 'pending',
+            confirmedHiMs: 1000,
+            releaseWarningSentHiMs: 2000,
+            attemptsRemaining: 4,
+            codeSendStatus: 'unknown',
+        });
+        await expect(
+            verifyEscrowHoldState(response, 'ff'.repeat(32), expected, identity)
+        ).rejects.toThrow();
+        for (const changed of [
+            { tenant: 'other' },
+            { authorityGeneration: 'g2' },
+            { did: 'other' },
+            { holdId: 'other' },
+            { holdDigest: '00'.repeat(32) },
+        ]) {
+            await expect(
+                verifyEscrowHoldState(response, nonce, { ...expected, ...changed }, identity)
+            ).rejects.toThrow();
+        }
+        for (const [index, value] of [
+            [7, 'invalid'],
+            [8, -1],
+            [10, 6],
+            [11, 'sent'],
+        ] as const) {
+            const malformed = [...payload];
+            malformed[index] = value;
+            await expect(
+                verifyEscrowHoldState(
+                    { proof: await sign('snapshot', malformed) },
+                    nonce,
+                    expected,
+                    identity
+                )
+            ).rejects.toThrow();
+        }
+        await expect(
+            verifyEscrowHoldState(
+                { proof: await sign('commit', payload) },
+                nonce,
+                expected,
+                identity
+            )
+        ).rejects.toThrow();
+        const other = await makeSigner();
+        await expect(
+            verifyEscrowHoldState(response, nonce, expected, other.identity)
+        ).rejects.toThrow();
     });
 
     const signedHoldRecord = async (

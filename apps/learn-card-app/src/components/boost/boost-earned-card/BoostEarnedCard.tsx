@@ -494,7 +494,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     textColor={darkColor}
                     indicatorColor={indicatorColor}
                     credential={cred}
-                    mediaTitleContainerClassName="!mt-[14px]"
+                    mediaTitleContainerClassName="mt-[14px]!"
                     isEarnedBoost
                     showNewItemIndicator={showNewItemIndicator}
                 />
@@ -555,7 +555,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 backgroundColor={backgroundColor}
                                 accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
                                 }`}
                                 badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
@@ -632,7 +632,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                     backgroundColor={backgroundColor}
                                     accentColor={accentColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                    badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                    badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
                                         isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
                                     }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
@@ -730,7 +730,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 backgroundColor={backgroundColor}
                                 accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
                                 }`}
                                 badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"

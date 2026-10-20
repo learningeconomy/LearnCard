@@ -112,7 +112,7 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
     return (
         <div className="h-full flex items-center justify-center">
             <div className="rounded-[20px] shadow-box-bottom overflow-hidden flex flex-col max-w-[335px]">
-                <div className="flex flex-col bg-white bg-opacity-70 backdrop-blur-[10px]">
+                <div className="flex flex-col bg-white/70  backdrop-blur-[10px]">
                     <div className="p-[15px]">
                         <TroopID
                             credential={credential}
@@ -208,12 +208,12 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                         )}
                     </div>
 
-                    {/* <div className="pt-[10px] border-t-[1px] border-solid border-grayscale-200 flex justify-center">
+                    {/* <div className="pt-[10px] border-t border-solid border-grayscale-200 flex justify-center">
                         <CredentialVerificationDisplay
                             credential={credential}
                             showText
-                            className="!text-[12px] font-poppins font-[500]"
-                            iconClassName="!h-[18px] !w-[18px]"
+                            className="text-[12px]! font-poppins font-[500]"
+                            iconClassName="h-[18px]! w-[18px]!"
                         />
                     </div> */}
                 </div>

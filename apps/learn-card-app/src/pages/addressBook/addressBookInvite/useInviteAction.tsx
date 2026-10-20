@@ -86,7 +86,7 @@ export const useInviteAction = ({
             if (!isMobile) {
                 newModal(
                     <InviteLinkModal />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
 

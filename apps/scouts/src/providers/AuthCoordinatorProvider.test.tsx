@@ -33,6 +33,7 @@ vi.mock('learn-card-base', async () => {
         AuthCoordinatorProvider: passThrough,
         SignInAdapterProvider: passThrough,
         useAuthCoordinator: () => mocks.coordinator,
+        useAuthSessionProvider: () => null,
         useAuthCoordinatorAutoSetup: vi.fn(),
         useIdleAuthCleanup,
         useSignInAdapter: () => ({ getCurrentUser: () => null }),

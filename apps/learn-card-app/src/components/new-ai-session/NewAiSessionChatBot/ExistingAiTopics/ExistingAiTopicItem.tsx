@@ -77,7 +77,7 @@ export const ExistingAiTopicItem: React.FC<{
                 <div className="w-[45px] flex items-center justify-center mr-1">
                     <div className="h-[45px] w-[45px]">
                         <img
-                            className="w-full h-full object-cover bg-white rounded-[12px] overflow-hidden border-[1px] border-solid"
+                            className="w-full h-full object-cover bg-white rounded-[12px] overflow-hidden border border-solid"
                             alt={`${app?.name} logo`}
                             src={app?.img}
                         />

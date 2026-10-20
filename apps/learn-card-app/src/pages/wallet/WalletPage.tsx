@@ -80,7 +80,7 @@ const WalletPage: React.FC = () => {
                             updateVersion={res?.bundle?.version}
                         />,
                         {
-                            sectionClassName: '!max-w-[400px]',
+                            sectionClassName: 'max-w-[400px]!',
                             cancelButtonTextOverride: m['claim.modal.maybeLater'](),
                         }
                     );
@@ -220,7 +220,7 @@ const WalletPage: React.FC = () => {
                                         {Capacitor.isNativePlatform() && (
                                             <button
                                                 type="button"
-                                                className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                                className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                                 aria-label={m['passport.wallet.scanQrCode']()}
                                                 onClick={() =>
                                                     QRCodeScannerStore.set.showScanner(true)
@@ -231,12 +231,12 @@ const WalletPage: React.FC = () => {
                                         )}
                                         <button
                                             type="button"
-                                            className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                             aria-label={m['passport.wallet.addToPassport']()}
                                             onClick={() => {
                                                 newModal(
                                                     <AddToPassportMenu />,
-                                                    { sectionClassName: '!max-w-[500px]' },
+                                                    { sectionClassName: 'max-w-[500px]!' },
                                                     {
                                                         desktop: ModalTypes.Center,
                                                         mobile: ModalTypes.BottomSheet,

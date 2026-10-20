@@ -128,7 +128,7 @@ export const ActivityDetailOverlay: React.FC<{
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in-up font-poppins p-0 sm:p-4">
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs animate-fade-in-up font-poppins p-0 sm:p-4">
             <button
                 type="button"
                 tabIndex={-1}
@@ -149,7 +149,7 @@ export const ActivityDetailOverlay: React.FC<{
                     type="button"
                     onClick={onClose}
                     aria-label={m['common.close']()}
-                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <IonIcon icon={closeOutline} className="text-xl" />
                 </button>
@@ -184,7 +184,7 @@ export const ActivityDetailOverlay: React.FC<{
                     <p className="text-sm text-grayscale-600 text-center">{subText}</p>
                 </div>
 
-                <div className="px-6 pb-2 flex flex-col space-y-3">
+                <div className="px-6 pb-2 flex flex-col space-y-v3-3">
                     {item.credentialType && (
                         <div className="flex items-center justify-between border-b border-grayscale-100 pb-3">
                             <span className="text-xs font-medium text-grayscale-600 uppercase tracking-[0.5px]">
@@ -234,7 +234,7 @@ export const ActivityDetailOverlay: React.FC<{
                         <button
                             type="button"
                             onClick={viewInPassport}
-                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
                             {m['passport.activity.viewInPass']()}
                         </button>
@@ -242,7 +242,7 @@ export const ActivityDetailOverlay: React.FC<{
                     <button
                         type="button"
                         onClick={onClose}
-                        className={`w-full py-3 px-4 rounded-[20px] font-medium text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                        className={`w-full py-3 px-4 rounded-[20px] font-medium text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                             item.isSelf
                                 ? 'border border-grayscale-300 text-grayscale-700 hover:bg-grayscale-10'
                                 : 'bg-grayscale-900 text-white hover:opacity-90 transition-opacity'

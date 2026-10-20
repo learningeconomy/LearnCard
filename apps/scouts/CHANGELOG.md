@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.90.44
+
+### Patch Changes
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
+- [#1750](https://github.com/learningeconomy/LearnCard/pull/1750) [`2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f`](https://github.com/learningeconomy/LearnCard/commit/2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Only run the contacts search when there is a search term. The address book used to send an empty profile search on every open even though results are only shown while searching.
+
+## 1.90.43
+
+### Patch Changes
+
+- [#1754](https://github.com/learningeconomy/LearnCard/pull/1754) [`7f68afd7f3bf30a07d42c18929ca90e1983825b7`](https://github.com/learningeconomy/LearnCard/commit/7f68afd7f3bf30a07d42c18929ca90e1983825b7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2284: perf(scouts): only look up troop ID status when the boost menu opens, and cache recipient lists
+
+## 1.90.42
+
+### Patch Changes
+
+- [#1736](https://github.com/learningeconomy/LearnCard/pull/1736) [`58b7eeb1adde1a16d15ccaff9c85acf8e99b0168`](https://github.com/learningeconomy/LearnCard/commit/58b7eeb1adde1a16d15ccaff9c85acf8e99b0168) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Keep the consent-flow sync running after its first save, and stop one unreadable credential or one failed accept from blocking the rest of the sync. ScoutPass also re-syncs when the native app resumes.
+
+- [#1721](https://github.com/learningeconomy/LearnCard/pull/1721) [`dc780c9ebf94cecec66116da7faa8f2f9482d3c4`](https://github.com/learningeconomy/LearnCard/commit/dc780c9ebf94cecec66116da7faa8f2f9482d3c4) Thanks [@Custard7](https://github.com/Custard7)! - Fix crashes when a credential has a missing or unknown category. Category metadata lookups now fall back to Achievement.
+
+- Updated dependencies []:
+    - @learncard/helpers@1.6.3
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/react@2.12.11
+    - @learncard/sss-key-manager@0.2.2
+
 ## 1.90.41
 
 ### Patch Changes

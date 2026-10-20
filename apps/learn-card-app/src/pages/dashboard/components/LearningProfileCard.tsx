@@ -113,7 +113,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
 
                     {strength ? (
                         <div className="relative overflow-hidden rounded-xl -mx-2 p-2">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shimmer z-10 pointer-events-none" />
+                            <div className="absolute inset-0 bg-linear-to-r/srgb from-transparent via-white/60 to-transparent animate-shimmer z-10 pointer-events-none" />
                             <div className="flex items-start gap-3 relative z-0">
                                 <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                                     <Trophy className="w-5 h-5" />
@@ -178,7 +178,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                 <button
                     type="button"
                     onClick={onViewInsights}
-                    className="flex items-center justify-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="flex items-center justify-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['dashboard.learningProfile.viewInsights']()}
                     <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />

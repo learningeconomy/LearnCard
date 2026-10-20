@@ -77,7 +77,7 @@ const NetworkItem: React.FC<NetworkItemProps> = ({ networkUri, isSelected, onCli
     return (
         <button
             onClick={onClick}
-            className="w-full flex items-center justify-between last-of-type:border-none border-b-[1px] border-solid border-grayscale-300 ion-padding first-of-type:pt-[4px]"
+            className="w-full flex items-center justify-between last-of-type:border-none border-b border-solid border-grayscale-300 ion-padding first-of-type:pt-[4px]"
         >
             <div className="flex items-center justify-center">
                 <div className="w-[40px] h-[40px] rounded-full bg-white mr-2 overflow-hidden">

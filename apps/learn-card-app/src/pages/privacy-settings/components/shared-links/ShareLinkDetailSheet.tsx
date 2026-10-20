@@ -210,7 +210,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 type="button"
                 aria-label={m['common.close']()}
                 onClick={onClose}
-                className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-xl text-grayscale-600 hover:bg-grayscale-100"
+                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-xl text-grayscale-600 hover:bg-grayscale-100"
             >
                 <IonIcon icon={closeOutline} aria-hidden="true" />
             </button>
@@ -219,7 +219,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 <h2
                     ref={titleRef}
                     tabIndex={-1}
-                    className="break-words text-lg font-semibold leading-snug focus:outline-none"
+                    className="wrap-break-word text-lg font-semibold leading-snug focus:outline-hidden"
                 >
                     {share.title}
                 </h2>
@@ -412,7 +412,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
             {panel === 'expiry' && (
                 <div
                     id={expiryPanelId}
-                    className="mt-3 space-y-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"
+                    className="mt-3 space-y-v3-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"
                 >
                     <label className="block text-xs font-medium text-grayscale-700">
                         {m['dataShareCenter.shared.expiryDate']()}
@@ -421,7 +421,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                             min={minimumExpiry}
                             value={expiry}
                             onChange={event => setExpiry(event.target.value)}
-                            className="mt-1.5 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            className="mt-1.5 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 focus:border-transparent focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                         />
                     </label>
                     <div className="flex flex-wrap justify-end gap-2">
@@ -470,7 +470,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                     {panel === 'update' && (
                         <div
                             id={updatePanelId}
-                            className="mb-2 space-y-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"
+                            className="mb-2 space-y-v3-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"
                         >
                             <p className="text-sm leading-relaxed text-grayscale-700">
                                 {m['dataShareCenter.shared.updateWarning']()}
@@ -509,7 +509,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         <div
                             id={stopPanelId}
                             data-testid="stop-sharing-panel"
-                            className="space-y-3 rounded-2xl border border-red-100 bg-red-50/60 p-4"
+                            className="space-y-v3-3 rounded-2xl border border-red-100 bg-red-50/60 p-4"
                         >
                             <p
                                 id={stopWarningId}

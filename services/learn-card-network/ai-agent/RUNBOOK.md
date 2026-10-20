@@ -302,6 +302,13 @@ personal access token to the task environment. The deployment workflow uses that
 dedicated-project secret. CloudFormation requires both the Trigger and LaunchDarkly secret
 references when enabling schedules, in staging or production.
 
+The service creates and updates every Trigger.dev schedule with `window: "0m"`, so runs start
+at the cron minute. Trigger.dev otherwise gives new schedules a 60-minute window and starts
+each run at a fixed offset inside it. Schedules synced before this change keep that 1h window
+until they're saved again (any schedule update re-syncs them); in the Trigger.dev dashboard,
+`nextRunEffectiveAt` later than `nextRun` means a schedule still has a window. On a free
+Trigger.dev plan the 60-minute minimum applies regardless (`appliedSchedulePolicy`).
+
 ## Staging test-account setup
 
 `AI_AGENT_SMOKE_SEED` must belong to a dedicated, non-human staging profile that has accepted the configured ConsentFlow contract. Give it minimal synthetic credentials only.
@@ -328,7 +335,13 @@ It explicitly tells the agent not to write user data. A missing grant, unavailab
 3. Deploy the exact branch commit with the `Deploy` workflow command below.
 4. The deployment smoke creates an enabled schedule two or three minutes ahead, confirms both
    Trigger.dev tasks complete, verifies the Assistant feed receives a card with a scheduled
-   `sourceRunId`, and deletes the temporary schedule.
+   `sourceRunId`, and deletes the temporary schedule. It waits up to 480 seconds after the
+   scheduled time for that card (`AI_AGENT_SMOKE_SCHEDULE_WINDOW_SECONDS`, 60–1800, overrides
+   it). On failure it prints the scheduled time, deadline, schedule ID, poll count, and the
+   newest autonomous cards, and says whether no card appeared or one appeared with the wrong
+   title. It also logs the schedule-create response (schedule ID, cron, timezone, next run)
+   with the Trigger.dev environment and project the deploy expected. A passing run logs
+   `scheduledCardLatencySeconds`.
 
 Any DID receiving the flag's `false` variation must fail schedule creation before Trigger.dev
 creates a schedule. A missing flag or LaunchDarkly evaluation failure also fails closed and emits

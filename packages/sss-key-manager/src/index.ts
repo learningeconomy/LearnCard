@@ -92,6 +92,8 @@ export type { HistoricalEscrowEvidence } from './escrow-authority.types';
 export type { EscrowRecoveryExpectations } from '@learncard/types';
 export {
     verifyEscrowAuthorityState,
+    verifyEscrowHoldState,
+    verifyEscrowCodeDelivery,
     verifyEscrowEnrollmentCommit,
     createEscrowEnrollmentIntent,
     resolveEscrowEnrollmentAction,

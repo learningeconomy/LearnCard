@@ -53,7 +53,7 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: 
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <div className="h-[100vh] w-full flex items-center justify-center absolute top-0 left-0 z-9999 bg-black/50">
+        <div className="h-screen w-full flex items-center justify-center absolute top-0 left-0 z-9999 bg-black/50">
             <div className="w-full flex flex-col justify-center items-center gap-[60px] bg-white rounded-[24px] px-[30px] pt-[60px] pb-[40px] max-w-[340px] mx-auto min-h-[400px] shadow-box-bottom">
                 <div className="relative w-full flex items-center justify-center">
                     <ProfilePicture
@@ -79,7 +79,7 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: 
                     >
                         {activeQuotes.map((quote, index) => (
                             <SwiperSlide key={index}>
-                                <span className="block font-notoSans text-grayscale-900 text-[17px] font-[600] leading-[24px] tracking-[0.25px]">
+                                <span className="block font-notoSans text-grayscale-900 text-[17px] font-semibold leading-[24px] tracking-[0.25px]">
                                     {quote}
                                 </span>
                             </SwiperSlide>

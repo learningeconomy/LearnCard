@@ -11,14 +11,14 @@ const StructuredTranscriptView: React.FC<{
     showSource?: boolean;
 }> = ({ model, showSource = false }) => {
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {model.programs.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <p className="text-sm font-medium text-grayscale-900">Programs</p>
                     {model.programs.map(program => (
                         <div
                             key={program.sourceCredentialId}
-                            className="bg-white border border-grayscale-200 rounded-xl p-3 space-y-1"
+                            className="bg-white border border-grayscale-200 rounded-xl p-3 space-y-v3-1"
                         >
                             <p className="text-sm text-grayscale-900">
                                 {program.name?.value || 'Program'}
@@ -41,7 +41,7 @@ const StructuredTranscriptView: React.FC<{
                     ))}
                 </div>
             )}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <p className="text-sm font-medium text-grayscale-900">Courses</p>
                 {(() => {
                     const withTerm = model.courses.filter(c => c.term?.value);
@@ -58,13 +58,13 @@ const StructuredTranscriptView: React.FC<{
                     const renderCourse = (course: (typeof model.courses)[number]) => (
                         <div
                             key={course.sourceCredentialId}
-                            className="bg-white border border-grayscale-200 rounded-xl p-3 space-y-1"
+                            className="bg-white border border-grayscale-200 rounded-xl p-3 space-y-v3-1"
                         >
                             <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                         {course.humanCode?.value && (
-                                            <span className="text-xs font-mono font-medium text-grayscale-600 bg-grayscale-100 px-1.5 py-0.5 rounded">
+                                            <span className="text-xs font-mono font-medium text-grayscale-600 bg-grayscale-100 px-1.5 py-0.5 rounded-sm">
                                                 {course.humanCode.value}
                                             </span>
                                         )}
@@ -97,7 +97,7 @@ const StructuredTranscriptView: React.FC<{
                     return (
                         <>
                             {termGroups.map(([term, courses]) => (
-                                <div key={term} className="space-y-2">
+                                <div key={term} className="space-y-v3-2">
                                     <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                         {term}
                                     </p>
@@ -105,7 +105,7 @@ const StructuredTranscriptView: React.FC<{
                                 </div>
                             ))}
                             {withoutTerm.length > 0 && (
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {termGroups.length > 0 && (
                                         <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                             Other

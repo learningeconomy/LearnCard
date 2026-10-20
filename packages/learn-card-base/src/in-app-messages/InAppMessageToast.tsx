@@ -82,7 +82,7 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
                 animate="visible"
                 exit="exit"
             >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
+                <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r/srgb from-transparent via-white to-transparent opacity-80" />
 
                 {message.emoji && (
                     <span className="text-[22px] leading-none shrink-0" aria-hidden="true">
