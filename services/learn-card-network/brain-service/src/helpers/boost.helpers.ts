@@ -451,7 +451,16 @@ export const appendTemplateEvidenceToCredential = (
     // EvidenceFile subterms — otherwise the signer fails later with an opaque
     // JSON-LD key-expansion error. Surface a clear message instead so the
     // caller can prompt the user to republish the boost.
-    if (!credentialContextSupportsDynamicEvidence(credential)) {
+    const usesEvidenceExtensions = normalizedTemplateEvidence.some(item => {
+        if (!item || typeof item !== 'object') return false;
+        const evidence = item as Record<string, unknown>;
+        const types = Array.isArray(evidence.type) ? evidence.type : [evidence.type];
+        return (
+            types.includes('EvidenceFile') ||
+            ['fileName', 'fileType', 'fileSize'].some(key => key in evidence)
+        );
+    });
+    if (usesEvidenceExtensions && !credentialContextSupportsDynamicEvidence(credential)) {
         throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message:
