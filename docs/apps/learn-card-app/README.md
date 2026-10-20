@@ -104,6 +104,7 @@ flowchart LR
     C --> D[Save original and selection]
     B -->|Empty or no readable text| J[Show feedback without creating a credential]
     B -->|Processing failed| E[Save original only]
+    B -->|Settings pending or request rejected| I[Leave the saved document unchanged]
     D --> F{Save confirmed?}
     E --> F
     F -->|Yes| G[Open original by selecting its filename]
@@ -117,8 +118,13 @@ success banner or action box.
 An empty result or a file with no readable text does not create a credential or save a new
 original. While the upload step is open, select its filename to preview the uploaded file,
 choose another file, or retry extraction.
-Processing failures still keep the original when its save succeeds. A failed save does
-not claim that the file is saved; retry saving without running extraction again.
+In a mixed batch, saving the review only stores originals that produced review candidates;
+empty files are not saved alongside them.
+Pending AI settings, unavailable AI processing, invalid or rejected input, oversized files,
+and incompatible service responses do not add a new saved original or replace a résumé.
+Feedback explains the reason and omits extraction retry for non-retryable rejections.
+Transient processing failures still keep the original when its save succeeds. A failed save
+does not claim that the file is saved; retry saving without running extraction again.
 The extraction overlay closes when the original starts saving. An inline message explains
 that extraction failed and saving is in progress; it only says the original is saved after
 the save is confirmed.
@@ -128,8 +134,8 @@ the original, but does not mean extraction found nothing. Saved counts include o
 selected credentials. Partial failures retain the review; retrying a save reuses confirmed writes.
 
 Confirmed saves trigger one background sharing sync instead of waiting for sharing on every
-credential. Insights refresh after that sync completes. A sharing failure does not undo
-confirmed saves or change their counts.
+credential. Insights refresh only after that sync succeeds; a sharing failure does not
+undo confirmed saves, change their counts, or request an insight from incomplete server data.
 
 Use **Update** for another résumé or **Add More** for other documents. These actions sit
 below the saved document cards. Failed extraction and storage still have their own retry
@@ -137,6 +143,10 @@ feedback. Reopening a manager shows saved originals without inventing a credenti
 
 Deleting an original immediately removes its row and upload feedback together. If deletion
 fails, both return with an error. Other documents and their feedback remain unchanged.
+
+**Deployment prerequisite:** deploy AI Passport's versioned extraction metadata before this
+app release. An incompatible response leaves saved documents unchanged; retry after the
+compatible backend is available.
 
 ### Publishing a Résumé
 

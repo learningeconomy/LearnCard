@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Mock } from 'vitest';
 import type { PendingReviewData } from 'learn-card-base/stores/checklistStore';
+import type * as FileExtractionHelpers from 'learn-card-base/helpers/fileExtraction';
 const {
     initWalletMock,
     logErrorMock,
@@ -22,9 +23,9 @@ const {
 }));
 const testState = vi.hoisted(() => ({
     aiEnabled: true,
+    aiLoading: false,
     pending: {} as Record<string, PendingReviewData | null>,
 }));
-
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ refetchQueries: refetchQueriesMock }),
 }));
@@ -80,7 +81,7 @@ vi.mock('learn-card-base', () => ({
     newCredsStore: { set: { addNewCreds: vi.fn() } },
     switchedProfileStore: { use: { switchedDid: () => undefined } },
     useGetCheckListStatus: () => ({ refetchCheckListStatus: vi.fn().mockResolvedValue(undefined) }),
-    useAiFeatureGate: () => ({ isAiEnabled: testState.aiEnabled, isLoading: false }),
+    useAiFeatureGate: () => ({ isAiEnabled: testState.aiEnabled, isLoading: testState.aiLoading }),
     useSyncAllCredentialsToContractsMutation: () => ({ mutateAsync: syncAllMock }),
     useToast: () => ({ presentToast: presentToastMock }),
     useUploadFileMutation: () => ({ mutateAsync: uploadMutationMock }),
@@ -94,22 +95,10 @@ vi.mock('learn-card-base/hooks/useAiInsightCredential', () => ({
     useAiInsightCredentialMutation: () => ({ mutate: vi.fn() }),
 }));
 
-vi.mock('learn-card-base/helpers/fileExtraction', async () => {
-    class FileExtractionError extends Error {
-        constructor(readonly code: string) {
-            super(code);
-        }
-    }
-    return {
-        createFileExtractionAttempt: vi.fn(() => ({
-            operationId: 'operation-1',
-            attemptId: 'attempt-1',
-            attempt: 1,
-        })),
-        FileExtractionError,
-        recordFilePersistenceDiagnostic: vi.fn(),
-    };
-});
+vi.mock('learn-card-base/helpers/fileExtraction', async importOriginal => ({
+    ...(await importOriginal<typeof FileExtractionHelpers>()),
+    recordFilePersistenceDiagnostic: vi.fn(),
+}));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: vi.fn(),
 }));
@@ -163,6 +152,7 @@ const createChangeEvent = (files: File[]): React.ChangeEvent<HTMLInputElement> =
     ({ target: { files } }) as unknown as React.ChangeEvent<HTMLInputElement>;
 beforeEach(() => {
     testState.aiEnabled = true;
+    testState.aiLoading = false;
     testState.pending = {};
     syncAllMock.mockReset().mockResolvedValue(undefined);
 });
@@ -489,6 +479,243 @@ describe('useUploadFile persistence outcomes', () => {
         expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
     });
 
+    it.each([false, true])(
+        'does not save the blank source when confirming a mixed batch (remounted: %s)',
+        async remount => {
+            let mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+            await act(async () => {
+                await mounted.result.current.getFiles(
+                    createChangeEvent([
+                        new File(['blank'], 'blank.pdf', { type: 'application/pdf' }),
+                        new File(['certificate'], 'readable.txt', { type: 'text/plain' }),
+                    ]),
+                    UploadTypesEnum.Certificate
+                );
+            });
+            uploadMutationMock
+                .mockRejectedValueOnce(new FileExtractionError('NO_READABLE_TEXT'))
+                .mockResolvedValueOnce({
+                    vcs: [parsedDraft(unsignedDraft('mixed-candidate'))],
+                    processing: { outcome: 'success', credentialCount: 1 },
+                });
+            await act(async () => {
+                await mounted.result.current.fetchParsedCredentialsFromFiles(
+                    UploadTypesEnum.Certificate
+                );
+            });
+            const [blank, readable] = mounted.result.current.rawArtifactCredentials;
+            const drafts = mounted.result.current.parsedCredentials;
+            if (remount) {
+                // Older in-memory reviews included every selected source, including blank files.
+                testState.pending.certificate = {
+                    credentials: drafts,
+                    rawArtifact: blank,
+                    additionalRawArtifacts: [readable],
+                };
+                mounted.unmount();
+                mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+                await act(async () => mounted.result.current.setParsedCredentials(drafts));
+            }
+            await act(async () => {
+                await expect(
+                    mounted.result.current.storeSelectedCredentials(
+                        drafts.map(entry => entry.vc),
+                        blank,
+                        UploadTypesEnum.Certificate,
+                        [readable]
+                    )
+                ).resolves.toMatchObject({
+                    extractedCount: 1,
+                    selectedCount: 1,
+                    storedCount: 1,
+                    artifactUris: [`original:${readable.id}`],
+                });
+            });
+            expect([...records.keys()]).toEqual([readable.id]);
+            expect(documents.has(`original:${blank.id}`)).toBe(false);
+            expect(savedCredentials.get('mixed-candidate')?.attachments[0].fileName).toBe(
+                'readable.txt'
+            );
+        }
+    );
+
+    it('keeps a pending AI gate local and can extract once settings finish loading', async () => {
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        testState.aiLoading = true;
+        const { result, rerender } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        const artifact = rawArtifact(`pending-gate-${crypto.randomUUID()}`);
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume
+            );
+            expect(retry.outcome).toMatchObject({
+                status: 'extraction_failed',
+                failureCode: 'AI_GATE_LOADING',
+                originalSaved: false,
+            });
+        });
+        expect(uploadMutationMock).not.toHaveBeenCalled();
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+        expect(records.get('resume-index')?.uri).toBe('current');
+        testState.aiLoading = false;
+        rerender();
+        uploadMutationMock.mockResolvedValueOnce({
+            vcs: [parsedDraft(unsignedDraft('ready-candidate'))],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume
+            );
+            expect(retry.outcome.status).toBe('review');
+        });
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+    });
+
+    it.each([
+        'RESPONSE_INVALID',
+        'INPUT_INVALID',
+        'FILE_TOO_LARGE',
+        'CONTENT_REJECTED',
+        'CONSENT_DENIED',
+    ])('does not replace the current resume after %s', async code => {
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        uploadMutationMock.mockRejectedValue(new FileExtractionError(code));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        const artifact = rawArtifact(`rejected-${code}`);
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'extraction_failed',
+            failureCode: code,
+            originalSaved: false,
+        });
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+        expect(wallet.invoke.issueCredential).not.toHaveBeenCalled();
+    });
+
+    it('handles exhausted extraction attempts without saving or replacing the resume', async () => {
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        uploadMutationMock.mockResolvedValue({
+            vcs: [],
+            processing: { outcome: 'empty', credentialCount: 0 },
+        });
+        const artifact = rawArtifact(`exhausted-${crypto.randomUUID()}`);
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            for (let attempt = 0; attempt < 100; attempt += 1) {
+                await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+            }
+        });
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume
+            );
+            expect(retry.outcome).toMatchObject({
+                status: 'extraction_failed',
+                failureCode: 'INPUT_INVALID',
+                originalSaved: false,
+            });
+        });
+        expect(uploadMutationMock).toHaveBeenCalledTimes(100);
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+    });
+
+    it('does not persist an upload whose restored extraction attempt is malformed', async () => {
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        const artifact = rawArtifact(`invalid-attempt-${crypto.randomUUID()}`);
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            result.current.setParsedCredentials([
+                {
+                    ...parsedDraft(unsignedDraft('restored-candidate'), artifact.id),
+                    attempt: { operationId: 'invalid', attemptId: 'invalid', attempt: -1 },
+                },
+            ]);
+        });
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume
+            );
+            expect(retry.outcome).toMatchObject({
+                status: 'extraction_failed',
+                failureCode: 'INPUT_INVALID',
+                originalSaved: false,
+            });
+        });
+        expect(uploadMutationMock).not.toHaveBeenCalled();
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+    });
+
+    it('retries the failed selection without duplicating successful selected credentials', async () => {
+        const artifact = rawArtifact('selection-retry');
+        const drafts = [unsignedDraft('selection-saved'), unsignedDraft('selection-failed')];
+        failingCredentials.add('selection-failed');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            result.current.setParsedCredentials(drafts.map(vc => parsedDraft(vc, artifact.id)));
+        });
+        await act(async () => {
+            await expect(
+                result.current.storeSelectedCredentials(
+                    drafts,
+                    artifact,
+                    UploadTypesEnum.Certificate
+                )
+            ).rejects.toMatchObject({ stage: 'credential_save' });
+        });
+        failingCredentials.clear();
+        await act(async () => {
+            await result.current.retryFileSave(artifact, UploadTypesEnum.Certificate);
+        });
+        expect([...savedCredentials.keys()]).toEqual(['selection-saved', 'selection-failed']);
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'stored',
+            selectedCount: 2,
+            storedCount: 2,
+        });
+        expect(
+            storeAndAddVCToWalletMock.mock.calls.filter(([vc]) => vc.id === 'selection-saved')
+        ).toHaveLength(1);
+    });
+
+    it('keeps idless caller drafts immutable and reuses their IDs across manager remounts', async () => {
+        const artifact = rawArtifact('immutable-draft-source');
+        const draft = Object.freeze(unsignedDraft());
+        let mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        for (let mount = 0; mount < 2; mount += 1) {
+            await act(async () => {
+                mounted.result.current.setParsedCredentials([parsedDraft(draft, artifact.id)]);
+            });
+            await act(async () => {
+                await mounted.result.current.storeSelectedCredentials(
+                    [draft],
+                    artifact,
+                    UploadTypesEnum.Certificate
+                );
+            });
+            mounted.unmount();
+            if (mount === 0) mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        }
+        expect(draft).not.toHaveProperty('id');
+        expect(savedCredentials.size).toBe(1);
+        expect(storeAndAddVCToWalletMock).toHaveBeenCalledTimes(1);
+        expect(wallet.store.LearnCloud.uploadEncrypted).toHaveBeenCalledTimes(1);
+    });
+
     it('does not count a false selected-storage result even if it includes a URI', async () => {
         storeAndAddVCToWalletMock.mockResolvedValue({
             result: false,
@@ -698,7 +925,7 @@ describe('useUploadFile persistence outcomes', () => {
             );
             expect(retry.outcome.status).toBe('extraction_failed');
             expect(retry.credentials.map(entry => entry.vc.id)).toEqual(['pending']);
-            expect(retry.outcome.message).not.toContain('PRIVATE_MODEL_ERROR');
+            expect(JSON.stringify(retry.outcome)).not.toContain('PRIVATE_MODEL_ERROR');
         });
         expect(records.has('second')).toBe(true);
     });
@@ -772,18 +999,25 @@ describe('useUploadFile persistence outcomes', () => {
         ]);
     });
 
-    it('preserves an original without model work when AI is disabled', async () => {
+    it('keeps the current resume when AI is disabled without attempting model work', async () => {
         testState.aiEnabled = false;
-        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
         await act(async () => {
             await result.current.retryFileExtraction(
                 rawArtifact('disabled'),
-                UploadTypesEnum.Certificate
+                UploadTypesEnum.Resume
             );
         });
         expect(uploadMutationMock).not.toHaveBeenCalled();
-        expect(records.has('disabled')).toBe(true);
-        expect(result.current.fileUploadOutcomes[0].status).toBe('extraction_failed');
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has('original:disabled')).toBe(false);
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'extraction_failed',
+            failureCode: 'CONSENT_DENIED',
+            originalSaved: false,
+        });
     });
 
     it('keeps a saved-original receipt after review closes without replacing another resume', async () => {

@@ -41,6 +41,17 @@ import type {
 } from 'learn-card-base/types/file-extraction';
 import { addCertificateAttachment } from './certificateAttachment';
 
+// Weak keys preserve IDs through manager remounts without retaining discarded draft data.
+const fileDraftIds = new WeakMap<UnsignedVC, string>();
+const getDraftId = (vc: UnsignedVC): string => {
+    if (vc.id) return vc.id;
+    const existing = fileDraftIds.get(vc);
+    if (existing) return existing;
+    const id = `urn:uuid:${crypto.randomUUID()}`;
+    fileDraftIds.set(vc, id);
+    return id;
+};
+
 export type RawArtifactType = {
     id: string;
     fileName: string;
@@ -577,7 +588,29 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         if (!rawArtifactVc) throw new Error('Uploaded document is unavailable.');
         setIsSavingSelection(true);
         try {
-            const artifacts = [rawArtifactVc, ...additionalRawArtifacts];
+            const restoredCounts: Record<string, number> = {};
+            for (const entry of parsedCredentials) {
+                const artifactId = entry.artifactId ?? rawArtifactVc.id;
+                credentialOrigins.current.set(getDraftId(entry.vc), artifactId);
+                if (entry.attempt) extractionAttempts.current.set(artifactId, entry.attempt);
+                restoredCounts[artifactId] = (restoredCounts[artifactId] ?? 0) + 1;
+            }
+            const previousById = new Map(fileUploadOutcomes.map(item => [item.artifact.id, item]));
+            const artifacts = [rawArtifactVc, ...additionalRawArtifacts].filter(artifact => {
+                const previous = previousById.get(artifact.id);
+                if (
+                    previous?.status === 'empty' ||
+                    (previous?.extractionStatus === 'extraction_failed' &&
+                        previous.originalSaved === false)
+                ) {
+                    return false;
+                }
+                // Restored reviews may still contain sources with no candidates.
+                return !parsedCredentials.length || Object.hasOwn(restoredCounts, artifact.id);
+            });
+            if (!artifacts.length) {
+                return { extractedCount: 0, selectedCount: 0, storedCount: 0, artifactUris: [] };
+            }
             const artifactById = new Map(artifacts.map(artifact => [artifact.id, artifact]));
             if (fileType !== UploadTypesEnum.RawVC) {
                 for (const receipt of checklistStore.get.pendingReview()[fileType]
@@ -591,20 +624,15 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const credentialsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
             const selectedByArtifact: Record<string, number> = {};
             const storedByArtifact: Record<string, number> = {};
-            const restoredCounts: Record<string, number> = {};
-
-            // Review entries keep their source/attempt through manager unmounts and edits.
-            for (const entry of parsedCredentials) {
-                const artifactId = entry.artifactId ?? rawArtifactVc.id;
-                if (entry.vc.id) credentialOrigins.current.set(entry.vc.id, artifactId);
-                if (entry.attempt) extractionAttempts.current.set(artifactId, entry.attempt);
-                restoredCounts[artifactId] = (restoredCounts[artifactId] ?? 0) + 1;
-            }
+            const selectedDrafts: UnsignedVC[] = [];
             for (const artifact of artifacts) pendingSelections.current.set(artifact.id, []);
             for (const vc of selectedVcs) {
-                const key = vc.id ?? (vc.id = `urn:uuid:${crypto.randomUUID()}`);
+                const key = getDraftId(vc);
                 const artifactId = credentialOrigins.current.get(key) ?? rawArtifactVc.id;
-                pendingSelections.current.get(artifactId)?.push(vc);
+                if (!artifactById.has(artifactId)) continue;
+                const draft = vc.id ? vc : { ...vc, id: key };
+                selectedDrafts.push(draft);
+                pendingSelections.current.get(artifactId)?.push(draft);
             }
             for (const artifact of artifacts) {
                 if (!extractedCounts.current.has(artifact.id)) {
@@ -620,8 +648,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             const wallet = await initWallet();
             let storedCount = 0;
-            for (const vc of selectedVcs) {
-                const key = vc.id ?? (vc.id = `urn:uuid:${crypto.randomUUID()}`);
+            for (const vc of selectedDrafts) {
+                const key = getDraftId(vc);
                 const artifactId = credentialOrigins.current.get(key) ?? rawArtifactVc.id;
                 selectedByArtifact[artifactId] = (selectedByArtifact[artifactId] ?? 0) + 1;
                 if (failures.get(artifactId) === 'artifact_save') continue;
@@ -643,9 +671,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                                     'The saved credential category could not be resolved.'
                                 );
                             }
-                            // The key is validated against the registered wallet categories.
                             stored = {
                                 uri: existing.uri,
+                                // The key is validated against the registered wallet categories.
                                 category: existing.category as CredentialCategory,
                             };
                         } else {
@@ -660,9 +688,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                             if (saved.result !== true || !saved.credentialUri) {
                                 throw new Error('A selected credential could not be saved.');
                             }
-                            // The wallet helper derives categories from the registered category map.
                             stored = {
                                 uri: saved.credentialUri,
+                                // The wallet helper derives categories from the registered category map.
                                 category: saved.category as CredentialCategory,
                             };
                             credentialsByCategory[stored.category] = [
@@ -716,6 +744,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         artifact,
                         status,
                         extractionStatus,
+                        failureCode: previous?.failureCode,
+                        originalSaved: savedArtifactUris.current.has(artifact.id),
                         extractedCount,
                         failedStage: failures.get(artifact.id),
                         selectedCount: selectedByArtifact[artifact.id] ?? 0,
@@ -785,13 +815,18 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     );
                 }
             }
-            return { extractedCount, selectedCount: selectedVcs.length, storedCount, artifactUris };
+            return {
+                extractedCount,
+                selectedCount: selectedDrafts.length,
+                storedCount,
+                artifactUris,
+            };
         } finally {
             setIsSavingSelection(false);
         }
     };
 
-    /** Empty results stay local; processing failures preserve originals, and candidates need review. */
+    /** Only processing failures preserve originals; empty results and blocked requests stay local. */
     const processArtifact = (
         artifact: RawArtifactCredential,
         fileType: UploadTypesEnum
@@ -799,64 +834,76 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         const active = inFlightExtractions.current.get(artifact.id);
         if (active) return active;
         const task = (async (): Promise<ArtifactProcessingResult> => {
-            const previous =
-                extractionAttempts.current.get(artifact.id) ??
-                parsedCredentials.find(entry => entry.artifactId === artifact.id)?.attempt;
-            const attempt = createFileExtractionAttempt(previous);
-            extractionAttempts.current.set(artifact.id, attempt);
-            if (extractionAttempts.current.size > 200) {
-                const oldest = extractionAttempts.current.keys().next().value;
-                if (oldest) extractionAttempts.current.delete(oldest);
-            }
-            let extractionStatus: 'empty' | 'extraction_failed' = 'empty';
-            let message: string | undefined;
+            let failureCode: string | undefined;
             try {
-                if (aiGateLoading || !isAiEnabled) throw new FileExtractionError('CONSENT_DENIED');
+                if (aiGateLoading) throw new FileExtractionError('AI_GATE_LOADING');
+                if (!isAiEnabled) throw new FileExtractionError('CONSENT_DENIED');
+                const previous =
+                    extractionAttempts.current.get(artifact.id) ??
+                    parsedCredentials.find(entry => entry.artifactId === artifact.id)?.attempt;
+                let attempt: FileExtractionAttempt;
+                try {
+                    attempt = createFileExtractionAttempt(previous);
+                } catch {
+                    throw new FileExtractionError('INPUT_INVALID');
+                }
+                extractionAttempts.current.set(artifact.id, attempt);
+                if (extractionAttempts.current.size > 200) {
+                    const oldest = extractionAttempts.current.keys().next().value;
+                    if (oldest) extractionAttempts.current.delete(oldest);
+                }
                 const wallet = await initWallet();
-                const did = wallet.id.did();
                 const result = await uploadFile({
-                    did,
+                    did: wallet.id.did(),
                     file: artifact.rawArtifact.data,
                     fileType,
                     attempt,
                 });
                 const credentials: ParsedFileCredential[] = result.vcs.map(entry => {
-                    entry.vc.id ||= `urn:uuid:${crypto.randomUUID()}`;
-                    credentialOrigins.current.set(entry.vc.id, artifact.id);
-                    return { ...entry, artifactId: artifact.id, attempt };
+                    const id = getDraftId(entry.vc);
+                    const vc = entry.vc.id ? entry.vc : { ...entry.vc, id };
+                    credentialOrigins.current.set(id, artifact.id);
+                    return { ...entry, vc, artifactId: artifact.id, attempt };
                 });
                 extractedCounts.current.set(artifact.id, credentials.length);
-                if (credentials.length) {
-                    return {
-                        credentials,
-                        outcome: {
-                            artifact,
-                            status: 'review',
-                            extractionStatus: 'review',
-                            extractedCount: credentials.length,
-                        },
-                    };
-                }
+                return {
+                    credentials,
+                    outcome: {
+                        artifact,
+                        status: credentials.length ? 'review' : 'empty',
+                        extractionStatus: credentials.length ? 'review' : 'empty',
+                        extractedCount: credentials.length,
+                        failureCode: credentials.length
+                            ? undefined
+                            : (result.processing.code ?? 'ZERO_STRUCTURED_ITEMS'),
+                        originalSaved: savedArtifactUris.current.has(artifact.id),
+                    },
+                };
             } catch (error) {
-                extractionStatus =
-                    error instanceof FileExtractionError && error.code === 'NO_READABLE_TEXT'
-                        ? 'empty'
-                        : 'extraction_failed';
-                extractedCounts.current.set(artifact.id, 0);
-                message =
-                    error instanceof FileExtractionError
-                        ? error.message
-                        : m['passport.buildMyLearnCard.managers.toastGenericError']();
+                failureCode = error instanceof FileExtractionError ? error.code : undefined;
             }
-            if (extractionStatus === 'empty') {
+            extractedCounts.current.set(artifact.id, 0);
+            const originalSaved = savedArtifactUris.current.has(artifact.id);
+            if (
+                failureCode === 'NO_READABLE_TEXT' ||
+                failureCode === 'AI_GATE_LOADING' ||
+                failureCode === 'CONSENT_DENIED' ||
+                failureCode === 'RESPONSE_INVALID' ||
+                failureCode === 'INPUT_INVALID' ||
+                failureCode === 'FILE_TOO_LARGE' ||
+                failureCode === 'CONTENT_REJECTED'
+            ) {
+                const extractionStatus =
+                    failureCode === 'NO_READABLE_TEXT' ? 'empty' : 'extraction_failed';
                 return {
                     credentials: [],
                     outcome: {
                         artifact,
-                        status: 'empty',
+                        status: extractionStatus,
                         extractionStatus,
                         extractedCount: 0,
-                        message,
+                        failureCode,
+                        originalSaved,
                     },
                 };
             }
@@ -865,7 +912,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 {
                     artifact,
                     status: 'saving_original',
-                    extractionStatus,
+                    extractionStatus: 'extraction_failed',
+                    failureCode,
+                    originalSaved,
                     extractedCount: 0,
                 },
             ]);
@@ -875,10 +924,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     credentials: [],
                     outcome: {
                         artifact,
-                        status: extractionStatus,
-                        extractionStatus,
+                        status: 'extraction_failed',
+                        extractionStatus: 'extraction_failed',
                         extractedCount: 0,
-                        message,
+                        failureCode,
+                        originalSaved: true,
                     },
                 };
             } catch {
@@ -887,9 +937,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     outcome: {
                         artifact,
                         status: 'save_failed',
-                        extractionStatus,
+                        extractionStatus: 'extraction_failed',
                         failedStage: 'artifact_save',
                         extractedCount: 0,
+                        failureCode,
+                        originalSaved: savedArtifactUris.current.has(artifact.id),
                         message: m['passport.buildMyLearnCard.managers.saveOutcomeError'](),
                     },
                 };
@@ -1015,6 +1067,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                           ...item,
                           status: item.extractionStatus ?? 'empty',
                           failedStage: undefined,
+                          originalSaved: true,
                           message: undefined,
                       }
                     : item

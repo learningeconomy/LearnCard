@@ -109,6 +109,8 @@ export const FileExtractionDiagnosticValidator = FileExtractionAttemptValidator.
     statusCode: z.number().int().min(100).max(599).optional(),
     pipelineVersion: z.literal('file-extraction-v1').optional(),
     // Only audited application model identifiers, never arbitrary server error text.
+    // Keep aligned with AI-Passport's constants/env.ts FORMATTING_MODEL and
+    // ai/bedrock-generation.ts audit IDs; unaudited identifiers deliberately become "unknown".
     model: z
         .enum([
             'us.openai.gpt-6-luna',

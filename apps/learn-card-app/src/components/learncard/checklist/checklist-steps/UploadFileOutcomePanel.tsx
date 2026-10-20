@@ -48,7 +48,7 @@ export const UploadFileOutcomePanel: React.FC<UploadFileOutcomePanelProps> = ({
                   count: extractedCount ?? 0,
               })
             : status === 'extraction_failed'
-              ? m['passport.buildMyLearnCard.managers.extractionFailedOriginalSaved']()
+              ? m['passport.buildMyLearnCard.managers.errorProcessingFailed']()
               : m['passport.buildMyLearnCard.managers.saveOutcomeError']();
 
     return (

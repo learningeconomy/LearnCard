@@ -11,6 +11,35 @@ import { UploadTypesEnum } from 'learn-card-base';
 import * as m from '../../../../paraglide/messages.js';
 import { UploadFileOutcomePanel } from './UploadFileOutcomePanel';
 
+const EXTRACTION_MESSAGES: Record<string, () => string> = {
+    ZERO_STRUCTURED_ITEMS: m['passport.buildMyLearnCard.managers.documentNoCredentials'],
+    NO_READABLE_TEXT: m['passport.buildMyLearnCard.managers.errorNoReadableText'],
+    INPUT_INVALID: m['passport.buildMyLearnCard.managers.errorInputInvalid'],
+    FILE_TOO_LARGE: m['passport.buildMyLearnCard.managers.errorFileTooLarge'],
+    READ_FAILED: m['passport.buildMyLearnCard.managers.errorReadFailed'],
+    CONTENT_REJECTED: m['passport.buildMyLearnCard.managers.errorContentRejected'],
+    CLASSIFICATION_FAILED: m['passport.buildMyLearnCard.managers.errorProcessingFailed'],
+    MODEL_FAILED: m['passport.buildMyLearnCard.managers.errorProcessingFailed'],
+    CONSTRUCTION_FAILED: m['passport.buildMyLearnCard.managers.errorProcessingFailed'],
+    OWNER_OPERATION_UNAVAILABLE: m['passport.buildMyLearnCard.managers.errorProcessingFailed'],
+    NETWORK_FAILED: m['passport.buildMyLearnCard.managers.errorNetworkFailed'],
+    RESPONSE_INVALID: m['passport.buildMyLearnCard.managers.errorResponseInvalid'],
+    CONSENT_DENIED: m['passport.buildMyLearnCard.managers.errorConsentDenied'],
+    AI_GATE_LOADING: m['passport.buildMyLearnCard.managers.errorAiGateLoading'],
+};
+
+const extractionMessage = (code?: string): string =>
+    code && Object.hasOwn(EXTRACTION_MESSAGES, code)
+        ? EXTRACTION_MESSAGES[code]()
+        : m['passport.buildMyLearnCard.managers.errorProcessingFailed']();
+
+const NON_RETRYABLE_CODES = new Set([
+    'FILE_TOO_LARGE',
+    'INPUT_INVALID',
+    'CONTENT_REJECTED',
+    'CONSENT_DENIED',
+]);
+
 type Props = {
     outcomes: FileUploadOutcome[];
     fileType: UploadTypesEnum;
@@ -86,7 +115,35 @@ export const UploadFileOutcomeList: React.FC<Props> = ({
                         ? 'save'
                         : item.status === 'review' || item.status === 'saving_original'
                           ? undefined
-                          : 'extraction';
+                          : item.status === 'extraction_failed' &&
+                              NON_RETRYABLE_CODES.has(item.failureCode ?? '')
+                            ? undefined
+                            : 'extraction';
+                let message = item.message;
+                if (failedId === item.artifact.id) {
+                    message =
+                        retryKind === 'save'
+                            ? item.failedStage === 'credential_save'
+                                ? m[
+                                      'passport.buildMyLearnCard.managers.credentialSaveOutcomeError'
+                                  ]()
+                                : m['passport.buildMyLearnCard.managers.saveOutcomeError']()
+                            : m['passport.buildMyLearnCard.managers.extractionRetryError']();
+                } else if (item.status === 'empty') {
+                    message = item.failureCode
+                        ? extractionMessage(item.failureCode)
+                        : m['passport.buildMyLearnCard.managers.documentNoCredentials']();
+                } else if (item.status === 'extraction_failed') {
+                    const reason = extractionMessage(item.failureCode);
+                    message = item.originalSaved
+                        ? `${reason} ${m['passport.buildMyLearnCard.managers.originalDocumentSaved']()}`
+                        : reason;
+                } else if (item.status === 'save_failed') {
+                    message =
+                        item.failedStage === 'credential_save'
+                            ? m['passport.buildMyLearnCard.managers.credentialSaveOutcomeError']()
+                            : m['passport.buildMyLearnCard.managers.saveOutcomeError']();
+                }
                 return (
                     <UploadFileOutcomePanel
                         key={item.artifact.id}
@@ -96,19 +153,7 @@ export const UploadFileOutcomeList: React.FC<Props> = ({
                             item.status === 'empty' ? item.artifact.rawArtifact.data : undefined
                         }
                         extractedCount={item.extractedCount}
-                        message={
-                            failedId === item.artifact.id
-                                ? item.failedStage === 'credential_save'
-                                    ? m[
-                                          'passport.buildMyLearnCard.managers.credentialSaveOutcomeError'
-                                      ]()
-                                    : m['passport.buildMyLearnCard.managers.saveOutcomeError']()
-                                : item.status === 'extraction_failed'
-                                  ? m[
-                                        'passport.buildMyLearnCard.managers.extractionFailedOriginalSaved'
-                                    ]()
-                                  : item.message
-                        }
+                        message={message}
                         retryKind={retryKind}
                         onRetry={retryKind ? button => void retry(item, button) : undefined}
                         isRetrying={retryingId === item.artifact.id}
