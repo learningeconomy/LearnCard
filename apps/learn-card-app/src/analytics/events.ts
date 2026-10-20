@@ -1093,6 +1093,7 @@ export interface AnalyticsEventPayloads {
         credential_type?: string;
         category?: string;
         duration_ms?: number;
+        recipient_count?: number;
     };
 
     [AnalyticsEvents.OPENID_OFFER_PRESENTED]: {

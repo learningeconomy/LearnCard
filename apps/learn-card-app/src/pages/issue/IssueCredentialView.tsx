@@ -12,6 +12,7 @@ import { RecipientPicker } from './components/RecipientPicker';
 import { RecipientEvidenceSection } from './components/RecipientEvidenceSection';
 import { IssueSuccess } from './components/IssueSuccess';
 import { HeroCanvas } from './components/HeroCanvas';
+import type { SpreadsheetView } from './spreadsheet/viewTypes';
 import type { CredentialTypeEntry } from './components/credentialTypeCatalog';
 import type { CredentialIdentity } from './components/useCredentialIdentity';
 import type { RecipientMode, Recipient, LinkOptions } from './components/recipientTypes';
@@ -23,6 +24,7 @@ import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import type { OBv3CredentialTemplate } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
 export interface IssueCredentialViewProps {
+    spreadsheet?: SpreadsheetView;
     issuedUri: string | null;
     previewCredential: Record<string, unknown> | null;
     selectedType: CredentialTypeEntry | null;
@@ -73,6 +75,7 @@ export interface IssueCredentialViewProps {
 }
 
 export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
+    spreadsheet,
     issuedUri,
     previewCredential,
     selectedType,
@@ -174,6 +177,8 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                         <button
                                             type="button"
                                             onClick={onToggleJson}
+                                            aria-label={m['issueFlow.header.json']()}
+                                            aria-pressed={showJson}
                                             className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
                                                 showJson
                                                     ? 'bg-grayscale-900 text-white shadow-md'
@@ -224,6 +229,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
 
                         <div className="max-w-[1100px] mx-auto px-6 py-8 flex flex-col-reverse desktop:flex-row desktop:items-start gap-8">
                             <div className="flex-1 desktop:min-w-0">
+                                {spreadsheet?.results}
                                 {provenance && !showJson && (
                                     <div className="mb-4 inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 animate-fade-in-up">
                                         {provenance.source === 'reuse' ? (
@@ -278,32 +284,44 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                                 onRecipientsChange={onRecipientsChange}
                                                 linkOptions={linkOptions}
                                                 onLinkOptionsChange={onLinkOptionsChange}
+                                                spreadsheet={spreadsheet}
                                             />
                                         </section>
-                                        <JsonStudio
-                                            credential={issuableJson}
-                                            identity={identity}
-                                            onChange={onJsonChange}
-                                            onParseError={onParseError}
-                                        />
-                                        <DynamicFieldsSection
-                                            variables={dynamicVars}
-                                            recipientMode={recipientMode}
-                                            recipients={recipients}
-                                            scope={variableScope}
-                                            onScopeChange={onScopeChange}
-                                            sharedValues={variableValues}
-                                            onSharedChange={onSharedVariableChange}
-                                            recipientValues={recipientValues}
-                                            onRecipientChange={onRecipientVariableChange}
-                                        />
-                                        {recipientMode === 'people' && (
-                                            <RecipientEvidenceSection
+                                        <fieldset
+                                            disabled={spreadsheet?.templateLocked || isSubmitting}
+                                        >
+                                            <JsonStudio
+                                                credential={issuableJson}
+                                                identity={identity}
+                                                onChange={onJsonChange}
+                                                onParseError={onParseError}
+                                            />
+                                        </fieldset>
+                                        {recipientMode === 'people' && spreadsheet ? (
+                                            spreadsheet.details
+                                        ) : (
+                                            <DynamicFieldsSection
+                                                variables={dynamicVars}
+                                                recipientMode={recipientMode}
                                                 recipients={recipients}
-                                                recipientEvidence={recipientEvidence}
-                                                onChange={onRecipientEvidenceChange}
+                                                scope={variableScope}
+                                                onScopeChange={onScopeChange}
+                                                sharedValues={variableValues}
+                                                onSharedChange={onSharedVariableChange}
+                                                recipientValues={recipientValues}
+                                                onRecipientChange={onRecipientVariableChange}
                                             />
                                         )}
+                                        {recipientMode === 'people' &&
+                                            !spreadsheet &&
+                                            recipients.length < 4 &&
+                                            !isSubmitting && (
+                                                <RecipientEvidenceSection
+                                                    recipients={recipients}
+                                                    recipientEvidence={recipientEvidence}
+                                                    onChange={onRecipientEvidenceChange}
+                                                />
+                                            )}
                                     </div>
                                 ) : (
                                     <div className="space-y-v3-5">
@@ -323,30 +341,39 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                             resolvedSkills={resolvedSkills}
                                             onSelectedSkillsChange={onSelectedSkillsChange}
                                             onResolvedSkillsChange={onResolvedSkillsChange}
+                                            spreadsheet={spreadsheet}
                                         />
-                                        <DynamicFieldsSection
-                                            variables={dynamicVars}
-                                            recipientMode={recipientMode}
-                                            recipients={recipients}
-                                            scope={variableScope}
-                                            onScopeChange={onScopeChange}
-                                            sharedValues={variableValues}
-                                            onSharedChange={onSharedVariableChange}
-                                            recipientValues={recipientValues}
-                                            onRecipientChange={onRecipientVariableChange}
-                                        />
-                                        {recipientMode === 'people' && (
-                                            <RecipientEvidenceSection
+                                        {recipientMode === 'people' && spreadsheet ? (
+                                            spreadsheet.details
+                                        ) : (
+                                            <DynamicFieldsSection
+                                                variables={dynamicVars}
+                                                recipientMode={recipientMode}
                                                 recipients={recipients}
-                                                recipientEvidence={recipientEvidence}
-                                                onChange={onRecipientEvidenceChange}
+                                                scope={variableScope}
+                                                onScopeChange={onScopeChange}
+                                                sharedValues={variableValues}
+                                                onSharedChange={onSharedVariableChange}
+                                                recipientValues={recipientValues}
+                                                onRecipientChange={onRecipientVariableChange}
                                             />
                                         )}
+                                        {recipientMode === 'people' &&
+                                            !spreadsheet &&
+                                            recipients.length < 4 &&
+                                            !isSubmitting && (
+                                                <RecipientEvidenceSection
+                                                    recipients={recipients}
+                                                    recipientEvidence={recipientEvidence}
+                                                    onChange={onRecipientEvidenceChange}
+                                                />
+                                            )}
                                     </div>
                                 )}
                             </div>
 
                             <div className="desktop:w-[340px] [@media(min-width:992px)_and_(max-width:1155px)]:w-[240px] shrink-0 desktop:sticky desktop:top-[84px]">
+                                {recipientMode === 'people' && spreadsheet?.previewControls}
                                 <HeroCanvas
                                     credential={previewCredential}
                                     credentialType={credentialType}
