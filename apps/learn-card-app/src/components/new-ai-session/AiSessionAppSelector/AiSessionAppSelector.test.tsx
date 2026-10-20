@@ -19,13 +19,25 @@ afterEach(() => {
 it.each([
     [LEARNCARD_AI_PASSPORT_CONTRACT_URI, true],
     ['lc:contract:other', false],
-])('scopes redirect suppression to in-app LearnCard AI (%s)', (contractUri, disabled) => {
-    render(
-        <AiSessionAppSelector
-            handleSetAiApp={vi.fn()}
-            apps={[{ name: 'App', contractUri } as LaunchPadAppListItem]}
-        />
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Get' }));
-    expect(open).toHaveBeenCalledWith(true, expect.any(Function), undefined, undefined, disabled);
-});
+])(
+    'scopes redirect suppression to LearnCard AI and keeps the chatbot open (%s)',
+    (contractUri, disabled) => {
+        render(
+            <AiSessionAppSelector
+                handleSetAiApp={vi.fn()}
+                apps={[{ name: 'App', contractUri } as LaunchPadAppListItem]}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Get' }));
+        expect(open).toHaveBeenCalledWith(
+            true,
+            expect.any(Function),
+            undefined,
+            undefined,
+            disabled,
+            undefined,
+            undefined,
+            true
+        );
+    }
+);

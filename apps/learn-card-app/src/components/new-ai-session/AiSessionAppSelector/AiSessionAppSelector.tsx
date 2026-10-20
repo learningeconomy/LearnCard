@@ -35,7 +35,10 @@ const AiSessionAppSelectorItem = ({
                 },
                 undefined,
                 undefined,
-                isLearnCardAiPassportContractUri(app.contractUri)
+                isLearnCardAiPassportContractUri(app.contractUri),
+                undefined,
+                undefined,
+                true
             );
         } else {
             handleSetAiApp(app);

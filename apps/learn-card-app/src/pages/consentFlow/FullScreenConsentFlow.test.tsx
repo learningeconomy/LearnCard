@@ -317,6 +317,7 @@ describe('guardian approval at the consent submission boundary', () => {
         const success = vi.fn();
         showFlow({
             disableRedirect: true,
+            keepParentModalsOpen: true,
             successCallback: success,
             contractDetails: {
                 ...contract,
@@ -342,6 +343,41 @@ describe('guardian approval at the consent submission boundary', () => {
             await waitFor(() => expect(state.closeAllModals).toHaveBeenCalledOnce());
         }
     );
+    it('keeps the parent chatbot open when already consented', async () => {
+        state.child = false;
+        const success = vi.fn();
+        state.consent.mockRejectedValueOnce(
+            new Error("You've already consented to this contract!")
+        );
+        showFlow({ keepParentModalsOpen: true, successCallback: success });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(success).toHaveBeenCalledOnce());
+        expect(state.closeAllModals).not.toHaveBeenCalled();
+    });
+    it('closes the modal stack for redirect-disabled consent with a success callback', async () => {
+        state.child = false;
+        const success = vi.fn();
+        showFlow({ successCallback: success });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.closeAllModals).toHaveBeenCalledOnce());
+        expect(success).toHaveBeenCalledOnce();
+        expect(state.push).not.toHaveBeenCalled();
+    });
+    it('closes an accepted referral review whose callback only refreshes', async () => {
+        state.child = false;
+        const refresh = vi.fn();
+        render(
+            <ReferralConsentReview
+                contractDetails={contract}
+                disableRedirect
+                successCallback={refresh}
+            />,
+            { wrapper }
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.closeAllModals).toHaveBeenCalledOnce());
+        expect(refresh).toHaveBeenCalledOnce();
+    });
     it('navigates locally after successful AI Passport consent', async () => {
         state.child = false;
         state.search = '?returnTo=%2Fai%2Fsessions';

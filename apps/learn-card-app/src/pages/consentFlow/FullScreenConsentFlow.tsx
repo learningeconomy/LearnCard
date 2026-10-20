@@ -56,6 +56,8 @@ type FullScreenConsentFlowProps = {
         hideCloseButton?: boolean;
     };
     disableRedirect?: boolean;
+    /** Close only this consent screen on success, e.g. inside the new-session chatbot. */
+    keepParentModalsOpen?: boolean;
     beforeSubmit?: () => Promise<void>;
     /** Revalidate an accepted invitation when finishing its saved publication. */
     beforePublicationRetry?: () => Promise<void>;
@@ -76,6 +78,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     aiInsightsRequestOptions,
     childInsightsProfile,
     disableRedirect = false,
+    keepParentModalsOpen = false,
     beforeSubmit,
     beforePublicationRetry,
     expectedRequestId,
@@ -115,6 +118,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
     const shouldDisableRedirect =
         disableRedirect || Boolean(insightsProfile) || Boolean(childInsightsProfile);
+    const shouldCloseAllModals =
+        !successCallback || (shouldDisableRedirect && !keepParentModalsOpen);
 
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
     const profileType = switchedProfileStore.use.profileType();
@@ -214,7 +219,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 if (isInlineInsightsRequest) {
                     setIsPostConsentLocal(true);
                     setStep(ConsentFlowStep.confirmation);
-                } else if (!successCallback || insightsProfile || childInsightsProfile) {
+                } else if (shouldCloseAllModals) {
                     closeAllModals();
                 }
                 if (!shouldDisableRedirect) {
@@ -255,7 +260,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 if (isInlineInsightsRequest) {
                     setIsPostConsentLocal(true);
                     setStep(ConsentFlowStep.confirmation);
-                } else if (!successCallback || insightsProfile || childInsightsProfile) {
+                } else if (shouldCloseAllModals) {
                     closeAllModals();
                 }
 
