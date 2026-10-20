@@ -16,10 +16,13 @@ import type { MessagePresentationProps, InAppMessagePresentationEvent } from '..
 import { I18nProvider } from '../../i18n';
 
 const state = vi.hoisted(() => ({
+    native: false,
     gate: false,
     messages: [] as InAppMessage[],
     accountDid: 'alice' as string | null,
 }));
+
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => state.native } }));
 
 vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ inAppMessages: { messages: state.messages } }),
@@ -83,6 +86,7 @@ describe('message host impressions', () => {
         resetInAppMessageDismissals();
         resetInAppMessageEventSession();
         state.gate = false;
+        state.native = false;
         state.accountDid = 'alice';
         state.messages = [inAppMessageValidator.parse({ id: 'test', title: 'Claim complete' })];
     });
@@ -331,4 +335,31 @@ describe('message host impressions', () => {
         expect(getInAppMessageFatigueState('alice').blockingShownThisSession).toBe(0);
         expect(shouldSuppressMessage('test', 'once', Date.now(), 'alice')).toBe(false);
     });
+
+    it.each(['flag', 'override'] as const)(
+        'blocks native iframe %s messages before opening a modal or recording impressions',
+        async source => {
+            state.native = true;
+            state.gate = true;
+            const message = inAppMessageValidator.parse({
+                id: 'native-iframe',
+                title: 'Native bridge probe',
+                presentation: 'iframe',
+                dismissible: false,
+                iframe: { url: 'https://campaign.example/native-bridge-probe.html' },
+            });
+            state.messages = source === 'flag' ? [message] : [];
+            if (source === 'override') setInAppMessageOverride(message);
+            const onEvent = vi.fn();
+            let view: ReturnType<typeof render>;
+            await act(async () => {
+                // No ModalsProvider: attempting to mount a rich surface would throw.
+                view = render(<InAppMessageHost onEvent={onEvent} />);
+            });
+            expect(view!.container.childElementCount).toBe(0);
+            expect(onEvent).not.toHaveBeenCalled();
+            expect(shouldSuppressMessage(message.id, 'once', Date.now(), 'alice')).toBe(false);
+            expect(getInAppMessageFatigueState('alice').blockingShownThisSession).toBe(0);
+        }
+    );
 });

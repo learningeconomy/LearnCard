@@ -4,6 +4,7 @@ import { closeOutline } from 'ionicons/icons';
 import { useT } from '../i18n';
 import { useInAppMessageActions } from './useInAppMessageActions';
 import { parseIframeMessage } from './iframeBridge';
+import { canEmbedInAppMessageIframe } from './presentationSupport';
 import type { MessagePresentationProps } from './presentationTypes';
 
 const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> = ({
@@ -158,6 +159,8 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
 
 export const InAppMessageIframe: React.FC<MessagePresentationProps> = props => {
     const [attempt, setAttempt] = useState(0);
+    if (!canEmbedInAppMessageIframe()) return null;
+
     return (
         <IframeAttempt
             key={`${props.message.iframe?.url}:${attempt}`}

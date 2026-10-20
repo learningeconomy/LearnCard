@@ -7,10 +7,12 @@ import { resetInAppMessageDismissals } from '../dismissalStore';
 import { summarizeCredential } from '../credentialFacts';
 
 const state = vi.hoisted(() => ({
+    native: false,
     flags: {} as Record<string, unknown>,
     facts: {} as CredentialFactsState,
     factsRequired: false,
 }));
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => state.native } }));
 vi.mock('launchdarkly-react-client-sdk', () => ({ useFlags: () => state.flags }));
 vi.mock('../useRuntimeContext', () => ({
     useInAppMessageRuntimeContext: () => ({
@@ -49,6 +51,7 @@ describe('message evaluation lifecycle', () => {
             clearFacts: vi.fn(),
         };
         state.factsRequired = false;
+        state.native = false;
     });
     afterEach(() => {
         cleanup();
@@ -144,5 +147,31 @@ describe('message evaluation lifecycle', () => {
         expect(state.factsRequired).toBe(true);
         expect(result.current.context?.credentials).toEqual([]);
         expect(result.current.context?.credentialsComplete).toBe(true);
+    });
+
+    it.each([false, true])('selects iframe campaigns only on web (native: %s)', native => {
+        state.native = native;
+        state.flags = {
+            inAppMessages: {
+                messages: [
+                    {
+                        id: 'embedded',
+                        title: 'Remote campaign',
+                        priority: 100,
+                        presentation: 'iframe',
+                        dismissible: false,
+                        iframe: { url: 'https://campaign.example/guide' },
+                    },
+                    { id: 'fallback', title: 'Safe sibling' },
+                ],
+            },
+        };
+        const { result } = renderHook(() => useInAppMessages());
+        expect(result.current.message?.id).toBe(native ? 'fallback' : 'embedded');
+        expect(result.current.report.diagnostics[0]).toMatchObject({
+            matched: true,
+            presentationSupported: !native,
+            willShow: !native,
+        });
     });
 });

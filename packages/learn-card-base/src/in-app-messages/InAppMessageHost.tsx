@@ -19,6 +19,7 @@ import { isFatigueControlled, recordBlockingShown } from './fatigueStore';
 import { useI18nLocale } from '../i18n';
 import { localizeMessage } from './localizeMessage';
 import { InAppMessageRichPresentation } from './InAppMessageSurface';
+import { isInAppMessagePresentationSupported } from './presentationSupport';
 import type {
     InAppMessagePresentationEvent,
     MessageInteraction,
@@ -103,7 +104,9 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({ onEvent, ...
     const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
     const realActive = candidate && messageKey && !closedIds.has(messageKey) ? candidate : null;
     const openingReady = !accountDid || (opening.accountDid === accountDid && opening.ready);
-    const active = override ?? (canPresent && openingReady ? realActive : null);
+    const requested = override ?? (canPresent && openingReady ? realActive : null);
+    // Preview overrides bypass targeting and frequency, never platform security policy.
+    const active = requested && isInAppMessagePresentationSupported(requested) ? requested : null;
     const isOverride = Boolean(override);
     const localized = active ? localizeMessage(active, locale) : null;
     const emit = useCallback(

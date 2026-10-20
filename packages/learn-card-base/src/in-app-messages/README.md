@@ -442,7 +442,8 @@ interface InAppMessagesReport {
         suppressed: boolean; // frequency/dismissal suppressed it
         triggerSatisfied: boolean;
         fatigueSuppressed: boolean;
-        willShow: boolean; // matched && !suppressed && !fatigueSuppressed (gate is separate)
+        presentationSupported: boolean;
+        willShow: boolean; // presentationSupported && matched && !suppressed && !fatigueSuppressed
         trace: PredicateTrace | null; // recursive pass/fail tree with human labels
     }>;
 }
@@ -542,6 +543,14 @@ happens after winner selection and does not change targeting or consume another 
 }
 ```
 
+**Iframe campaigns are web-only.** Capacitor iOS/Android builds exclude them before selection,
+including required campaigns, without consuming impressions or blocking supported siblings. Debug
+overrides and direct iframe rendering cannot bypass this restriction. The local diagnostic report
+sets `presentationSupported:false`. The HTML sandbox and our JavaScript action allowlist do not
+isolate WebKit's native message handlers: remote subframes can call those handlers directly.
+Native embedding must stay disabled until native main-frame/trusted-origin enforcement or an
+unprivileged WebView is implemented and verified. This gate does not modify the native bridge itself.
+
 Iframe URLs (including translated URLs) must be HTTPS, without embedded credentials. Same-origin
 embeds are refused at runtime: a scripted same-origin page could access the parent app directly. The sandbox is
 fixed to `allow-scripts allow-same-origin allow-forms allow-popups`. The app owns the close control,
@@ -586,8 +595,21 @@ action can complete the message; no-op/failed actions cannot. During an error, a
 retry but no close escape. Use required campaigns sparingly and test their recovery path first.
 
 The runnable [bridge example](examples/iframe.html) accepts a `parentOrigin` query parameter. Host it
-on a separate HTTPS origin you control; no hosting service is created by this PR. For iOS, use the
-exact `capacitor://localhost` origin; Android and web use their HTTP(S) app origins.
+on a separate HTTPS origin you control and pass the web app's exact origin; no hosting service is
+created by this PR. Native campaign embedding is disabled regardless of the configured origin.
+
+#### Native isolation regression
+
+Unit tests assert that native selection skips the iframe, previews open no modal/consume no
+impression, and direct rendering never even creates an iframe element. These are mock-platform
+tests, not a native reproduction. On an isolated iOS test build, serve the
+[read-only probe](examples/native-bridge-probe.html) from a separate HTTPS origin and use it as a
+campaign URL (both dismissible/required and flag/debug-preview paths). It attempts only `App.getState`
+via the raw WebKit handler, without the JavaScript bridge allowlist. Confirm no request for the probe,
+no campaign frame, no impression, and no native dispatch with callback ID
+`lc-campaign-isolation-probe` in Xcode; confirm a lower-priority supported campaign still displays.
+Do not disable the gate in a production build. This device check must be run separately; jsdom and
+the Linux browser catalog cannot establish native isolation.
 
 ### Engagement and QA
 
@@ -608,13 +630,13 @@ LearnCard forwards these to `in_app_message_shown`, `in_app_message_action`, and
    final Done, mobile fullscreen, and desktop card layout.
 2. In Builder, add/reorder/remove screens; preview media and final actions. Enter valid and invalid
    locale JSON and confirm invalid drafts cannot preview. Check Spanish fallback and Arabic chrome.
-3. Host the bridge example separately over HTTPS. Set its URL in **Embedded HTTPS page** and test
+3. On web, host the bridge example separately over HTTPS. Set its URL in **Embedded HTTPS page** and test
    ready, close, and navigation. Repeat with `dismissible:false` and confirm close/dismiss are ignored.
 4. Test offline, timeout, retry, invalid messages, another source/origin, and stale frames. For blocked
    pages that still fire `load`, use `dismissible:false` and withhold `ready` to exercise the timeout.
    A dismissible third-party page can appear blank after a blocked load; verify the host close control.
-   Check
-   Safari and iOS/Android webviews separately; browser load alone is not proof of embedding success.
+   Check Safari separately; browser load alone is not proof of embedding success. On native,
+   verify campaigns and previews are blocked using the isolation regression above.
 5. Test Tab/Shift-Tab focus trapping, Escape, focus restoration, reduced motion, and `?insets=47,34`.
 6. Use staging flag messages to verify one impression, fatigue, account isolation, and analytics.
    Preview overrides intentionally exercise none of those persisted effects.

@@ -62,6 +62,9 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
   explicit dismissal; navigation completion, retries, and gate cleanup are not new impressions.
 - Iframe bridge input is untrusted: validate window, origin, envelope, and safe target before running
   actions. No Capgo or identity APIs. Required frames ignore close/dismiss requests.
+- Iframe campaigns are web-only: enforce `presentationSupport` in selection, host (including overrides),
+  and renderer. Native subframes can bypass the JS allowlist through Capacitor handlers; the HTML
+  sandbox is not native isolation. Do not enable native embedding without a verified native boundary.
 - Presentation analytics use `InAppMessagePresentationEvent` (distinct from credential events).
   Keep payloads allowlisted and exclude overrides from app analytics.
 - Story actions are final-screen-only; reject earlier overrides and keep the builder editor restricted.

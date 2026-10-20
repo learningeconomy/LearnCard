@@ -12,7 +12,13 @@ import { InAppMessageModal } from '../InAppMessageModal';
 import { MessageActions } from '../MessageActions';
 import { localizeMessage } from '../localizeMessage';
 
-const mocks = vi.hoisted(() => ({ runAction: vi.fn(), startUpdate: vi.fn(), status: 'idle' }));
+const mocks = vi.hoisted(() => ({
+    runAction: vi.fn(),
+    startUpdate: vi.fn(),
+    status: 'idle',
+    native: false,
+}));
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => mocks.native } }));
 vi.mock('../useInAppMessageActions', () => ({
     useInAppMessageActions: () => ({ runAction: mocks.runAction }),
 }));
@@ -31,6 +37,7 @@ beforeEach(() => {
         .mockReset()
         .mockImplementation(async (onComplete?: () => void) => onComplete?.());
     mocks.status = 'idle';
+    mocks.native = false;
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
 });
 afterEach(() => {
@@ -334,6 +341,30 @@ describe('action completion', () => {
 });
 
 describe('iframe lifecycle', () => {
+    it.each([false, true])(
+        'never creates a remote native frame, even when rendered directly (dismissible: %s)',
+        dismissible => {
+            mocks.native = true;
+            const createElement = vi.spyOn(document, 'createElement');
+            const onClose = vi.fn();
+            const { container } = render(
+                <InAppMessageIframe
+                    message={inAppMessageValidator.parse({
+                        id: 'native-probe',
+                        title: 'Native bridge probe',
+                        presentation: 'iframe',
+                        dismissible,
+                        iframe: { url: 'https://campaign.example/native-bridge-probe.html' },
+                    })}
+                    onClose={onClose}
+                />
+            );
+            expect(createElement.mock.calls.some(([tag]) => tag === 'iframe')).toBe(false);
+            expect(container.childElementCount).toBe(0);
+            expect(mocks.runAction).not.toHaveBeenCalled();
+            expect(onClose).not.toHaveBeenCalled();
+        }
+    );
     it('does not mount a scripted iframe on the app origin', () => {
         const message = inAppMessageValidator.parse({
             id: 'same-origin',

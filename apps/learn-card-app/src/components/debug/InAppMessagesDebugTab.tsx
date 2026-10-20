@@ -107,6 +107,7 @@ const diagnosticDot = (d: InAppMessageDiagnostic): string => {
 
 const diagnosticStatus = (d: InAppMessageDiagnostic): string => {
     if (!d.enabled) return 'disabled';
+    if (!d.presentationSupported) return 'unsupported on this platform';
     if (d.willShow) return 'will show';
     if (!d.triggerSatisfied) return 'trigger waiting';
     if (d.fatigueSuppressed) return 'fatigue suppressed';
