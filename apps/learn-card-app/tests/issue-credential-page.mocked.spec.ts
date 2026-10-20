@@ -379,7 +379,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await issueButton(page).click();
             await expect.poll(() => submissions.length).toBe(1);
-            const flyer = page.locator('.batch-delivery-card');
+            const flyer = page.locator('.batch-delivery-ufo');
             await expect(flyer).toBeInViewport();
             await expect(
                 page.getByRole('button', { name: 'View delivery status', exact: true })

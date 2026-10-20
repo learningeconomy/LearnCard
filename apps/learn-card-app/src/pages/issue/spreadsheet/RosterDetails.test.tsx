@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RosterDetails, RosterEditor, type RosterDetailsProps } from './RosterDetails';
 import { makeRun } from './fixtures.test-support';
 
+vi.mock('../../../i18n', () => ({ useLocale: () => 'en' }));
+
 const modal = vi.hoisted(() => ({
     open: vi.fn((_node: React.ReactNode, ..._rest: unknown[]) => ({ id: 1, generation: 1 })),
     close: vi.fn(),
@@ -131,6 +133,23 @@ describe('roster review workspace', () => {
         expect(input).toHaveAttribute('aria-invalid', 'true');
         fireEvent.blur(input, { relatedTarget: screen.getByRole('searchbox') });
         expect(screen.queryByRole('textbox', { name: 'Email for Person40' })).toBeNull();
+    });
+    it('uses the saved date for locked shared fields and never guesses a date from a column name', () => {
+        render(
+            <RosterEditor
+                {...props(1)}
+                variables={['award', 'date_code']}
+                dateVariables={['award']}
+                scopes={{ award: 'shared', date_code: 'perRecipient' }}
+                shared={{ award: '2026-10-19T00:00:00.000Z' }}
+                values={{ 'row-0': { award: '2026-10-01T00:00:00.000Z', date_code: '0012' } }}
+                locked={() => true}
+                onClose={vi.fn()}
+            />
+        );
+        expect(screen.getByLabelText('Person0 Award')).toHaveValue('2026-10-01');
+        expect(screen.getByLabelText('Person0 Award')).toBeDisabled();
+        expect(screen.getByRole('textbox', { name: 'Person0 Date Code' })).toHaveValue('0012');
     });
     it('shows shared values consistently and preserves locked row controls', () => {
         render(

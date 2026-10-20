@@ -9486,7 +9486,9 @@
                     "sent": "Sent",
                     "failed": "Failed",
                     "confirming": "Unconfirmed"
-                }
+                },
+                "dateUtc": "UTC · changing the date keeps the time",
+                "originalDate": "Original value: {{value}}"
             }
         }
     },

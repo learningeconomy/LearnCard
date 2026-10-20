@@ -47,8 +47,8 @@ export const IssuanceResults: React.FC<{
             data-testid="issuance-progress"
             className="font-poppins bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4"
         >
+            <BatchDeliveryAnimation active={busy || (!ready && waiting > 0)} />
             <div className="flex items-center gap-3">
-                <BatchDeliveryAnimation active={busy || (!ready && waiting > 0)} />
                 <div className="min-w-0 flex-1" aria-live="polite" role="status">
                     <h3 className="text-base font-semibold text-grayscale-900">
                         {busy

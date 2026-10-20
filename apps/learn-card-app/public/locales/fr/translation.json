@@ -9435,7 +9435,9 @@
                     "sent": "Envoyé",
                     "failed": "Échec",
                     "confirming": "Non confirmé"
-                }
+                },
+                "dateUtc": "UTC · changer la date conserve l’heure",
+                "originalDate": "Valeur d’origine : {{value}}"
             }
         }
     },

@@ -1,52 +1,92 @@
 .batch-delivery-illustration {
-    .batch-delivery-card {
-        transform-box: fill-box;
-        transform-origin: center;
+    // The full-width track makes the flight respond to the card, including on phones.
+    .batch-delivery-flight {
+        transform: translateX(calc(50% - 56px));
     }
-
-    .batch-delivery-spark {
-        opacity: 0.55;
+    .batch-delivery-ufo {
+        overflow: visible;
+    }
+    .batch-delivery-drop {
+        transform-origin: 56px 92px;
+    }
+    .batch-delivery-cloud--0 {
+        inset-inline-start: 4%;
+        top: 15px;
+    }
+    .batch-delivery-cloud--1 {
+        inset-inline-start: 47%;
+        top: 83px;
+        opacity: 0.7;
+    }
+    .batch-delivery-cloud--2 {
+        inset-inline-start: 82%;
+        top: 30px;
     }
 
     &--active {
-        .batch-delivery-card {
-            animation: batch-credential-flight 2.6s ease-in-out infinite;
+        .batch-delivery-flight {
+            animation: batch-delivery-crossing 9s linear infinite;
         }
-
-        .batch-delivery-spark {
-            animation: batch-delivery-glimmer 2.6s ease-in-out infinite;
-
-            &:nth-of-type(2) {
-                animation-delay: 0.4s;
-            }
+        .batch-delivery-ufo {
+            animation: batch-delivery-wave 3s ease-in-out infinite;
+        }
+        .batch-delivery-drop {
+            animation: batch-delivery-release 1.8s ease-in infinite;
+        }
+        .batch-delivery-beam {
+            animation: batch-delivery-beam 1.8s ease-in infinite;
         }
     }
 }
 
-@keyframes batch-credential-flight {
+@keyframes batch-delivery-crossing {
+    from {
+        transform: translateX(-112px);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+@keyframes batch-delivery-wave {
     0%,
     100% {
-        transform: translate(-2px, 2px) rotate(-5deg);
+        transform: translateY(4px) rotate(-3deg);
     }
     50% {
-        transform: translate(2px, -3px) rotate(4deg);
+        transform: translateY(19px) rotate(3deg);
     }
 }
-
-@keyframes batch-delivery-glimmer {
+@keyframes batch-delivery-release {
+    0% {
+        transform: translateY(-23px) scale(0.7);
+        opacity: 0;
+    }
+    25% {
+        opacity: 1;
+    }
+    75% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(40px) rotate(12deg);
+        opacity: 0;
+    }
+}
+@keyframes batch-delivery-beam {
     0%,
     100% {
-        opacity: 0.35;
+        opacity: 0.15;
     }
-    50% {
-        opacity: 0.85;
+    40% {
+        opacity: 0.4;
     }
 }
-
 @media (prefers-reduced-motion: reduce) {
     .batch-delivery-illustration--active {
-        .batch-delivery-card,
-        .batch-delivery-spark {
+        .batch-delivery-flight,
+        .batch-delivery-ufo,
+        .batch-delivery-drop,
+        .batch-delivery-beam {
             animation: none;
         }
     }

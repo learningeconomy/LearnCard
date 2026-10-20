@@ -19,6 +19,7 @@ import { recipientKey, recipientDisplayName, type Recipient } from '../component
 import { humanizeVariable } from '../components/variableSubstitution';
 import { spreadsheetProblem } from './messages';
 import type { ColumnScopes } from './roster';
+import { RosterDateInput } from './RosterDateInput';
 import type { RowProblem } from './types';
 
 const INPUT =
@@ -29,6 +30,7 @@ export interface RosterDetailsProps {
     onAttachmentsChange: (rowId: string, attachments: SimpleMediaAttachment[]) => void;
     variables: string[];
     labels?: Record<string, string>;
+    dateVariables?: string[];
     scopes: ColumnScopes;
     shared: Record<string, string>;
     values: Record<string, Record<string, string>>;
@@ -148,25 +150,34 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
         },
     });
     const fieldLabel = (name: string): string => props.labels?.[name] ?? humanizeVariable(name);
-    const input = (recipient: Recipient, name: string): React.ReactNode => (
-        <input
-            aria-label={`${recipientDisplayName(recipient)} ${fieldLabel(name)}`}
-            className={INPUT}
-            value={
-                props.locked(recipientKey(recipient)) || scopes[name] === 'perRecipient'
-                    ? (values[recipientKey(recipient)]?.[name] ?? '')
-                    : (shared[name] ?? '')
-            }
-            disabled={
-                disabled || props.locked(recipientKey(recipient)) || scopes[name] !== 'perRecipient'
-            }
-            onChange={event => props.onChange(recipientKey(recipient), name, event.target.value)}
-        />
-    );
+    const input = (recipient: Recipient, name: string): React.ReactNode => {
+        const rowId = recipientKey(recipient);
+        const value =
+            props.locked(rowId) || scopes[name] === 'perRecipient'
+                ? (values[rowId]?.[name] ?? '')
+                : (shared[name] ?? '');
+        const fieldProps = {
+            'aria-label': `${recipientDisplayName(recipient)} ${fieldLabel(name)}`,
+            className: INPUT,
+            value,
+            disabled: disabled || props.locked(rowId) || scopes[name] !== 'perRecipient',
+        };
+        return props.dateVariables?.includes(name) ? (
+            <RosterDateInput {...fieldProps} onChange={next => props.onChange(rowId, name, next)} />
+        ) : (
+            <input
+                {...fieldProps}
+                onChange={event => props.onChange(rowId, name, event.target.value)}
+            />
+        );
+    };
     const identity = (recipient: Recipient): React.ReactNode => (
         <div className="min-w-0 space-y-v3-2">
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-grayscale-900">
+            <div className="flex h-5 items-center gap-2">
+                <span
+                    title={recipientDisplayName(recipient)}
+                    className="min-w-0 truncate text-sm font-semibold leading-5 text-grayscale-900"
+                >
                     {recipientDisplayName(recipient)}
                 </span>
                 {props.locked(recipientKey(recipient)) && (
@@ -484,21 +495,21 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                                 : 'bg-white'
                                         }
                                     >
-                                        <td className="sticky inset-s-0 z-10 min-w-[270px] border-b border-grayscale-100 bg-inherit p-4 align-top">
+                                        <td className="sticky inset-s-0 z-10 min-w-[270px] max-w-[320px] border-b border-grayscale-100 bg-inherit p-4 align-top">
                                             {identity(recipient)}
                                         </td>
                                         {variables.map(name => (
                                             <td
                                                 key={name}
-                                                className="min-w-[200px] border-b border-grayscale-100 p-4 align-top"
+                                                className="min-w-[220px] border-b border-grayscale-100 px-4 pb-4 pt-11 align-top"
                                             >
                                                 {input(recipient, name)}
                                             </td>
                                         ))}
-                                        <td className="min-w-[260px] border-b border-grayscale-100 p-4 align-top">
+                                        <td className="min-w-[260px] border-b border-grayscale-100 px-4 pb-4 pt-11 align-top">
                                             {evidenceInput(recipient)}
                                         </td>
-                                        <td className="border-b border-grayscale-100 p-4 align-top">
+                                        <td className="border-b border-grayscale-100 px-4 pb-4 pt-11 align-top">
                                             {remove(recipient)}
                                         </td>
                                     </tr>

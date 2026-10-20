@@ -924,6 +924,11 @@ const IssueCredentialPage: React.FC = () => {
                 onAttachmentsChange={handleRecipientEvidenceChange}
                 recipients={recipients}
                 variables={dynamicVars}
+                dateVariables={[template?.validFrom, template?.validUntil].flatMap(field =>
+                    field?.isDynamic && !field.isSystem && field.variableName
+                        ? [field.variableName]
+                        : []
+                )}
                 scopes={roster.scopes}
                 shared={variableValues}
                 values={Object.fromEntries(
