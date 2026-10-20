@@ -1,7 +1,10 @@
 import React from 'react';
 import './batch-delivery-animation.scss';
 
-/** A decorative delivery scene; the adjacent text is the source of progress information. */
+// LearnCardBrandmark colors, confined to this decorative scene.
+const CREDENTIAL_COLORS = ['#40CBA6', '#59D4F4', '#60A5FA', '#8B5CF6', '#F472B6', '#FCD34D'];
+
+/** Decorative motion only; the adjacent status text supplies actual delivery progress. */
 export const BatchDeliveryAnimation: React.FC<{ active: boolean }> = ({ active }) => (
     <div
         aria-hidden="true"
@@ -18,46 +21,41 @@ export const BatchDeliveryAnimation: React.FC<{ active: boolean }> = ({ active }
                 <path d="M22 42a17 17 0 0 1-1-34 24 24 0 0 1 43 3 18 18 0 0 1 30 7 12 12 0 0 1 0 24Z" />
             </svg>
         ))}
-        <div className="batch-delivery-flight absolute inset-0">
-            <svg
-                viewBox="0 0 128 96"
-                className="batch-delivery-bird h-24 w-32"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                focusable="false"
+        {CREDENTIAL_COLORS.map((color, index) => (
+            <div
+                key={color}
+                className="batch-delivery-flight absolute inset-0"
+                style={
+                    {
+                        color,
+                        '--delivery-delay': `${-index * 2}s`,
+                        '--delivery-position': `${8 + index * 17}%`,
+                        '--delivery-rest-y': `${index % 2 ? 28 : 10}px`,
+                    } as React.CSSProperties
+                }
             >
-                <g className="batch-delivery-drop">
-                    <path d="M53 58h14l7 7v19H53Z" className="fill-white stroke-emerald-600" />
-                    <path d="M67 58v7h7M58 69h5" className="stroke-emerald-600" />
-                    <circle cx="63" cy="77" r="4" className="fill-emerald-100 stroke-emerald-600" />
-                    <path d="m61 77 1.5 1.5 3-3" className="stroke-emerald-700" />
-                </g>
-                {/* Long trailing legs and a curved neck give our courier a crane silhouette. */}
-                <path d="m37 48-24 6-7-2m33 0-24 9-7-1" className="stroke-grayscale-700" />
-                <path
-                    d="m27 37-13-7 8 17 16 6c13 5 25 0 31-9l8-15c2-4 8-5 12-2l5-3c-7-9-20-8-25 2L56 39c-8-8-20-9-29-2Z"
-                    className="fill-white stroke-grayscale-700"
-                />
-                <path d="m94 24 18 6-19 1" className="fill-emerald-300 stroke-emerald-700" />
-                <circle cx="87" cy="24" r="1.5" className="fill-grayscale-900 stroke-none" />
-                <path
-                    d="M76 19v-7c5-5 14-5 20 0l-1 8Z"
-                    className="fill-grayscale-900 stroke-grayscale-900"
-                />
-                <path d="M75 19h25" className="stroke-grayscale-900" strokeWidth="3" />
-                <path d="M82 12h8v5h-8Zm0 0 4 3 4-3" className="stroke-white" strokeWidth=".9" />
-                <g className="batch-delivery-wing">
+                <svg
+                    viewBox="0 0 40 52"
+                    className="batch-delivery-credential"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    focusable="false"
+                >
                     <path
-                        d="M56 43C47 26 37 14 24 12c1 10 5 15 10 20l-10-3c5 10 15 17 27 19"
-                        className="fill-white stroke-grayscale-700"
+                        d="M7 3h18l9 9v33a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z"
+                        fill="currentColor"
+                        fillOpacity=".3"
+                        strokeOpacity=".75"
                     />
-                    <path d="m33 23 14 17m-11-7 10 9" className="stroke-grayscale-300" />
-                </g>
-                <path d="m54 51 7 7 7-3" className="stroke-grayscale-700" />
-            </svg>
-        </div>
+                    <path d="M25 3v9h9" fill="white" fillOpacity=".7" strokeOpacity=".75" />
+                    <path d="M11 17h12M11 22h8" strokeOpacity=".65" />
+                    <circle cx="20" cy="35" r="8" fill="white" fillOpacity=".9" stroke="none" />
+                    <path d="m16 35 3 3 5-6" className="stroke-grayscale-700" strokeWidth="1.8" />
+                </svg>
+            </div>
+        ))}
     </div>
 );

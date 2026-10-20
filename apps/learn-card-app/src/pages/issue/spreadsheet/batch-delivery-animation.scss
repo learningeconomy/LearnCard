@@ -1,19 +1,14 @@
 .batch-delivery-illustration {
-    // Decorative sky requested for this scene; controls keep the app palette.
+    // Brand accents stay in the decorative sky; controls retain the app palette.
     background-color: #e5f4fc;
 
-    // The full-width track makes the flight respond to the card, including on phones.
     .batch-delivery-flight {
-        transform: translateX(calc(50% - 64px));
+        transform: translateX(calc(var(--delivery-position) - 20px));
     }
-    .batch-delivery-bird {
-        overflow: visible;
-    }
-    .batch-delivery-wing {
-        transform-origin: 55px 44px;
-    }
-    .batch-delivery-drop {
-        transform-origin: 63px 58px;
+    .batch-delivery-credential {
+        width: 36px;
+        height: 48px;
+        transform: translateY(var(--delivery-rest-y));
     }
     .batch-delivery-cloud--0 {
         inset-inline-start: 4%;
@@ -31,23 +26,30 @@
 
     &--active {
         .batch-delivery-flight {
-            animation: batch-delivery-crossing 9s linear infinite;
+            animation: batch-delivery-crossing 12s linear infinite;
+            animation-delay: var(--delivery-delay);
         }
-        .batch-delivery-bird {
-            animation: batch-delivery-wave 3s ease-in-out infinite;
+        .batch-delivery-credential {
+            animation: batch-delivery-wave 6s ease-in-out infinite;
+            animation-delay: var(--delivery-delay);
         }
-        .batch-delivery-drop {
-            animation: batch-delivery-release 1.8s ease-in infinite;
+        .batch-delivery-cloud {
+            animation: batch-delivery-cloud-drift 18s ease-in-out infinite alternate;
         }
-        .batch-delivery-wing {
-            animation: batch-delivery-flap 1.5s ease-in-out infinite;
+        .batch-delivery-cloud--1 {
+            animation-delay: -8s;
+            animation-duration: 24s;
+        }
+        .batch-delivery-cloud--2 {
+            animation-delay: -13s;
+            animation-duration: 21s;
         }
     }
 }
 
 @keyframes batch-delivery-crossing {
     from {
-        transform: translateX(-128px);
+        transform: translateX(-40px);
     }
     to {
         transform: translateX(100%);
@@ -56,43 +58,25 @@
 @keyframes batch-delivery-wave {
     0%,
     100% {
-        transform: translateY(4px) rotate(-3deg);
+        transform: translateY(8px) rotate(-4deg);
     }
     50% {
-        transform: translateY(11px) rotate(3deg);
+        transform: translateY(32px) rotate(4deg);
     }
 }
-@keyframes batch-delivery-release {
-    0% {
-        transform: translateY(-3px) scale(0.7);
-        opacity: 0;
+@keyframes batch-delivery-cloud-drift {
+    from {
+        transform: translate(-12px, 2px);
     }
-    25% {
-        opacity: 1;
-    }
-    75% {
-        opacity: 1;
-    }
-    100% {
-        transform: translateY(25px) rotate(12deg);
-        opacity: 0;
-    }
-}
-@keyframes batch-delivery-flap {
-    0%,
-    100% {
-        transform: rotate(-8deg) scaleY(1);
-    }
-    50% {
-        transform: rotate(12deg) scaleY(0.55);
+    to {
+        transform: translate(18px, -2px);
     }
 }
 @media (prefers-reduced-motion: reduce) {
     .batch-delivery-illustration--active {
         .batch-delivery-flight,
-        .batch-delivery-bird,
-        .batch-delivery-drop,
-        .batch-delivery-wing {
+        .batch-delivery-credential,
+        .batch-delivery-cloud {
             animation: none;
         }
     }

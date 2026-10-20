@@ -379,7 +379,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await issueButton(page).click();
             await expect.poll(() => submissions.length).toBe(1);
-            const flyer = page.locator('.batch-delivery-bird');
+            const flyer = page.locator('.batch-delivery-credential').first();
             await expect(flyer).toBeInViewport();
             await expect(
                 page.getByRole('button', { name: 'View delivery status', exact: true })
@@ -400,7 +400,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             expect(await scene.evaluate(el => getComputedStyle(el).backgroundColor)).toBe(
                 'rgb(229, 244, 252)'
             );
-            await page.screenshot({ path: testInfo.outputPath('compact-crane-phone.png') });
+            await page.screenshot({ path: testInfo.outputPath('batch-credentials-phone.png') });
             await page.setViewportSize({ width: 1440, height: 1000 });
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await page.getByRole('button', { name: 'View delivery status', exact: true }).click();
