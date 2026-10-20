@@ -115,7 +115,8 @@ When credentials are added, the card shows the confirmed count; there is no sepa
 success banner or action box.
 
 An empty result or a file with no readable text does not create a credential or save a new
-original. Choose another file or retry extraction while the upload step remains open.
+original. While the upload step is open, select its filename to preview the uploaded file,
+choose another file, or retry extraction.
 Processing failures still keep the original when its save succeeds. A failed save does
 not claim that the file is saved; retry saving without running extraction again.
 The extraction overlay closes when the original starts saving. An inline message explains

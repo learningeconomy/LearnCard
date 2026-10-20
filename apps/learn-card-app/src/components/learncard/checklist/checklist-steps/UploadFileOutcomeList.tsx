@@ -92,6 +92,9 @@ export const UploadFileOutcomeList: React.FC<Props> = ({
                         key={item.artifact.id}
                         status={item.status}
                         fileName={item.artifact.rawArtifact.fileName}
+                        fileData={
+                            item.status === 'empty' ? item.artifact.rawArtifact.data : undefined
+                        }
                         extractedCount={item.extractedCount}
                         message={
                             failedId === item.artifact.id

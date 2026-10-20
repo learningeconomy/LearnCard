@@ -9,6 +9,7 @@
 - LC-2202: Tighten the gap before Add in the empty résumé upload state while preserving spacing below saved documents.
 - LC-2202: Hide uploaded original-document records from Recently Added without hiding extracted credentials or published résumés.
 - LC-2202: Finish selected-credential saving after confirmed storage instead of waiting for per-credential sharing. Synchronize consented sharing once in the background, then refresh insights.
+- LC-2202: Open empty/unreadable uploads from their feedback filename without creating a saved source credential.
 
 ## 1.100.0
 

@@ -1,12 +1,14 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
 import type { FileUploadOutcome } from '../../../../hooks/uploadFile.types';
+import { useUploadedDocumentPreview } from '../../../../hooks/useUploadedDocumentPreview';
 
 type UploadFileOutcomePanelProps = {
     message?: string;
     retryKind?: 'extraction' | 'save';
     status?: Exclude<FileUploadOutcome['status'], 'stored'>;
     fileName?: string;
+    fileData?: string;
     extractedCount?: number;
     onRetry?: (button: HTMLButtonElement) => void;
     isRetrying?: boolean;
@@ -18,11 +20,17 @@ export const UploadFileOutcomePanel: React.FC<UploadFileOutcomePanelProps> = ({
     retryKind,
     status,
     fileName,
+    fileData,
     extractedCount,
     onRetry,
     isRetrying = false,
     disabled = false,
 }) => {
+    const { opening, openDocument } = useUploadedDocumentPreview(
+        fileName ?? '',
+        fileData ?? '',
+        disabled || isRetrying
+    );
     const isFailure = status === 'save_failed' || retryKind === 'save';
     const isReady = status === 'review';
     const isSavingOriginal = status === 'saving_original';
@@ -46,10 +54,28 @@ export const UploadFileOutcomePanel: React.FC<UploadFileOutcomePanelProps> = ({
     return (
         <div
             role={isFailure ? 'alert' : 'status'}
-            aria-busy={isSavingOriginal || isRetrying}
+            aria-busy={isSavingOriginal || isRetrying || opening}
             className={`w-full rounded-xl border p-3 mb-3 font-poppins ${panelClass}`}
         >
-            {fileName && <p className="text-sm font-semibold mb-1">{fileName}</p>}
+            {fileName &&
+                (fileData ? (
+                    <button
+                        type="button"
+                        onClick={event => void openDocument(event)}
+                        disabled={disabled || isRetrying || opening}
+                        aria-label={`${m['passport.buildMyLearnCard.managers.openFile']()}: ${fileName}`}
+                        className="mb-1 max-w-full rounded-[20px] text-left text-sm font-semibold [overflow-wrap:anywhere] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait disabled:opacity-50"
+                    >
+                        {fileName}
+                    </button>
+                ) : (
+                    <p className="text-sm font-semibold mb-1">{fileName}</p>
+                ))}
+            {opening && (
+                <p className="text-xs mb-1">
+                    {m['passport.buildMyLearnCard.managers.openingFile']()}
+                </p>
+            )}
             <p className="text-sm mb-2 flex items-center gap-2">
                 {isSavingOriginal && (
                     <span
@@ -62,7 +88,7 @@ export const UploadFileOutcomePanel: React.FC<UploadFileOutcomePanelProps> = ({
             {onRetry && retryKind && (
                 <button
                     type="button"
-                    disabled={disabled || isRetrying}
+                    disabled={disabled || isRetrying || opening}
                     onClick={event => onRetry(event.currentTarget)}
                     className="rounded-[20px] bg-grayscale-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
