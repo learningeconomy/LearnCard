@@ -12,6 +12,7 @@
 - LC-2202: Open empty/unreadable uploads from their feedback filename without creating a saved source credential. Preview supported extensions when a device supplies a missing/generic MIME type, without overriding explicit HTML/SVG types.
 - LC-2202: Leave saved documents unchanged while AI settings are loading or processing requests are rejected/incompatible. Preserve original-only uploads when AI is disabled, without model calls or futile extraction retries. Localize failure reasons.
 - LC-2202: Isolate unavailable originals without hiding valid or readable legacy documents. Keep unavailable records deletable, refresh saved documents without stale index results, and protect newer résumés from stale deletion.
+- LC-2202: Keep unexpected résumé processing errors visible outside credential review, and distinguish save errors without hiding the review or exposing internal error text.
 
 ## 1.100.4
 

@@ -269,9 +269,14 @@ export const CheckListUploadResume: React.FC = () => {
 
     return (
         <>
+            {uploadOutcome && (
+                <UploadFileOutcomePanel
+                    message={uploadOutcome.message}
+                    retryKind={uploadOutcome.retryKind}
+                />
+            )}
             {showReview ? (
                 <>
-                    {uploadOutcome && <UploadFileOutcomePanel message={uploadOutcome.message} />}
                     <CheckListCredentialReviewStep
                         credentials={parsedCredentials}
                         fileType={UploadTypesEnum.Resume}
