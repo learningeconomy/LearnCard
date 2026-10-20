@@ -1,4 +1,5 @@
 import { createCredentialActivity } from '@accesslayer/credential-activity/create';
+import type { Transaction } from 'neo4j-driver';
 import type {
     LogCredentialActivityParams,
     CredentialActivityEventType,
@@ -7,10 +8,11 @@ import type {
 } from 'types/activity';
 
 export const logCredentialActivity = async (
-    params: LogCredentialActivityParams
+    params: LogCredentialActivityParams,
+    transaction?: Transaction
 ): Promise<string> => {
     try {
-        const activityId = await createCredentialActivity(params);
+        const activityId = await createCredentialActivity(params, transaction);
 
         return activityId;
     } catch (error) {
@@ -19,30 +21,34 @@ export const logCredentialActivity = async (
     }
 };
 
-export const logCredentialSent = async (params: {
-    onBehalfOf?: string;
-    actorProfileId?: string;
-    recipientType: CredentialActivityRecipientType;
-    recipientIdentifier: string;
-    recipientProfileId?: string;
-    boostUri?: string;
-    credentialUri?: string;
-    inboxCredentialId?: string;
-    integrationId?: string;
-    listingId?: string;
-    source: CredentialActivitySourceType;
-    metadata?: Record<string, unknown>;
-    // LC-1644 Phase 1d: callers can pre-generate activityId upfront so
-    // logCredentialSent can run in parallel with dependent writes (e.g. sendBoost
-    // which stores activityId on the SentCredential relationship).
-    activityId?: string;
-}): Promise<string> => {
+export const logCredentialSent = async (
+    params: {
+        onBehalfOf?: string;
+        actorProfileId?: string;
+        recipientType: CredentialActivityRecipientType;
+        recipientIdentifier: string;
+        recipientProfileId?: string;
+        boostUri?: string;
+        credentialUri?: string;
+        inboxCredentialId?: string;
+        integrationId?: string;
+        listingId?: string;
+        source: CredentialActivitySourceType;
+        metadata?: Record<string, unknown>;
+        // Optional correlation ID shared with delivery relationships.
+        activityId?: string;
+    },
+    transaction?: Transaction
+): Promise<string> => {
     const isInboxSend = params.recipientType === 'email' || params.recipientType === 'phone';
 
-    return logCredentialActivity({
-        ...params,
-        eventType: isInboxSend ? 'CREATED' : 'DELIVERED',
-    });
+    return logCredentialActivity(
+        {
+            ...params,
+            eventType: isInboxSend ? 'CREATED' : 'DELIVERED',
+        },
+        transaction
+    );
 };
 
 export const logCredentialDelivered = async (params: {

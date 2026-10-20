@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { JWE, VC } from '@learncard/types';
+import type { Transaction } from 'neo4j-driver';
 
 const mocks = vi.hoisted(() => ({
     decrypt: vi.fn(),
@@ -65,7 +66,7 @@ vi.mock('@tracing', () => ({
     traceInternal: async (_name: string, action: () => unknown) => action(),
 }));
 
-import { issueClaimLinkBoost, sendBoost } from './boost.helpers';
+import { issueClaimLinkBoost, sendBoost, persistBoostDelivery } from './boost.helpers';
 
 const vc = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -133,7 +134,8 @@ describe('boost payload storage', () => {
             expect(mocks.issue).not.toHaveBeenCalled();
             expect(mocks.instanceOf).toHaveBeenCalledExactlyOnceWith(
                 { id: 'stored' },
-                options.boost
+                options.boost,
+                undefined
             );
             expect(mocks.sent).toHaveBeenCalledExactlyOnceWith(
                 options.from,
@@ -141,11 +143,13 @@ describe('boost payload storage', () => {
                 { id: 'stored' },
                 options.metadata,
                 'activity',
-                'integration'
+                'integration',
+                undefined
             );
             expect(mocks.contract).toHaveBeenCalledExactlyOnceWith(
                 { id: 'stored' },
-                options.contractTerms
+                options.contractTerms,
+                undefined
             );
             expect(mocks.listing).toHaveBeenCalledExactlyOnceWith(
                 'listing',
@@ -153,7 +157,8 @@ describe('boost payload storage', () => {
                 { id: 'stored' },
                 options.metadata,
                 'activity',
-                'integration'
+                'integration',
+                undefined
             );
             expect(mocks.accept).toHaveBeenCalledExactlyOnceWith(options.to, uri, {
                 skipNotification: false,
@@ -161,6 +166,29 @@ describe('boost payload storage', () => {
             expect(mocks.notify).toHaveBeenCalledOnce();
         }
     );
+
+    it('enlists every graph write in the caller transaction without acceptance or notification', async () => {
+        const transaction = {} as Transaction;
+        await expect(persistBoostDelivery(options, transaction)).resolves.toBe(
+            'lc:network:network.example/credential:stored'
+        );
+        expect(mocks.store).toHaveBeenCalledExactlyOnceWith(options.credential, transaction);
+        for (const write of [mocks.instanceOf, mocks.sent, mocks.listing, mocks.contract]) {
+            expect(write).toHaveBeenCalledOnce();
+            expect(write.mock.calls[0]?.at(-1)).toBe(transaction);
+        }
+        expect(mocks.accept).not.toHaveBeenCalled();
+        expect(mocks.notify).not.toHaveBeenCalled();
+    });
+
+    it('stops transaction writes after a failed relationship without notifying', async () => {
+        const error = new Error('Listing relationship failed');
+        mocks.listing.mockRejectedValueOnce(error);
+        await expect(persistBoostDelivery(options, {} as Transaction)).rejects.toBe(error);
+        expect(mocks.contract).not.toHaveBeenCalled();
+        expect(mocks.accept).not.toHaveBeenCalled();
+        expect(mocks.notify).not.toHaveBeenCalled();
+    });
 
     it('does not inspect template-derived fields or add a network signature', async () => {
         const credential = { ...vc, display: { backgroundColor: '#bad' } };
@@ -219,7 +247,7 @@ describe('boost payload storage', () => {
             } else {
                 expect(unsigned).not.toHaveProperty('boostId');
             }
-            expect(mocks.store).toHaveBeenCalledWith(issued);
+            expect(mocks.store).toHaveBeenCalledWith(issued, undefined);
         }
     );
 

@@ -2,10 +2,13 @@ import { vi } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 import { testVc } from './helpers/send';
-import { Profile, Credential, CredentialActivity, AppStoreListing } from '@models';
+import { Profile, Credential, CredentialActivity, AppStoreListing, Boost } from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
+import * as CredentialRelationships from '@accesslayer/credential/relationships/create';
 import { addNotificationToQueueSpy } from './helpers/spies';
 import { createCredentialActivity } from '@accesslayer/credential-activity/create';
+import { neogma } from '@instance';
+import { sendBoostWithActivity } from '@helpers/credential-delivery.helpers';
 import {
     getActivitiesForProfile,
     getActivityStatsForProfile,
@@ -15,6 +18,50 @@ import {
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+
+const createAppDeliveryFixture = async (): Promise<{
+    activity: Parameters<typeof sendBoostWithActivity>[0];
+    delivery: Parameters<typeof sendBoostWithActivity>[1];
+}> => {
+    const listing = await AppStoreListing.createOne({
+        listing_id: 'activity-delivery-listing',
+        display_name: 'Activity delivery test',
+        tagline: 'Test',
+        full_description: 'Test',
+        icon_url: 'https://example.com/icon.png',
+        app_listing_status: 'LISTED',
+        launch_type: 'EMBEDDED_IFRAME',
+        launch_config_json: '{}',
+        promotion_level: 'STANDARD',
+    });
+    const boost = await Boost.createOne({ id: crypto.randomUUID(), boost: JSON.stringify(testVc) });
+    const owner = (await Profile.findOne({ where: { profileId: 'usera' } }))!;
+    const recipient = (await Profile.findOne({ where: { profileId: 'userb' } }))!;
+    return {
+        activity: {
+            actorProfileId: owner.profileId,
+            recipientType: 'profile',
+            recipientIdentifier: recipient.profileId,
+            recipientProfileId: recipient.profileId,
+            boostUri: `lc:network:localhost%3A3000/trpc:boost:${boost.id}`,
+            listingId: listing.listing_id,
+            source: 'appEvent',
+        },
+        delivery: {
+            from: {
+                type: 'appStoreListing',
+                listing: listing.dataValues,
+                ownerProfile: owner.dataValues,
+            },
+            to: recipient.dataValues,
+            boost,
+            credential: testVc,
+            domain: 'localhost%3A3000',
+            listingId: listing.listing_id,
+            skipNotification: true,
+        },
+    };
+};
 
 describe('Credential Activity', () => {
     beforeAll(async () => {
@@ -43,6 +90,94 @@ describe('Credential Activity', () => {
         await Credential.delete({ detach: true, where: {} });
         await CredentialActivity.delete({ detach: true, where: {} });
         await AppStoreListing.delete({ detach: true, where: {} });
+    });
+
+    it('keeps repeated app deliveries linked to completed listing activity', async () => {
+        const { activity, delivery } = await createAppDeliveryFixture();
+        const delivered: string[] = [];
+        try {
+            for (let index = 0; index < 12; index++) {
+                delivered.push(await sendBoostWithActivity(activity, delivery));
+            }
+            const result = await neogma.queryRunner.run(
+                `MATCH (listing:AppStoreListing {listing_id: $listingId})
+                    -[:PERFORMED_BY_LISTING]->(activity:CredentialActivity)
+                 MATCH (listing)-[sent:CREDENTIAL_SENT]->(credential:Credential)
+                 WHERE sent.activityId = activity.activityId
+                 RETURN DISTINCT credential.id AS id, activity.activityId AS activityId`,
+                { listingId: delivery.listingId }
+            );
+            expect(result.records).toHaveLength(delivered.length);
+            expect(new Set(result.records.map(record => record.get('activityId'))).size).toBe(12);
+            expect(result.records.map(record => record.get('id')).sort()).toEqual(
+                delivered.map(uri => uri.split(':').at(-1)).sort()
+            );
+        } finally {
+            await Boost.delete({ detach: true, where: { id: delivery.boost.id } });
+        }
+    });
+
+    it.each(['activity node', 'activity relationship', 'delivery relationship'] as const)(
+        'rolls back all activity and delivery writes after a failed %s write',
+        async stage => {
+            const { activity, delivery } = await createAppDeliveryFixture();
+            const error = new Error(`Injected ${stage} failure`);
+            const failAfterWrite =
+                <Args extends unknown[], Result>(original: (...args: Args) => Promise<Result>) =>
+                async (...args: Args): Promise<Result> => {
+                    await original(...args);
+                    throw error;
+                };
+            const originalCreate = CredentialActivity.createOne.bind(CredentialActivity);
+            const originalSend = CredentialRelationships.createSentCredentialRelationship;
+            const spy =
+                stage === 'activity node'
+                    ? vi
+                          .spyOn(CredentialActivity, 'createOne')
+                          .mockImplementationOnce(failAfterWrite(originalCreate))
+                    : stage === 'delivery relationship'
+                      ? vi
+                            .spyOn(CredentialRelationships, 'createSentCredentialRelationship')
+                            .mockImplementationOnce(failAfterWrite(originalSend))
+                      : (() => {
+                            const original = neogma.queryRunner.run.bind(neogma.queryRunner);
+                            return vi
+                                .spyOn(neogma.queryRunner, 'run')
+                                .mockImplementation(async (...args) => {
+                                    const result = await original(...args);
+                                    if (args[0].includes('FOR_BOOST')) throw error;
+                                    return result;
+                                });
+                        })();
+            try {
+                await expect(
+                    sendBoostWithActivity(activity, { ...delivery, skipNotification: false })
+                ).rejects.toBe(error);
+                expect(await CredentialActivity.findMany({ where: {} })).toHaveLength(0);
+                expect(await Credential.findMany({ where: {} })).toHaveLength(0);
+                expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
+            } finally {
+                spy.mockRestore();
+                await Boost.delete({ detach: true, where: { id: delivery.boost.id } });
+            }
+        }
+    );
+
+    it('commits concurrent app deliveries with one activity per credential', async () => {
+        const { activity, delivery } = await createAppDeliveryFixture();
+        try {
+            const uris = await Promise.all(
+                Array.from({ length: 6 }, () =>
+                    sendBoostWithActivity(activity, { ...delivery, skipNotification: false })
+                )
+            );
+            expect(new Set(uris).size).toBe(6);
+            expect(await Credential.findMany({ where: {} })).toHaveLength(6);
+            expect(await CredentialActivity.findMany({ where: {} })).toHaveLength(6);
+            await vi.waitFor(() => expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(6));
+        } finally {
+            await Boost.delete({ detach: true, where: { id: delivery.boost.id } });
+        }
     });
 
     describe('createCredentialActivity', () => {

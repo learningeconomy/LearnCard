@@ -102,7 +102,8 @@ export const createListingSentCredentialRelationship = async (
     credential: CredentialInstance,
     metadata?: Record<string, unknown>,
     activityId?: string,
-    integrationId?: string
+    integrationId?: string,
+    transaction?: Transaction
 ): Promise<void> => {
     const properties = flattenObject({
         to: to.profileId,
@@ -133,7 +134,7 @@ export const createListingSentCredentialRelationship = async (
             }]->(credential)`
         )
         .set('r = $params')
-        .run();
+        .run(transaction);
 };
 
 export const createReceivedCredentialRelationship = async (
@@ -223,7 +224,8 @@ export const setDefaultClaimedRole = async (
  */
 export const createCredentialIssuedViaContractRelationship = async (
     credential: CredentialInstance,
-    terms: DbTermsType
+    terms: DbTermsType,
+    transaction?: Transaction
 ): Promise<void> => {
     const currentDate = new Date().toISOString();
     const transactionId = uuid();
@@ -262,5 +264,5 @@ export const createCredentialIssuedViaContractRelationship = async (
                 { identifier: 'transaction' },
             ],
         })
-        .run();
+        .run(transaction);
 };

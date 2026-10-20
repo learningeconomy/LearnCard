@@ -1,9 +1,10 @@
 import cloneDeep from 'lodash/cloneDeep';
+import type { Transaction } from 'neo4j-driver';
+import type { BoostDeliveryOptions } from 'types/credential-delivery';
 import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import {
     VC,
-    JWE,
     UnsignedVC,
     LCNNotificationTypeEnumValidator,
     ContactMethodQueryType,
@@ -41,10 +42,8 @@ import { getNotificationMessage } from './notificationMessages';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { BoostStatus, getBoostOwnerProfile } from 'types/boost';
 import { getDidWeb } from './did.helpers';
-import { DbTermsType } from 'types/consentflowcontract';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
 import { getIssuedCredentialPayload } from './issuedCredentialStatus.helpers';
-import type { IssuedCredential } from '../types/credential';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -100,142 +99,124 @@ export const convertCredentialToBoostTemplateJSON = (
     return JSON.stringify(template);
 };
 
-export const sendBoost = async ({
-    from,
-    to,
-    boost,
-    credential,
-    domain,
-    skipNotification = false,
-    autoAcceptCredential = false,
-    contractTerms,
-    metadata,
-    activityId,
-    integrationId,
-    listingId,
-}: {
-    from: CredentialIssuer;
-    to: ProfileType;
-    boost: BoostInstance;
-    credential: VC | JWE | IssuedCredential;
-    domain: string;
-    skipNotification?: boolean;
-    autoAcceptCredential?: boolean;
-    contractTerms?: DbTermsType;
-    metadata?: Record<string, unknown>;
-    activityId?: string;
-    integrationId?: string;
-    listingId?: string;
-}): Promise<string> => {
+/** Persist the signed payload and delivery graph without any external side effects. */
+export const persistBoostDelivery = async (
+    {
+        from,
+        to,
+        boost,
+        credential,
+        domain,
+        contractTerms,
+        metadata,
+        activityId,
+        integrationId,
+        listingId,
+    }: BoostDeliveryOptions,
+    transaction?: Transaction
+): Promise<string> => {
+    const sourceBoostUri = getBoostUri(boost.dataValues.id, domain);
+    const payload = getIssuedCredentialPayload(credential);
+    // Preserve pre-signed payloads; reject only an explicit conflicting Boost claim.
+    if (
+        !isEncrypted(payload) &&
+        (payload as VC).boostId !== undefined &&
+        (payload as VC).boostId !== sourceBoostUri
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential boostId must match the Boost being sent.',
+        });
+    }
+
+    const credentialInstance = await traceDb('storeCredential', () =>
+        storeCredential(credential, transaction)
+    );
+    const tasks = [
+        () => createBoostInstanceOfRelationship(credentialInstance, boost, transaction),
+        () =>
+            createSentCredentialRelationship(
+                from,
+                to,
+                credentialInstance,
+                metadata,
+                activityId,
+                integrationId,
+                transaction
+            ),
+    ];
+    if (listingId)
+        tasks.push(() =>
+            createListingSentCredentialRelationship(
+                listingId,
+                to,
+                credentialInstance,
+                metadata,
+                activityId,
+                integrationId,
+                transaction
+            )
+        );
+    if (contractTerms)
+        tasks.push(() =>
+            createCredentialIssuedViaContractRelationship(
+                credentialInstance,
+                contractTerms,
+                transaction
+            )
+        );
+
+    await traceDb('createRelationships', async () => {
+        if (transaction) {
+            // A transaction owns all locks until commit; keep its query order stable.
+            for (const task of tasks) await task();
+        } else {
+            await Promise.all(tasks.map(task => task()));
+        }
+    });
+    return getCredentialUri(credentialInstance.id, domain);
+};
+
+/** Best-effort notification, invoked only after delivery has committed. */
+export const notifyBoostRecipient = (
+    { from, to, boost, domain, metadata }: BoostDeliveryOptions,
+    credentialUri: string
+): void => {
+    const sourceBoostUri = getBoostUri(boost.dataValues.id, domain);
+    void trace('notification', 'addNotificationToQueue', () =>
+        addNotificationToQueue({
+            type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+            to,
+            from: getIssuerOwnerProfile(from),
+            message: getNotificationMessage('boostReceived', resolveRecipientLocale(to), {
+                issuer: getIssuerDisplayName(from),
+            }),
+            data: {
+                vcUris: [credentialUri],
+                metadata: { ...(metadata ?? {}), boostUri: sourceBoostUri },
+            },
+        })
+    ).catch((error: unknown) => {
+        console.error('[sendBoost] BOOST_RECEIVED notification enqueue failed', {
+            err: error instanceof Error ? error.message : String(error),
+            from: getIssuerProfileId(from),
+            to: to.profileId,
+            boostUri: credentialUri,
+        });
+    });
+};
+
+export const sendBoost = async (options: BoostDeliveryOptions): Promise<string> => {
+    const { from, to, skipNotification = false, autoAcceptCredential = false } = options;
     return trace(
         'boost',
         'sendBoost',
         async () => {
-            const sourceBoostUri = getBoostUri(boost.dataValues.id, domain);
-            const fromProfile = getIssuerOwnerProfile(from);
-
-            const payload = getIssuedCredentialPayload(credential);
-            // Pre-signed credentials may predate their network Boost (send can create
-            // one from the signed payload). Preserve them without inventing a signed
-            // association; only an explicit conflicting claim is rejected.
-            if (
-                !isEncrypted(payload) &&
-                (payload as VC).boostId !== undefined &&
-                (payload as VC).boostId !== sourceBoostUri
-            ) {
-                throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message: 'Credential boostId must match the Boost being sent.',
-                });
-            }
-
-            // Preserve the issuer's payload without decrypting or counter-signing it.
-            const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(credential)
-            );
-
-            const tasks = [
-                createBoostInstanceOfRelationship(credentialInstance, boost),
-                createSentCredentialRelationship(
-                    from,
-                    to,
-                    credentialInstance,
-                    metadata,
-                    activityId,
-                    integrationId
-                ),
-            ];
-
-            if (listingId) {
-                tasks.push(
-                    createListingSentCredentialRelationship(
-                        listingId,
-                        to,
-                        credentialInstance,
-                        metadata,
-                        activityId,
-                        integrationId
-                    )
-                );
-            }
-
-            if (contractTerms) {
-                tasks.push(
-                    createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
-                );
-            }
-
-            await traceDb('createRelationships', () => Promise.all(tasks));
-
-            if (autoAcceptCredential) {
-                await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
-                    skipNotification,
-                });
-            }
-
-            const boostUri = getCredentialUri(credentialInstance.id, domain);
-
-            if (typeof boostUri === 'string') {
-                if (!skipNotification) {
-                    // LC-1644: fire-and-forget the BOOST_RECEIVED notification enqueue.
-                    // addNotificationToQueue is an SQS SendMessage in prod (~5-30ms) or a
-                    // direct webhook call in offline/dev. Neither produces a value the caller
-                    // needs, and notifications are eventually-consistent by design — there's
-                    // no correctness benefit to making sendBoost wait on the enqueue ack.
-                    // Any enqueue failure is logged so operators still have visibility;
-                    // the original boostUri return path is unaffected.
-                    trace('notification', 'addNotificationToQueue', () =>
-                        addNotificationToQueue({
-                            type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
-                            to: to,
-                            from: fromProfile,
-                            message: getNotificationMessage(
-                                'boostReceived',
-                                resolveRecipientLocale(to),
-                                { issuer: getIssuerDisplayName(from) }
-                            ),
-                            data: {
-                                vcUris: [boostUri!],
-                                metadata: {
-                                    ...(metadata ?? {}),
-                                    boostUri: sourceBoostUri,
-                                },
-                            },
-                        })
-                    ).catch((err: unknown) => {
-                        console.error('[sendBoost] BOOST_RECEIVED notification enqueue failed', {
-                            err: err instanceof Error ? err.message : String(err),
-                            from: getIssuerProfileId(from),
-                            to: to.profileId,
-                            boostUri,
-                        });
-                    });
-                }
-
-                return boostUri;
-            } else {
-                throw new Error('Error sending boost.');
-            }
+            const credentialUri = await persistBoostDelivery(options);
+            if (autoAcceptCredential)
+                await acceptCredential(to, credentialUri, { skipNotification });
+            if (!skipNotification) notifyBoostRecipient(options, credentialUri);
+            return credentialUri;
         },
         { from: getIssuerProfileId(from), to: to.profileId }
     );
