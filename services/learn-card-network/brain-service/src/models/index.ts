@@ -377,6 +377,8 @@ export * from './Integration';
 export * from './AppManifestVersion';
 export * from './AppStoreListing';
 export * from './ListingVersion';
+export * from './WorkloadPackage';
+export * from './WorkloadPackageVersion';
 export * from './CredentialActivity';
 export * from './CredentialRefresh';
 export * from './ShareLink';

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import {
-    BundleManifestValidator,
+    VersionedBundleManifestValidator,
     IntegrationManifestValidator,
     WalletManifestValidator,
     WorkloadPackageValidator,
@@ -26,7 +26,7 @@ import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import type { AppStoreListingKind } from 'types/app-store-listing';
 import type { ListingVersionType } from 'types/listing-version';
 
-type ListingManifest = IntegrationManifest | WalletManifest | BundleManifest;
+type ListingManifest = IntegrationManifest | WalletManifest | BundleManifest | BundleManifestV11;
 type SignedManifest = ListingManifest | WorkloadPackage | BundleManifestV11;
 
 const stableSortValue = (value: unknown): unknown => {
@@ -260,7 +260,7 @@ export const parseSignedManifestForListingKind = (
         case 'WALLET':
             return WalletManifestValidator.parse(parsed);
         case 'BUNDLE':
-            return BundleManifestValidator.parse(parsed);
+            return VersionedBundleManifestValidator.parse(parsed);
         case 'APP':
             throw new Error('APP listings do not use signed manifests in Phase C.');
     }

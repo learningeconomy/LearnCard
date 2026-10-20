@@ -13,6 +13,7 @@ import {
 import type { AppStoreListingType } from 'types/app-store-listing';
 import type { ListingVersionType } from 'types/listing-version';
 import type { CatalogReadinessGate } from '@learncard/types';
+import type { BundleWorkloadMember, WorkloadPlan } from '@learncard/types';
 import { neogma } from '@instance';
 import { getEcosystemById } from '@accesslayer/ecosystem/read';
 import { getEcosystemMembershipRole } from '@accesslayer/ecosystem/membership';
@@ -20,6 +21,7 @@ import { appendConsentDecisionRecord } from '@accesslayer/consent-decision-recor
 import { readInstallTargetInternal } from '@accesslayer/install-target/internal';
 import { readInstallIntentById } from '@accesslayer/install-intent/intent-read';
 import { readListingVersionById } from '@accesslayer/listing-version/read';
+import { assertNoInlineWorkloadSecrets } from '@helpers/workload-config.helpers';
 
 type ConsentDecisionRecord = Awaited<ReturnType<typeof appendConsentDecisionRecord>>;
 
@@ -45,13 +47,16 @@ type BindingProposal = {
 
 type BundleManifest = {
     apiVersion?: string;
-    contains: Array<{
-        declarationId: string;
-        targetType: InstallTargetType;
-        listingId: string;
-        versionId: string;
-        optional?: boolean;
-    }>;
+    contains: Array<
+        | BundleWorkloadMember
+        | {
+              declarationId: string;
+              targetType: InstallTargetType;
+              listingId: string;
+              versionId: string;
+              optional?: boolean;
+          }
+    >;
     defaultBindings: Array<{
         capability: (typeof CapabilityEnum)['options'][number];
         providerDeclarationId: string;
@@ -70,6 +75,7 @@ type ApprovalAuthorityChanges = {
 };
 
 type InstallIntentPlan = {
+    targets?: InstallTargetSpec[];
     apiVersion: 'lc.install-plan/v1';
     renderedAt: string;
     planHash: string;
@@ -82,6 +88,8 @@ type InstallIntentPlan = {
 };
 
 type InstallTargetSpec = {
+    declarationId?: string;
+    workload?: WorkloadPlan;
     targetType: InstallTargetType;
     listingId: string;
     versionId: string;
@@ -103,6 +111,7 @@ type InstallIntentSpec = {
 };
 
 export type BundleExpansionMember = {
+    workloadMember?: BundleWorkloadMember;
     declarationId: string;
     targetType: InstallTargetType;
     listingId: string;
@@ -182,7 +191,10 @@ const stableSortObject = (value: unknown): unknown => {
         return Object.keys(value)
             .sort()
             .reduce<Record<string, unknown>>((acc, key) => {
-                acc[key] = stableSortObject((value as Record<string, unknown>)[key]);
+                Object.defineProperty(acc, key, {
+                    value: stableSortObject((value as Record<string, unknown>)[key]),
+                    enumerable: true,
+                });
                 return acc;
             }, {});
     }
@@ -198,6 +210,30 @@ export const computeStableHash = (value: unknown): string => {
 
 export const getIntentTargetId = (intentId: string, declarationId: string): string => {
     return `target_${intentId}_${declarationId}`;
+};
+
+/** New specs use platform-owned metadata; retain identity of persisted legacy targets. */
+export const getTargetDeclarationId = (
+    target: Pick<InstallTargetSpec, 'declarationId' | 'config' | 'targetType' | 'listingId'>
+): string =>
+    target.declarationId ??
+    (typeof target.config.declarationId === 'string'
+        ? target.config.declarationId
+        : `${target.targetType}_${target.listingId}`);
+
+export const getMemberOperatorConfig = (
+    config: Record<string, unknown>,
+    declarationId: string
+): Record<string, unknown> => {
+    const value = config[declarationId];
+    if (value === undefined) return {};
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Config for ${declarationId} must be an object.`,
+        });
+    }
+    return value as Record<string, unknown>;
 };
 
 export const getInstallTargetTypeForListing = (listing: AppStoreListingType): InstallTargetType => {
@@ -223,8 +259,9 @@ export const expandBundle = (manifest: BundleManifest): BundleExpansion => {
         .map(member => ({
             declarationId: member.declarationId,
             targetType: member.targetType,
-            listingId: member.listingId,
-            versionId: member.versionId,
+            listingId: 'listingId' in member ? member.listingId : '',
+            versionId: 'versionId' in member ? member.versionId : '',
+            ...('packageId' in member ? { workloadMember: member } : {}),
             optional: member.optional ?? false,
         }))
         .sort((left, right) => left.declarationId.localeCompare(right.declarationId));
@@ -473,6 +510,14 @@ export const buildPlanFromMaterialization = (input: {
     infrastructureEffects: string[];
     dispositionPolicy?: InstallIntentPlan['dispositionPolicy'];
 }): InstallIntentPlan => {
+    if (input.targets.some((target): boolean => Boolean(target.workload))) {
+        for (const target of input.targets) {
+            assertNoInlineWorkloadSecrets(
+                target.config,
+                target.workload?.secrets.map((secret): string => secret.name)
+            );
+        }
+    }
     const scopesRequested = uniqueSortedStrings(input.targets.flatMap(target => target.scopes));
     const consentTiers = uniqueSortedStrings(
         input.targets.flatMap(target => target.consentTiers)
@@ -497,6 +542,9 @@ export const buildPlanFromMaterialization = (input: {
 
     return {
         apiVersion: 'lc.install-plan/v1',
+        ...(input.targets.some((target): boolean => Boolean(target.workload))
+            ? { targets: input.targets.filter((target): boolean => Boolean(target.workload)) }
+            : {}),
         renderedAt: new Date().toISOString(),
         planHash: computeStableHash(planPayload),
         planRevision: input.planRevision,
@@ -515,8 +563,29 @@ export const materializeBundlePlan = (input: {
     listingVersionsById: Record<string, ListingVersionType>;
     listingById: Record<string, AppStoreListingType>;
     requestedConfig: Record<string, unknown>;
+    workloadsByDeclarationId?: Record<string, WorkloadPlan>;
 }): PlanBundleMaterialization => {
     const targets = input.expandedBundle.members.map(member => {
+        const operatorConfig = getMemberOperatorConfig(input.requestedConfig, member.declarationId);
+        if (member.workloadMember) {
+            const workload = input.workloadsByDeclarationId?.[member.declarationId];
+            if (!workload)
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Workload ${member.declarationId} has not been validated.`,
+                });
+            return {
+                declarationId: member.declarationId,
+                targetType: member.targetType,
+                listingId: '',
+                versionId: '',
+                workload,
+                scopes: [],
+                consentTiers: [],
+                config: operatorConfig,
+                entitlementRequirements: input.expandedBundle.entitlementRequirements,
+            } satisfies InstallTargetSpec;
+        }
         const listing = input.listingById[member.listingId];
         const version = input.listingVersionsById[member.versionId];
 
@@ -530,19 +599,28 @@ export const materializeBundlePlan = (input: {
         const authoritySummary = getListingVersionAuthoritySummary(version);
 
         return {
+            declarationId: member.declarationId,
             targetType: member.targetType,
             listingId: member.listingId,
             versionId: member.versionId,
             scopes: authoritySummary.scopes,
             consentTiers: authoritySummary.consentTiers,
             config: {
-                declarationId: member.declarationId,
+                ...Object.fromEntries(
+                    Object.entries(operatorConfig).filter(
+                        ([key]): boolean =>
+                            ![
+                                'declarationId',
+                                'targetType',
+                                'packageId',
+                                'packageVersionId',
+                                'manifestHash',
+                                'profiles',
+                            ].includes(key)
+                    )
+                ),
                 optional: member.optional,
                 listingKind: listing.kind,
-                ...(input.requestedConfig[member.declarationId] &&
-                typeof input.requestedConfig[member.declarationId] === 'object'
-                    ? (input.requestedConfig[member.declarationId] as Record<string, unknown>)
-                    : {}),
             },
             entitlementRequirements: input.expandedBundle.entitlementRequirements,
         } satisfies InstallTargetSpec;
@@ -569,7 +647,7 @@ export const materializeBundlePlan = (input: {
         }
 
         const member = input.expandedBundle.members.find(
-            member => member.declarationId === declarationId
+            candidate => candidate.declarationId === declarationId
         );
         const resourceId = targetIdByDeclarationId[declarationId];
         if (!member || !resourceId) {
@@ -602,7 +680,19 @@ export const materializeBundlePlan = (input: {
             });
         }
 
-        if (providerMember) {
+        if (providerMember?.workloadMember) {
+            if (
+                !input.workloadsByDeclarationId?.[providerMember.declarationId]?.provides.includes(
+                    binding.capability
+                )
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'Workload does not provide the binding capability in selected profiles.',
+                });
+            }
+        } else if (providerMember) {
             assertListingVersionSupportsCapability(
                 input.listingVersionsById[providerMember.versionId]!,
                 binding.capability,
@@ -610,7 +700,19 @@ export const materializeBundlePlan = (input: {
             );
         }
 
-        if (consumerMember) {
+        if (consumerMember?.workloadMember) {
+            if (
+                !input.workloadsByDeclarationId?.[consumerMember.declarationId]?.consumes.includes(
+                    binding.capability
+                )
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'Workload does not consume the binding capability in selected profiles.',
+                });
+            }
+        } else if (consumerMember) {
             assertListingVersionSupportsCapability(
                 input.listingVersionsById[consumerMember.versionId]!,
                 binding.capability,
@@ -630,7 +732,9 @@ export const materializeBundlePlan = (input: {
         targets,
         bindings,
         pinnedVersionIds: uniqueSortedStrings(
-            input.expandedBundle.members.map(member => member.versionId)
+            input.expandedBundle.members.map(
+                member => member.workloadMember?.packageVersionId ?? member.versionId
+            )
         ),
         entitlementRequirements: input.expandedBundle.entitlementRequirements,
         infrastructureEffects: input.expandedBundle.infrastructureEffects,
@@ -718,17 +822,49 @@ export const assertBindingRefsExist = async (bindings: BindingProposal[]): Promi
     }
 };
 
+/** Apply to the final binding set, including operator proposals, not only bundle defaults. */
+export const assertWorkloadBindingCapabilities = (
+    intentId: string,
+    targets: InstallTargetSpec[],
+    bindings: BindingProposal[]
+): void => {
+    const workloads = new Map(
+        targets
+            .filter((target): boolean => Boolean(target.workload))
+            .map((target): [string, WorkloadPlan | undefined] => [
+                getIntentTargetId(intentId, getTargetDeclarationId(target)),
+                target.workload,
+            ])
+    );
+    for (const binding of bindings) {
+        for (const role of ['provider', 'consumer'] as const) {
+            const endpoint = binding[role];
+            if (endpoint.resourceType === 'ECOSYSTEM') continue;
+            const workload = workloads.get(endpoint.resourceId);
+            if (!workload) continue;
+            const capabilities = role === 'provider' ? workload.provides : workload.consumes;
+            if (
+                endpoint.resourceType !== 'WORKLOAD_DEPLOYMENT' ||
+                !capabilities.includes(binding.capability)
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Workload ${role} does not support ${binding.capability} in selected profiles.`,
+                });
+            }
+        }
+    }
+};
+
 export const assertBindingRefsInIntentSpec = async (
     intentId: string,
     ecosystemId: string,
     spec: InstallIntentSpec
 ): Promise<void> => {
+    assertWorkloadBindingCapabilities(intentId, spec.targets, spec.bindings);
     const expectedTargetIds = new Set(
         spec.targets.map(target => {
-            const declarationId =
-                typeof target.config.declarationId === 'string'
-                    ? target.config.declarationId
-                    : `${target.targetType}_${target.listingId}`;
+            const declarationId = getTargetDeclarationId(target);
 
             return getIntentTargetId(intentId, declarationId);
         })
@@ -783,10 +919,7 @@ const resolveInstallTargetSpecForBindingEndpoint = async (
 
     return (
         intent.spec.targets.find(candidate => {
-            const declarationId =
-                typeof candidate.config.declarationId === 'string'
-                    ? candidate.config.declarationId
-                    : `${candidate.targetType}_${candidate.listingId}`;
+            const declarationId = getTargetDeclarationId(candidate);
 
             return getIntentTargetId(intent.intentId, declarationId) === endpoint.resourceId;
         }) ?? null

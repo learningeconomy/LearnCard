@@ -477,7 +477,30 @@ export const ApprovalArtifactValidator = z.object({
 });
 export type ApprovalArtifact = z.infer<typeof ApprovalArtifactValidator>;
 
+/** Review evidence only: no secret values or provisioning results. */
+export const WorkloadPlanValidator = z.object({
+    packageId: z.string(),
+    packageVersionId: z.string(),
+    version: z.string(),
+    manifestHash: z.string(),
+    publisherDid: z.string(),
+    profiles: z.array(z.string()),
+    components: z.array(z.object({ id: z.string(), image: z.string(), platform: z.string() })),
+    module: z.object({ sha256: z.string(), rendererVersion: z.string() }),
+    endpoints: z.array(z.record(z.string(), z.unknown())),
+    supportBoundary: z.record(z.string(), z.string()),
+    secrets: z.array(z.object({ name: z.string(), provisioningKind: z.string() })),
+    driver: z.literal('local-compose'),
+    provides: z.array(CapabilityEnum),
+    consumes: z.array(CapabilityEnum),
+    bundle: z.object({ versionId: z.string(), manifestHash: z.string() }),
+    platformValidation: z.literal('DEFERRED_TO_AGENT'),
+});
+export type WorkloadPlan = z.infer<typeof WorkloadPlanValidator>;
+
 export const InstallTargetSpecValidator = z.object({
+    declarationId: z.string().optional(),
+    workload: WorkloadPlanValidator.optional(),
     targetType: InstallTargetTypeEnum,
     listingId: z.string(),
     versionId: z.string(),
@@ -497,6 +520,7 @@ export const InstallIntentProposalValidator = z.object({
 export type InstallIntentProposal = z.infer<typeof InstallIntentProposalValidator>;
 
 export const InstallIntentPlanValidator = z.object({
+    targets: z.array(InstallTargetSpecValidator).optional(),
     apiVersion: z.literal('lc.install-plan/v1'),
     renderedAt: z.string().datetime(),
     planHash: z.string(),

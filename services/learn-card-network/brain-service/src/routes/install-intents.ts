@@ -5,13 +5,21 @@ import { z } from 'zod';
 import {
     BindingProposalValidator,
     BindingValidator,
-    BundleManifestValidator,
+    VersionedBundleManifestValidator,
     ConsoleSurfaceValidator,
     InstallIntentSpecValidator,
     IntegrationManifestValidator,
 } from '@learncard/types';
 
 import { t, profileRoute, openRouteWithoutInputCapture } from '@routes';
+import type { WorkloadPlan } from '@learncard/types';
+import { resolveWorkloadPlan } from '@helpers/workload-plan.helpers';
+import {
+    getTargetDeclarationId,
+    getMemberOperatorConfig,
+    assertWorkloadBindingCapabilities,
+} from '@helpers/install-intent.helpers';
+import { computeManifestHash } from '@helpers/manifest-signature.helpers';
 import {
     readServiceAccount,
     issueServiceAccountCredential,
@@ -245,13 +253,13 @@ const registrySubscriptionTargetsFromSignedManifest = (
     }
 
     return parsed.data.subscribes.map(subscription => ({
+        declarationId: subscription.declarationId,
         targetType: 'REGISTRY_SUBSCRIPTION' as const,
         listingId,
         versionId,
         scopes: [],
         consentTiers: [],
         config: {
-            declarationId: subscription.declarationId,
             registryId: subscription.registryId,
             displayName: subscription.displayName,
             ...(subscription.description ? { description: subscription.description } : {}),
@@ -278,7 +286,8 @@ const buildSingletonSpec = (
             versionId,
             scopes,
             consentTiers: [],
-            config: { declarationId: 'root', ...requestedConfig },
+            declarationId: 'root',
+            config: requestedConfig,
             entitlementRequirements: [],
         },
         ...additionalTargets,
@@ -383,7 +392,7 @@ const buildSpecForIntent = async (input: {
     }
 
     if (listing.kind === 'BUNDLE') {
-        const manifestResult = BundleManifestValidator.safeParse(
+        const manifestResult = VersionedBundleManifestValidator.safeParse(
             version.manifest_json ? JSON.parse(version.manifest_json) : {}
         );
 
@@ -394,8 +403,20 @@ const buildSpecForIntent = async (input: {
         const expanded = expandBundle(manifestResult.data);
         const listingById: Record<string, NonNullable<typeof listing>> = {};
         const listingVersionsById: Record<string, NonNullable<typeof version>> = {};
+        const workloadsByDeclarationId: Record<string, WorkloadPlan> = {};
 
         for (const member of expanded.members) {
+            if (member.workloadMember) {
+                workloadsByDeclarationId[member.declarationId] = await resolveWorkloadPlan(
+                    member.workloadMember,
+                    getMemberOperatorConfig(input.requestedConfig, member.declarationId),
+                    {
+                        versionId: version.version_id,
+                        manifestHash: computeManifestHash(JSON.parse(version.manifest_json!)),
+                    }
+                );
+                continue;
+            }
             const memberListing = await readAppStoreListingById(member.listingId);
             const memberVersion = await readListingVersionById(member.versionId);
 
@@ -432,6 +453,7 @@ const buildSpecForIntent = async (input: {
             listingById,
             listingVersionsById,
             requestedConfig: input.requestedConfig,
+            workloadsByDeclarationId,
         });
         const adapterSubscriptionTargets = materialized.targets
             .filter(target => target.targetType === 'INTEGRATION_INSTALL')
@@ -440,14 +462,9 @@ const buildSpecForIntent = async (input: {
                     target.listingId,
                     target.versionId,
                     listingVersionsById[target.versionId]?.manifest_json
-                ).map(subscription => ({
+                ).map((subscription): InstallIntentSpec['targets'][number] => ({
                     ...subscription,
-                    config: {
-                        ...subscription.config,
-                        declarationId: `${String(target.config.declarationId)}:${String(
-                            subscription.config.declarationId
-                        )}`,
-                    },
+                    declarationId: `${getTargetDeclarationId(target)}:${getTargetDeclarationId(subscription)}`,
                 }))
             );
         materialized.targets.push(...adapterSubscriptionTargets);
@@ -457,18 +474,17 @@ const buildSpecForIntent = async (input: {
         const consentTiers = Array.from(
             new Set(materialized.targets.flatMap(target => target.consentTiers))
         ).sort();
+        const bindings = dedupeBindingProposals(
+            bindEcosystem(input.ecosystemId, [...materialized.bindings, ...input.proposedBindings])
+        );
+        assertWorkloadBindingCapabilities(input.intentId, materialized.targets, bindings);
 
         return {
             listingKind: listing.kind,
             spec: {
                 apiVersion: 'lc.install-spec/v1',
                 targets: materialized.targets,
-                bindings: dedupeBindingProposals(
-                    bindEcosystem(input.ecosystemId, [
-                        ...materialized.bindings,
-                        ...input.proposedBindings,
-                    ])
-                ),
+                bindings,
                 pinnedVersionIds: materialized.pinnedVersionIds,
                 scopes,
                 consentTiers,
@@ -686,6 +702,8 @@ export const installIntentsRouter = t.router({
             const spec = await buildApprovedSpec(intent);
 
             for (const target of spec.targets) {
+                // Package eligibility was rechecked by resolveWorkloadPlan, independently of catalog policy.
+                if (target.workload) continue;
                 const targetListing = await readAppStoreListingById(target.listingId);
                 if (!targetListing)
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found.' });

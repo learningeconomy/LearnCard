@@ -154,9 +154,10 @@ export const revokeIntentServiceAccounts = async (
                     // Same declaration identity used by expectedTargetDescriptors.
                     getIntentTargetId(
                         intent.intentId,
-                        typeof t.config.declarationId === 'string'
-                            ? t.config.declarationId
-                            : `${t.targetType}_${t.listingId}`
+                        t.declarationId ??
+                            (typeof t.config.declarationId === 'string'
+                                ? t.config.declarationId
+                                : `${t.targetType}_${t.listingId}`)
                     )
                 ) ?? [];
         await tx.run(
@@ -204,9 +205,10 @@ export const checkIntegrationServiceAccount = async (
             t =>
                 getIntentTargetId(
                     intent.intentId,
-                    typeof t.config.declarationId === 'string'
-                        ? t.config.declarationId
-                        : `${t.targetType}_${t.listingId}`
+                    t.declarationId ??
+                        (typeof t.config.declarationId === 'string'
+                            ? t.config.declarationId
+                            : `${t.targetType}_${t.listingId}`)
                 ) === installId
         );
         let expectedGrants: ServiceAccountGrant[] = [];

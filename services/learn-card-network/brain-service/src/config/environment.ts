@@ -29,6 +29,8 @@ export const brainServiceEnvironmentShape = {
     LOGIN_PROVIDER_DID: optionalEnvironmentString,
     SIGNING_AUTHORITY_ENDPOINT: optionalEnvironmentUrl,
     APP_STORE_ADMIN_PROFILE_IDS: optionalEnvironmentString,
+    WORKLOAD_CURATOR_DIDS: optionalEnvironmentString,
+    WORKLOAD_LOCAL_COMPOSE_ENABLED: optionalEnvironmentBoolean.default(false),
     SKILL_FRAMEWORK_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID: optionalEnvironmentString,
     TRUSTED_BRAIN_SERVICES: optionalEnvironmentString,

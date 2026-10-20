@@ -294,6 +294,11 @@ const main = async (): Promise<void> => {
         }
 
         const { versionId, version, minted } = await ensureMemberVersion(memberListing);
+        if (targetType === 'WORKLOAD_DEPLOYMENT' && memberListing.kind === 'APP') {
+            console.warn(
+                'Deprecated: v1 WORKLOAD_DEPLOYMENT uses an APP listing. Use a v1.1 workload package member for new bundles.'
+            );
+        }
 
         members.push({
             declarationId: memberSlug,

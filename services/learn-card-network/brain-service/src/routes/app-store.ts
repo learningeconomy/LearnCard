@@ -8,6 +8,8 @@ import {
     AppManifestVersionValidator,
     AppEventValidator,
     BundleManifestValidator,
+    VersionedBundleManifestValidator,
+    BundleWorkloadMemberValidator,
     CapabilityEnum,
     InstallTargetTypeEnum,
     IntegrationManifestValidator,
@@ -3242,6 +3244,7 @@ export const appStoreRouter = t.router({
                     listingId: z.string(),
                     versionId: z.string(),
                     optional: z.boolean(),
+                    workloadMember: BundleWorkloadMemberValidator.optional(),
                     display_name: z.string().optional(),
                 })
             )
@@ -3274,10 +3277,12 @@ export const appStoreRouter = t.router({
             // Same gate buildSpecForIntent runs before it fans a bundle out: the stored
             // manifest must verify against its publisher DID before its members are read.
             const validated = await assertSignedListingVersionOrThrow(listing.kind, version);
-            const { members } = expandBundle(BundleManifestValidator.parse(validated));
+            const { members } = expandBundle(VersionedBundleManifestValidator.parse(validated));
 
             const memberListings = await Promise.all(
-                members.map(member => readAppStoreListingById(member.listingId))
+                members.map(member =>
+                    member.workloadMember ? null : readAppStoreListingById(member.listingId)
+                )
             );
 
             return members.map((member, index) => ({
@@ -3310,7 +3315,7 @@ export const appStoreRouter = t.router({
             }
             // ADR-009 D5 + ADR-008: only verified manifest evidence reaches operators.
             const validated = await assertSignedListingVersionOrThrow(listing.kind, version);
-            const manifest = BundleManifestValidator.parse(validated);
+            const manifest = VersionedBundleManifestValidator.parse(validated);
             return { readiness: manifest.readiness, defaultBindings: manifest.defaultBindings };
         }),
 

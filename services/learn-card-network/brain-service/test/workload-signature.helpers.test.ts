@@ -8,7 +8,7 @@ import {
     computeWorkloadManifestHash,
     signManifestWithDidKey,
 } from '@helpers/manifest-signature.helpers';
-import { buildDccIssuerWorkloadPackage } from '../../test/fixtures/workload/dcc-issuer';
+import { buildDccIssuerWorkloadPackage } from './fixtures/workload/dcc-issuer';
 
 describe('workload manifest signing', (): void => {
     it('preserves own __proto__ fields in canonical hashes', (): void => {

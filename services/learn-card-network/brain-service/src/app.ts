@@ -24,6 +24,7 @@ import { federationRouter, FederationRouter } from '@routes/federation';
 import { ecosystemsRouter, EcosystemsRouter } from '@routes/ecosystems';
 import { groupsRouter, GroupsRouter } from '@routes/groups';
 import { installIntentsRouter, InstallIntentsRouter } from '@routes/install-intents';
+import { workloadPackagesRouter, type WorkloadPackagesRouter } from '@routes/workload-packages';
 import {
     integrationServiceRouter,
     type IntegrationServiceRouter,
@@ -64,6 +65,7 @@ export const appRouter = t.router<{
     ecosystem: EcosystemsRouter;
     group: GroupsRouter;
     installIntent: InstallIntentsRouter;
+    workloadPackage: WorkloadPackagesRouter;
     integrationService: IntegrationServiceRouter;
     shareLinks: ShareLinksRouter;
     publicShareLinks: PublicShareLinksRouter;
@@ -94,6 +96,7 @@ export const appRouter = t.router<{
     ecosystem: ecosystemsRouter,
     group: groupsRouter,
     installIntent: installIntentsRouter,
+    workloadPackage: workloadPackagesRouter,
     integrationService: integrationServiceRouter,
     shareLinks: shareLinksRouter,
     publicShareLinks: publicShareLinksRouter,

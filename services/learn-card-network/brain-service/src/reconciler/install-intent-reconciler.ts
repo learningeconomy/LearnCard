@@ -371,9 +371,12 @@ const assertKillSwitchNotEnabled = async (ecosystemId: string): Promise<void> =>
 };
 
 const getTargetDeclarationId = (target: InstallIntentTargetSpec): string => {
-    return typeof target.config.declarationId === 'string'
-        ? target.config.declarationId
-        : `${target.targetType}_${target.listingId}`;
+    return (
+        target.declarationId ??
+        (typeof target.config.declarationId === 'string'
+            ? target.config.declarationId
+            : `${target.targetType}_${target.listingId}`)
+    );
 };
 
 const expectedTargetDescriptors = (intent: InstallIntentRecordType) => {
@@ -480,7 +483,7 @@ const observeDrift = async (
     let authorityDrift: string | undefined;
     const invalidAuthorities = new Set<string>();
     for (const target of expectedTargets.filter(
-        target => target.targetType === 'INTEGRATION_INSTALL'
+        candidate => candidate.targetType === 'INTEGRATION_INSTALL'
     )) {
         const cause = await checkIntegrationServiceAccount(intent, target.id);
         authorityDrift ??= cause;
@@ -488,7 +491,7 @@ const observeDrift = async (
     }
 
     for (const target of expectedTargets.filter(
-        target => probeHealth && target.targetType === 'INTEGRATION_INSTALL'
+        candidate => probeHealth && candidate.targetType === 'INTEGRATION_INSTALL'
     )) {
         if (invalidAuthorities.has(target.id)) continue;
         const cause = await reconcileServiceAccountHealth(intent, target);
