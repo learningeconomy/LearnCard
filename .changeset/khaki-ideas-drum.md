@@ -8,3 +8,5 @@ fix: [LC-2202] Clarify extraction and confirmed save outcomes, keep saved origin
 Open empty or unreadable uploads from their feedback filename without saving a source credential.
 
 Keep blank files out of mixed and reopened reviews, preserve saved documents when processing is blocked, and localize extraction errors and retry actions.
+
+Keep readable legacy originals accessible alongside removable unavailable records, refresh document lists without stale cached results, and verify a résumé's identity before deleting it.

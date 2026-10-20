@@ -27,7 +27,7 @@ import {
 
 import * as m from '../../../../paraglide/messages.js';
 import type { LCR } from 'learn-card-base/types/credential-records';
-import { RawArtifactCredentialValidator } from 'learn-card-base/types/file-extraction';
+import { readUploadedDocument } from './uploadedDocument.helpers';
 import { FileUploadPersistenceError } from '../../../../hooks/uploadFile.types';
 import type { UnsignedVC } from '@learncard/types';
 
@@ -40,6 +40,7 @@ export type DiplomaType = {
     fileType: string;
     type: string;
     data: string;
+    unavailable?: boolean;
 };
 
 export const CheckListDiplomas: React.FC = () => {
@@ -77,8 +78,14 @@ export const CheckListDiplomas: React.FC = () => {
     const [reviewError, setReviewError] = useState<string | null>(null);
     const processFiles = async () => {
         const vcs = await fetchParsedCredentialsFromFiles(UploadTypesEnum.Diploma);
+        const needed = new Set(vcs.map(entry => entry.artifactId).filter(Boolean));
+        const sources = rawArtifactCredentials.filter(source => needed.has(source.id));
         if (vcs.length) {
-            const [first, ...rest] = rawArtifactCredentials;
+            const [first, ...rest] = sources;
+            if (!first) {
+                await handleSetDiploma();
+                return;
+            }
             checklistStore.set.setPendingReview('diploma', {
                 credentials: vcs,
                 rawArtifact: first,
@@ -167,9 +174,10 @@ export const CheckListDiplomas: React.FC = () => {
             setIsLoading(true);
             const wallet = await initWallet();
 
-            const records = await wallet.index.LearnCloud.get({
-                category: UploadTypesEnum.Diploma,
-            });
+            const records = await wallet.index.LearnCloud.get(
+                { category: UploadTypesEnum.Diploma },
+                { cache: 'skip-cache' }
+            );
 
             const recordUris =
                 records?.map(({ uri, id }: { uri: string; id: string }) => ({ uri, id })) ?? [];
@@ -181,18 +189,13 @@ export const CheckListDiplomas: React.FC = () => {
             }
 
             const documents = await Promise.all(
-                recordUris.map(async ({ uri, id }) => {
-                    const credential = RawArtifactCredentialValidator.parse(
-                        await wallet.read.get(uri)
-                    );
-                    return {
-                        ...credential.rawArtifact,
-                        id,
-                        uri,
-                        artifactId: credential.id,
-                        type: UploadTypesEnum.Diploma,
-                    };
-                })
+                recordUris.map(record =>
+                    readUploadedDocument(
+                        record,
+                        uri => wallet.read.get(uri),
+                        UploadTypesEnum.Diploma
+                    )
+                )
             );
             setDiplomas(documents);
             setIsLoading(false);
@@ -214,7 +217,7 @@ export const CheckListDiplomas: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({ id });
+                const record = await wallet.index.LearnCloud.get({ id }, { cache: 'skip-cache' });
                 const targetRecord = record?.[0] as unknown as LCR | undefined;
 
                 if (!targetRecord) return;
@@ -323,6 +326,7 @@ export const CheckListDiplomas: React.FC = () => {
                                         fileType={diploma.fileType}
                                         fileSize={diploma.fileSize}
                                         data={diploma.data}
+                                        unavailable={diploma.unavailable}
                                         addedCredentialCount={
                                             fileUploadOutcomes.find(
                                                 item =>

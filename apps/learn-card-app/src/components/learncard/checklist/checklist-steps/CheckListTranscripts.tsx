@@ -24,7 +24,7 @@ import {
 
 import * as m from '../../../../paraglide/messages.js';
 import type { LCR } from 'learn-card-base/types/credential-records';
-import { RawArtifactCredentialValidator } from 'learn-card-base/types/file-extraction';
+import { readUploadedDocument } from './uploadedDocument.helpers';
 import type { UnsignedVC } from '@learncard/types';
 import { UploadedOriginalDocument } from './UploadedOriginalDocument';
 import { UploadFileOutcomeList } from './UploadFileOutcomeList';
@@ -40,6 +40,7 @@ export type TranscriptType = {
     fileType: string;
     type: string;
     data: string;
+    unavailable?: boolean;
 };
 
 export const CheckListTranscripts: React.FC = () => {
@@ -89,8 +90,14 @@ export const CheckListTranscripts: React.FC = () => {
 
     const processFiles = async () => {
         const vcs = await fetchParsedCredentialsFromFiles(UploadTypesEnum.Transcript);
+        const needed = new Set(vcs.map(entry => entry.artifactId).filter(Boolean));
+        const sources = rawArtifactCredentials.filter(source => needed.has(source.id));
         if (vcs.length > 0) {
-            const [first, ...rest] = rawArtifactCredentials;
+            const [first, ...rest] = sources;
+            if (!first) {
+                await handleSetTranscripts();
+                return;
+            }
             checklistStore.set.setPendingReview('transcript', {
                 credentials: vcs,
                 rawArtifact: first,
@@ -119,9 +126,10 @@ export const CheckListTranscripts: React.FC = () => {
             setIsLoading(true);
             const wallet = await initWallet();
 
-            const records = await wallet.index.LearnCloud.get({
-                category: UploadTypesEnum.Transcript,
-            });
+            const records = await wallet.index.LearnCloud.get(
+                { category: UploadTypesEnum.Transcript },
+                { cache: 'skip-cache' }
+            );
 
             const recordUris =
                 records?.map(({ uri, id }: { uri: string; id: string }) => ({ uri, id })) ?? [];
@@ -133,18 +141,13 @@ export const CheckListTranscripts: React.FC = () => {
             }
 
             const documents = await Promise.all(
-                recordUris.map(async ({ uri, id }) => {
-                    const credential = RawArtifactCredentialValidator.parse(
-                        await wallet.read.get(uri)
-                    );
-                    return {
-                        ...credential.rawArtifact,
-                        id,
-                        uri,
-                        artifactId: credential.id,
-                        type: UploadTypesEnum.Transcript,
-                    };
-                })
+                recordUris.map(record =>
+                    readUploadedDocument(
+                        record,
+                        uri => wallet.read.get(uri),
+                        UploadTypesEnum.Transcript
+                    )
+                )
             );
             setTranscripts(documents);
             setIsLoading(false);
@@ -166,7 +169,7 @@ export const CheckListTranscripts: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({ id });
+                const record = await wallet.index.LearnCloud.get({ id }, { cache: 'skip-cache' });
                 const targetRecord = record?.[0] as unknown as LCR | undefined;
 
                 if (!targetRecord) return;
@@ -362,6 +365,7 @@ export const CheckListTranscripts: React.FC = () => {
                                         fileType={transcript.fileType}
                                         fileSize={transcript.fileSize}
                                         data={transcript.data}
+                                        unavailable={transcript.unavailable}
                                         addedCredentialCount={
                                             fileUploadOutcomes.find(
                                                 item =>

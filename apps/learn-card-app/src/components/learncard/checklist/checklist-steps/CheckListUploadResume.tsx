@@ -13,7 +13,7 @@ import { getField } from './credentialEditFields';
 
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import { FileUploadPersistenceError } from '../../../../hooks/uploadFile.types';
-import { RawArtifactCredentialValidator } from 'learn-card-base/types/file-extraction';
+import { readUploadedDocument } from './uploadedDocument.helpers';
 import type { UnsignedVC } from '@learncard/types';
 import {
     useWallet,
@@ -41,6 +41,7 @@ export type ResumeType = {
     fileType: string;
     type: string;
     data: string;
+    unavailable?: boolean;
 };
 
 export const CheckListUploadResume: React.FC = () => {
@@ -119,7 +120,10 @@ export const CheckListUploadResume: React.FC = () => {
             setIsLoading(true);
             const wallet = await initWallet();
 
-            const record = await wallet.index.LearnCloud.get({ category: UploadTypesEnum.Resume });
+            const record = await wallet.index.LearnCloud.get(
+                { category: UploadTypesEnum.Resume },
+                { cache: 'skip-cache' }
+            );
 
             const recordUri = record?.[0]?.uri as string;
 
@@ -129,17 +133,13 @@ export const CheckListUploadResume: React.FC = () => {
                 return;
             }
 
-            const resumeCredential = RawArtifactCredentialValidator.parse(
-                await wallet.read.get(recordUri)
+            setResume(
+                await readUploadedDocument(
+                    { id: record[0].id, uri: recordUri },
+                    uri => wallet.read.get(uri),
+                    UploadTypesEnum.Resume
+                )
             );
-
-            setResume({
-                id: record?.[0]?.id as string,
-                uri: recordUri,
-                artifactId: resumeCredential.id,
-                ...resumeCredential.rawArtifact,
-                type: UploadTypesEnum.Resume,
-            });
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
@@ -157,18 +157,22 @@ export const CheckListUploadResume: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({
-                    category: UploadTypesEnum.Resume,
-                });
+                const record = await wallet.index.LearnCloud.get(
+                    { id: previous.id },
+                    { cache: 'skip-cache' }
+                );
                 const targetRecord = record?.[0] as unknown as LCR | undefined;
 
-                if (!targetRecord) return;
+                if (!targetRecord || targetRecord.uri !== previous.uri) {
+                    await handleSetResume();
+                    return;
+                }
 
                 await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteResume::error', error);
-                setResume(previous);
+                setResume(current => current ?? previous);
                 restoreOutcome();
                 presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
                     title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
@@ -356,6 +360,7 @@ export const CheckListUploadResume: React.FC = () => {
                                 fileType={resume.fileType}
                                 fileSize={resume.fileSize}
                                 data={resume.data}
+                                unavailable={resume.unavailable}
                                 addedCredentialCount={
                                     fileUploadOutcomes.find(
                                         item =>
