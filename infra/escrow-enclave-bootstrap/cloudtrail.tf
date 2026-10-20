@@ -84,6 +84,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail" {
       sse_algorithm     = "aws:kms"
       kms_master_key_id = aws_kms_key.cloudtrail.arn
     }
+    # CloudTrail encrypts its own objects with the trail key and the
+    # aws:cloudtrail:arn encryption context the key policy pins; an S3 Bucket
+    # Key would replace that context with the bucket ARN. Volume is a few
+    # thousand objects a day, far below KMS request quotas.
     bucket_key_enabled = false
   }
 }

@@ -49,6 +49,14 @@ resource "aws_cloudwatch_event_rule" "authority_governance" {
   for_each      = local.authority_event_patterns
   name          = "${local.name_prefix}-authority-${each.key}"
   event_pattern = each.value
+  lifecycle {
+    # The unexpected_write exemption must be the real writer ARN; never let the
+    # try() fallback render a pattern that pages on every legitimate write.
+    precondition {
+      condition     = each.key != "unexpected_write" || length(aws_iam_user.authority_writer) == 1
+      error_message = "unexpected_write requires the authority writer IAM user; its ARN is the only exempt caller."
+    }
+  }
 }
 resource "aws_cloudwatch_event_target" "authority_governance" {
   for_each = local.authority_event_patterns
