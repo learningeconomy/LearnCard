@@ -2,8 +2,7 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         "outDir": "../../dist/out-tsc",
-        "module": "commonjs",
-        "types": ["vitest/globals", "node"]
+        "types": ["vitest/globals", "node", "vite/client"]
     },
     "include": [
         "vitest.config.ts",
