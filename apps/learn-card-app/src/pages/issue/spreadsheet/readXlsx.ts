@@ -27,7 +27,7 @@ export const readXlsx = (bytes: ArrayBuffer, name: string): SpreadsheetSource =>
                 position.r >= SPREADSHEET_LIMITS.rows + 100 ||
                 position.c >= SPREADSHEET_LIMITS.columns
             )
-                throw new SpreadsheetError('limit');
+                throw new SpreadsheetError('bounds', `${sheetName}!${address}`);
             end.r = Math.max(end.r, position.r);
             end.c = Math.max(end.c, position.c);
         }

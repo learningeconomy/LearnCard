@@ -19,10 +19,13 @@ export const SPREADSHEET_LIMITS = {
 };
 
 export type SpreadsheetErrorCode =
-    'file' | 'limit' | 'malformed' | 'emailColumn' | 'mapping' | 'run';
+    'file' | 'limit' | 'encoding' | 'bounds' | 'malformed' | 'emailColumn' | 'mapping' | 'run';
 
 export class SpreadsheetError extends Error {
-    constructor(readonly code: SpreadsheetErrorCode) {
+    constructor(
+        readonly code: SpreadsheetErrorCode,
+        readonly cell?: string
+    ) {
         super(code);
         this.name = 'SpreadsheetError';
     }
@@ -32,6 +35,7 @@ export const isValidRosterEmail = (value: string): boolean =>
     ContactMethodQueryValidator.safeParse({ type: 'email', value: normalizeEmail(value) }).success;
 
 export const readSpreadsheetText = (text: string, name = 'spreadsheet.csv'): SpreadsheetSource => {
+    if (text.includes('\uFFFD')) throw new SpreadsheetError('encoding');
     if (new TextEncoder().encode(text).length > SPREADSHEET_LIMITS.bytes)
         throw new SpreadsheetError('limit');
     const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), {
@@ -62,7 +66,14 @@ export const readSpreadsheetFile = async (file: File): Promise<SpreadsheetSource
         return readXlsx(await file.arrayBuffer(), file.name);
     }
     if (!/\.(csv|tsv)$/i.test(file.name)) throw new SpreadsheetError('file');
-    return readSpreadsheetText(await file.text(), file.name);
+    let text: string;
+    try {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
+    } catch {
+        // Guessing a legacy encoding can silently corrupt names in signed credentials.
+        throw new SpreadsheetError('encoding');
+    }
+    return readSpreadsheetText(text, file.name);
 };
 
 /** Multi-line cells are a roster candidate, never a hosted-credential URL. */

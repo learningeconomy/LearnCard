@@ -24,6 +24,12 @@ export const spreadsheetErrorMessage = (error: unknown): string => {
             ? error.code
             : '';
     switch (code) {
+        case 'encoding':
+            return m['issueFlow.sheet.encoding']();
+        case 'bounds':
+            return m['issueFlow.sheet.bounds']({
+                cell: error instanceof SpreadsheetError ? (error.cell ?? '') : '',
+            });
         case 'limit':
         case 'oversize':
             return m['issueFlow.sheet.tooLarge']();

@@ -1,3 +1,4 @@
+import { getResultValidationError } from '../components/resultField';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -27,7 +28,12 @@ import {
     type ColumnScopes,
 } from './roster';
 import { exportIssuanceCsv } from './exportIssuance';
-import { executeIssuance, canRemoveIssuanceRow, canReplaceIssuanceRecipients } from './issuance';
+import {
+    executeIssuance,
+    isSubmissionCandidate,
+    canRemoveIssuanceRow,
+    canReplaceIssuanceRecipients,
+} from './issuance';
 import {
     listIssuanceRuns,
     readIssuanceRun,
@@ -243,7 +249,7 @@ export const useIssueRoster = (options: RosterOptions) => {
     const capture = (): IssuanceRun => {
         if (!scope.issuer) throw new IssuanceRecoveryError('context');
         const base = runRef.current;
-        return {
+        const captured: IssuanceRun = {
             version: 1,
             id,
             scope,
@@ -265,6 +271,21 @@ export const useIssueRoster = (options: RosterOptions) => {
             ),
             attempts: base?.attempts ?? [],
         };
+        const content = (saved: IssuanceRun): string =>
+            JSON.stringify([
+                saved.template,
+                saved.draft.recipients,
+                saved.draft.values,
+                saved.shared,
+                saved.scopes,
+                saved.draft.evidence,
+                saved.draft.formulaCells ?? {},
+                saved.draft.attachments ?? {},
+                saved.draft.source ?? null,
+            ]);
+        if (base?.dismissedAt && content(base) === content(captured))
+            captured.dismissedAt = base.dismissedAt;
+        return captured;
     };
     const persistDraft = async (saved: IssuanceRun): Promise<void> => {
         if (issuanceScopeKey(saved.scope) !== issuanceScopeKey(currentScope()))
@@ -462,18 +483,13 @@ export const useIssueRoster = (options: RosterOptions) => {
             recipient_count: restore?.draft.recipients.length ?? options.recipients.length,
         };
         let step: 'jsonld_validation' | 'issuance' = 'jsonld_validation';
+        let issueStarted = false;
         try {
             if (analyticsTemplate)
                 metadata.category =
                     getDefaultCategoryForCredential(
                         templateToJson(analyticsTemplate) as UnsignedVC
                     ) || undefined;
-            if (!checkOnly)
-                track(AnalyticsEvents.CREDENTIAL_ISSUE_STARTED, {
-                    ...metadata,
-                    used_dynamic_variables: options.variables.length > 0,
-                    entry_point: options.entryPoint,
-                });
             // Finish this tab's autosave before capturing its revision. Other tabs
             // still fail the controller's lock/revision checks rather than overwrite it.
             await Promise.all([...pendingDraftSaves.current]);
@@ -483,11 +499,17 @@ export const useIssueRoster = (options: RosterOptions) => {
             const candidates = checkOnly
                 ? []
                 : saved.draft.recipients.filter(row =>
-                      (retryFailed ? ['ready', 'failed'] : ['ready']).includes(
-                          saved.outcomes[recipientKey(row)]?.state ?? 'ready'
-                      )
+                      isSubmissionCandidate(saved, row, retryFailed)
                   );
+            const candidateIds = candidates.map(recipientKey);
+            metadata.recipient_count = candidates.length;
             if (candidates.length) {
+                issueStarted = true;
+                track(AnalyticsEvents.CREDENTIAL_ISSUE_STARTED, {
+                    ...metadata,
+                    used_dynamic_variables: variables.length > 0,
+                    entry_point: options.entryPoint,
+                });
                 if (validateTemplate(saved.template).length)
                     throw new Error('Credential validation failed');
                 const issues = getRowProblems(
@@ -499,7 +521,22 @@ export const useIssueRoster = (options: RosterOptions) => {
                     saved.draft.evidence,
                     saved.draft.formulaCells
                 );
-                if (candidates.some(row => issues[recipientKey(row)]?.length))
+                if (
+                    candidates.some(
+                        row =>
+                            issues[recipientKey(row)]?.length ||
+                            getResultValidationError(
+                                saved.template,
+                                effectiveRowValues(
+                                    row,
+                                    variables,
+                                    saved.scopes,
+                                    saved.shared,
+                                    saved.draft.values
+                                )
+                            )
+                    )
+                )
                     throw new SpreadsheetError('mapping');
                 const checked = new Set<string>();
                 for (const row of candidates) {
@@ -571,8 +608,8 @@ export const useIssueRoster = (options: RosterOptions) => {
                     },
                 }
             );
-            if (!checkOnly) {
-                const outcomes = Object.values(completed.outcomes);
+            if (issueStarted) {
+                const outcomes = candidateIds.map(id => completed.outcomes[id]).filter(Boolean);
                 const duration = Date.now() - startedAt;
                 if (outcomes.length && outcomes.every(row => row.state === 'sent')) {
                     track(AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED, {
@@ -596,7 +633,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                     });
             }
         } catch (reason) {
-            if (!checkOnly)
+            if (issueStarted)
                 track(AnalyticsEvents.CREDENTIAL_ISSUE_FAILED, {
                     ...metadata,
                     step_id: step,

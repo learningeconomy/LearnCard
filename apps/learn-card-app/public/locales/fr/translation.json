@@ -9363,7 +9363,7 @@
             "storage": "La récupération n’a pas pu être enregistrée. Libérez de l’espace et réessayez.",
             "corrupt": "Cet envoi enregistré n’a pas pu être lu. Conservez la feuille et vérifiez les résultats avant de recommencer.",
             "contextChanged": "Votre compte ou réseau a changé. Revenez au compte d’origine pour continuer.",
-            "expired": "Cette demande non confirmée est trop ancienne pour être renvoyée sans risque. Vérifiez ses résultats d’abord.",
+            "expired": "Cette demande est trop ancienne pour être renvoyée sans risque. Contactez l’assistance pour vérifier ces envois. Vous pouvez continuer à délivrer des justificatifs aux autres personnes.",
             "busy": "Cet envoi est actif ou a changé. Actualisez pour voir ses derniers résultats.",
             "chooseEmail": "Choisissez la colonne des adresses e-mail des destinataires.",
             "mapping": "Vérifiez les noms des colonnes et corrigez les lignes signalées.",
@@ -9447,7 +9447,9 @@
                 },
                 "dateUtc": "UTC · changer la date conserve l’heure",
                 "originalDate": "Valeur d’origine : {{value}}"
-            }
+            },
+            "encoding": "Enregistrez cette feuille au format CSV UTF-8 ou XLSX, puis importez-la à nouveau. Certains caractères n’ont pas pu être lus correctement.",
+            "bounds": "Supprimez la cellule hors limites {{cell}}, puis importez à nouveau le classeur."
         }
     },
     "connectivity": {
