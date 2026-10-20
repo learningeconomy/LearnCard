@@ -88,8 +88,10 @@ warming action; verifier child environments remain unchanged.
 `startup-timings.json` records preflight, checkout Docker build,
 preparation, Compose startup and readiness. Each run's `timings.json` records total startup,
 catalog and teardown; `report.json` records each journey's `durationMs`, including evidence
-capture and closure. Durations use a monotonic clock. Completed/failed phases are saved at
-each boundary; a killed process can leave a phase marked running without a final duration.
+capture and closure. Durations use a monotonic clock. Startup timing files are created only
+after ownership is claimed, so a failed preflight can be retried in the same directory.
+Timing writes are best-effort diagnostics: a storage failure cannot prevent work or mask its
+original error. Completed/failed phases are saved at each boundary when storage is available; a killed process can leave a phase marked running without a final duration.
 The hosted Markdown/JSON summaries retain only allowlisted phase/feature names, statuses,
 coverage counts and validated numeric durations. Raw timestamps and error text are excluded.
 

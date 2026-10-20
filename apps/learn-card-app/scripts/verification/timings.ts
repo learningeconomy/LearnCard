@@ -17,15 +17,25 @@ interface PhaseTiming {
 }
 
 /** Persist each boundary, including failures, without copying command output or credentials. */
-export const createTimings = (path: string) => {
-    const timings: PhaseTiming[] = [];
+export const createTimings = (path: string, completed: readonly PhaseTiming[] = []) => {
+    const timings: PhaseTiming[] = [...completed];
     let initialized = false;
+    let unavailable = false;
     const save = async (): Promise<void> => {
-        await writeFile(path, `${JSON.stringify(timings, null, 2)}\n`, {
-            mode: 0o600,
-            flag: initialized ? 'w' : 'wx',
-        });
-        initialized = true;
+        if (unavailable) return;
+        try {
+            await writeFile(path, `${JSON.stringify(timings, null, 2)}\n`, {
+                mode: 0o600,
+                flag: initialized ? 'w' : 'wx',
+            });
+            initialized = true;
+        } catch {
+            unavailable = true;
+            // Timing output is diagnostic: never prevent an action or hide its real error.
+            console.error(
+                '[lc verify] Phase timings could not be saved; continuing without timing updates.'
+            );
+        }
     };
     return async <T>(phase: TimingPhase, action: () => Promise<T>): Promise<T> => {
         const timing: PhaseTiming = { phase, status: 'running', durationMs: null };

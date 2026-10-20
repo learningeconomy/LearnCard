@@ -3,6 +3,7 @@ import { dockerBuildArguments } from './docker-build';
 
 const localBuilder = async () =>
     JSON.stringify({
+        Name: 'lc-verification',
         Driver: 'docker-container',
         Nodes: [{ Endpoint: 'unix:///var/run/docker.sock' }],
     });
@@ -29,6 +30,36 @@ describe('verification Docker build cache', () => {
         expect(args).not.toContain('--cache-to');
     });
 
+    it('selects the requested builder from real newline-delimited list output', async () => {
+        const args = await dockerBuildArguments(
+            'owner',
+            async command => {
+                expect(command).toEqual(['docker', 'buildx', 'ls', '--format', 'json']);
+                return [
+                    JSON.stringify({
+                        Name: 'other',
+                        Driver: 'docker',
+                        Nodes: [{ Endpoint: 'default' }],
+                    }),
+                    await localBuilder(),
+                    '',
+                ].join('\r\n');
+            },
+            'lc-verification'
+        );
+        expect(args).toContain('lc-verification');
+        expect(args).toContain('--load');
+    });
+
+    it('does not fall back to a different builder when the requested name is absent', async () => {
+        await expect(dockerBuildArguments('owner', localBuilder, 'missing')).rejects.toThrow(
+            'was not found'
+        );
+        await expect(dockerBuildArguments('owner', async () => '', 'missing')).rejects.toThrow(
+            'was not found'
+        );
+    });
+
     it.each(['tcp://remote:2375', 'ssh://remote', 'alternate-context', 'default'])(
         'rejects a builder endpoint outside the trusted daemon: %s',
         async endpoint => {
@@ -37,6 +68,7 @@ describe('verification Docker build cache', () => {
                     'owner',
                     async () =>
                         JSON.stringify({
+                            Name: 'named',
                             Driver: 'docker-container',
                             Nodes: [{ Endpoint: endpoint }],
                         }),
@@ -52,6 +84,7 @@ describe('verification Docker build cache', () => {
                 'owner',
                 async () =>
                     JSON.stringify({
+                        Name: 'named',
                         Driver: 'docker-container',
                         Nodes: [
                             { Endpoint: 'unix:///var/run/docker.sock' },

@@ -68,7 +68,8 @@ jobs:
                   endpoint: unix:///var/run/docker.sock
                   driver: docker-container
                   use: false
-                  buildkitd-flags: ''
+                  # A non-empty value replaces the action's insecure-entitlement defaults.
+                  buildkitd-flags: --log-format=text
 
             # Warm only the existing dependency target. The catalog's source build uses
             # this same builder, but still creates its own token-labelled checkout image.
@@ -110,7 +111,7 @@ jobs:
 
             - name: Check lifecycle, resolver and persistence boundaries
               run: |
-                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
+                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts apps/learn-card-app/scripts/verification/startup-timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
                   bun run --cwd apps/learn-card-app test:unit src/helpers/queryPersistence.test.ts src/helpers/createQueryPersister.test.ts > "$PRIVATE_LOG_DIR/persistence.log" 2>&1
 
             - name: Check sanitized timing summaries

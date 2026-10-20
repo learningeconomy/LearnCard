@@ -1,16 +1,20 @@
 /** Opt-in CI cache. The ordinary local build and token-owned image identity stay unchanged. */
 export const dockerBuildArguments = async (
     token: string,
-    inspect: (args: string[]) => Promise<string>,
+    listBuilders: (args: string[]) => Promise<string>,
     builderName?: string
 ): Promise<string[]> => {
     const args = builderName ? ['docker', 'buildx', 'build'] : ['docker', 'build'];
     if (builderName) {
         if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(builderName))
             throw new Error('Docker cache builder must be an explicit Buildx builder name.');
-        const builder = JSON.parse(
-            await inspect(['docker', 'buildx', 'inspect', builderName, '--format', '{{json .}}'])
-        );
+        const output = await listBuilders(['docker', 'buildx', 'ls', '--format', 'json']);
+        const builder = output
+            .split(/\r?\n/)
+            .filter(line => line.trim())
+            .map(line => JSON.parse(line))
+            .find(value => value?.Name === builderName);
+        if (!builder) throw new Error(`Docker cache builder ${builderName} was not found.`);
         // --host alone does not constrain an explicitly selected Buildx builder. Require
         // its nodes to use the same trusted system daemon, never a remote/context endpoint.
         if (

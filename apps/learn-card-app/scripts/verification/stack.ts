@@ -714,11 +714,10 @@ export const startStack = async (
     await privatePath(canonical, true);
     const progress = (stage: string, extra: Record<string, unknown> = {}) =>
         onProgress?.({ event: 'progress', stage, directory: canonical, ...extra });
-    const measure = createTimings(join(canonical, 'startup-timings.json'));
     progress('preflight');
-    const preflight = await measure('preflight', () =>
-        preflightVerification(canonical, { signal })
-    );
+    const preflightStarted = performance.now();
+    const preflight = await preflightVerification(canonical, { signal });
+    const preflightDuration = Math.round(performance.now() - preflightStarted);
     progress('preflight-complete', { preflight });
     const existingState = await lstat(join(canonical, 'state.json')).then(
         () => true,
@@ -745,6 +744,10 @@ export const startStack = async (
             { cause: error }
         );
     });
+    // No diagnostic file may arbitrate ownership or prevent retrying a failed preflight.
+    const measure = createTimings(join(canonical, 'startup-timings.json'), [
+        { phase: 'preflight', status: 'passed', durationMs: preflightDuration },
+    ]);
     let allocation: PortAllocation | undefined;
     let state: StackState | undefined;
     try {

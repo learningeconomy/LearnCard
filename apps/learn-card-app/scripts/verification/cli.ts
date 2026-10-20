@@ -370,7 +370,7 @@ const runFeatures = async (
     let endpoints: StackEndpoints | undefined;
     let ready: Record<string, unknown> | undefined;
     const runId = newRunId();
-    const artifacts = join(directory, 'runs', runId);
+    const artifacts = join(directory, command === 'run' ? 'runs' : 'startup', runId);
     const measure = createTimings(join(artifacts, 'timings.json'));
     const results: Array<Record<string, unknown>> = [];
     const report = async (status: string): Promise<void> =>

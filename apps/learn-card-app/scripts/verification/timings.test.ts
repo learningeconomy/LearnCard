@@ -1,4 +1,4 @@
-import { expect, it } from 'bun:test';
+import { expect, it, spyOn } from 'bun:test';
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -36,9 +36,36 @@ it('retains running, successful and failed phases without persisting action data
         ).toBe(true);
         expect(text).not.toContain('private');
         expect((await stat(path)).mode & 0o777).toBe(0o600);
-        await expect(createTimings(path)('build', async () => 'new run')).rejects.toThrow();
-        expect(await readFile(path, 'utf8')).toBe(text);
+        const warning = spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            expect(await createTimings(path)('build', async () => 'new run')).toBe('new run');
+            expect(await readFile(path, 'utf8')).toBe(text);
+            expect(warning).toHaveBeenCalledTimes(1);
+        } finally {
+            warning.mockRestore();
+        }
     } finally {
+        await rm(directory, { recursive: true, force: true });
+    }
+});
+
+it('does not hide an action error when the final timing write fails', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'lc-timing-write-failure-'));
+    const warning = spyOn(console, 'error').mockImplementation(() => {});
+    const measure = createTimings(join(directory, 'timings.json'));
+    const failure = new Error('private-build-failure');
+    try {
+        await expect(
+            measure('build', async () => {
+                await rm(directory, { recursive: true, force: true });
+                throw failure;
+            })
+        ).rejects.toBe(failure);
+        expect(await measure('teardown', async () => 'cleaned')).toBe('cleaned');
+        expect(warning).toHaveBeenCalledTimes(1);
+        expect(JSON.stringify(warning.mock.calls)).not.toContain('private-build-failure');
+    } finally {
+        warning.mockRestore();
         await rm(directory, { recursive: true, force: true });
     }
 });
