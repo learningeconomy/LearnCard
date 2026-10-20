@@ -144,6 +144,8 @@ below the saved document cards. Failed extraction and storage still have their o
 feedback. Reopening a manager shows saved originals without inventing a credential count.
 An unreadable original remains listed as unavailable and can still be deleted. It does
 not hide other documents; readable legacy originals remain accessible.
+Uploaded originals are hidden from **Recently Added** and **See all**. Extracted
+credentials and published résumés remain visible.
 
 Deleting an original immediately removes its row and upload feedback together. If deletion
 fails, both return with an error. Other documents and their feedback remain unchanged.
