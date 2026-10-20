@@ -86,14 +86,18 @@ describe('getConsentFlowDidAuthRedirect', () => {
                 ...input,
                 returnTo: 'https://attacker.example/callback',
             })
-        ).rejects.toThrow('DID Auth callback must use the configured AI Passport origin');
+        ).rejects.toThrow(
+            'DID Auth callback must use the configured AI Passport or contract redirect origin'
+        );
         await expect(
             getConsentFlowDidAuthRedirect({
                 ...input,
                 domain: 'https://attacker.example',
                 returnTo: 'https://api.example.test/auth/callback',
             })
-        ).rejects.toThrow('DID Auth callback must use the configured AI Passport origin');
+        ).rejects.toThrow(
+            'DID Auth callback must use the configured AI Passport or contract redirect origin'
+        );
 
         expect(wallet.invoke.issuePresentation).not.toHaveBeenCalled();
     });
@@ -301,7 +305,7 @@ describe('getConsentFlowDidAuthRedirect', () => {
                     domain: 'https://api.example.test',
                     returnTo: 'https://api.example.test/callback',
                 })
-            ).toThrow('configured AI Passport origin');
+            ).toThrow('configured AI Passport or contract redirect origin');
         }
     );
     it('validates a known challenged destination up front', () => {
@@ -311,7 +315,7 @@ describe('getConsentFlowDidAuthRedirect', () => {
                 domain: 'https://wrong.example.test',
                 returnTo: 'https://api.example.test/callback',
             })
-        ).toThrow('configured AI Passport origin');
+        ).toThrow('configured AI Passport or contract redirect origin');
     });
     it('preserves unrelated relative contract navigation', () => {
         expect(
@@ -335,5 +339,162 @@ describe('getConsentFlowDidAuthRedirect', () => {
             '/ai/sessions'
         );
         expect(wallet.invoke.issuePresentation).not.toHaveBeenCalled();
+    });
+});
+
+describe('challenged callbacks to the contract redirect origin', () => {
+    const contractUri = 'lc:network:example.test:contract:taylorbot';
+    const origin = 'https://taylorbot.example.test';
+    const challenged = {
+        challenge: 'backend-challenge',
+        contractUri,
+        domain: origin,
+        registeredRedirectUrl: `${origin}/auth/callback`,
+        returnTo: `${origin}/auth/callback?challenge=backend-challenge&response_mode=fragment`,
+    };
+    const signingWallet = () =>
+        ({
+            id: { did: () => 'did:key:holder' },
+            invoke: { issuePresentation: vi.fn(async () => 'signed.jwt') },
+        }) as unknown as BespokeLearnCard;
+
+    beforeEach(() => {
+        networkStore.set.aiServiceUrl('https://api.example.test');
+    });
+
+    it('signs for a returnTo and domain on the contract redirect origin', async () => {
+        expect(getConsentFlowContractRedirect(challenged)).toBeUndefined();
+        const wallet = signingWallet();
+        const url = new URL(
+            await getConsentFlowDidAuthRedirect({ ...challenged, ownerDid, wallet })
+        );
+
+        expect(url.origin).toBe(origin);
+        expect(new URLSearchParams(url.hash.slice(1)).get('vp')).toBe('signed.jwt');
+        expect(wallet.invoke.issuePresentation).toHaveBeenCalledWith(
+            expect.objectContaining({ contractUri }),
+            expect.objectContaining({ challenge: 'backend-challenge', domain: origin })
+        );
+    });
+
+    it('only needs the origin of the registered redirect', () => {
+        for (const registeredRedirectUrl of [origin, `${origin}/`, `${origin}/other/path?x=1`]) {
+            expect(
+                getConsentFlowContractRedirect({ ...challenged, registeredRedirectUrl })
+            ).toBeUndefined();
+        }
+    });
+
+    it.each([
+        ['the domain is elsewhere', { domain: 'https://attacker.example' }],
+        ['returnTo is elsewhere', { returnTo: 'https://attacker.example/auth/callback' }],
+        ['returnTo uses http', { returnTo: 'http://taylorbot.example.test/auth/callback' }],
+        ['the domain uses http', { domain: 'http://taylorbot.example.test' }],
+        ['returnTo adds www', { returnTo: 'https://www.taylorbot.example.test/auth/callback' }],
+        ['the domain adds www', { domain: 'https://www.taylorbot.example.test' }],
+        ['returnTo uses another port', { returnTo: 'https://taylorbot.example.test:8443/cb' }],
+        [
+            'the registered redirect uses http',
+            { registeredRedirectUrl: 'http://taylorbot.example.test' },
+        ],
+        [
+            'the registered redirect adds www',
+            { registeredRedirectUrl: 'https://www.taylorbot.example.test' },
+        ],
+        ['there is no registered redirect', { registeredRedirectUrl: undefined }],
+        ['the registered redirect is empty', { registeredRedirectUrl: '' }],
+        ['the registered redirect is relative', { registeredRedirectUrl: '/auth/callback' }],
+        ['the registered redirect is not a URL', { registeredRedirectUrl: 'not a url' }],
+        [
+            'the registered redirect is not http(s)',
+            { registeredRedirectUrl: 'javascript:alert(1)//taylorbot.example.test' },
+        ],
+        [
+            'the registered redirect only shares a prefix',
+            { registeredRedirectUrl: 'https://taylorbot.example.test.attacker.example' },
+        ],
+    ])('rejects the callback when %s', async (_case, override) => {
+        const input = { ...challenged, ...override };
+        expect(() => getConsentFlowContractRedirect(input)).toThrow(
+            'configured AI Passport or contract redirect origin'
+        );
+        const wallet = signingWallet();
+        await expect(getConsentFlowDidAuthRedirect({ ...input, ownerDid, wallet })).rejects.toThrow(
+            'configured AI Passport or contract redirect origin'
+        );
+        expect(wallet.invoke.issuePresentation).not.toHaveBeenCalled();
+    });
+
+    it('does not mix the AI Passport and contract redirect origins', () => {
+        expect(() =>
+            getConsentFlowContractRedirect({
+                ...challenged,
+                domain: 'https://api.example.test',
+            })
+        ).toThrow('configured AI Passport or contract redirect origin');
+        expect(() =>
+            getConsentFlowContractRedirect({
+                ...challenged,
+                returnTo: 'https://api.example.test/auth/callback',
+            })
+        ).toThrow('configured AI Passport or contract redirect origin');
+    });
+
+    it('keeps AI Passport callbacks working with or without a registered redirect', async () => {
+        for (const registeredRedirectUrl of [undefined, `${origin}/auth/callback`]) {
+            const wallet = signingWallet();
+            const url = new URL(
+                await getConsentFlowDidAuthRedirect({
+                    challenge: 'backend-challenge',
+                    contractUri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                    domain: 'https://api.example.test',
+                    ownerDid,
+                    registeredRedirectUrl,
+                    returnTo: 'https://api.example.test/auth/callback',
+                    wallet,
+                })
+            );
+            expect(url.origin).toBe('https://api.example.test');
+        }
+    });
+
+    it('accepts the contract redirect origin when AI Passport is unconfigured', () => {
+        networkStore.set.aiServiceUrl('TODO_AI_SERVICE');
+        expect(getConsentFlowContractRedirect(challenged)).toBeUndefined();
+    });
+
+    it('leaves unchallenged callbacks to the existing rules', async () => {
+        const wallet = {
+            id: { did: () => 'did:key:legacy-holder' },
+            invoke: {
+                newCredential: vi.fn(() => ({})),
+                issueCredential: vi.fn(async () => ({})),
+                newPresentation: vi.fn(async () => ({})),
+                issuePresentation: vi.fn(async () => 'legacy.jwt'),
+            },
+        } as unknown as BespokeLearnCard;
+        const url = new URL(
+            await getConsentFlowDidAuthRedirect({
+                contractUri,
+                ownerDid,
+                registeredRedirectUrl: `${origin}/auth/callback`,
+                returnTo: 'https://legacy.example.test/callback',
+                wallet,
+            })
+        );
+        expect(url.searchParams.get('did')).toBe('did:key:legacy-holder');
+        expect(
+            getConsentFlowContractRedirect({
+                contractRedirectUrl: 'https://contract.example.test/legacy',
+                registeredRedirectUrl: `${origin}/auth/callback`,
+            })
+        ).toBe('https://contract.example.test/legacy');
+        expect(() =>
+            getConsentFlowContractRedirect({
+                contractUri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                registeredRedirectUrl: 'https://other.example.test/callback',
+                returnTo: 'https://other.example.test/callback',
+            })
+        ).toThrow('Go back to AI Passport and sign in again.');
     });
 });

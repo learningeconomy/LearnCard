@@ -174,6 +174,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                     getConsentFlowContractRedirect({
                         challenge,
                         domain,
+                        registeredRedirectUrl: contractDetails?.redirectUrl,
                         returnTo,
                         contractUri: contractDetails?.uri,
                     });
@@ -191,6 +192,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                         contractRedirectUrl: redirectUrl,
                         contractUri: contractDetails?.uri,
                         domain,
+                        registeredRedirectUrl: contractDetails?.redirectUrl,
                         returnTo,
                     });
                     if (
@@ -207,6 +209,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                             contractUri: contractDetails.uri,
                             domain,
                             ownerDid,
+                            registeredRedirectUrl: contractDetails.redirectUrl,
                             returnTo,
                             wallet,
                         });

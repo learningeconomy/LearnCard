@@ -149,6 +149,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         contractUri: uri,
                         domain,
                         ownerDid,
+                        registeredRedirectUrl: consentedContract?.contract?.redirectUrl,
                         returnTo,
                         wallet,
                     });

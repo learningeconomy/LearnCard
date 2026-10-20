@@ -44,11 +44,25 @@ const getAiPassportOrigin = (): string | undefined => {
     }
 };
 
+// Origin of an http(s) URL, or undefined so callers fail closed on anything else.
+const getHttpOrigin = (url?: string): string | undefined => {
+    if (!url) return undefined;
+    try {
+        const parsed = new URL(url.trim());
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+            ? parsed.origin
+            : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 const validateDestination = (
     destination: QueryParam,
     challenged: boolean,
     contractUri?: string,
-    domain?: QueryParam
+    domain?: QueryParam,
+    registeredRedirectUrl?: string
 ): void => {
     if (typeof destination !== 'string' || !destination) return;
     if (isLocalNavigation(destination)) return;
@@ -79,31 +93,39 @@ const validateDestination = (
         } catch {
             throw new Error('Invalid DID Auth domain');
         }
-        if (
-            !aiPassportOrigin ||
-            redirect.origin !== aiPassportOrigin ||
-            audienceOrigin !== aiPassportOrigin
-        ) {
-            throw new Error('DID Auth callback must use the configured AI Passport origin');
+        // The callback and the proof's audience must share one exact allowed origin.
+        const allowedOrigins = [aiPassportOrigin, getHttpOrigin(registeredRedirectUrl)];
+        if (redirect.origin !== audienceOrigin || !allowedOrigins.includes(redirect.origin)) {
+            throw new Error(
+                'DID Auth callback must use the configured AI Passport or contract redirect origin'
+            );
         }
     }
 };
 
+/**
+ * `registeredRedirectUrl` is the contract's own `redirectUrl` (`contractDetails.redirectUrl`).
+ * Its http(s) origin may receive a challenged DID Auth response, but only when both `returnTo`
+ * and `domain` have exactly that origin. `contractRedirectUrl` is the redirect returned by
+ * `consentToContract`.
+ */
 export const getConsentFlowContractRedirect = ({
     challenge,
     contractRedirectUrl,
     contractUri,
     domain,
+    registeredRedirectUrl,
     returnTo,
 }: {
     challenge?: QueryParam;
     contractRedirectUrl?: string;
     contractUri?: string;
     domain?: QueryParam;
+    registeredRedirectUrl?: string;
     returnTo?: QueryParam;
 }): string | undefined => {
     const challenged = validateConsentFlowDidAuthParams(challenge, domain);
-    validateDestination(returnTo, challenged, contractUri, domain);
+    validateDestination(returnTo, challenged, contractUri, domain, registeredRedirectUrl);
     // Challenged flows suppress this server-provided override and use returnTo.
     if (!challenged) validateDestination(contractRedirectUrl, false, contractUri);
     return challenged ? undefined : contractRedirectUrl;
@@ -114,6 +136,7 @@ export const getConsentFlowDidAuthRedirect = async ({
     contractUri,
     domain,
     ownerDid,
+    registeredRedirectUrl,
     returnTo,
     wallet,
 }: {
@@ -121,11 +144,13 @@ export const getConsentFlowDidAuthRedirect = async ({
     contractUri: string;
     domain?: QueryParam;
     ownerDid: string;
+    /** The contract's own `redirectUrl`; see `getConsentFlowContractRedirect`. */
+    registeredRedirectUrl?: string;
     returnTo: string;
     wallet: BespokeLearnCard;
 }): Promise<string> => {
     const challenged = validateConsentFlowDidAuthParams(challenge, domain);
-    validateDestination(returnTo, challenged, contractUri, domain);
+    validateDestination(returnTo, challenged, contractUri, domain, registeredRedirectUrl);
     // Callers normally navigate local paths themselves; never generate a proof for one.
     if (isLocalNavigation(returnTo)) return returnTo;
     const redirect = new URL(returnTo);

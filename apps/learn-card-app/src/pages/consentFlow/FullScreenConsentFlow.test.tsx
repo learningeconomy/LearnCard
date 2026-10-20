@@ -311,6 +311,52 @@ describe('guardian approval at the consent submission boundary', () => {
         expect(success).not.toHaveBeenCalled();
         expect(state.closeAllModals).not.toHaveBeenCalled();
     });
+    describe('challenged callback on the contract redirect origin', () => {
+        const taylorBot = 'https://taylorbot.example.test';
+        const search = (domain: string) =>
+            `?${new URLSearchParams({
+                returnTo: `${taylorBot}/auth/callback?challenge=backend-challenge&response_mode=fragment`,
+                challenge: 'backend-challenge',
+                domain,
+            })}`;
+        const showTaylorBot = () =>
+            showFlow({
+                disableRedirect: false,
+                successCallback: vi.fn(),
+                contractDetails: { ...contract, redirectUrl: `${taylorBot}/auth/callback` },
+            });
+
+        it('saves consent and signs for the contract redirect origin', async () => {
+            state.child = false;
+            state.search = search(taylorBot);
+            const wallet = await state.initWallet();
+            wallet.id = { did: () => 'did:key:holder' };
+            // Stop before navigation; the proof request is what matters here.
+            wallet.invoke.issuePresentation = vi.fn().mockRejectedValue(new Error('stop'));
+            showTaylorBot();
+            fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+            await waitFor(() => expect(wallet.invoke.issuePresentation).toHaveBeenCalledOnce());
+            expect(wallet.invoke.issuePresentation).toHaveBeenCalledWith(
+                expect.any(Object),
+                expect.objectContaining({ challenge: 'backend-challenge', domain: taylorBot })
+            );
+            expect(state.consent).toHaveBeenCalledOnce();
+        });
+
+        it('rejects a mismatched domain before saving consent', async () => {
+            state.child = false;
+            state.search = search('https://attacker.example');
+            showTaylorBot();
+            fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+            await waitFor(() =>
+                expect(state.presentToast).toHaveBeenCalledWith(
+                    expect.any(String),
+                    expect.objectContaining({ type: 'error' })
+                )
+            );
+            expect(state.consent).not.toHaveBeenCalled();
+        });
+    });
     it('completes in-app consent with configured and returned redirects', async () => {
         state.child = false;
         state.consent.mockResolvedValue({ redirectUrl: 'https://api.example.test/callback' });

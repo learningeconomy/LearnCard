@@ -208,6 +208,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 getConsentFlowContractRedirect({
                                     challenge,
                                     domain,
+                                    registeredRedirectUrl: contractDetails.redirectUrl,
                                     returnTo,
                                     contractUri: contractDetails.uri,
                                 });
@@ -227,6 +228,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                     contractRedirectUrl,
                                     contractUri: contractDetails?.uri,
                                     domain,
+                                    registeredRedirectUrl: contractDetails?.redirectUrl,
                                     returnTo,
                                 });
 
@@ -250,6 +252,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                             contractUri: contractDetails.uri,
                                             domain,
                                             ownerDid,
+                                            registeredRedirectUrl: contractDetails.redirectUrl,
                                             returnTo,
                                             wallet,
                                         });
