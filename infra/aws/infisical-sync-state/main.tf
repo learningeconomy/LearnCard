@@ -1,7 +1,51 @@
+data "aws_iam_policy_document" "state_key" {
+  # Key administration stays delegated to IAM (including PutKeyPolicy), so the key
+  # can never become unmanageable. Cryptographic use is deliberately excluded here.
+  statement {
+    sid = "KeyAdministrationViaIam"
+    actions = [
+      "kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*",
+      "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*",
+      "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion",
+      "kms:CancelKeyDeletion", "kms:RotateKeyOnDemand",
+    ]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id}:root"]
+    }
+  }
+
+  # Only the same admin principals the bucket policy admits may encrypt or decrypt,
+  # and only through S3, so broad IAM KMS grants elsewhere cannot read state.
+  statement {
+    sid = "StateEncryptionByAdminsViaS3"
+    actions = [
+      "kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*",
+    ]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id}:root"]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:PrincipalArn"
+      values   = var.admin_principal_arn_patterns
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["s3.${var.aws_region}.amazonaws.com"]
+    }
+  }
+}
+
 resource "aws_kms_key" "state" {
   description             = "Encrypts Terraform state for the infisical-sync root"
   enable_key_rotation     = true
   deletion_window_in_days = 30
+  policy                  = data.aws_iam_policy_document.state_key.json
   lifecycle {
     prevent_destroy = true
   }
@@ -109,8 +153,9 @@ data "aws_iam_policy_document" "state" {
     }
   }
 
-  # Blocks writes that request SSE-S3 instead of the bucket's KMS key (the S3
-  # backend does this unless kms_key_id is configured).
+  # Blocks writes that explicitly request SSE-S3 (the S3 backend does this unless
+  # kms_key_id is configured). Writes with no SSE header are not denied here; the
+  # bucket's default encryption applies the KMS key to them.
   statement {
     sid       = "DenyNonKmsEncryption"
     effect    = "Deny"

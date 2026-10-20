@@ -10,21 +10,30 @@ Terraform >= 1.10; AWS provider `~> 6.0`. Applied in `206533012615`, us-east-1.
 ## What it creates
 
 - A customer-managed KMS key (rotation enabled, 30-day deletion window) and alias
-  `alias/learncard-infisical-sync-tfstate`.
+  `alias/learncard-infisical-sync-tfstate`. Its key policy leaves key
+  administration (including `PutKeyPolicy`) delegated to IAM, but allows
+  encrypt/decrypt only for `admin_principal_arn_patterns` and only via S3, so a
+  broad IAM KMS grant elsewhere in the account cannot read state.
 - Bucket `learncard-infisical-sync-tfstate-<account>-<region>` with:
     - versioning, superseded versions expired after `noncurrent_version_retention_days`
       (default 90), incomplete multipart uploads aborted after 7 days;
     - default SSE-KMS with the key above and S3 Bucket Keys;
     - all public access blocked and `BucketOwnerEnforced` (ACLs disabled);
     - a bucket policy that denies non-TLS requests, denies every principal not
-      matching `admin_principal_arn_patterns`, and denies writes requesting any
-      encryption other than `aws:kms`.
+      matching `admin_principal_arn_patterns`, and denies writes that explicitly
+      request encryption other than `aws:kms` (writes without an SSE header get the
+      bucket's default KMS encryption).
 
 Locking uses S3-native lock files (`use_lockfile = true`); there is no DynamoDB
 table. Both the key and bucket have `prevent_destroy`.
 
 The account root user can always replace the bucket policy, so a wrong pattern
 list is recoverable.
+
+Both roots are applied by a human admin; no CI role is admitted. If an automation
+role ever needs to run `infisical-sync`, add its ARN pattern to
+`admin_principal_arn_patterns` (it covers both the bucket and the key) and apply
+this root first.
 
 ## First apply (bootstrap)
 
