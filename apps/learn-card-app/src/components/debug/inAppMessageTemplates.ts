@@ -46,8 +46,23 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                 {
                     title: 'Your achievements, together',
                     body: 'Keep a record of what you have learned.',
+                    media: {
+                        type: 'image',
+                        url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBB4LQTn0vRq4ydPLp-uTj_lEUHOHYWUU18JlCq5KuMw&s=10',
+                        aspect: '3:2',
+                        alt: 'A monarch butterfly perched on an orange flower.',
+                    },
                 },
-                { title: 'Choose your next step', body: 'You are ready to explore.' },
+                {
+                    title: 'Choose your next step',
+                    body: 'You are ready to explore.',
+                    media: {
+                        type: 'image',
+                        url: 'https://sites.cc.gatech.edu/classes/AY2016/cs4476_fall/results/proj1/html/gwright31/images/cat.bmp',
+                        aspect: '3:2',
+                        alt: 'A cat.',
+                    },
+                },
             ],
             actions: [{ label: 'Done', style: 'primary', action: { type: 'dismiss' } }],
             locales: {
