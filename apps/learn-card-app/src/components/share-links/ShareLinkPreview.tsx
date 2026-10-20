@@ -204,12 +204,7 @@ export const ShareLinkPreview = ({
                 );
                 const proof = proofs?.[credentialIndex];
 
-                // Use getCredentialName with skipHumanizedFallback to get explicit/type-derived names,
-                // then fall back to translated "Credential" instead of humanized type
-                const credentialTitle =
-                    text.name ||
-                    getCredentialName(credential, { skipHumanizedFallback: true }) ||
-                    m['shareLinks.credential']();
+                const credentialTitle = text.name || getCredentialName(credential);
 
                 return (
                     <article
