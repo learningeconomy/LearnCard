@@ -164,7 +164,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         setFormulaCells(previous => {
             const next = { ...previous };
             for (const [key, values] of Object.entries(problems))
-                next[key] = { ...previous[key], ...values };
+                next[key] = { ...previous?.[key], ...values };
             return next;
         });
         setScopes(previous => ({
