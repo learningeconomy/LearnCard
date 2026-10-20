@@ -122,9 +122,11 @@ original. While the upload step is open, select its filename to preview the uplo
 choose another file, or retry extraction.
 In a mixed batch, saving the review only stores originals that produced review candidates;
 empty files are not saved alongside them.
-Pending AI settings, unavailable AI processing, invalid or rejected input, oversized files,
-and incompatible service responses do not add a new saved original or replace a résumé.
-Feedback explains the reason and omits extraction retry for non-retryable rejections.
+Pending AI settings, invalid or rejected input, oversized files, and incompatible service
+responses do not add a new saved original or replace a résumé. Feedback explains the reason
+and omits extraction retry for non-retryable rejections.
+With AI disabled, uploads still save the original without sending it for AI processing or
+offering extraction retry. A file already known to be empty remains unsaved.
 Transient processing failures still keep the original when its save succeeds. A failed save
 does not claim that the file is saved; retry saving without running extraction again.
 The extraction overlay closes when the original starts saving. An inline message explains

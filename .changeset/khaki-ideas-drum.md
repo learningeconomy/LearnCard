@@ -12,3 +12,5 @@ Keep blank files out of mixed and reopened reviews, preserve saved documents whe
 Keep readable legacy originals accessible alongside removable unavailable records, refresh document lists without stale cached results, and verify a résumé's identity before deleting it.
 
 Hide original-document records consistently from Recently Added and its full credential list without hiding issued credentials or published résumés.
+
+Preserve original-only uploads when AI is disabled, without calling the model or offering extraction retry; loading settings and service refusals leave saved originals unchanged.

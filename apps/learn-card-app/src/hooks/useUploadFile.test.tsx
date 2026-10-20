@@ -999,7 +999,7 @@ describe('useUploadFile persistence outcomes', () => {
         ]);
     });
 
-    it('keeps the current resume when AI is disabled without attempting model work', async () => {
+    it('saves only the original without model work when AI is disabled', async () => {
         testState.aiEnabled = false;
         records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
         documents.set('current', rawArtifact('current-resume'));
@@ -1011,13 +1011,38 @@ describe('useUploadFile persistence outcomes', () => {
             );
         });
         expect(uploadMutationMock).not.toHaveBeenCalled();
-        expect(records.get('resume-index')?.uri).toBe('current');
-        expect(documents.has('original:disabled')).toBe(false);
+        expect(records.get('resume-index')?.uri).toBe('original:disabled');
+        expect(documents.get('original:disabled')?.rawArtifact).toEqual(
+            rawArtifact('disabled').rawArtifact
+        );
+        expect(savedCredentials.size).toBe(0);
         expect(result.current.fileUploadOutcomes[0]).toMatchObject({
             status: 'extraction_failed',
             failureCode: 'CONSENT_DENIED',
+            originalSaved: true,
+        });
+    });
+
+    it('does not save a known empty file when AI is turned off before retry', async () => {
+        uploadMutationMock.mockRejectedValue(new FileExtractionError('NO_READABLE_TEXT'));
+        const { result, rerender } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        const artifact = rawArtifact('known-empty-then-disabled');
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        testState.aiEnabled = false;
+        rerender();
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'empty',
+            failureCode: 'NO_READABLE_TEXT',
             originalSaved: false,
         });
+        expect(uploadMutationMock).toHaveBeenCalledTimes(1);
+        expect(records.size).toBe(0);
+        expect(documents.size).toBe(0);
     });
 
     it('keeps a saved-original receipt after review closes without replacing another resume', async () => {

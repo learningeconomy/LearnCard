@@ -826,7 +826,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         }
     };
 
-    /** Only processing failures preserve originals; empty results and blocked requests stay local. */
+    /** Empty and blocked requests stay unsaved; disabled AI preserves original-only uploads. */
     const processArtifact = (
         artifact: RawArtifactCredential,
         fileType: UploadTypesEnum
@@ -835,6 +835,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         if (active) return active;
         const task = (async (): Promise<ArtifactProcessingResult> => {
             let failureCode: string | undefined;
+            const originalOnly = !aiGateLoading && !isAiEnabled;
+            if (originalOnly) {
+                const empty = fileUploadOutcomes.find(
+                    item => item.artifact.id === artifact.id && item.status === 'empty'
+                );
+                if (empty) return { credentials: [], outcome: empty };
+            }
             try {
                 if (aiGateLoading) throw new FileExtractionError('AI_GATE_LOADING');
                 if (!isAiEnabled) throw new FileExtractionError('CONSENT_DENIED');
@@ -887,7 +894,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             if (
                 failureCode === 'NO_READABLE_TEXT' ||
                 failureCode === 'AI_GATE_LOADING' ||
-                failureCode === 'CONSENT_DENIED' ||
+                (failureCode === 'CONSENT_DENIED' && !originalOnly) ||
                 failureCode === 'RESPONSE_INVALID' ||
                 failureCode === 'INPUT_INVALID' ||
                 failureCode === 'FILE_TOO_LARGE' ||
