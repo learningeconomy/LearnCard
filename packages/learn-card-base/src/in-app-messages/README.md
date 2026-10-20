@@ -1,7 +1,7 @@
 # In-App Messages
 
 A LaunchDarkly-driven system for **conditional, targeted user prompts** across LearnCard apps
-(`learn-card-app` + `scouts`). One JSON flag (`inAppMessages`) delivers a prioritized list of
+(`learn-card-app` + `scouts`). The JSON flag `inAppMessagesV2` delivers a prioritized list of
 messages; each message carries its own **targeting predicate tree** that is evaluated _on device_
 so it can see things LaunchDarkly's own rules cannot — the Capacitor platform, the native binary
 version, and the live Capgo/OTA bundle version.
@@ -20,7 +20,7 @@ version, and the live Capgo/OTA bundle version.
 ## Quick start
 
 The host is already mounted in both apps (`FullApp.tsx`), so **you don't write any React** — you
-just author the flag value in LaunchDarkly. Create a JSON flag named **`inAppMessages`** and paste
+just author the flag value in LaunchDarkly. Create a client-readable JSON flag named **`inAppMessagesV2`** and paste
 a value like:
 
 ```json
@@ -160,7 +160,7 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 | -------------- | ------------------------------------------------------- | --------- | ------------------------------------------------------------- |
 | `id`           | `string`                                                | —         | Stable key; used to persist dismissal / frequency state       |
 | `priority`     | `number`                                                | `0`       | Highest matching message wins                                 |
-| `dismissible`  | `boolean`                                               | `true`    | `false` = required/blocking (no close affordance)             |
+| `dismissible`  | `boolean`                                               | `true`    | `false` = required/blocking; iframe errors still offer Close  |
 | `frequency`    | `"once" \| "session" \| "always" \| {…}`                | `"once"`  | See [Frequency](#frequency)                                   |
 | `presentation` | `"modal" \| "banner" \| "toast" \| "story" \| "iframe"` | `"modal"` | Stories require `steps`; iframes require `iframe.url`         |
 | `media`        | `{ type, url, aspect?, alt? }`                          | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`     |
@@ -299,7 +299,7 @@ Everything is exported from `learn-card-base`:
 ```tsx
 import { useInAppMessages, evaluatePredicate, compareSemver } from 'learn-card-base';
 
-const { message, context, ready } = useInAppMessages(); // reads the `inAppMessages` flag
+const { message, context, ready } = useInAppMessages(); // reads `inAppMessagesV2`, legacy fallback only when absent
 ```
 
 ```ts
@@ -479,13 +479,21 @@ The per-message isolation added in #1729 only protects clients that actually inc
 Adding passthrough fields is different from extending an enum; neither `enabled: false` nor on-device
 version targeting protects older clients because validation runs before those checks.
 
-Keep rich campaigns in a dev/staging LaunchDarkly environment that released builds cannot read.
-For production, first ship and establish adoption of the isolated parser; only serve rich variations
-to clients that support the new presentations. If older clients still read that environment, use
-LaunchDarkly-side delivery rules that reliably separate supporting builds, with a legacy-safe default
-and off variation. Otherwise keep rich entries out of all variations delivered to those clients.
-Do not replace unrelated production campaigns with a test payload. The LC-2263 test campaigns were
-confirmed by the author to be dev/staging-only, inaccessible to released builds.
+Rich-capable clients now read a **separate key: `inAppMessagesV2`**. Older binaries continue reading
+`inAppMessages`; shipping #1729 does not update those installed binaries. Keep every variation of the
+legacy key limited to `modal`, `banner`, and `toast`, including its default/off values.
+
+When V2 is absent, new clients fall back to the legacy key but reject rich entries there with a
+diagnostic. When V2 is present it is authoritative (including settings): empty, off, or malformed
+values never fall back or merge legacy campaigns. Copy any still-needed legacy campaigns into V2,
+keeping their IDs stable so existing frequency state carries over. The JSON envelope `version`
+field is not a delivery gate and does not need to change.
+
+Configuration rollout: create the client-readable V2 JSON flag, copy the campaigns needed by new
+clients, move story/iframe entries out of the legacy flag, and retain all unrelated legacy campaigns.
+Use `{ "messages": [] }` as an explicit V2 off/default variation. This repository change does not
+modify LaunchDarkly. The author confirmed existing test campaigns are dev/staging-only and inaccessible
+to released builds; those test entries still need to be moved to V2 before testing this revision.
 
 ```json
 {
@@ -539,7 +547,8 @@ happens after winner selection and does not change targeting or consume another 
     "iframe": {
         "url": "https://your-content.example/guide.html",
         "title": "Guide",
-        "loadTimeoutMs": 10000
+        "loadTimeoutMs": 10000,
+        "allowedInternalPaths": ["/passport"]
     }
 }
 ```
@@ -584,7 +593,12 @@ parent.postMessage(
 
 The app verifies the sender's window, the configured URL's exact origin, the envelope, and the action.
 Only existing actions are supported; `capgoUpdate` and future `openApp`/`openMessage` targets are
-rejected. Internal paths must start with a single `/` and contain no whitespace/backslashes;
+rejected. Internal navigation is **denied by default**. A destination must exactly match an entry in
+the campaign's `iframe.allowedInternalPaths`, including its query string and fragment. No prefix,
+wildcard, decoding, or query-stripping match is performed. For example, approving `/passport` does
+not approve `/passport?returnTo=/request` or `/passport#other`. Declare only destinations the campaign
+actually needs; do not approve sensitive request/exchange/consent routes for untrusted content.
+Paths must start with a single `/` and contain no whitespace/backslashes;
 external/store overrides must use HTTPS. There is no identity, authentication, credential, or wallet
 API. Do not place private account data in authored URLs. The bridge has no response channel.
 Popups inherit the iframe sandbox: `allow-popups-to-escape-sandbox` is intentionally absent.
@@ -592,12 +606,15 @@ For external links that need an ordinary browser context (such as sign-in or sto
 validated `runAction` with `externalLink` or `appStore` through the host instead of `window.open`.
 
 For `dismissible:false`, neither `close` nor a `dismiss` action is honored. A successful navigation
-action can complete the message; no-op/failed actions cannot. During an error, a required iframe has
-retry but no close escape. Use required campaigns sparingly and test their recovery path first.
+action can complete the message; no-op/failed actions cannot. After an offline, timeout, frame-load,
+or same-origin error, the app-owned **Close** button is available even for required frames, alongside
+retry. Only the user can take this escape; a required frame's bridge close/dismiss requests stay
+rejected. Retrying restores the required loading state. Use required campaigns sparingly.
 
 The runnable [bridge example](examples/iframe.html) accepts a `parentOrigin` query parameter. Host it
 on a separate HTTPS origin you control and pass the web app's exact origin; no hosting service is
-created by this PR. Native campaign embedding is disabled regardless of the configured origin.
+created by this PR. Declare `"allowedInternalPaths": ["/passport"]` for its navigation button.
+Native campaign embedding is disabled regardless of the configured origin.
 
 #### Native isolation regression
 

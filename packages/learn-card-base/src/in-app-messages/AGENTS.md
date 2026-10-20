@@ -1,6 +1,6 @@
 # In-App Messages — Agent Guide
 
-Feature: a LaunchDarkly JSON flag (`inAppMessages`) that drives conditional, targeted user prompts
+Feature: a LaunchDarkly JSON flag (`inAppMessagesV2`) that drives conditional, targeted user prompts
 in `learn-card-app` and `scouts`. Targeting is evaluated **on-device** (platform / semver /
 role / credential facts / recent events), the flag value is just the payload. Read `README.md` in this folder for the authored-flag
 reference; this file is for making **code** changes safely.
@@ -8,7 +8,7 @@ reference; this file is for making **code** changes safely.
 ## Architecture (data flow)
 
 ```
-LaunchDarkly `inAppMessages` (JSON)
+LaunchDarkly `inAppMessagesV2` (JSON; legacy-only `inAppMessages` fallback when absent)
    → useFlags()                       (launchdarkly-react-client-sdk)
    → parseInAppMessagesFlagWithErrors() (@learncard/types — isolate invalid siblings)
    → useInAppMessages()               (targeting + triggers + frequency + fatigue, highest priority)
@@ -63,7 +63,9 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 - `MessageActions` owns modal/story button and Capgo behavior. Report accepted actions separately from
   explicit dismissal; navigation completion, retries, and gate cleanup are not new impressions.
 - Iframe bridge input is untrusted: validate window, origin, envelope, and safe target before running
-  actions. No Capgo or identity APIs. Required frames ignore close/dismiss requests.
+  actions. No Capgo or identity APIs. Internal destinations must exactly match the campaign's
+  `iframe.allowedInternalPaths` (default deny), including query/fragment. Required frames ignore
+  bridge close/dismiss requests; their host-owned Close button becomes available on error.
 - Iframe campaigns are web-only: enforce `presentationSupport` in selection, host (including overrides),
   and renderer. Native subframes can bypass the JS allowlist through Capacitor handlers; the HTML
   sandbox is not native isolation. Do not enable native embedding without a verified native boundary.
@@ -77,13 +79,13 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 
 ### Rollout rules for new presentations
 
-Older clients parse the whole flag and reject every campaign if any presentation enum is unknown.
-`enabled: false` and on-device targeting cannot protect them: parsing comes first. The #1729 isolated
-parser must be shipped and adopted; merely merging the base PR does not protect installed builds.
-Keep story/iframe campaigns in dev/staging environments inaccessible to released builds until then.
-For mixed-version production environments, use LaunchDarkly delivery rules that exclude unsupported
-clients and keep default/off variations legacy-safe, or omit rich campaigns entirely. See README's
-rollout section. The author confirmed LC-2263 test campaigns use dev/staging only.
+Older clients parse the whole legacy flag and reject every campaign if any presentation enum is unknown.
+`enabled: false` and on-device targeting cannot protect them: parsing comes first. New clients read
+`inAppMessagesV2`; only when absent do they fall back to legacy `inAppMessages`, rejecting rich entries
+there. An empty/off/invalid V2 value is authoritative. Never merge the two feeds. Keep all legacy-key
+variations legacy-safe indefinitely while older binaries exist; merely shipping #1729 does not update
+them. Copy still-needed legacy campaigns into V2 with the same IDs. The author confirmed existing
+test campaigns use dev/staging only; moving them to V2 is a separate LaunchDarkly configuration step.
 
 ### Add a new action type (e.g. `share`)
 

@@ -14,6 +14,7 @@ import { getRecentInAppMessageEvents, resetInAppMessageEventSession } from '../i
 import { setInAppMessageOverride } from '../debugOverrideStore';
 import type { MessagePresentationProps, InAppMessagePresentationEvent } from '../presentationTypes';
 import { I18nProvider } from '../../i18n';
+import { ModalsProvider, useModalsContext } from '../../components/modals/ModalsContext';
 
 const state = vi.hoisted(() => ({
     native: false,
@@ -25,7 +26,7 @@ const state = vi.hoisted(() => ({
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => state.native } }));
 
 vi.mock('launchdarkly-react-client-sdk', () => ({
-    useFlags: () => ({ inAppMessages: { messages: state.messages } }),
+    useFlags: () => ({ inAppMessagesV2: { messages: state.messages } }),
 }));
 vi.mock('../useRuntimeContext', () => ({
     useInAppMessageRuntimeContext: () => ({
@@ -95,6 +96,47 @@ describe('message host impressions', () => {
         setInAppMessageOverride(null);
         vi.restoreAllMocks();
         vi.useRealTimers();
+    });
+
+    it('removes a required iframe and its owned surface when the user closes a load error', async () => {
+        state.gate = true;
+        state.messages = [
+            inAppMessageValidator.parse({
+                id: 'failed-required',
+                title: 'Required guide',
+                presentation: 'iframe',
+                dismissible: false,
+                iframe: { url: 'https://campaign.example/guide' },
+            }),
+        ];
+        const OpenModals = () => {
+            const { modals } = useModalsContext();
+            return (
+                <>
+                    {modals
+                        .filter(modal => modal.open)
+                        .map(modal => (
+                            <section key={modal.id} data-testid="owned-surface">
+                                {modal.component}
+                            </section>
+                        ))}
+                </>
+            );
+        };
+        const onEvent = vi.fn();
+        render(
+            <ModalsProvider>
+                <InAppMessageHost onEvent={onEvent} />
+                <OpenModals />
+            </ModalsProvider>
+        );
+        const frame = await screen.findByTitle('Required guide');
+        expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+        fireEvent.error(frame);
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        await waitFor(() => expect(screen.queryByTestId('owned-surface')).toBeNull());
+        expect(screen.queryByTitle('Required guide')).toBeNull();
+        expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual(['shown', 'dismissed']);
     });
 
     it.each([false, true])(

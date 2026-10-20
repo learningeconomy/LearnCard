@@ -152,7 +152,7 @@ describe('message evaluation lifecycle', () => {
     it.each([false, true])('selects iframe campaigns only on web (native: %s)', native => {
         state.native = native;
         state.flags = {
-            inAppMessages: {
+            inAppMessagesV2: {
                 messages: [
                     {
                         id: 'embedded',

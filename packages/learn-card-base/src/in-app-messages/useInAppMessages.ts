@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import {
-    parseInAppMessagesFlagWithErrors,
     type InAppMessage,
     type InAppMessagePredicate,
     type InAppMessageSettings,
@@ -23,8 +22,9 @@ import { useCredentialFacts, type CredentialFactsState } from './useCredentialFa
 import { onInAppMessageEventsChanged, useRecentInAppMessageEvents } from './inAppMessageEvents';
 import { shouldSuppressByFatigue, onFatigueChanged } from './fatigueStore';
 import { isInAppMessagePresentationSupported } from './presentationSupport';
+import { IN_APP_MESSAGES_FLAG_KEY, readInAppMessagesFlags } from './flagDelivery';
 
-export const IN_APP_MESSAGES_FLAG_KEY = 'inAppMessages';
+export { IN_APP_MESSAGES_FLAG_KEY, LEGACY_IN_APP_MESSAGES_FLAG_KEY } from './flagDelivery';
 
 export interface InAppMessageDiagnostic {
     id: string;
@@ -114,10 +114,7 @@ export const useInAppMessages = (
     const flags = useFlags();
     const { context: baseContext, ready: baseReady } = useInAppMessageRuntimeContext();
 
-    const parsed = useMemo(
-        () => parseInAppMessagesFlagWithErrors(flags?.[flagKey]),
-        [flags, flagKey]
-    );
+    const parsed = useMemo(() => readInAppMessagesFlags(flags ?? {}, flagKey), [flags, flagKey]);
     const flag = parsed.flag;
     const needsCredentialFacts =
         options.forceCredentialFacts ||
