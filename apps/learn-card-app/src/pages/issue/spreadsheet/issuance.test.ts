@@ -210,6 +210,58 @@ describe('durable roster issuance', () => {
         expect(api.createTemplate).toHaveBeenCalledTimes(1);
         expect(vi.mocked(api.submit).mock.calls[1][0]).toEqual(first);
     });
+    it('resumes never-submitted chunks after 25 hours while quarantining the lost acknowledgement', async () => {
+        const run = makeRun(250);
+        const api = transport();
+        const opts = options(run);
+        vi.mocked(api.submit).mockRejectedValueOnce(new Error('lost acknowledgement'));
+        await expect(executeIssuance(run, api, opts)).rejects.toThrow('lost acknowledgement');
+        const frozen = structuredClone(stored!.attempts.map(attempt => attempt.body));
+        expect(stored!.attempts.map(attempt => attempt.submissionStartedAt)).toEqual([
+            expect.any(Number),
+            null,
+            null,
+        ]);
+        stored!.attempts[0].submissionStartedAt = Date.now() - 25 * 3_600_000;
+        for (const attempt of stored!.attempts) attempt.createdAt = Date.now() - 25 * 3_600_000;
+        const result = await executeIssuance(stored!, api, opts);
+        expect(
+            Object.values(result.outcomes).filter(row => row.state === 'confirming')
+        ).toHaveLength(100);
+        expect(Object.values(result.outcomes).filter(row => row.state === 'sent')).toHaveLength(
+            150
+        );
+        expect(vi.mocked(api.submit).mock.calls.map(([body]) => body)).toEqual(frozen);
+        expect(result.attempts.map(attempt => attempt.body)).toEqual(frozen);
+    });
+    it('does not admit frozen but never-submitted chunks through Retry Failed', async () => {
+        const run = makeRun(250);
+        const api = transport();
+        const opts = options(run);
+        vi.mocked(api.submit).mockRejectedValueOnce(new Error('lost acknowledgement'));
+        await expect(executeIssuance(run, api, opts)).rejects.toThrow('lost acknowledgement');
+        stored!.attempts[0].submissionStartedAt = Date.now() - 25 * 3_600_000;
+        const retried = await executeIssuance(stored!, api, { ...opts, retryFailed: true });
+        expect(api.submit).toHaveBeenCalledOnce();
+        expect(retried.attempts.slice(1).map(attempt => attempt.submissionStartedAt)).toEqual([
+            null,
+            null,
+        ]);
+        expect(retried.outcomes['row-100'].state).toBe('queued');
+    });
+    it('requires a durable admission marker before the network call', async () => {
+        const run = makeRun();
+        const api = transport();
+        const opts = options(run);
+        opts.save.mockImplementation(async next => {
+            if (next.attempts.some(attempt => typeof attempt.submissionStartedAt === 'number'))
+                throw new Error('disk full');
+            stored = structuredClone(next);
+        });
+        await expect(executeIssuance(run, api, opts)).rejects.toThrow('disk full');
+        expect(api.submit).not.toHaveBeenCalled();
+        expect(stored!.attempts[0].submissionStartedAt).toBeNull();
+    });
     it('resumes polling a known receipt after abort, without submitting again', async () => {
         const run = makeRun();
         const api = transport();
@@ -235,7 +287,7 @@ describe('durable roster issuance', () => {
             expect(stored!.outcomes['row-0'].state).toBe('queued');
             expect(stored!.attempts[0].done).not.toBe(true);
             expect(stored!.attempts[0].body).toEqual(original);
-            stored!.attempts[0].createdAt = Date.now() - 25 * 3_600_000;
+            stored!.attempts[0].submissionStartedAt = Date.now() - 25 * 3_600_000;
             const expired = await executeIssuance(stored!, api, { ...opts, retryFailed: true });
             expect(expired.outcomes['row-0']).toMatchObject({
                 state: 'confirming',
@@ -381,7 +433,7 @@ describe('durable roster issuance', () => {
         let run = makeRun();
         run.templateUri = 'template';
         run = addSubmissionAttempts(run);
-        run.attempts[0].createdAt = Date.now() - 25 * 3_600_000;
+        run.attempts[0].submissionStartedAt = Date.now() - 25 * 3_600_000;
         const frozen = structuredClone(run.attempts[0].body);
         run.draft.recipients.push(
             { kind: 'email', rowId: 'failed', email: 'failed@test.com' },
@@ -405,6 +457,7 @@ describe('durable roster issuance', () => {
         run.templateUri = 'template';
         const queued = addSubmissionAttempts(run);
         queued.attempts[0].createdAt = Date.now() - 25 * 3600000;
+        delete queued.attempts[0].submissionStartedAt; // Legacy record: admission is unknown.
         const api = transport();
         const expired = await executeIssuance(queued, api, options(queued));
         expect(expired.outcomes['row-0']).toMatchObject({

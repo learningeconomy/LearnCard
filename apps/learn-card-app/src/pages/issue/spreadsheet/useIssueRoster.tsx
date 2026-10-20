@@ -34,7 +34,7 @@ import {
     downloadRosterCsv,
     type ColumnScopes,
 } from './roster';
-import { exportIssuanceCsv } from './exportIssuance';
+import { exportIssuanceCsv, issuanceRowValues } from './exportIssuance';
 import {
     executeIssuance,
     isSubmissionCandidate,
@@ -149,19 +149,31 @@ export const useIssueRoster = (options: RosterOptions) => {
             }))
             .filter(item => item.column);
         if (!mapped.length) return;
+        const additions: RosterDraft['values'] = {};
+        const problems: NonNullable<RosterDraft['formulaCells']> = {};
+        for (const row of options.recipients) {
+            const key = recipientKey(row);
+            const imported = source.rows.find(
+                item => item.exportedRowId === key || item.rowId === key
+            );
+            if (!imported) continue;
+            for (const { name, column } of mapped) {
+                if (name in (options.values[key] ?? {})) continue;
+                const cell = imported.cells[column!.id];
+                additions[key] = { ...additions[key], [name]: cell?.text ?? '' };
+                if (cell?.problem) problems[key] = { ...problems[key], [name]: cell.text };
+            }
+        }
         options.setValues(previous => {
             const next = { ...previous };
-            for (const row of options.recipients) {
-                const key = recipientKey(row);
-                const imported = source.rows.find(
-                    item => item.exportedRowId === key || item.rowId === key
-                );
-                if (!imported) continue;
-                for (const { name, column } of mapped) {
-                    if (name in (next[key] ?? {})) continue;
-                    next[key] = { ...next[key], [name]: imported.cells[column!.id]?.text ?? '' };
-                }
-            }
+            for (const [key, values] of Object.entries(additions))
+                next[key] = { ...values, ...previous[key] };
+            return next;
+        });
+        setFormulaCells(previous => {
+            const next = { ...previous };
+            for (const [key, values] of Object.entries(problems))
+                next[key] = { ...previous[key], ...values };
             return next;
         });
         setScopes(previous => ({
@@ -421,7 +433,18 @@ export const useIssueRoster = (options: RosterOptions) => {
                     recipientKey(row),
                     {
                         ...baseDraft.values[recipientKey(row)],
-                        ...effectiveRowValues(row, variables, baseScopes, shared, baseDraft.values),
+                        ...(saved &&
+                        !['ready', 'failed'].includes(
+                            saved.outcomes[recipientKey(row)]?.state ?? 'ready'
+                        )
+                            ? issuanceRowValues(saved, row, variables)
+                            : effectiveRowValues(
+                                  row,
+                                  variables,
+                                  baseScopes,
+                                  shared,
+                                  baseDraft.values
+                              )),
                     },
                 ])
             ),
@@ -437,17 +460,13 @@ export const useIssueRoster = (options: RosterOptions) => {
                         (existing.kind === 'email' && normalizeEmail(existing.email) === row.email)
                 );
                 if (!incoming) continue;
-                const before = effectiveRowValues(
-                    existing,
-                    variables,
-                    saved.scopes,
-                    saved.shared,
-                    saved.draft.values
-                );
+                const before = issuanceRowValues(saved, existing, variables);
+                const canonical = merged.draft.recipients.find(row => recipientKey(row) === key);
                 const after = merged.draft.values[key] ?? {};
                 if (
                     (existing.kind === 'email' &&
-                        incoming.email !== normalizeEmail(existing.email)) ||
+                        (canonical?.kind !== 'email' ||
+                            normalizeEmail(canonical.email) !== normalizeEmail(existing.email))) ||
                     merged.mapped.some(name => after[name] !== before[name]) ||
                     (merged.draft.evidence[key]?.trim() ?? '') !==
                         (saved.draft.evidence[key]?.trim() ?? '')
@@ -677,22 +696,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         Boolean(run?.outcomes[rowId] && !['ready', 'failed'].includes(run.outcomes[rowId]!.state));
     const valuesForRow = (row: Recipient): Record<string, string> => {
         const key = recipientKey(row);
-        if (locked(key)) {
-            const frozen = run?.outcomes[key]?.templateData;
-            if (frozen)
-                return Object.fromEntries(
-                    Object.entries(frozen).filter(([, value]) => typeof value === 'string')
-                ) as Record<string, string>;
-            for (const attempt of [...(run?.attempts ?? [])].reverse()) {
-                const index = attempt.rowIds.indexOf(key);
-                if (index >= 0)
-                    return Object.fromEntries(
-                        Object.entries(
-                            attempt.body.items[index]?.configuration?.templateData ?? {}
-                        ).filter(([, value]) => typeof value === 'string')
-                    ) as Record<string, string>;
-            }
-        }
+        if (locked(key) && run) return issuanceRowValues(run, row, options.variables);
         return effectiveRowValues(
             row,
             options.variables,

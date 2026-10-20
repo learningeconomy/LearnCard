@@ -148,6 +148,7 @@ export const addSubmissionAttempts = (run: IssuanceRun, retryFailed = false): Is
         return {
             id,
             createdAt: Date.now(),
+            submissionStartedAt: null,
             rowIds: [],
             body: { requestId: `${run.id}:${id}`, items: [] },
         };
@@ -223,13 +224,13 @@ export const executeIssuance = async (
             await persist();
         }
         // Resume old attempts before admitting new work. Do not regenerate keys/body.
-        const observe = async (
-            attempt: SubmissionAttempt,
-            firstSubmission = false
-        ): Promise<void> => {
+        const observe = async (attempt: SubmissionAttempt): Promise<void> => {
             assertScope();
             if (!attempt.batchId) {
-                if (Date.now() - attempt.createdAt >= 24 * 3_600_000) {
+                const firstSubmission = attempt.submissionStartedAt === null;
+                // Legacy attempts have no proof that admission never started.
+                const startedAt = attempt.submissionStartedAt ?? attempt.createdAt;
+                if (!firstSubmission && Date.now() - startedAt >= 24 * 3_600_000) {
                     // Never replay past the server's idempotency window. Quarantine
                     // these rows while allowing unrelated ready/failed work to continue.
                     for (const rowId of attempt.rowIds) {
@@ -243,6 +244,11 @@ export const executeIssuance = async (
                     await persist();
                     return;
                 }
+                if (firstSubmission) {
+                    attempt.submissionStartedAt = Date.now();
+                    await persist(); // A crash after this point may have admitted the request.
+                }
+                assertScope();
                 let receipt: InboxBatchReceipt;
                 try {
                     receipt = await transport.submit(attempt.body);
@@ -306,7 +312,12 @@ export const executeIssuance = async (
                     await observe(attempt);
             return run;
         }
-        for (const attempt of run.attempts) if (!attempt.done) await observe(attempt);
+        for (const attempt of run.attempts)
+            if (
+                !attempt.done &&
+                !(options.retryFailed && !attempt.batchId && attempt.submissionStartedAt === null)
+            )
+                await observe(attempt);
         // Receipt polling can turn a confirming row into a retry candidate.
         // Validate the resulting candidates before creating any new requests.
         validateSubmissionResults(run, options.retryFailed);
@@ -314,7 +325,7 @@ export const executeIssuance = async (
         run = addSubmissionAttempts(run, options.retryFailed);
         await persist();
         for (const attempt of run.attempts.slice(previousAttempts))
-            if (!attempt.done) await observe(attempt, true);
+            if (!attempt.done) await observe(attempt);
         for (const recipient of run.draft.recipients) {
             if (recipient.kind !== 'profile') continue;
             const id = recipientKey(recipient);

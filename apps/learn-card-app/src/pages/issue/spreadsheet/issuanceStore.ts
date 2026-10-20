@@ -144,6 +144,7 @@ const runValidator = z
             z.object({
                 id: z.string(),
                 createdAt: z.number(),
+                submissionStartedAt: z.number().nullable().optional(),
                 rowIds: z.array(z.string()),
                 body: IssueInboxCredentialBatchValidator,
                 batchId: z.string().optional(),

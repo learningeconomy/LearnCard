@@ -95,6 +95,18 @@ describe('IndexedDB issuance recovery', () => {
         expect(restored!.draft.evidence).toEqual(run.draft.evidence);
     });
 
+    it.each([null, 123456, undefined])(
+        'preserves admission marker %s, including unknown legacy records',
+        async marker => {
+            const initial = makeRun();
+            initial.templateUri = 'template';
+            const run = addSubmissionAttempts(initial);
+            if (marker === undefined) delete run.attempts[0].submissionStartedAt;
+            else run.attempts[0].submissionStartedAt = marker;
+            await saveIssuanceRun(run);
+            expect(await readIssuanceRun(run.id, run.scope)).toEqual(run);
+        }
+    );
     it('rejects corrupt records instead of substituting a fresh run', async () => {
         const run = makeRun();
         await expect(

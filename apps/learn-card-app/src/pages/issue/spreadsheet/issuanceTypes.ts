@@ -18,6 +18,8 @@ export interface RowOutcome {
 export interface SubmissionAttempt {
     id: string;
     createdAt: number;
+    /** null proves never submitted; absent legacy values are conservatively uncertain. */
+    submissionStartedAt?: number | null;
     rowIds: string[];
     body: IssueInboxCredentialBatch;
     batchId?: string;
