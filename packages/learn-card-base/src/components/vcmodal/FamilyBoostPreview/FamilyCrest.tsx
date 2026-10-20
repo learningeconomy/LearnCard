@@ -60,8 +60,8 @@ export const FamilyCrest: React.FC<{
                         )}
                         <p className="text-gray-900 px-4 py-1 text-xs z-9999 shadow-soft-bottom">
                             {_familyName}
-                            <CrescentCornerLeft className="absolute bottom-[-13px] left-[-4px] z-0 !h-[15px]" />
-                            <CrescentCornerRight className="absolute bottom-[-13px] right-[-4px] z-0 !h-[15px]" />
+                            <CrescentCornerLeft className="absolute bottom-[-13px] left-[-4px] z-0 h-[15px]!" />
+                            <CrescentCornerRight className="absolute bottom-[-13px] right-[-4px] z-0 h-[15px]!" />
                         </p>
                     </div>
                 </div>
@@ -71,7 +71,7 @@ export const FamilyCrest: React.FC<{
 
     return (
         <div className={`rounded-t-[20px] flex flex-col mt-[100px] ${containerClassName}`}>
-            <div className="w-full flex items-center justify-center flex-col bg-opacity-70 rounded-t-[20px] backdrop-blur-[5px] bg-white">
+            <div className="w-full flex items-center justify-center flex-col  rounded-t-[20px] backdrop-blur-[5px] bg-white/70">
                 <div className="w-full relative">
                     <div className="absolute top-[-75px] right-[50%] translate-x-[50%] z-0">
                         <FamilyCMSThumbnail thumbnail={thumbnail} />
@@ -88,8 +88,8 @@ export const FamilyCrest: React.FC<{
                             )}
                             <p className="text-grayscale-900 px-4 py-1 text-xl z-9999 shadow-soft-bottom min-w-[100px] min-h-[36px] text-center">
                                 {_familyName}
-                                <CrescentCornerLeft className="absolute bottom-[-20px] left-[0] z-0" />
-                                <CrescentCornerRight className="absolute bottom-[-20px] right-[0] z-0" />
+                                <CrescentCornerLeft className="absolute bottom-[-20px] left-0 z-0" />
+                                <CrescentCornerRight className="absolute bottom-[-20px] right-0 z-0" />
                             </p>
                         </div>
                     </div>
@@ -112,7 +112,7 @@ export const FamilyCrest: React.FC<{
                 {showSleeve && (
                     <div
                         className={`w-full flex items-center justify-center relative ${
-                            showQRCode ? '!pt-6' : 'pt-4'
+                            showQRCode ? 'pt-6!' : 'pt-4'
                         }`}
                     >
                         <IDSleeve className="h-auto w-full" />

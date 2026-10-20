@@ -66,7 +66,15 @@ const AddressBook: React.FC = () => {
 
     // Search state and query
     const [search, setSearch] = useState<string>('');
-    const { data: connections, isLoading: loading, refetch } = useGetSearchProfiles(search);
+    // Results only render while searching (see isSearching below). Don't fire an empty
+    // search on every mount/focus: it full-scans Profile and fans out per result.
+    const {
+        data: connections,
+        isLoading: loading,
+        refetch,
+    } = useGetSearchProfiles(search, {
+        enabled: search.length > 0,
+    });
     const { data: records, isLoading: isLoadingRecords } = useGetIDs();
     // Active tab (derived from the route URL) and connection count state
     const initialTab = getActiveRouteTab(url) || AddressBookTabsEnum.Connections;
@@ -103,10 +111,11 @@ const AddressBook: React.FC = () => {
                         onSuccess: async () => {
                             await refetch();
                         },
-                        onError: (error: any) => {
+                        onError: error => {
                             refetch();
                             presentToast(
-                                error?.message || m['addressBook.toasts.unableToBlockUser'](),
+                                (error as { message?: string } | undefined)?.message ||
+                                    m['addressBook.toasts.unableToBlockUser'](),
                                 {
                                     type: ToastTypeEnum.Error,
                                     hasDismissButton: true,
@@ -115,9 +124,10 @@ const AddressBook: React.FC = () => {
                         },
                     }
                 );
-            } catch (err: any) {
+            } catch (err) {
                 log.debug('blockProfile::error', err);
-                presentToast(err?.message || m['addressBook.toasts.unableToBlockUser'](), {
+                const message = (err as { message?: string } | undefined)?.message;
+                presentToast(message || m['addressBook.toasts.unableToBlockUser'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -170,7 +180,7 @@ const AddressBook: React.FC = () => {
                 isLoadingRecords={isLoadingRecords}
             />,
             {
-                sectionClassName: '!max-w-[550px]',
+                sectionClassName: 'max-w-[550px]!',
             }
         );
     };
@@ -202,7 +212,7 @@ const AddressBook: React.FC = () => {
                             (selectedGroupId === 'all' ? (
                                 <button
                                     onClick={handleContactSelection}
-                                    className="flex border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                                    className="flex border-solid border-grayscale-200 border rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
                                 >
                                     <AllContactsIcon />
                                     <div className="flex flex-col items-start ml-2">
@@ -220,7 +230,7 @@ const AddressBook: React.FC = () => {
                             ) : (
                                 <button
                                     onClick={handleContactSelection}
-                                    className="relative flex bg-white border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                                    className="relative flex bg-white border-solid border-grayscale-200 border rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
                                 >
                                     <img
                                         className="w-[40px] h-[40px] rounded-[40px] mr-2"

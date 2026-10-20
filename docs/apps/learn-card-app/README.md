@@ -10,6 +10,16 @@ Available on:
 
 ---
 
+## Supported browsers and devices
+
+Tailwind 4 requires Safari 16.4+, Chrome 111+, or Firefox 128+. The iOS app
+requires iOS 16.4 or later. On Android, keep Android System WebView or Chrome
+updated to version 111 or later; the Android OS version alone does not determine
+support. Native builds check the standard Android WebView minimum and show a
+standalone notice if the browser cannot open the app. Update Android System
+WebView or Chrome through the device's app store, then reopen the app.
+See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility).
+
 ## Key Features
 
 | Feature               | Description                                                            |
@@ -42,6 +52,10 @@ flowchart LR
 3. User logs in (or creates an account)
 4. User reviews the credential details
 5. User accepts and saves to their wallet
+
+### Receiving Credentials from a Website
+
+For a browser credential offer, choose LearnCard in the website’s account chooser. The **Add to Passport** page lists every offered credential; expand **Details** to inspect one before choosing **Save to Passport** or **Cancel**. Saving disables the action buttons until it finishes. If part of a batch fails, **Try Again** continues without adding completed items again. Exact retries reuse the saved signed credential; a different revision is saved separately even if the issuer keeps the same credential ID. An unsupported offer or a failed exchange shows a visible error instead of leaving **Accepting…** on screen. Cancel remains available while the website’s request is loading. If you switch accounts, return to the issuing website and start a new request. If the credentials are saved but the website cannot be notified, the page tells you; retrying that notification is not offered. A failed cancellation also tells you to return to the website, without offering a retry on the used request. Cancelling after a partial save keeps the credentials already saved and shows their count. Start a new offer on the issuing website if the request has expired.
 
 ### Sharing a Credential
 

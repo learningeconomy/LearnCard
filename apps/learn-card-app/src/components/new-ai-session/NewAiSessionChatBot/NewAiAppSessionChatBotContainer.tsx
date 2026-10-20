@@ -235,7 +235,7 @@ export const NewAiAppSessionChatBotContainer: React.FC = () => {
                                 qa={qa}
                                 index={index}
                                 handleEditChatBotAnswer={handleEditChatBotAnswer}
-                                className={index === 0 ? '!pt-4' : ''}
+                                className={index === 0 ? 'pt-4!' : ''}
                             />
                         )}
 

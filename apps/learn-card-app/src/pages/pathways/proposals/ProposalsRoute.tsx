@@ -49,7 +49,7 @@ const ProposalsRoute: React.FC = () => {
                     pathway: activePathway,
                     ownerDid: learnerDid,
                 },
-                (event, payload) => analytics.track(event, payload),
+                (event, payload) => analytics.track(event, payload)
             );
 
             if (!result.ok) {
@@ -69,11 +69,9 @@ const ProposalsRoute: React.FC = () => {
     };
 
     return (
-        <div className="max-w-xl mx-auto px-4 py-8 font-poppins space-y-5">
+        <div className="max-w-xl mx-auto px-4 py-8 font-poppins space-y-v3-5">
             <div>
-                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                    Proposals
-                </h2>
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Proposals</h2>
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">
                     Changes suggested by agents. You decide what lands.
@@ -87,7 +85,7 @@ const ProposalsRoute: React.FC = () => {
                     </p>
                 </div>
             ) : (
-                <ul className="space-y-4">
+                <ul className="space-y-v3-4">
                     {open.map(proposal => (
                         <li key={proposal.id}>
                             <ProposalCard proposal={proposal} />
@@ -96,23 +94,22 @@ const ProposalsRoute: React.FC = () => {
                 </ul>
             )}
 
-            <section className="mt-10 p-4 rounded-[20px] border border-dashed border-grayscale-300 bg-grayscale-10 space-y-3">
+            <section className="mt-10 p-4 rounded-[20px] border border-dashed border-grayscale-300 bg-grayscale-10 space-y-v3-3">
                 <div>
                     <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide">
                         Simulate agent
                     </p>
 
                     <p className="text-xs text-grayscale-500 leading-relaxed mt-0.5">
-                        Phase 3a scripted proposals — no LLM. Use these to exercise the
-                        accept / reject / modify pipeline end-to-end.
+                        Phase 3a scripted proposals — no LLM. Use these to exercise the accept /
+                        reject / modify pipeline end-to-end.
                     </p>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
                     {DEV_CAPABILITIES.map(capability => {
                         const disabled =
-                            simulating !== null ||
-                            (capability !== 'matching' && !activePathway);
+                            simulating !== null || (capability !== 'matching' && !activePathway);
 
                         return (
                             <button

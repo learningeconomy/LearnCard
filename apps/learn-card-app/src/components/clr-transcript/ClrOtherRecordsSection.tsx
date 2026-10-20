@@ -26,7 +26,7 @@ export const ClrOtherRecordsSection = ({
     if (!model.otherRecords.length) return null;
 
     return (
-        <section aria-label={m['clrTranscript.details.otherRecords']()} className="space-y-3">
+        <section aria-label={m['clrTranscript.details.otherRecords']()} className="space-y-v3-3">
             <div className="flex items-center justify-between border-b border-grayscale-100 px-1 pb-2">
                 <h3 className="text-xs font-semibold uppercase tracking-widest text-grayscale-500">
                     {m['clrTranscript.details.otherRecords']()}
@@ -44,7 +44,7 @@ export const ClrOtherRecordsSection = ({
             {model.otherRecords.map(other => (
                 <div
                     key={other.sourceCredentialId}
-                    className="space-y-3 rounded-[20px] border border-grayscale-200 bg-white p-4"
+                    className="space-y-v3-3 rounded-[20px] border border-grayscale-200 bg-white p-4"
                 >
                     <h4 className="text-base font-semibold text-grayscale-900">
                         {onSelectRecord ? (

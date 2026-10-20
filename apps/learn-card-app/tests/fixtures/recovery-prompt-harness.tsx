@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import '../../src/tailwind.css';
 import '../../src/index.scss';
 
 import { AnalyticsContextProvider } from '../../src/analytics';

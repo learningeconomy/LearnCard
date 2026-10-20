@@ -55,7 +55,7 @@ export const TroopsCMSHeader: React.FC<TroopsCMSHeaderProps> = ({
                     <div className="w-full flex flex-col items-start justify-center max-w-[600px] ion-padding">
                         <h2 className="text-grayscale-800 flex items-center justify-center text-[22px] font-notoSans text-graycale-900">
                             <Icon
-                                className={`max-w-[40px] max-h-[40px] h-[40px] w-[40px] shrink-1 mr-2 text-${color}`}
+                                className={`max-w-[40px] max-h-[40px] h-[40px] w-[40px] shrink mr-2 text-${color}`}
                             />
                             <TransP
                                 m={headingMessages[viewMode]}

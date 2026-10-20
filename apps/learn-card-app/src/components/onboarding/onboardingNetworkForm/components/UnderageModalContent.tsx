@@ -143,7 +143,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                                 spellCheck={false}
                                 aria-invalid={Boolean(error)}
                                 aria-describedby={error ? 'underage-school-code-error' : undefined}
-                                className={`w-full bg-grayscale-100 rounded-[12px] px-4 py-2 text-grayscale-900 placeholder:text-grayscale-400 font-medium tracking-widest text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
+                                className={`w-full bg-grayscale-100 rounded-[12px] px-4 py-2 text-grayscale-900 placeholder:text-grayscale-400 font-medium tracking-widest text-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                                     error ? 'border-red-500 border' : ''
                                 }`}
                             />
@@ -169,7 +169,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                 )}
             </div>
             <LoggingOutPanel isLoggingOut={isLoggingOut} />
-            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom">
+            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! safe-area-bottom">
                 <div className="w-full max-w-[700px] flex gap-[10px]">
                     <button
                         type="button"

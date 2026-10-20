@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 1.10.4
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/core@9.4.39
+
 ## 1.10.3
 
 ### Patch Changes

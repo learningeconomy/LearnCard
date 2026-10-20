@@ -5,7 +5,7 @@ import type { CourseDisplayModel } from 'learn-card-base/helpers/credentials/clr
 
 /** Shows the source-backed credit quantities and keeps absent earned credits unknown. */
 export const ClrCreditValues = ({ course }: { course: CourseDisplayModel }) => (
-    <div className="space-y-1 text-xs text-grayscale-700">
+    <div className="space-y-v3-1 text-xs text-grayscale-700">
         {!course.creditsEarned && (
             <p aria-label={m['clrTranscript.credits.earnedNotSuppliedAria']()}>
                 {m['clrTranscript.credits.earnedNotSupplied']()}
@@ -21,7 +21,7 @@ export const ClrCreditValues = ({ course }: { course: CourseDisplayModel }) => (
                       : m['clrTranscript.credits.inferredQuantity']({ value });
 
             return (
-                <p key={quantity.kind} className="break-words">
+                <p key={quantity.kind} className="wrap-break-word">
                     {label}
                 </p>
             );

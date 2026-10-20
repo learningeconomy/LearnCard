@@ -224,7 +224,7 @@ export const boostVCTypeOptions = {
             ShapeIcon: Circle,
             shapeColor: 'text-cyan-400 w-[35px] h-[35px]',
             WalletIcon: ExperiencesIcon,
-            iconStyles: 'h-[35px] w-[35px] !top-[46%]',
+            iconStyles: 'h-[35px] w-[35px] top-[46%]!',
         },
         // {
         //     id: 7,
@@ -263,7 +263,7 @@ export const boostVCTypeOptions = {
             type: BoostCategoryOptionsEnum.id,
             ShapeIcon: Hexagon,
             shapeColor: 'text-blue-400 w-[45px] h-[45px]',
-            iconStyles: 'h-[33px] w-[33px] !top-[55%]',
+            iconStyles: 'h-[33px] w-[33px] top-[55%]!',
             WalletIcon: IDsIcon,
         },
     ],

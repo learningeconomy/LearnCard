@@ -1,4 +1,15 @@
-import type { EscrowEnvelope } from '@learncard/sss-key-manager';
+import type { EscrowEnvelope, SignedEscrowEnrollmentIntent } from '@learncard/sss-key-manager';
+import type {
+    AuthorityRecord,
+    AuthorityHoldReceipt,
+    AuthorityMutationResult,
+    AuthorityStateResponse,
+} from './authorityContract';
+export interface ApplyEnrollmentInput {
+    signedIntent: SignedEscrowEnrollmentIntent;
+    sourceEnvelope: EscrowEnvelope | null;
+    targetEnvelope: EscrowEnvelope | null;
+}
 // Hold records are independent of host Mongo status and deadlines.
 
 export interface EnclaveAttestation {
@@ -41,9 +52,23 @@ export interface EnclaveCreateHoldInput {
     clientEphemeralPublicKey: string;
 }
 export interface CancelHoldRequest {
+    requestId?: string;
     envelope: EscrowEnvelope;
     hold: EscrowHoldRecord;
     clientEphemeralPublicKey: string;
+    expectedDid: string;
+}
+/** P9.1 (attack C): `code` is the one-time code itself (compared against a
+ * stored hash enclave-side), never a proof — unlike `ReleaseRequest.pinProof`. */
+export interface ConfirmHoldRequest extends CancelHoldRequest {
+    code: string;
+}
+export type ResendCodeRequest = CancelHoldRequest;
+/** P9.1 (attack C): system-initiated (lca-api's hourly job) — no envelope or
+ * signed hold, since there is no user action to authenticate. */
+export interface SendReleaseWarningRequest {
+    requestId?: string;
+    holdId: string;
     expectedDid: string;
 }
 export interface VerifyEscrowBlobInput {
@@ -60,6 +85,7 @@ export interface ReleaseRequest extends CancelHoldRequest {
 }
 export interface ReleaseResult {
     sealed: EscrowEnvelope;
+    receipt?: AuthorityRecord;
 }
 export interface CarryPinVerifierInput {
     sourceEnvelope: EscrowEnvelope;
@@ -80,6 +106,12 @@ export interface RewrapEscrowBlobInput {
     sourceEnrollmentEpoch: number;
 }
 export interface EscrowEnclave {
+    /** Remote authority only; software mode must not impersonate signed authority. */
+    getEnrollmentState?(input: {
+        expectedDid: string;
+        nonce: string;
+    }): Promise<AuthorityStateResponse>;
+    applyEnrollmentIntent?(input: ApplyEnrollmentInput): Promise<AuthorityMutationResult>;
     /** `nonce` binds a nitro attestation to one client-generated challenge (64 hex chars,
      * decoded to bytes); the software backend has no freshness story and ignores it. */
     getAttestation(nonce?: Uint8Array): Promise<EnclaveAttestation>;
@@ -91,15 +123,45 @@ export interface EscrowEnclave {
      * `EscrowBlobError`) unless the envelope's own keyId is a recognised
      * previous key — never the current key (nothing to migrate) or an
      * unknown one. */
-    rewrapEscrowBlob(input: RewrapEscrowBlobInput): Promise<{ envelope: EscrowEnvelope }>;
+    rewrapEscrowBlob(
+        input: RewrapEscrowBlobInput
+    ): Promise<{ envelope: EscrowEnvelope; authority?: AuthorityMutationResult }>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
-    createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
-    cancelHold(input: CancelHoldRequest): Promise<void>;
+    createHold(input: EnclaveCreateHoldInput): Promise<{
+        holdRecord: EscrowHoldRecord;
+        delivery?: { codeSent: boolean; proof: AuthorityHoldReceipt };
+    }>;
+    getHoldState?(input: {
+        expectedDid: string;
+        hold: EscrowHoldRecord;
+        nonce: string;
+    }): Promise<{ proof: AuthorityRecord }>;
+    cancelHold(input: CancelHoldRequest): Promise<void | { receipt: AuthorityRecord }>;
+    /** P9.1 (attack C): authority (nitro) mode only — software mode never
+     * produces an awaiting-confirmation hold, so it has nothing to confirm.
+     * `confirmedAtMs` is the enclave's authoritative confirmation time
+     * (present on both a fresh confirm and an idempotent retry); callers
+     * must use it instead of a locally-observed clock to compute deadlines. */
+    confirmHold?(
+        input: ConfirmHoldRequest
+    ): Promise<{ receipt: AuthorityHoldReceipt; confirmedAtMs: number }>;
+    resendCode?(input: ResendCodeRequest): Promise<{ receipt: AuthorityRecord }>;
+    /** `releaseWarningSentAtMs` is the enclave's authoritative warning-sent
+     * time, present on both a fresh send and an idempotent retry. */
+    sendReleaseWarning?(
+        input: SendReleaseWarningRequest
+    ): Promise<{ receipt: AuthorityHoldReceipt; releaseWarningSentAtMs: number }>;
 }
 export class EscrowPolicyError extends Error {
     constructor() {
         super('Escrow recovery is not permitted.');
         this.name = 'EscrowPolicyError';
+    }
+}
+export class EscrowCodeError extends Error {
+    constructor(public readonly reason: 'codeMismatch' | 'codeExpired' | 'codeLocked') {
+        super(reason);
+        this.name = 'EscrowCodeError';
     }
 }
 export class EscrowPinMismatchError extends Error {
@@ -115,7 +177,17 @@ export class EscrowBlobError extends Error {
     }
 }
 export class EscrowUnavailableError extends Error {
-    constructor() {
+    constructor(
+        readonly reason:
+            | 'unavailable'
+            | 'ledger'
+            | 'time'
+            | 'transport'
+            | 'invalid_response'
+            | 'invalid_hold'
+            | 'http_refusal'
+            | 'rate_limit' = 'unavailable'
+    ) {
         super('Escrow recovery is not available.');
         this.name = 'EscrowUnavailableError';
     }

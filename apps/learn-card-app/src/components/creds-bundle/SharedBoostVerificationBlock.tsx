@@ -100,7 +100,7 @@ const SharedBoostVerificationBlock: React.FC<{
         const loggedInStyles = isLoggedIn
             ? 'share-page-verification-loggedIn-block'
             : 'share-page-verification-block';
-        containerStyles = `absolute top-[10%] left-[1%] justify-start z-9999 bg-white min-w-[320px] max-w-[320px] max-h-[100%] rounded-[20px] ion-padding shadow-bottom ${loggedInStyles}`;
+        containerStyles = `absolute top-[10%] left-[1%] justify-start z-9999 bg-white min-w-[320px] max-w-[320px] max-h-full rounded-[20px] ion-padding shadow-bottom ${loggedInStyles}`;
         innerContainerStyles = 'w-full flex flex-col items-center justify-start';
     }
 

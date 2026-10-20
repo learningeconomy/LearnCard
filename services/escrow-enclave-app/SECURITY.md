@@ -4,6 +4,36 @@ This document provides a comprehensive security overview of the Escrow Enclave s
 
 ## System Overview and Trust Boundaries
 
+**2026-10-16 hold evidence update:** returned SES failures no longer discard a
+durably created hold. Response-only, ledger-signed delivery evidence binds its
+unchanged digest; `codeSent: false` includes ambiguous acceptance. It never starts
+the seven-day wait or changes the send/guess budgets. A lost whole response or
+outer timeout remains an availability risk. The new bearer-authenticated
+`/v1/hold-state` read signs a caller nonce and the exact hold identity, generation,
+state, confirmation/warning times and remaining guesses. Persisted state does not
+record send acceptance, so reads conservatively report `unknown`, not success
+inferred from a throttle. Clients must verify against attested ledger evidence and
+fresh nonces; a signature is not an assurance of subsequent state stability.
+
+`codeMismatch`, `codeExpired`, and `codeLocked` disclose only public policy outcomes
+after hold-binding checks. They reveal no digits, secret hashes or unmetered
+equality oracle; the fifth failed guess locks, expired attempts remain consumed,
+and malformed/binding failures remain generic. Bearer-only cancellation still
+permits a compromised API to cause durable DoS, not disclosure. See
+[ENROLLMENT-AUTHORITY §§11–12](ENROLLMENT-AUTHORITY.md#11-hold-delivery-evidence-and-state-reads-2026-10-16)
+for wire details, new-host-first compatibility, the unchanged persisted format,
+and the recommended future owner-signature cancellation design (not implemented).
+
+**PR 2 / Design 2 status:** the enrollment blocker is resolved **only in configured
+authority mode**, with the measured authority/credential configuration, attested
+writer unsealing, both verified Organizations guardrails, owner intent verification,
+and the authority-aware clients/API. Unconfigured deployments still use
+`UnavailableEnrollment`. No live AWS deployment or guardrail evaluation is claimed
+by the offline implementation. See [offline audit coverage](AUDIT-COVERAGE.md) and
+the [ordered staging cutover](STAGING.md#pr-2-authority-cutover--operator-only).
+**Attack C remains a launch blocker for PR 3.** Existing lca-api notifications are
+not enclave-controlled email confirmation.
+
 The Escrow Enclave is a hardware-isolated environment (AWS Nitro Enclaves) responsible for securely holding and releasing encrypted account recovery keys. It enforces a strict release policy (7-day delay or PIN) that cannot be bypassed by the host operating system, the parent application (`lca-api`), or human operators.
 
 ```mermaid
@@ -53,16 +83,16 @@ flowchart TD
 
 - **D1 (Instance Size):** The enclave requires an `m6i.xlarge` instance. AWS requires at least 2 vCPUs for the parent host, so a 2-vCPU enclave necessitates a 4-vCPU parent instance.
 - **D2 (Time Sources):** The enclave hypervisor clock was considered but not used. Measured code pins Cloudflare (draft-08), int08h and Tanner Ryan (Google legacy), with a 2-of-3 quorum and a shared two-second query deadline. All authenticated intervals must intersect; no majority/outlier exclusion. The 10s radius cap accommodates rough/smeared time without weakening the seven-day comparison. Bad signatures/timeouts count as unavailable; one unavailable source is tolerated, two fail closed. int08h and Tanner passed live verification on 2026-09-30; Cloudflare timed out. Public-source uptime and high-volume service-use approval remain staging obligations.
-- **D3 (Rollback Detection):** The anti-replay ledger provides rollback _detection_, not prevention. A fresh-booted enclave cannot know the true head (Trust On First Use). Strict prevention requires quorum replicas, which is deferred.
+- **D3 (Legacy detection / configured prevention):** The host-owned ledger remains detection-only. Configured Design 2 instead serializes every sensitive transition in AWS-operated DynamoDB with exact prior-row conditions and durable execution receipts, independent of parent history and AWS token expiry. This prevents host replay/rollback across fresh boots and parallel enclaves under the AWS/protected-administration trust assumption. It does not protect against approved management/key administrators deliberately undoing that boundary.
 - **D4 (KMS Recipient Flow):** The enclave generates a boot-time RSA-2048 recipient keypair. First boot calls `GenerateDataKey(KeySpec=AES_256, Recipient=NSM attestation)` with `{purpose:escrow-enclave-key,keyId}` context; subsequent boots call `Decrypt` with the same context and Recipient. Both reject any Plaintext field (including empty), require nonempty recipient ciphertext, and accept exactly 32 seed bytes after CMS opening. Generation additionally requires a nonempty CiphertextBlob for persistence. Domain-separated HKDF-SHA256 binds keyId and rejection-samples the escrow P-256 scalar; the seed/scalar buffers zeroize. No `Encrypt` operation exists in the enclave. No sealed-format migration is supported: Nitro never ran in production and the prior `nitro,kms` build did not compile. Deploy with a fresh restricted CMK, or prove it has never allowed attacker-known ciphertext generation: newly denying Encrypt does not invalidate pre-existing host-known 32-byte-seed ciphertexts.
 - **D7 (KMS Key Policy):** The KMS key policy uses one statement per released measurement tuple. It requires an exact match on PCR0, PCR1, and PCR2 simultaneously to prevent cross-combination of measurements.
 - **D10 (Key Admin Residual Risk):** An MFA-authenticated key admin can theoretically rewrite the KMS key policy to remove attestation gates. This residual risk is mitigated by mandatory two-person PR review and CloudTrail alarms, rather than an immutable key policy.
 - **D11 (RSA/Marvin Rationale):** The `rsa` crate has a known timing side-channel (Marvin). This is accepted because the CMS blob only arrives inside the enclave's own TLS session to KMS, meaning the host cannot submit chosen ciphertexts.
 - **D12 (Software Mode Blocked in Production):** The client guard (`getEscrowStrategyConfig` in `packages/learn-card-base/src/config/authConfig.ts`) downgrades `software` mode to `off` for production tenants (`learncard`, `vetpass`, `scoutpass`) whenever the resolved tenant config's deploy `stage` is `production` — which is also the fail-closed default for a missing or unrecognized stage. The guard keys on this deploy `stage`, not the Vite build mode (`IS_PRODUCTION`, i.e. `mode === 'production'`): staging deployments are Vite production-mode builds too (`apps/learn-card-app`'s `build` script runs `vite build` under `STAGE=staging`), so `IS_PRODUCTION` alone can't tell a staging deploy from production. Staging deliberately runs the software enclave (host-trusted, dev/test only) per #1565, with `stage: 'staging'` baked into the tenant config by `prepare-native-config.ts --stage staging` (learn-card-app) or the equivalent `VITE_NODE_ENV`-driven overlay (scouts). Independently, the enclave binary enforces this server-side: `--emulate` (software mode) is feature-gated behind `fake-nsm`/`fake-kms`/`fake-time`/`fake-ledger`, which a production `--features nitro,kms` build excludes, so that compiled binary refuses `--emulate` before binding.
-- **D13 (Ledger Design):** The ledger uses one bounded chain per tenant/decrypted identity/blob hash (v2); epoch remains a signed binding, never a chain selector. PIN reservations consume an attempt before verification. Every carry/rewrap signs a destination-genesis `Carried` event committing to the source chain, observed source head and inherited attempts. The monitor checks that accounting on inserts and sweeps. Readback does not prove durable storage, as a malicious parent can retain signed bytes only in RAM. Time intervals describe signed processing events, not an authenticated upper bound on receipt time. Nitro never ran in production; no v1 chain migration is supported.
-- **D14 (Release Replay Refused & Enrollment Boundary):** Release replay is explicitly refused after a `Released` state is observed. A crash or lost response after append but before returning ciphertext burns the hold. Additionally, current enrollment is a required trust boundary: the production enclave currently wires in `UnavailableEnrollment`, so every mutating operation fails closed until an authenticated, fresh enrollment source is integrated.
-- **D15 (Cancel-Link Token Primitive):** Cancel-link tokens (`services/learn-card-network/lca-api/src/helpers/escrowCancelToken.ts`) are 256-bit random values stored as SHA-256 hashes and compared in constant time — the same primitive as resume tokens. They are single-use and valid only while the hold is `pending`. An HMAC was considered and rejected: the token is random and never derived from other data, so a keyed hash would add no security over a plain hash of a high-entropy secret.
-- **D18 (Enclave key stability and rotation):** The escrow key is generated once and KMS-sealed (`services/escrow-enclave-app/src/kms.rs`); any build whose PCRs are in the key policy unseals the same key, so new builds and redeploys keep the same `keyId` and all existing copies stay readable (measurement rotation ≠ key rotation). The `keyId` changes only by deliberate rotation or if the host loses the sealed key. Previous keys (up to 3) are read-only, advertised and bound in the signed attestation, and new copies are always sealed with the current key. PIN carry and re-seal preserve the attempt count (D17/P8.3). Honest limits: (a) **lost sealed key** — if the host loses the sealed key object and first boot generates a new one, every copy under the old key is unrecoverable by escrow (users fall back to other recovery methods); mitigations = the sealed key lives under a create-only `sealed-keys/` prefix in the versioned artifacts bucket, where the enclave-host IAM role can create but never overwrite or delete an existing sealed key object (`infra/escrow-enclave/iam.tf`'s scoped `s3:PutObject`, `storage.tf`'s bucket policy denying any unconditional `sealed-keys/*` write, no `s3:DeleteObject`/`s3:DeleteObjectVersion` grant anywhere), the bucket's versioning preserves prior object versions if an admin ever does replace one, and `ESCROW_ALLOW_FIRST_BOOT` stays off in steady state (`services/escrow-enclave-host/README.md`); (b) **re-seal vs. a recovery starting at the same moment** — the rewrap job (`services/learn-card-network/lca-api/src/jobs/escrowBlobRewrap.ts`) skips accounts with a pending hold, but a hold started between that check and the write refers to the old copy, and its release will then be refused; this is rare (once per user per rotation), fails safe, and the user starts a new recovery.
+- **D13 (Audit design):** Legacy mode retains its bounded per-blob ledger and `Carried` genesis. Configured mode instead stores per-DID authority state, bounded per-hold/operation rows and immutable execution receipts with signed proposals. No legacy history is imported. Proposed events and post-commit signatures have different domain tags; a proposal is never commit proof. The independent monitor verifies authenticated table evidence and continuity, not parent readback. Time intervals remain processing evidence, not authenticated upper bounds on receipt time.
+- **D14 (Release replay and ordering):** Configured authority commits successful PIN results together with release. Cancel committed first blocks release; release committed first is final. Unknown/reconciled reservations never permit another comparison, and ambiguous release commits never grant another seal. A lost response can burn a hold. Configured carry/rewrap consult and update the authority; unsigned carry is refused. Unconfigured create/release/cancel remain fail-closed with `UnavailableEnrollment`.
+- **D15 (Cancel-Link Token Primitive):** Cancel-link tokens (`services/learn-card-network/lca-api/src/helpers/escrowCancelToken.ts`) are 256-bit random values stored as SHA-256 hashes and compared in constant time — the same primitive as resume tokens. They are single-use and valid only while the hold is `pending`. HMAC derivation (`token = HMAC-SHA256(SEED, holdId)`) was considered and rejected for this primary token: an HMAC-derived token is fully determined by `SEED` and the hold ID, so a future `SEED` compromise would retroactively make every cancel link for every hold — past, present and future — derivable offline from hold IDs alone, which are not treated as secret (they appear in Mongo, in client receipts, and in the resumeToken flow). A true random primary token is never a function of `SEED`, so a `SEED` compromise does not retroactively compromise already-issued cancel links. Retry notification tokens (`rotateEscrowCancelToken`) are HMAC-derived instead: this is a deliberate, narrower trade-off for idempotent redelivery (recompute the same link for a retry without storing or resending a new one), bounded to at most four additional HMAC-derived hashes per hold (`cancelTokenHashes`), alongside the original random token which always remains valid.
+- **D18 (Enclave key stability and rotation):** The escrow key is generated once and KMS-sealed (`services/escrow-enclave-app/src/kms.rs`); any build whose PCRs are in the key policy unseals the same key, so new builds and redeploys keep the same `keyId` and all existing copies stay readable (measurement rotation ≠ key rotation). The `keyId` changes only by deliberate rotation or if the host loses the sealed key. Previous keys (up to 3) are read-only, advertised and bound in the signed attestation, and new copies are always sealed with the current key. PIN carry and re-seal preserve the attempt count (D17/P8.3). Honest limits: (a) **lost sealed key** — if the host loses the sealed key object and first boot generates a new one, every copy under the old key is unrecoverable by escrow (users fall back to other recovery methods); mitigations = the sealed key lives under a create-only `sealed-keys/` prefix in the versioned artifacts bucket, where the enclave-host IAM role can create but never overwrite or delete an existing sealed key object, and holds that create permission only while `escrow_allow_first_boot` is true (`infra/escrow-enclave/iam.tf`'s conditional `WriteSealedKey` statement, `storage.tf`'s bucket policy denying any unconditional `sealed-keys/*` write, no `s3:DeleteObject`/`s3:DeleteObjectVersion` grant anywhere), the bucket's versioning preserves prior object versions if an admin ever does replace one, and `ESCROW_ALLOW_FIRST_BOOT` stays off in steady state (`services/escrow-enclave-host/README.md`); (b) **re-seal vs. a recovery starting at the same moment** — the rewrap job (`services/learn-card-network/lca-api/src/jobs/escrowBlobRewrap.ts`) skips accounts with a pending hold, but a hold started between that check and the write refers to the old copy, and its release will then be refused; this is rare (once per user per rotation), fails safe, and the user starts a new recovery.
 
 ## Guarantees vs. Non-Guarantees
 
@@ -71,10 +101,10 @@ We are scrupulously honest about the limits of this system. The following table 
 | Threat                          | Prevention / Detection Boundary                                                                                                                                                                                                                                                                                                                                                                                                                         | Citation                                                                                 |
 | :------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------- |
 | Forged/modified ledger record   | **Prevented** by enclave signature and sequence verification.                                                                                                                                                                                                                                                                                                                                                                                           | `services/escrow-enclave-app/README.md`                                                  |
-| Ledger rollback / stale history | **Detected**, not prevented. A fresh enclave cannot distinguish the true latest head from an old valid head supplied by the parent. Requires independent monitor.                                                                                                                                                                                                                                                                                       | `services/escrow-enclave-app/README.md`, [Design Decisions](#design-decisions) (D3, D13) |
-| Release replay                  | **Prevented**. Once `Released` is observed, every retry is refused. A crash after append but before returning ciphertext burns the hold. (Note: Today, all production releases fail closed due to the enrollment blocker).                                                                                                                                                                                                                              | `services/escrow-enclave-app/README.md`, [Design Decisions](#design-decisions) (D14)     |
+| Ledger rollback / stale history | **Configured:** host replay is prevented by authenticated authority reads and conditional transactions. **Legacy:** detection-only. Privileged coherent authority rollback remains a governance risk.                                                                                                                                                                                                                                                   | D3, D13; [coverage](AUDIT-COVERAGE.md)                                                   |
+| Release replay                  | **Configured:** committed release is final, including across restart. A lost reply can burn the hold. **Unconfigured:** release remains unavailable.                                                                                                                                                                                                                                                                                                    | D14                                                                                      |
 | Enclave clock manipulation      | **Enforced** by a compiled 2-of-3 Roughtime quorum (Cloudflare, int08h, Tanner Ryan); every valid interval must overlap. One unavailable/invalid-signature source is tolerated; two or any authenticated disagreement fail closed. The hypervisor clock was considered but not used. Signed processing events are not an authenticated upper bound on receipt time.                                                                                     | `services/escrow-enclave-app/README.md`, [Design Decisions](#design-decisions) (D2, D13) |
-| PIN attempt budget bypass       | **Enforced per blob**: changing epoch cannot select a fresh chain. Carry/rewrap preserve spent attempts in encrypted `pinAttemptsFloor` and signed `Carried` genesis records; the monitor verifies source-head accounting. Fresh-boot/parallel-instance history rollback remains D3 detection-only. Choosing an older PIN-bearing blob with fewer attempts remains BLOCKER-ENROLLMENT, not a globally replay-proof budget.                              | [Design Decisions](#design-decisions) (D13)                                              |
+| PIN attempt budget bypass       | **Configured:** ten durable reservations per signed PIN set, serialized across enclaves; carry/rewrap cannot replenish it and old blobs fail current-identity checks. **Legacy:** per-blob detection limitations remain.                                                                                                                                                                                                                                | D3, D13; BLOCKER-ENROLLMENT status below                                                 |
 | Key Admin policy rewrite        | **Residual Risk**. An MFA-authenticated admin can rewrite the KMS policy to remove attestation gates. Mitigated by PR review and CloudTrail alarms.                                                                                                                                                                                                                                                                                                     | `infra/escrow-enclave/README.md`, [Design Decisions](#design-decisions) (D10)            |
 | RSA timing side-channels        | **Accepted Risk**. The `rsa` crate has a known timing side-channel (Marvin). Exploitation requires chosen ciphertexts, which the enclave does not accept from the host (only via verified KMS TLS).                                                                                                                                                                                                                                                     | [Design Decisions](#design-decisions) (D11)                                              |
 | Software mode in production     | **Prevented**. The client guard downgrades software mode to `off` for production tenants whenever the deploy `stage` is `production` (the fail-closed default). Staging deliberately runs the software enclave (host-trusted, dev/test only) — the guard keys on deploy stage, not Vite build mode, since staging is a production-mode build too. The enclave binary separately excludes the software-mode emulator from `nitro,kms` production builds. | [Design Decisions](#design-decisions) (D12)                                              |
@@ -82,6 +112,127 @@ We are scrupulously honest about the limits of this system. The following table 
 | Re-seal vs. concurrent recovery | **Fails Safe**. A recovery hold started between the rewrap job's check and its write refers to the old copy, and its release will be refused. The user must start a new recovery.                                                                                                                                                                                                                                                                       | [Design Decisions](#design-decisions) (D18)                                              |
 
 ## KMS Key Policy Summary
+
+### Independent authority observer and residual risks
+
+The monitor gets only GetItem/Query/Scan on the exact authority table, plus a
+security-owned public trust parameter. It gets neither escrow/credential-CMK
+access nor writer credentials. The table policy and **both** attached SCPs restrict
+its exception to reads. The observer SCP protects its IAM role (including PassRole),
+Lambda code/configuration and fixed SSM trust parameter against non-admin takeover.
+The original escrow CMK policy is unchanged.
+
+The sweep uses strongly consistent reads and an unchanged account fence around
+pagination. It verifies key-ID/measurement-pinned proposals, receipt/revision
+bindings, per-PIN-generation budgets, hold terminal order and every committed row's
+receipt. Invalid data alarms; unavailable/changing/over-capacity reads retry and
+alarm on coverage failure. A separate missing-authority-heartbeat alarm prevents
+the legacy monitor's heartbeat from masking a disabled/broken authority observer.
+
+This is detection, not an availability or immutable-administration guarantee:
+
+- Signed RPC Commit/Snapshot artifacts are not stored in the table; the observer
+  verifies stored proposals and authenticated execution receipts, never equating
+  a proposal signature with proof of commit. Clients verify RPC artifacts separately.
+- A coherent privileged purge to a historical prefix (or an empty table) cannot
+  be distinguished from an unused/shorter history without an external durable
+  high-water mark. No such checkpoint is claimed. Same-generation restore is forbidden.
+- Organization/management owners and MFA key administrators remain trusted. They
+  can change SCPs/policies, provision writer keys, or suppress monitoring. Scheduler,
+  alarm/subscriber controls and independent CloudTrail delivery need security-owned
+  operational protection; the detector is not an immutable control plane.
+- Bounds/timeouts can require sharding or a reviewed checkpoint design before
+  scaling. They cause coverage failure, never a partial-history success.
+- Mongo remains an availability/UX cache and holds auth shares/PIN salts needed by
+  client recovery. Durable encrypted authority output does not make those caches
+  recoverable if lost. Ambiguous releases may burn holds; no refund/replay is allowed.
+- No live guardrail, credentials, native relay or monitor-delivery verification was
+  performed in this PR. Attack C/email confirmation remains PR 3.
+
+### AWS TLS and signing time (authority foundations)
+
+The existing KMS client now obtains fresh enclave-verified `TimeSource` evidence
+before each Decrypt or GenerateDataKey operation. Production supplies the compiled
+Roughtime quorum; unavailable or malformed intervals fail before AWS network IO.
+This hardens existing boot/unsealing, not enrollment authorization:
+`UnavailableEnrollment` remains wired, and authority/email clients are not active.
+Boot now also requires available Roughtime evidence for KMS access.
+
+The previous SDK-default HTTPS transport used rustls's system clock and native
+roots from the Alpine CA bundle baked into the EIF. The replacement uses a narrow
+hyper 1/rustls adapter because the locked Smithy HTTPS builder does not expose a
+custom rustls configuration/time provider. Mozilla roots from `webpki-roots` are
+compiled into the binary and pinned by Cargo.lock; neither host CA files nor
+`SSL_CERT_FILE`/proxy environment variables select trust roots or transport.
+This is WebPKI trust plus the fixed regional AWS hostname, not AWS-only CA pinning.
+
+- Certificate chain/name validation runs at **both authenticated interval bounds**,
+  rounding the lower bound down and the upper bound up to whole seconds. TLS
+  handshake-signature verification remains rustls/WebPKI's standard implementation.
+- An explicit rustls time provider uses the same sample, with no wall-clock fallback.
+  SigV4 uses the interval midpoint through the SDK's explicit time source.
+- Each operation creates a fresh SDK client and connection pool. TLS resumption,
+  early data, idle pooling, Hyper's cancelled-request retries and SDK retries are
+  disabled. SDK response-date clock-skew correction therefore cannot influence a
+  subsequent request. An unknown GenerateDataKey outcome is not automatically retried.
+- Only HTTPS to the configured regional authority is accepted. Redirects are not
+  followed. Responses are bounded to 1 MiB, with a 15-second whole-exchange deadline;
+  local timers bound resource use, not trusted elapsed time.
+
+**Limit:** Roughtime authenticates server processing time, not a receipt-time upper
+bound. A host that delays a live response or suspends execution can make the sample
+old before the handshake or request completes. Fresh nonces, disabled reuse and
+timeouts do not prove real-time freshness against suspension. Certificate checks
+cover the signed interval, not a proven current wall-clock interval; a compromised
+certificate key valid then is not ruled out solely because the certificate has
+expired by receipt. AWS's own SigV4 time window can reject delayed requests, but is
+not an enclave-authenticated elapsed-time guarantee. No revocation/OCSP freshness
+guarantee is added. D2, D3, D11 and D13 remain applicable.
+
+### Configured direct data-plane clients
+
+The `authority::aws` clients sign only enclave-built GetItem,
+TransactGetItems, conditional TransactWriteItems and SESv2 SendEmail requests.
+They reuse the trusted-time transport above, pin the table/SES identity by full
+account-qualified ARN and do not retry any operation. Each transaction retains an
+immutable token/body pair; each email has a generated execution tag (not an SES
+idempotency guarantee). Unknown mutation outcomes remain errors. Read failures
+must never be interpreted as missing authority state.
+
+Dedicated credentials are a distinct zeroizing type that rejects STS access-key
+IDs and has no session token or conversion from parent boot credentials. Its
+`from_unsealed` constructor accepts material from trusted enclave code only.
+The configured `CredentialUnsealer` uses a separate measured credential CMK and fresh
+NSM Recipient attestation, then the existing BER/CMS recipient unwrap. Its KMS
+encryption context binds `purpose` (`authority-writer` or `email-sender`), `tenant`,
+`environment`, `authorityGeneration` and `principalArn`. The credential CMK must
+differ from the escrow CMK and use the measured account and existing KMS relay's
+region. It never calls GenerateDataKey or falls back to the escrow CMK.
+
+Decrypted JSON is capped at 4096 bytes; escape bytes are rejected before invoking
+the JSON decoder so it cannot allocate an escape-decoding copy of a secret value.
+Fields are parsed as borrowed strings from a zeroizing buffer; its exact fields are `accessKeyId`, `secretAccessKey`, and
+`principalArn`. Unknown/duplicate fields, session tokens, malformed keys, escaped
+strings requiring allocation, or a principal mismatch fail closed. Owned final
+credentials zeroize on drop; this is not a claim about all SDK/library copies.
+The parent can deliver only optional opaque ciphertexts (6144 bytes each), never
+the dedicated keys. Existing temporary parent STS credentials remain unchanged
+and are used only to authorize attested KMS access, not DynamoDB/SES requests.
+
+Claimed principal metadata is checked against
+measured configuration, but is not independently an AWS identity proof: the
+credential-CMK/provisioning binding and resource IAM policy must enforce that
+contract before activation. Gated Terraform and the operator provisioning script
+now implement that contract; they have not been deployed or adversarially tested
+against AWS. Install the management-account SCP before enabling resources: IAM
+users cannot protect their access keys from other IAM administrators through
+user-attached policies. The SCP receipt variable requires independent verification,
+and organization/key administrators remain trusted (D10). Configured boot now
+unseals the writer and supervises the direct DynamoDB relay. Missing/partial
+configuration or failed unsealing never falls back to host credentials. Email
+unsealing/sending/confirmation remain inactive for PR 3.
+
+### Escrow CMK policy
 
 The AWS KMS Customer Master Key (CMK) policy (`infra/escrow-enclave/kms.tf`) is the primary security boundary enforcing attestation.
 
@@ -159,27 +310,25 @@ error-level alerts fire when cancellation is still pending within 24 hours of
 Operators must investigate these alerts before release, and use the manual API
 kill switch where appropriate; it does not stop a host bypassing the API.
 
-No current wire error uniquely proves an already-cancelled or unknown hold is safe.
-Policy, blob, unavailable, time, ledger and transport errors therefore never confirm
-revocation. A lost successful reply can leave a terminal hold pending for operator
-reconciliation; retries do not weaken that boundary. Legacy rows missing the signed
-record or matching ciphertext also stay pending rather than inventing confirmation.
-**BLOCKER-ENROLLMENT remains:** Nitro cancellation fails closed with `Unavailable`
-and remains pending until the independent enrollment authority lands. Suppressed
-delivery, unavailable authority, and D3 rollback mean bounded revocation latency is
-not guaranteed by this API queue.
+Errors never confirm cancellation. In configured mode, a stable hold-bound operation
+ID and authenticated immutable receipt let retries positively confirm an already
+committed cancellation across restart. The API persists its commit receipt before
+clearing `enclaveCancelPendingAt`. Obsolete pending holds can be cancelled after
+rotation/disablement; cancellation grants no release. Legacy/unknown rows do not
+invent confirmation. Suppressed delivery and unavailable authority still mean the
+queue cannot guarantee bounded revocation latency. Unconfigured mode remains unavailable.
 
 ## Open Items / Launch Blockers
 
 - **BLOCKER-TIME — all three sources verify; operational review remains:** Three operator-published keys are compiled in: Cloudflare, int08h and Tanner Ryan. All three verify live from the staging host (2026-10-06, image `vc3b4711b`). Cloudflare's draft-08 replies omit the `NONC` echo; the parser now accepts that (the nonce is bound by the signed Merkle `ROOT`) and still rejects a present-but-wrong echo, covered by a real captured response. Before launch obtain Tanner's requested high-volume infrastructure approval and review public-service availability/rate limits. No Netnod Roughtime endpoint/key could be established from its official pages, so none is guessed. Signed processing-time/delayed-delivery limitations remain unchanged. ([Design Decisions](#design-decisions) D2)
-- **BLOCKER-ENROLLMENT:** Production uses `UnavailableEnrollment`; create hold, release and cancel fail closed until a fresh, independently authenticated `{epoch,shareVersion,blobHash}` authority exists. A host-database response or replayable signed snapshot is insufficient. **The host can still choose an older PIN-bearing blob with fewer recorded attempts**; closing that requires the authenticated current-enrollment authority. The host cannot mint the real recovery share, but can replay old encrypted copies. Carry/rewrap do not call EnrollmentSource, but now require trusted TimeSource evidence to sign their destination records. There is no separate startup time feature gate: startup constructs the compiled Roughtime source, and operations fail closed on unavailable evidence.
+- **BLOCKER-ENROLLMENT — resolved when configured, not an unconditional launch approval:** Measured scope and attested writer credentials select `AuthorityEnrollment`; owner Ed25519 `did:key` intent binds exact source/target identities and expected enrollment version. Older/fabricated sources (attack B), signature replay, counter rollback through parent history and competing enclave writes are refused. Operation revision is separate from enrollment version. Set/change/clear require signatures and reset a PIN generation; keep/carry/rewrap preserve its ten-attempt budget. Rewrap requires original signed delegation and preserves DID/share/epoch/verifier/count. The actual resealed envelope is committed atomically. Unconfigured mode remains `UnavailableEnrollment`. Credential provisioning, IAM/SCP verification and rollout are operator gates, not established by offline tests.
 - **RESOLVED-PIN-EPOCH-CARRY (P8.3/H1, v2):** Chain identity is SHA-256 of `learncard-ledger-chain-v2\0 || tenant_byte_length_u64_be || tenant || sha256(did) || blob_hash`. `sourceEnrollmentEpoch` still binds signed source records but never selects the chain. Stateful `observe` rejects changed epoch, invalid or remembered stale history with `Ledger`; storage failures map to `Unavailable`. Every carry/rewrap appends and reads back a first `Carried` event on the output blob's empty chain before returning ciphertext. Its code-7 CBOR array is `[7, sourceChainId(bytes32), sourceHeadHash(bytes32), attemptsCarried(uint 0..10)]`. The floor is `min(10, sourceCarried + sourceAttemptsUsed)`; positive encrypted floors must match the first signed Carried event on carry, hold creation and release. Carry binds `targetEnrollmentEpoch`; rewrap preserves the source epoch. Append failure returns no blob. The monitor checks the source prefix accounting on INSERT and sweeps without recursive ancestry traversal. An all-zero head denotes an empty prefix with floor zero (the source may have later acquired ordinary hold records); nonzero heads must exist in the authenticated source chain. Client-made new blobs legitimately start at zero. Nitro never ran in production, so there is no chain migration.
-    - **Deliberate deviation from a literal `max(chain.attempts_used, floor)`:** the ledger's own `ChainState.attempts_used` stays a purely LOCAL, per-epoch-chain counter (`ledger.rs`/`Enrollment` are otherwise unchanged) — the floor is combined with it only at the `policy.rs` call sites (`release_pin`'s budget/lock-timing check, `carry_pin_verifier`'s floor computation), never baked into the ledger's own replay/validation logic. This was a deliberate choice, not an oversight: seeding `ChainState`'s replay from an externally-supplied floor would require the independent **ledger monitor** (`services/escrow-ledger-monitor/`) — which has no blob-decryption capability and therefore no way to learn the true floor — to also know it, or it would false-positive-alarm (`LedgerIntegrityFailure`) on every post-carry chain. Keeping the ledger's own chain encoding and validation untouched preserves the monitor's independent verification unmodified (confirmed: `cargo test` for `escrow-ledger-monitor` is unaffected by this change) and needed no change to the canonical CBOR record schema (golden bytes test `ledger::tests::golden_cbor_and_strict_bounded_decode` is unmodified and still passes). One side effect: the enclave-signed `PinAttemptReserved`/`PinLocked` ledger events for a post-carry epoch are numbered LOCALLY (1, 2, 3, …) rather than showing the true cumulative attempt number, and the explicit `PinLocked` audit record is only written when the ledger's own local count reaches ten — with a nonzero floor the account can lock with a lower local count (`floor + local >= 10`), in which case no `PinLocked` marker is written (the lock is still fully enforced by the `>= 10` check on the next attempt; `PinLocked` is documented as an audit convenience, not the enforcement boundary, both before and after this change).
+    - **Floor accounting:** `ChainState.attempts_used` counts attempts on the destination chain only; `policy.rs` adds the inherited floor at its call sites (release budget and carry floor). The inherited count is not hidden from the monitor: it is signed in the destination's `Carried` genesis record, which the monitor parses and checks against the source head (`services/escrow-ledger-monitor/src/lib.rs`). `PinAttemptReserved` numbering restarts on the destination chain, and an explicit `PinLocked` record is written only when the local count reaches ten; a carried account can lock earlier (`floor + local >= 10`), enforced by the budget check rather than by that audit record.
     - **Software mode (`softwareEnclave.ts`):** accepts `sourceEnrollmentEpoch` but ignores it. Software mode has no enclave ledger to reset in the first place — its PIN attempt budget is the host's `escrowPin.failedAttempts`/`verifiedFailedAttempts` counters in MongoDB, which `routes/escrow.ts`'s enroll route already copies forward unchanged on every carry, independent of `enrollmentEpoch`. Software mode therefore never had this bug; `pinAttemptsFloor` is a remote/nitro-mode-only concept, not implemented for software-mode enforcement (documented in `softwareEnclave.ts`).
     - **Same-process rollback fix (H1):** carry and rewrap both call the existing Policy ledger's stateful `observe`, not stateless `verify_chain`. This retains high-water marks and rejects empty/truncated chains and forks after the process has observed or signed a newer head. The source chain is read-only in storage, but observation mutates enclave memory. The same-instance regression spends three attempts and refuses both empty and truncated views on both paths.
-- **Residual rollback caveat:** fresh boots and parallel enclaves can still accept stale valid history (D3). Epoch substitution no longer selects another chain. Older-copy selection belongs to BLOCKER-ENROLLMENT above. Suppressed writes/audit evidence and readback-only durability remain limitations; do not claim a globally replay-proof ten-attempt budget.
-
+- **Residual rollback caveat (legacy only):** the legacy parent-ledger path retains D3's limitations. Configured recovery does not use that history for freshness or PIN budgets. A privileged authority-table restore/purge or credential/key-policy compromise is outside the host-adversary guarantee; restore requires a new measured generation and two-person approval, never Mongo/history bootstrap or same-generation rollback.
 - **RESOLVED-BLOB-IDENTITY-MALLEABILITY:** The v1 envelope does not authenticate the ephemeral point, and P-256 ECDH yields the same shared x-coordinate for `Q` and `-Q`, so both decrypt identically. Blob identity (`crypto::escrow_blob_identity`) is therefore SHA-256 over a domain tag and length-prefixed decoded fields (version, algorithm, keyId, the point's x-coordinate only, salt, IV, ciphertext), not the serialized JSON. A negated-point twin or base64/JSON alias maps to the same chain, hold binding and Carried record. lca-api computes the same value (`services/escrow-enclave/blobIdentity.ts`), pinned by a shared golden vector over `escrow-vectors.json`. Any other change to the ciphertext, salt or IV fails AES-GCM authentication.
+- **BLOCKER-ATTACK-C — resolved when configured, not an unconditional launch approval (PR 3):** A Hold-policy `create_hold` now always starts `AwaitingConfirmation`, never the old unconfirmed `Pending` — the enclave sends an 8-digit, 30-minute, CSPRNG one-time code to the blob-bound `recoveryEmail` (in `recoveryLanguage`, one of en/es/fr/ar) and fails the whole request closed if either is missing, so a compromised lca-api that only controls the recipient key can no longer silently start a releasable hold. `confirm-hold` binds the caller's `client_ephemeral_public_key` to the signed hold record (rejecting a guess from any other recipient key even with the correct code), caps guesses at 5, and `resend-code` replaces the prior code outright (old code stops matching, guess counter resets) subject to a per-DID throttle (3 sends / 24h, 60s minimum gap). Release requires **both** a matched confirmation **and** a `send-release-warning` recorded at least 24h earlier — independently re-derived and enforced by the ledger monitor from signed events, never trusted from the stored `HoldItem` row's own timestamps (`escrow-ledger-monitor/src/authority.rs`). `cancel` remains valid from `AwaitingConfirmation` or `Pending` (idempotent on retry) but not once `Released`. PIN-policy holds are entirely unaffected (never enter `AwaitingConfirmation`; same fast-release path as before). Email wording is fixed, measured-image content only — no links, no images. Only the code message states "only enter this code if you started this recovery"; the started and release-warning messages instead tell the recipient to open the app and cancel the recovery if they didn't start it, naming a display brand mapped from the tenant label (`email.rs`'s `brand_name`) — relayed through the existing `enable_enclave_email`/vsock-proxy infrastructure with a dedicated, scope-limited `email-sender` IAM credential (SES `SendEmail` only, from the single approved address). See `AUDIT-COVERAGE.md`'s "Recovery boundary / attack C" row for the full offline test inventory. **Remaining operator gates, not closed by this implementation:** real SES delivery/bounce handling, the email vsock relay on real Nitro hardware, and a full live 7-day-since-confirmation soak — see `STAGING.md`.
 
 **Independent persistence checks (M9):** INSERT requires a head captured before
 the chain read (valid prefix, at least the inserted sequence), and exact signed S3
@@ -191,6 +340,9 @@ both scans finish. Operational errors/cap exhaustion fail the invocation, not a
 fabricated empty result. Fully suppressed evidence remains outside detection.
 
 ## Staging Adversarial Verification (2026-10-05)
+
+Historical checks below predate Design 2 and do **not** attest that the new table,
+two SCPs, monitor read exception or credential delivery have been deployed/tested.
 
 Run against the live staging deployment (account `217358003896`, steady-state image `vefcd07a1`).
 

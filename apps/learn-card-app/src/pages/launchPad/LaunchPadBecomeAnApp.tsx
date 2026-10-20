@@ -14,10 +14,10 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
         <div className="w-full max-w-[600px] mt-4 px-2">
             <button
                 onClick={handleClick}
-                className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 p-[1px] transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.99]"
+                className="w-full group relative overflow-hidden rounded-2xl bg-linear-to-br/srgb from-violet-600 via-indigo-600 to-cyan-500 p-[1px] transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.99]"
             >
                 {/* Inner container */}
-                <div className="relative overflow-hidden rounded-[15px] bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 px-5 py-5">
+                <div className="relative overflow-hidden rounded-[15px] bg-linear-to-br/srgb from-violet-600 via-indigo-600 to-cyan-500 px-5 py-5">
                     {/* Decorative background elements */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-cyan-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
@@ -33,7 +33,7 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                     {/* Content */}
                     <div className="relative flex items-center gap-4">
                         {/* Icon */}
-                        <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg">
+                        <div className="shrink-0 w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center border border-white/20 shadow-lg">
                             <Sparkles className="w-7 h-7 text-white" />
                         </div>
 
@@ -51,7 +51,7 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                         </div>
 
                         {/* Arrow */}
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:bg-white/30 transition-colors">
+                        <div className="shrink-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-xs flex items-center justify-center border border-white/20 group-hover:bg-white/30 transition-colors">
                             <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-0.5 transition-transform" />
                         </div>
                     </div>

@@ -176,7 +176,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                         value={name}
                         onChange={event => setName(event.target.value)}
                         placeholder={m['passport.resumeBuilder.selfAttest.namePlaceholder']()}
-                        className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[12px] border-none outline-none"
+                        className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[12px] border-none outline-hidden"
                         maxLength={60}
                     />
                     <textarea
@@ -186,7 +186,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                         placeholder={m[
                             'passport.resumeBuilder.selfAttest.descriptionPlaceholder'
                         ]()}
-                        className="w-full min-h-[108px] max-h-[180px] overflow-y-auto resize-none bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[12px] border-none outline-none"
+                        className="w-full min-h-[108px] max-h-[180px] overflow-y-auto resize-none bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[12px] border-none outline-hidden"
                         rows={4}
                     />
                 </div>

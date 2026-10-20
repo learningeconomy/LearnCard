@@ -224,7 +224,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                     data-html2canvas-ignore
                     data-feedback-exclude
                 >
-                    <div className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-6 py-8 md:py-12">
+                    <div className="mx-auto w-full max-w-2xl flex-1 space-y-v3-6 px-6 py-8 md:py-12">
                         <ShareCredentialsIllustration />
                         <div>
                             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">

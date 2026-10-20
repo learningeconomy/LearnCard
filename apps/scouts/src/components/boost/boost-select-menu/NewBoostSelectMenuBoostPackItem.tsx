@@ -118,7 +118,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
             className="flex justify-center items-center relative pt-[20px]"
         >
             <BoostSmallCard
-                className="!h-[220px]"
+                className="h-[220px]!"
                 innerOnClick={() => handleBoostCMSRedirect(boostPackItem.type)}
                 customHeaderClass="boost-managed-card"
                 buttonOnClick={() => handleBoostCMSRedirect(boostPackItem.type)}

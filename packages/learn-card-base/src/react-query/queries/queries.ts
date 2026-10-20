@@ -342,6 +342,29 @@ export const useGetCredentialWithEdits = (credential: VC | undefined, boostUri?:
 };
 
 /**
+ * Recipient lists are expensive on brain-service and only change when someone sends,
+ * accepts, or revokes a boost. Those paths invalidate via invalidateBoostRecipientQueries,
+ * so we don't need to refetch on every mount/focus.
+ */
+export const BOOST_RECIPIENTS_STALE_TIME = 5 * 60 * 1000;
+
+/**
+ * Invalidate every cached recipient list/count for a boost (or for all boosts when no URI
+ * is given). Call this after sending, accepting, or revoking a boost.
+ */
+export const invalidateBoostRecipientQueries = async (
+    queryClient: QueryClient,
+    boostUri?: string | null
+) => {
+    const keys = ['boostRecipients', 'useCountBoostRecipients', 'paginatedBoostRecipients'];
+    await Promise.all(
+        keys.map(key =>
+            queryClient.invalidateQueries({ queryKey: boostUri ? [key, boostUri] : [key] })
+        )
+    );
+};
+
+/**
  * Query: Count the number of recipients for a given boost.
  * @param includeUnacceptedBoosts - If true, includes pending (sent but not claimed) credentials. Default: false
  */
@@ -359,6 +382,8 @@ export const useCountBoostRecipients = (
             return wallet.invoke.countBoostRecipients(uri, includeUnacceptedBoosts);
         },
         enabled: enabled && Boolean(uri),
+        staleTime: BOOST_RECIPIENTS_STALE_TIME,
+        refetchOnWindowFocus: false,
     });
 };
 
@@ -502,6 +527,8 @@ export const useGetBoostRecipients = (
             return Array.isArray(data) ? data : [];
         },
         enabled,
+        staleTime: BOOST_RECIPIENTS_STALE_TIME,
+        refetchOnWindowFocus: false,
     });
 };
 
@@ -814,11 +841,7 @@ export const useGetProfile = (
     return useQuery<QueriedProfile | null>({
         enabled: enabled && (!!profileId || isLoggedIn) && (!requiresOwnWallet || walletReady),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
-        // The current user's profile changes rarely (avatar/displayName edits).
-        // Keep cached data fresh for 5 minutes so navigations between pages don't
-        // trigger background refetches that flicker dependent UI like
-        // UserProfilePicture in the header. Mutations that update the profile
-        // (e.g., editProfile) are responsible for invalidating this query.
+        // Cache profiles for 5 minutes; profile edits update the affected cache entries.
         staleTime: 5 * 60 * 1000,
         queryFn: async (): Promise<QueriedProfile | null> => {
             // Own profile: the wallet MUST resolve here. On failure, throw so React

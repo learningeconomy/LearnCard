@@ -173,7 +173,7 @@ const MyAppsLanding: React.FC = () => {
                                 onChange={e => setSearchInput(e.target.value)}
                                 placeholder={m['myAppsPage.searchPlaceholder']()}
                                 aria-label={m['myAppsPage.searchAria']()}
-                                className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none"
+                                className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-hidden"
                             />
                         </div>
                     </div>
@@ -184,11 +184,11 @@ const MyAppsLanding: React.FC = () => {
                                 {resultsCount === 0
                                     ? m['myAppsPage.noResultsFor']({ query: searchInput.trim() })
                                     : resultsCount === 1
-                                    ? m['myAppsPage.oneResult']({ query: searchInput.trim() })
-                                    : m['myAppsPage.manyResults']({
-                                          count: resultsCount,
-                                          query: searchInput.trim(),
-                                      })}
+                                      ? m['myAppsPage.oneResult']({ query: searchInput.trim() })
+                                      : m['myAppsPage.manyResults']({
+                                            count: resultsCount,
+                                            query: searchInput.trim(),
+                                        })}
                             </p>
                             {resultsCount > 0 && (
                                 <AppGrid>{matchedApps.map(renderAppTile)}</AppGrid>

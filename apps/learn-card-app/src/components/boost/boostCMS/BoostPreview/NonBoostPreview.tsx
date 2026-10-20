@@ -222,7 +222,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 isPreview={isPreview}
             />,
             {
-                className: '!bg-transparent',
+                className: 'bg-transparent!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -315,7 +315,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     if (showsCoursePanel || (isMobile && isClrCredential)) {
         previewWrapperPaddingClass = 'px-0';
-        previewContentPaddingClass = '!p-0';
+        previewContentPaddingClass = 'p-0!';
     } else if (shouldUseHostCardPadding) {
         previewWrapperPaddingClass = 'px-2';
         previewContentPaddingClass = 'px-6';
@@ -442,7 +442,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                 isCertificate && !isStandaloneCourse
                                     ? 'certificate-display-zoom'
                                     : ''
-                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
+                            } ${isID ? 'px-0! mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
                                 className={`w-full overflow-y-auto max-h-full disable-scrollbars ${

@@ -26,7 +26,7 @@ const CustomWallet: React.FC = () => {
     return (
         <main className="h-full w-full flex flex-col items-center justify-center max-w-[600px] mx-auto">
             <form
-                className="flex flex-col p-8 gap-4 border rounded shadow w-full max-w-screen-mobile text-black"
+                className="flex flex-col p-8 gap-4 border rounded-sm shadow-sm w-full max-w-(--breakpoint-mobile) text-black"
                 onSubmit={e => e.preventDefault()}
             >
                 <fieldset className="flex flex-col gap-2">
@@ -41,7 +41,7 @@ const CustomWallet: React.FC = () => {
 
                 <button
                     onClick={createWallet}
-                    className="w-full py-2 rounded border border-solid border-emerald-700 text-emerald-800"
+                    className="w-full py-2 rounded-sm border border-solid border-emerald-700 text-emerald-800"
                     type="button"
                 >
                     Create Wallet

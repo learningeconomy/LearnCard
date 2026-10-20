@@ -387,6 +387,7 @@ export const useWallet = () => {
     const storeAndAddVCToWallet = async (
         vc: VC,
         metadata: Partial<{
+            id: string;
             title: string;
             imgUrl: string;
             allowDuplicate: boolean;
@@ -399,6 +400,7 @@ export const useWallet = () => {
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
     ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
         const {
+            id: recordId,
             title,
             imgUrl,
             allowDuplicate,
@@ -406,27 +408,43 @@ export const useWallet = () => {
             boostUri: sourceBoostUri,
             deferContractSync,
         } = metadata;
-        const _id = inboxDeliveryId
-            ? vc.id || `inbox:${inboxDeliveryId}`
-            : allowDuplicate
-              ? uuidv4()
-              : vc.id || uuidv4();
+        const _id =
+            recordId ??
+            (inboxDeliveryId
+                ? vc.id || `inbox:${inboxDeliveryId}`
+                : allowDuplicate
+                  ? uuidv4()
+                  : vc.id || uuidv4());
         let returnUri: string | undefined;
+        let stage = 'initialize';
 
         try {
             const wallet = await getWallet();
 
+            stage = 'category';
             const category = await getCategoryForCredential(vc, wallet);
-            if (inboxDeliveryId) {
-                const existing = await wallet.index[location].get({ inboxDeliveryId });
-                const saved = existing[0] ?? (await wallet.index[location].get({ id: _id }))[0];
+            // Explicit IDs identify the caller's save operation, not necessarily
+            // the credential's issuer ID. CHAPI uses full-payload fingerprints
+            // so exact retries dedupe without dropping same-ID revisions.
+            if (inboxDeliveryId || recordId) {
+                stage = 'lookup';
+                const existing = await wallet.index[location].get(
+                    inboxDeliveryId ? { inboxDeliveryId } : { id: _id }
+                );
+                const saved =
+                    existing[0] ??
+                    (inboxDeliveryId
+                        ? (await wallet.index[location].get({ id: _id }))[0]
+                        : undefined);
                 if (saved) return { result: true, credentialUri: saved.uri, category };
             }
             const boostUri = sourceBoostUri ?? vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
             let result: boolean | undefined;
 
             if (skipLCNUser) {
+                stage = 'upload';
                 const uri2 = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
+                if (!uri2) throw new Error('credential.upload.failed');
                 const record = {
                     id: _id,
                     uri: uri2,
@@ -437,12 +455,15 @@ export const useWallet = () => {
                     ...(imgUrl ? { imgUrl } : {}),
                 };
 
+                stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
             }
 
             if (!skipLCNUser) {
+                stage = 'upload';
                 const uri = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
+                if (!uri) throw new Error('credential.upload.failed');
 
                 const record = {
                     id: _id,
@@ -454,9 +475,11 @@ export const useWallet = () => {
                     ...(imgUrl ? { imgUrl } : {}),
                 };
 
+                stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri;
 
+                stage = 'cache';
                 const didWeb = switchedProfileStore.get.switchedDid();
 
                 if (result) {
@@ -507,6 +530,7 @@ export const useWallet = () => {
                 });
 
                 if (!deferContractSync) {
+                    stage = 'sync';
                     await syncCredentialToContracts({ record, category });
                 }
             }
@@ -517,8 +541,14 @@ export const useWallet = () => {
                 category,
             };
         } catch (e) {
-            // Credentials can contain uploaded source files; never send them or SDK payloads to logs.
-            log.error('credential.store.failed');
+            // Incoming credentials and counterparty errors can contain private
+            // claims or capability URLs. Keep diagnostics to an operational code.
+            const errorType =
+                e instanceof Error &&
+                ['Error', 'TypeError', 'AbortError', 'TimeoutError'].includes(e.name)
+                    ? e.name
+                    : 'UnknownError';
+            log.error('credential.save.failed', { stage, errorType });
             throw e instanceof Error ? e : new Error(String(e));
         }
     };

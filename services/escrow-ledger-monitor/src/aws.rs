@@ -1,9 +1,136 @@
 //! SDK errors are deliberately discarded: they may include keys, bodies or identifiers.
+use crate::authority::{
+    AuthorityBackend, MAX_ACCOUNT_BYTES, MAX_ACCOUNT_ROWS, MAX_PARTITIONS, Row,
+};
 use crate::{Backend, Error, Head, Metric, Monitor, Result, chain_from_pk};
 use aws_sdk_cloudwatch::types::{Dimension, MetricDatum, StandardUnit};
 use aws_sdk_dynamodb::types::AttributeValue as A;
+use escrow_enclave::authority::state::MAX_ITEM_BYTES;
 use escrow_enclave::ledger::{MAX_CHAIN_RECORDS, MAX_RECORD_BYTES};
 use std::collections::HashMap;
+
+fn authority_pk(pk: &str) -> Result<()> {
+    let value = pk.strip_prefix("ACCOUNT#").ok_or(Error::Integrity)?;
+    if value.len() != 64
+        || !value
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
+        return Err(Error::Integrity);
+    }
+    Ok(())
+}
+fn authority_row(item: &HashMap<String, A>) -> Result<Row> {
+    let pk = text(item, "pk")?;
+    authority_pk(pk)?;
+    let sk = text(item, "sk")?;
+    let payload = item
+        .get("payload")
+        .and_then(|v| v.as_b().ok())
+        .ok_or(Error::Integrity)?
+        .as_ref();
+    if item.len() != 3 || sk.len() > 128 || payload.is_empty() || payload.len() > MAX_ITEM_BYTES {
+        return Err(Error::Integrity);
+    }
+    Ok(Row {
+        pk: pk.into(),
+        sk: sk.into(),
+        payload: payload.to_vec(),
+    })
+}
+
+#[async_trait::async_trait]
+impl AuthorityBackend for Aws {
+    async fn authority_partitions(&self, table: &str) -> Result<Vec<String>> {
+        let mut cursor = None;
+        let mut partitions = std::collections::BTreeSet::new();
+        for _ in 0..10_000 {
+            let page = self
+                .db
+                .scan()
+                .table_name(table)
+                .consistent_read(true)
+                .projection_expression("pk")
+                .limit(100)
+                .set_exclusive_start_key(cursor)
+                .send()
+                .await
+                .map_err(|_| Error::Unavailable)?;
+            for item in page.items() {
+                let pk = text(item, "pk")?;
+                authority_pk(pk)?;
+                partitions.insert(pk.to_owned());
+                if partitions.len() > MAX_PARTITIONS {
+                    return Err(Error::Unavailable);
+                }
+            }
+            cursor = page.last_evaluated_key;
+            if cursor.as_ref().is_none_or(HashMap::is_empty) {
+                return Ok(partitions.into_iter().collect());
+            }
+        }
+        Err(Error::Unavailable)
+    }
+    async fn authority_account(&self, table: &str, pk: &str) -> Result<Option<Vec<u8>>> {
+        authority_pk(pk)?;
+        let output = self
+            .db
+            .get_item()
+            .table_name(table)
+            .key("pk", A::S(pk.into()))
+            .key("sk", A::S("ENROLLMENT".into()))
+            .consistent_read(true)
+            .send()
+            .await
+            .map_err(|_| Error::Unavailable)?;
+        output
+            .item
+            .map(|item| {
+                let row = authority_row(&item)?;
+                if row.pk != pk || row.sk != "ENROLLMENT" {
+                    return Err(Error::Integrity);
+                }
+                Ok(row.payload)
+            })
+            .transpose()
+    }
+    async fn authority_rows(&self, table: &str, pk: &str) -> Result<Vec<Row>> {
+        authority_pk(pk)?;
+        let mut cursor = None;
+        let mut rows = Vec::new();
+        let mut bytes = 0;
+        for _ in 0..=MAX_ACCOUNT_ROWS {
+            let page = self
+                .db
+                .query()
+                .table_name(table)
+                .consistent_read(true)
+                .key_condition_expression("pk = :pk")
+                .expression_attribute_values(":pk", A::S(pk.into()))
+                .limit(100)
+                .set_exclusive_start_key(cursor)
+                .send()
+                .await
+                .map_err(|_| Error::Unavailable)?;
+            for item in page.items() {
+                let row = authority_row(item)?;
+                if row.pk != pk {
+                    return Err(Error::Integrity);
+                }
+                bytes += row.payload.len();
+                if rows.len() >= MAX_ACCOUNT_ROWS || bytes > MAX_ACCOUNT_BYTES {
+                    return Err(Error::Unavailable);
+                }
+                rows.push(row);
+            }
+            cursor = page.last_evaluated_key;
+            if cursor.as_ref().is_none_or(HashMap::is_empty) {
+                return Ok(rows);
+            }
+        }
+        Err(Error::Unavailable)
+    }
+}
 
 pub const NAMESPACE: &str = "LearnCard/EscrowLedger";
 

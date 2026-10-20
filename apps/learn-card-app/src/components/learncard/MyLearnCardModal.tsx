@@ -328,7 +328,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                 onSuccess={closeModal}
                                 onCancel={closeModal}
                             />,
-                            { sectionClassName: '!max-w-[480px]' },
+                            { sectionClassName: 'max-w-[480px]!' },
                             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                         );
                     };
@@ -664,7 +664,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onClose={closeRecoveryModal}
                         />,
                         {
-                            sectionClassName: '!max-w-[480px]',
+                            sectionClassName: 'max-w-[480px]!',
                             // Backdrop/Escape: let the modal guard an unfinished check.
                             onClose: () => {
                                 if (!requestClose) return true;
@@ -703,7 +703,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 }}
             />,
             {
-                sectionClassName: '!bg-transparent !border-none !shadow-none !max-w-[400px]',
+                sectionClassName: 'bg-transparent! border-none! shadow-none! max-w-[400px]!',
                 hideButton: true,
             }
         );
@@ -793,7 +793,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 style={{ paddingTop: '20px' }}
             >
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
-                    <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">
+                    <div className="bg-white/70  backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">
                             <LearnCardIdView user={user} />
 

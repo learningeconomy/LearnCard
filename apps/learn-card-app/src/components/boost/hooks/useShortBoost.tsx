@@ -33,10 +33,10 @@ const useShortBoost = (
                 handleEditOnClick={handleEditOnClick}
             />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
                 usePortal: true,
-                portalClassName: '!max-w-[500px]',
+                portalClassName: 'max-w-[500px]!',
             }
         );
     };

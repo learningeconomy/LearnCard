@@ -9,6 +9,7 @@ import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 import { ToastTypeEnum, useToast } from '../../hooks/useToast';
 import { getLogger } from '../../logging/logger';
 import { connectionPromptKeys } from '../connectionPrompts';
+import { invalidateBoostRecipientQueries } from '../queries/queries';
 const log = getLogger('mutations');
 
 export const getDeletedUrisForCredentialRecord = (record: LCR): string[] => {
@@ -170,6 +171,9 @@ export const useAcceptCredentialMutation = () => {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all }),
                 queryClient.invalidateQueries({ queryKey: ['contactCredentialHistory'] }),
+                // Accepting moves the viewer from pending to claimed on that boost's
+                // recipient lists, which are now cached for a few minutes.
+                invalidateBoostRecipientQueries(queryClient),
             ]);
         },
     });
@@ -648,9 +652,8 @@ export const useRevokeBoostRecipient = () => {
         },
         onSuccess: (_, { boostUri }) => {
             // Invalidate boost recipients queries to refresh the data
-            queryClient.invalidateQueries({
-                queryKey: ['boostRecipients', boostUri],
-            });
+            // Covers boostRecipients, useCountBoostRecipients and paginatedBoostRecipients
+            invalidateBoostRecipientQueries(queryClient, boostUri);
             queryClient.invalidateQueries({
                 queryKey: ['getPaginatedBoostRecipients'],
             });
@@ -700,9 +703,8 @@ export const useSuspendBoostRecipient = () => {
             }
         },
         onSuccess: (_, { boostUri }) => {
-            queryClient.invalidateQueries({
-                queryKey: ['boostRecipients', boostUri],
-            });
+            // Covers boostRecipients, useCountBoostRecipients and paginatedBoostRecipients
+            invalidateBoostRecipientQueries(queryClient, boostUri);
             queryClient.invalidateQueries({
                 queryKey: ['getPaginatedBoostRecipients'],
             });
@@ -748,9 +750,8 @@ export const useUnsuspendBoostRecipient = () => {
             }
         },
         onSuccess: (_, { boostUri }) => {
-            queryClient.invalidateQueries({
-                queryKey: ['boostRecipients', boostUri],
-            });
+            // Covers boostRecipients, useCountBoostRecipients and paginatedBoostRecipients
+            invalidateBoostRecipientQueries(queryClient, boostUri);
             queryClient.invalidateQueries({
                 queryKey: ['getPaginatedBoostRecipients'],
             });

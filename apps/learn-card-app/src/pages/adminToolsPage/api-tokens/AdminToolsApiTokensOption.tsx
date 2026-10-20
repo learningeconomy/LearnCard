@@ -71,10 +71,10 @@ const AdminToolsApiTokensOption: React.FC<{ option: AdminToolOption; showFooter?
                 signingAuthorities={signingAuthorities}
             />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 usePortal: true,
                 hideButton: true,
-                portalClassName: '!max-w-[500px]',
+                portalClassName: 'max-w-[500px]!',
             }
         );
     };

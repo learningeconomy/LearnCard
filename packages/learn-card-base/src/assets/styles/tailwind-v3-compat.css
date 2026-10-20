@@ -1,0 +1,53 @@
+@import './tailwind-v3-theme.css';
+
+/* The legacy preflight ran in the same cascade as Ionic and app styles. */
+*,
+::before,
+::after,
+::backdrop,
+::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+}
+input::placeholder,
+textarea::placeholder {
+    color: var(--color-gray-400);
+    opacity: 1;
+}
+button,
+[role='button'] {
+    cursor: pointer;
+}
+:disabled {
+    cursor: default;
+}
+dialog {
+    margin: auto;
+}
+
+/* V3 reset headings explicitly; the V4 universal reset loses to Ionic selectors. */
+blockquote,
+dd,
+dl,
+figure,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+hr,
+p,
+pre {
+    margin: 0;
+}
+fieldset {
+    margin: 0;
+    padding: 0;
+}
+ol,
+ul,
+menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}

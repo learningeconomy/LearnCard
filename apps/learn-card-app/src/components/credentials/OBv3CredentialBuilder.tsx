@@ -192,7 +192,7 @@ const InputField: React.FC<{
     const [showTooltip, setShowTooltip] = useState(false);
 
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <div className="flex items-center gap-1.5">
                 <label className="text-sm font-medium text-gray-700">{label}</label>
 
@@ -224,7 +224,7 @@ const InputField: React.FC<{
                     onChange={e => onChange(e.target.value)}
                     placeholder={placeholder}
                     rows={3}
-                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none placeholder:text-gray-400"
+                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none placeholder:text-gray-400"
                 />
             ) : (
                 <input
@@ -232,7 +232,7 @@ const InputField: React.FC<{
                     value={value}
                     onChange={e => onChange(e.target.value)}
                     placeholder={placeholder}
-                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-gray-400"
+                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-gray-400"
                 />
             )}
         </div>
@@ -570,7 +570,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                 <ChevronLeft className="w-5 h-5 text-gray-500" />
                             </button>
                         ) : (
-                            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
+                            <div className="w-10 h-10 bg-linear-to-br/srgb from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
                                 <Award className="w-5 h-5 text-white" />
                             </div>
                         )}
@@ -617,7 +617,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                 <FolderOpen className="w-4 h-4" />
                                 Library
                                 {savedCredentials.length > 0 && (
-                                    <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs font-medium">
+                                    <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded-sm text-xs font-medium">
                                         {savedCredentials.length}
                                     </span>
                                 )}
@@ -636,7 +636,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                 {/* Library Panel */}
                 {showLibrary ? (
                     <div className="flex-1 overflow-y-auto p-4">
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {/* New Credential Button */}
                             <button
                                 onClick={handleNewCredential}
@@ -648,7 +648,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
 
                             {/* Saved Credentials List */}
                             {savedCredentials.length > 0 ? (
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {savedCredentials.map(cred => (
                                         <div
                                             key={cred.id}
@@ -659,12 +659,12 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                             }`}
                                         >
                                             <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <div className="w-10 h-10 bg-linear-to-br/srgb from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center shrink-0">
                                                     {cred.data.achievementImage ? (
                                                         <img
                                                             src={cred.data.achievementImage}
                                                             alt=""
-                                                            className="w-8 h-8 rounded object-cover"
+                                                            className="w-8 h-8 rounded-sm object-cover"
                                                         />
                                                     ) : (
                                                         <Award className="w-5 h-5 text-cyan-600" />
@@ -768,9 +768,9 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto p-4">
                             {activeTab === 'build' ? (
-                                <div className="space-y-6">
+                                <div className="space-y-v3-6">
                                     {/* Basic Section */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-v3-4">
                                         <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
                                             <FileText className="w-4 h-4 text-cyan-500" />
                                             Basic Information
@@ -793,7 +793,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                             tooltip="What did the recipient do to earn this?"
                                         />
 
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-v3-1.5">
                                             <label className="text-sm font-medium text-gray-700">
                                                 Type of credential
                                             </label>
@@ -806,7 +806,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                                         e.target.value as AchievementType
                                                     )
                                                 }
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 bg-white"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 bg-white"
                                             >
                                                 {ACHIEVEMENT_TYPES.map(type => (
                                                     <option key={type.value} value={type.value}>
@@ -825,7 +825,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                         </div>
 
                                         {/* Badge Image with Upload */}
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-v3-1.5">
                                             <div className="flex items-center gap-1.5">
                                                 <label className="text-sm font-medium text-gray-700">
                                                     Badge Image
@@ -847,7 +847,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                                     }
                                                     placeholder="https://example.com/badge.png"
                                                     disabled={isUploading}
-                                                    className="flex-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-gray-400 disabled:opacity-50"
+                                                    className="flex-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-gray-400 disabled:opacity-50"
                                                 />
 
                                                 <button
@@ -911,9 +911,9 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
 
                                     {/* Advanced Section */}
                                     {showAdvanced && (
-                                        <div className="space-y-6 pt-2">
+                                        <div className="space-y-v3-6 pt-2">
                                             {/* Criteria */}
-                                            <div className="space-y-4 p-4 bg-gray-50 rounded-xl">
+                                            <div className="space-y-v3-4 p-4 bg-gray-50 rounded-xl">
                                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
                                                     <FileText className="w-4 h-4 text-indigo-500" />
                                                     Criteria (How to Earn)
@@ -941,7 +941,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                             </div>
 
                                             {/* Evidence */}
-                                            <div className="space-y-4 p-4 bg-gray-50 rounded-xl">
+                                            <div className="space-y-v3-4 p-4 bg-gray-50 rounded-xl">
                                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
                                                     <LinkIcon className="w-4 h-4 text-emerald-500" />
                                                     Evidence (Proof of Completion)
@@ -970,7 +970,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                             </div>
 
                                             {/* Dates */}
-                                            <div className="space-y-4 p-4 bg-gray-50 rounded-xl">
+                                            <div className="space-y-v3-4 p-4 bg-gray-50 rounded-xl">
                                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
                                                     <Calendar className="w-4 h-4 text-amber-500" />
                                                     Validity Period
@@ -997,7 +997,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                             </div>
 
                                             {/* Credential Name Override */}
-                                            <div className="space-y-4 p-4 bg-gray-50 rounded-xl">
+                                            <div className="space-y-v3-4 p-4 bg-gray-50 rounded-xl">
                                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
                                                     <Award className="w-4 h-4 text-violet-500" />
                                                     Display Name
@@ -1019,7 +1019,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                     )}
                                 </div>
                             ) : activeTab === 'visual' ? (
-                                <div className="space-y-6">
+                                <div className="space-y-v3-6">
                                     <p className="text-sm text-gray-600 text-center">
                                         Click the credential to see the full preview:
                                     </p>
@@ -1095,7 +1095,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                     )}
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-v3-4">
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm text-gray-600">
                                             This is the Open Badges 3.0 JSON that will be created:
@@ -1124,7 +1124,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                     </pre>
 
                                     {/* Verification Section */}
-                                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-v3-3">
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -1181,7 +1181,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                                         Invalid Credential Structure
                                                     </p>
                                                 </div>
-                                                <p className="text-xs text-red-600 font-mono bg-red-100 p-2 rounded mt-2 overflow-x-auto">
+                                                <p className="text-xs text-red-600 font-mono bg-red-100 p-2 rounded-sm mt-2 overflow-x-auto">
                                                     {verificationError}
                                                 </p>
                                             </div>
@@ -1214,7 +1214,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                             value={saveAsName}
                                             onChange={e => setSaveAsName(e.target.value)}
                                             placeholder={data.achievementName || 'Credential name'}
-                                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                             autoFocus
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter')

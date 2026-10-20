@@ -162,7 +162,7 @@ export const LoginContent: React.FC = () => {
                     />,
                     {
                         sectionClassName:
-                            '!bg-transparent !border-none !shadow-none !rounded-none !mx-auto',
+                            'bg-transparent! border-none! shadow-none! rounded-none! mx-auto!',
                     },
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
@@ -496,7 +496,7 @@ export const LoginContent: React.FC = () => {
 
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-center justify-center gap-2.5">
                                 <svg
                                     width="16"
                                     height="16"
@@ -543,7 +543,7 @@ export const LoginContent: React.FC = () => {
 
                     {installIntent?.listingId && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-center gap-3 justify-center">
                                 {installIntent.appIcon && (
                                     <img
                                         src={installIntent.appIcon}
@@ -569,7 +569,7 @@ export const LoginContent: React.FC = () => {
                     {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
                         Boolean(query.get('underageFamily'))) && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-start gap-2.5">
                                 <svg
                                     viewBox="0 0 24 24"
                                     fill="none"
@@ -641,7 +641,7 @@ export const LoginContent: React.FC = () => {
                                         Boolean(persistenceError))
                                 }
                                 onClick={() => changeSignInPersistence(adapter, !isPublicMode)}
-                                className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <div
                                     className={`
@@ -652,7 +652,7 @@ export const LoginContent: React.FC = () => {
                                     <div
                                         className={`
                                         absolute top-[2px] w-[14px] h-[14px] rounded-full
-                                        transition-all duration-200 shadow-sm
+                                        transition-all duration-200 shadow-xs
                                         ${
                                             isPublicMode
                                                 ? 'left-[15px] bg-emerald-600'
@@ -748,13 +748,13 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
             )}
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow"
+                className="flex flex-col grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
                 {/* Pre-auth language switcher. Positioned over the login background
                     in the safe-area top-right; the side-menu LanguagePicker isn't
                     reachable until after sign-in. */}
-                <div className="absolute top-0 end-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
+                <div className="absolute top-0 inset-e-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
                     <LanguagePickerCompact />
                 </div>
                 <IonGrid

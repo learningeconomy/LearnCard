@@ -76,6 +76,7 @@ export const showNavBar = (path?: string): boolean => {
     if (
         path === '/wallet-worker' ||
         path === '/store' ||
+        path === '/exchange' ||
         path === '/get' ||
         path === '/sync-my-school' ||
         path === '/sync-my-school-simple' ||

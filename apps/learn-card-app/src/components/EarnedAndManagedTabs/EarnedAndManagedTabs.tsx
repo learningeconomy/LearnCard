@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 
@@ -27,7 +28,7 @@ export type BoostPageViewModeType = (typeof BoostPageViewMode)[keyof typeof Boos
 
 type EarnedAndManagedTabsProps = {
     activeTab: CredentialListTabEnum | string;
-    handleActiveTab: (selectedTab: any) => void;
+    handleActiveTab: (selectedTab: CredentialListTabEnum) => void;
     className?: string;
     containerClassName?: string;
 
@@ -107,7 +108,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             role="tab"
                             aria-selected={activeTab === CredentialListTabEnum.Earned}
                             onClick={() => handleOnChange(CredentialListTabEnum.Earned)}
-                            className={`py-[8px] px-[16px] rounded-[5px] text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                            className={`py-[8px] px-[16px] rounded-[5px] text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                 activeTab === CredentialListTabEnum.Earned
                                     ? `${activeLabelClassName} ${tabColor}`
                                     : inactiveLabelClassName
@@ -121,7 +122,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                 role="tab"
                                 aria-selected={activeTab === CredentialListTabEnum.Managed}
                                 onClick={() => handleOnChange(CredentialListTabEnum.Managed)}
-                                className={`py-[8px] px-[16px] rounded-[5px] text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                className={`py-[8px] px-[16px] rounded-[5px] text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                     activeTab === CredentialListTabEnum.Managed
                                         ? `${activeLabelClassName} ${tabColor}`
                                         : inactiveLabelClassName
@@ -161,13 +162,13 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                                 ? m['boost.browseEarnedPlaceholder']()
                                                 : m['boost.browseManagedPlaceholder']()
                                         }
-                                        className={`rounded-[10px] pl-4 w-full h-[44px] pr-[34px] font-notoSans text-[14px] outline-none placeholder:text-grayscale-400 focus-visible:ring-2 focus-visible:ring-emerald-500 ${tabColor}`}
+                                        className={`rounded-[10px] pl-4 w-full h-[44px] pr-[34px] font-notoSans text-[14px] outline-hidden placeholder:text-grayscale-400 focus-visible:ring-2 focus-visible:ring-emerald-500 ${tabColor}`}
                                     />
                                     {searchString && (
                                         <button
                                             type="button"
                                             aria-label={m['common.clear']()}
-                                            className="absolute right-[10px] top-[12px] z-10 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            className="absolute right-[10px] top-[12px] z-10 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                             onClick={() =>
                                                 credentialSearchStore.set.searchStringWithMatch('')
                                             }
@@ -187,13 +188,14 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             aria-label={m['wallet.viewMode']()}
                             className={`fix-ripple p-1 rounded-[5px] flex w-fit items-center ${
                                 !showEarnedManaged ? 'mx-auto min-w-[82px]' : ''
-                            } ${className} ${tabColor} bg-opacity-25`}
+                            } ${className}`}
+                            style={{ backgroundColor: tailwindColorWithOpacity(tabColor, 25) }}
                         >
                             <button
                                 type="button"
                                 aria-label={m['wallet.gridView']()}
                                 aria-pressed={viewMode === BoostPageViewMode.Card}
-                                className={`py-[8px] rounded-[5px] px-[8px] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                className={`py-[8px] rounded-[5px] px-[8px] shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                     viewMode === BoostPageViewMode.Card
                                         ? `bg-white ${activeLabelClassName}`
                                         : `${inactiveLabelClassName}`
@@ -213,7 +215,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                 type="button"
                                 aria-label={m['wallet.listView']()}
                                 aria-pressed={viewMode === BoostPageViewMode.List}
-                                className={`py-[8px] rounded-[5px] px-[8px] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                className={`py-[8px] rounded-[5px] px-[8px] shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                     viewMode === BoostPageViewMode.List
                                         ? `bg-white ${activeLabelClassName}`
                                         : `${inactiveLabelClassName}`
@@ -230,7 +232,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             type="button"
                             aria-label={m['common.close']()}
                             onClick={() => credentialSearchStore.set.toggleIsSearchActive()}
-                            className="flex items-center justify-center w-[40px] h-[40px] rounded-full z-10 text-grayscale-900 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="flex items-center justify-center w-[40px] h-[40px] rounded-full z-10 text-grayscale-900 shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
                             <X className="h-[20px] w-[20px]" />
                         </button>
@@ -240,7 +242,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             type="button"
                             aria-label={m['common.search']()}
                             onClick={() => credentialSearchStore.set.toggleIsSearchActive()}
-                            className="flex items-center justify-center w-[40px] h-[40px] rounded-full z-10 text-grayscale-900 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="flex items-center justify-center w-[40px] h-[40px] rounded-full z-10 text-grayscale-900 shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
                             <Search className="h-[20px] w-[20px]" />
                         </button>

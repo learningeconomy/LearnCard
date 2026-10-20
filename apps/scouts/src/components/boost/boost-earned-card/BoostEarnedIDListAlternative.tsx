@@ -82,7 +82,7 @@ const BoostEarnedIDListAlternative: React.FC<BoostEarnedIDListProps> = ({
                 <>
                     {isCardView && (
                         <section className="relative flex flex-wrap gap-[10px] text-center justify-center items-center max-w-[800px]">
-                            <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] z-[-10]" />
+                            <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] -z-10" />
                             {credentials}
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
@@ -97,7 +97,7 @@ const BoostEarnedIDListAlternative: React.FC<BoostEarnedIDListProps> = ({
                     )}
                     {!isCardView && (
                         <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
-                            <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] z-[-10]" />
+                            <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] -z-10" />
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
                                 {credentials}
                             </div>

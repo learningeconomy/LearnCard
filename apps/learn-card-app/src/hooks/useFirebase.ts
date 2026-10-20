@@ -305,7 +305,7 @@ export const useFirebase = () => {
 
     const presentGoogleHelpModal = (message?: string) => {
         newModal(React.createElement(GoogleLoginHelpModal, { message }), {
-            sectionClassName: '!max-w-[420px]',
+            sectionClassName: 'max-w-[420px]!',
         });
     };
 

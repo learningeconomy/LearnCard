@@ -145,7 +145,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                     }}
                 />,
                 {
-                    sectionClassName: '!max-w-[355px] !shadow-none !bg-transparent',
+                    sectionClassName: 'max-w-[355px]! shadow-none! bg-transparent!',
                     hideButton: true,
                 },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -225,7 +225,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                     <IonRow className="px-5 pb-5 w-full max-w-[800px]">
                         <IonCol
                             size="12"
-                            className="w-full bg-white rounded-[15px] shadow-[0px_2px_4px_0px_rgba(0,0,0,0.25)] py-2 px-5"
+                            className="w-full bg-white rounded-[15px] shadow-box-bottom py-2 px-5"
                         >
                             <fieldset className="w-full flex flex-col gap-3 border-b border-solid border-b-gray-200 py-3">
                                 <section className="w-full justify-between items-center flex gap-3">

@@ -127,7 +127,7 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
                 className="absolute inset-0 z-20 font-poppins
-                           bg-gradient-to-b from-emerald-50/90 via-white/95 to-white/95
+                           bg-linear-to-b/srgb from-emerald-50/90 via-white/95 to-white/95
                            backdrop-blur-xl overflow-y-auto"
                 role="dialog"
                 aria-label="Pathway navigation"
@@ -145,7 +145,7 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                             onClick={onExit}
                             className="flex items-center gap-1.5 py-2 px-3 rounded-full
                                        bg-white/70 backdrop-blur-md border border-white
-                                       shadow-sm hover:bg-white transition-colors
+                                       shadow-xs hover:bg-white transition-colors
                                        text-xs font-medium text-grayscale-700"
                             aria-label="Exit navigation"
                         >
@@ -214,7 +214,7 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                         onClick={() => onOpen(nid)}
                                         title={n?.title ?? nid}
                                         className="group relative flex-1 h-1.5 rounded-full overflow-visible
-                                                   focus:outline-none"
+                                                   focus:outline-hidden"
                                         aria-label={`${n?.title ?? 'Step'} (${
                                             isDone ? 'complete' : isYou ? 'current' : 'upcoming'
                                         })`}
@@ -284,7 +284,7 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                             className="mt-4 w-full max-w-md p-3 rounded-2xl
                                        bg-white/60 backdrop-blur-md border border-white
                                        text-left hover:bg-white/80 transition-colors
-                                       shadow-sm"
+                                       shadow-xs"
                             aria-label={`Preview: ${nextNode.title}`}
                         >
                             <div className="flex items-center gap-2 mb-1">
@@ -323,7 +323,7 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                     */}
                     <div className="hidden sm:block mt-6 text-[10px] font-medium text-grayscale-400 tracking-wide">
                         Press{' '}
-                        <kbd className="px-1.5 py-0.5 rounded bg-white/70 border border-grayscale-200 text-grayscale-600">
+                        <kbd className="px-1.5 py-0.5 rounded-sm bg-white/70 border border-grayscale-200 text-grayscale-600">
                             Esc
                         </kbd>{' '}
                         to return to the map

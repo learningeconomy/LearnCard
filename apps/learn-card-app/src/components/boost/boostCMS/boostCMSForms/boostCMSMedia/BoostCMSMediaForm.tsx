@@ -78,7 +78,7 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
 
     const noAttachments = state?.mediaAttachments?.length === 0;
     const hasAttachments = state?.mediaAttachments?.length > 0;
-    const removePadding = noAttachments ? '!p-0' : '';
+    const removePadding = noAttachments ? 'p-0!' : '';
 
     const handleDeleteonClick = (attachment: BoostCMSMediaAttachment) => {
         setState(state => ({
@@ -191,7 +191,7 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
                                     }
                                 />,
                                 {
-                                    sectionClassName: '!max-w-[500px]',
+                                    sectionClassName: 'max-w-[500px]!',
                                     hideButton: true,
                                     usePortal: true,
                                 }

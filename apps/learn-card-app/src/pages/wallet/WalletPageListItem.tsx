@@ -96,7 +96,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
         <button
             type="button"
             onClick={() => handleItemClick(categoryType)}
-            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 !passportCardBgColor ? `bg-${primaryColor}` : ''
             }`}
             style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}

@@ -25,8 +25,8 @@ const LearnerInsightsPreviewHeader: React.FC<LearnerInsightsPreviewHeaderProps> 
                     <AiInsightsUserCard
                         profile={profile}
                         mode={AiInsightsUserCardMode.Preview}
-                        containerClassName="!shadow-none !pt-4 !pb-2"
-                        imageClassName="!w-[80px] !h-[80px] !min-w-[80px] !min-h-[80px]"
+                        containerClassName="shadow-none! pt-4! pb-2!"
+                        imageClassName="w-[80px]! h-[80px]! min-w-[80px]! min-h-[80px]!"
                         readStatus={readStatus}
                         status={status}
                         showOptions

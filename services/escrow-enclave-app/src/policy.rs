@@ -11,6 +11,7 @@ use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::{
+    authority::record::SignedAuthorityRecord,
     crypto::{self, EscrowBlobPlaintext, EscrowKeyPair, EscrowReleasePlaintext},
     ledger::{
         ChainState, Enrollment, Event, Hash, HeadStore, Ledger, LedgerError, LedgerRecord,
@@ -20,6 +21,8 @@ use crate::{
     wire::{ErrorCode, EscrowEnvelope, HoldRecord, ReleasePolicy},
 };
 
+#[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+pub mod authority;
 #[cfg(test)]
 mod tests;
 
@@ -41,7 +44,7 @@ pub type EnrollmentFuture<'a> =
 /// Trusted driver boundary, like TimeSource. Implementations MUST authenticate
 /// tenant/DID ownership and freshness independently of the parent. A signed old
 /// snapshot is insufficient. Rotation must serialize with policy operations.
-/// No production implementation is provided: missing authority fails closed.
+/// Configured production uses AuthorityEnrollment; missing authority fails closed.
 pub trait EnrollmentSource: Send + Sync {
     fn current<'a>(&'a self, tenant: &'a str, did: &'a str) -> EnrollmentFuture<'a>;
 }
@@ -80,6 +83,37 @@ pub struct ReleaseRequest<'a> {
     pub pin_proof: Option<&'a str>,
 }
 
+/// P9.1 (attack C): the envelope is required (unlike release, nothing is
+/// re-sealed from it) solely so the enclave can read the recovery
+/// email/language back out to send the "recovery started" notification —
+/// confirming a code itself only needs the stored hash, never the blob.
+pub struct ConfirmHoldRequest<'a> {
+    pub envelope: &'a EscrowEnvelope,
+    pub hold: &'a SignedHoldRecord,
+    pub request_id: &'a str,
+    pub expected_did: &'a str,
+    pub client_ephemeral_public_key: &'a str,
+    pub code: &'a str,
+}
+
+/// P9.1 (attack C): system-initiated (lca-api's hourly job), not a user action;
+/// there is no client signature to verify, only the hold's own stored identity.
+pub struct SendReleaseWarningRequest<'a> {
+    pub hold_id: &'a str,
+    pub request_id: &'a str,
+    pub expected_did: &'a str,
+}
+
+/// P9.1 (attack C): same shape as `ConfirmHoldRequest` minus the code — resend
+/// generates and sends a fresh one, it never verifies a guess.
+pub struct ResendCodeRequest<'a> {
+    pub envelope: &'a EscrowEnvelope,
+    pub hold: &'a SignedHoldRecord,
+    pub request_id: &'a str,
+    pub expected_did: &'a str,
+    pub client_ephemeral_public_key: &'a str,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct BlobVerification {
     pub ok: bool,
@@ -104,6 +138,14 @@ pub struct Policy<'a> {
     store: &'a dyn HeadStore,
     time: &'a dyn TimeSource,
     enrollments: &'a dyn EnrollmentSource,
+    #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+    authority: Option<&'a authority::AuthorityEnrollment>,
+    /// P9.1 (attack C): `None` unless `ESCROW_EMAIL_*` is fully configured and
+    /// its sealed sender credential unsealed at boot. `authority_create_hold`
+    /// fails closed when this is `None` — a nitro deployment without email
+    /// configured can never start a hold.
+    #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+    email: Option<&'a dyn crate::authority::email::EmailSender>,
     #[cfg(test)]
     comparisons: usize,
 }
@@ -158,6 +200,10 @@ impl<'a> Policy<'a> {
             store,
             time,
             enrollments,
+            #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+            authority: None,
+            #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+            email: None,
             #[cfg(test)]
             comparisons: 0,
         })
@@ -256,6 +302,10 @@ impl<'a> Policy<'a> {
         target_share_version: u32,
         (source_enrollment_epoch, target_enrollment_epoch): (u64, u64),
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return Err(ErrorCode::Policy);
+        }
         let mut source = self.decrypt(source_envelope)?;
         let mut target = self.decrypt(target_envelope)?;
         if source.did != expected_did
@@ -399,6 +449,19 @@ impl<'a> Policy<'a> {
         expected_share_version: u32,
         source_enrollment_epoch: u64,
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self
+                .authority_rewrap(
+                    envelope,
+                    expected_did,
+                    expected_share_version,
+                    source_enrollment_epoch,
+                )
+                .await?
+                .envelope
+                .ok_or(ErrorCode::Unavailable);
+        }
         if envelope.key_id == self.key_id
             || !self
                 .previous_keys
@@ -481,6 +544,19 @@ impl<'a> Policy<'a> {
         &mut self,
         req: CreateHoldRequest<'_>,
     ) -> Result<SignedHoldRecord, ErrorCode> {
+        self.create_hold_with_delivery(req)
+            .await
+            .map(|(hold, _)| hold)
+    }
+
+    pub async fn create_hold_with_delivery(
+        &mut self,
+        req: CreateHoldRequest<'_>,
+    ) -> Result<(SignedHoldRecord, Option<crate::wire::v1::CodeDelivery>), ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_create_hold(req).await;
+        }
         identifier(req.hold_id)?;
         identifier(req.request_id)?;
         validate_client_key(req.client_ephemeral_public_key)?;
@@ -530,7 +606,7 @@ impl<'a> Policy<'a> {
             .await
             .map_err(ledger_error)?;
         signed.hold.signature = STANDARD.encode(record.sig);
-        Ok(signed)
+        Ok((signed, None))
     }
 
     async fn verify_hold(&mut self, req: &ReleaseRequest<'_>) -> Result<VerifiedHold, ErrorCode> {
@@ -588,21 +664,36 @@ impl<'a> Policy<'a> {
         purpose: &str,
         pin: Option<&str>,
     ) -> Result<Operation, ErrorCode> {
+        self.operation_for(req.hold, req.request_id, time, purpose, pin)
+    }
+
+    /// P9.1 (attack C): the `ReleaseRequest`-free primitive `operation()`
+    /// delegates to, so `confirm-hold`/`send-release-warning` (which have no
+    /// envelope and so cannot build a `ReleaseRequest`) share the exact same
+    /// request-digest binding as release/cancel/PIN, not a parallel scheme.
+    fn operation_for(
+        &self,
+        hold: &SignedHoldRecord,
+        request_id: &str,
+        time: TimeEvidence,
+        purpose: &str,
+        pin: Option<&str>,
+    ) -> Result<Operation, ErrorCode> {
         // Hash all public bindings before including the proof; never publish an
         // unkeyed proof hash. The guarded JSON buffer is bounded by validated inputs.
         let bytes = Zeroizing::new(
             serde_json::to_vec(&(
                 "learncard-policy-operation-v1",
                 purpose,
-                hold_hash(&self.tenant, req.hold)?,
-                req.request_id,
+                hold_hash(&self.tenant, hold)?,
+                request_id,
                 pin,
             ))
             .map_err(|_| ErrorCode::Policy)?,
         );
         Ok(Operation {
-            hold_id: req.hold.hold.hold_id.clone(),
-            request_id: format!("{}-{}", purpose, req.request_id),
+            hold_id: hold.hold.hold_id.clone(),
+            request_id: format!("{purpose}-{request_id}"),
             time_evidence: time,
             payload_hash: self.ledger.pin_payload_hash(&bytes).map_err(ledger_error)?,
         })
@@ -620,6 +711,10 @@ impl<'a> Policy<'a> {
         &mut self,
         req: ReleaseRequest<'_>,
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_release(req, ReleasePolicy::Hold).await;
+        }
         if req.hold.hold.release_policy != ReleasePolicy::Hold {
             return Err(ErrorCode::Policy);
         }
@@ -635,6 +730,10 @@ impl<'a> Policy<'a> {
         &mut self,
         req: ReleaseRequest<'_>,
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_release(req, ReleasePolicy::Pin).await;
+        }
         if req.hold.hold.release_policy != ReleasePolicy::Pin {
             return Err(ErrorCode::Policy);
         }
@@ -749,6 +848,10 @@ impl<'a> Policy<'a> {
     /// Signed cancellation is irrevocable in the observable chain. Caller must
     /// authenticate user intent before invoking; cancellation never grants release.
     pub async fn cancel_hold(&mut self, req: ReleaseRequest<'_>) -> Result<(), ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_cancel(req).await.map(|_| ());
+        }
         let verified = self.verify_hold(&req).await?;
         let time = self.now(&verified.state).await?;
         let operation = self.operation(&req, time, "cancel", None)?;
@@ -762,6 +865,45 @@ impl<'a> Policy<'a> {
             .await
             .map_err(ledger_error)?;
         Ok(())
+    }
+
+    /// P9.1 (attack C): authority-only — legacy (non-authority) mode never
+    /// creates an `AwaitingConfirmation` hold in the first place, so there is
+    /// nothing for it to confirm.
+    pub async fn confirm_hold(
+        &mut self,
+        #[allow(unused_variables)] req: ConfirmHoldRequest<'_>,
+    ) -> Result<(SignedAuthorityRecord, u64), ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_confirm_hold(req).await;
+        }
+        Err(ErrorCode::Policy)
+    }
+
+    /// P9.1 (attack C): authority-only, called by lca-api's hourly job for
+    /// holds nearing their 7-day deadline.
+    pub async fn send_release_warning(
+        &mut self,
+        #[allow(unused_variables)] req: SendReleaseWarningRequest<'_>,
+    ) -> Result<(SignedAuthorityRecord, u64), ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_send_release_warning(req).await;
+        }
+        Err(ErrorCode::Policy)
+    }
+
+    /// P9.1 (attack C): authority-only, same reasoning as `confirm_hold`.
+    pub async fn resend_code(
+        &mut self,
+        #[allow(unused_variables)] req: ResendCodeRequest<'_>,
+    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_resend_code(req).await;
+        }
+        Err(ErrorCode::Policy)
     }
 }
 

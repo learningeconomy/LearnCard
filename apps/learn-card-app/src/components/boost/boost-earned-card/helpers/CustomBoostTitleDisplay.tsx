@@ -66,12 +66,12 @@ export const CustomBoostTitleDisplay: React.FC<{
                     </span>
                 </div>
                 <span
-                    className={`w-full text-center text-${textColor} text-[12px] font-[600] uppercase font-notoSans px-[7px] line-clamp-1`}
+                    className={`w-full text-center text-${textColor} text-[12px] font-semibold uppercase font-notoSans px-[7px] line-clamp-1`}
                 >
                     {newItemIndicator} {getLocalizedCategoryDisplayLabel(formattedDisplayType)}
                 </span>
                 {/* <div
-                    className={`w-full flex items-center justify-center text-grayscale-800 text-[12px] font-[600] font-notoSans`}
+                    className={`w-full flex items-center justify-center text-grayscale-800 text-[12px] font-semibold font-notoSans`}
                 >
                     <AttachmentIcon className="mr-1" /> {attachmentTitle}
                 </div> */}
@@ -94,7 +94,7 @@ export const CustomBoostTitleDisplay: React.FC<{
                     </span>
                 </div>
                 <span
-                    className={`w-full text-center text-${textColor} text-[12px] font-[600] uppercase font-notoSans px-[7px] line-clamp-1`}
+                    className={`w-full text-center text-${textColor} text-[12px] font-semibold uppercase font-notoSans px-[7px] line-clamp-1`}
                 >
                     {newItemIndicator} {getLocalizedCategoryDisplayLabel(formattedDisplayType)}
                 </span>
@@ -104,11 +104,11 @@ export const CustomBoostTitleDisplay: React.FC<{
 
     return (
         <div className="flex flex-col items-center justify-center mt-[4px] w-full">
-            <span className="text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2 px-[8px] !z-[9999]">
+            <span className="text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2 px-[8px] z-[9999]!">
                 {title}
             </span>
             <span
-                className={`w-full text-center text-${textColor} text-[12px] font-[600] uppercase font-notoSans px-[7px] line-clamp-1`}
+                className={`w-full text-center text-${textColor} text-[12px] font-semibold uppercase font-notoSans px-[7px] line-clamp-1`}
             >
                 {newItemIndicator} {formattedDisplayType}
             </span>

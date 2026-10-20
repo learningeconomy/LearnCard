@@ -38,7 +38,7 @@ export const AlignmentsShowcase: React.FC<AlignmentsShowcaseProps> = ({ alignmen
         return (
             <div
                 key={alignment.id}
-                className={`rounded-xl border px-3.5 py-3 space-y-1 ${
+                className={`rounded-xl border px-3.5 py-3 space-y-v3-1 ${
                     isVerified
                         ? 'border-emerald-100 bg-emerald-50'
                         : 'border-grayscale-200 bg-grayscale-50'
@@ -104,7 +104,7 @@ export const AlignmentsShowcase: React.FC<AlignmentsShowcaseProps> = ({ alignmen
     };
 
     return (
-        <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-4">
+        <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4">
             <div>
                 <div className="flex items-center gap-2">
                     <Target className="w-5 h-5 text-grayscale-900" />
@@ -117,24 +117,24 @@ export const AlignmentsShowcase: React.FC<AlignmentsShowcaseProps> = ({ alignmen
                 </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 {credentialEngine.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <p className="text-xs font-medium text-grayscale-500">
                             {m['issueFlow.verifiedSource']()}
                         </p>
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {credentialEngine.map(a => renderRow(a, true))}
                         </div>
                     </div>
                 )}
 
                 {other.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <p className="text-xs font-medium text-grayscale-500">
                             {m['issueFlow.occupationsPrograms']()}
                         </p>
-                        <div className="space-y-2">{other.map(a => renderRow(a, false))}</div>
+                        <div className="space-y-v3-2">{other.map(a => renderRow(a, false))}</div>
                     </div>
                 )}
             </div>

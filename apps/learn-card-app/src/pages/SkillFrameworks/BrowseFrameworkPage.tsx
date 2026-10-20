@@ -144,7 +144,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                         onDiscard={handleDiscard}
                         discardButtonText="Create New Framework"
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
             }, 300);
@@ -395,7 +395,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                 onSuccessClose={_handleClose}
             />,
             {
-                sectionClassName: '!bg-transparent !shadow-none',
+                sectionClassName: 'bg-transparent! shadow-none!',
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
         );
@@ -870,7 +870,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                                 />,
                                 {
                                     sectionClassName:
-                                        '!bg-transparent !shadow-none !overflow-visible',
+                                        'bg-transparent! shadow-none! overflow-visible!',
                                     onClose: () => {
                                         // close modals if they exist success modal via clicking on background space
                                         // closeAllModals();
@@ -895,7 +895,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                     }}
                 />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+                    sectionClassName: 'bg-transparent! shadow-none! overflow-visible!',
                 },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
@@ -918,7 +918,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                         }, 301);
                     }}
                 />,
-                { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+                { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } else {
@@ -983,7 +983,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                         }, 301);
                     }}
                 />,
-                { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+                { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } else {
@@ -1158,14 +1158,14 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
             ) : (
                 <div className="flex w-full relative h-full overflow-y-hidden">
                     {search && maxColumns > 1 && !isFullScreenSearch && (
-                        <div className="absolute h-full w-full bg-grayscale-100 bg-opacity-50 backdrop-blur-[15px] z-[1]" />
+                        <div className="absolute h-full w-full bg-grayscale-100/50  backdrop-blur-[15px] z-[1]" />
                     )}
 
                     {isFullScreenSearch && (
                         <FrameworkSearchResults
                             searchResults={searchResults}
                             frameworkInfo={frameworkInfo}
-                            className="!pt-[15px] !pb-[200px]"
+                            className="pt-[15px]! pb-[200px]!"
                             onClick={onSearchResultItemClick}
                             isSelectSkillsFlow={isSelectSkillsFlow}
                             selectedSkills={selectedSkills}

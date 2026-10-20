@@ -116,7 +116,7 @@ const AppRouter: React.FC = () => {
     useLaunchDarklyIdentify({ debug: !IS_PRODUCTION });
     useSentryIdentify({ debug: !IS_PRODUCTION });
     useSetFirebaseAnalyticsUserId({ debug: false });
-    useSyncConsentFlow(enablePrefetch);
+    const { refetch: refetchConsentFlowSync } = useSyncConsentFlow(enablePrefetch);
     useSyncRevokedCredentials(enablePrefetch);
 
     const { newModal: newBoostSelectModal, closeModal: closeBoostSelectModal } = useModal({
@@ -167,6 +167,17 @@ const AppRouter: React.FC = () => {
             }
         };
     }, [verifySignInLinkAndLogin, savedEmail]);
+
+    // Pick up contract-written credentials when the native app comes back to the foreground.
+    useEffect(() => {
+        if (!enablePrefetch || !Capacitor.isNativePlatform()) return;
+        const listener = App.addListener('resume', () => {
+            refetchConsentFlowSync();
+        });
+        return () => {
+            listener.then(handle => handle.remove());
+        };
+    }, [enablePrefetch, refetchConsentFlowSync]);
 
     useEffect(() => {
         if (!Capacitor.isNativePlatform() && savedEmail) {

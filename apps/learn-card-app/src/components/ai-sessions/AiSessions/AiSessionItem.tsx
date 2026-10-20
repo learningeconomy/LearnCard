@@ -94,7 +94,7 @@ export const AiSessionItem: React.FC<{
         <button
             disabled={isLoading}
             onClick={handleViewSession}
-            className={`flex items-center justify-between w-full bg-white rounded-2xl shadow-sm px-4 py-3 mb-3 ${
+            className={`flex items-center justify-between w-full bg-white rounded-2xl shadow-xs px-4 py-3 mb-3 ${
                 isSelectedSession ? 'ring-2 ring-cyan-200' : ''
             }`}
         >

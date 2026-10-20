@@ -157,10 +157,10 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     let idSleeveFooterClass = '';
 
     if (isID) {
-        idDisplayContainerClass = '!border-white';
-        idSleeveFooterClass = '!bg-teal-300';
+        idDisplayContainerClass = 'border-white!';
+        idSleeveFooterClass = 'bg-teal-300!';
     } else if (isMembership) {
-        idDisplayContainerClass = '!border-white';
+        idDisplayContainerClass = 'border-white!';
         idSleeveFooterClass = '!bg-sp-green-light';
     }
 
@@ -276,14 +276,14 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                 customIssueHistoryComponent={
                     <IonList
                         lines="none"
-                        className="flex flex-col items-center justify-center w-[100%]"
+                        className="flex flex-col items-center justify-center w-full"
                     >
                         {recipients?.map((recipient, index) => {
                             return (
                                 <IonItem
                                     key={recipient?.received || index}
                                     lines="none"
-                                    className={`w-[100%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
+                                    className={`w-full max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
                                 >
                                     <div className="flex items-center justify-start w-full">
                                         <div className="flex items-center justify-start">

@@ -38,7 +38,7 @@ export const AiAssessmentQAItems: React.FC<{
                         ref={isCurrent ? lastQuestionRef : null}
                         className="w-full mb-4 mt-12"
                     >
-                        <div className="border-t-solid border-t-[1px] border-grayscale-200 pb-12" />
+                        <div className="border-t-solid border-t border-grayscale-200 pb-12" />
                         <AssessmentQuestion
                             questionNumber={questionNumber}
                             question={qa.question}

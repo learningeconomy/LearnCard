@@ -1,5 +1,6 @@
 import { base64ToBuffer, bufferToBase64 } from './crypto';
 import type { EscrowAttestationPolicy } from './types';
+import type { VerifiedEnclaveIdentity } from './escrow-authority.types';
 import { NitroAttestationError, verifyNitroAttestationDocument } from './escrow-nitro-attestation';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -22,15 +23,7 @@ export const verifyEnclaveAttestation = async (
     attestation: unknown,
     policy: EscrowAttestationPolicy,
     nonce?: Uint8Array
-): Promise<{
-    publicKey: string;
-    keyId: string;
-    /** P9.1: retired keyIds still accepted for decrypt. In nitro mode this is
-     * the value bound inside the signed attestation document, cross-checked
-     * against the plaintext field below — never the plaintext alone. */
-    previousKeyIds: string[];
-    mode: 'software' | 'nitro';
-}> => {
+): Promise<VerifiedEnclaveIdentity> => {
     const isKeyId = (value: unknown): value is string =>
         typeof value === 'string' && /^[A-Za-z0-9._-]{1,128}$/.test(value);
     const fields = [
@@ -103,6 +96,14 @@ export const verifyEnclaveAttestation = async (
             keyId: attestation.keyId,
             previousKeyIds: verified.previousKeyIds,
             mode: 'nitro',
+            ...(verified.keyId && verified.ledgerPublicKey && verified.measurementHash
+                ? {
+                      authority: {
+                          ledgerPublicKey: verified.ledgerPublicKey,
+                          measurement: verified.measurementHash,
+                      },
+                  }
+                : {}),
         };
     }
     const publicKey = normalizePublicKey(attestation.publicKey);
