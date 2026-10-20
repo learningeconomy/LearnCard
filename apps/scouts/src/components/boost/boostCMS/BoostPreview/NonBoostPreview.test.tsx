@@ -86,7 +86,7 @@ describe('standalone credential footer', () => {
 
             const footer = container.querySelector('footer')!;
             expect(footer.className).toContain('backdrop-blur');
-            expect(footer.className).toContain('bg-opacity-60');
+            expect(footer.className).toContain('bg-white/60');
             const controls = within(footer);
             fireEvent.click(controls.getByRole('button', { name: 'details' }));
             expect(screen.getByText('Credential details')).toBeTruthy();
