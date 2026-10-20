@@ -20,8 +20,8 @@ run "protects_keys_and_admin_trust_from_org_admin" {
   assert {
     condition = alltrue([for action in ["cloudtrail:StopLogging", "cloudtrail:DeleteTrail", "cloudtrail:UpdateTrail", "cloudtrail:PutEventSelectors", "cloudtrail:PutInsightSelectors"] :
       anytrue([for s in local.monitor_guardrail.Statement : s.Sid == "DenyTrailTampering" && s.Effect == "Deny" && contains(try(s.Action, []), action) && s.Resource == "arn:aws:cloudtrail:*:123456789012:trail/escrow-enclave-staging-audit" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.admin])
-      ]) && alltrue([for action in ["s3:PutBucketPolicy", "s3:DeleteBucketPolicy", "s3:PutLifecycleConfiguration", "s3:PutBucketObjectLockConfiguration"] :
-      anytrue([for s in local.monitor_guardrail.Statement : s.Sid == "DenyTrailBucketReconfiguration" && s.Effect == "Deny" && contains(try(s.Action, []), action) && s.Resource == "arn:aws:s3:::learncard-escrow-cloudtrail-staging-123456789012" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.admin])
+      ]) && alltrue([for action in ["s3:PutBucketPolicy", "s3:DeleteBucketPolicy", "s3:PutLifecycleConfiguration", "s3:PutBucketObjectLockConfiguration", "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls", "s3:PutBucketAcl", "s3:PutObjectAcl", "s3:PutObjectVersionAcl"] :
+      anytrue([for s in local.monitor_guardrail.Statement : s.Sid == "DenyTrailBucketReconfiguration" && s.Effect == "Deny" && contains(try(s.Action, []), action) && toset(s.Resource) == toset(["arn:aws:s3:::learncard-escrow-cloudtrail-staging-123456789012", "arn:aws:s3:::learncard-escrow-cloudtrail-staging-123456789012/*"]) && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.admin])
     ])
     error_message = "Trail and log-bucket tampering must be denied with exactly the existing MFA-admin ARN exception."
   }

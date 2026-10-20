@@ -41,3 +41,24 @@ run "locked_account_trail" {
     error_message = "Dedicated key must not delegate arbitrary crypto privileges; only the MFA admin can decrypt."
   }
 }
+
+run "production_rejects_short_retention" {
+  command = plan
+  variables {
+    environment               = "production"
+    cloudtrail_retention_days = 30
+  }
+  expect_failures = [var.cloudtrail_retention_days]
+}
+
+run "staging_allows_short_retention" {
+  command = plan
+  variables {
+    environment               = "staging"
+    cloudtrail_retention_days = 30
+  }
+  assert {
+    condition     = var.cloudtrail_retention_days == 30
+    error_message = "Staging may use a shorter retention."
+  }
+}

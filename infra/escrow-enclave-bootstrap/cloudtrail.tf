@@ -10,12 +10,16 @@ variable "authority_generations" {
 }
 
 variable "cloudtrail_retention_days" {
-  description = "COMPLIANCE retention for new log versions. Staging may explicitly override; existing retention cannot be shortened."
+  description = "COMPLIANCE retention for new log versions. Production requires at least 365 days; only staging may go lower. Existing retention cannot be shortened."
   type        = number
   default     = 365
   validation {
     condition     = var.cloudtrail_retention_days >= 1 && var.cloudtrail_retention_days <= 36500 && floor(var.cloudtrail_retention_days) == var.cloudtrail_retention_days
     error_message = "Retention must be an integer from 1 to 36500 days."
+  }
+  validation {
+    condition     = var.environment == "staging" || var.cloudtrail_retention_days >= 365
+    error_message = "Production CloudTrail retention must be at least 365 days."
   }
 }
 

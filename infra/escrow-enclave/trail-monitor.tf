@@ -17,7 +17,7 @@ resource "aws_cloudwatch_event_rule" "trail_tamper" {
       } },
       { source = ["aws.s3"], detail = {
         eventSource       = ["s3.amazonaws.com"],
-        eventName         = ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "PutBucketLifecycle", "PutBucketLifecycleConfiguration", "PutBucketVersioning", "PutBucketEncryption", "PutBucketReplication"],
+        eventName         = ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "PutBucketLifecycle", "PutBucketLifecycleConfiguration", "PutBucketVersioning", "PutBucketEncryption", "PutBucketReplication", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"],
         requestParameters = { bucketName = ["learncard-escrow-cloudtrail-${var.environment}-${data.aws_caller_identity.current.account_id}"] }
       } },
     ]

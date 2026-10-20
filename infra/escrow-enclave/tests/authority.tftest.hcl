@@ -69,7 +69,7 @@ run "disabled_is_structurally_a_noop" {
       jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][0].detail.requestParameters.name[0] == "escrow-enclave-staging-audit" &&
       jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][1].detail.requestParameters.trailName[0] == "escrow-enclave-staging-audit" &&
       jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.requestParameters.bucketName == ["learncard-escrow-cloudtrail-staging-123456789012"] &&
-      alltrue([for name in ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration"] : contains(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.eventName, name)]) &&
+      alltrue([for name in ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"] : contains(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.eventName, name)]) &&
       jsondecode(aws_cloudwatch_event_target.trail_tamper.input).alarm == "EscrowCloudTrailTamper" &&
       aws_cloudwatch_event_target.trail_tamper.arn == aws_sns_topic.monitor.arn &&
       aws_cloudwatch_event_target.trail_tamper.dead_letter_config[0].arn == aws_sqs_queue.monitor_dlq.arn
