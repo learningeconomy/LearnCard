@@ -20,6 +20,9 @@ export const InAppMessagesAnalyticsHost: React.FC = () => {
                     presentation: event.presentation,
                     source: event.source,
                     ...(event.actionIndex !== undefined ? { actionIndex: event.actionIndex } : {}),
+                    ...(event.actionSource !== undefined
+                        ? { actionSource: event.actionSource }
+                        : {}),
                     ...(event.actionType !== undefined ? { actionType: event.actionType } : {}),
                     ...(event.stepIndex !== undefined ? { stepIndex: event.stepIndex } : {}),
                 });

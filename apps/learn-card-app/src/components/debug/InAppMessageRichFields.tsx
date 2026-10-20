@@ -281,23 +281,45 @@ export const InAppMessageRichFields: React.FC<{
                                     onChange={e => updateStep(index, { emoji: e.target.value })}
                                 />
                             </Field>
-                            <label className="text-xs text-grayscale-700 flex gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={step.actions !== undefined}
-                                    onChange={e =>
-                                        updateStep(index, {
-                                            actions: e.target.checked ? [] : undefined,
-                                        })
-                                    }
-                                />
-                                Override final-screen actions
-                            </label>
-                            {step.actions && (
-                                <StepActions
-                                    actions={step.actions}
-                                    onChange={actions => updateStep(index, { actions })}
-                                />
+                            {index === state.steps.length - 1 && (
+                                <>
+                                    <label className="text-xs text-grayscale-700 flex gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={step.actions !== undefined}
+                                            onChange={e =>
+                                                updateStep(index, {
+                                                    actions: e.target.checked ? [] : undefined,
+                                                })
+                                            }
+                                        />
+                                        Override final-screen actions
+                                    </label>
+                                    {step.actions && (
+                                        <StepActions
+                                            actions={step.actions}
+                                            onChange={actions => updateStep(index, { actions })}
+                                        />
+                                    )}
+                                </>
+                            )}
+                            {index !== state.steps.length - 1 && step.actions !== undefined && (
+                                <div
+                                    role="alert"
+                                    className="p-3 bg-amber-50 text-sm text-amber-900 rounded-2xl space-y-2"
+                                >
+                                    <p>
+                                        Only the final screen can have actions. Move this screen to
+                                        the end or remove its action override.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        className={button}
+                                        onClick={() => updateStep(index, { actions: undefined })}
+                                    >
+                                        Remove action override
+                                    </button>
+                                </div>
                             )}
                             <div className="flex flex-wrap gap-2">
                                 <button

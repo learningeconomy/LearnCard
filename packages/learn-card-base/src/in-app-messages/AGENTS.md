@@ -30,7 +30,7 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 
 - **Schema first.** Any new field/action/predicate starts in `@learncard/types/inAppMessages.ts`,
   then flows through `predicates.ts` (if it affects matching) and the UI. Keep `.passthrough()` /
-  safe defaults so old clients never break on new flag fields.
+  safe defaults for additive fields. New enum members are NOT safe on older clients; see rollout rules below.
 - **Fail closed.** Missing/unparseable data in a predicate must return `false`, never throw. A
   malformed envelope must degrade to "show nothing"; invalid messages must not discard valid siblings.
 - **`predicates.ts` stays pure** — no React, no Capacitor, no I/O. It is the unit-tested core.
@@ -64,6 +64,21 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
   actions. No Capgo or identity APIs. Required frames ignore close/dismiss requests.
 - Presentation analytics use `InAppMessagePresentationEvent` (distinct from credential events).
   Keep payloads allowlisted and exclude overrides from app analytics.
+- Story actions are final-screen-only; reject earlier overrides and keep the builder editor restricted.
+  Localize overrides through `locales[locale].steps[index].actionLabels`; preserve positional fallbacks.
+- Mirror arrow, swipe, and tap navigation using the rendered direction, including language switches.
+- Emit actions after successful completion, excluding no-ops/failures. Include `actionSource` alongside
+  authored action indexes; bridge actions have no index/source. Capgo completion can be lost on reload.
+
+### Rollout rules for new presentations
+
+Older clients parse the whole flag and reject every campaign if any presentation enum is unknown.
+`enabled: false` and on-device targeting cannot protect them: parsing comes first. The #1729 isolated
+parser must be shipped and adopted; merely merging the base PR does not protect installed builds.
+Keep story/iframe campaigns in dev/staging environments inaccessible to released builds until then.
+For mixed-version production environments, use LaunchDarkly delivery rules that exclude unsupported
+clients and keep default/off variations legacy-safe, or omit rich campaigns entirely. See README's
+rollout section. The author confirmed LC-2263 test campaigns use dev/staging only.
 
 ### Add a new action type (e.g. `share`)
 

@@ -34,6 +34,55 @@ describe('rich message schema', () => {
         ).toBe(10000);
     });
     it.each([
+        { actions: [] },
+        { actions: [{ label: 'Open', action: { type: 'internalLink', path: '/home' } }] },
+    ])(
+        'rejects non-final action overrides without discarding other campaigns: %j',
+        ({ actions }) => {
+            const result = parseInAppMessagesFlagWithErrors({
+                messages: [
+                    {
+                        id: 'bad-actions',
+                        title: 'Story',
+                        presentation: 'story',
+                        steps: [{ title: 'First', actions }, { title: 'Last' }],
+                    },
+                    {
+                        id: 'valid-actions',
+                        title: 'Story',
+                        presentation: 'story',
+                        steps: [{ title: 'First' }, { title: 'Last', actions }],
+                    },
+                ],
+            });
+            expect(result.flag.messages.map(message => message.id)).toEqual(['valid-actions']);
+            expect(result.invalid).toHaveLength(1);
+            expect(result.invalid[0]?.error).toContain('Only the final story screen');
+        }
+    );
+    it('validates positional step action translations', () => {
+        const draft = {
+            id: 'localized',
+            title: 'Story',
+            locales: {
+                es: { steps: [null, { actionLabels: ['Listo', null, ''] }] },
+            },
+        };
+        expect(inAppMessageValidator.parse(draft).locales?.es?.steps?.[1]?.actionLabels).toEqual([
+            'Listo',
+            null,
+            '',
+        ]);
+        expect(
+            inAppMessageValidator.safeParse({
+                ...draft,
+                locales: {
+                    es: { steps: [{ actionLabels: [42] }] },
+                },
+            }).success
+        ).toBe(false);
+    });
+    it.each([
         'http://example.com',
         '/page',
         'javascript:alert(1)',

@@ -470,6 +470,22 @@ loaded only for dev/debug-enabled builds; normal production builds omit it.
 Targeting and triggers still run before presentation; both new formats use the existing blocking
 fatigue rules. Deploy supporting clients before enabling campaigns that use these values.
 
+### Rollout compatibility
+
+Older released clients validate the entire flag and only recognize `modal`, `banner`, and `toast`.
+Receiving one `story` or `iframe` entry can make them reject **every campaign** in the flag.
+The per-message isolation added in #1729 only protects clients that actually include that parser.
+Adding passthrough fields is different from extending an enum; neither `enabled: false` nor on-device
+version targeting protects older clients because validation runs before those checks.
+
+Keep rich campaigns in a dev/staging LaunchDarkly environment that released builds cannot read.
+For production, first ship and establish adoption of the isolated parser; only serve rich variations
+to clients that support the new presentations. If older clients still read that environment, use
+LaunchDarkly-side delivery rules that reliably separate supporting builds, with a legacy-safe default
+and off variation. Otherwise keep rich entries out of all variations delivered to those clients.
+Do not replace unrelated production campaigns with a test payload. The LC-2263 test campaigns were
+confirmed by the author to be dev/staging-only, inaccessible to released builds.
+
 ```json
 {
     "id": "achievement-intro",
@@ -494,17 +510,23 @@ fatigue rules. Deploy supporting clients before enabling campaigns that use thes
 ```
 
 Stories require at least one screen. Each screen supports `title`, `body`, `media`, `emoji`, and
-optional `actions`. Earlier screens show Next; the final screen uses `step.actions ?? message.actions`
-(an explicitly empty array suppresses inherited actions). There is no timer or wrapping. Tap the left
-third to go back, the right two thirds to continue, swipe horizontally, or use arrow keys. Interactive
+optional `actions` on the **final screen only**. Earlier action overrides (including empty arrays)
+are rejected by the schema; the builder offers the action editor only on the final screen and warns
+when reordering leaves an override on an earlier screen. Earlier screens show Next; the final screen
+uses `step.actions ?? message.actions` (an explicitly empty array suppresses inherited actions).
+There is no timer or wrapping. In LTR, tap the left third to go back, the right two thirds to continue,
+swipe left to continue, or use Right/Left arrow keys for next/previous. RTL mirrors these controls:
+right third goes back, left two thirds continue, swipe right continues, and ArrowLeft advances. Interactive
 media and controls do not advance the story. Required stories should provide a completing final action.
 Final-screen action state remains mounted across navigation, preserving update progress and preventing
 duplicate downloads when a learner returns to that screen.
 
-`locales` supports `title`, `body`, `actionLabels`, `steps` (title/body), and `iframeUrl`. Each field
+`locales` supports `title`, `body`, `actionLabels`, `steps` (title/body/actionLabels), and `iframeUrl`. Each field
 falls back independently: exact locale, language, original. Arrays are positional and never add
-screens/actions; `null` entries can skip positions. Only message-level action labels are translated by
-`actionLabels`, not screen-specific action labels. Empty strings are intentional overrides. Localization
+screens/actions; `null` entries can skip positions. Top-level `actionLabels` translates message-level
+actions; `steps[i].actionLabels` translates that screen's override actions, independently. For example,
+`"es": { "steps": [null, { "actionLabels": ["Listo"] }] }` translates the first action on screen 2.
+Empty strings are intentional overrides. Localization
 happens after winner selection and does not change targeting or consume another impression.
 
 ```json
@@ -528,6 +550,10 @@ a valid `ready` message. Required frames (`dismissible:false`) require the valid
 to remove the skeleton and cancel the timeout; **load does not prove the remote page succeeded**. The remote server must allow
 embedding through its CSP `frame-ancestors` / X-Frame-Options policy. These restrictions cannot be
 bypassed by the app. Retry mounts a new frame; old listeners and completions are discarded.
+For dismissible frames, a blocked/error-page load can still end the loading state and cancel the
+timer, leaving a blank but closable surface. Cross-origin content cannot be inspected to detect this.
+Use a required bridge-enabled frame with no `ready` handshake to verify blocked-page timeout/retry;
+an actual missing load event or an offline event can also exercise failure handling on dismissible frames.
 
 ### Iframe protocol
 
@@ -551,6 +577,9 @@ Only existing actions are supported; `capgoUpdate` and future `openApp`/`openMes
 rejected. Internal paths must start with a single `/` and contain no whitespace/backslashes;
 external/store overrides must use HTTPS. There is no identity, authentication, credential, or wallet
 API. Do not place private account data in authored URLs. The bridge has no response channel.
+Popups inherit the iframe sandbox: `allow-popups-to-escape-sandbox` is intentionally absent.
+For external links that need an ordinary browser context (such as sign-in or store pages), send a
+validated `runAction` with `externalLink` or `appStore` through the host instead of `window.open`.
 
 For `dismissible:false`, neither `close` nor a `dismiss` action is honored. A successful navigation
 action can complete the message; no-op/failed actions cannot. During an error, a required iframe has
@@ -564,8 +593,12 @@ exact `capacitor://localhost` origin; Android and web use their HTTP(S) app orig
 
 The host optionally calls `onEvent` with `type` (`shown`, `action`, `dismissed`), `messageId`,
 `presentation`, `source` (`flag`, `deepLink`, `override`), and optional zero-based `actionIndex`,
-`stepIndex`, and `actionType`. `deepLink` is reserved for LC-2264. Bridge actions have no authored
-action index. Seen state is recorded before fatigue, then shown is emitted. Screen changes and retries
+`stepIndex`, `actionSource` (`step` or `message`), and `actionType`. An `actionIndex` indexes
+`steps[stepIndex].actions` when `actionSource` is `step`, otherwise `message.actions`.
+`deepLink` is reserved for LC-2264. Bridge actions have no authored action index or action source.
+Action events are emitted after the runner succeeds, never for pending, rejected, or no-op actions.
+Capgo reports after a successful update/check; failures are excluded, and an immediate webview reload
+may prevent delivery of the completion event. Seen state is recorded before fatigue, then shown is emitted. Screen changes and retries
 do not create new impressions. Navigation completion, automatic toast expiry, and lifecycle cleanup
 are not dismissals. Tapping a toast without a navigation action is an explicit dismissal.
 LearnCard forwards these to `in_app_message_shown`, `in_app_message_action`, and
@@ -577,7 +610,10 @@ LearnCard forwards these to `in_app_message_shown`, `in_app_message_action`, and
    locale JSON and confirm invalid drafts cannot preview. Check Spanish fallback and Arabic chrome.
 3. Host the bridge example separately over HTTPS. Set its URL in **Embedded HTTPS page** and test
    ready, close, and navigation. Repeat with `dismissible:false` and confirm close/dismiss are ignored.
-4. Test offline, timeout, retry, invalid messages, another source/origin, and stale frames. Check
+4. Test offline, timeout, retry, invalid messages, another source/origin, and stale frames. For blocked
+   pages that still fire `load`, use `dismissible:false` and withhold `ready` to exercise the timeout.
+   A dismissible third-party page can appear blank after a blocked load; verify the host close control.
+   Check
    Safari and iOS/Android webviews separately; browser load alone is not proof of embedding success.
 5. Test Tab/Shift-Tab focus trapping, Escape, focus restoration, reduced motion, and `?insets=47,34`.
 6. Use staging flag messages to verify one impression, fatigue, account isolation, and analytics.

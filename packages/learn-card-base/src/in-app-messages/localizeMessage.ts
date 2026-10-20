@@ -20,6 +20,13 @@ export const localizeMessage = (message: InAppMessage, locale: string): InAppMes
             ...step,
             title: exact?.steps?.[index]?.title ?? language?.steps?.[index]?.title ?? step.title,
             body: exact?.steps?.[index]?.body ?? language?.steps?.[index]?.body ?? step.body,
+            actions: step.actions?.map((action, actionIndex) => ({
+                ...action,
+                label:
+                    exact?.steps?.[index]?.actionLabels?.[actionIndex] ??
+                    language?.steps?.[index]?.actionLabels?.[actionIndex] ??
+                    action.label,
+            })),
         })),
         iframe: message.iframe
             ? {

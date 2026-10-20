@@ -10,6 +10,7 @@ import { InAppMessageToast } from '../InAppMessageToast';
 import { InAppMessageBanner } from '../InAppMessageBanner';
 import { InAppMessageModal } from '../InAppMessageModal';
 import { MessageActions } from '../MessageActions';
+import { localizeMessage } from '../localizeMessage';
 
 const mocks = vi.hoisted(() => ({ runAction: vi.fn(), startUpdate: vi.fn(), status: 'idle' }));
 vi.mock('../useInAppMessageActions', () => ({
@@ -26,13 +27,17 @@ vi.mock('framer-motion', async importOriginal => {
 
 beforeEach(() => {
     mocks.runAction.mockReset().mockResolvedValue('closed');
-    mocks.startUpdate.mockReset();
+    mocks.startUpdate
+        .mockReset()
+        .mockImplementation(async (onComplete?: () => void) => onComplete?.());
     mocks.status = 'idle';
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
 });
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
 });
 
 describe('story presentation', () => {
@@ -70,6 +75,7 @@ describe('story presentation', () => {
         await waitFor(() => expect(onClose).toHaveBeenCalledWith('dismissed', { stepIndex: 1 }));
         expect(onAction).toHaveBeenCalledWith({
             actionIndex: 0,
+            actionSource: 'message',
             actionType: 'dismiss',
             stepIndex: 1,
         });
@@ -83,6 +89,67 @@ describe('story presentation', () => {
         render(<InAppMessageStory message={required} onClose={vi.fn()} />);
         expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    });
+    it('renders localized final actions and identifies their source in analytics', async () => {
+        const onAction = vi.fn();
+        const localized = localizeMessage(
+            inAppMessageValidator.parse({
+                ...message,
+                steps: [
+                    {
+                        title: 'Final',
+                        actions: [{ label: 'Finish step', action: { type: 'dismiss' } }],
+                    },
+                ],
+                locales: { es: { steps: [{ actionLabels: ['Listo'] }] } },
+            }),
+            'es'
+        );
+        render(<InAppMessageStory message={localized} onClose={vi.fn()} onAction={onAction} />);
+        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+        await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Listo' })));
+        expect(onAction).toHaveBeenCalledExactlyOnceWith({
+            actionIndex: 0,
+            actionSource: 'step',
+            actionType: 'dismiss',
+            stepIndex: 0,
+        });
+    });
+    it('responds to direction changes when handling keyboard navigation', async () => {
+        const view = render(<InAppMessageStory message={message} onClose={vi.fn()} />);
+        const root = view.container.firstElementChild as HTMLElement;
+        root.style.direction = 'rtl';
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Next' }), { key: 'ArrowRight' });
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('1');
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Next' }), { key: 'ArrowLeft' });
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('2');
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Previous' }), { key: 'ArrowLeft' });
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('2');
+        root.style.direction = 'ltr';
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Previous' }), { key: 'ArrowLeft' });
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('1');
+    });
+    it.each(['ltr', 'rtl'])('maps taps and swipes to reading direction in %s', direction => {
+        vi.stubGlobal('PointerEvent', MouseEvent);
+        const view = render(<InAppMessageStory message={message} onClose={vi.fn()} />);
+        const root = view.container.firstElementChild as HTMLElement;
+        root.style.direction = direction;
+        const content = root.querySelector('.touch-pan-y') as HTMLElement;
+        vi.spyOn(content, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 300, 200));
+        const gesture = (start: number, end: number): void => {
+            fireEvent.pointerDown(content, { clientX: start, clientY: 100, button: 0 });
+            fireEvent.pointerUp(content, { clientX: end, clientY: 100, button: 0 });
+        };
+        const forward = direction === 'rtl' ? 20 : 280;
+        const back = direction === 'rtl' ? 280 : 20;
+        gesture(forward, forward);
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('2');
+        gesture(back, back);
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('1');
+        gesture(forward, back);
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('2');
+        gesture(back, forward);
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('1');
     });
     it('shares Capgo progress without closing the story', async () => {
         mocks.runAction.mockResolvedValue('capgo');
@@ -206,18 +273,62 @@ describe('action completion', () => {
                 actions: [{ label: 'Open store', action: { type: 'appStore' } }],
             });
             const onClose = vi.fn();
+            const onAction = vi.fn();
             mocks.runAction.mockResolvedValueOnce('noop').mockResolvedValueOnce('closed');
-            render(<Component message={message} onClose={onClose} />);
+            render(<Component message={message} onClose={onClose} onAction={onAction} />);
             const actionButton = screen.getByRole('button', {
                 name: presentation === 'toast' ? 'Update available' : 'Open store',
             });
             await act(async () => fireEvent.click(actionButton));
             expect(mocks.runAction).toHaveBeenCalledOnce();
             expect(onClose).not.toHaveBeenCalled();
+            expect(onAction).not.toHaveBeenCalled();
             await act(async () => fireEvent.click(actionButton));
             expect(mocks.runAction).toHaveBeenCalledTimes(2);
             expect(onClose).toHaveBeenCalledOnce();
+            expect(onAction).toHaveBeenCalledOnce();
             expect(onClose.mock.calls[0]?.[0]).toBe('action');
+        }
+    );
+    it.each([
+        ['modal', InAppMessageModal],
+        ['story', InAppMessageStory],
+        ['banner', InAppMessageBanner],
+        ['toast', InAppMessageToast],
+    ] as const)(
+        'does not count pending or rejected %s actions and allows retry',
+        async (presentation, Component) => {
+            const message = inAppMessageValidator.parse({
+                id: 'failure',
+                title: 'Try opening',
+                presentation,
+                steps: [{ title: 'Final' }],
+                actions: [
+                    { label: 'Open', action: { type: 'externalLink', url: 'https://example.com' } },
+                ],
+            });
+            let rejectAction: (error: Error) => void = () => undefined;
+            mocks.runAction.mockImplementationOnce(
+                () =>
+                    new Promise((_resolve, reject) => {
+                        rejectAction = reject;
+                    })
+            );
+            const onAction = vi.fn();
+            const onClose = vi.fn();
+            render(<Component message={message} onClose={onClose} onAction={onAction} />);
+            const button = screen.getByRole('button', {
+                name: presentation === 'toast' ? 'Try opening' : 'Open',
+            });
+            fireEvent.click(button);
+            expect(onAction).not.toHaveBeenCalled();
+            await act(async () => rejectAction(new Error('Failed')));
+            expect(onAction).not.toHaveBeenCalled();
+            expect(onClose).not.toHaveBeenCalled();
+            expect(screen.getByRole('alert')).toBeTruthy();
+            await act(async () => fireEvent.click(button));
+            expect(onAction).toHaveBeenCalledOnce();
+            expect(onClose).toHaveBeenCalledOnce();
         }
     );
 });
@@ -337,11 +448,15 @@ describe('iframe lifecycle', () => {
     });
     it('does not close on no-op and discards completion after unmount', async () => {
         const onClose = vi.fn();
+        const onAction = vi.fn();
         mocks.runAction.mockResolvedValue('noop');
-        const view = render(<InAppMessageIframe message={message} onClose={onClose} />);
+        const view = render(
+            <InAppMessageIframe message={message} onClose={onClose} onAction={onAction} />
+        );
         const frame = screen.getByTitle('Embedded') as HTMLIFrameElement;
         await act(async () => send(frame, 'runAction', { type: 'appStore' }));
         expect(onClose).not.toHaveBeenCalled();
+        expect(onAction).not.toHaveBeenCalled();
         let resolve: (value: string) => void = () => undefined;
         mocks.runAction.mockImplementation(
             () =>
@@ -353,6 +468,28 @@ describe('iframe lifecycle', () => {
         view.unmount();
         await act(async () => resolve('closed'));
         expect(onClose).not.toHaveBeenCalled();
+        expect(onAction).not.toHaveBeenCalled();
+    });
+    it('does not report pending or rejected bridge actions', async () => {
+        let rejectAction: (error: Error) => void = () => undefined;
+        mocks.runAction.mockImplementationOnce(
+            () =>
+                new Promise((_resolve, reject) => {
+                    rejectAction = reject;
+                })
+        );
+        const onAction = vi.fn();
+        const onClose = vi.fn();
+        render(<InAppMessageIframe message={message} onClose={onClose} onAction={onAction} />);
+        send(screen.getByTitle('Embedded') as HTMLIFrameElement, 'runAction', {
+            type: 'externalLink',
+            url: 'https://example.com',
+        });
+        expect(onAction).not.toHaveBeenCalled();
+        await act(async () => rejectAction(new Error('Failed')));
+        expect(onAction).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert')).toBeTruthy();
     });
     it('shows an offline error with retry', () => {
         Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });

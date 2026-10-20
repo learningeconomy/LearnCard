@@ -269,6 +269,7 @@ export const inAppMessageLocalesValidator = z.record(
                         .object({
                             title: z.string().optional(),
                             body: z.string().optional(),
+                            actionLabels: z.array(z.string().nullable()).optional(),
                         })
                         .passthrough()
                         .nullable()
@@ -307,6 +308,17 @@ export const inAppMessageValidator = z
     })
     .passthrough()
     .superRefine((message, ctx) => {
+        if (message.presentation === 'story') {
+            message.steps?.slice(0, -1).forEach((step, index) => {
+                if (step.actions !== undefined) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ['steps', index, 'actions'],
+                        message: 'Only the final story screen may define actions',
+                    });
+                }
+            });
+        }
         if (message.presentation === 'story' && !message.steps?.length) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,

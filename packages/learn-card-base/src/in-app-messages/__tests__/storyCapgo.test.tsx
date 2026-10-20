@@ -46,6 +46,7 @@ describe('story update lifecycle', () => {
                 })
         );
         const onClose = vi.fn();
+        const onAction = vi.fn();
         render(
             <InAppMessageStory
                 message={inAppMessageValidator.parse({
@@ -56,6 +57,7 @@ describe('story update lifecycle', () => {
                     actions: [{ label: 'Update', action: { type: 'capgoUpdate' } }],
                 })}
                 onClose={onClose}
+                onAction={onAction}
             />
         );
         expect(screen.queryByRole('button', { name: 'Update', exact: true })).toBeNull();
@@ -75,10 +77,38 @@ describe('story update lifecycle', () => {
         expect(screen.getByText(/Downloading.*35/)).toBeTruthy();
         expect(native.getLatest).toHaveBeenCalledOnce();
         expect(native.download).toHaveBeenCalledOnce();
+        expect(onAction).not.toHaveBeenCalled();
 
         await act(async () => finishDownload({ id: 'new-bundle' }));
         expect(native.set).toHaveBeenCalledExactlyOnceWith({ id: 'new-bundle' });
         expect(native.remove).toHaveBeenCalledOnce();
         expect(onClose).not.toHaveBeenCalled();
+        expect(onAction).toHaveBeenCalledExactlyOnceWith({
+            actionIndex: 0,
+            actionSource: 'message',
+            actionType: 'capgoUpdate',
+            stepIndex: 1,
+        });
+    });
+    it('does not count a failed native update as an action', async () => {
+        native.getLatest.mockRejectedValue(new Error('Connection failed'));
+        const onAction = vi.fn();
+        render(
+            <InAppMessageStory
+                message={inAppMessageValidator.parse({
+                    id: 'failed-update',
+                    title: 'Update',
+                    presentation: 'story',
+                    steps: [{ title: 'Update available' }],
+                    actions: [{ label: 'Install', action: { type: 'capgoUpdate' } }],
+                })}
+                onClose={vi.fn()}
+                onAction={onAction}
+            />
+        );
+        await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Install' })));
+        expect(native.getLatest).toHaveBeenCalledOnce();
+        expect(onAction).not.toHaveBeenCalled();
+        expect(screen.getByText('Something went wrong. Please try again.')).toBeTruthy();
     });
 });

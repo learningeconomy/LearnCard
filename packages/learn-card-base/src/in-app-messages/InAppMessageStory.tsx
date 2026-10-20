@@ -18,11 +18,12 @@ const isInteractive = (target: EventTarget | null): boolean =>
 export const getStorySwipeDirection = (
     dx: number,
     dy: number,
-    elapsedMs: number
+    elapsedMs: number,
+    rtl = false
 ): -1 | 1 | null => {
     const velocity = (Math.abs(dx) / Math.max(1, elapsedMs)) * 1000;
     if (Math.abs(dx) <= Math.abs(dy) || (Math.abs(dx) < 60 && velocity < 500)) return null;
-    return dx < 0 ? 1 : -1;
+    return dx < 0 !== rtl ? 1 : -1;
 };
 
 /** Screen navigation is bounded and intentionally never advances automatically. */
@@ -33,6 +34,9 @@ export const InAppMessageStory: React.FC<
     const index = stepIndex ?? localIndex;
     const setIndex = onStepChange ?? setLocalIndex;
     const pointer = useRef<{ x: number; y: number; time: number } | null>(null);
+    const root = useRef<HTMLDivElement>(null);
+    const isRtl = (): boolean =>
+        Boolean(root.current && getComputedStyle(root.current).direction === 'rtl');
     const reducedMotion = useReducedMotion();
     const t = useT();
     const steps = message.steps ?? [];
@@ -45,6 +49,7 @@ export const InAppMessageStory: React.FC<
     return (
         // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Delegates arrow keys from descendant controls; the container is not itself a widget.
         <div
+            ref={root}
             className="w-full min-h-full flex flex-col font-poppins bg-white/80 text-grayscale-900"
             onKeyDown={event => {
                 if (
@@ -56,7 +61,7 @@ export const InAppMessageStory: React.FC<
                     return;
                 if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
                     event.preventDefault();
-                    move(event.key === 'ArrowLeft' ? -1 : 1);
+                    move((event.key === 'ArrowLeft') !== isRtl() ? -1 : 1);
                 }
             }}
         >
@@ -109,13 +114,17 @@ export const InAppMessageStory: React.FC<
                     const direction = getStorySwipeDirection(
                         dx,
                         dy,
-                        performance.now() - start.time
+                        performance.now() - start.time,
+                        isRtl()
                     );
                     if (direction !== null) {
                         move(direction);
                     } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
                         const rect = event.currentTarget.getBoundingClientRect();
-                        move(event.clientX - rect.left < rect.width / 3 ? -1 : 1);
+                        const fromStart = isRtl()
+                            ? rect.right - event.clientX
+                            : event.clientX - rect.left;
+                        move(fromStart < rect.width / 3 ? -1 : 1);
                     }
                 }}
             >
@@ -175,6 +184,9 @@ export const InAppMessageStory: React.FC<
                 <div hidden={current !== steps.length - 1}>
                     <MessageActions
                         actions={steps[steps.length - 1]?.actions ?? message.actions}
+                        actionSource={
+                            steps[steps.length - 1]?.actions !== undefined ? 'step' : 'message'
+                        }
                         stepIndex={steps.length - 1}
                         onClose={onClose}
                         onAction={onAction}

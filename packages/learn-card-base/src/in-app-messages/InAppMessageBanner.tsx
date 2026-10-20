@@ -19,6 +19,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({
     const t = useT();
     const capgo = useCapgoUpdate();
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(false);
     const [isCapgoTarget, setIsCapgoTarget] = useState(false);
     const shouldReduceMotion = useReducedMotion();
 
@@ -32,18 +33,27 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({
         if (isLoading || isCapgoTarget) return;
 
         setIsLoading(true);
+        setError(false);
         try {
-            onAction?.({
-                actionIndex: message.actions.indexOf(action),
-                actionType: action.action.type,
-            });
             const outcome = await runAction(action.action);
+            if (outcome === 'noop') return;
+            const reportAction = (): void =>
+                onAction?.({
+                    actionIndex: message.actions.indexOf(action),
+                    actionSource: 'message',
+                    actionType: action.action.type,
+                });
             if (outcome === 'capgo') {
                 setIsCapgoTarget(true);
-                await capgo.startUpdate();
-            } else if (outcome === 'closed' && action.closeOnComplete) {
+                await capgo.startUpdate(reportAction);
+                return;
+            }
+            reportAction();
+            if (outcome === 'closed' && action.closeOnComplete) {
                 onClose(action.action.type === 'dismiss' ? 'dismissed' : 'action');
             }
+        } catch {
+            setError(true);
         } finally {
             setIsLoading(false);
         }
@@ -173,6 +183,14 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({
                         </p>
                     )}
 
+                    {error && (
+                        <p
+                            role="alert"
+                            className="mt-3 p-3 bg-red-50 text-sm text-red-700 rounded-2xl"
+                        >
+                            {t('inAppMessages.error')}
+                        </p>
+                    )}
                     {isCapgoTarget
                         ? renderCapgoState()
                         : primaryAction && (

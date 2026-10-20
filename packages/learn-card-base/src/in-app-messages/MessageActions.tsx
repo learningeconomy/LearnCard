@@ -5,11 +5,12 @@ import type { InAppMessageAction } from '@learncard/types';
 import { useInAppMessageActions } from './useInAppMessageActions';
 import { useCapgoUpdate } from './useCapgoUpdate';
 import { useT } from '../i18n';
-import type { MessagePresentationProps } from './presentationTypes';
+import type { MessageInteraction, MessagePresentationProps } from './presentationTypes';
 
 interface MessageActionsProps extends Pick<MessagePresentationProps, 'onClose' | 'onAction'> {
     actions: InAppMessageAction[];
     stepIndex?: number;
+    actionSource?: MessageInteraction['actionSource'];
 }
 
 /** Shared modal/story actions; the caller owns navigation-completion and dismissal effects. */
@@ -18,6 +19,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
     onClose,
     onAction,
     stepIndex,
+    actionSource = 'message',
 }) => {
     const t = useT();
     const busy = useRef(false);
@@ -34,12 +36,22 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
 
         setLoadingActionIndex(index);
         try {
-            onAction?.({ actionIndex: index, actionType: action.action.type, stepIndex });
             const outcome = await runAction(action.action);
+            if (outcome === 'noop') return;
+            const reportAction = (): void =>
+                onAction?.({
+                    actionIndex: index,
+                    actionSource,
+                    actionType: action.action.type,
+                    stepIndex,
+                });
             if (outcome === 'capgo') {
                 setCapgoActionIndex(index);
-                await capgo.startUpdate();
-            } else if (outcome === 'closed' && action.closeOnComplete) {
+                await capgo.startUpdate(reportAction);
+                return;
+            }
+            reportAction();
+            if (outcome === 'closed' && action.closeOnComplete) {
                 onClose(action.action.type === 'dismiss' ? 'dismissed' : 'action', { stepIndex });
             }
         } catch {

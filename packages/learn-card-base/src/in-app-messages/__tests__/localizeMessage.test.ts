@@ -48,4 +48,43 @@ describe('message localization', () => {
         });
         expect(localizeMessage(message, 'es').body).toBe('');
     });
+    it('localizes final-screen actions independently from inherited actions with positional fallbacks', () => {
+        const message = inAppMessageValidator.parse({
+            id: 'step-actions',
+            title: 'Story',
+            presentation: 'story',
+            actions: [{ label: 'Message default', action: { type: 'dismiss' } }],
+            steps: [
+                { title: 'First' },
+                {
+                    title: 'Final',
+                    actions: [
+                        { label: 'One', action: { type: 'dismiss' } },
+                        { label: 'Two', action: { type: 'dismiss' } },
+                        { label: 'Three', action: { type: 'dismiss' } },
+                    ],
+                },
+            ],
+            locales: {
+                es: {
+                    actionLabels: ['Mensaje'],
+                    steps: [null, { actionLabels: ['Uno', 'Dos', null] }],
+                },
+                'es-MX': { steps: [null, { actionLabels: [null, '', null, 'Ignored'] }] },
+            },
+        });
+        const original = structuredClone(message);
+        const translated = localizeMessage(message, 'ES_mx');
+        expect(translated.steps?.[1]?.actions?.map(action => action.label)).toEqual([
+            'Uno',
+            '',
+            'Three',
+        ]);
+        expect(translated.actions[0]?.label).toBe('Mensaje');
+        expect(translated.steps?.[0]?.actions).toBeUndefined();
+        expect(localizeMessage(message, 'fr').steps?.[1]?.actions).toEqual(
+            message.steps?.[1]?.actions
+        );
+        expect(message).toEqual(original);
+    });
 });

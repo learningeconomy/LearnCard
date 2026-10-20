@@ -28,6 +28,7 @@ it('forwards only allowlisted metadata and excludes previews', () => {
         presentation: 'story',
         source: 'flag',
         actionIndex: 0,
+        actionSource: 'step',
         actionType: 'dismiss',
         stepIndex: 1,
         credential: 'private',
@@ -39,6 +40,7 @@ it('forwards only allowlisted metadata and excludes previews', () => {
         presentation: 'story',
         source: 'flag',
         actionIndex: 0,
+        actionSource: 'step',
         actionType: 'dismiss',
         stepIndex: 1,
     });

@@ -3,6 +3,7 @@ import { motion, useReducedMotion, Variants } from 'framer-motion';
 
 import { useInAppMessageActions } from './useInAppMessageActions';
 import type { MessagePresentationProps } from './presentationTypes';
+import { useT } from '../i18n';
 
 const AUTO_DISMISS_MS = 5000;
 
@@ -18,6 +19,8 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
 }) => {
     const shouldReduceMotion = useReducedMotion();
     const { runAction } = useInAppMessageActions();
+    const t = useT();
+    const [error, setError] = useState(false);
     const runningRef = useRef(false);
     const completedRef = useRef(false);
     const [expiryAttempt, setExpiryAttempt] = useState(0);
@@ -49,20 +52,24 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
         runningRef.current = true;
         completedRef.current = true;
         let completed = false;
+        setError(false);
 
         try {
             if (primaryAction) {
-                onAction?.({
-                    actionIndex: message.actions.indexOf(primaryAction),
-                    actionType: primaryAction.action.type,
-                });
                 const outcome = await runAction(primaryAction.action);
                 if (outcome !== 'closed') return;
+                onAction?.({
+                    actionIndex: message.actions.indexOf(primaryAction),
+                    actionSource: 'message',
+                    actionType: primaryAction.action.type,
+                });
             }
             completed = true;
             onClose(
                 primaryAction && primaryAction.action.type !== 'dismiss' ? 'action' : 'dismissed'
             );
+        } catch {
+            setError(true);
         } finally {
             runningRef.current = false;
             if (!completed) {
@@ -116,6 +123,11 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
                 )}
 
                 <span className="min-w-0">
+                    {error && (
+                        <span role="alert" className="block text-sm text-red-700">
+                            {t('inAppMessages.error')}
+                        </span>
+                    )}
                     <span className="block text-sm font-semibold text-grayscale-900 tracking-[-0.01em] truncate">
                         {message.title}
                     </span>

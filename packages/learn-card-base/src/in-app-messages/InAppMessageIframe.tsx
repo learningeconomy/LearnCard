@@ -66,12 +66,13 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
             busy.current = true;
             setRunning(true);
             try {
-                callbacks.current.onAction?.({ actionType: data.action.type });
                 const outcome = await callbacks.current.runAction(data.action);
-                if (active && outcome === 'closed')
+                if (active && outcome === 'closed') {
+                    callbacks.current.onAction?.({ actionType: data.action.type });
                     callbacks.current.onClose(
                         data.action.type === 'dismiss' ? 'dismissed' : 'action'
                     );
+                }
             } catch {
                 if (active) fail();
             } finally {

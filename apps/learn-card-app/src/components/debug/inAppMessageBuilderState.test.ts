@@ -109,6 +109,27 @@ describe('message builder credential round-trip', () => {
                 .success
         ).toBe(false);
     });
+    it('keeps final-screen action translations on builder import/export', () => {
+        const message = inAppMessageValidator.parse({
+            id: 'localized-step',
+            title: 'Story',
+            presentation: 'story',
+            steps: [
+                { title: 'First' },
+                { title: 'Final', actions: [{ label: 'Done', action: { type: 'dismiss' } }] },
+            ],
+            locales: { es: { steps: [null, { actionLabels: ['Listo', null] }] } },
+        });
+        const restored = inAppMessageValidator.parse(
+            buildDraftJson(messageToBuilderState(message))
+        );
+        expect(restored.locales).toEqual(message.locales);
+        expect(restored.steps).toEqual(message.steps);
+        const state = messageToBuilderState(message);
+        const reordered = { ...state, ...remapStoryScreens(state, [1, 0]) };
+        expect(JSON.parse(reordered.localesJson).es.steps[0].actionLabels).toEqual(['Listo', null]);
+        expect(inAppMessageValidator.safeParse(buildDraftJson(reordered)).success).toBe(false);
+    });
     it('omits claim filters after changing a claim template to app.opened', () => {
         const template = IN_APP_MESSAGE_TEMPLATES.find(
             candidate => candidate.key === 'clr-claim-celebration-example'

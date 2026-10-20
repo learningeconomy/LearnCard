@@ -6,12 +6,14 @@ export interface InAppMessagePresentationEvent {
     presentation: InAppMessage['presentation'];
     source: 'flag' | 'deepLink' | 'override';
     actionIndex?: number;
+    actionSource?: 'step' | 'message';
     actionType?: InAppMessageActionTarget['type'];
     stepIndex?: number;
 }
 
 export interface MessageInteraction {
     actionIndex?: number;
+    actionSource?: 'step' | 'message';
     actionType?: InAppMessageActionTarget['type'];
     stepIndex?: number;
 }
