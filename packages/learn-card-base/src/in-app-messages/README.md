@@ -259,6 +259,8 @@ Messages may add `trigger: { event, where?, windowMinutes? }`, where `event` is
 `credential.claimed` or `app.opened`. Claim events are emitted only after the credential is stored;
 `where` evaluates against that claimed credential's local summary. Events remain in memory for 30
 minutes (at most 50 events) and are never persisted. The trigger window defaults to 10 minutes.
+Facts are saved before emitting the claim event, but this bookkeeping runs in the background so
+slow local storage does not delay completion of the claim.
 Targeting and the trigger must both pass. `app.opened` is emitted when the presentation gate first
 opens for the active account in this session. A claim made on a suppressed route remains eligible
 after navigation only while its trigger window is still open.

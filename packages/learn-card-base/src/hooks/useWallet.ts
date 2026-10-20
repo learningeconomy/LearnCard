@@ -322,6 +322,7 @@ export const useWallet = () => {
         return true;
     };
 
+    // Run in the background so local facts persistence cannot delay a successful claim.
     const recordCredentialClaim = async (
         wallet: BespokeLearnCard,
         uri: string,
@@ -494,7 +495,7 @@ export const useWallet = () => {
                 stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
-                if (result) await recordCredentialClaim(wallet, uri2, vc, category);
+                if (result) void recordCredentialClaim(wallet, uri2, vc, category);
             }
 
             if (!skipLCNUser) {
@@ -515,7 +516,7 @@ export const useWallet = () => {
                 stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri;
-                if (result) await recordCredentialClaim(wallet, uri, vc, category);
+                if (result) void recordCredentialClaim(wallet, uri, vc, category);
 
                 stage = 'cache';
                 const didWeb = switchedProfileStore.get.switchedDid();
@@ -646,7 +647,7 @@ export const useWallet = () => {
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (result) {
-                await recordCredentialClaim(wallet, uri, vc as VC, category);
+                void recordCredentialClaim(wallet, uri, vc as VC, category);
                 await queryClient.cancelQueries({
                     queryKey: ['useGetCredentialList', didWeb ?? '', category],
                 });

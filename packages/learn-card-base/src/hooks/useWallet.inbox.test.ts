@@ -12,6 +12,17 @@ const mocks = vi.hoisted(() => ({
     logError: vi.fn(),
     read: vi.fn(),
     getContracts: vi.fn(),
+    saveFact: vi.fn(),
+}));
+vi.mock('localforage', () => ({
+    default: {
+        INDEXEDDB: 'asyncStorage',
+        createInstance: () => ({
+            setItem: mocks.saveFact,
+            keys: async () => [],
+            clear: async () => undefined,
+        }),
+    },
 }));
 vi.mock('../logging/logger', () => ({ getLogger: () => ({ error: mocks.logError }) }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
@@ -61,7 +72,11 @@ vi.mock('learn-card-base/react-query/mutations/ai-passport', () => ({
 }));
 vi.mock('learn-card-base/constants/aiPassport', () => ({ LEARNCARD_AI_PASSPORT_CONTRACT_URI: '' }));
 import { useWallet } from './useWallet';
-import { clearCredentialFacts, loadCredentialFacts } from '../in-app-messages/credentialFactsStore';
+import {
+    addCredentialSummary,
+    clearCredentialFacts,
+    loadCredentialFacts,
+} from '../in-app-messages/credentialFactsStore';
 import {
     clearInAppMessageEvents,
     getRecentInAppMessageEvents,
@@ -81,6 +96,8 @@ beforeEach(async () => {
     clearInAppMessageEvents();
     await clearCredentialFacts();
     records = [];
+    mocks.saveFact.mockReset();
+    mocks.saveFact.mockResolvedValue(undefined);
     mocks.upload.mockResolvedValue('encrypted-uri');
     mocks.read.mockResolvedValue(credential);
     mocks.getContracts.mockResolvedValue([]);
@@ -116,6 +133,59 @@ it('updates on-device targeting facts and emits the claim trigger after saving',
     ]);
 });
 
+it.each([
+    [
+        'storeAndAddVCToWallet without a network account',
+        () => useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true),
+        'encrypted-uri',
+    ],
+    [
+        'storeAndAddVCToWallet with a network account',
+        () => useWallet().storeAndAddVCToWallet(credential),
+        'encrypted-uri',
+    ],
+    ['addVCtoWallet', () => useWallet().addVCtoWallet({ uri: 'existing-uri' }), 'existing-uri'],
+] as const)('%s completes while facts persistence is pending', async (_name, claim, uri) => {
+    let releaseWrite = (): void => undefined;
+    const blockedWrite = new Promise<void>(resolve => {
+        releaseWrite = resolve;
+    });
+    mocks.saveFact.mockReturnValueOnce(blockedWrite);
+    const backfill = addCredentialSummary(
+        'did:example:claiming-account',
+        'backfill-uri',
+        credential
+    );
+    let claimFinished = false;
+    const claimed = claim().then(result => {
+        expect(typeof result === 'boolean' ? result : result.result).toBe(true);
+        claimFinished = true;
+    });
+
+    try {
+        await vi.waitFor(() => expect(claimFinished).toBe(true));
+        expect(mocks.saveFact).toHaveBeenCalledOnce();
+        expect(records).toEqual([expect.objectContaining({ uri })]);
+        expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([]);
+    } finally {
+        releaseWrite();
+        await backfill;
+        await claimed;
+        await loadCredentialFacts('did:example:claiming-account');
+    }
+
+    await vi.waitFor(() =>
+        expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([
+            expect.objectContaining({
+                event: 'credential.claimed',
+                credential: expect.objectContaining({ uri }),
+            }),
+        ])
+    );
+    expect(mocks.saveFact).toHaveBeenCalledTimes(2);
+    expect(mocks.saveFact.mock.calls[1][1]).toEqual(expect.objectContaining({ uri }));
+});
+
 it('does not summarize or emit a claim when the index write fails', async () => {
     mocks.add.mockResolvedValueOnce(false);
     const result = await useWallet().storeAndAddVCToWallet(credential);
@@ -129,7 +199,7 @@ it.each([
     ['storeAndAddVCToWallet', () => useWallet().storeAndAddVCToWallet(credential)],
     ['addVCtoWallet', () => useWallet().addVCtoWallet({ uri: 'existing-uri' })],
 ] as const)(
-    'records a successful %s claim before downstream contract sync',
+    'records a successful %s claim even if downstream contract sync fails',
     async (_name, claim) => {
         mocks.getContracts.mockRejectedValueOnce(new Error('sync failed'));
 

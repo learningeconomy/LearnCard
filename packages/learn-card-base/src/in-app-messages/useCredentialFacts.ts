@@ -92,7 +92,7 @@ export const useCredentialFacts = (required: boolean): CredentialFactsState => {
                     if (!page.cursor || cursors.has(page.cursor))
                         throw new Error('Incomplete index');
                     cursor = page.cursor;
-                    cursors.add(cursor);
+                    cursors.add(page.cursor);
                 } while (cursor);
                 return records;
             },
