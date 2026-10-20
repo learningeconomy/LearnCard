@@ -4,6 +4,7 @@ import {
     BundleManifestValidator,
     IntegrationManifestValidator,
     WalletManifestValidator,
+    WorkloadPackageValidator,
 } from '@learncard/types';
 import type {
     BundleManifest,
@@ -12,6 +13,8 @@ import type {
     ManifestSignature,
     VerificationMethod,
     WalletManifest,
+    WorkloadPackage,
+    BundleManifestV11,
 } from '@learncard/types';
 import { base58btc } from 'multiformats/bases/base58';
 import { base64url } from 'multiformats/bases/base64';
@@ -23,7 +26,8 @@ import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import type { AppStoreListingKind } from 'types/app-store-listing';
 import type { ListingVersionType } from 'types/listing-version';
 
-type SignedManifest = IntegrationManifest | WalletManifest | BundleManifest;
+type ListingManifest = IntegrationManifest | WalletManifest | BundleManifest;
+type SignedManifest = ListingManifest | WorkloadPackage | BundleManifestV11;
 
 const stableSortValue = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(stableSortValue);
@@ -31,8 +35,11 @@ const stableSortValue = (value: unknown): unknown => {
     if (value && typeof value === 'object') {
         return Object.keys(value)
             .sort()
-            .reduce<Record<string, unknown>>((acc, key) => {
-                acc[key] = stableSortValue((value as Record<string, unknown>)[key]);
+            .reduce<Record<string, unknown>>((acc, key): Record<string, unknown> => {
+                Object.defineProperty(acc, key, {
+                    value: stableSortValue((value as Record<string, unknown>)[key]),
+                    enumerable: true,
+                });
                 return acc;
             }, {});
     }
@@ -50,12 +57,47 @@ export const canonicalizeManifestForSignature = <T extends { signature?: unknown
 export const computeManifestHash = (manifest: { signature?: unknown }): string =>
     createHash('sha256').update(canonicalizeManifestForSignature(manifest)).digest('hex');
 
-const extractFragment = (value: string): string | undefined => {
-    const index = value.lastIndexOf('#');
-    if (index === -1) return value.length > 0 ? value : undefined;
-    const fragment = value.slice(index + 1);
-    return fragment.length > 0 ? fragment : undefined;
+/** Hash the publisher's raw object, never a schema-default-expanded copy. */
+export const computeWorkloadManifestHash = (
+    manifest: Omit<WorkloadPackage, 'signature'> & { signature?: unknown }
+): string => computeManifestHash(manifest);
+
+export interface SignedWorkloadPackageOptions {
+    manifestHash?: string;
+    publisherDid?: string;
+    signature?: string;
+}
+
+/** Verify the exact stored payload before strict workload parsing. */
+export const assertSignedWorkloadPackageOrThrow = async (
+    rawManifestJson: string,
+    opts: SignedWorkloadPackageOptions = {}
+): Promise<WorkloadPackage> => {
+    try {
+        const raw: unknown = JSON.parse(rawManifestJson);
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+            throw new Error('Expected manifest object.');
+        // This assertion does not transform the payload. Signature verification uses raw JSON,
+        // and the strict parser below establishes the full contract before returning anything.
+        const manifest = raw as WorkloadPackage;
+        if (opts.manifestHash && computeWorkloadManifestHash(manifest) !== opts.manifestHash)
+            throw new Error('Manifest hash mismatch.');
+        if (opts.publisherDid && manifest.publisherDid !== opts.publisherDid)
+            throw new Error('Publisher DID mismatch.');
+        if (opts.signature && manifest.signature?.sig !== opts.signature)
+            throw new Error('Signature mismatch.');
+        await verifyManifestSignature(manifest);
+        return WorkloadPackageValidator.parse(raw);
+    } catch (error) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Workload manifest validation failed: ${error instanceof Error ? error.message : String(error)}`,
+        });
+    }
 };
+
+const absoluteMethodId = (value: string, publisherDid: string): string =>
+    value.startsWith('#') ? `${publisherDid}${value}` : value;
 
 const findVerificationMethod = (
     document: DidDocument,
@@ -66,14 +108,11 @@ const findVerificationMethod = (
         (entry): entry is Exclude<VerificationMethod, string> =>
             typeof entry === 'object' && entry !== null && typeof entry.id === 'string'
     );
-    const requestedFragment = extractFragment(verificationMethodId);
-
-    const match = methods.find(method => {
-        if (method.id === verificationMethodId) return true;
-        if (method.id === `${publisherDid}${verificationMethodId}`) return true;
-        const methodFragment = extractFragment(method.id);
-        return Boolean(requestedFragment && methodFragment === requestedFragment);
-    });
+    const match = methods.find(
+        (method): boolean =>
+            absoluteMethodId(method.id, publisherDid) ===
+            absoluteMethodId(verificationMethodId, publisherDid)
+    );
 
     if (!match) {
         throw new Error(
@@ -90,18 +129,13 @@ const isAuthorizedForAssertion = (
     verificationMethodId: string
 ): boolean => {
     const assertionMethods = document.assertionMethod ?? [];
-    const requestedFragment = extractFragment(verificationMethodId);
-
-    return assertionMethods.some(entry => {
-        if (typeof entry === 'string') {
-            if (entry === verificationMethodId) return true;
-            if (entry === `${publisherDid}${verificationMethodId}`) return true;
-            return Boolean(requestedFragment && extractFragment(entry) === requestedFragment);
-        }
-
-        if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string') return false;
-        if (entry.id === verificationMethodId) return true;
-        return Boolean(requestedFragment && extractFragment(entry.id) === requestedFragment);
+    return assertionMethods.some((entry): boolean => {
+        const methodId = typeof entry === 'string' ? entry : entry?.id;
+        return (
+            typeof methodId === 'string' &&
+            absoluteMethodId(methodId, publisherDid) ===
+                absoluteMethodId(verificationMethodId, publisherDid)
+        );
     });
 };
 
@@ -165,16 +199,10 @@ export const verifyManifestSignature = async (manifest: SignedManifest): Promise
 
     if (
         typeof protectedHeader.protectedHeader.kid === 'string' &&
-        protectedHeader.protectedHeader.kid !== verificationMethod.id
+        absoluteMethodId(protectedHeader.protectedHeader.kid, manifest.publisherDid) !==
+            absoluteMethodId(verificationMethod.id, manifest.publisherDid)
     ) {
-        const headerFragment = extractFragment(protectedHeader.protectedHeader.kid);
-        const methodFragment = extractFragment(verificationMethod.id);
-
-        if (!headerFragment || headerFragment !== methodFragment) {
-            throw new Error(
-                'Manifest signature kid does not match the declared verificationMethod.'
-            );
-        }
+        throw new Error('Manifest signature kid does not match the declared verificationMethod.');
     }
 
     if (protectedHeader.protectedHeader.alg !== signature.alg) {
@@ -223,8 +251,8 @@ export const signManifestWithDidKey = async <T extends SignedManifest>(
 export const parseSignedManifestForListingKind = (
     kind: AppStoreListingKind,
     manifestJson: string
-): SignedManifest => {
-    const parsed = JSON.parse(manifestJson);
+): ListingManifest => {
+    const parsed: unknown = JSON.parse(manifestJson);
 
     switch (kind) {
         case 'INTEGRATION':
@@ -244,7 +272,7 @@ export const listingKindRequiresSignedManifest = (kind: AppStoreListingKind): bo
 export const assertValidSignedListingVersion = async (
     kind: AppStoreListingKind,
     version: ListingVersionType
-): Promise<SignedManifest> => {
+): Promise<ListingManifest> => {
     if (!listingKindRequiresSignedManifest(kind)) {
         throw new Error(`Listing kind ${kind} does not require a signed manifest.`);
     }
@@ -282,7 +310,7 @@ export const assertSignedListingVersionOrThrow = async (
     kind: AppStoreListingKind,
     version: ListingVersionType,
     messagePrefix = 'Manifest validation failed'
-): Promise<SignedManifest> => {
+): Promise<ListingManifest> => {
     try {
         return await assertValidSignedListingVersion(kind, version);
     } catch (error) {

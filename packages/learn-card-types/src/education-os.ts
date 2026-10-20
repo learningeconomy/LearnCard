@@ -86,6 +86,9 @@ const assertCapabilitiesWithinPinnedSet = (
 };
 
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+export const ManifestSemverValidator = z.string().regex(SEMVER_PATTERN, {
+    message: 'Must be valid semver.',
+});
 
 export const ManifestSignatureValidator = z.object({
     alg: z.string().min(1),
@@ -617,6 +620,51 @@ export const BundleManifestValidator = z
         );
     });
 export type BundleManifest = z.infer<typeof BundleManifestValidator>;
+
+export const BundleWorkloadMemberValidator = z
+    .object({
+        declarationId: z.string().min(1),
+        targetType: z.literal('WORKLOAD_DEPLOYMENT'),
+        packageId: z.string().min(1),
+        packageVersionId: z.string().min(1),
+        manifestHash: z.string().regex(/^[a-fA-F0-9]{64}$/),
+        profiles: z.array(z.string().min(1)).min(1),
+        optional: z.boolean().optional(),
+    })
+    .strict();
+export type BundleWorkloadMember = z.infer<typeof BundleWorkloadMemberValidator>;
+
+export const BundleManifestV11MemberValidator = z.discriminatedUnion('targetType', [
+    BundleManifestMemberValidator.extend({
+        targetType: InstallTargetTypeEnum.exclude(['WORKLOAD_DEPLOYMENT']),
+    }),
+    BundleWorkloadMemberValidator,
+]);
+export type BundleManifestV11Member = z.infer<typeof BundleManifestV11MemberValidator>;
+
+/** Phase 1 contract only. Existing listing planners remain explicitly on v1 until phase 2. */
+export const BundleManifestV11Validator = z
+    .object({
+        ...BundleManifestValidator.shape,
+        apiVersion: z.literal('lc.bundle/v1.1'),
+        contains: z.array(BundleManifestV11MemberValidator),
+    })
+    .strict()
+    .superRefine((manifest, ctx): void => {
+        assertCapabilitiesWithinPinnedSet(
+            'lc.bundle/v1',
+            manifest.defaultBindings.map((binding): Capability => binding.capability),
+            ctx,
+            ['defaultBindings']
+        );
+    });
+export type BundleManifestV11 = z.infer<typeof BundleManifestV11Validator>;
+
+export const VersionedBundleManifestValidator = z.discriminatedUnion('apiVersion', [
+    BundleManifestValidator,
+    BundleManifestV11Validator,
+]);
+export type VersionedBundleManifest = z.infer<typeof VersionedBundleManifestValidator>;
 
 export const WalletManifestValidator = z
     .object({

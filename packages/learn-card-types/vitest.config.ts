@@ -4,6 +4,6 @@ export default createVitestConfig(nodePreset, {
     test: {
         globals: false,
         passWithNoTests: false,
-        include: ['src/**/*.test.ts'],
+        include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
     },
 });

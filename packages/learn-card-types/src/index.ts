@@ -23,3 +23,4 @@ export * from './inAppMessages';
 export * from './education-os';
 export * from './credential-refresh';
 export * from './share-links';
+export * from './workload';

@@ -16,6 +16,7 @@ export default createVitestConfig(brainServicePreset, {
             NEO4J_SKIP_INDICES: 'true',
         },
         include: [
+            'src/helpers/workload-signature.helpers.test.ts',
             'src/helpers/service-account-auth.helpers.test.ts',
             'src/helpers/ecosystem-access.helpers.test.ts',
             'src/helpers/service-account-health.helpers.test.ts',
