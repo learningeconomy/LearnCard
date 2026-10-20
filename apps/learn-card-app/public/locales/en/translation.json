@@ -9414,7 +9414,7 @@
             "storage": "Recovery could not be saved on this device. Free some space and try again.",
             "corrupt": "This saved run could not be read. Keep your spreadsheet and check sent results before starting again.",
             "contextChanged": "Your account or network changed. Return to the original account to resume.",
-            "expired": "This unconfirmed request is too old to resend safely. Check its results before issuing again.",
+            "expired": "This request is too old to resend safely. Contact support to reconcile these deliveries. Other people can still be issued credentials.",
             "busy": "This run is already active or has changed. Reload to see its latest results.",
             "chooseEmail": "Choose the column containing recipient email addresses.",
             "mapping": "Check the column names and fix the highlighted rows.",
@@ -9539,7 +9539,9 @@
                 "originalDate": "Original value: {{value}}",
                 "openBadgesOnly": "Column mapping is available for Open Badges credentials.",
                 "columnsReadOnly": "This run’s columns are read-only."
-            }
+            },
+            "encoding": "Save this spreadsheet as CSV UTF-8 or XLSX, then import it again. Some characters could not be read safely.",
+            "bounds": "Remove the out-of-range cell {{cell}}, then import the workbook again."
         }
     },
     "connectivity": {

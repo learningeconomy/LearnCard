@@ -1,3 +1,5 @@
+import { writeResult } from '../components/resultField';
+import { dynamicField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     addSubmissionAttempts,
@@ -91,6 +93,80 @@ describe('durable roster issuance', () => {
         expect(api.sendProfile).not.toHaveBeenCalled();
         expect(canCheckIssuanceStatus(checked)).toBe(false);
     });
+    it('Retry Failed leaves newly added email and profile recipients unattempted', async () => {
+        const run = makeRun(2);
+        run.outcomes['row-0'] = { state: 'failed' };
+        run.draft.recipients.push({
+            kind: 'profile',
+            rowId: 'new-profile',
+            profileId: 'new-profile',
+            displayName: 'New',
+        });
+        run.draft.recipients.push({
+            kind: 'profile',
+            rowId: 'failed-profile',
+            profileId: 'failed-profile',
+            displayName: 'Failed',
+        });
+        run.outcomes['failed-profile'] = { state: 'failed' };
+        const api = transport();
+        const opts = options(run);
+        const retried = await executeIssuance(run, api, { ...opts, retryFailed: true });
+        expect(retried.attempts.flatMap(attempt => attempt.rowIds)).toEqual(['row-0']);
+        expect(api.sendProfile).toHaveBeenCalledExactlyOnceWith(
+            'failed-profile',
+            expect.any(String),
+            expect.any(Object)
+        );
+        expect(retried.outcomes['row-1']).toBeUndefined();
+        expect(retried.outcomes['new-profile']).toBeUndefined();
+        const resumed = await executeIssuance(retried, api, opts);
+        expect(resumed.outcomes['row-1'].state).toBe('sent');
+        expect(resumed.outcomes['new-profile'].state).toBe('sent');
+    });
+    it.each([false, true])(
+        'blocks invalid result ranges at the controller (retry=%s)',
+        async retryFailed => {
+            const run = makeRun();
+            run.template = writeResult(run.template, {
+                resultType: 'Percent',
+                value: dynamicField('percent'),
+                valueMin: '0',
+                valueMax: '100',
+            });
+            run.scopes = { percent: 'perRecipient' };
+            run.draft.values = { 'row-0': { percent: '101' } };
+            run.outcomes['row-0'] = { state: retryFailed ? 'failed' : 'ready' };
+            const api = transport();
+            await expect(
+                executeIssuance(run, api, { ...options(run), retryFailed })
+            ).rejects.toThrow('mapping');
+            expect(api.createTemplate).not.toHaveBeenCalled();
+            expect(api.submit).not.toHaveBeenCalled();
+        }
+    );
+    it('revalidates rows that become failed while polling an existing receipt', async () => {
+        let run = makeRun();
+        run.templateUri = 'template';
+        run = addSubmissionAttempts(run);
+        run.attempts[0].batchId = 'existing';
+        run.outcomes['row-0'] = { state: 'confirming' };
+        run.template = writeResult(run.template, {
+            resultType: 'Percent',
+            value: dynamicField('percent'),
+            valueMin: '0',
+            valueMax: '100',
+        });
+        run.scopes = { percent: 'perRecipient' };
+        run.draft.values = { 'row-0': { percent: '101' } };
+        const api = transport();
+        vi.mocked(api.wait).mockResolvedValue(statusFor('existing', 1, [0]));
+        await expect(
+            executeIssuance(run, api, { ...options(run), retryFailed: true })
+        ).rejects.toThrow('mapping');
+        expect(api.wait).toHaveBeenCalledOnce();
+        expect(api.submit).not.toHaveBeenCalled();
+    });
     it('does not create a template or send a profile while checking an unsent draft', async () => {
         const run = makeRun();
         const api = transport();
@@ -160,9 +236,11 @@ describe('durable roster issuance', () => {
             expect(stored!.attempts[0].done).not.toBe(true);
             expect(stored!.attempts[0].body).toEqual(original);
             stored!.attempts[0].createdAt = Date.now() - 25 * 3_600_000;
-            await expect(
-                executeIssuance(stored!, api, { ...opts, retryFailed: true })
-            ).rejects.toThrow('expired');
+            const expired = await executeIssuance(stored!, api, { ...opts, retryFailed: true });
+            expect(expired.outcomes['row-0']).toMatchObject({
+                state: 'confirming',
+                error: { reason: 'EXPIRED' },
+            });
             expect(api.submit).toHaveBeenCalledTimes(2);
             expect(stored!.attempts).toHaveLength(1);
         }
@@ -299,13 +377,40 @@ describe('durable roster issuance', () => {
         await executeIssuance(first, api, { ...opts, retryFailed: true });
         expect(api.sendProfile).toHaveBeenCalledTimes(1);
     });
-    it('refuses expired unacknowledged attempts and concurrent tabs', async () => {
+    it('continues unrelated retries and new chunks without replaying an expired request', async () => {
+        let run = makeRun();
+        run.templateUri = 'template';
+        run = addSubmissionAttempts(run);
+        run.attempts[0].createdAt = Date.now() - 25 * 3_600_000;
+        const frozen = structuredClone(run.attempts[0].body);
+        run.draft.recipients.push(
+            { kind: 'email', rowId: 'failed', email: 'failed@test.com' },
+            { kind: 'email', rowId: 'ready', email: 'ready@test.com' }
+        );
+        run.outcomes.failed = { state: 'failed' };
+        const api = transport();
+        const opts = options(run);
+        const retried = await executeIssuance(run, api, { ...opts, retryFailed: true });
+        expect(retried.outcomes.failed.state).toBe('sent');
+        expect(retried.outcomes['row-0'].state).toBe('confirming');
+        expect(api.submit).toHaveBeenCalledOnce();
+        const resumed = await executeIssuance(retried, api, opts);
+        expect(resumed.outcomes.ready.state).toBe('sent');
+        expect(resumed.attempts[0].body).toEqual(frozen);
+        expect(api.submit).toHaveBeenCalledTimes(2);
+        expect(api.submit).not.toHaveBeenCalledWith(frozen);
+    });
+    it('quarantines expired unacknowledged attempts and rejects concurrent tabs', async () => {
         const run = makeRun();
         run.templateUri = 'template';
         const queued = addSubmissionAttempts(run);
         queued.attempts[0].createdAt = Date.now() - 25 * 3600000;
         const api = transport();
-        await expect(executeIssuance(queued, api, options(queued))).rejects.toThrow('expired');
+        const expired = await executeIssuance(queued, api, options(queued));
+        expect(expired.outcomes['row-0']).toMatchObject({
+            state: 'confirming',
+            error: { reason: 'EXPIRED' },
+        });
         expect(api.submit).not.toHaveBeenCalled();
         vi.mocked(navigator.locks.request).mockImplementationOnce(
             async (_name: unknown, _opts: unknown, callback: LockGrantedCallback<unknown>) =>

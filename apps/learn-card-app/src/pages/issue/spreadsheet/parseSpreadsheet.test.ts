@@ -4,6 +4,7 @@ import { utils, write } from 'xlsx';
 import JSZip from 'jszip';
 import {
     parseSpreadsheet,
+    readSpreadsheetFile,
     readSpreadsheetText,
     looksLikeSpreadsheet,
     SPREADSHEET_LIMITS,
@@ -34,6 +35,23 @@ describe('spreadsheet parsing and editable roster', () => {
         });
         expect(parsed.rows[0].cells['column-6'].text).toBe('90');
         expect(parsed.rows.some(row => row.displayName === 'Points Possible')).toBe(false);
+    });
+    it('reads UTF-8 names losslessly and rejects legacy CSV bytes before import', async () => {
+        const file = (bytes: Uint8Array): File =>
+            ({
+                name: 'people.csv',
+                size: bytes.length,
+                arrayBuffer: async () => bytes.slice().buffer,
+            }) as File;
+        const utf8 = new TextEncoder().encode('Email,Name\na@test.com,José');
+        const valid = parseSpreadsheet(await readSpreadsheetFile(file(utf8)));
+        expect(valid.rows[0].displayName).toBe('José');
+        const legacy = new Uint8Array([
+            ...new TextEncoder().encode('Email,Name\na@test.com,Jos'),
+            0xe9,
+        ]);
+        await expect(readSpreadsheetFile(file(legacy))).rejects.toThrow('encoding');
+        expect(() => readSpreadsheetText('Email,Name\na@test.com,Jos\uFFFD')).toThrow('encoding');
     });
     it('reads 250 quoted rows, BOM, preamble, normalized emails and trailing Total', () => {
         const sheet = parse(
@@ -151,7 +169,12 @@ describe('spreadsheet parsing and editable roster', () => {
             )
         );
         const tooFar = await zip.generateAsync({ type: 'arraybuffer' });
-        expect(() => readXlsx(tooFar, 'too-far.xlsx')).toThrow('limit');
+        expect(() => readXlsx(tooFar, 'too-far.xlsx')).toThrow('bounds');
+        try {
+            readXlsx(tooFar, 'too-far.xlsx');
+        } catch (error) {
+            expect(error).toMatchObject({ code: 'bounds', cell: 'People!XFD1048576' });
+        }
     });
     it('blocks duplicate profiles even when their stable row IDs differ', () => {
         const rows = ['first', 'second'].map(rowId => ({
@@ -225,6 +248,39 @@ describe('spreadsheet parsing and editable roster', () => {
         expect(draft.formulaCells?.['row-0']).toEqual({});
         expect(original.formulaCells['row-0']).toEqual({ score: '#REF!' });
     });
+    it('retains unresolved XLSX errors through an unchanged app CSV roundtrip', () => {
+        const original = makeRun(2).draft;
+        original.values = { 'row-0': { score: '#REF!' }, 'row-1': { score: '#DIV/0!' } };
+        original.evidence = { 'row-0': '#REF!' };
+        original.formulaCells = {
+            'row-0': { score: '#REF!', Evidence: '#REF!' },
+            'row-1': { score: '#DIV/0!' },
+        };
+        const csv = exportRosterCsv(original, ['score'], { score: 'perRecipient' }, {});
+        const unchanged = mergeSpreadsheet(original, parse(csv), ['score']).draft;
+        expect(unchanged.formulaCells).toEqual(original.formulaCells);
+        const corrected = mergeSpreadsheet(unchanged, parse(csv.replaceAll('#REF!', '95')), [
+            'score',
+        ]).draft;
+        expect(corrected.formulaCells).toEqual({ 'row-0': {}, 'row-1': { score: '#DIV/0!' } });
+        expect(original.formulaCells['row-0'].score).toBe('#REF!');
+    });
+    it.each(['+ada@example.com', '-ada@example.com', "'+ada@example.com"])(
+        'round-trips the exact recipient address %s without decoding unrelated CSV input',
+        email => {
+            const original = makeRun().draft;
+            original.recipients[0] = { kind: 'email', rowId: 'row-0', email, displayName: 'Ada' };
+            const csv = exportRosterCsv(original, [], {}, {});
+            const restored = mergeSpreadsheet(original, parse(csv), []).draft;
+            expect(restored.recipients).toEqual(original.recipients);
+            const arbitrary = mergeSpreadsheet(
+                makeRun(0).draft,
+                parse(`Email\n"'+ada@example.com"`),
+                []
+            ).draft;
+            expect(arbitrary.recipients[0]).toMatchObject({ email: "'+ada@example.com" });
+        }
+    );
     it('normalizes placeholder headers, preserves duplicates and leaves evidence opt-in', () => {
         const run = makeRun(0);
         const { draft, mapped } = mergeSpreadsheet(

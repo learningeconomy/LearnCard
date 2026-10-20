@@ -84,3 +84,15 @@ Evidence uses standard Open Badges `Evidence` entries. Attachment names remain i
 Changing credential type re-applies the included spreadsheet mappings and preserves corrected mapped cells. Importing a replacement credential clears mappings and previous template values; the source spreadsheet remains available for mapping again. Shared values from an earlier template do not silently populate a replacement. Every included column is required for each active recipient; remove an optional column or skip a recipient when a cell should not be issued.
 
 Calendar award dates represent midnight UTC, so a generic local-time viewer may show the previous day. Timestamps require seconds and an explicit timezone and normalize to UTC before signing. Unsupported date spellings are rejected rather than guessed.
+
+### CSV corrections and failure-only retries
+
+Re-uploading an unchanged exported CSV preserves unresolved Excel formula/error flags; correct the flagged value to clear it. Same-run exports restore the original recipient address when CSV formula protection added an apostrophe. Literal apostrophes in addresses remain intact.
+
+Retry Failed includes only recipients with a confirmed failure. Newly added people remain unattempted until Issue or Resume. Resume and retry validate result ranges again before new submissions, including failures discovered while checking an existing receipt. Previously accepted requests keep their frozen contents for safe replay.
+
+CSV and TSV uploads must use UTF-8. Invalid byte sequences or replacement characters block import with instructions to export as CSV UTF-8 or XLSX. Out-of-range Excel content identifies the sheet and cell to remove.
+
+An expired unacknowledged request is never replayed. Its rows remain unconfirmed for support reconciliation; unrelated failed rows and unattempted chunks may continue. Viewing a hidden run preserves its dismissal, while editing the draft makes its reminder available again. Analytics count only recipients selected for a new send action.
+
+Duplicate protection applies within a saved run. Starting a fresh run from an original spreadsheet creates a separate issuance; there is no cross-run 24-hour deduplication. This scope follows the accepted product decision for this release.

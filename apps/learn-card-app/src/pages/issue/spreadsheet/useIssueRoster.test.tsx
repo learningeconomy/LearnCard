@@ -8,6 +8,7 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { dynamicField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import { exportRosterCsv } from './roster';
+import { writeResult } from '../components/resultField';
 import { AnalyticsEvents } from '../../../analytics/events';
 
 const analytics = vi.hoisted(() => ({ track: vi.fn() }));
@@ -289,6 +290,145 @@ describe('roster autosave and sending', () => {
             AnalyticsEvents.CREDENTIAL_ISSUE_FAILED,
             expect.objectContaining({ step_id: 'jsonld_validation', recipient_count: 1 })
         );
+    });
+    it.each([false, true])(
+        'validates result ranges before resume/retry (retry=%s)',
+        async retryFailed => {
+            const run = makeRun();
+            run.template = writeResult(run.template, {
+                resultType: 'Percent',
+                value: dynamicField('percent'),
+                valueMin: '0',
+                valueMax: '100',
+            });
+            run.scopes = { percent: 'perRecipient' };
+            run.draft.values = { 'row-0': { percent: '101' } };
+            run.outcomes['row-0'] = { state: retryFailed ? 'failed' : 'ready' };
+            store.list.mockResolvedValue([]);
+            store.read.mockResolvedValue(run);
+            const options = emptyOptions(run);
+            const { result } = renderHook(() => useIssueRoster(options));
+            await act(async () => {
+                await result.current.execute(retryFailed, run);
+            });
+            expect(result.current.error).not.toBe('');
+            expect(options.initWallet).not.toHaveBeenCalled();
+        }
+    );
+    it.each([0, 100])('permits the Percent boundary %s on resume', async percent => {
+        const run = makeRun();
+        run.template = writeResult(run.template, {
+            resultType: 'Percent',
+            value: dynamicField('percent'),
+            valueMin: '0',
+            valueMax: '100',
+        });
+        run.scopes = { percent: 'perRecipient' };
+        run.draft.values = { 'row-0': { percent: String(percent) } };
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(run);
+        const options = emptyOptions(run);
+        options.initWallet = vi.fn().mockRejectedValue(new Error('stop after validation'));
+        const { result } = renderHook(() => useIssueRoster(options));
+        await act(async () => {
+            await result.current.execute(false, run);
+        });
+        expect(options.initWallet).toHaveBeenCalledOnce();
+    });
+    it('validates only failed candidates when a retry includes a new unattempted row', async () => {
+        const run = makeRun(2);
+        run.template = writeResult(run.template, {
+            resultType: 'Percent',
+            value: dynamicField('percent'),
+            valueMin: '0',
+            valueMax: '100',
+        });
+        run.scopes = { percent: 'perRecipient' };
+        run.draft.values = { 'row-0': { percent: '95' }, 'row-1': { percent: '101' } };
+        run.outcomes['row-0'] = { state: 'failed' };
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(run);
+        const options = emptyOptions(run);
+        options.initWallet = vi.fn().mockRejectedValue(new Error('stop after validation'));
+        const { result } = renderHook(() => useIssueRoster(options));
+        await act(async () => {
+            await result.current.execute(true, run);
+        });
+        expect(options.initWallet).toHaveBeenCalledOnce();
+    });
+    it.each([0, 1])('tracks only new send candidates (%s failed recipients)', async failures => {
+        const run = makeRun(2);
+        run.outcomes = {
+            'row-0': { state: failures ? 'failed' : 'sent' },
+            'row-1': { state: 'sent' },
+        };
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(run);
+        const options = emptyOptions(run);
+        options.initWallet = vi.fn().mockRejectedValue(new Error('stop after validation'));
+        const { result } = renderHook(() => useIssueRoster(options));
+        await act(async () => {
+            await result.current.execute(true, run);
+        });
+        if (failures) {
+            expect(analytics.track).toHaveBeenCalledWith(
+                AnalyticsEvents.CREDENTIAL_ISSUE_STARTED,
+                expect.objectContaining({ recipient_count: 1 })
+            );
+            expect(analytics.track).toHaveBeenCalledWith(
+                AnalyticsEvents.CREDENTIAL_ISSUE_FAILED,
+                expect.objectContaining({ recipient_count: 1 })
+            );
+        } else expect(analytics.track).not.toHaveBeenCalled();
+    });
+    it('preserves dismissal while viewing, and clears it only after editing', async () => {
+        const run = makeRun();
+        run.dismissedAt = 123;
+        store.list.mockResolvedValue([]);
+        let stored = structuredClone(run);
+        store.read.mockImplementation(async () => structuredClone(stored));
+        store.save.mockImplementation(async next => {
+            stored = structuredClone(next);
+        });
+        Object.defineProperty(navigator, 'locks', {
+            configurable: true,
+            value: {
+                request: async (
+                    _name: string,
+                    _options: unknown,
+                    callback: (lock: object) => unknown
+                ) => callback({}),
+            },
+        });
+        const { result } = renderHook(() => {
+            const [recipients, setRecipients] = useState<typeof run.draft.recipients>([]);
+            const [values, setValues] = useState<typeof run.draft.values>({});
+            const [shared, setShared] = useState({});
+            const [attachments, setAttachments] = useState({});
+            const [template, setTemplate] = useState<typeof run.template | null>(null);
+            return useIssueRoster({
+                ...emptyOptions(run),
+                recipients,
+                setRecipients,
+                values,
+                setValues,
+                shared,
+                setShared,
+                attachments,
+                setAttachments,
+                template,
+                onRestoreTemplate: setTemplate,
+            });
+        });
+        act(() => result.current.restore(run));
+        await waitFor(() => expect(store.save).toHaveBeenCalled(), { timeout: 3000 });
+        expect(stored.dismissedAt).toBe(123);
+        store.save.mockClear();
+        act(() =>
+            result.current.changeRecipients([{ ...run.draft.recipients[0], displayName: 'Edited' }])
+        );
+        await waitFor(() => expect(store.save).toHaveBeenCalled(), { timeout: 3000 });
+        expect(stored.dismissedAt).toBeUndefined();
     });
     it.each(['send', 'reset', 'failed', 'unconfirmed', 'profile'] as const)(
         '%s during autosave',

@@ -194,7 +194,9 @@ export const DeliveryStatus: React.FC<{
                             {(state === 'confirming' || state === 'failed') && (
                                 <p className="mt-2 text-sm leading-relaxed text-grayscale-700">
                                     {state === 'confirming'
-                                        ? m['issueFlow.sheet.needsConfirmation']()
+                                        ? outcome?.error?.reason === 'EXPIRED'
+                                            ? m['issueFlow.sheet.expired']()
+                                            : m['issueFlow.sheet.needsConfirmation']()
                                         : getFriendlyIssueError(
                                               { message: outcome?.error?.message },
                                               'people'

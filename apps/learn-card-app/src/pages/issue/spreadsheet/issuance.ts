@@ -1,3 +1,5 @@
+import { getResultValidationError } from '../components/resultField';
+import { SpreadsheetError } from './parseSpreadsheet';
 import {
     IssueInboxCredentialBatchValidator,
     type InboxBatchStatus,
@@ -106,14 +108,38 @@ const rowTemplateData = (run: IssuanceRun, rowId: string): Record<string, unknow
 export const inboxBatchWireBytes = (body: IssueInboxCredentialBatch): number =>
     new TextEncoder().encode(JSON.stringify({ '0': JSON.stringify(body) })).length;
 
+/** Failure-only retries never include newly added, unattempted rows. */
+export const isSubmissionCandidate = (
+    run: IssuanceRun,
+    row: Recipient,
+    retryFailed = false
+): boolean =>
+    (run.outcomes[recipientKey(row)]?.state ?? 'ready') === (retryFailed ? 'failed' : 'ready');
+
+const validateSubmissionResults = (run: IssuanceRun, retryFailed = false): void => {
+    for (const row of run.draft.recipients.filter(row =>
+        isSubmissionCandidate(run, row, retryFailed)
+    )) {
+        if (
+            getResultValidationError(
+                run.template,
+                effectiveRowValues(
+                    row,
+                    Object.keys(run.scopes),
+                    run.scopes,
+                    run.shared,
+                    run.draft.values
+                )
+            )
+        )
+            throw new SpreadsheetError('mapping');
+    }
+};
+
 /** Freeze new attempt IDs only for rows proved unsent; accepted attempts are immutable. */
 export const addSubmissionAttempts = (run: IssuanceRun, retryFailed = false): IssuanceRun => {
     const rows = run.draft.recipients.filter(
-        row =>
-            row.kind === 'email' &&
-            (retryFailed ? ['ready', 'failed'] : ['ready']).includes(
-                run.outcomes[recipientKey(row)]?.state ?? 'ready'
-            )
+        row => row.kind === 'email' && isSubmissionCandidate(run, row, retryFailed)
     );
     const attempts = [...run.attempts];
     let current: SubmissionAttempt | undefined;
@@ -189,6 +215,7 @@ export const executeIssuance = async (
             }
             options.onChange(structuredClone(run));
         };
+        if (!options.checkOnly) validateSubmissionResults(run, options.retryFailed);
         await persist();
         if (!run.templateUri && !options.checkOnly) {
             assertScope();
@@ -202,8 +229,20 @@ export const executeIssuance = async (
         ): Promise<void> => {
             assertScope();
             if (!attempt.batchId) {
-                if (Date.now() - attempt.createdAt >= 24 * 3_600_000)
-                    throw new IssuanceRecoveryError('expired');
+                if (Date.now() - attempt.createdAt >= 24 * 3_600_000) {
+                    // Never replay past the server's idempotency window. Quarantine
+                    // these rows while allowing unrelated ready/failed work to continue.
+                    for (const rowId of attempt.rowIds) {
+                        if (latestAttemptFor(run, rowId) !== attempt) continue;
+                        run.outcomes[rowId] = {
+                            ...run.outcomes[rowId],
+                            state: 'confirming',
+                            error: { code: 'UNCONFIRMED', reason: 'EXPIRED', message: '' },
+                        };
+                    }
+                    await persist();
+                    return;
+                }
                 let receipt: InboxBatchReceipt;
                 try {
                     receipt = await transport.submit(attempt.body);
@@ -268,6 +307,9 @@ export const executeIssuance = async (
             return run;
         }
         for (const attempt of run.attempts) if (!attempt.done) await observe(attempt);
+        // Receipt polling can turn a confirming row into a retry candidate.
+        // Validate the resulting candidates before creating any new requests.
+        validateSubmissionResults(run, options.retryFailed);
         const previousAttempts = run.attempts.length;
         run = addSubmissionAttempts(run, options.retryFailed);
         await persist();
@@ -276,12 +318,7 @@ export const executeIssuance = async (
         for (const recipient of run.draft.recipients) {
             if (recipient.kind !== 'profile') continue;
             const id = recipientKey(recipient);
-            if (
-                !(options.retryFailed ? ['ready', 'failed'] : ['ready']).includes(
-                    run.outcomes[id]?.state ?? 'ready'
-                )
-            )
-                continue;
+            if (!isSubmissionCandidate(run, recipient, options.retryFailed)) continue;
             // A crash/lost response must leave the profile row uncertain, never ready.
             const templateData = rowTemplateData(run, id);
             run.outcomes[id] = { state: 'confirming', templateData };

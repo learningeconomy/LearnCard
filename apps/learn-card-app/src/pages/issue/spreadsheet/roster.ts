@@ -155,10 +155,22 @@ export const mergeSpreadsheet = (
     const recipients = [...draft.recipients];
     const assigned = new Set<string>();
     const sourceRows: ParsedSpreadsheet['rows'] = [];
+    // Decode only the exact address our exporter escaped for this saved row.
+    // A literal leading apostrophe is itself valid in some email local parts.
+    const rows = sheet.rows.map(row => {
+        const existing =
+            row.exportedRunId === draft.id && row.exportedRowId
+                ? draft.recipients.find(recipient => recipientKey(recipient) === row.exportedRowId)
+                : undefined;
+        return existing?.kind === 'email' &&
+            /^'[=+\-@\t\r]/.test(row.email) &&
+            normalizeEmail(existing.email) === row.email.slice(1)
+            ? { ...row, email: row.email.slice(1) }
+            : row;
+    });
     const incomingCounts = new Map<string, number>();
-    for (const row of sheet.rows)
-        incomingCounts.set(row.email, (incomingCounts.get(row.email) ?? 0) + 1);
-    for (const row of sheet.rows) {
+    for (const row of rows) incomingCounts.set(row.email, (incomingCounts.get(row.email) ?? 0) + 1);
+    for (const row of rows) {
         if (row.example && row.email === 'person@example.com') continue;
         if (row.exportedRunId && row.exportedRunId !== draft.id) throw new SpreadsheetError('run');
         let existing = row.exportedRowId
@@ -195,7 +207,8 @@ export const mergeSpreadsheet = (
         const cellProblems = { ...formulaCells[key] };
         if (row.cells[`column-${sheet.emailColumn}`]?.problem)
             cellProblems['Recipient Email'] = row.email;
-        else delete cellProblems['Recipient Email'];
+        else if (cellProblems['Recipient Email'] !== row.email)
+            delete cellProblems['Recipient Email'];
         const imported = Object.fromEntries(
             mapped.map(name => {
                 const cell = row.cells[matches[name]!.id] ?? { text: '' };
@@ -210,11 +223,12 @@ export const mergeSpreadsheet = (
                               : binding
                       )
                     : cell.text;
-                if (row.cells[matches[name]!.id]?.problem) cellProblems[name] = value;
-                else delete cellProblems[name];
                 // Undo our CSV formula-escape only for verified, same-run app exports.
                 if (row.exportedRunId === draft.id && /^'[=+\-@\t\r]/.test(value))
                     value = value.slice(1);
+                // CSV has no XLSX error metadata. An unchanged error remains unresolved.
+                if (row.cells[matches[name]!.id]?.problem) cellProblems[name] = value;
+                else if (cellProblems[name] !== value) delete cellProblems[name];
                 return [name, value];
             })
         );
@@ -222,7 +236,7 @@ export const mergeSpreadsheet = (
         if (evidenceColumn) {
             evidence[key] = row.cells[evidenceColumn.id]?.text.trim() ?? '';
             if (row.cells[evidenceColumn.id]?.problem) cellProblems.Evidence = evidence[key];
-            else delete cellProblems.Evidence;
+            else if (cellProblems.Evidence !== evidence[key]) delete cellProblems.Evidence;
         }
         formulaCells[key] = cellProblems;
     }
