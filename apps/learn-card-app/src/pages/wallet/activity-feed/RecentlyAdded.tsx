@@ -1,11 +1,18 @@
 import React, { useMemo } from 'react';
-import { useGetCredentialList, useModal, ModalTypes } from 'learn-card-base';
+import { useGetCredentialList, useModal, ModalTypes, UploadTypesEnum } from 'learn-card-base';
 import PassportCredentialCard, { ActivityIndexRecord } from './PassportCredentialCard';
 import { AllCredentialsModal } from './AllCredentialsModal';
 import { isHiddenActivity } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
 
 const MAX_ITEMS = 5;
+
+const ORIGINAL_DOCUMENT_CATEGORIES: Record<string, true> = {
+    [UploadTypesEnum.Resume]: true,
+    [UploadTypesEnum.Certificate]: true,
+    [UploadTypesEnum.Transcript]: true,
+    [UploadTypesEnum.Diploma]: true,
+};
 
 export const RecentlyAdded: React.FC = () => {
     const { newModal, closeModal } = useModal({
@@ -24,7 +31,12 @@ export const RecentlyAdded: React.FC = () => {
         const records = (data?.pages?.flatMap(p => p?.records ?? []) ??
             []) as ActivityIndexRecord[];
         return records
-            .filter(r => r?.uri && !isHiddenActivity(r.category))
+            .filter(
+                r =>
+                    r?.uri &&
+                    !isHiddenActivity(r.category) &&
+                    !Object.hasOwn(ORIGINAL_DOCUMENT_CATEGORIES, r.category ?? '')
+            )
             .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
             .slice(0, MAX_ITEMS);
     }, [data]);

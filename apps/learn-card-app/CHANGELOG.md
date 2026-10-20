@@ -7,6 +7,7 @@
 - LC-2202: Show extraction failures immediately with inline original-save progress instead of keeping the extraction overlay open during storage.
 - LC-2202: Consolidate upload success into a single document card with confirmed credential counts, filename-to-open, and delete. Move Update/Add More below saved documents and remove the separate success and Open/Download/Try Again boxes.
 - LC-2202: Tighten the gap before Add in the empty résumé upload state while preserving spacing below saved documents.
+- LC-2202: Hide uploaded original-document records from Recently Added without hiding extracted credentials or published résumés.
 
 ## 1.100.0
 
