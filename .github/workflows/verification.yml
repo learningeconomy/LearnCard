@@ -101,6 +101,34 @@ jobs:
             - name: Install Chromium and Linux libraries
               run: bunx playwright install --with-deps chromium
 
+            - name: Build and test message schemas
+              working-directory: packages/learn-card-types
+              run: |
+                  bun run build
+                  bun run test -- src/inAppMessagePresentations.test.ts
+
+            - name: Test shared messages and modal ownership
+              working-directory: packages/learn-card-base
+              run: bun run test -- src/in-app-messages src/hooks/useWallet.inbox.test.ts src/helpers/__tests__/indexedDBHelpers.test.ts src/components/modals/ModalsContext.test.tsx src/components/modals/surfaces/AppModal.test.tsx
+
+            - name: Test message authoring and analytics
+              working-directory: apps/learn-card-app
+              run: bun run test -- src/components/debug/inAppMessageBuilderState.test.ts src/components/debug/InAppMessageRichFields.test.tsx src/components/debug/inAppMessageDryRun.test.ts src/analytics/InAppMessagesAnalyticsHost.test.tsx
+
+            - name: Typecheck hosted iframe example test
+              run: bunx tsc --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target es2022 --lib es2022,dom packages/learn-card-base/src/in-app-messages/__tests__/iframeExample.test.ts
+
+            - name: Lint and format message sources
+              shell: bash
+              run: |
+                  mapfile -t message_files < <(git ls-files -- \
+                    'packages/learn-card-base/src/in-app-messages/*' \
+                    'packages/learn-card-types/src/inAppMessage*.ts' \
+                    'apps/learn-card-app/src/components/debug/*nAppMessage*.ts*')
+                  bun scripts/lint-workspace.ts --files "${message_files[@]}"
+                  bunx prettier --check "${message_files[@]}"
+                  node scripts/check-safe-area.mjs
+
             - name: Check catalog documentation contract
               run: bun scripts/check-verification-map.ts
 
