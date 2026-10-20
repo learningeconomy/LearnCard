@@ -983,6 +983,95 @@ describe('Universal Inbox batch issuance', () => {
         expect(names).toEqual(['Ada', 'Grace']);
     });
 
+    it('issues standard per-person Evidence with pure VC2 and Open Badges contexts', async () => {
+        const template = structuredClone(testUnsignedBoost);
+        template['@context'] = [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ];
+        template.type = ['VerifiableCredential', 'OpenBadgeCredential'];
+        delete template.issuanceDate;
+        template.validFrom = new Date().toISOString();
+        const templateUri = await issuer.clients.fullAuth.boost.createBoost({
+            credential: template,
+            name: 'Standard evidence',
+            category: 'Achievement',
+        });
+        const evidence = [
+            {
+                id: 'https://portfolio.test/work.pdf',
+                type: ['Evidence'],
+                name: 'Work sample',
+                genre: 'document',
+            },
+        ];
+        const batch = await issue({
+            configuration: { signingAuthority },
+            items: [
+                {
+                    recipient: email('standard-evidence@test.com'),
+                    templateUri,
+                    configuration: { templateData: { evidence } },
+                },
+            ],
+        });
+        expect(batch.summary.failed).toBe(0);
+        const result = batch.results[0];
+        if (!result.success) throw new Error('Expected successful issuance');
+        const credential = JSON.parse(
+            await decryptInboxCredential((await stored(result.issuanceId)).credential)
+        );
+        expect(credential.evidence).toEqual(evidence);
+        expect(credential['@context']).toEqual(template['@context']);
+        expect(credential.type).not.toContain('BoostCredential');
+        const claimed = await claim(result.claimUrl!);
+        expect(claimed[0].proof).toBeDefined();
+        expect(claimed[0].evidence).toEqual(evidence);
+    });
+
+    it('still rejects extension EvidenceFile fields without their defining context', async () => {
+        const template = structuredClone(testUnsignedBoost);
+        template['@context'] = [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ];
+        template.type = ['VerifiableCredential', 'OpenBadgeCredential'];
+        delete template.issuanceDate;
+        template.validFrom = new Date().toISOString();
+        const templateUri = await issuer.clients.fullAuth.boost.createBoost({
+            credential: template,
+            name: 'Extension evidence',
+            category: 'Achievement',
+        });
+        const batch = await issue({
+            configuration: { signingAuthority },
+            items: [
+                {
+                    recipient: email('extension@test.com'),
+                    templateUri,
+                    configuration: {
+                        templateData: {
+                            evidence: [
+                                {
+                                    id: 'https://proof.test/file',
+                                    type: ['EvidenceFile'],
+                                    fileName: 'file.pdf',
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+        });
+        expect(batch.results[0]).toMatchObject({
+            success: false,
+            error: {
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('Failed to prepare boost credential template'),
+            },
+        });
+    });
+
     it('returns HTTP 202 then exposes partial success and passes tenant branding to delivery', async () => {
         const response = await post({
             items: [
