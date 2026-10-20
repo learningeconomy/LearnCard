@@ -10,6 +10,7 @@ const {
     refetchQueriesMock,
     uploadMutationMock,
     storeAndAddVCToWalletMock,
+    syncAllMock,
 } = vi.hoisted(() => ({
     initWalletMock: vi.fn(),
     logErrorMock: vi.fn(),
@@ -17,6 +18,7 @@ const {
     refetchQueriesMock: vi.fn(),
     uploadMutationMock: vi.fn(),
     storeAndAddVCToWalletMock: vi.fn(),
+    syncAllMock: vi.fn(),
 }));
 const testState = vi.hoisted(() => ({
     aiEnabled: true,
@@ -79,7 +81,7 @@ vi.mock('learn-card-base', () => ({
     switchedProfileStore: { use: { switchedDid: () => undefined } },
     useGetCheckListStatus: () => ({ refetchCheckListStatus: vi.fn().mockResolvedValue(undefined) }),
     useAiFeatureGate: () => ({ isAiEnabled: testState.aiEnabled, isLoading: false }),
-    useSyncAllCredentialsToContractsMutation: () => ({ mutate: vi.fn() }),
+    useSyncAllCredentialsToContractsMutation: () => ({ mutateAsync: syncAllMock }),
     useToast: () => ({ presentToast: presentToastMock }),
     useUploadFileMutation: () => ({ mutateAsync: uploadMutationMock }),
     useWallet: () => ({
@@ -162,6 +164,7 @@ const createChangeEvent = (files: File[]): React.ChangeEvent<HTMLInputElement> =
 beforeEach(() => {
     testState.aiEnabled = true;
     testState.pending = {};
+    syncAllMock.mockReset().mockResolvedValue(undefined);
 });
 describe('getFileInfo', () => {
     it('uses the final extension segment for multi-dot filenames', () => {
@@ -508,6 +511,28 @@ describe('useUploadFile persistence outcomes', () => {
             storedCount: 0,
         });
         expect(savedCredentials.size).toBe(0);
+    });
+
+    it('keeps confirmed save counts when background sharing fails', async () => {
+        syncAllMock.mockRejectedValueOnce(new Error('Sharing unavailable'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await expect(
+                result.current.storeSelectedCredentials(
+                    [unsignedDraft('confirmed')],
+                    rawArtifact('source'),
+                    UploadTypesEnum.Certificate
+                )
+            ).resolves.toMatchObject({ selectedCount: 1, storedCount: 1 });
+        });
+        expect(savedCredentials.get('confirmed')?.id).toBe('confirmed');
+        expect(records.get('source')?.uri).toBe('original:source');
+        expect(result.current.isSaving).toBe(false);
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'stored',
+            selectedCount: 1,
+            storedCount: 1,
+        });
     });
 
     it('keeps idless candidates attached to their own files and reports per-file counts', async () => {

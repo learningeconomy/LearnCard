@@ -8,6 +8,7 @@
 - LC-2202: Consolidate upload success into a single document card with confirmed credential counts, filename-to-open, and delete. Move Update/Add More below saved documents and remove the separate success and Open/Download/Try Again boxes.
 - LC-2202: Tighten the gap before Add in the empty résumé upload state while preserving spacing below saved documents.
 - LC-2202: Hide uploaded original-document records from Recently Added without hiding extracted credentials or published résumés.
+- LC-2202: Finish selected-credential saving after confirmed storage instead of waiting for per-credential sharing. Synchronize consented sharing once in the background, then refresh insights.
 
 ## 1.100.0
 

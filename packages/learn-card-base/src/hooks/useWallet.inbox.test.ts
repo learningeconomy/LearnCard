@@ -1,3 +1,5 @@
+/// <reference lib="es2024.promise" />
+
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 
@@ -5,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     get: vi.fn(),
     add: vi.fn(),
     upload: vi.fn(),
+    getConsentedContracts: vi.fn(),
 }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 vi.mock('@learncard/init', () => ({ initLearnCard: vi.fn() }));
@@ -43,7 +46,9 @@ vi.mock('@tanstack/react-query', () => ({
     }),
 }));
 vi.mock('./useSharedUrisInTerms', () => ({ getOrCreateSharedUriForWallet: vi.fn() }));
-vi.mock('./useConsentedContracts', () => ({ getOrFetchConsentedContracts: async () => [] }));
+vi.mock('./useConsentedContracts', () => ({
+    getOrFetchConsentedContracts: mocks.getConsentedContracts,
+}));
 vi.mock('learn-card-base/react-query/mutations/ai-passport', () => ({
     queueAiInsightCredentialRefresh: vi.fn(),
 }));
@@ -61,6 +66,7 @@ let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 beforeEach(() => {
     vi.clearAllMocks();
     records = [];
+    mocks.getConsentedContracts.mockReset().mockResolvedValue([]);
     mocks.upload.mockResolvedValue('encrypted-uri');
     mocks.get.mockImplementation(async (query: Record<string, string>) =>
         records.filter(record =>
@@ -107,4 +113,65 @@ it('reuses an id-less credential already saved by the recovery sweep', async () 
     expect(result).toMatchObject({ result: true, credentialUri: 'recovered-uri' });
     expect(mocks.upload).not.toHaveBeenCalled();
     expect(mocks.add).not.toHaveBeenCalled();
+});
+
+it('finishes confirmed batch storage without waiting for sharing', async () => {
+    const sharingStarted = Promise.withResolvers<void>();
+    const finishSharing = Promise.withResolvers<[]>();
+    mocks.getConsentedContracts.mockImplementationOnce(async () => {
+        sharingStarted.resolve();
+        return finishSharing.promise;
+    });
+    const saving = useWallet().storeAndAddVCToWallet(
+        { ...credential, id: 'batch-credential' },
+        { deferContractSync: true }
+    );
+    try {
+        const first = await Promise.race([
+            saving.then(result => ({ phase: 'stored', result })),
+            sharingStarted.promise.then(() => ({ phase: 'sharing' })),
+        ]);
+        expect(first).toEqual({
+            phase: 'stored',
+            result: { result: true, credentialUri: 'encrypted-uri', category: 'Achievement' },
+        });
+        expect(records).toEqual([
+            { id: 'batch-credential', uri: 'encrypted-uri', category: 'Achievement' },
+        ]);
+    } finally {
+        finishSharing.resolve([]);
+        await saving;
+    }
+});
+
+it('still waits for sharing on a normal credential save', async () => {
+    const sharingStarted = Promise.withResolvers<void>();
+    const finishSharing = Promise.withResolvers<[]>();
+    mocks.getConsentedContracts.mockImplementationOnce(async () => {
+        sharingStarted.resolve();
+        return finishSharing.promise;
+    });
+    const saving = useWallet().storeAndAddVCToWallet({ ...credential, id: 'normal-credential' });
+    try {
+        const first = await Promise.race([
+            saving.then(() => 'stored'),
+            sharingStarted.promise.then(() => 'sharing'),
+        ]);
+        expect(first).toBe('sharing');
+        expect(records).toEqual([
+            { id: 'normal-credential', uri: 'encrypted-uri', category: 'Achievement' },
+        ]);
+    } finally {
+        finishSharing.resolve([]);
+        await saving;
+    }
+});
+
+it('does not complete a deferred-sharing save when indexing fails', async () => {
+    mocks.add.mockRejectedValueOnce(new Error('Index unavailable'));
+    await expect(
+        useWallet().storeAndAddVCToWallet(credential, { deferContractSync: true })
+    ).rejects.toThrow('Index unavailable');
+    expect(records).toEqual([]);
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
 });

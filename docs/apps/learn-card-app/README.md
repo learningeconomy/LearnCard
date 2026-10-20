@@ -126,6 +126,10 @@ Review can be closed and reopened within the same app session. Selecting none st
 the original, but does not mean extraction found nothing. Saved counts include only confirmed
 selected credentials. Partial failures retain the review; retrying a save reuses confirmed writes.
 
+Confirmed saves trigger one background sharing sync instead of waiting for sharing on every
+credential. Insights refresh after that sync completes. A sharing failure does not undo
+confirmed saves or change their counts.
+
 Use **Update** for another résumé or **Add More** for other documents. These actions sit
 below the saved document cards. Failed extraction and storage still have their own retry
 feedback. Reopening a manager shows saved originals without inventing a credential count.

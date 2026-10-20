@@ -88,6 +88,8 @@ const FILE_UPLOAD_ERROR_TOAST_OPTIONS = {
     duration: 5000,
 } as const;
 
+const FILE_CREDENTIAL_SAVE_OPTIONS = { deferContractSync: true };
+
 const TOAST_PAUSE_MS = 100;
 
 // Stable, user-facing copy for inline file errors. Raw parser / validation / storage
@@ -651,7 +653,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                             const issued = await wallet.invoke.issueCredential(
                                 addCertificateAttachment(vc, source)
                             );
-                            const saved = await storeAndAddVCToWallet(issued);
+                            const saved = await storeAndAddVCToWallet(
+                                issued,
+                                FILE_CREDENTIAL_SAVE_OPTIONS
+                            );
                             if (saved.result !== true || !saved.credentialUri) {
                                 throw new Error('A selected credential could not be saved.');
                             }
@@ -730,8 +735,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 void refetchCheckListStatus().catch(() =>
                     log.error('file.checklist_refresh.failed')
                 );
-                syncAll.mutate();
-                aiInsightMutation.mutate();
+                // Sharing and insights follow confirmed writes without blocking the save UI.
+                void syncAll
+                    .mutateAsync()
+                    .then(() => aiInsightMutation.mutate())
+                    .catch(() => log.error('file.background_sync.failed'));
             }
             if (failures.size) {
                 const stage = [...failures.values()].includes('artifact_save')
