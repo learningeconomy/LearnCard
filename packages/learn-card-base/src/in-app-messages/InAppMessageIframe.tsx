@@ -52,7 +52,8 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
             const data = parseIframeMessage(
                 event,
                 frame.current?.contentWindow ?? null,
-                config.url
+                config.url,
+                config.allowedInternalPaths
             );
             if (!data) return;
             if (data.event === 'ready') {
@@ -84,23 +85,31 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
         const node = frame.current;
         // A load event also fires for blocked/failed embeds; required frames need the handshake.
         if (message.dismissible) node?.addEventListener('load', ready);
+        node?.addEventListener('error', fail);
         window.addEventListener('message', receive);
         window.addEventListener('offline', fail);
         return () => {
             active = false;
             clearTimeout(timer);
             node?.removeEventListener('load', ready);
+            node?.removeEventListener('error', fail);
             window.removeEventListener('message', receive);
             window.removeEventListener('offline', fail);
         };
-    }, [config?.url, config?.loadTimeoutMs, message.dismissible, separateOrigin]);
+    }, [
+        config?.url,
+        config?.loadTimeoutMs,
+        config?.allowedInternalPaths,
+        message.dismissible,
+        separateOrigin,
+    ]);
 
     if (!config) return null;
     return (
         <div className="flex flex-col h-full min-h-0 w-full bg-white font-poppins">
             <header className="flex items-center justify-between gap-3 p-4 text-grayscale-900">
                 <h2 className="text-xl font-semibold">{config.title ?? message.title}</h2>
-                {message.dismissible && (
+                {(message.dismissible || status === 'error') && (
                     <button
                         type="button"
                         aria-label={t('common.close')}

@@ -1,20 +1,14 @@
 import { z } from 'zod';
-import { inAppMessageActionTargetValidator, inAppMessageHttpsUrlValidator } from '@learncard/types';
+import {
+    inAppMessageActionTargetValidator,
+    inAppMessageHttpsUrlValidator,
+    inAppMessageInternalPathValidator,
+} from '@learncard/types';
 
 const safeTarget = inAppMessageActionTargetValidator.refine(action => {
     if (action.type === 'capgoUpdate') return false;
     if (action.type === 'internalLink') {
-        return (
-            action.path.startsWith('/') &&
-            !action.path.startsWith('//') &&
-            [...action.path].every(
-                char =>
-                    char.charCodeAt(0) > 32 &&
-                    char.charCodeAt(0) !== 127 &&
-                    char !== '\\' &&
-                    !/\s/.test(char)
-            )
-        );
+        return inAppMessageInternalPathValidator.safeParse(action.path).success;
     }
     if (action.type === 'externalLink')
         return inAppMessageHttpsUrlValidator.safeParse(action.url).success;
@@ -41,9 +35,18 @@ export const iframeMessageValidator = z.discriminatedUnion('event', [
 export const parseIframeMessage = (
     event: MessageEvent,
     frame: Window | null,
-    url: string
+    url: string,
+    allowedInternalPaths: readonly string[] = []
 ): z.infer<typeof iframeMessageValidator> | null => {
     if (!frame || event.source !== frame || event.origin !== new URL(url).origin) return null;
     const result = iframeMessageValidator.safeParse(event.data);
-    return result.success ? result.data : null;
+    if (!result.success) return null;
+    const message = result.data;
+    if (
+        message.event === 'runAction' &&
+        message.action.type === 'internalLink' &&
+        !allowedInternalPaths.includes(message.action.path)
+    )
+        return null;
+    return message;
 };

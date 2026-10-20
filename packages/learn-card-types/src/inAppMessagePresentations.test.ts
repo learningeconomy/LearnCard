@@ -2,6 +2,35 @@ import { describe, expect, it } from 'vitest';
 import { inAppMessageValidator, parseInAppMessagesFlagWithErrors } from './inAppMessages';
 
 describe('rich message schema', () => {
+    it('defaults iframe internal navigation to denied and preserves explicit destinations', () => {
+        const draft = {
+            id: 'frame',
+            title: 'Guide',
+            presentation: 'iframe',
+            iframe: { url: 'https://example.com' },
+        };
+        expect(inAppMessageValidator.parse(draft).iframe?.allowedInternalPaths).toEqual([]);
+        const paths = ['/passport', '/passport?tab=skills#recent'];
+        expect(
+            inAppMessageValidator.parse({
+                ...draft,
+                iframe: { ...draft.iframe, allowedInternalPaths: paths },
+            }).iframe?.allowedInternalPaths
+        ).toEqual(paths);
+        for (const path of [
+            'https://example.com',
+            '//example.com',
+            '/\\example.com',
+            '/passport\n',
+        ]) {
+            expect(
+                inAppMessageValidator.safeParse({
+                    ...draft,
+                    iframe: { ...draft.iframe, allowedInternalPaths: [path] },
+                }).success
+            ).toBe(false);
+        }
+    });
     it('keeps legacy defaults', () => {
         expect(inAppMessageValidator.parse({ id: 'old', title: 'Hello' })).toMatchObject({
             presentation: 'modal',

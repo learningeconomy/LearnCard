@@ -393,6 +393,19 @@ export const InAppMessageRichFields: React.FC<{
                             onChange={e => onChange({ iframeTimeout: e.target.value })}
                         />
                     </Field>
+                    <Field label="Allowed internal destinations (one exact path per line)">
+                        <textarea
+                            className={input}
+                            rows={3}
+                            placeholder="/passport"
+                            value={state.iframeAllowedInternalPaths}
+                            onChange={e => onChange({ iframeAllowedInternalPaths: e.target.value })}
+                        />
+                    </Field>
+                    <p className="text-xs text-grayscale-600">
+                        Empty denies all internal navigation. Query strings and fragments must match
+                        exactly.
+                    </p>
                 </>
             )}
             <Field label="Locale overrides (JSON)">

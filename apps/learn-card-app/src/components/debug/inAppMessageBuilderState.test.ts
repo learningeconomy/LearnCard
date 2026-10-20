@@ -109,6 +109,25 @@ describe('message builder credential round-trip', () => {
                 .success
         ).toBe(false);
     });
+    it('round-trips exact iframe navigation destinations without broadening them', () => {
+        const message = inAppMessageValidator.parse({
+            id: 'allowed-paths',
+            title: 'Guide',
+            presentation: 'iframe',
+            iframe: {
+                url: 'https://example.com',
+                allowedInternalPaths: ['/passport', '/passport?tab=skills#recent'],
+            },
+        });
+        const state = messageToBuilderState(message);
+        expect(state.iframeAllowedInternalPaths).toBe('/passport\n/passport?tab=skills#recent');
+        expect(inAppMessageValidator.parse(buildDraftJson(state)).iframe).toEqual(message.iframe);
+        expect(
+            inAppMessageValidator.safeParse(
+                buildDraftJson({ ...state, iframeAllowedInternalPaths: ' /passport' })
+            ).success
+        ).toBe(false);
+    });
     it('keeps final-screen action translations on builder import/export', () => {
         const message = inAppMessageValidator.parse({
             id: 'localized-step',

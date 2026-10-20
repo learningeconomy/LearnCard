@@ -380,7 +380,11 @@ describe('iframe lifecycle', () => {
         id: 'frame',
         title: 'Embedded',
         presentation: 'iframe',
-        iframe: { url: 'https://example.com/page', loadTimeoutMs: 100 },
+        iframe: {
+            url: 'https://example.com/page',
+            loadTimeoutMs: 100,
+            allowedInternalPaths: ['/wallet'],
+        },
     });
     const send = (
         frame: HTMLIFrameElement,
@@ -408,6 +412,56 @@ describe('iframe lifecycle', () => {
         expect(screen.getByRole('status')).toBeTruthy();
         send(frame, 'ready');
         expect(screen.queryByRole('status')).toBeNull();
+    });
+    it.each(['same-origin', 'offline', 'timeout', 'frame-error'])(
+        'lets the user close a required iframe after %s failure',
+        failure => {
+            vi.useFakeTimers();
+            if (failure === 'offline') {
+                Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+            }
+            const onClose = vi.fn();
+            render(
+                <InAppMessageIframe
+                    message={{
+                        ...message,
+                        dismissible: false,
+                        iframe: {
+                            ...message.iframe!,
+                            url:
+                                failure === 'same-origin'
+                                    ? 'https://app.example/content'
+                                    : message.iframe!.url,
+                        },
+                    }}
+                    onClose={onClose}
+                />
+            );
+            if (failure === 'timeout' || failure === 'frame-error') {
+                expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+                const frame = screen.getByTitle('Embedded');
+                if (failure === 'frame-error') fireEvent.error(frame);
+                else {
+                    fireEvent.load(frame);
+                    act(() => vi.advanceTimersByTime(101));
+                }
+            }
+            expect(screen.getByRole('alert')).toBeTruthy();
+            fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+            expect(onClose).toHaveBeenCalledExactlyOnceWith('dismissed');
+        }
+    );
+    it('does not run or report undeclared bridge navigation', async () => {
+        const onClose = vi.fn();
+        const onAction = vi.fn();
+        render(<InAppMessageIframe message={message} onClose={onClose} onAction={onAction} />);
+        const frame = screen.getByTitle('Embedded') as HTMLIFrameElement;
+        for (const path of ['/request', '/wallet?uri=untrusted', '/wallet#untrusted']) {
+            await act(async () => send(frame, 'runAction', { type: 'internalLink', path }));
+        }
+        expect(mocks.runAction).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
+        expect(onAction).not.toHaveBeenCalled();
     });
     it('keeps required frames recoverable after load without a valid ready handshake', () => {
         vi.useFakeTimers();

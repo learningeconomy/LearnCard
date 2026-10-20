@@ -41,4 +41,38 @@ describe('iframe bridge boundary', () => {
             false
         );
     });
+    it.each([
+        '/request?uri=https://attacker.example',
+        '/exchange?uri=https://attacker.example',
+        '/consent-flow?contract=https://attacker.example',
+        '/interactions/claim?token=untrusted',
+        '/passport?returnTo=/request',
+        '/passport#redirect',
+        '/passport/../request',
+        '/%70assport',
+    ])('denies undeclared internal destinations even from the configured frame: %s', path => {
+        const event = new MessageEvent('message', {
+            source: window,
+            origin: 'https://example.com',
+            data: envelope({ type: 'internalLink', path }),
+        });
+        expect(
+            parseIframeMessage(event, window, 'https://example.com/page', ['/passport'])
+        ).toBeNull();
+    });
+    it('denies internal navigation by default and accepts only exact declared query/fragment values', () => {
+        const path = '/passport?tab=skills#recent';
+        const data = envelope({ type: 'internalLink', path });
+        const event = new MessageEvent('message', {
+            source: window,
+            origin: 'https://example.com',
+            data,
+        });
+        expect(parseIframeMessage(event, window, 'https://example.com/page')).toBeNull();
+        expect(
+            parseIframeMessage(event, window, 'https://example.com/page', ['/passport'])
+        ).toBeNull();
+        expect(parseIframeMessage(event, window, 'https://example.com/page', [path])).toEqual(data);
+        expect(parseIframeMessage(event, null, 'https://example.com/page', [path])).toBeNull();
+    });
 });

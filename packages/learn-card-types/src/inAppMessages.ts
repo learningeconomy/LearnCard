@@ -248,11 +248,29 @@ export const inAppMessageStepValidator = z
     .passthrough();
 export type InAppMessageStep = z.infer<typeof inAppMessageStepValidator>;
 
+/** Exact app-relative destination, including any explicitly approved query and fragment. */
+export const inAppMessageInternalPathValidator = z
+    .string()
+    .refine(
+        path =>
+            path.startsWith('/') &&
+            !path.startsWith('//') &&
+            [...path].every(
+                char =>
+                    char.charCodeAt(0) > 32 &&
+                    char.charCodeAt(0) !== 127 &&
+                    char !== '\\' &&
+                    !/\s/.test(char)
+            ),
+        'A single-slash app-relative path without whitespace or backslashes is required'
+    );
+
 export const inAppMessageIframeValidator = z
     .object({
         url: inAppMessageHttpsUrlValidator,
         title: z.string().optional(),
         loadTimeoutMs: z.number().int().positive().max(2147483647).default(10000),
+        allowedInternalPaths: z.array(inAppMessageInternalPathValidator).default([]),
     })
     .passthrough();
 
@@ -286,7 +304,7 @@ export const inAppMessageValidator = z
         id: z.string(),
         /** Higher priority wins when multiple messages match. Default 0. */
         priority: z.number().default(0),
-        /** When false, the message is required/blocking (no dismiss affordance). */
+        /** When false, the message is required; iframe errors still allow a host-owned close. */
         dismissible: z.boolean().default(true),
         frequency: inAppMessageFrequencyValidator,
         presentation: inAppMessagePresentationValidator,

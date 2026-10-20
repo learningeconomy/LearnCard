@@ -45,6 +45,7 @@ export interface BuilderState {
     iframeUrl: string;
     iframeTitle: string;
     iframeTimeout: string;
+    iframeAllowedInternalPaths: string;
     localesJson: string;
     frequency: 'once' | 'session' | 'always' | 'everyDays';
     everyDays: string;
@@ -101,6 +102,7 @@ export const initialState: BuilderState = {
     iframeUrl: '',
     iframeTitle: '',
     iframeTimeout: '10000',
+    iframeAllowedInternalPaths: '',
     localesJson: '',
     frequency: 'once',
     everyDays: '3',
@@ -236,6 +238,9 @@ export const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
                       url: s.iframeUrl,
                       ...(s.iframeTitle ? { title: s.iframeTitle } : {}),
                       loadTimeoutMs: Number(s.iframeTimeout),
+                      allowedInternalPaths: s.iframeAllowedInternalPaths
+                          .split('\n')
+                          .filter(path => path !== ''),
                   },
               }
             : {}),
@@ -357,6 +362,7 @@ export const messageToBuilderState = (m: InAppMessage): BuilderState => {
         iframeUrl: m.iframe?.url ?? '',
         iframeTitle: m.iframe?.title ?? '',
         iframeTimeout: String(m.iframe?.loadTimeoutMs ?? 10000),
+        iframeAllowedInternalPaths: m.iframe?.allowedInternalPaths.join('\n') ?? '',
         localesJson: m.locales ? JSON.stringify(m.locales, null, 2) : '',
         frequency: typeof m.frequency === 'object' ? 'everyDays' : m.frequency,
         everyDays: typeof m.frequency === 'object' ? String(m.frequency.everyDays) : '3',
