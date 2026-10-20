@@ -114,6 +114,8 @@ flowchart LR
 The saved original appears in one document card. Select its filename to open it.
 When credentials are added, the card shows the confirmed count; there is no separate
 success banner or action box.
+Preview uses a supported filename extension when a device supplies no specific file type.
+It never overrides an explicit HTML or SVG type.
 
 An empty result or a file with no readable text does not create a credential or save a new
 original. While the upload step is open, select its filename to preview the uploaded file,

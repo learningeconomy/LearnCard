@@ -53,22 +53,34 @@ export const useUploadedDocumentPreview = (fileName: string, data: string, disab
         busy.current = true;
         setOpening(true);
         try {
-            // Only supported documents may open; HTML/SVG blobs could execute uploaded scripts.
-            if (
-                !/^data:(?:application\/pdf|text\/plain|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|image\/(?:png|jpeg|webp));base64,/i.test(
-                    data
-                )
-            ) {
+            const header = /^data:([^;,]*);base64,/i.exec(data);
+            if (!header) throw new Error('Unsupported preview type');
+            const basename = (fileName.split(/[\\/]/).pop() ?? '').replace(/\p{Cc}/gu, '');
+            const safeName =
+                basename && basename !== '.' && basename !== '..'
+                    ? basename.slice(0, 120)
+                    : 'document';
+            let mimeType = header[1].toLowerCase();
+            if (!mimeType || mimeType === 'application/octet-stream') {
+                let extension = basename.match(/\.[^.]+$/)?.[0].toLowerCase();
+                if (extension === '.jpeg') extension = '.jpg';
+                for (const allowedMimeType in PREVIEW_EXTENSIONS) {
+                    if (PREVIEW_EXTENSIONS[allowedMimeType] === extension) {
+                        mimeType = allowedMimeType;
+                        break;
+                    }
+                }
+            }
+            // Infer only missing/generic types; never reinterpret explicit HTML/SVG as a document.
+            if (!Object.hasOwn(PREVIEW_EXTENSIONS, mimeType)) {
                 throw new Error('Unsupported preview type');
             }
-            const basename = (fileName.split(/[\\/]/).pop() ?? '')
-                .replace(/\p{Cc}/gu, '')
-                .slice(0, 120);
-            const safeName =
-                basename && basename !== '.' && basename !== '..' ? basename : 'document';
-            const mimeType = data.slice(5, data.indexOf(';')).toLowerCase();
+            const previewData =
+                mimeType === header[1] && data.startsWith('data:')
+                    ? data
+                    : `data:${mimeType};base64,${data.slice(header[0].length)}`;
             await openAttachmentUrl(
-                data,
+                previewData,
                 Capacitor.isNativePlatform()
                     ? `upload-${crypto.randomUUID()}-${safeName.replace(/\.[^.]*$/, '')}${PREVIEW_EXTENSIONS[mimeType]}`
                     : safeName
