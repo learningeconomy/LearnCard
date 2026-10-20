@@ -377,7 +377,7 @@ export const CheckListUploadResume: React.FC = () => {
                                 isParsing
                             }
                             onClick={triggerFileInput}
-                            className={`mt-6 w-full flex min-h-[48px] rounded-[20px] items-center justify-center py-3 px-4 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                            className={`${resume ? 'mt-6' : 'mt-0'} w-full flex min-h-[48px] rounded-[20px] items-center justify-center py-3 px-4 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                                 resume
                                     ? 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
                                     : 'bg-grayscale-900 text-white hover:opacity-90'
