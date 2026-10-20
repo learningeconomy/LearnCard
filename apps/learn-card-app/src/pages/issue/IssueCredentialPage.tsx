@@ -947,7 +947,11 @@ const IssueCredentialPage: React.FC = () => {
                 onAttachmentsChange={handleRecipientEvidenceChange}
                 recipients={recipients}
                 variables={dynamicVars}
-                dateVariables={[template?.validFrom, template?.validUntil, template?.awardedDate].flatMap(field =>
+                dateVariables={[
+                    template?.validFrom,
+                    template?.validUntil,
+                    template?.awardedDate,
+                ].flatMap(field =>
                     field?.isDynamic && !field.isSystem && field.variableName
                         ? [field.variableName]
                         : []

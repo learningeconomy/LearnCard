@@ -387,7 +387,20 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expect
                 .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
                 .not.toBe('none');
+            const scene = page.locator('.batch-delivery-illustration');
+            const card = page.getByTestId('issuance-progress');
+            const sceneBounds = await scene.boundingBox();
+            const cardBounds = await card.boundingBox();
+            expect(sceneBounds!.width).toBeGreaterThan(cardBounds!.width * 0.85);
+            const start = await flyer.boundingBox();
+            await expect
+                .poll(async () => Math.abs((await flyer.boundingBox())!.x - start!.x))
+                .toBeGreaterThan(30);
             await page.emulateMedia({ reducedMotion: 'reduce' });
+            await page.screenshot({
+                path: testInfo.outputPath('batch-delivery-scene.png'),
+                animations: 'disabled',
+            });
             await expect
                 .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
                 .toBe('none');
@@ -546,13 +559,18 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expect(
                 page.getByRole('textbox', { name: 'Ada Student Code', exact: true })
             ).toHaveValue('0012');
-            await expect(
-                page.getByRole('textbox', { name: 'Ada Completed Date', exact: true })
-            ).toHaveValue('2024-04-03T00:00:00.000Z');
+            await expect(page.getByLabel('Ada Completed Date', { exact: true })).toHaveValue(
+                '2024-04-03'
+            );
+            await expect(page.getByText('Apr 3, 2024', { exact: true })).toBeVisible();
             if (viewport.width > 991) {
                 const tableView = page.getByRole('region', { name: 'Review people', exact: true });
                 const email = page.getByRole('textbox', { name: 'Email for Ada', exact: true });
                 const before = await email.boundingBox();
+                const dateBounds = await page
+                    .getByLabel('Ada Completed Date', { exact: true })
+                    .boundingBox();
+                expect(Math.abs(before!.y - dateBounds!.y)).toBeLessThan(2);
                 await tableView.evaluate(element => {
                     element.scrollLeft = element.scrollWidth;
                 });
@@ -576,6 +594,10 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 animations: 'disabled',
                 path: testInfo.outputPath('recipient-fields.png'),
             });
+            const datePicker = page.getByLabel('Ada Completed Date', { exact: true });
+            await datePicker.fill('2024-04-04');
+            await expect(page.getByText('Apr 4, 2024', { exact: true }).first()).toBeVisible();
+            await datePicker.fill('2024-04-03');
             await page.getByRole('button', { name: 'Done', exact: true }).click();
             await page.getByRole('button', { name: 'Map columns', exact: true }).click();
             await page.getByRole('button', { name: 'Remove Quiz Score', exact: true }).click();
