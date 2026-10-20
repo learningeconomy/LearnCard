@@ -6,6 +6,7 @@ import {
     listIssuanceRuns,
     pruneIssuanceRuns,
 } from './issuanceStore';
+import { addSubmissionAttempts } from './issuance';
 import { makeRun } from './fixtures.test-support';
 
 describe('IndexedDB issuance recovery', () => {
@@ -19,6 +20,18 @@ describe('IndexedDB issuance recovery', () => {
                 await readIssuanceRun(run.id, { ...run.scope, [field]: 'other' })
             ).toBeUndefined();
     });
+    it.each([null, 123456, undefined])(
+        'preserves admission marker %s, including unknown legacy records',
+        async marker => {
+            const initial = makeRun();
+            initial.templateUri = 'template';
+            const run = addSubmissionAttempts(initial);
+            if (marker === undefined) delete run.attempts[0].submissionStartedAt;
+            else run.attempts[0].submissionStartedAt = marker;
+            await saveIssuanceRun(run);
+            expect(await readIssuanceRun(run.id, run.scope)).toEqual(run);
+        }
+    );
     it('rejects corrupt records instead of substituting a fresh run', async () => {
         const run = makeRun();
         await expect(

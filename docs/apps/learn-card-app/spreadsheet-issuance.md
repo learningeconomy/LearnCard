@@ -30,7 +30,7 @@ Recovery data is saved in this browser's IndexedDB for the issuing account, netw
 
 **Skip for Now** hides the restore banner without deleting its saved rows or delivery history. **View saved run** opens the hidden run later on this device. Editing a restored run makes it available for recovery again.
 
-Email issuance continues on the server after leaving the page. Resume observes an existing batch or recovers its receipt using the original request. It does not restart successful rows. An unconfirmed submission older than the 24-hour replay window requires checking its results before another issuance.
+Email issuance continues on the server after leaving the page. Resume observes an existing batch or recovers its receipt using the original request. It does not restart successful rows. An unacknowledged request older than the 24-hour replay window stays unconfirmed for support reconciliation. It is never automatically resent.
 
 **Retry Failed** and **Download Failed Rows** include only definite failures. Correct the exported failed rows and upload them into their saved run. Submitted rows remain in the run history and cannot be removed. Successful and uncertain rows are locked; definite failures remain editable for correction and retry. Sends that need confirmation are excluded from retry files; check their results before issuing again. Profile recipients are sent one at a time; a lost response needs confirmation because that send has no replay guarantee.
 
@@ -62,6 +62,8 @@ Retry Failed includes only recipients with a confirmed failure. Newly added peop
 
 CSV and TSV uploads must use UTF-8. Invalid byte sequences or replacement characters block import with instructions to export as CSV UTF-8 or XLSX. Out-of-range Excel content identifies the sheet and cell to remove.
 
-An expired unacknowledged request is never replayed. Its rows remain unconfirmed for support reconciliation; unrelated failed rows and unattempted chunks may continue. Viewing a hidden run preserves its dismissal, while editing the draft makes its reminder available again. Analytics count only recipients selected for a new send action.
+An expired unacknowledged request is never replayed. Its rows remain unconfirmed for support reconciliation; unrelated failed rows and unattempted chunks may continue. Each chunk records admission start before contacting the server, so a chunk prepared over 24 hours ago can still be sent if admission never started. Older saved runs without that marker remain conservative because their submission history is unknown. Viewing a hidden run preserves its dismissal, while editing the draft makes its reminder available again. Analytics count only recipients selected for a new send action.
 
-Duplicate protection applies within a saved run. Starting a fresh run from an original spreadsheet creates a separate issuance; there is no cross-run 24-hour deduplication. This scope follows the accepted product decision for this release.
+Duplicate protection applies within a saved run. Starting a fresh run from an original spreadsheet creates a separate issuance; there is no cross-run 24-hour deduplication. Cross-run duplicate protection is outside the scope of this release.
+
+Recovery currently shows one pending run and one hidden run at a time. Starting another draft hides the saved-run shortcut until the page is reloaded. Check Again polls the selected batch until it finishes, so a running batch can keep the page busy. A history screen for multiple runs and a one-shot status refresh are follow-up UI improvements.

@@ -8,6 +8,8 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { dynamicField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import { exportRosterCsv } from './roster';
+import { exportIssuanceCsv } from './exportIssuance';
+import { addSubmissionAttempts } from './issuance';
 import { writeResult } from '../components/resultField';
 import { AnalyticsEvents } from '../../../analytics/events';
 
@@ -207,6 +209,123 @@ describe('roster autosave and sending', () => {
                 )
             ).rejects.toMatchObject({ code: 'locked' });
         });
+    });
+    it.each([
+        ['escaped email', 'outcome'],
+        ['escaped email', 'attempt'],
+        ['edited shared value', 'outcome'],
+        ['edited shared value', 'attempt'],
+    ])(
+        'accepts unchanged full exports of locked rows: %s (%s snapshot)',
+        async (scenario, snapshot) => {
+            const run = makeRun(2);
+            run.templateUri = 'template';
+            run.template.credentialSubject.achievement.description = dynamicField('score');
+            run.scopes = { score: 'shared' };
+            run.shared = { score: 'Corrected' };
+            run.outcomes = {
+                'row-0': { state: 'sent', templateData: { score: 'Original' } },
+                'row-1': { state: 'failed' },
+            };
+            if (scenario === 'escaped email') {
+                run.draft.recipients[0] = { kind: 'email', rowId: 'row-0', email: '+ada@test.com' };
+                run.shared.score = 'Original';
+            }
+            if (snapshot === 'attempt') {
+                const frozen = addSubmissionAttempts({
+                    ...run,
+                    shared: { score: 'Original' },
+                    outcomes: {},
+                });
+                run.attempts = frozen.attempts;
+                delete run.outcomes['row-0'].templateData;
+            }
+            store.list.mockResolvedValue([]);
+            store.read.mockResolvedValue(run);
+            store.save.mockResolvedValue(undefined);
+            const options = emptyOptions(run);
+            const variables = ['score'];
+            const { result } = renderHook(() => {
+                const [recipients, setRecipients] = useState(options.recipients);
+                const [values, setValues] = useState(options.values);
+                const [shared, setShared] = useState(options.shared);
+                return useIssueRoster({
+                    ...options,
+                    recipients,
+                    setRecipients,
+                    values,
+                    setValues,
+                    shared,
+                    setShared,
+                    variables,
+                    template: run.template,
+                });
+            });
+            const csv = exportIssuanceCsv(run, variables);
+            await act(async () => {
+                await result.current.importSheet(parseSpreadsheet(readSpreadsheetText(csv)));
+            });
+            expect(result.current.run?.draft.recipients[0]).toEqual(run.draft.recipients[0]);
+            expect(result.current.valuesForRow(run.draft.recipients[0])).toEqual({
+                score: 'Original',
+            });
+            expect(result.current.draft.values['row-1']).toEqual({ score: run.shared.score });
+            await act(async () => {
+                await expect(
+                    result.current.importSheet(
+                        parseSpreadsheet(readSpreadsheetText(csv.replace('Original', 'Tampered')))
+                    )
+                ).rejects.toMatchObject({ code: 'locked' });
+            });
+        }
+    );
+    it('blocks source formula errors when a template variable is mapped after import', async () => {
+        const run = makeRun();
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(undefined);
+        store.save.mockResolvedValue(undefined);
+        const options = emptyOptions(run);
+        const initWallet = vi.fn();
+        const { result, rerender } = renderHook(
+            ({ variables }: { variables: string[] }) => {
+                const [recipients, setRecipients] = useState(run.draft.recipients);
+                const [values, setValues] = useState(run.draft.values);
+                const template = structuredClone(run.template);
+                if (variables.length)
+                    template.credentialSubject.achievement.description = dynamicField('score');
+                return {
+                    ...useIssueRoster({
+                        ...options,
+                        recipients,
+                        setRecipients,
+                        values,
+                        setValues,
+                        variables,
+                        template,
+                        initWallet,
+                    }),
+                    correct: () =>
+                        setValues(previous => ({ ...previous, 'row-0': { score: 'Corrected' } })),
+                };
+            },
+            { initialProps: { variables: [] as string[] } }
+        );
+        const sheet = parseSpreadsheet(readSpreadsheetText('Email,score\nperson0@test.com,#REF!'));
+        sheet.rows[0].cells[sheet.columns.find(column => column.label === 'score')!.id].problem =
+            'formula';
+        await act(async () => {
+            await result.current.importSheet(sheet);
+        });
+        rerender({ variables: ['score'] });
+        await waitFor(() => expect(result.current.draft.values['row-0']?.score).toBe('#REF!'));
+        expect(result.current.problems['row-0']).toEqual(['formula']);
+        expect(result.current.hasProblems).toBe(true);
+        await act(async () => {
+            await result.current.execute();
+        });
+        expect(initWallet).not.toHaveBeenCalled();
+        act(() => result.current.correct());
+        expect(result.current.hasProblems).toBe(false);
     });
     it.each([false, true])('blocks formula errors after import (saved run: %s)', async saved => {
         const original = makeRun();

@@ -131,6 +131,7 @@ export const mergeSpreadsheet = (
     const evidenceColumn = sheet.columns.find(column =>
         /^(evidence|evidencelink|portfolio|portfoliolink)$/.test(normalizeColumn(column.label))
     );
+    const sourceRows: ParsedSpreadsheet['rows'] = [];
     for (const row of rows) {
         if (row.example && row.email === 'person@example.com') continue;
         if (row.exportedRunId && row.exportedRunId !== draft.id) throw new SpreadsheetError('run');
@@ -150,6 +151,7 @@ export const mergeSpreadsheet = (
         const key = existing ? recipientKey(existing) : row.rowId;
         if (assigned.has(key)) throw new SpreadsheetError('mapping');
         assigned.add(key);
+        sourceRows.push({ ...row, rowId: key });
         const recipient: Recipient =
             existing?.kind === 'profile'
                 ? existing
@@ -197,7 +199,7 @@ export const mergeSpreadsheet = (
             values,
             evidence,
             formulaCells,
-            source: sheet,
+            source: { ...sheet, rows: sourceRows },
         },
         mapped,
     };
