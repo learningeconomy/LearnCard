@@ -42,7 +42,15 @@ const makeUser = (id = 'same-user', displayName = 'Apple Name'): FirebaseUser =>
 });
 const publishLiveUser = (user: FirebaseUser | null): void => {
     liveUser = user;
-    publish(user ? { id: user.uid, displayName: user.displayName ?? undefined } : null);
+    publish(
+        user
+            ? {
+                  id: user.uid,
+                  displayName: user.displayName ?? undefined,
+                  providerType: 'firebase',
+              }
+            : null
+    );
 };
 const Probe = () => {
     const value = useAuthCoordinator();
@@ -76,11 +84,21 @@ beforeEach(() => {
     liveUser = null;
     cachedKey = null;
     // Persisted identity is already available before the SDK restores its session.
-    authUserStore.set.setUser({ id: 'same-user', displayName: 'Persisted Name' });
+    authUserStore.set.setUser({
+        id: 'same-user',
+        displayName: 'Persisted Name',
+        providerType: 'firebase',
+    });
     adapter = {
         providerType: 'firebase',
         getCurrentUser: () =>
-            liveUser ? { id: liveUser.uid, displayName: liveUser.displayName ?? undefined } : null,
+            liveUser
+                ? {
+                      id: liveUser.uid,
+                      displayName: liveUser.displayName ?? undefined,
+                      providerType: 'firebase',
+                  }
+                : null,
         subscribe: (listener: typeof publish) => {
             publish = listener;
             return () => undefined;
