@@ -89,9 +89,11 @@ export const normalizeEmail = (value: string): string => value.trim().toLowerCas
 export const EXPORT_RUN_COLUMN = '__lc_run_id';
 export const EXPORT_ROW_COLUMN = '__lc_row_id';
 export const EXPORT_EXAMPLE_COLUMN = '__lc_example';
+export const EXPORT_ENCODING_COLUMN = '__lc_csv_encoding';
 export const RESERVED_COLUMNS = new Set([
     EXPORT_RUN_COLUMN,
     EXPORT_ROW_COLUMN,
     EXPORT_EXAMPLE_COLUMN,
+    EXPORT_ENCODING_COLUMN,
     'Problem',
 ]);

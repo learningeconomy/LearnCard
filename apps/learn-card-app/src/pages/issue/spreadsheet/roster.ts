@@ -7,6 +7,7 @@ import {
     EXPORT_RUN_COLUMN,
     EXPORT_ROW_COLUMN,
     EXPORT_EXAMPLE_COLUMN,
+    EXPORT_ENCODING_COLUMN,
     normalizeColumn,
     normalizeEmail,
     type ParsedSpreadsheet,
@@ -15,6 +16,18 @@ import {
 } from './types';
 
 export type ColumnScopes = Record<string, 'shared' | 'perRecipient'>;
+
+// Versioned CSV cells escape both formula prefixes and literal apostrophes.
+// One leading apostrophe is transport encoding; a literal one becomes two.
+const CSV_ENCODING = 'apostrophe-v1';
+const encodeCsvValue = (value: string): string =>
+    /^[=+\-@\t\r']/.test(value) ? `'${value}` : value;
+const decodeCsvValue = (value: string): string =>
+    /^'[=+\-@\t\r']/.test(value) ? value.slice(1) : value;
+const decodeLegacyCsvValue = (value: string, original?: string): string =>
+    original !== undefined && /^[=+\-@\t\r]/.test(original) && value === `'${original}`
+        ? original
+        : value;
 
 export const effectiveRowValues = (
     recipient: Recipient,
@@ -155,18 +168,47 @@ export const mergeSpreadsheet = (
     const recipients = [...draft.recipients];
     const assigned = new Set<string>();
     const sourceRows: ParsedSpreadsheet['rows'] = [];
-    // Decode only the exact address our exporter escaped for this saved row.
-    // A literal leading apostrophe is itself valid in some email local parts.
+    const encodingColumn = sheet.columns.find(column => column.label === EXPORT_ENCODING_COLUMN);
+    const decodedRows = new WeakSet<ParsedSpreadsheet['rows'][number]>();
+    // Decode versioned cells only for verified saved rows. Legacy recipient
+    // addresses require an exact saved match; literal apostrophes are valid.
     const rows = sheet.rows.map(row => {
         const existing =
             row.exportedRunId === draft.id && row.exportedRowId
                 ? draft.recipients.find(recipient => recipientKey(recipient) === row.exportedRowId)
                 : undefined;
-        return existing?.kind === 'email' &&
-            /^'[=+\-@\t\r]/.test(row.email) &&
-            normalizeEmail(existing.email) === row.email.slice(1)
-            ? { ...row, email: row.email.slice(1) }
-            : row;
+        if (!existing) return row;
+        if (encodingColumn && row.cells[encodingColumn.id]?.text === CSV_ENCODING) {
+            const decoded = {
+                ...row,
+                email: decodeCsvValue(row.email),
+                displayName: decodeCsvValue(row.displayName),
+                cells: Object.fromEntries(
+                    Object.entries(row.cells).map(([id, cell]) => {
+                        const text = id === encodingColumn.id ? '' : decodeCsvValue(cell.text);
+                        return [
+                            id,
+                            {
+                                ...cell,
+                                text,
+                                ...(typeof cell.value === 'string'
+                                    ? { value: decodeCsvValue(cell.value) }
+                                    : {}),
+                            },
+                        ];
+                    })
+                ),
+            };
+            decodedRows.add(decoded);
+            return decoded;
+        }
+        return {
+            ...row,
+            email:
+                existing.kind === 'email'
+                    ? decodeLegacyCsvValue(row.email, normalizeEmail(existing.email))
+                    : row.email,
+        };
     });
     const incomingCounts = new Map<string, number>();
     for (const row of rows) incomingCounts.set(row.email, (incomingCounts.get(row.email) ?? 0) + 1);
@@ -223,9 +265,10 @@ export const mergeSpreadsheet = (
                               : binding
                       )
                     : cell.text;
-                // Undo our CSV formula-escape only for verified, same-run app exports.
-                if (row.exportedRunId === draft.id && /^'[=+\-@\t\r]/.test(value))
-                    value = value.slice(1);
+                // Old exports have no reversible codec. Only the saved original
+                // can prove Papa added a quote; changed/unknown cells stay literal.
+                if (!decodedRows.has(row) && row.exportedRunId === draft.id)
+                    value = decodeLegacyCsvValue(value, previous[name]);
                 // CSV has no XLSX error metadata. An unchanged error remains unresolved.
                 if (row.cells[matches[name]!.id]?.problem) cellProblems[name] = value;
                 else if (cellProblems[name] !== value) delete cellProblems[name];
@@ -278,6 +321,7 @@ export const exportRosterCsv = (
         [EXPORT_RUN_COLUMN]: draft.id,
         [EXPORT_ROW_COLUMN]: recipientKey(recipient),
         [EXPORT_EXAMPLE_COLUMN]: '',
+        [EXPORT_ENCODING_COLUMN]: CSV_ENCODING,
         ...(problems ? { Problem: problems[recipientKey(recipient)] } : {}),
     }));
     if (!rows.length && !problems)
@@ -289,6 +333,7 @@ export const exportRosterCsv = (
             [EXPORT_RUN_COLUMN]: '',
             [EXPORT_ROW_COLUMN]: '',
             [EXPORT_EXAMPLE_COLUMN]: 'true',
+            [EXPORT_ENCODING_COLUMN]: CSV_ENCODING,
         });
     return Papa.unparse(
         {
@@ -300,9 +345,14 @@ export const exportRosterCsv = (
                 EXPORT_RUN_COLUMN,
                 EXPORT_ROW_COLUMN,
                 EXPORT_EXAMPLE_COLUMN,
+                EXPORT_ENCODING_COLUMN,
                 ...(problems ? ['Problem'] : []),
             ],
-            data: rows,
+            data: rows.map(row =>
+                Object.fromEntries(
+                    Object.entries(row).map(([name, value]) => [name, encodeCsvValue(value)])
+                )
+            ),
         },
         { escapeFormulae: true }
     );

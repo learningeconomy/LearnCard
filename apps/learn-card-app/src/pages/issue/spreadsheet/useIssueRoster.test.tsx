@@ -10,6 +10,7 @@ import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import { exportRosterCsv } from './roster';
 import { exportIssuanceCsv } from './exportIssuance';
 import { addSubmissionAttempts } from './issuance';
+import { validateCredentialJsonLd } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/validateJsonLd';
 import { writeResult } from '../components/resultField';
 import { AnalyticsEvents } from '../../../analytics/events';
 
@@ -286,6 +287,86 @@ describe('roster autosave and sending', () => {
                     )
                 ).rejects.toMatchObject({ code: 'locked' });
             });
+        }
+    );
+    it.each([false, true])(
+        'keeps literal apostrophes through full CSV import (sent: %s)',
+        async sent => {
+            const run = makeRun();
+            run.templateUri = 'template';
+            run.template.credentialSubject.achievement.description = dynamicField('score');
+            run.scopes = { score: 'perRecipient' };
+            run.draft.values = { 'row-0': { score: "'=SUM(A1:A2)" } };
+            if (sent)
+                run.outcomes['row-0'] = { state: 'sent', templateData: { score: "'=SUM(A1:A2)" } };
+            store.list.mockResolvedValue([]);
+            store.read.mockResolvedValue(run);
+            store.save.mockResolvedValue(undefined);
+            const options = emptyOptions(run);
+            const variables = ['score'];
+            const submit = vi.fn(async () => ({
+                batchId: 'batch',
+                status: 'QUEUED',
+                createdAt: new Date().toISOString(),
+            }));
+            const wallet = {
+                id: { did: () => 'did:key:test' },
+                invoke: {
+                    getProfile: vi.fn(async () => ({ profileId: run.scope.issuer })),
+                    sendCredentialsViaInbox: submit,
+                    waitForInboxCredentialBatch: vi.fn(async () => statusFor('batch', 1)),
+                },
+            } as unknown as BespokeLearnCard;
+            options.initWallet = vi.fn(async () => wallet);
+            const { result } = renderHook(() => {
+                const [recipients, setRecipients] = useState(options.recipients);
+                const [values, setValues] = useState(options.values);
+                const [shared, setShared] = useState(options.shared);
+                return useIssueRoster({
+                    ...options,
+                    recipients,
+                    setRecipients,
+                    values,
+                    setValues,
+                    shared,
+                    setShared,
+                    variables,
+                    template: run.template,
+                });
+            });
+            const csv = exportIssuanceCsv(run, variables);
+            await act(async () => {
+                await result.current.importSheet(parseSpreadsheet(readSpreadsheetText(csv)));
+            });
+            expect(result.current.valuesForRow(run.draft.recipients[0])).toEqual({
+                score: "'=SUM(A1:A2)",
+            });
+            expect(result.current.hasProblems).toBe(false);
+            expect(result.current.run?.draft.values['row-0'].score).toBe("'=SUM(A1:A2)");
+            if (!sent) {
+                store.read.mockResolvedValue(result.current.run);
+                await act(async () => {
+                    await result.current.execute();
+                });
+                expect(result.current.error).toBe('');
+                expect(validateCredentialJsonLd).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        credentialSubject: expect.objectContaining({
+                            achievement: expect.objectContaining({ description: "'=SUM(A1:A2)" }),
+                        }),
+                    }),
+                    expect.anything()
+                );
+                expect(submit).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        items: [
+                            expect.objectContaining({
+                                configuration: { templateData: { score: "'=SUM(A1:A2)" } },
+                            }),
+                        ],
+                    })
+                );
+            }
         }
     );
     it('blocks source formula errors when a template variable is mapped after import', async () => {
