@@ -404,7 +404,6 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expect
                 .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
                 .toBe('none');
-            const scene = page.locator('.batch-delivery-illustration');
             await page.setViewportSize({ width: 390, height: 844 });
             const phoneScene = await scene.boundingBox();
             expect(phoneScene!.height).toBeLessThanOrEqual(96);
