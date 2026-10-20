@@ -13,10 +13,10 @@ export const BatchDeliveryAnimation: React.FC<{ active: boolean }> = ({ active }
         {[0, 1, 2].map(cloud => (
             <svg
                 key={cloud}
-                viewBox="0 0 150 50"
+                viewBox="0 -8 150 60"
                 fill="currentColor"
                 focusable="false"
-                className={`batch-delivery-cloud batch-delivery-cloud--${cloud} absolute h-12 w-36 text-white`}
+                className={`batch-delivery-cloud batch-delivery-cloud--${cloud} absolute h-14 w-36 text-white`}
             >
                 <path d="M22 42a17 17 0 0 1-1-34 24 24 0 0 1 43 3 18 18 0 0 1 30 7 12 12 0 0 1 0 24Z" />
             </svg>
