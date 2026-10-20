@@ -61,7 +61,7 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
     return (
         <div className="rounded-[20px] shadow-box-bottom overflow-hidden flex flex-col">
             {ownsCurrentId && (
-                <div className="flex flex-col bg-white bg-opacity-70 backdrop-blur-[10px]">
+                <div className="flex flex-col bg-white/70  backdrop-blur-[10px]">
                     <div className="p-[15px]">
                         <TroopID
                             credential={credential}
@@ -157,8 +157,8 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
                         {/* <CredentialVerificationDisplay
                             credential={credential}
                             showText
-                            className="!text-[12px] mx-auto"
-                            iconClassName="!h-[18px] !w-[18px]"
+                            className="text-[12px]! mx-auto"
+                            iconClassName="h-[18px]! w-[18px]!"
                         /> */}
                     </>
                 )}

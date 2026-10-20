@@ -590,7 +590,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                             href="/login"
                             aria-label="LearnCard"
                             rel="noreferrer"
-                            className="flex items-center gap-2.5 shrink-0 rounded text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="flex items-center gap-2.5 shrink-0 rounded-sm text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
                             <img
                                 src={LearnCardBrandMark}
@@ -607,7 +607,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                             <a
                                 href="/login"
                                 rel="noreferrer"
-                                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                             >
                                 <span>{m['shareLinks.close']()}</span>
                                 <IonIcon
@@ -622,11 +622,11 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
             </IonHeader>
             <IonContent>
                 <main className="bg-grayscale-100 text-grayscale-900 min-h-full">
-                    <div className="max-w-3xl mx-auto px-5 py-8 md:py-14 space-y-5">
+                    <div className="max-w-3xl mx-auto px-5 py-8 md:py-14 space-y-v3-5">
                         {state !== 'ready' || !ready ? (
                             <section
                                 role="status"
-                                className="bg-white rounded-[20px] p-8 md:p-12 text-center space-y-4"
+                                className="bg-white rounded-[20px] p-8 md:p-12 text-center space-y-v3-4"
                             >
                                 <span className="inline-flex p-4 rounded-2xl bg-grayscale-100 text-grayscale-600">
                                     <IonIcon
@@ -659,7 +659,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                 )}
                                 {state === 'passcode_required' && (
                                     <form
-                                        className="mx-auto max-w-sm space-y-4 text-left"
+                                        className="mx-auto max-w-sm space-y-v3-4 text-left"
                                         onSubmit={event => {
                                             event.preventDefault();
                                             if (passcode.length < 4) return;
@@ -681,7 +681,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                     setPasscode(event.target.value);
                                                     setPasscodeError(false);
                                                 }}
-                                                className="mt-2 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="mt-2 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                                                 placeholder={m['shareLinks.passcodeLabel']()}
                                             />
                                         </label>
@@ -740,7 +740,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                             <>
                                                 <section
                                                     data-share-export-exclude
-                                                    className="pt-4 border-t border-grayscale-100 space-y-3"
+                                                    className="pt-4 border-t border-grayscale-100 space-y-v3-3"
                                                 >
                                                     <div className="flex items-start gap-3">
                                                         <IonIcon
@@ -815,7 +815,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                         </p>
                                                     )}
                                                 </section>
-                                                <div className="pt-4 border-t border-grayscale-100 space-y-2">
+                                                <div className="pt-4 border-t border-grayscale-100 space-y-v3-2">
                                                     <p className="text-xs font-medium text-grayscale-700">
                                                         {m['shareLinks.presentationProof']()}
                                                     </p>
@@ -826,7 +826,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                 </div>
                                                 <section
                                                     data-share-export-exclude
-                                                    className="pt-4 border-t border-grayscale-100 space-y-3"
+                                                    className="pt-4 border-t border-grayscale-100 space-y-v3-3"
                                                 >
                                                     <p className="text-xs text-grayscale-500 leading-relaxed">
                                                         {m['shareLinks.downloadHint']()}
@@ -871,10 +871,10 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             onClick={() =>
                                                                 newModal(
                                                                     <div
-                                                                        className="sentry-block ph-no-capture bg-white p-6 font-poppins text-grayscale-900 text-center space-y-5"
+                                                                        className="sentry-block ph-no-capture bg-white p-6 font-poppins text-grayscale-900 text-center space-y-v3-5"
                                                                         data-html2canvas-ignore
                                                                     >
-                                                                        <h2 className="text-xl font-semibold break-words">
+                                                                        <h2 className="text-xl font-semibold wrap-break-word">
                                                                             {ready.metadata.title}
                                                                         </h2>
                                                                         <QRCodeSVG
@@ -897,7 +897,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                                         </p>
                                                                         <button
                                                                             type="button"
-                                                                            className="rounded-[20px] !bg-grayscale-900 !text-white px-5 py-3 text-sm font-medium"
+                                                                            className="rounded-[20px] bg-grayscale-900! text-white! px-5 py-3 text-sm font-medium"
                                                                             onClick={closeModal}
                                                                         >
                                                                             {m[

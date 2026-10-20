@@ -217,7 +217,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
                 onFamilyCreationSuccess={() => setStep(LaunchStep.selectProfile)}
             />,
             {
-                sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
                 hideButton: true,
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
@@ -290,7 +290,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
 
                 <button
                     onClick={handleCancel}
-                    className="w-full py-3 bg-white text-grayscale-700 rounded-full font-medium shadow-sm"
+                    className="w-full py-3 bg-white text-grayscale-700 rounded-full font-medium shadow-xs"
                 >
                     Cancel
                 </button>

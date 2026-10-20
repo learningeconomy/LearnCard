@@ -1982,6 +1982,9 @@
             "resendFailed": "No pudimos enviar un código nuevo. Comprueba tu conexión e inténtalo de nuevo."
         },
         "invalidRequest": "Esta solicitud de recuperación ya no es válida. Inicia una nueva.",
+        "status": {
+            "failed": "No pudimos comprobar tu solicitud en este momento."
+        },
         "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
         "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
         "error.invalidCode": "Ese código es incorrecto o ha expirado. Solicita uno nuevo e inténtalo de nuevo.",

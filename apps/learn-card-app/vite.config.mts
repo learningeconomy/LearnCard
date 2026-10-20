@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
@@ -173,6 +174,7 @@ export default defineConfig(async ({ mode, command }) => {
 
     return {
         plugins: [
+            tailwindcss(),
             i18nImportGuard(),
             react(),
             svgr(),
@@ -195,6 +197,7 @@ export default defineConfig(async ({ mode, command }) => {
         ],
         build: {
             target: 'esnext',
+            cssTarget: ['chrome111', 'safari16.4', 'firefox128'],
             outDir: path.join(__dirname, 'build'),
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,

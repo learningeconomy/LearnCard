@@ -238,6 +238,8 @@ Before shipping any new modal, overlay, or form:
 
 Use focused unit/mock tests and small scripts or a reusable browser in the edit loop. Near PR readiness, prove cross-surface or network-touching changes with the matching `lc verify` journey; run the full catalog before marking that work ready. This is a Linux-only owned-stack gate, not a requirement to rebuild the world after every edit. macOS/Windows developers can use the secret-free hosted Linux workflow `.github/workflows/verification.yml` or a disposable Linux sandbox. Read `.agents/skills/verify-learncard/SKILL.md` for setup, per-directory ports/dev coexistence, safe worker coordination, and honest coverage gaps. Never claim verification you did not run.
 
+Finish agent tasks with the draft-PR proof contract in [ship-with-proof](.agents/skills/ship-with-proof/SKILL.md).
+
 ## Monorepo Structure
 
 The project uses Bun workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory

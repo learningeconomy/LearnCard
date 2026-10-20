@@ -68,9 +68,9 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
     };
 
     return (
-        <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)_+_2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)_+_1.5rem)] font-poppins">
+        <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)+2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)] font-poppins">
             <div className="w-full max-w-[360px] md:max-w-[440px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 md:px-12 md:py-10 flex flex-col items-center relative overflow-hidden">
-                <div className="w-16 h-16 mx-auto mb-6 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm border border-emerald-100/50">
+                <div className="w-16 h-16 mx-auto mb-6 bg-emerald-50 rounded-full flex items-center justify-center shadow-xs border border-emerald-100/50">
                     {step === 'success' ? (
                         <CheckCircle2 className="w-8 h-8 text-emerald-600" strokeWidth={1.5} />
                     ) : (
@@ -111,7 +111,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
                     )}
 
                     {step === 'saving' && (
-                        <div className="flex flex-col items-center justify-center h-[64px] space-y-3">
+                        <div className="flex flex-col items-center justify-center h-[64px] space-y-v3-3">
                             <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
                             <p className="text-sm font-medium text-grayscale-700">
                                 {m['onboarding.v2.pin.saving']()}

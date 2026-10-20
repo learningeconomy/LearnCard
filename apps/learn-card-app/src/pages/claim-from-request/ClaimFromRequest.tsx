@@ -203,7 +203,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
                 </div>
                 <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                     <span className="created-at text-grayscale-700">{issueDate}</span>
-                    <span className="issued-by text-grayscale-900 font-[500]">
+                    <span className="issued-by text-grayscale-900 font-medium">
                         by <strong className="font-[700] capitalize">{issuerName}</strong>
                     </span>
                 </div>
@@ -225,7 +225,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
             </div>
             <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
-                <span className="issued-by text-grayscale-900 font-[500]">
+                <span className="issued-by text-grayscale-900 font-medium">
                     by <strong className="font-[700] capitalize">{issuerName}</strong>
                 </span>
             </div>
@@ -360,7 +360,7 @@ const ExchangeErrorDisplay: React.FC<{
 
                 {/* Content */}
                 <div className="p-6">
-                    <div className="space-y-5 mb-6">
+                    <div className="space-y-v3-5 mb-6">
                         <p className="text-grayscale-600 text-center text-sm leading-relaxed">
                             {friendlyError.description}
                         </p>
@@ -384,7 +384,7 @@ const ExchangeErrorDisplay: React.FC<{
                                 </summary>
 
                                 <div className="mt-3 bg-grayscale-100 rounded-xl p-4">
-                                    <p className="text-xs text-grayscale-600 font-mono break-words">
+                                    <p className="text-xs text-grayscale-600 font-mono wrap-break-word">
                                         {rawErrorMessage}
                                     </p>
                                 </div>
@@ -393,7 +393,7 @@ const ExchangeErrorDisplay: React.FC<{
                     </div>
 
                     {/* Action buttons */}
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <button
                             type="button"
                             onClick={() => onRetry()}
@@ -429,8 +429,8 @@ const ExchangeSuccessDisplay: React.FC<{
 }) => (
     <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
         <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
-            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-8 text-center">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <div className="bg-linear-to-br/srgb from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-5">
                     <CheckCircle className="w-8 h-8 text-white" />
                 </div>
                 <h1 className="text-xl font-semibold text-white mb-2">{title}</h1>

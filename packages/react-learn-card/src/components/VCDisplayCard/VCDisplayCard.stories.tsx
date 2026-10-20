@@ -47,7 +47,7 @@ const DetailsOverrideTest = (
             <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
                 Issuer
             </h6>
-            <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block overflow-ellipsis break-all">
+            <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block text-ellipsis break-all">
                 override details issuer override details issuer override details issuer override
                 details issuer override details issuer override details issuer
             </p>
@@ -57,7 +57,7 @@ const DetailsOverrideTest = (
             <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
                 other field
             </h6>
-            <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block overflow-ellipsis break-all">
+            <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block text-ellipsis break-all">
                 override details
             </p>
         </div>

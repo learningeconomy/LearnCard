@@ -137,6 +137,23 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+describe.each(['onboarding', 'account'])('ScoutPass %s keyboard focus', surface => {
+    it.each(['apple', 'google'])('preserves the native %s name field focus outline', loginType => {
+        mocks.loginType = loginType;
+        if (surface === 'onboarding') {
+            render(<NewJoinNetworkPrompt handleCloseModal={mocks.close} />);
+        } else {
+            renderAccount();
+        }
+
+        const name = screen.getByRole('textbox', { name: /Full Name/ });
+        // Tailwind 4's outline-hidden keeps the forced-colors fallback when rings are suppressed.
+        expect(name.tagName).toBe('INPUT');
+        expect(name.classList.contains('focus:outline-hidden')).toBe(true);
+        expect(name.classList.contains('focus:outline-none')).toBe(false);
+    });
+});
+
 describe('ScoutPass Apple onboarding', () => {
     it('allows a blank name and saves the username consistently', async () => {
         render(<NewJoinNetworkPrompt handleCloseModal={mocks.close} />);

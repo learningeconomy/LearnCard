@@ -51,7 +51,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
                 <h4 className="text-xs font-medium text-grayscale-700 mb-2 uppercase tracking-wider">
                     {title}
                 </h4>
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     {stringDiff.added.map((item, i) => (
                         <div
                             key={`added-${i}`}
@@ -107,7 +107,7 @@ export const ManifestDiffPanel: React.FC<ManifestDiffPanelProps> = ({ diff }) =>
                 <h4 className="text-xs font-medium text-grayscale-700 mb-2 uppercase tracking-wider">
                     Templates
                 </h4>
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     {diff.templates.added.map((item, i) => (
                         <div
                             key={`added-${i}`}

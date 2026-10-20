@@ -54,7 +54,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                 setDraft(e.target.value);
                 onChange?.(e.target.value);
             },
-            className: `w-full text-xs text-grayscale-700 px-2 py-1.5 outline-none resize-none leading-relaxed ${
+            className: `w-full text-xs text-grayscale-700 px-2 py-1.5 outline-hidden resize-none leading-relaxed ${
                 showDecoration ? 'bg-transparent rounded-none' : 'bg-indigo-50 rounded-lg'
             }`,
         };

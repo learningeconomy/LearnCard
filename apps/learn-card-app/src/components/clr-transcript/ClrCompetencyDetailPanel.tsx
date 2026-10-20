@@ -125,7 +125,7 @@ const ClrCompetencyDetailPanel: React.FC<{
 
             <div className="border-b border-grayscale-100 border-solid w-[95%] mx-auto" />
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-v3-4">
                 {section.competencies.map(competency => (
                     <ClrCompetencyBlock
                         key={competency.sourceCredentialId}
@@ -146,7 +146,7 @@ const ClrCompetencyDetailPanel: React.FC<{
     );
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
+        <div className="space-y-v3-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             <div className="bg-white rounded-b-[15px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -160,14 +160,14 @@ const ClrCompetencyDetailPanel: React.FC<{
                     </div>
                     <button
                         onClick={closeModal}
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px]"
+                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2"
                     >
                         <X className="w-6 h-6" />
                     </button>
                 </div>
             </div>
 
-            <div className="px-5 space-y-4">
+            <div className="px-5 space-y-v3-4">
                 {linkedCourseSections.map(section =>
                     renderSection(section, <StudiesIcon className="w-4 h-4" />)
                 )}
@@ -175,7 +175,7 @@ const ClrCompetencyDetailPanel: React.FC<{
                 {linkedProgramSections.map(section =>
                     renderSection(
                         section,
-                        <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-500" />
+                        <CertificateDisplayIcon className="w-4 h-4 text-grayscale-500!" />
                     )
                 )}
 

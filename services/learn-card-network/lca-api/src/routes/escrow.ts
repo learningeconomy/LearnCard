@@ -1,4 +1,5 @@
 import { timingSafeEqual, randomUUID, randomBytes } from 'crypto';
+import { logEscrowFailure } from '../services/escrow-enclave/logFailure';
 import {
     AuthorityCommitValidator,
     AuthorityHoldReceiptValidator,
@@ -248,6 +249,7 @@ const enclaveOperation = async <T>(
     try {
         return await operation();
     } catch (error) {
+        logEscrowFailure(error);
         if (error instanceof EscrowCodeError) {
             throw new TRPCError({ code: 'FORBIDDEN', message: error.reason });
         }
@@ -1311,8 +1313,10 @@ export const escrowRouter = t.router({
                     };
                 } catch (error) {
                     // Keep the typed mismatch inside the wrapper; never expose enclave internals.
-                    if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError)
+                    if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError) {
+                        logEscrowFailure(error);
                         return { mismatch: true as const };
+                    }
                     if (reserved && hold.holdRecord.hold.policyVersion !== 2)
                         await refundEscrowPinAttempt(
                             hold.authProvider,

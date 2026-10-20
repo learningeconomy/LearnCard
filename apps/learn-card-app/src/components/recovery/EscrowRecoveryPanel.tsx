@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
 import { IonIcon } from '@ionic/react';
 import {
     alertCircleOutline,
@@ -23,6 +24,17 @@ import {
 import type { PendingEscrowRecovery } from './escrowRecoveryStorage';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import * as m from '../../paraglide/messages.js';
+
+const log = getLogger('recovery-request');
+// Error messages/causes may contain response bodies or request credentials.
+const logRecoveryError = (event: string, cause: unknown): void => {
+    const errorType =
+        cause instanceof Error &&
+        ['EscrowEvidenceError', 'EscrowRequestError', 'TypeError'].includes(cause.name)
+            ? cause.name
+            : 'Error';
+    log.error(event, { errorType });
+};
 
 export const formatTimeRemaining = (ms: number): string => {
     if (ms <= 0) return 'Ready';
@@ -129,6 +141,8 @@ export const EscrowRecoveryPanel = ({
     // confirmed. Reset on a fresh hold; refreshed from the server (never
     // trusted purely from local storage) on load and on every status check.
     const [confirmed, setConfirmed] = useState(false);
+    const [verifiedHoldId, setVerifiedHoldId] = useState<string>();
+    const [statusFailed, setStatusFailed] = useState(false);
     const [codeInput, setCodeInput] = useState('');
     const [codeError, setCodeError] = useState('');
     const [confirming, setConfirming] = useState(false);
@@ -201,7 +215,9 @@ export const EscrowRecoveryPanel = ({
                     setPending(undefined);
                     setLoaded(true);
                     setError(m['recovery.invalidRequest']());
-                    void clearPendingEscrowRecovery(value.holdId, scope).catch(() => {});
+                    void clearPendingEscrowRecovery(value.holdId, scope).catch(cause =>
+                        logRecoveryError('recovery.storage.clear.failed', cause)
+                    );
                     return;
                 }
                 setPending(value);
@@ -239,6 +255,9 @@ export const EscrowRecoveryPanel = ({
         if (generation !== statusGenerationRef.current || holdId !== activeHoldIdRef.current) {
             return;
         }
+        setVerifiedHoldId(holdId);
+        setStatusFailed(false);
+        setError('');
         // Monotonic for a given hold: once confirmed locally, never let a
         // stale confirmed: false revert it. Independent of the generation
         // check above as a second guard on the field a race would most
@@ -259,6 +278,54 @@ export const EscrowRecoveryPanel = ({
         }
     };
 
+    const handleStatusResult = async (
+        hold: Awaited<ReturnType<EscrowRecoveryPanelProps['onStatus']>>,
+        { generation, holdId }: { generation: number; holdId: string }
+    ): Promise<{ ok: boolean; ready: boolean }> => {
+        const isCurrent = () =>
+            active.current &&
+            generation === statusGenerationRef.current &&
+            holdId === activeHoldIdRef.current;
+        // Ignore superseded reads before cleanup or any state updates.
+        if (!pending || !isCurrent()) return { ok: false, ready: false };
+        if (
+            !hold ||
+            hold.status === 'cancelled' ||
+            hold.status === 'expired' ||
+            (hold.status === 'completed' && !canResumeCompleted?.())
+        ) {
+            try {
+                await clearPendingEscrowRecovery(holdId, scope);
+            } catch (cause) {
+                logRecoveryError('recovery.storage.clear.failed', cause);
+                if (isCurrent()) {
+                    setStatusFailed(true);
+                    setVerifiedHoldId(undefined);
+                }
+                // Keep the request so Try Again can retry cleanup, including after confirmation.
+                return { ok: false, ready: false };
+            }
+            if (!isCurrent()) return { ok: false, ready: false };
+            setStatusFailed(false);
+            setPending(undefined);
+            setError(
+                hold?.status === 'cancelled'
+                    ? 'This recovery request was cancelled.'
+                    : hold?.status === 'completed'
+                      ? 'This recovery request has already finished. Start a new one.'
+                      : 'This recovery request expired. Start a new one.'
+            );
+            return { ok: false, ready: false };
+        }
+        await refreshHoldStatus(hold, { generation, holdId });
+        if (!isCurrent()) return { ok: false, ready: false };
+        const effectiveReleaseAfter =
+            hold.releaseAfter && !Number.isNaN(Date.parse(hold.releaseAfter))
+                ? hold.releaseAfter
+                : pending.releaseAfter;
+        return { ok: true, ready: Date.parse(effectiveReleaseAfter) <= Date.now() };
+    };
+
     // Confirmation state lives only on the server; a reload must re-derive it
     // rather than trust whatever was last persisted locally. Must stay above
     // every early return below so hook call order never varies between renders.
@@ -267,15 +334,26 @@ export const EscrowRecoveryPanel = ({
         let cancelled = false;
         const holdId = pending.holdId;
         const generation = beginStatusRead();
+        setStatusFailed(false);
+        setVerifiedHoldId(undefined);
         onStatus({
             holdId: pending.holdId,
             resumeToken: pending.resumeToken,
             expectations: pending.expectations,
         })
-            .then(hold => {
-                if (!cancelled) void refreshHoldStatus(hold, { generation, holdId });
+            .then(async hold => {
+                if (!cancelled) await handleStatusResult(hold, { generation, holdId });
             })
-            .catch(() => {});
+            .catch(cause => {
+                logRecoveryError('recovery.status.load.failed', cause);
+                if (
+                    cancelled ||
+                    generation !== statusGenerationRef.current ||
+                    holdId !== activeHoldIdRef.current
+                )
+                    return;
+                setStatusFailed(true);
+            });
         return () => {
             cancelled = true;
         };
@@ -289,6 +367,7 @@ export const EscrowRecoveryPanel = ({
         try {
             await action();
         } catch (cause) {
+            logRecoveryError('recovery.action.failed', cause);
             const message = cause instanceof Error ? cause.message.toLowerCase() : '';
             setError(
                 message.includes('cancelled')
@@ -357,41 +436,23 @@ export const EscrowRecoveryPanel = ({
         if (!pending) return { ok: false, ready: false };
         const holdId = pending.holdId;
         const generation = beginStatusRead();
-        const hold = await onStatus({
-            holdId: pending.holdId,
-            resumeToken: pending.resumeToken,
-            expectations: pending.expectations,
-        });
-        // [P2] A newer read (or a confirmation) may have started, and even
-        // finished, while this one was in flight. Report not-ready instead
-        // of acting on it: acting here could mean clearing a hold (below)
-        // that a newer read has already moved past.
-        if (generation !== statusGenerationRef.current || holdId !== activeHoldIdRef.current) {
-            return { ok: false, ready: false };
+        let hold;
+        setError('');
+        setStatusFailed(false);
+        try {
+            hold = await onStatus({
+                holdId: pending.holdId,
+                resumeToken: pending.resumeToken,
+                expectations: pending.expectations,
+            });
+        } catch (cause) {
+            if (generation === statusGenerationRef.current && holdId === activeHoldIdRef.current) {
+                setStatusFailed(true);
+                setVerifiedHoldId(undefined);
+            }
+            throw cause;
         }
-        if (
-            !hold ||
-            hold.status === 'cancelled' ||
-            hold.status === 'expired' ||
-            (hold.status === 'completed' && !canResumeCompleted?.())
-        ) {
-            await clearPendingEscrowRecovery(holdId, scope);
-            setPending(undefined);
-            setError(
-                hold?.status === 'cancelled'
-                    ? 'This recovery request was cancelled.'
-                    : hold?.status === 'completed'
-                      ? 'This recovery request has already finished. Start a new one.'
-                      : 'This recovery request expired. Start a new one.'
-            );
-            return { ok: false, ready: false };
-        }
-        await refreshHoldStatus(hold, { generation, holdId });
-        const effectiveReleaseAfter =
-            hold.releaseAfter && !Number.isNaN(Date.parse(hold.releaseAfter))
-                ? hold.releaseAfter
-                : pending.releaseAfter;
-        return { ok: true, ready: Date.parse(effectiveReleaseAfter) <= Date.now() };
+        return handleStatusResult(hold, { generation, holdId });
     };
 
     const handleConfirmCode = async (code: string) => {
@@ -429,7 +490,20 @@ export const EscrowRecoveryPanel = ({
                     { generation, holdId }
                 );
             }
-            await checkStatus().catch(() => {});
+            const refresh = checkStatus();
+            const refreshGeneration = statusGenerationRef.current;
+            await refresh.catch(cause => {
+                logRecoveryError('recovery.status.confirm.failed', cause);
+                if (
+                    !active.current ||
+                    refreshGeneration !== statusGenerationRef.current ||
+                    holdId !== activeHoldIdRef.current
+                )
+                    return;
+                // Code acceptance remains authoritative if this best-effort read fails.
+                setStatusFailed(false);
+                setVerifiedHoldId(holdId);
+            });
         } catch (e) {
             const isRefusal = isEscrowRefusal(e);
             const reason =
@@ -475,14 +549,14 @@ export const EscrowRecoveryPanel = ({
     // Screen 1 only surfaces a recovery already underway; starting one lives on Screen 2.
     if (view === 'status' && !pending && !existingHold && !error && !notice) return null;
     return (
-        <section className="font-poppins space-y-4 my-5" aria-label="Account recovery request">
+        <section className="font-poppins space-y-v3-4 my-5" aria-label="Account recovery request">
             {view === 'start' && !storageAvailable && (
                 <p role="alert" className="text-sm text-grayscale-600 leading-relaxed">
                     Use an up-to-date browser on a personal device, with public-computer mode off,
                     for a 7-day recovery.
                 </p>
             )}
-            {error && (
+            {(statusFailed || error) && (
                 <div
                     role="alert"
                     className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
@@ -491,7 +565,9 @@ export const EscrowRecoveryPanel = ({
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
-                    <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+                    <span className="text-sm text-red-700 leading-relaxed">
+                        {statusFailed ? m['recovery.status.failed']() : error}
+                    </span>
                 </div>
             )}
             {notice && !pending && (
@@ -501,8 +577,8 @@ export const EscrowRecoveryPanel = ({
             )}
 
             {existingHold && !pending && (
-                <div className="space-y-5 animate-fade-in-up">
-                    <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-4">
+                <div className="space-y-v3-5 animate-fade-in-up">
+                    <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
                                 <IonIcon icon={timeOutline} className="text-xl" />
@@ -533,7 +609,7 @@ export const EscrowRecoveryPanel = ({
 
                         <hr className="border-grayscale-200" />
 
-                        <div className="space-y-1">
+                        <div className="space-y-v3-1">
                             <p className="text-sm font-medium text-grayscale-900">
                                 Lost that browser?
                             </p>
@@ -605,10 +681,30 @@ export const EscrowRecoveryPanel = ({
             )}
             {pending
                 ? (() => {
+                      if (
+                          statusFailed ||
+                          ((pending.requiresConfirmation || loading) &&
+                              verifiedHoldId !== pending.holdId)
+                      ) {
+                          return (
+                              <button
+                                  className={button}
+                                  disabled={!statusFailed || loading}
+                                  onClick={() => {
+                                      setVerifiedHoldId(undefined);
+                                      void run(async () => {
+                                          await checkStatus();
+                                      });
+                                  }}
+                              >
+                                  {!statusFailed || loading ? spinner('Checking...') : 'Try Again'}
+                              </button>
+                          );
+                      }
                       if (pending.requiresConfirmation && !confirmed) {
                           return (
-                              <div className="space-y-5 animate-fade-in-up">
-                                  <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-5">
+                              <div className="space-y-v3-5 animate-fade-in-up">
+                                  <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-5">
                                       <div className="flex items-center gap-3">
                                           <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
                                               <IonIcon icon={mailOutline} className="text-xl" />
@@ -687,8 +783,8 @@ export const EscrowRecoveryPanel = ({
                       }
 
                       return (
-                          <div className="space-y-5 animate-fade-in-up">
-                              <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-5">
+                          <div className="space-y-v3-5 animate-fade-in-up">
+                              <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-5">
                                   <div className="flex items-center gap-3">
                                       <div
                                           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isReady ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}
@@ -713,7 +809,7 @@ export const EscrowRecoveryPanel = ({
                                   </div>
 
                                   {!isReady && (
-                                      <div className="space-y-2" aria-live="polite">
+                                      <div className="space-y-v3-2" aria-live="polite">
                                           <p className="text-lg font-medium text-grayscale-900">
                                               {formatTimeRemaining(timeRemaining)}
                                           </p>
@@ -747,7 +843,7 @@ export const EscrowRecoveryPanel = ({
                                   )}
 
                                   {!saved && (
-                                      <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-3">
+                                      <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-v3-3">
                                           <div className="flex items-start gap-2.5">
                                               <IonIcon
                                                   icon={alertCircleOutline}
@@ -871,7 +967,7 @@ export const EscrowRecoveryPanel = ({
                   view === 'start' && (
                       <>
                           {showPinFlow ? (
-                              <div className="space-y-4">
+                              <div className="space-y-v3-4">
                                   <h3 className="text-xl font-semibold text-grayscale-900">
                                       Enter my recovery PIN
                                   </h3>

@@ -128,7 +128,7 @@ const CredentialHistoryModal: React.FC<CredentialHistoryModalProps> = ({
                             <li
                                 key={entry.uri}
                                 data-testid="credential-history-entry"
-                                className="w-full border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0 py-3"
+                                className="w-full border-b-grayscale-100 border-b-solid border-b-2 last:border-0 py-3"
                             >
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex flex-col min-w-0">

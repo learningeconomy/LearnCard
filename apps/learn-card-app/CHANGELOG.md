@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.100.4
+
+### Patch Changes
+
+- [#1741](https://github.com/learningeconomy/LearnCard/pull/1741) [`b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229`](https://github.com/learningeconomy/LearnCard/commit/b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Persist saved profile changes before navigation without forcing profile refetches on every mount. Keep browser query-cache storage on localforage and native storage on SQLite across initialization and reload; native persistence failures never fall back to a stale second store. Revalidate installed apps after reload and apply nested tenant registry defaults correctly.
+
+    Add the disposable `lc verify` workflow with maintained user journeys, clean-checkout preparation, independently allocated service ports, confined local-service access, interruption-safe evidence, and ownership-checked crash recovery. Repair cold-start Vite loading, pin Astro's compatible Zod dependency, and load the example's CommonJS dependency correctly during server rendering. Build credential share links from the active tenant's configured host instead of the fixed development port.
+
+    Allow CLI schema/help loading before generated snippets exist; generate snippets atomically and load token snippets only when needed.
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
 ## 1.100.3
 
 ### Patch Changes

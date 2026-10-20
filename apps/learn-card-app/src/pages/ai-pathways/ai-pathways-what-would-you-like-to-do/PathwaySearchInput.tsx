@@ -151,7 +151,7 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
                             if (e.key === 'Escape') setShowSuggestions(false);
                         }}
                         autocapitalize="off"
-                        className={`w-full text-grayscale-800 rounded-[20px] !px-[10px] !py-0 font-medium text-[16px] leading-[18px] ${
+                        className={`w-full text-grayscale-800 rounded-[20px] px-[10px]! py-0! font-medium text-[16px] leading-[18px] ${
                             showClearAction ? 'bg-violet-50' : 'bg-grayscale-100'
                         }`}
                         style={

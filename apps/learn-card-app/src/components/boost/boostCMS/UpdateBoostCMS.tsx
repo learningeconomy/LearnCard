@@ -669,7 +669,7 @@ const UpdateBoostCMS: React.FC = () => {
                 isSaveLoading={isSaveLoading}
                 skippedPublishStep={skippedPublishStep}
             />,
-            { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
+            { sectionClassName: 'max-w-[400px]!', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

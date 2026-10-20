@@ -131,7 +131,7 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
             </p>
 
             {error && (
-                <div className="text-sm text-red-600 bg-red-50 rounded p-3 mb-4">{error}</div>
+                <div className="text-sm text-red-600 bg-red-50 rounded-sm p-3 mb-4">{error}</div>
             )}
 
             <div ref={containerRef} className="min-h-[60px] flex items-center justify-center" />

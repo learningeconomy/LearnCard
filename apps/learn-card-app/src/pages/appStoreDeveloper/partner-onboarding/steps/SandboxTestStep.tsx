@@ -237,10 +237,10 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
     const hasUnsavedTemplates = issuableTemplates.some(t => !t.boostUri);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Info */}
             <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                <TestTube2 className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                <TestTube2 className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" />
 
                 <div className="text-sm text-violet-800">
                     <p className="font-medium mb-1">
@@ -251,7 +251,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
             </div>
 
             {/* Configuration Summary */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-3">
                 <h3 className="font-medium text-gray-800">
                     {m['developerPortal.onboarding.sandboxTest.configSummary']()}
                 </h3>
@@ -313,7 +313,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
             {/* Warning if no templates or unsaved */}
             {!canTest && (
                 <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div className="text-sm text-amber-800">
                         <p className="font-medium">
                             {m['developerPortal.onboarding.sandboxTest.templatesNotSaved']()}
@@ -327,7 +327,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
             {hasUnsavedTemplates && canTest && (
                 <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <p className="text-sm text-amber-700">
                         {m['developerPortal.onboarding.sandboxTest.someUnsaved']()}
                     </p>
@@ -336,7 +336,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
             {/* Template Selector (if multiple) */}
             {canTest && issuableTemplates.filter(t => t.boostUri).length > 1 && (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <label className="block text-sm font-medium text-gray-700">
                         {m['developerPortal.onboarding.sandboxTest.selectTemplate']()}
                     </label>
@@ -414,7 +414,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                         </span>
                     </div>
 
-                    <div className="p-4 bg-gradient-to-br from-violet-50 to-cyan-50 rounded-xl border border-violet-100">
+                    <div className="p-4 bg-linear-to-br/srgb from-violet-50 to-cyan-50 rounded-xl border border-violet-100">
                         <div className="flex items-start gap-4">
                             {branding.image ? (
                                 <img
@@ -445,7 +445,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                     {templateVariables.slice(0, 4).map(varName => (
                                         <span
                                             key={varName}
-                                            className="inline-flex items-center gap-1 px-2 py-1 bg-white/70 rounded text-xs"
+                                            className="inline-flex items-center gap-1 px-2 py-1 bg-white/70 rounded-sm text-xs"
                                         >
                                             <span className="text-gray-500">
                                                 {varName
@@ -474,13 +474,13 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
             {/* Send Test */}
             {canTest && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <h3 className="font-medium text-gray-800">
                         {m['developerPortal.onboarding.sandboxTest.sendTest']()}
                     </h3>
 
                     {testStatus === 'idle' && (
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <div>
                                 <label className="block text-sm text-gray-600 mb-1">
                                     {m['developerPortal.onboarding.sandboxTest.yourEmail']()}
@@ -495,7 +495,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                             value={testEmail}
                                             onChange={e => setTestEmail(e.target.value)}
                                             placeholder="you@company.com"
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                                         />
                                     </div>
 
@@ -519,7 +519,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                     )}
 
                     {testStatus === 'sending' && (
-                        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                        <div className="flex flex-col items-center justify-center py-8 space-y-v3-4">
                             <Loader2 className="w-10 h-10 text-violet-500 animate-spin" />
 
                             <div className="text-center">
@@ -534,9 +534,9 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                     )}
 
                     {testStatus === 'success' && testResult && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
 
                                 <div className="flex-1">
                                     <p className="font-medium text-emerald-800">
@@ -577,9 +577,9 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                     )}
 
                     {testStatus === 'error' && testResult?.error && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-                                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
 
                                 <div className="flex-1">
                                     <p className="font-medium text-red-800">

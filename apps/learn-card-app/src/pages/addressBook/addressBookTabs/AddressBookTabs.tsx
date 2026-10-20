@@ -52,7 +52,7 @@ const AddressBookTabs: React.FC<{
                             }}
                             className={` pr-4 z-10 pl-[15px] py-[5px] ${
                                 activeTab === AddressBookTabsEnum.Connections
-                                    ? `font-semibold text-${primaryColor} ${borderRadius} border-solid border-[1px] border-${primaryColorShade}`
+                                    ? `font-semibold text-${primaryColor} ${borderRadius} border-solid border border-${primaryColorShade}`
                                     : 'text-grayscale-600'
                             }`}
                         >
@@ -65,7 +65,7 @@ const AddressBookTabs: React.FC<{
                             }}
                             className={` pr-4 subpixel-antialiased z-10 pl-[15px] py-[5px] ${
                                 activeTab === AddressBookTabsEnum.Requests
-                                    ? `font-semibold text-${primaryColor} ${borderRadius} border-solid border-[1px] border-${primaryColorShade}`
+                                    ? `font-semibold text-${primaryColor} ${borderRadius} border-solid border border-${primaryColorShade}`
                                     : 'text-grayscale-600'
                             }`}
                         >
@@ -78,7 +78,7 @@ const AddressBookTabs: React.FC<{
                                 }}
                                 className={` pr-4 subpixel-antialiased z-10 pl-[15px] py-[5px] ${
                                     activeTab === AddressBookTabsEnum.Blocked
-                                        ? `font-semibold text-${primaryColor} ${borderRadius} border-solid border-[1px] border-${primaryColorShade}`
+                                        ? `font-semibold text-${primaryColor} ${borderRadius} border-solid border border-${primaryColorShade}`
                                         : 'text-grayscale-600'
                                 }`}
                             >
@@ -99,7 +99,7 @@ const AddressBookTabs: React.FC<{
                             onChange={e => handleSearch?.(e.target.value)}
                             ref={searchInputRef}
                             type="text"
-                            className="w-full py-3 pl-12 pr-11 rounded-2xl text-base text-grayscale-900 placeholder:text-grayscale-400 bg-grayscale-100 border border-transparent focus:outline-none focus:bg-white focus:border-grayscale-200 focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                            className="w-full py-3 pl-12 pr-11 rounded-2xl text-base text-grayscale-900 placeholder:text-grayscale-400 bg-grayscale-100 border border-transparent focus:outline-hidden focus:bg-white focus:border-grayscale-200 focus:ring-2 focus:ring-emerald-500/40 transition-all"
                         />
                         {search?.length > 0 && (
                             <button

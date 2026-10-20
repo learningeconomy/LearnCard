@@ -340,9 +340,69 @@ describe('createRemoteEnclave', () => {
         await expect(enclave.releaseEscrow(input)).resolves.toEqual({ sealed: envelope, receipt });
         expect(post.mock.calls.at(-1)?.[1]).toMatchObject({ requestId: 'stable-id' });
         post.mockResolvedValue(respond(200, { sealed: envelope }));
-        await expect(enclave.releaseEscrow(input)).rejects.toBeInstanceOf(EscrowUnavailableError);
+        await expect(enclave.releaseEscrow(input)).rejects.toMatchObject({
+            reason: 'invalid_response',
+        });
         post.mockResolvedValue(respond(200, { ok: true }));
-        await expect(enclave.cancelHold(input)).rejects.toBeInstanceOf(EscrowUnavailableError);
+        await expect(enclave.cancelHold(input)).rejects.toMatchObject({
+            reason: 'invalid_response',
+        });
+    });
+
+    it.each([
+        { ...hold, ledgerSeq: -1 },
+        { ...hold, hold: { ...hold.hold, policyVersion: 2, signature: 'invalid' } },
+    ])('distinguishes invalid outbound holds from invalid returned holds', async invalidHold => {
+        const post = vi.fn().mockResolvedValue(respond(200, invalidHold));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        const input = {
+            envelope,
+            hold: invalidHold,
+            expectedDid: hold.hold.did,
+            clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+        };
+        await expect(enclave.releaseEscrow(input)).rejects.toMatchObject({
+            reason: 'invalid_hold',
+        });
+        await expect(enclave.cancelHold(input)).rejects.toMatchObject({ reason: 'invalid_hold' });
+        await expect(enclave.confirmHold!({ ...input, code: '12345678' })).rejects.toMatchObject({
+            reason: 'invalid_hold',
+        });
+        await expect(enclave.resendCode!(input)).rejects.toMatchObject({ reason: 'invalid_hold' });
+        expect(post).not.toHaveBeenCalled();
+        await expect(
+            enclave.createHold({
+                envelope,
+                ...hold.hold,
+                expectedDid: hold.hold.did,
+                expectedShareVersion: 1,
+            })
+        ).rejects.toMatchObject({ reason: 'invalid_response' });
+    });
+
+    it.each([
+        { envelope: null, enrollmentEpoch: 1 },
+        { envelope, enrollmentEpoch: 2 },
+    ])('classifies invalid rewrap envelope/epoch as a response failure', async result => {
+        const post = vi.fn().mockResolvedValue(
+            respond(200, {
+                result: {
+                    ...result,
+                    receipt,
+                    authorityGeneration: 'g1',
+                    enrollmentVersion: 2,
+                },
+            })
+        );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        await expect(
+            enclave.rewrapEscrowBlob({
+                envelope,
+                expectedDid: hold.hold.did,
+                expectedShareVersion: 1,
+                sourceEnrollmentEpoch: 1,
+            })
+        ).rejects.toMatchObject({ reason: 'invalid_response' });
     });
 
     // [A] confirm-hold/send-release-warning: a fresh call returns a signed

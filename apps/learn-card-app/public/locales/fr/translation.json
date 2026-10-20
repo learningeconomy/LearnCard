@@ -1982,6 +1982,9 @@
             "resendFailed": "Nous n'avons pas pu envoyer un nouveau code. Vérifiez votre connexion et réessayez."
         },
         "invalidRequest": "Cette demande de récupération n'est plus valide. Commencez-en une nouvelle.",
+        "status": {
+            "failed": "Nous n'avons pas pu vérifier votre demande pour le moment."
+        },
         "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
         "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
         "error.invalidCode": "Ce code est incorrect ou a expiré. Demandez-en un nouveau et réessayez.",

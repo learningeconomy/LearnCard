@@ -31,10 +31,7 @@ import { timeOutline } from 'ionicons/icons';
 import { motion } from 'motion/react';
 
 import { pathwayStore } from '../../../stores/pathways';
-import {
-    type ReviewGrade,
-    scheduleReview,
-} from '../scheduler/fsrsScheduler';
+import { type ReviewGrade, scheduleReview } from '../scheduler/fsrsScheduler';
 import type { FsrsParams, PathwayNode } from '../types';
 
 interface ReviewsPanelProps {
@@ -109,29 +106,25 @@ const ReviewsPanel: React.FC<ReviewsPanelProps> = ({ pathwayId, node }) => {
                 grade: 'again',
                 label: 'Again',
                 subtitle: preview('again'),
-                className:
-                    'bg-red-50 hover:bg-red-100 text-red-700 border-red-200',
+                className: 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200',
             },
             {
                 grade: 'hard',
                 label: 'Hard',
                 subtitle: preview('hard'),
-                className:
-                    'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200',
+                className: 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200',
             },
             {
                 grade: 'good',
                 label: 'Good',
                 subtitle: preview('good'),
-                className:
-                    'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200',
+                className: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200',
             },
             {
                 grade: 'easy',
                 label: 'Easy',
                 subtitle: preview('easy'),
-                className:
-                    'bg-white hover:bg-grayscale-10 text-grayscale-800 border-grayscale-200',
+                className: 'bg-white hover:bg-grayscale-10 text-grayscale-800 border-grayscale-200',
             },
         ];
     }, [current, nowIso, nowMs]);
@@ -154,15 +147,13 @@ const ReviewsPanel: React.FC<ReviewsPanelProps> = ({ pathwayId, node }) => {
             progress: {
                 ...node.progress,
                 status:
-                    node.progress.status === 'not-started'
-                        ? 'in-progress'
-                        : node.progress.status,
+                    node.progress.status === 'not-started' ? 'in-progress' : node.progress.status,
                 streak: {
                     ...node.progress.streak,
                     current: node.progress.streak.current + 1,
                     longest: Math.max(
                         node.progress.streak.longest,
-                        node.progress.streak.current + 1,
+                        node.progress.streak.current + 1
                     ),
                     lastActiveAt: nowIso,
                 },
@@ -171,7 +162,7 @@ const ReviewsPanel: React.FC<ReviewsPanelProps> = ({ pathwayId, node }) => {
     };
 
     return (
-        <section className="space-y-3 p-4 rounded-2xl border border-grayscale-200 bg-white">
+        <section className="space-y-v3-3 p-4 rounded-2xl border border-grayscale-200 bg-white">
             <div className="flex items-center gap-2 text-xs text-grayscale-600">
                 <IonIcon icon={timeOutline} className="text-base" aria-hidden />
 
@@ -179,8 +170,7 @@ const ReviewsPanel: React.FC<ReviewsPanelProps> = ({ pathwayId, node }) => {
 
                 {current.lastReviewAt && (
                     <span className="ml-auto text-[11px] text-grayscale-400">
-                        Last graded{' '}
-                        {new Date(current.lastReviewAt).toLocaleDateString()}
+                        Last graded {new Date(current.lastReviewAt).toLocaleDateString()}
                     </span>
                 )}
             </div>
@@ -203,9 +193,7 @@ const ReviewsPanel: React.FC<ReviewsPanelProps> = ({ pathwayId, node }) => {
                     >
                         <span className="text-sm">{o.label}</span>
 
-                        <span className="text-[10px] opacity-70 tabular-nums">
-                            {o.subtitle}
-                        </span>
+                        <span className="text-[10px] opacity-70 tabular-nums">{o.subtitle}</span>
                     </motion.button>
                 ))}
             </div>

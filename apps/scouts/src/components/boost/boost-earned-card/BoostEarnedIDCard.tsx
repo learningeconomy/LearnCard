@@ -217,10 +217,10 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     let idSleeveFooterClass = '';
 
     if (isID) {
-        idDisplayContainerClass = '!border-white';
-        idSleeveFooterClass = '!bg-teal-300';
+        idDisplayContainerClass = 'border-white!';
+        idSleeveFooterClass = 'bg-teal-300!';
     } else if (isMembership) {
-        idDisplayContainerClass = '!border-white';
+        idDisplayContainerClass = 'border-white!';
         idSleeveFooterClass = '!bg-sp-green-light';
     }
 
@@ -289,7 +289,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                 credential={credential.boostCredential ?? credential}
                 uri={credential.boostId ?? uri}
             />,
-            { sectionClassName: '!bg-transparent !shadow-none !max-w-[355px]' },
+            { sectionClassName: 'bg-transparent! shadow-none! max-w-[355px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

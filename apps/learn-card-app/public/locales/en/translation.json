@@ -2306,6 +2306,9 @@
             "resendFailed": "We couldn't send a new code. Check your connection and try again."
         },
         "invalidRequest": "This recovery request is no longer valid. Start a new one.",
+        "status": {
+            "failed": "We couldn't check your request right now."
+        },
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",
         "fullyProtected": "You're fully protected.",

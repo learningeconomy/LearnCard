@@ -61,7 +61,7 @@ export const FamilyCMSAppearanceForm: React.FC<{
                 <div className="flex flex-col items-center justify-center w-full bg-grayscale-100 rounded-[15px] mt-4 py-2">
                     <FamilyCMSWallpaperSelect state={state} setState={setState} />
 
-                    <div className="flex items-center justify-between w-full bg-grayscale-100 p-2 border-b-white border-b-solid border-b-[2px]">
+                    <div className="flex items-center justify-between w-full bg-grayscale-100 p-2 border-b-white border-b-solid border-b-2">
                         <div className="flex items-center justify-between w-full pb-2 pl-[4px]">
                             <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                 {m['family.appearance.fadeBackground']()}

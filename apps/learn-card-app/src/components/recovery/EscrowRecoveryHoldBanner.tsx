@@ -57,10 +57,10 @@ export const EscrowRecoveryHoldBanner = ({
             role="alert"
             aria-labelledby="escrow-hold-title"
             aria-describedby="escrow-hold-desc"
-            className="font-poppins p-5 bg-white/80 backdrop-blur-xl border border-grayscale-200 shadow-lg rounded-[24px] space-y-4 animate-fade-in-up motion-reduce:animate-none transition-all duration-300 ease-in-out"
+            className="font-poppins p-5 bg-white/80 backdrop-blur-xl border border-grayscale-200 shadow-lg rounded-[24px] space-y-v3-4 animate-fade-in-up motion-reduce:animate-none transition-all duration-300 ease-in-out"
         >
             {success ? (
-                <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-fade-in-up motion-reduce:animate-none">
+                <div className="flex flex-col items-center justify-center py-4 space-y-v3-3 animate-fade-in-up motion-reduce:animate-none">
                     <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
                         <IonIcon
                             icon={checkmarkCircleOutline}
@@ -77,7 +77,7 @@ export const EscrowRecoveryHoldBanner = ({
                         <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
                             <IonIcon icon={shieldHalfOutline} className="text-amber-600 text-xl" />
                         </div>
-                        <div className="space-y-1 flex-1">
+                        <div className="space-y-v3-1 flex-1">
                             <h3
                                 id="escrow-hold-title"
                                 className="text-base font-semibold text-grayscale-900"
@@ -132,7 +132,7 @@ export const EscrowRecoveryHoldBanner = ({
                                     setLoading(false);
                                 }
                             }}
-                            className="w-full py-3 px-4 rounded-[20px] bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                            className="w-full py-3 px-4 rounded-[20px] bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -146,7 +146,7 @@ export const EscrowRecoveryHoldBanner = ({
                         <button
                             disabled={loading}
                             onClick={() => setDismissed(true)}
-                            className="w-full py-3 px-4 rounded-[20px] text-grayscale-600 font-medium text-sm hover:bg-grayscale-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grayscale-500 focus-visible:ring-offset-2"
+                            className="w-full py-3 px-4 rounded-[20px] text-grayscale-600 font-medium text-sm hover:bg-grayscale-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-grayscale-500 focus-visible:ring-offset-2"
                         >
                             {m['recovery.escrowHold.dismiss']()}
                         </button>

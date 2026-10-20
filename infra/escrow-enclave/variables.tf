@@ -51,6 +51,21 @@ variable "privatelink_allowed_principals" {
   }
 }
 
+variable "host_ami_id" {
+  description = "Reviewed regional AL2023 x86_64 host AMI. Required in production; null preserves staging's latest-AL2023 SSM lookup. Changes require a deliberate host roll."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.environment != "production" || var.host_ami_id != null
+    error_message = "Production requires an explicit pinned host_ami_id; latest AMI lookup is staging-only."
+  }
+  validation {
+    condition     = var.host_ami_id == null || can(regex("^ami-[0-9a-f]{17}$", var.host_ami_id))
+    error_message = "host_ami_id must be an AMI ID (ami- followed by 17 lowercase hexadecimal characters)."
+  }
+}
+
 variable "instance_type" {
   description = <<-EOT
     EC2 instance type for the enclave-host launch template. Must be at least

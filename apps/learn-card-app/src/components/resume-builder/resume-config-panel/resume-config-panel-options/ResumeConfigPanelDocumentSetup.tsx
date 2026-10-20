@@ -59,7 +59,7 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                         </label>
                         <input
                             type="text"
-                            className="resume-builder-input-bg w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                            className="resume-builder-input-bg w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-300"
                             placeholder="resume.pdf"
                             value={documentSetup?.fileName ?? ''}
                             onChange={e => setDocumentSetup({ fileName: e.target.value })}

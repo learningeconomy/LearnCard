@@ -49,9 +49,9 @@ const AiInsightsTopSkills: React.FC<AiInsightsTopSkillsProps> = ({
                             <SkillsChipItem
                                 title={skillName}
                                 count={skill.count}
-                                containerClassName="!bg-grayscale-100 !text-grayscale-900 !rounded-[10px]"
-                                countClassName="!text-grayscale-900 !rounded-[10px] !px-2"
-                                iconClassName="!mr-[2px]"
+                                containerClassName="bg-grayscale-100! text-grayscale-900! rounded-[10px]!"
+                                countClassName="text-grayscale-900! rounded-[10px]! px-2!"
+                                iconClassName="mr-[2px]!"
                                 iconFill="#353E64"
                             />
                             <p className="w-full text-left text-grayscale-700 font-notoSans text-sm mt-2 mx-2 mb-4">

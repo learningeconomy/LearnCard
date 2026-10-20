@@ -111,7 +111,7 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                         transition={{ duration: 0.25, ease: 'easeOut' }}
                         className="overflow-hidden"
                     >
-                        <div className="px-3 pb-3 space-y-2 border-t border-emerald-100/80 pt-3">
+                        <div className="px-3 pb-3 space-y-v3-2 border-t border-emerald-100/80 pt-3">
                             {achievement.description && (
                                 <p className="text-sm text-grayscale-700 leading-relaxed">
                                     {achievement.description}

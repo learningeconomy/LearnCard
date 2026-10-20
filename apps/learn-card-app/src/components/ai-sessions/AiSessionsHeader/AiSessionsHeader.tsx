@@ -33,7 +33,7 @@ export const AiSessionsSubHeader: React.FC<{
     const handlePersonalizeMyAi = () => {
         newModal(
             <AiPassportPersonalizationContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -98,7 +98,7 @@ export const AiSessionsSubHeader: React.FC<{
             {isMobile && (
                 <button
                     onClick={handlePersonalizeMyAi}
-                    className="bg-white text-grayscale-700 flex items-center justify-center p-3 py-[5px] rounded-[15px] font-semibold text-[14px] mr-4 border-[1px] border-solid border-grayscale-200"
+                    className="bg-white text-grayscale-700 flex items-center justify-center p-3 py-[5px] rounded-[15px] font-semibold text-[14px] mr-4 border border-solid border-grayscale-200"
                 >
                     <UnicornIcon className="w-[35px] h-auto mr-2" />
                     {m['ai.personalize']()}
@@ -141,7 +141,7 @@ export const AiSessionsHeader: React.FC<{
             </button>
             <div className="h-[55px] w-[55px] min-h-[55px] min-w-[55px]">
                 <img
-                    className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
+                    className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border border-solid border-grayscale-200"
                     alt={`${app?.name} logo`}
                     src={app?.img}
                 />

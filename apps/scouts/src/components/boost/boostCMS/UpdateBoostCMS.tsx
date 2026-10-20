@@ -752,7 +752,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 isEditMode={isEditDisabled}
                 isSaveLoading={isSaveLoading}
             />,
-            { sectionClassName: 'generic-modal show-modal ion-disable-focus-trap !bg-white' }
+            { sectionClassName: 'generic-modal show-modal ion-disable-focus-trap bg-white!' }
         );
 
     let activeBoostCMSStep: null | React.ReactNode = null;

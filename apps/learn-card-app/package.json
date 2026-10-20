@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.100.3",
+    "version": "1.100.4",
     "private": true,
     "engines": {
         "node": ">=24.12 <25"
@@ -201,13 +201,16 @@
         "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH",
         "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line",
         "i18n:check-markers": "node scripts/check-i18n-markers.mjs",
-        "i18n:check-memos": "eslint --config eslint-i18n-memo.config.mjs src"
+        "i18n:check-memos": "eslint --config eslint-i18n-memo.config.mjs src",
+        "test:visual": "playwright test --config playwright.visual.config.ts"
     },
     "browserslist": {
         "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
+            "Chrome >= 111",
+            "Safari >= 16.4",
+            "iOS >= 16.4",
+            "Firefox >= 128",
+            "Edge >= 111"
         ],
         "development": [
             "last 1 chrome version",
@@ -221,6 +224,12 @@
         "@capacitor/cli": "8.5.2",
         "@capgo/cli": "^7.2.10",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+        "@fontsource/jacques-francois": "5.3.0",
+        "@fontsource/montserrat": "5.3.0",
+        "@fontsource/mouse-memoirs": "5.3.0",
+        "@fontsource/noto-sans": "5.2.10",
+        "@fontsource/poppins": "5.2.7",
+        "@fontsource/sacramento": "5.3.0",
         "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
         "@learncard/learn-cloud-service": "workspace:^",
@@ -233,8 +242,8 @@
         "@storybook/react-vite": "8.6.18",
         "@storybook/test": "8.6.18",
         "@storybook/test-runner": "0.22.0",
-        "@tailwindcss/typography": "^0.5.16",
-        "@tailwindcss/line-clamp": "^0.4.4",
+        "@tailwindcss/typography": "^0.5.20",
+        "@tailwindcss/vite": "^4.3.3",
         "@testing-library/react": "^14.3.1",
         "@types/async": "^3.2.24",
         "@types/lodash": "^4.17.15",
@@ -244,6 +253,7 @@
         "autoprefixer": "^10.4.20",
         "chromatic": "^17.4.1",
         "concurrently": "7.6.0",
+        "esbuild": "^0.27.1",
         "eslint-plugin-i18next": "^6.1.4",
         "http-server": "14.1.1",
         "jeep-sqlite": "2.5.8",
@@ -257,7 +267,7 @@
         "sass": "^1.84.0",
         "sharp": "^0.35.0",
         "storybook": "8.6.18",
-        "tailwindcss": "^3.4.17",
+        "tailwindcss": "^4.3.3",
         "tsx": "^4.19.0",
         "vite": "^6.4.3",
         "vite-plugin-svgr": "^3.3.0",

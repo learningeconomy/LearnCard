@@ -81,9 +81,9 @@ const PracticeEditor: React.FC<{
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     <label className={LABEL} htmlFor="policy-practice-frequency">
                         How often
                     </label>
@@ -110,7 +110,7 @@ const PracticeEditor: React.FC<{
                     </select>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     <label className={LABEL} htmlFor="policy-practice-per">
                         Per period
                     </label>
@@ -134,7 +134,7 @@ const PracticeEditor: React.FC<{
                 </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <p className={LABEL}>What they can submit</p>
 
                 <div className="flex flex-wrap gap-2">

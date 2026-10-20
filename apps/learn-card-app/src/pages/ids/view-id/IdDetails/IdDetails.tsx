@@ -80,7 +80,7 @@ export const IdDetails: React.FC<IdDetailsProps> = ({
                         </p>
                     )} */}
                     {(troopName || networkName || globalNetworkName) && (
-                        <div className="flex flex-col gap-[5px] font-notoSans text-[14px] pt-[10px] border-t-[1px] border-solid border-grayscale-200 w-full">
+                        <div className="flex flex-col gap-[5px] font-notoSans text-[14px] pt-[10px] border-t border-solid border-grayscale-200 w-full">
                             {troopName && (
                                 <div className="flex gap-[4px]">
                                     {/* isGeneralView => *Created by [Troop 222]* on [date]  */}
