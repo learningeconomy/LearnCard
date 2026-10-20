@@ -867,8 +867,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     attempt,
                 });
                 const credentials: ParsedFileCredential[] = result.vcs.map(entry => {
-                    const id = getDraftId(entry.vc);
-                    const vc = entry.vc.id ? entry.vc : { ...entry.vc, id };
+                    // Service IDs can repeat across uploads; retries reuse this review's ID.
+                    const id = `urn:uuid:${crypto.randomUUID()}`;
+                    const vc = { ...entry.vc, id };
                     credentialOrigins.current.set(id, artifact.id);
                     return { ...entry, vc, artifactId: artifact.id, attempt };
                 });

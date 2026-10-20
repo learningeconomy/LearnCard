@@ -1,3 +1,5 @@
+/// <reference lib="es2024.promise" />
+
 import React from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -332,6 +334,48 @@ describe('useUploadFile persistence outcomes', () => {
         expect(savedCredentials.size).toBe(0);
     });
 
+    it('saves a newly edited extraction even when its backend ID was already saved', async () => {
+        const original = unsignedDraft('backend-reused-id');
+        savedCredentials.set('backend-reused-id', original);
+        uploadMutationMock.mockResolvedValue({
+            vcs: [parsedDraft(original)],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        const artifact = rawArtifact('new-transcript', 'transcript.pdf');
+        artifact.rawArtifact.type = UploadTypesEnum.Transcript;
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Transcript));
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Transcript);
+        });
+        const edited = {
+            ...result.current.parsedCredentials[0].vc,
+            name: 'Reviewed transcript',
+        };
+        await act(async () => {
+            await result.current.storeSelectedCredentials(
+                [edited],
+                artifact,
+                UploadTypesEnum.Transcript
+            );
+        });
+        expect(savedCredentials.get('backend-reused-id')).toMatchObject({
+            id: 'backend-reused-id',
+            credentialSubject: { name: 'Draft' },
+        });
+        expect([...savedCredentials.values()].map(vc => vc.name)).toEqual([
+            undefined,
+            'Reviewed transcript',
+        ]);
+        await act(async () => {
+            await result.current.storeSelectedCredentials(
+                [edited],
+                artifact,
+                UploadTypesEnum.Transcript
+            );
+        });
+        expect(storeAndAddVCToWalletMock).toHaveBeenCalledOnce();
+    });
+
     it.each(['sign', 'upload', 'index'] as const)(
         'leaves the existing resume intact when %s fails',
         async stage => {
@@ -533,9 +577,9 @@ describe('useUploadFile persistence outcomes', () => {
             });
             expect([...records.keys()]).toEqual([readable.id]);
             expect(documents.has(`original:${blank.id}`)).toBe(false);
-            expect(savedCredentials.get('mixed-candidate')?.attachments[0].fileName).toBe(
-                'readable.txt'
-            );
+            expect([...savedCredentials.values()].map(vc => vc.attachments[0].fileName)).toEqual([
+                'readable.txt',
+            ]);
         }
     );
 
@@ -762,54 +806,57 @@ describe('useUploadFile persistence outcomes', () => {
         });
     });
 
-    it('keeps idless candidates attached to their own files and reports per-file counts', async () => {
-        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
-        await act(async () => {
-            await result.current.getFiles(
-                createChangeEvent([
-                    new File(['first'], 'first.txt', { type: 'text/plain' }),
-                    new File(['second'], 'second.txt', { type: 'text/plain' }),
-                ]),
-                UploadTypesEnum.Certificate
+    it.each([undefined, 'backend-stable-id'])(
+        'keeps candidates attached to their own files (%s)',
+        async backendId => {
+            const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+            await act(async () => {
+                await result.current.getFiles(
+                    createChangeEvent([
+                        new File(['first'], 'first.txt', { type: 'text/plain' }),
+                        new File(['second'], 'second.txt', { type: 'text/plain' }),
+                    ]),
+                    UploadTypesEnum.Certificate
+                );
+            });
+            uploadMutationMock.mockImplementation(async () => ({
+                vcs: [parsedDraft(unsignedDraft(backendId))],
+                processing: { outcome: 'success', credentialCount: 1 },
+            }));
+            await act(async () => {
+                await result.current.fetchParsedCredentialsFromFiles(UploadTypesEnum.Certificate);
+            });
+            const [first, second] = result.current.rawArtifactCredentials;
+            const drafts = result.current.parsedCredentials;
+            await act(async () => {
+                await result.current.storeSelectedCredentials(
+                    drafts.map(entry => entry.vc),
+                    first,
+                    UploadTypesEnum.Certificate,
+                    [second]
+                );
+            });
+            expect([...savedCredentials.values()].map(vc => vc.attachments[0].fileName)).toEqual([
+                'first.txt',
+                'second.txt',
+            ]);
+            expect(
+                result.current.fileUploadOutcomes.map(item => ({
+                    id: item.artifact.id,
+                    extracted: item.extractedCount,
+                    selected: item.selectedCount,
+                    stored: item.storedCount,
+                }))
+            ).toEqual(
+                [first, second].map(artifact => ({
+                    id: artifact.id,
+                    extracted: 1,
+                    selected: 1,
+                    stored: 1,
+                }))
             );
-        });
-        uploadMutationMock.mockImplementation(async () => ({
-            vcs: [parsedDraft(unsignedDraft())],
-            processing: { outcome: 'success', credentialCount: 1 },
-        }));
-        await act(async () => {
-            await result.current.fetchParsedCredentialsFromFiles(UploadTypesEnum.Certificate);
-        });
-        const [first, second] = result.current.rawArtifactCredentials;
-        const drafts = result.current.parsedCredentials;
-        await act(async () => {
-            await result.current.storeSelectedCredentials(
-                drafts.map(entry => entry.vc),
-                first,
-                UploadTypesEnum.Certificate,
-                [second]
-            );
-        });
-        expect([...savedCredentials.values()].map(vc => vc.attachments[0].fileName)).toEqual([
-            'first.txt',
-            'second.txt',
-        ]);
-        expect(
-            result.current.fileUploadOutcomes.map(item => ({
-                id: item.artifact.id,
-                extracted: item.extractedCount,
-                selected: item.selectedCount,
-                stored: item.storedCount,
-            }))
-        ).toEqual(
-            [first, second].map(artifact => ({
-                id: artifact.id,
-                extracted: 1,
-                selected: 1,
-                stored: 1,
-            }))
-        );
-    });
+        }
+    );
 
     it('continues other files after an original fails to index', async () => {
         wallet.index.LearnCloud.add.mockRejectedValueOnce(new Error('PRIVATE_INDEX'));
@@ -902,7 +949,7 @@ describe('useUploadFile persistence outcomes', () => {
         });
         expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
         expect(records.size).toBe(0);
-        expect(savedCredentials.has('retry-draft')).toBe(true);
+        expect(savedCredentials.size).toBe(1);
     });
 
     it('reports a failed retry for this file even when another still has review drafts', async () => {
@@ -917,6 +964,7 @@ describe('useUploadFile persistence outcomes', () => {
                 UploadTypesEnum.Certificate
             );
         });
+        const previousDrafts = result.current.parsedCredentials;
         uploadMutationMock.mockRejectedValueOnce(new Error('PRIVATE_MODEL_ERROR'));
         await act(async () => {
             const retry = await result.current.retryFileExtraction(
@@ -924,7 +972,7 @@ describe('useUploadFile persistence outcomes', () => {
                 UploadTypesEnum.Certificate
             );
             expect(retry.outcome.status).toBe('extraction_failed');
-            expect(retry.credentials.map(entry => entry.vc.id)).toEqual(['pending']);
+            expect(retry.credentials).toEqual(previousDrafts);
             expect(JSON.stringify(retry.outcome)).not.toContain('PRIVATE_MODEL_ERROR');
         });
         expect(records.has('second')).toBe(true);
@@ -1079,7 +1127,7 @@ describe('useUploadFile persistence outcomes', () => {
             );
         });
         expect(records.get('resume-index')?.uri).toBe('other-original');
-        expect(savedCredentials.has('historical-draft')).toBe(true);
+        expect(savedCredentials.size).toBe(1);
         expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
         expect(wallet.index.LearnCloud.update).not.toHaveBeenCalled();
     });
@@ -1102,15 +1150,18 @@ describe('addCertificateAttachment', () => {
             rawArtifactCredential
         );
 
-        expect(credential.attachments[0]).toMatchObject({
-            title: 'certificate.pdf',
-            fileName: 'certificate.pdf',
-            fileSize: '1 KB',
-            fileType: 'PDF',
-            type: 'document',
-            data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
-        });
-        expect(credential.attachments[0]).not.toHaveProperty('url');
+        expect(credential).toHaveProperty(
+            'attachments.0',
+            expect.objectContaining({
+                title: 'certificate.pdf',
+                fileName: 'certificate.pdf',
+                fileSize: '1 KB',
+                fileType: 'PDF',
+                type: 'document',
+                data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
+            })
+        );
+        expect(credential).not.toHaveProperty('attachments.0.url');
     });
 
     it('does not duplicate the canonical context or attachment', () => {
@@ -1130,7 +1181,7 @@ describe('addCertificateAttachment', () => {
         );
 
         expect(attachmentContexts).toHaveLength(1);
-        expect(enrichedAgain.attachments).toHaveLength(1);
+        expect(enrichedAgain).toHaveProperty('attachments.length', 1);
     });
 
     it('deduplicates an existing attachment with the same file identity', () => {
