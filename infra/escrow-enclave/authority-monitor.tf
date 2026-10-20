@@ -9,6 +9,22 @@ provider "aws" {
 }
 locals {
   authority_event_patterns = { for name, pattern in {
+    unexpected_write = {
+      source = ["aws.dynamodb"], "detail-type" = ["AWS API Call via CloudTrail"],
+      detail = {
+        eventSource  = ["dynamodb.amazonaws.com"], eventCategory = ["Data"], readOnly = [false, "false"],
+        resources    = { ARN = [local.authority_table_arn] },
+        userIdentity = { arn = [{ "anything-but" = try(aws_iam_user.authority_writer[0].arn, "disabled") }] }
+      }
+    }
+    denied_write = {
+      source = ["aws.dynamodb"], "detail-type" = ["AWS API Call via CloudTrail"],
+      detail = {
+        eventSource = ["dynamodb.amazonaws.com"], eventCategory = ["Data"], readOnly = [false, "false"],
+        resources   = { ARN = [local.authority_table_arn] },
+        errorCode   = [{ prefix = "AccessDenied" }]
+      }
+    }
     access_keys = {
       source = ["aws.iam"], "detail-type" = ["AWS API Call via CloudTrail"],
       # Account-wide also catches IAM-user self-service calls omitting userName.
