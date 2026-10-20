@@ -519,8 +519,9 @@ There is no timer or wrapping. In LTR, tap the left third to go back, the right 
 swipe left to continue, or use Right/Left arrow keys for next/previous. RTL mirrors these controls:
 right third goes back, left two thirds continue, swipe right continues, and ArrowLeft advances. Interactive
 media and controls do not advance the story. Required stories should provide a completing final action.
-Final-screen action state remains mounted across navigation, preserving update progress and preventing
-duplicate downloads when a learner returns to that screen.
+Final-screen action state remains mounted across navigation and responsive modal replacement. The
+same portal container moves between the mobile and desktop surfaces, preserving update progress and
+operation ownership when a learner navigates back, rotates a device, or resizes split view.
 
 `locales` supports `title`, `body`, `actionLabels`, `steps` (title/body/actionLabels), and `iframeUrl`. Each field
 falls back independently: exact locale, language, original. Arrays are positional and never add
@@ -628,6 +629,8 @@ LearnCard forwards these to `in_app_message_shown`, `in_app_message_action`, and
 
 1. In Dev Debug → Messages → Preview, choose **Story walkthrough**; verify Next/Previous, arrows,
    final Done, mobile fullscreen, and desktop card layout.
+   With a native story update pending, cross the 991px breakpoint in both directions: retain progress
+   and the final screen, keep Update unavailable, and confirm exactly one download/application.
 2. In Builder, add/reorder/remove screens; preview media and final actions. Enter valid and invalid
    locale JSON and confirm invalid drafts cannot preview. Check Spanish fallback and Arabic chrome.
 3. On web, host the bridge example separately over HTTPS. Set its URL in **Embedded HTTPS page** and test

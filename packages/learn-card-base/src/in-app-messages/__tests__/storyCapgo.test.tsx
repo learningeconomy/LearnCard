@@ -4,6 +4,9 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { inAppMessageValidator } from '@learncard/types';
 import { InAppMessageStory } from '../InAppMessageStory';
+import { InAppMessageRichPresentation } from '../InAppMessageSurface';
+import { ModalsProvider } from '../../components/modals/ModalsContext';
+import { Modals } from '../../components/modals/Modals';
 
 const native = vi.hoisted(() => ({
     getLatest: vi.fn(),
@@ -20,6 +23,7 @@ vi.mock('../useInAppMessageActions', () => ({
 }));
 vi.mock('../debug', () => ({ iamDebug: vi.fn() }));
 vi.mock('../MessageMedia', () => ({ MessageMedia: () => null }));
+vi.mock('learn-card-base', () => ({ isLocalhost: false }));
 vi.mock('framer-motion', async importOriginal => {
     const original = await importOriginal<typeof import('framer-motion')>();
     return { ...original, useReducedMotion: () => true };
@@ -34,9 +38,105 @@ beforeEach(() => {
     native.addListener.mockResolvedValue({ remove: native.remove });
     native.set.mockResolvedValue(undefined);
 });
-afterEach(cleanup);
+afterEach(() => {
+    cleanup();
+    document.getElementById('modal-mid-root')?.remove();
+    vi.unstubAllGlobals();
+});
 
 describe('story update lifecycle', () => {
+    it('retains one in-flight update when the real responsive modal replaces its mount point', async () => {
+        vi.stubGlobal('innerWidth', 991);
+        const modalRoot = document.createElement('div');
+        modalRoot.id = 'modal-mid-root';
+        document.body.appendChild(modalRoot);
+        let finishDownload: (bundle: { id: string }) => void = () => undefined;
+        native.download.mockImplementation(
+            () =>
+                new Promise<{ id: string }>(resolve => {
+                    finishDownload = resolve;
+                })
+        );
+        const onShown = vi.fn();
+        const onAction = vi.fn();
+        const onClose = vi.fn();
+        render(
+            <ModalsProvider>
+                <InAppMessageRichPresentation
+                    message={inAppMessageValidator.parse({
+                        id: 'responsive-update',
+                        title: 'App update',
+                        presentation: 'story',
+                        steps: [{ title: 'Overview' }, { title: 'Get the update' }],
+                        actions: [
+                            { label: 'Update', action: { type: 'capgoUpdate' } },
+                            { label: 'Later', action: { type: 'dismiss' } },
+                        ],
+                    })}
+                    onClose={onClose}
+                    onShown={onShown}
+                    onAction={onAction}
+                />
+                <Modals />
+            </ModalsProvider>
+        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Next' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Update', exact: true }));
+        await waitFor(() => expect(native.download).toHaveBeenCalledOnce());
+        const reportProgress = native.addListener.mock.calls[0]?.[1] as (event: {
+            percent: number;
+        }) => void;
+        act(() => reportProgress({ percent: 35 }));
+        const progress = screen.getByText(/Downloading.*35/);
+        const mobileMount = modalRoot.querySelector(
+            '#full-screen-modal .lc-message-story'
+        )?.firstElementChild;
+        expect(mobileMount).toBeTruthy();
+
+        act(() => {
+            vi.stubGlobal('innerWidth', 992);
+            window.dispatchEvent(new Event('resize'));
+        });
+        const desktopMount = modalRoot.querySelector(
+            '#center-modal .lc-message-story'
+        )?.firstElementChild;
+        expect(desktopMount).toBeTruthy();
+        expect(desktopMount).not.toBe(mobileMount);
+        expect(mobileMount?.isConnected).toBe(false);
+        expect(screen.getByRole('heading', { name: 'Get the update' })).toBeTruthy();
+        expect(screen.getByText(/Downloading.*35/)).toBe(progress);
+        expect(screen.queryByRole('button', { name: 'Update', exact: true })).toBeNull();
+        const later = screen.getByRole<HTMLButtonElement>('button', { name: 'Later' });
+        expect(later.disabled).toBe(true);
+        fireEvent.click(later);
+
+        act(() => {
+            vi.stubGlobal('innerWidth', 991);
+            window.dispatchEvent(new Event('resize'));
+            reportProgress({ percent: 70 });
+        });
+        expect(modalRoot.querySelector('#full-screen-modal')).toBeTruthy();
+        expect(desktopMount?.isConnected).toBe(false);
+        expect(screen.getByText(/Downloading.*70/)).toBe(progress);
+        expect(screen.queryByRole('button', { name: 'Update', exact: true })).toBeNull();
+        expect(native.getLatest).toHaveBeenCalledOnce();
+        expect(native.download).toHaveBeenCalledOnce();
+        expect(native.addListener).toHaveBeenCalledOnce();
+        expect(onShown).toHaveBeenCalledOnce();
+        expect(onAction).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
+
+        await act(async () => finishDownload({ id: 'one-bundle' }));
+        expect(native.set).toHaveBeenCalledExactlyOnceWith({ id: 'one-bundle' });
+        expect(native.remove).toHaveBeenCalledOnce();
+        expect(onAction).toHaveBeenCalledExactlyOnceWith({
+            actionIndex: 0,
+            actionSource: 'message',
+            actionType: 'capgoUpdate',
+            stepIndex: 1,
+        });
+        expect(onShown).toHaveBeenCalledOnce();
+    });
     it('retains download progress and its running guard across screen navigation', async () => {
         let finishDownload: (bundle: { id: string }) => void = () => undefined;
         native.download.mockImplementation(

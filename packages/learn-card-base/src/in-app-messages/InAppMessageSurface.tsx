@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useModal } from '../components/modals/useModal';
 import { ModalTypes } from '../components/modals/types/Modals';
@@ -14,7 +14,7 @@ const Mounted: React.FC<{ onShown: () => void; children: React.ReactNode }> = ({
     return <>{children}</>;
 };
 
-/** Keep screen position outside the responsive modal portal, which remounts on breakpoint changes. */
+/** Keep screen position available to the modal's passive dismissal callback. */
 export const InAppMessageRichPresentation: React.FC<
     MessagePresentationProps & { onShown: () => void }
 > = props => {
@@ -48,7 +48,21 @@ export const InAppMessageSurface: React.FC<
     }
 > = props => {
     const { newModalWithToken, forceCloseModalByToken } = useModal();
-    const [target, setTarget] = useState<HTMLDivElement | null>(null);
+    const [target] = useState(() => {
+        const container = document.createElement('div');
+        container.className = 'w-full h-full min-h-0';
+        return container;
+    });
+    const [attached, setAttached] = useState(false);
+    const attach = useCallback(
+        (host: HTMLDivElement | null): void => {
+            if (!host) return;
+            // Reparent the same portal container; replacing it remounts in-flight action owners.
+            host.appendChild(target);
+            setAttached(true);
+        },
+        [target]
+    );
     const latest = useRef(props);
     useLayoutEffect(() => {
         latest.current = props;
@@ -57,7 +71,7 @@ export const InAppMessageSurface: React.FC<
     useEffect(() => {
         const story = latest.current.message.presentation === 'story';
         const token = newModalWithToken(
-            <div ref={setTarget} className="w-full h-full min-h-0" />,
+            <div ref={attach} className="w-full h-full min-h-0" />,
             {
                 hideButton: true,
                 sectionClassName: story ? 'lc-message-story' : 'lc-message-iframe',
@@ -73,9 +87,9 @@ export const InAppMessageSurface: React.FC<
             }
         );
         return () => forceCloseModalByToken(token);
-    }, [newModalWithToken, forceCloseModalByToken]);
+    }, [newModalWithToken, forceCloseModalByToken, attach]);
 
-    return target
+    return attached
         ? createPortal(<Mounted onShown={props.onShown}>{props.children}</Mounted>, target)
         : null;
 };

@@ -58,6 +58,8 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 - Localize the selected message with `localizeMessage` at the host, never in targeting or persisted state.
 - Stories and iframes use `InAppMessageSurface` / token-owned `useModal` cleanup; keep live content in
   its React portal. Shared surfaces own insets and accessibility. Never close an unrelated top modal.
+  Reparent the stable portal container when responsive modal hosts change; never replace the portal
+  target or unmount action owners during a pending update. Test with actual breakpoint replacements.
 - `MessageActions` owns modal/story button and Capgo behavior. Report accepted actions separately from
   explicit dismissal; navigation completion, retries, and gate cleanup are not new impressions.
 - Iframe bridge input is untrusted: validate window, origin, envelope, and safe target before running
