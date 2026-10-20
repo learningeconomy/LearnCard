@@ -4,6 +4,12 @@ Planning checkpoint, October 16, 2026. The user explicitly asked to queue the mi
 
 This supersedes earlier notes saying Journeys scope is unconfirmed. It authorizes planning the learner subset, not enabling web flags or claiming these features are already in the native app. The Apps composition is implemented; the October 18 pass now starts the personal Skills/goals and career-exploration designs.
 
+## October 20 checkpoint
+
+[Career exploration is implemented](CAREER_EXPLORATION.md) beside Skills & goals in Apps → Keep learning. It uses the existing occupation/training endpoints, bounded explicit search, readable details, on-demand U.S. learning options and editable goal review. Existing age/privacy choices are checked before each request; provider queries contain only search words or the selected occupation title. Public endpoints do not establish server-side account-age enforcement. Source artwork and flat panels remain shared.
+
+Safe self-assessed skill editing is next. Retain usable prior records through uncertain Boost/send/index replacement before exposing a framework picker or personal proficiency changes. Real cross-client goal-write checks and native sharing/insight refresh remain separate follow-ups. Journeys still needs a shared persistence/dispatch contract; no rollout is enabled by this work.
+
 ## October 18 checkpoint
 
 The [source audit and implementation contract](LEARNER_SKILLS.md) records current profile keys/wire format, credential-skill provenance, self-assessment writes, existing sharing side effects and AI availability. [Seven generated concept screens](design/LEARNER_SKILLS_BRIEF.md) cover Skills first visit/overview/sources/goals and career explore/results/detail. The user approved proceeding with established app artwork in place of some new graphics. The first implemented slice adds credential-linked Skills/source reads and personal goal editing; career concepts and missing integration work remain separate.
@@ -48,12 +54,15 @@ Keep **Home / Passport / Inbox / Apps**. Add native Career Pathways and Journeys
 - [x] Audit current personal profile keys/schema/storage, credential-linked skill provenance, self-assessment lifecycle, AI gate and existing consent-sync side effects. See [the implementation contract](LEARNER_SKILLS.md).
 - [x] Generate initial learner concepts: Skills first visit, overview, sources and goals; career explore, results and detail. Keep optional career/employment fields progressive rather than mandatory student onboarding. See [the boards and caveats](design/LEARNER_SKILLS_BRIEF.md).
 - [x] Implement first-slice Skills/goals loading, failed/partial reads, search-empty versus genuine empty, explicit paging and dirty-form cancellation states.
-- [ ] Design the remaining career no-results/unavailable/disabled-AI, skill-picker and expanded optional details states before implementing those routes.
-- [ ] Audit occupation/resource query schemas, providers, pagination, availability and insight prerequisites. Resolve save-time insight refresh and sharing disclosures with existing choices; do not silently add consent.
+- [x] Implement career first-visit, no-results, unavailable/disabled, retained-result errors and resource retry states.
+- [ ] Design the supported skill picker and expanded optional personal-profile states.
+- [x] Audit occupation/training query schemas, provider coverage, bounded responses and current age/privacy decisions. No cursor contract is assumed.
+- [ ] Audit further content/insight prerequisites and native save-time sharing/insight refresh; retain existing choices and explicit disclosures.
 - [x] Implement native credential-linked Skills reads and personal goals read/explicit-save using current interoperable storage. Preserve unknown/legacy fields and distinguish failed reads from empty data. Existing self-assessment is labeled; choosing/updating it remains below.
 - [ ] Resolve and implement safe self-assigned-skill replacement, preserving the previous usable data through failed/uncertain writes and retries. Do not conflate self-reported skills with institution-issued evidence.
-- [ ] Implement career search/detail once its services and policy contract are verified. Add a career goal through explicit editable review.
-- [ ] Route available learning resources into native detail or the browser as appropriate. Defer session creation until its own integration is ready; no dead CTA.
+- [x] Implement career search/detail and explicit editable career-goal review against the audited contract.
+- [x] Render returned training programs and open supplied valid school websites in the browser.
+- [ ] Audit further learning-content integrations and session creation separately.
 - [ ] Verify web/native round trip, cancellation, no-change saves, unavailable upstream services, pagination, translations and account background/resume/sign-out isolation.
 
 First-slice local checks cover current wire-format round trip, real SDK signatures, cancellation/no-change semantics, read/write failures, paging, translations and stale account replies. A real signed-in web/native UI round trip and concurrent-client exercise remain explicit follow-ups; local fixtures do not complete that gate.

@@ -89,17 +89,18 @@ The user-approved builder ray strokes now extend to the four main pane titles an
 
 Nine core and twelve distinct focused UI checks pass. The full suite and hosted CI were not run. Real account/partner writes, physical-device review and iPad remain separate gates.
 
-## In progress: learner Skills, goals and career Pathways — October 18
+## In progress: learner Skills, goals and career Pathways — October 20
 
 The user explicitly asked to queue the missing learning experiences. [The native learning plan](LEARNER_LEARNING_PLAN.md) distinguishes AI career Pathways from Journeys and stages personal skills/goals and career exploration, Journeys persistence/API work, learner Today/map/steps/progress, then Sessions/Insights and proposal/What-if review. Both products are learner features. Skill-framework editing/creation, Journey authoring and institutional management are excluded. This replaces the earlier “Journeys needs scope confirmation” backlog; it does not turn on rollout flags or add nonfunctional tiles.
 
 - [x] Audit current personal profile storage/schema, skill provenance/self-assessment writes, AI gates and existing sharing side effects. [Implementation contract](LEARNER_SKILLS.md).
 - [x] Generate seven sample-data concept screens for Skills/goals and career exploration, preserving the four-tab shell and rendered artwork on flat panels. [Boards and exact prompts](design/LEARNER_SKILLS_BRIEF.md).
 - [x] Implement credential-linked Skills/source reads and optional goal read/explicit-save, including bounded paging, failed/partial versus empty states, source provenance, draft/discard and uncertain-save reconciliation. Reuse existing artwork per the user's style correction. [Native behavior and verification](LEARNER_SKILLS.md).
-- [ ] Complete remaining career/picker states, resolve safe self-assigned-skill replacement and occupation/provider contracts before their integrations. Native automatic profile sharing/insight refresh and a live cross-client UI round trip remain explicit follow-ups.
+- [x] Implement career search/detail, bounded training programs, explicit goal review and current age/privacy gates against existing provider contracts. [Career behavior and limits](CAREER_EXPLORATION.md).
+- [ ] Resolve safe self-assigned-skill replacement and supported framework selection. Native automatic profile sharing/insight refresh and a live cross-client UI round trip remain explicit follow-ups.
 - [ ] Establish account-owned Journey persistence and real dispatch/endpoints before native Today/map/progress; fetched upstream defaults remain local/scripted.
 
-The first runtime slice is personal Skills and goals; career exploration, Journeys and Sessions/Insights remain separate integrations. Endorsements/issuer trust and the broader design-system consistency audit remain queued separately; organization workspaces retain their later plan.
+Personal Skills/goals and career exploration are implemented. Self-assessed skill editing leads next; Journeys and Sessions/Insights remain separate integrations. Endorsements/issuer trust and the broader design-system consistency audit remain queued separately; organization workspaces retain their later plan.
 
 ## Complete logo from first frame — October 16
 

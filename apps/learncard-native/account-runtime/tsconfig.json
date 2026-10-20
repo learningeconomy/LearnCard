@@ -31,6 +31,7 @@
         "inbox.ts",
         "intake.ts",
         "learner.ts",
+        "careers.ts",
         "personal-creations.ts",
         "claims.ts",
         "profile-update.ts",

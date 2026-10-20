@@ -169,7 +169,7 @@ private struct SkillSourcesView: View {
     }
 }
 
-private struct GoalsEditorView: View {
+struct GoalsEditorView: View {
     @Environment(\.dismiss) private var dismiss
     let appStore: AppStore
     let original: LearnerGoals
@@ -178,7 +178,7 @@ private struct GoalsEditorView: View {
     @State private var discard = false
     @FocusState private var focused: Bool
     private var learner: LearnerStore { appStore.learner }
-    init(appStore: AppStore, original: LearnerGoals) { self.appStore = appStore; self.original = original; _draft = State(initialValue: original.goals) }
+    init(appStore: AppStore, original: LearnerGoals, proposedGoal: String = "") { self.appStore = appStore; self.original = original; _draft = State(initialValue: original.goals); _newGoal = State(initialValue: proposedGoal) }
     private var dirty: Bool { draft != original.goals || !newGoal.isEmpty }
     private var candidate: String { newGoal.trimmingCharacters(in: .whitespacesAndNewlines) }
     var body: some View {

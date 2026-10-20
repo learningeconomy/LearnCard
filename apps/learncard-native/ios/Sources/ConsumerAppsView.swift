@@ -154,6 +154,9 @@ struct AppsView: View {
             NavigationLink { SkillsView(appStore: store) } label: {
                 ConsumerToolRow(title: NativeText.text("skills.title"), subtitle: NativeText.text("skills.entryBody"), symbol: .skill, tint: Palette.lilacCard)
             }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22)).accessibilityIdentifier("apps-skills")
+            NavigationLink { CareerView(appStore: store) } label: {
+                ConsumerToolRow(title: NativeText.text("career.title"), subtitle: NativeText.text("career.entry"), symbol: .career, tint: Palette.tealCard)
+            }.buttonStyle(CredentialPressStyle()).background(Palette.surface, in: RoundedRectangle(cornerRadius: 22)).accessibilityIdentifier("apps-careers")
             Text(NativeText.text("apps.tools")).font(.title3.bold()).foregroundStyle(Palette.ink)
                 .accessibilityAddTraits(.isHeader).accessibilityIdentifier("apps-tools-heading")
             VStack(spacing: 0) {

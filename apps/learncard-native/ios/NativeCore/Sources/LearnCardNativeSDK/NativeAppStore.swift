@@ -23,6 +23,7 @@ public final class NativeAppStore {
     public let people: PeopleStore
     public let intake: IntakeStore
     public let learner: LearnerStore
+    public let careers: CareerStore
     public private(set) var sampleRefreshBusy = false
     public private(set) var sampleRefreshFailed = false
     public var sampleSyncBusy: Bool { intake.samplePreparing || intake.sampleBusy || sampleRefreshBusy }
@@ -50,9 +51,10 @@ public final class NativeAppStore {
     }
     public var inboxCount: Int { (snapshot?.offers.count ?? 0) + unreadInboxUpdateCount }
 
-    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil, peopleService: (any PeopleService)? = nil, intakeService: (any IntakeService)? = nil, learnerService: (any LearnerService)? = nil) {
+    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil, peopleService: (any PeopleService)? = nil, intakeService: (any IntakeService)? = nil, learnerService: (any LearnerService)? = nil, careerService: (any CareerService)? = nil) {
         self.service = service
         self.isLive = isLive
+        careers = CareerStore(service: careerService ?? (isLive ? UnavailableCareerService() : DemoCareerService()))
         learner = LearnerStore(service: learnerService ?? (isLive ? UnavailableLearnerService() : DemoLearnerService(credentials: service)))
         let demoConsumer = consumerService as? DemoConsumerAppService ?? DemoConsumerAppService()
         intake = IntakeStore(service: intakeService ?? (isLive ? UnavailableIntakeService() : DemoIntakeService(service: service, consumer: demoConsumer)))

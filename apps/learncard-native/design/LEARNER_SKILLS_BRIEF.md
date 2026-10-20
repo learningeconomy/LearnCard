@@ -4,7 +4,7 @@ The user asked to resume the planned learner-learning features. This first desig
 
 ## October 18 implementation refinement
 
-The user approved proceeding but found some new graphics inconsistent with the rest of the app. The implemented Skills/goals slice therefore uses the existing outlined category star and Drawn credential/share tiles. Flat panels, heading rays and navigation remain shared. The generated glossy medallions/compass are composition studies, not production assets. Career exploration stays a subsequent integration.
+The user approved proceeding but found some new graphics inconsistent with the rest of the app. The implemented Skills/goals slice therefore uses the existing outlined category star and Drawn credential/share tiles. Flat panels, heading rays and navigation remain shared. The generated glossy medallions/compass are composition studies, not production assets. The October 20 career implementation is recorded below.
 
 The goal form also uses a smaller title and places its Add action beside the field, keeping it visible when the keyboard opens. Actual native captures and verification are linked below after the generated references.
 
@@ -65,6 +65,28 @@ The first Skills/goals slice uses established native artwork and actual producti
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | ![Empty Skills and optional goals](skills-empty-arabic-accessibility-native.png) | ![Correctly mirrored and enlarged goal sheet](personal-goals-arabic-accessibility-native.png) |
 
-The goal Add button is beside the field at standard type sizes and remains on its mirrored side in RTL. Disabled controls use reduced opacity. The sheet explicitly receives locale, direction and text size from the presenting screen; translated labels alone are insufficient evidence. Shared heading rays hide at accessibility sizes. Career-result artwork/screens above remain unimplemented concepts.
+The goal Add button is beside the field at standard type sizes and remains on its mirrored side in RTL. Disabled controls use reduced opacity. The sheet explicitly receives locale, direction and text size from the presenting screen; translated labels alone are insufficient evidence. Shared heading rays hide at accessibility sizes. Career artwork/screens above are generated concepts; the implemented career screens are recorded below.
 
 [Compact 375-point goal editor](personal-goals-compact-native.png): the capture is scrolled after adding a draft, so its upper heading is naturally under the navigation bar. The saved-goal/reopen/discard check passes with the keyboard and fixed footer on this shorter viewport.
+
+## Implemented career exploration — October 20, 2026
+
+Apps → Keep learning → Explore careers uses existing drawn category artwork, flat reading panels and shared heading rays. There are no new generated runtime graphics. At accessibility text sizes the career card and detail heading stack artwork above the title to preserve reading width. Search is explicit, results retain their successful query label on failure, and U.S. provider coverage is visible. Details distinguish occupational skills from personal assessment. Training programs load on request, school links open only on a tap, and adding a goal opens the existing editable review.
+
+These are actual native production views with **in-memory sample services**. They do not depict live recommendations or the retained account's private data. [Behavior/provider limits](../CAREER_EXPLORATION.md); [exact verification](../TESTING.md#career-exploration--october-20-2026).
+
+| Search                                                    | Career detail                                             |
+| --------------------------------------------------------- | --------------------------------------------------------- |
+| ![Career search native fixture](career-search-native.png) | ![Career detail native fixture](career-detail-native.png) |
+
+| Learning programs                                                | Explicit goal review                                                  |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------- |
+| ![Training resources native fixture](career-learning-native.png) | ![Editable career goal native fixture](career-goal-review-native.png) |
+
+| Arabic dark accessibility3                                                      | Privacy choice                                                       | No search results                                                  |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| ![Stacked career card at enlarged text](career-arabic-accessibility-native.png) | ![Career disabled by the account choice](career-disabled-native.png) | ![Successful search with no results](career-no-results-native.png) |
+
+Screens captured after search/resource scrolling naturally show earlier content beneath the translucent navigation bar. The goal editor preserves mirrored layout and explicit Add/Save semantics; entering a title alone does not save it. The school-program screenshot intentionally has no school-link action because its sample record supplies no website.
+
+[Compact 375-point career goal review](career-goal-compact-native.png): the occupation is prefilled for editing, while Save remains disabled until the learner explicitly adds a goal. English save/reopen and Arabic accessibility3 mirrored review/discard both pass on this device.

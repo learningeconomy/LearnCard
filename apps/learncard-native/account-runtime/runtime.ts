@@ -66,6 +66,7 @@ import { createFamilyCommands, familyErrorCode, type FamilyPinService } from './
 import { getClient as getAccountAPI } from '@learncard/lca-api-client';
 import { isFamilyCreation, sendPersonalCreation } from './personal-creations';
 import { createLearnerCommands, learnerErrorCode } from './learner';
+import { createCareerCommands, careerErrorCode } from './careers';
 
 // This runtime's transport is staging-only; never use production sample contracts.
 const sampleContracts = Object.fromEntries(
@@ -81,6 +82,7 @@ const origins = new Set([
     'https://staging.network.learncard.com',
     'https://staging.cloud.learncard.com',
     'https://staging.api.learncard.app',
+    'https://api.learncloud.ai',
 ]);
 globalThis.fetch = async (input, options) => {
     const request = new Request(input, options);
@@ -523,6 +525,23 @@ const shares = new Map<
 
 const commands = {
     ...createLearnerCommands(() => wallet, display),
+    ...createCareerCommands(
+        () => wallet,
+        async current => {
+            const client = await getAccountAPI(
+                'https://staging.api.learncard.app/trpc',
+                async challenge => {
+                    const proof = await current.invoke.getDidAuthVp({
+                        proofFormat: 'jwt',
+                        challenge,
+                    });
+                    if (typeof proof !== 'string') throw new Error('Account proof unavailable');
+                    return proof;
+                }
+            );
+            return client.preferences.getPreferencesForDid.query();
+        }
+    ),
     ...createClaimCommands(
         () => wallet,
         display,
@@ -975,23 +994,25 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
                             ? claimErrorCode(error)
                             : method.startsWith('people')
                               ? peopleErrorCode(error)
-                              : method.startsWith('skills') || method.startsWith('goals')
-                                ? learnerErrorCode(error)
-                                : method.startsWith('intake')
-                                  ? intakeErrorCode(error)
-                                  : method.startsWith('inbox')
-                                    ? inboxErrorCode(error)
-                                    : method.startsWith('families')
-                                      ? familyErrorCode(error)
-                                      : method.startsWith('apps') ||
-                                          method.startsWith('samples') ||
-                                          method.startsWith('privacy')
-                                        ? consumerErrorCode(error)
-                                        : method === 'initialize'
-                                          ? 'connection'
-                                          : method === 'recover'
-                                            ? 'recovery'
-                                            : 'unavailable',
+                              : method.startsWith('career')
+                                ? careerErrorCode(error)
+                                : method.startsWith('skills') || method.startsWith('goals')
+                                  ? learnerErrorCode(error)
+                                  : method.startsWith('intake')
+                                    ? intakeErrorCode(error)
+                                    : method.startsWith('inbox')
+                                      ? inboxErrorCode(error)
+                                      : method.startsWith('families')
+                                        ? familyErrorCode(error)
+                                        : method.startsWith('apps') ||
+                                            method.startsWith('samples') ||
+                                            method.startsWith('privacy')
+                                          ? consumerErrorCode(error)
+                                          : method === 'initialize'
+                                            ? 'connection'
+                                            : method === 'recover'
+                                              ? 'recovery'
+                                              : 'unavailable',
                 });
             }
         },

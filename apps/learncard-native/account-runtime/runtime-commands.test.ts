@@ -238,3 +238,12 @@ test.each(['skillsPage', 'skillsSource', 'goalsRead', 'goalsSave'])(
         expect(bridgeCalls).toBe(0);
     }
 );
+
+test.each(['careerAccess', 'careerSearch', 'careerPrograms'])(
+    'career command %s refuses signed-out access without provider requests',
+    async method => {
+        const reply = JSON.parse(await account.call(method, {}));
+        expect(reply).toEqual({ ok: false, error: 'career:signIn' });
+        expect(bridgeCalls).toBe(0);
+    }
+);

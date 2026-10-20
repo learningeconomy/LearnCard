@@ -1,10 +1,10 @@
 # Native personal Skills and goals — October 18, 2026
 
-This records the implemented personal Skills/goals slice and its source audit. The [concept boards and native captures](design/LEARNER_SKILLS_BRIEF.md) distinguish the actual Skills implementation from the later career-exploration concepts. The [wider learning plan](LEARNER_LEARNING_PLAN.md) remains authoritative for sequencing and exclusions.
+This records the implemented personal Skills/goals slice and its source audit. The [concept boards and native captures](design/LEARNER_SKILLS_BRIEF.md) distinguish generated concepts from the actual Skills and career implementations. The [wider learning plan](LEARNER_LEARNING_PLAN.md) remains authoritative for sequencing and exclusions.
 
 ## Implemented first slice
 
-**Apps → Keep learning → Skills & goals** opens the native personal hub. Existing category-star/Drawn artwork, flat panels and shared heading rays replace the generated coin/compass artwork, following the user's October 18 feedback. No career or Add a skill placeholder is exposed before its integration exists.
+**Apps → Keep learning → Skills & goals** opens the native personal hub. Existing category-star/Drawn artwork, flat panels and shared heading rays replace the generated coin/compass artwork, following the user's October 18 feedback. The separate career entry is now implemented; Add a skill remains unavailable until its safe replacement integration exists.
 
 A compact goal summary sits above the searchable Skills list, so a real account with many skill references does not bury personal goals. It previews the first goal and total count; the editor retains the complete list. Live read-only review confirmed a substantial real skill list and an empty goal record without any save or account reset.
 
@@ -15,7 +15,7 @@ A compact goal summary sits above the searchable Skills list, so a real account 
 - **Sharing boundary:** the editor links to native Data Sharing and explains that saved goals can be included in existing agreements. This slice does not run contract synchronization or queue AI insight refresh on save. Existing recipients may retain their previous shared URI until the established web sharing synchronization runs; automatic native profile-to-contract refresh remains a follow-up. No new consent, public link, AI session or document analysis is created by opening or saving these screens.
 - **Lifecycle and language:** account-scoped stores discard late replies and clear personal state on account lock/background/disposal. The goal draft is not persisted separately. All copy is in English, Spanish, French and Arabic, with shared RTL/Dynamic Type/VoiceOver controls and existing root-tray clearance. Publisher and goal content are displayed directly, not translated through legacy literal lookup.
 
-Runtime commands live in [learner.ts](account-runtime/learner.ts), with [service/models](ios/NativeCore/Sources/LearnCardNativeSDK/LearnerService.swift), [account store](ios/NativeCore/Sources/LearnCardNativeSDK/LearnerStore.swift) and [native screens](ios/Sources/SkillsView.swift). [Verification](TESTING.md#personal-skills-and-goals--october-18-2026) distinguishes local wire-format/real-signature checks from the unperformed live web/native UI round trip. Choosing/updating self-assessed skills, expanded employment details and career search/resources are subsequent slices.
+Runtime commands live in [learner.ts](account-runtime/learner.ts), with [service/models](ios/NativeCore/Sources/LearnCardNativeSDK/LearnerService.swift), [account store](ios/NativeCore/Sources/LearnCardNativeSDK/LearnerStore.swift) and [native screens](ios/Sources/SkillsView.swift). [Verification](TESTING.md#personal-skills-and-goals--october-18-2026) distinguishes local wire-format/real-signature checks from the unperformed live web/native UI round trip. Choosing/updating self-assessed skills and expanded employment details remain subsequent slices. The October 20 [career exploration integration](CAREER_EXPLORATION.md) adds search, details, training resources and explicit goal review.
 
 ## Placement and scope
 
@@ -83,7 +83,7 @@ Opening Skills, viewing a source or editing a goal draft must not start a new AI
 
 The AI gate checks age restrictions first, waits for preferences, requires explicit enabled preferences for child profiles and honors user opt-out. Non-child accounts currently default differently when the preference is missing. Reuse the actual policy decision at the native boundary, including relevant server enforcement. Keep loading, disabled-by-choice and age-unavailable states distinct. Personal Skills access must not be unnecessarily blocked by the separate career AI gate.
 
-Career occupations, learning resources, insight prerequisites, pagination, query availability and external providers still need a focused executable-contract audit. The [career composition](design/LEARNER_SKILLS_BRIEF.md) uses sample occupations without salary figures, personalized scores or provider claims. Its Add a career goal action should open an explicit editable goal review, not silently save or launch AI.
+The October 20 [career contract](CAREER_EXPLORATION.md) supersedes the occupation/training-query audit below: existing endpoints and responses are checked, bounded search/resources are implemented and the shared client policy is applied. No server account-age enforcement was established for the public provider. Other insight/content integrations remain unaudited. Originally, career occupations, learning resources, insight prerequisites, pagination, query availability and external providers needed a focused executable-contract audit. The [career composition](design/LEARNER_SKILLS_BRIEF.md) uses sample occupations without salary figures, personalized scores or provider claims. Its Add a career goal action should open an explicit editable goal review, not silently save or launch AI.
 
 ## Journeys checkpoint
 

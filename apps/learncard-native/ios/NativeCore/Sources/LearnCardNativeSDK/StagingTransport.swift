@@ -86,11 +86,14 @@ final class StagingTransport: NSObject, WKScriptMessageHandlerWithReply {
         if ["staging.network.learncard.com", "staging.cloud.learncard.com"].contains(url.host ?? "") {
             return ["GET", "POST"].contains(method)
         }
+        if accountHost, url.host == "api.learncloud.ai" {
+            return method == "POST" && url.query == nil && ["/insights/occupations", "/insights/training-programs"].contains(url.path)
+        }
         guard accountHost, url.host == "staging.api.learncard.app" else { return false }
         if url.path.hasPrefix("/api/keys/") { return ["GET", "POST", "PUT", "DELETE"].contains(method) }
         guard url.path.hasPrefix("/trpc/"), ["GET", "POST"].contains(method) else { return false }
         let actions = url.path.dropFirst("/trpc/".count).split(separator: ",", omittingEmptySubsequences: false)
-        let allowed: Set<String> = ["utilities.getChallenges", "preferences.updatePreferences", "pins.hasPin", "pins.createPin", "pins.verifyPin", "notifications.notifications", "notifications.updateNotificationMeta"]
+        let allowed: Set<String> = ["utilities.getChallenges", "preferences.updatePreferences", "preferences.getPreferencesForDid", "pins.hasPin", "pins.createPin", "pins.verifyPin", "notifications.notifications", "notifications.updateNotificationMeta"]
         return !actions.isEmpty && actions.allSatisfy { allowed.contains(String($0)) }
     }
 
@@ -101,7 +104,8 @@ final class StagingTransport: NSObject, WKScriptMessageHandlerWithReply {
     }
 
     nonisolated static func permitsHeader(_ name: String, url: URL, accountHost: Bool) -> Bool {
-        ["authorization", "content-type", "accept", "x-tenant-id"].contains(name.lowercased()) ||
+        if url.host == "api.learncloud.ai" { return accountHost && ["content-type", "accept"].contains(name.lowercased()) }
+        return ["authorization", "content-type", "accept", "x-tenant-id"].contains(name.lowercased()) ||
             (accountHost && url.host == "staging.api.learncard.app" && url.path.hasPrefix("/api/keys/") && name.lowercased() == "x-auth-token")
     }
 }

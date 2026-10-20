@@ -23,6 +23,8 @@ enum AccountReply {
                let failure = IntakeError(rawValue: String(code.dropFirst("intake:".count))) { throw failure }
             if let code = envelope["error"] as? String, code.hasPrefix("learner:"),
                let failure = LearnerError(rawValue: String(code.dropFirst("learner:".count))) { throw failure }
+            if let code = envelope["error"] as? String, code.hasPrefix("career:"),
+               let failure = CareerError(rawValue: String(code.dropFirst("career:".count))) { throw failure }
             throw method == "recover" ? AccountError.recovery : AccountError.unavailable
         }
         let decoder = JSONDecoder()
