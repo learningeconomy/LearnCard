@@ -21,7 +21,9 @@ export const ShareCredentialSelectionRow = ({
     onToggle: () => void;
 }) => {
     const text = credentialText(choice.credential);
-    const title = choice.credential ? text.name : getCredentialName(choice.credential);
+    const title = choice.credential
+        ? text.name || getCredentialName(choice.credential)
+        : choice.title || m['shareLinks.credential']();
 
     const checkboxId = useId();
 
