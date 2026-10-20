@@ -162,7 +162,7 @@ export const InAppMessageStory: React.FC<
                         {t('inAppMessages.previous')}
                     </button>
                 )}
-                {current < steps.length - 1 ? (
+                {current < steps.length - 1 && (
                     <button
                         type="button"
                         onClick={() => move(1)}
@@ -170,15 +170,16 @@ export const InAppMessageStory: React.FC<
                     >
                         {t('inAppMessages.next')}
                     </button>
-                ) : (
+                )}
+                {/* Preserve in-flight actions while earlier screens are visible. */}
+                <div hidden={current !== steps.length - 1}>
                     <MessageActions
-                        key={current}
-                        actions={step.actions ?? message.actions}
-                        stepIndex={current}
+                        actions={steps[steps.length - 1]?.actions ?? message.actions}
+                        stepIndex={steps.length - 1}
                         onClose={onClose}
                         onAction={onAction}
                     />
-                )}
+                </div>
             </footer>
         </div>
     );

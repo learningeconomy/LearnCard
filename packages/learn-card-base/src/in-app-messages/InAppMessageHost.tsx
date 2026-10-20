@@ -19,7 +19,11 @@ import { isFatigueControlled, recordBlockingShown } from './fatigueStore';
 import { useI18nLocale } from '../i18n';
 import { localizeMessage } from './localizeMessage';
 import { InAppMessageRichPresentation } from './InAppMessageSurface';
-import type { InAppMessagePresentationEvent, MessageInteraction } from './presentationTypes';
+import type {
+    InAppMessagePresentationEvent,
+    MessageInteraction,
+    MessagePresentationProps,
+} from './presentationTypes';
 
 export interface InAppMessageHostProps extends PresentationGateOptions {
     onEvent?: (event: InAppMessagePresentationEvent) => void;
@@ -190,10 +194,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({ onEvent, ...
     const key = active
         ? `${accountDid ?? 'anonymous'}:${isOverride}:${active.id}:${active.presentation}`
         : null;
-    const onClose = (
-        reason: 'dismissed' | 'action' = 'dismissed',
-        details?: MessageInteraction
-    ): void => {
+    const onClose: MessagePresentationProps['onClose'] = (reason = 'dismissed', details): void => {
         if (!active) return;
         if (reason === 'dismissed') emit('dismissed', details);
         close(active.id);

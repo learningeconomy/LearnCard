@@ -124,7 +124,7 @@ describe('toast lifecycle', () => {
         view.rerender(<InAppMessageToast message={message} onClose={latestClose} />);
         act(() => vi.advanceTimersByTime(1000));
         expect(firstClose).not.toHaveBeenCalled();
-        expect(latestClose).toHaveBeenCalledExactlyOnceWith('dismissed');
+        expect(latestClose).toHaveBeenCalledExactlyOnceWith('expired');
     });
 
     it('does not report expiry while a tapped navigation action completes', async () => {
@@ -184,7 +184,7 @@ describe('toast lifecycle', () => {
         await act(async () => resolve('noop'));
         expect(onClose).not.toHaveBeenCalled();
         act(() => vi.advanceTimersByTime(5000));
-        expect(onClose).toHaveBeenCalledExactlyOnceWith('dismissed');
+        expect(onClose).toHaveBeenCalledExactlyOnceWith('expired');
     });
 });
 

@@ -498,6 +498,8 @@ optional `actions`. Earlier screens show Next; the final screen uses `step.actio
 (an explicitly empty array suppresses inherited actions). There is no timer or wrapping. Tap the left
 third to go back, the right two thirds to continue, swipe horizontally, or use arrow keys. Interactive
 media and controls do not advance the story. Required stories should provide a completing final action.
+Final-screen action state remains mounted across navigation, preserving update progress and preventing
+duplicate downloads when a learner returns to that screen.
 
 `locales` supports `title`, `body`, `actionLabels`, `steps` (title/body), and `iframeUrl`. Each field
 falls back independently: exact locale, language, original. Arrays are positional and never add
@@ -564,7 +566,8 @@ The host optionally calls `onEvent` with `type` (`shown`, `action`, `dismissed`)
 `presentation`, `source` (`flag`, `deepLink`, `override`), and optional zero-based `actionIndex`,
 `stepIndex`, and `actionType`. `deepLink` is reserved for LC-2264. Bridge actions have no authored
 action index. Seen state is recorded before fatigue, then shown is emitted. Screen changes and retries
-do not create new impressions. Navigation completion and lifecycle cleanup are not dismissals.
+do not create new impressions. Navigation completion, automatic toast expiry, and lifecycle cleanup
+are not dismissals. Tapping a toast without a navigation action is an explicit dismissal.
 LearnCard forwards these to `in_app_message_shown`, `in_app_message_action`, and
 `in_app_message_dismissed`, excluding previews. Payloads contain no credential data, URLs, or prose.
 

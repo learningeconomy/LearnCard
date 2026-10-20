@@ -65,10 +65,17 @@ vi.mock('../InAppMessageModal', () => ({
     ),
 }));
 vi.mock('../InAppMessageBanner', () => ({ InAppMessageBanner: () => null }));
-vi.mock('../InAppMessageToast', () => ({ InAppMessageToast: () => null }));
-vi.mock('framer-motion', () => ({
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+vi.mock('../useInAppMessageActions', () => ({
+    useInAppMessageActions: () => ({ runAction: vi.fn().mockResolvedValue('closed') }),
 }));
+vi.mock('framer-motion', async importOriginal => {
+    const original = await importOriginal<typeof import('framer-motion')>();
+    return {
+        ...original,
+        AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+        useReducedMotion: () => true,
+    };
+});
 
 describe('message host impressions', () => {
     beforeEach(() => {
@@ -83,7 +90,34 @@ describe('message host impressions', () => {
         cleanup();
         setInAppMessageOverride(null);
         vi.restoreAllMocks();
+        vi.useRealTimers();
     });
+
+    it.each([false, true])(
+        'only emits toast dismissal for a user tap (tapped: %s)',
+        async tapped => {
+            vi.useFakeTimers();
+            state.gate = true;
+            state.messages = [
+                inAppMessageValidator.parse({
+                    id: 'toast-event',
+                    title: 'Saved',
+                    presentation: 'toast',
+                }),
+            ];
+            const onEvent = vi.fn();
+            await act(async () => {
+                render(<InAppMessageHost onEvent={onEvent} />);
+            });
+            const toast = screen.getByRole('button', { name: 'Saved' });
+            if (tapped) fireEvent.click(toast);
+            await act(async () => vi.advanceTimersByTimeAsync(5000));
+            expect(screen.queryByRole('button', { name: 'Saved' })).toBeNull();
+            expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual(
+                tapped ? ['shown', 'dismissed'] : ['shown']
+            );
+        }
+    );
 
     it('records seen and fatigue before shown, localizes live, and emits no dismissal for navigation', async () => {
         state.gate = true;

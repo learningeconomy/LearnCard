@@ -37,7 +37,7 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
         const timer = setTimeout(() => {
             if (completedRef.current) return;
             completedRef.current = true;
-            closeRef.current('dismissed');
+            closeRef.current('expired');
         }, durationMs);
 
         return () => clearTimeout(timer);

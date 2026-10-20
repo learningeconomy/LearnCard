@@ -18,6 +18,6 @@ export interface MessageInteraction {
 
 export interface MessagePresentationProps {
     message: InAppMessage;
-    onClose: (reason?: 'dismissed' | 'action', details?: MessageInteraction) => void;
+    onClose: (reason?: 'dismissed' | 'action' | 'expired', details?: MessageInteraction) => void;
     onAction?: (details: MessageInteraction) => void;
 }
