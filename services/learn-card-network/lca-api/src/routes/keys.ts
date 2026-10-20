@@ -349,6 +349,10 @@ export const keysRouter = t.router({
                 recoverySessionToken: RecoverySessionTokenValidator,
                 recoveryMethods: z.array(RecoveryMethodResponseValidator),
                 escrowPin: EscrowPinStatusValidator,
+                // Same source as the key-status `primaryDid` (getAuthShare): lets
+                // the client bind a no-provider Nitro escrow hold start/restart to
+                // the verified account without a signed-in identity proof.
+                primaryDid: z.string().nullable(),
             })
         )
         .mutation(async ({ input }) => {
@@ -407,6 +411,7 @@ export const keysRouter = t.router({
                 recoverySessionToken,
                 recoveryMethods,
                 escrowPin: getEscrowPinStatus(userKey),
+                primaryDid: userKey.primaryDid ?? null,
             };
         }),
 

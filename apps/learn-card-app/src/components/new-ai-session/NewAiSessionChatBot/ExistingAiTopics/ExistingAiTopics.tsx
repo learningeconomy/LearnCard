@@ -56,7 +56,7 @@ export const ExistingAiTopics: React.FC<{
     }, [aiTopics, search, selectedAppId]);
 
     return (
-        <section className="w-full bg-white ion-padding border-t-[1px] border-solid border-grayscale-200 z-50">
+        <section className="w-full bg-white ion-padding border-t border-solid border-grayscale-200 z-50">
             <ul className="pt-0">
                 {(search?.length ?? 0) > 0 && filteredTopics ? (
                     <>

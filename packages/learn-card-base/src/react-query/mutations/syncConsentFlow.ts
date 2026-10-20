@@ -1,5 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import { InfiniteData, QueryClient, useMutation } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { v4 as uuidv4 } from 'uuid';
 import {
     useToast,
     useWallet,
@@ -17,12 +18,23 @@ import { useAcceptCredentialMutation } from './mutations';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
+import { getLogger } from '../../logging/logger';
+import { getAcceptLifecycleRejection, LifecycleRejection } from './consentFlowLifecycle';
+import {
+    clearConsentFlowRecordMarker,
+    getConsentFlowRecordMarker,
+    setConsentFlowRecordMarker,
+} from './consentFlowRecordMarkers';
+
+const log = getLogger('sync-consent-flow');
 
 export type ConsentRecord = {
     credentialUri: string;
     contractUri: string;
     termsUri: string;
     category?: string;
+    /** Already in the wallet index, so the sync only needs to accept it on the server. */
+    alreadyStored?: boolean;
 };
 
 export type ConsentedContract = {
@@ -250,32 +262,153 @@ export const useSyncConsentContractsMutation = () => {
     });
 };
 
+class LifecycleRejectedError extends Error {
+    constructor(
+        readonly status: LifecycleRejection,
+        readonly rolledBack: boolean
+    ) {
+        super(`Credential is ${status}`);
+        this.name = 'LifecycleRejectedError';
+    }
+}
+
+/**
+ * Remove a record this sync indexed, plus the caches addVCtoWallet updated for it. Idempotent:
+ * an id that was never written, or that's already gone (e.g. revoked-credential cleanup got
+ * there first), is a no-op. Only ever called with an id from the sync's ownership marker.
+ */
+const rollBackIndexedRecord = async (
+    learnCard: BespokeLearnCard,
+    queryClient: QueryClient,
+    { recordId, uri }: { recordId: string; uri: string }
+) => {
+    try {
+        await learnCard.index.LearnCloud.remove(recordId);
+    } catch (error) {
+        const remaining = await learnCard.index.LearnCloud.get({ uri });
+        if (remaining.some(record => record.id === recordId)) throw error;
+    }
+
+    try {
+        await learnCard.cache?.flushIndex?.();
+    } catch (error) {
+        log.warn('Failed to flush index cache after consent flow rollback', uri, error);
+    }
+
+    queryClient.setQueriesData<InfiniteData<{ records: { id?: string }[] }>>(
+        { queryKey: ['useGetCredentialList'] },
+        data =>
+            data?.pages
+                ? {
+                      ...data,
+                      pages: data.pages.map(page => ({
+                          ...page,
+                          records: (page.records ?? []).filter(record => record.id !== recordId),
+                      })),
+                  }
+                : data
+    );
+    queryClient.removeQueries({ queryKey: ['useGetResolvedCredential', uri] });
+    await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
+        queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
+    ]);
+};
+
 /**
  * Accept all credentials and add them to the wallet.
  */
 export const useAcceptAndStoreCredentialsMutation = () => {
     const acceptCredential = useAcceptCredentialMutation();
-    const { addVCtoWallet } = useWallet();
+    const { addVCtoWallet, initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
-    return useMutation<void, Error, { allRecords: ConsentRecord[] }>({
+    return useMutation<
+        { stored: ConsentRecord[]; failed: ConsentRecord[]; rejected: ConsentRecord[] },
+        Error,
+        { allRecords: ConsentRecord[] }
+    >({
         mutationFn: async ({ allRecords }) => {
             walletStore.set.setIsSyncing(WalletSyncState.Syncing);
-            await Promise.all(
-                allRecords.map(r => acceptCredential.mutateAsync({ uri: r.credentialUri }))
+            const learnCard = await initWallet();
+            const profileDid = learnCard.id.did();
+            // Store each credential independently so one failure doesn't fail the batch
+            // or keep the successful ones from being stored.
+            // Store before accepting: accepting removes the credential from the server's
+            // pending list, so if storing failed after an accept, no later sync would ever
+            // see it again. In this order, a failed store leaves it pending (retried next
+            // sync), and a transient accept failure leaves it pending and indexed (accepted
+            // next sync via alreadyStored, without storing a duplicate).
+            // If acceptance is definitively refused because the issuer revoked or suspended
+            // the credential, the record this sync created is rolled back so it never sits in
+            // the normal wallet. Ownership (profile + URI -> record id) is persisted BEFORE the
+            // index write, so this still works if the write landed but its response was lost,
+            // or the app reloaded before the rejection. Records without a marker were put there
+            // by something else and are never removed.
+            const results = await Promise.allSettled(
+                allRecords.map(async r => {
+                    const uri = r.credentialUri;
+                    if (!r.alreadyStored) {
+                        // Reuse a marker from an earlier attempt so it always names the only
+                        // record this sync could have written for this credential.
+                        const recordId = getConsentFlowRecordMarker(profileDid, uri) ?? uuidv4();
+                        setConsentFlowRecordMarker(profileDid, uri, recordId);
+                        await addVCtoWallet({
+                            id: recordId,
+                            uri,
+                            contractUri: r.contractUri,
+                            skipSync: true,
+                        });
+                    }
+
+                    try {
+                        await acceptCredential.mutateAsync({ uri });
+                    } catch (error) {
+                        const rejection = await getAcceptLifecycleRejection(learnCard, uri, error);
+                        if (!rejection) throw error;
+
+                        const recordId = getConsentFlowRecordMarker(profileDid, uri);
+                        if (recordId) {
+                            await rollBackIndexedRecord(learnCard, queryClient, { recordId, uri });
+                            clearConsentFlowRecordMarker(profileDid, uri);
+                        }
+                        throw new LifecycleRejectedError(rejection, Boolean(recordId));
+                    }
+                    clearConsentFlowRecordMarker(profileDid, uri);
+                })
             );
-            await Promise.all(
-                allRecords.map(r =>
-                    addVCtoWallet({
-                        uri: r.credentialUri,
-                        contractUri: r.contractUri,
-                        skipSync: true,
-                    })
-                )
-            );
+
+            const stored: ConsentRecord[] = [];
+            const failed: ConsentRecord[] = [];
+            const rejected: ConsentRecord[] = [];
+            results.forEach((result, index) => {
+                const record = allRecords[index]!;
+                if (result.status === 'fulfilled') {
+                    stored.push(record);
+                } else if (result.reason instanceof LifecycleRejectedError) {
+                    rejected.push(record);
+                    log.warn(
+                        `Consent flow credential is ${result.reason.status}; not keeping it`,
+                        record.credentialUri,
+                        { rolledBack: result.reason.rolledBack }
+                    );
+                } else {
+                    failed.push(record);
+                    log.warn(
+                        'Failed to accept/store consent flow credential',
+                        record.credentialUri,
+                        result.reason
+                    );
+                }
+            });
+
+            return { stored, failed, rejected };
         },
-        onSuccess: (_, { allRecords }) => {
-            const count = allRecords.length;
-            if (count > 0) {
+        onSuccess: ({ stored }) => {
+            const count = stored.filter(r => !r.alreadyStored).length;
+            if (count === 0) {
+                walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
+            } else {
                 // presentToast(`Successfully synced ${count} credentials`, {
                 //     toastType: ToastTypeEnum.CopySuccess,
                 // });

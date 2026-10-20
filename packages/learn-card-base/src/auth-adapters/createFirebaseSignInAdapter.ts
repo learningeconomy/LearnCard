@@ -1,8 +1,9 @@
-import type { Auth } from 'firebase/auth';
+import type { Auth, User } from 'firebase/auth';
 import type { AuthUser, SignInAdapter } from '@learncard/types';
 import { getLogger } from '../logging/logger';
 import { createFirebasePhoneAuth } from './createFirebasePhoneAuth';
 import { loadFirebaseAuth } from './firebaseAuthModule';
+import { verifyFirebaseSignOut } from './verifyFirebaseSignOut';
 import type {
     FirebaseAuthLike,
     FirebaseSignInAdapterConfig,
@@ -80,6 +81,8 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
         return isSignInWithEmailLink(auth(), link);
     };
 
+    const profileListeners = new Set<(user: AuthUser | null) => void>();
+
     const nativePhoneAuth = isNative() ? config.getNativeAuth?.() : undefined;
 
     return {
@@ -97,6 +100,9 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
             deleteAccount: true,
         }),
         subscribe: (onUser): (() => void) => {
+            // Each subscription owns its entry, even when callbacks are shared.
+            const onProfile = (user: AuthUser | null): void => onUser(user);
+            profileListeners.add(onProfile);
             let unsubscribe: (() => void) | undefined;
             let cancelled = false;
             void loadFirebaseAuth()
@@ -109,7 +115,9 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                 })
                 .catch(() => log.error('Unable to subscribe to Firebase auth state'));
             return (): void => {
+                if (cancelled) return;
                 cancelled = true;
+                profileListeners.delete(onProfile);
                 unsubscribe?.();
             };
         },
@@ -234,6 +242,28 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                     const currentUser = config.getAuth().currentUser;
                     if (!currentUser) throw new Error('No authenticated user after sign-in');
                     user = currentUser;
+                    // Apple's name arrives separately from the ID token on the first sign-in.
+                    // With skipNativeAuth, the plugin may return only user.displayName.
+                    const appleDisplayName = result.user?.displayName?.trim();
+                    if (appleDisplayName && !user.displayName) {
+                        try {
+                            const { updateProfile } = await loadFirebaseAuth();
+                            await updateProfile(user as User, { displayName: appleDisplayName });
+                            // Re-read the live user: the SDK may replace its currentUser object.
+                            const updatedUser = config.getAuth().currentUser;
+                            if (updatedUser?.uid === user.uid) {
+                                user = updatedUser;
+                                // Same-UID profile updates do not emit onAuthStateChanged.
+                                const profile = mapFirebaseUser(user);
+                                profileListeners.forEach(listener =>
+                                    notify(() => listener(profile))
+                                );
+                            }
+                        } catch (error) {
+                            // Profile enrichment must not turn a successful sign-in into a failure.
+                            log.warn('Could not save Apple display name', error);
+                        }
+                    }
                 } else {
                     const result = await signInWithPopup(auth(), provider);
                     if (!result) throw new Error('Missing popup result');
@@ -300,7 +330,8 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
         },
         signOut: (): Promise<void> =>
             operation('signOut', async () => {
-                await config.getAuth().signOut();
+                const firebaseAuth = auth();
+                await firebaseAuth.signOut();
                 phone.cleanup();
                 if (isNative() && config.getNativeAuth) {
                     try {
@@ -309,6 +340,7 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                         log.warn('Native signOut failed');
                     }
                 }
+                await verifyFirebaseSignOut(firebaseAuth);
             }),
         cleanup: phone.cleanup,
     };

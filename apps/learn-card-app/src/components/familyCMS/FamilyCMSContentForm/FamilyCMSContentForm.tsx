@@ -87,7 +87,7 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
             >
                 <FamilyEmojiPicker handleSetEmoji={handleSetEmoji} handleCloseModal={closeModal} />
             </Suspense>,
-            { sectionClassName: '!bg-transparent !shadow-none !w-fit' }
+            { sectionClassName: 'bg-transparent! shadow-none! w-fit!' }
         );
     };
 
@@ -108,7 +108,7 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                             handleSetState('basicInfo', 'name', _familyName);
                             setErrors?.({});
                         }}
-                        className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !pr-4 flex ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
+                        className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] pr-4! flex ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                             errors?.name ? 'border-red-300 border-2' : ''
                         }`}
                         placeholder={m['family.editor.familyNamePlaceholder']()}

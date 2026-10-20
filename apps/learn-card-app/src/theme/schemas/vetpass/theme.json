@@ -15,7 +15,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-baltic-blue-100"
             },
@@ -27,7 +27,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-orange-100"
             },
@@ -39,7 +39,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-navy-100"
             },
@@ -51,7 +51,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-army-green-100"
             },
@@ -63,7 +63,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-sand-100"
             },
@@ -75,7 +75,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-vp-red-100"
             },
@@ -87,7 +87,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-baltic-blue-100"
             },
@@ -99,7 +99,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-navy-100"
             },
@@ -111,7 +111,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-sand-100"
             },
@@ -123,7 +123,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-army-green-100"
             },
@@ -135,7 +135,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-baltic-blue-100"
             },
@@ -147,7 +147,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-army-green-100"
             },
@@ -159,7 +159,7 @@
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
                 "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-navy-100"
             }
@@ -190,14 +190,14 @@
             "primaryButtonColor": "bg-baltic-blue-600 text-white",
             "secondaryButtonColor": "bg-slate-700 text-white border-slate-700",
             "indicatorColor": "text-baltic-blue-500",
-            "syncingColor": "!text-baltic-blue-500",
-            "completedColor": "!text-emerald-900"
+            "syncingColor": "text-baltic-blue-500!",
+            "completedColor": "text-emerald-900!"
         },
         "navbar": {
             "activeColor": "text-vp-red-500",
             "inactiveColor": "text-grayscale-500",
-            "syncingColor": "!text-baltic-blue-500",
-            "completedColor": "!text-emerald-900"
+            "syncingColor": "text-baltic-blue-500!",
+            "completedColor": "text-emerald-900!"
         },
         "introSlides": {
             "firstSlideBackground": "bg-navy-500",

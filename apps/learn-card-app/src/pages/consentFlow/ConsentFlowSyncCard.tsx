@@ -167,7 +167,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             onClick={() => {
                                 newModal(
                                     <NewMyData />,
-                                    { sectionClassName: '!max-w-[350px]' },
+                                    { sectionClassName: 'max-w-[350px]!' },
                                     { desktop: ModalTypes.Cancel }
                                 );
                             }}

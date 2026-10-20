@@ -570,13 +570,13 @@ const ResumeBuilderContent: React.FC = () => {
             data-feedback-exclude
         >
             {(loadingAction || isHydratingResume) && (
-                <div className="absolute inset-0 h-full w-full z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                <div className="absolute inset-0 h-full w-full z-[100] bg-white/80 backdrop-blur-xs flex items-center justify-center">
                     <ResumeBuilderLoader />
                 </div>
             )}
             <div className="flex-1 min-w-0 flex flex-col">
                 {canDiscardSetup && (
-                    <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 space-y-3">
+                    <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 space-y-v3-3">
                         <p className="text-sm text-grayscale-700">
                             {m['resumePublishing.interrupted']()}
                         </p>
@@ -652,7 +652,7 @@ const ResumeBuilderContent: React.FC = () => {
             {!isMobile && !panelOpen && (
                 <button
                     onClick={() => openResumeConfigPanel()}
-                    className="absolute top-4 right-4 z-20 bg-white border border-grayscale-200 shadow-sm rounded-full p-2 h-[40px] w-[40px] text-grayscale-600 hover:text-grayscale-900"
+                    className="absolute top-4 right-4 z-20 bg-white border border-grayscale-200 shadow-xs rounded-full p-2 h-[40px] w-[40px] text-grayscale-600 hover:text-grayscale-900"
                 >
                     <IonIcon icon={menuOutline} className="w-[20px] h-[20px]" />
                 </button>

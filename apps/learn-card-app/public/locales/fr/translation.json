@@ -1236,6 +1236,7 @@
             "imA": "Je suis ",
             "selectRole": "Sélectionner le rôle",
             "fullName": "Nom complet",
+            "fullNameOptional": "Nom complet (facultatif)",
             "dateOfBirth": "Date de naissance",
             "age": "Âge : {{age}}",
             "countryOfResidence": "Pays de résidence",
@@ -1965,6 +1966,26 @@
                 "hint": "Mêmes règles : 6 chiffres, rien d’évident."
             },
             "useInstead": "Utiliser mon code PIN de récupération"
+        },
+        "confirmCode": {
+            "mismatch": "Ce code est incorrect. Réessayez.",
+            "expired": "Ce code a expiré. Envoyez-en un nouveau.",
+            "locked": "Trop de tentatives. Envoyez un nouveau code.",
+            "notSent": "Nous n'avons pas pu envoyer votre code. Attendez une minute avant de le renvoyer.",
+            "title": "Vérifiez votre e-mail",
+            "description": "Saisissez le code que nous avons envoyé pour confirmer cette demande.",
+            "confirming": "Confirmation...",
+            "error": "Ce code n'a pas fonctionné ou a expiré. Vérifiez-le et réessayez, ou appuyez sur Renvoyer le code pour en obtenir un nouveau.",
+            "failed": "Quelque chose s'est mal passé. Vérifiez votre connexion et réessayez.",
+            "resend": "Renvoyer le code",
+            "resending": "Envoi en cours...",
+            "resent": "Nous avons envoyé un nouveau code.",
+            "resendError": "Vous avez demandé plusieurs codes récemment. Veuillez patienter un peu et réessayer.",
+            "resendFailed": "Nous n'avons pas pu envoyer un nouveau code. Vérifiez votre connexion et réessayez."
+        },
+        "invalidRequest": "Cette demande de récupération n'est plus valide. Commencez-en une nouvelle.",
+        "status": {
+            "failed": "Nous n'avons pas pu vérifier votre demande pour le moment."
         },
         "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
         "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
@@ -2997,7 +3018,35 @@
         "readMore": "En savoir plus",
         "connectHandler": "Connecter le gestionnaire",
         "connected": "Gestionnaire de justificatifs connecté",
-        "connFail": "Impossible de connecter le gestionnaire de justificatifs. Votre navigateur l'a peut-être bloqué — vérifiez les autorisations et réessayez."
+        "connFail": "Impossible de connecter le gestionnaire de justificatifs. Votre navigateur l'a peut-être bloqué — vérifiez les autorisations et réessayez.",
+        "receive": {
+            "title": "Ajouter au Passeport",
+            "description": "Vérifiez les justificatifs avant de les enregistrer dans votre compte.",
+            "from": "Demandé par {{origin}}",
+            "loading": "Récupération des justificatifs...",
+            "saved": "Enregistré dans votre Passeport. Vous pouvez retourner sur le site émetteur.",
+            "credential": "Justificatif",
+            "issuerUnavailable": "Nom de l’émetteur indisponible",
+            "details": "Détails",
+            "progress": "{{saved}} justificatifs enregistrés sur {{total}}",
+            "cancel": "Annuler",
+            "saving": "Enregistrement...",
+            "retry": "Réessayer",
+            "accept": "Enregistrer dans le Passeport",
+            "error": {
+                "invalid": "Cette offre n’est pas prise en charge ou contient un justificatif invalide. Retournez sur le site émetteur et lancez une nouvelle demande.",
+                "request": "Impossible de récupérer les justificatifs. Retournez sur le site émetteur et réessayez.",
+                "save": "L’enregistrement n’a pas pu se terminer. Réessayez pour reprendre là où vous en étiez.",
+                "response": "Vos justificatifs ont été enregistrés, mais le site émetteur n’a pas pu être informé.",
+                "account": "Votre compte a changé. Retournez au site émetteur et lancez une nouvelle demande.",
+                "cancel": "Nous n’avons pas pu informer le site émetteur de votre annulation. Retournez sur ce site et lancez une nouvelle demande."
+            },
+            "cancelled": "Demande annulée. Retournez sur le site émetteur.",
+            "connectTitle": "Connexion de votre compte",
+            "connectDescription": "Préparation de la demande de ce site.",
+            "connecting": "Connexion...",
+            "savedBeforeCancel": "Les justificatifs déjà enregistrés restent dans votre Passeport ({{saved}})."
+        }
     },
     "legal": {
         "connectionsEncrypted": "Toutes les connexions sont chiffrées.",

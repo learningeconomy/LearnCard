@@ -10,6 +10,16 @@ Available on:
 
 ---
 
+## Supported browsers and devices
+
+Tailwind 4 requires Safari 16.4+, Chrome 111+, or Firefox 128+. The iOS app
+requires iOS 16.4 or later. On Android, keep Android System WebView or Chrome
+updated to version 111 or later; the Android OS version alone does not determine
+support. Native builds check the standard Android WebView minimum and show a
+standalone notice if the browser cannot open the app. Update Android System
+WebView or Chrome through the device's app store, then reopen the app.
+See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility).
+
 ## Key Features
 
 | Feature                    | Description                                                       |
@@ -19,6 +29,14 @@ Available on:
 | **Badge Issuance**         | Issue digital badges for achievements, ranks, and milestones      |
 | **Role-Based Permissions** | NSO admins, troop leaders, and scouts have scoped permissions     |
 | **Verifiable Credentials** | All badges and IDs are W3C Verifiable Credentials                 |
+
+---
+
+## Setting up your profile with Apple
+
+After **Sign in with Apple**, ScoutPass fills in your name when it is available. **Full Name (optional)** can be left blank or cleared in profile setup and account settings. Choose an available public username to finish setup; ScoutPass uses that username as your display name when the name is blank. You do not need to re-enter your Apple email address.
+
+If saving fails, the form stays open so you can try again.
 
 ---
 
@@ -90,6 +108,18 @@ flowchart LR
 ---
 
 ### Key flows
+
+#### Competency framework administration
+
+ScoutPass shows the Competencies **Admin Panel** and framework management tools only when the current account's resolved IDs include a **Global Admin ID**. The controls stay hidden while the ID query is loading or fails. National admins, troop leaders, and scouts do not receive access through their membership IDs. Badge authors can still select existing competencies without editing the framework.
+
+If an admin overlay is open when access is lost or the ID query fails, ScoutPass closes that specific overlay, including its fullscreen shell. Other open overlays and badge-author competency selection remain available.
+
+This is a frontend visibility rule, using `useGetCurrentUserTroopIdsResolved().isScoutGlobalAdmin`. It is **not a server authorization boundary**: the ID lookup reads the user's personal LearnCloud index, and this change adds no server check of the ID's issuer, network claim status, or revocation status.
+
+The shared LearnCard Network API still allows any authenticated profile to create or link a framework; editing, deleting, and managing its competencies require framework manager permissions. A regular user can therefore bypass ScoutPass's UI and create a framework through the API, including retaining manager access to a framework created before the UI restriction. LearnCard App relies on the shared API behavior.
+
+For stronger enforcement, add a ScoutPass-specific server capability keyed to the authenticated profile and enforce it on framework and competency mutations, in addition to the existing framework manager checks. Trusted credential claim and revocation events could grant and remove that capability. The UI would read the same capability from the API. The policy must be selected by trusted deployment configuration, rather than a caller-controlled tenant header, to preserve LearnCard App's permissions and prevent bypasses.
 
 #### Setting up a troop
 

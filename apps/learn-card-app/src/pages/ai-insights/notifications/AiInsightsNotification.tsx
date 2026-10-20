@@ -144,8 +144,8 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     } = NotificationTypeStyles[NotificationTypeEnum.consentFlowTransaction ?? 'loading'];
 
     let claimButtonStyles = isClaimed
-        ? `${claimedButtonStyles} !bg-emerald-600/50`
-        : `${unclaimedButtonStyles} !bg-emerald-600`;
+        ? `${claimedButtonStyles} bg-emerald-600/50!`
+        : `${unclaimedButtonStyles} bg-emerald-600!`;
 
     const issueDate = moment(notification?.sent).format('MMMM DD YYYY');
     let buttonText: string = '';
@@ -161,16 +161,16 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
         buttonText = m['aiInsights.viewInsights']();
     } else if (expiredRequest) {
         buttonText = m['aiInsights.expired']();
-        claimButtonStyles = `${claimedButtonStyles} !bg-grayscale-200`;
+        claimButtonStyles = `${claimedButtonStyles} bg-grayscale-200!`;
     } else {
         buttonText = m['aiInsights.viewRequest']();
     }
 
     if (isShareRequest && !insightsRequest?.status) {
-        claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
+        claimButtonStyles = `${claimedButtonStyles} bg-emerald-600!`;
         buttonText = m['aiInsights.viewRequest']();
     } else if (isShareRequest && !!insightsRequest?.status) {
-        claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600/50`;
+        claimButtonStyles = `${claimedButtonStyles} bg-emerald-600/50!`;
         buttonText = m['aiInsights.accepted']();
     }
 
@@ -178,21 +178,21 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     const isForwardedRequest = notification?.data?.metadata?.subtype === 'forwarded-share';
     if (isForwardedRequest) {
         buttonText = m['aiInsights.viewRequest']();
-        claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
+        claimButtonStyles = `${claimedButtonStyles} bg-emerald-600!`;
     }
 
     if (isChild) {
         buttonText = m['aiInsights.getPermission']();
-        claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
+        claimButtonStyles = `${claimedButtonStyles} bg-emerald-600!`;
 
         if (hasConsented) {
             buttonText = m['aiInsights.approved']();
-            claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600/50`;
+            claimButtonStyles = `${claimedButtonStyles} bg-emerald-600/50!`;
         }
 
         if (expiredRequest) {
             buttonText = m['aiInsights.expired']();
-            claimButtonStyles = `${claimedButtonStyles} !bg-grayscale-200`;
+            claimButtonStyles = `${claimedButtonStyles} bg-grayscale-200!`;
         }
     }
 
@@ -232,7 +232,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                         targetProfile={notification?.data?.metadata?.targetProfileId as string}
                         childProfileId={notification?.from?.profileId as string}
                     />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
                 return;
@@ -242,7 +242,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
         if (isChild && !hasConsented) {
             newModal(
                 <AiInsightsParentConsent targetProfile={notification?.from as LCNProfile} />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
             return;
@@ -264,7 +264,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                 <RequestInsightsFromUserModalWrapper
                     profileId={notification?.from?.profileId as string}
                 />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         } else {

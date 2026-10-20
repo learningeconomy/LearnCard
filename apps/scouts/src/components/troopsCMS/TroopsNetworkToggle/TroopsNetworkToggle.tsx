@@ -70,7 +70,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
         const globalNetwork = state?.parentID;
 
         return (
-            <div className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4">
+            <div className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-300 mt-4 mb-4">
                 <div className="flex items-center justify-start">
                     <div className="h-[40px] w-[40px] rounded-full bg-white mr-2 overflow-hidden">
                         {isParentBoostLoading ? (
@@ -121,7 +121,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
         <button
             disabled={disableClick}
             onClick={() => openNetworkList()}
-            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4"
+            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-300 mt-4 mb-4"
         >
             <div className="flex items-center justify-start">
                 <div className="w-[40px] h-[40px] rounded-full bg-white mr-2 overflow-hidden">

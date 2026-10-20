@@ -16,7 +16,7 @@ import BoostManagedChildrenList from '../../components/boost/boost-managed-card/
 import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoostSelectMenuOld';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
-import { IonRow, IonCol, IonInput, IonContent } from '@ionic/react';
+import { IonRow, IonCol, IonInput } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 import { selectLocalePlural } from '../../i18n/formatters';
 import { getLogger } from 'learn-card-base';
@@ -79,8 +79,8 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                 returnToParentAfterSave
             />,
             {
-                className: '!p-0',
-                sectionClassName: '!p-0',
+                className: 'p-0!',
+                sectionClassName: 'p-0!',
             }
         );
     };
@@ -141,8 +141,8 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
     };
 
     return (
-        <section className="flex flex-col h-full w-full bg-white items-center">
-            <h1 className="px-[20px] py-[15px] bg-white flex gap-[10px] w-full max-w-[600px] sticky top-0 z-[1001]">
+        <section className="relative flex flex-col h-full min-h-0 w-full overflow-hidden bg-white items-center">
+            <h1 className="px-[20px] py-[15px] bg-white flex shrink-0 gap-[10px] w-full max-w-[600px] relative z-[1001]">
                 {icon}
                 <div className="flex flex-col">
                     <span className="text-grayscale-900 text-[22px] font-notoSans leading-[130%] tracking-[-0.25px]">
@@ -160,15 +160,15 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                     <X className="text-grayscale-900 h-auto w-[30px] absolute top-[10px] right-[20px]" />
                 </button>
             </h1>
-            <section className="bg-grayscale-100 grow w-full flex flex-col items-center">
-                <div className="flex items-center justify-between w-full max-w-[600px] px-[15px]">
+            <section className="bg-grayscale-100 flex-1 min-h-0 w-full flex flex-col items-center">
+                <div className="flex shrink-0 items-center justify-between w-full max-w-[600px] px-[15px] pb-[8px]">
                     <IonRow class="w-full max-w-[600px] mt-6 ion-no-padding">
                         <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
                             <IonInput
                                 autocapitalize="on"
                                 placeholder={m['troops.membersList.searchPlaceholder']()}
                                 value={search}
-                                className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
+                                className="bg-white text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
                                 onIonInput={e => setSearch(e?.detail?.value)}
                                 type="text"
                                 clearInput
@@ -184,7 +184,12 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                         </IonCol>
                     </IonRow>
                 </div>
-                <IonContent className="test" color="grayscale-100">
+                <div
+                    className="lc-content-owns-bottom lc-scroll-to-edge relative flex-1 min-h-0 w-full overflow-y-auto [&>ion-grid]:pt-0"
+                    role="region"
+                    aria-label={title}
+                    tabIndex={0}
+                >
                     <BoostManagedChildrenList
                         parentUri={parentUri}
                         childGenerations={childGenerations}
@@ -201,7 +206,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                         returnToParentAfterSave
                         useManagedCardSkeleton
                     />
-                </IonContent>
+                </div>
             </section>
         </section>
     );

@@ -17,7 +17,7 @@ const ClrEvidenceDetailPanel: React.FC<{
     const { closeModal } = useModal();
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto mt-[var(--ion-safe-area-top,0px)]">
+        <div className="space-y-v3-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto mt-[var(--ion-safe-area-top,0px)]">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
@@ -31,7 +31,7 @@ const ClrEvidenceDetailPanel: React.FC<{
                     </div>
                     <button
                         onClick={closeModal}
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px]"
+                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2"
                     >
                         <X className="w-6 h-6" />
                     </button>

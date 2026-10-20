@@ -156,7 +156,7 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
 
             {/* QR Code */}
             {status === 'waiting' && qrPayload && (
-                <div className="mb-4 p-4 bg-white rounded-2xl border border-grayscale-200 shadow-sm">
+                <div className="mb-4 p-4 bg-white rounded-2xl border border-grayscale-200 shadow-xs">
                     {renderQrCode ? (
                         renderQrCode(JSON.stringify(qrPayload))
                     ) : (

@@ -384,7 +384,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         return (
             <div
                 role="alert"
-                className="font-poppins p-6 bg-white rounded-[20px] space-y-4 text-grayscale-900"
+                className="font-poppins p-6 bg-white rounded-[20px] space-y-v3-4 text-grayscale-900"
             >
                 <p className="text-sm text-grayscale-600 leading-relaxed">
                     {m['consentFlow.retryPublication']()}

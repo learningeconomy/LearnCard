@@ -43,7 +43,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
         if (prompted) return;
         newModal(
             <CheckListContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -60,7 +60,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
             <button
                 type="button"
                 onClick={handleCheckListButton}
-                className={`w-full text-left flex items-center gap-[10px] rounded-[15px] border-[3px] border-solid border-white p-[10px] shadow-[0_2px_1.5px_rgba(0,0,0,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 bg-${family}-50 ${className}`}
+                className={`w-full text-left flex items-center gap-[10px] rounded-[15px] border-[3px] border-solid border-white p-[10px] shadow-[0_2px_1.5px_rgba(0,0,0,0.25)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 bg-${family}-50 ${className}`}
             >
                 <div className="shrink-0 w-[40px] h-[40px] rounded-[10px] overflow-hidden flex items-center justify-center">
                     {isParsing ? (
@@ -82,10 +82,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             {isParsing
                                 ? m['passport.buildMyLearnCard.processing']()
                                 : hasPendingReview
-                                ? m['passport.buildMyLearnCard.pendingReview']({
-                                      count: pendingReviewCount,
-                                  })
-                                : helperCopy}
+                                  ? m['passport.buildMyLearnCard.pendingReview']({
+                                        count: pendingReviewCount,
+                                    })
+                                  : helperCopy}
                         </span>
                     </div>
                 </div>
@@ -112,8 +112,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             isParsing
                                 ? `bg-${primaryColor}`
                                 : featuredCardBgColor
-                                ? 'bg-transparent'
-                                : 'bg-white'
+                                  ? 'bg-transparent'
+                                  : 'bg-white'
                         }`}
                     >
                         {isParsing ? (
@@ -125,7 +125,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
 
                 <h5
-                    className={`text-[17px] leading-[130%] font-poppins font-[600] text-left ${
+                    className={`text-[17px] leading-[130%] font-poppins font-semibold text-left ${
                         featuredCardTextColor ?? 'text-grayscale-900'
                     }`}
                 >
@@ -176,8 +176,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         isParsing
                             ? `bg-${primaryColor}`
                             : featuredCardBgColor
-                            ? 'bg-transparent'
-                            : 'bg-white'
+                              ? 'bg-transparent'
+                              : 'bg-white'
                     }`}
                 >
                     {isParsing ? (
@@ -188,7 +188,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
                 <div className="flex flex-col">
                     <h5
-                        className={`text-[17px] font-poppins font-[600] leading-[130%] text-left ${
+                        className={`text-[17px] font-poppins font-semibold leading-[130%] text-left ${
                             featuredCardTextColor ?? 'text-grayscale-900'
                         }`}
                     >

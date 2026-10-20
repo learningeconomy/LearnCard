@@ -4,6 +4,10 @@ This runbook governs turning on **automatic** escrow recovery enrollment for rea
 tenants, stage by stage. It is operator-facing, not implementation documentation —
 see `packages/learn-card-base/src/config/escrowRollout.ts` for the code.
 
+Before production infrastructure bring-up, complete [PRODUCTION.md](./PRODUCTION.md).
+Its authority Object Lock archiver/outbox gate is a **production launch blocker**;
+preparing infrastructure or passing offline Terraform tests does not close it.
+
 ## What this controls (and what it doesn't)
 
 Two independent tenant-config switches gate escrow:
@@ -34,36 +38,36 @@ without a single real user being auto-enrolled — this is the intended
 
 ## Launch blockers — DO NOT roll out beyond internal until these are resolved
 
-Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), three items remain open:
+Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), these items remain open:
 
-1. **No second production-grade Roughtime time source.** The enclave's 7-day
-   hold timer requires ≥2 independent signed time sources; today only one
-   (Cloudflare) is realistically usable and it's explicitly marked
-   "DO NOT USE IN PRODUCTION" upstream. Every production release would
-   currently fail closed with `InsufficientSources`. Needs a product/security
-   decision (add more Roughtime operators, run LearnCard-operated servers in
-   separate accounts, or accept a documented weaker model) before any real
-   user can complete a hold-based release in production.
-2. **No authenticated EnrollmentSource.** The production enclave currently wires
-   in `UnavailableEnrollment`, so every mutating operation (create hold, release,
-   cancel) fails closed with `Unavailable`. A protocol design and separate security
-   review are required to independently authenticate the current enrollment.
-   Nothing can be released in production without it.
-3. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
+1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
+   servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
+   host. Remaining: the operators' availability and rate limits for production
+   traffic (time.txryan.com's operator has approved our use).
+2. **No authenticated enrollment authority.** The production enclave wires in
+   `UnavailableEnrollment`, so create hold, release and cancel fail closed with
+   `Unavailable` (carry and rewrap do not use it). The design is in
+   [ENROLLMENT-AUTHORITY.md](ENROLLMENT-AUTHORITY.md). Nothing can be released in
+   production without it.
+3. **Hold path relies on lca-api for notification (attack C).** A compromised lca-api
+   could start a hold and suppress the warning emails. The chosen fix is
+   enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9).
+4. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS
-   two-person review, `DenyPutKeyPolicyWithoutMFA`, a CloudTrail alarm — see
-   below), not eliminated. Security must explicitly accept this residual risk
-   (or adopt the immutable-key-policy alternative documented in
-   `infra/escrow-enclave/README.md`) before rollout proceeds past internal.
+   review, root-only `DenyRootPutKeyPolicyWithoutMFA`, MFA required to assume
+   `escrow-kms-admin`, a CloudTrail alarm), not eliminated. Security must
+   explicitly accept this residual risk (or adopt the immutable-key-policy
+   alternative documented in `infra/escrow-enclave/README.md`) before rollout
+   proceeds past internal.
 
 **Gate:** stage 1 (internal allowlist) may proceed once all items have an
 explicit, documented decision from security/product — even a "we accept this
 risk" sign-off counts as resolved for D10. Stages 2+ (1% and above, i.e. any real,
 non-internal user) must not start until all are actually fixed or the
-Roughtime and Enrollment items specifically are closed (D10 is a residual, security-accepted
-risk by design; the Roughtime and Enrollment items are hard functional blockers — recovery
-literally cannot complete without them).
+Roughtime, enrollment and attack C items specifically are closed (D10 is a residual, security-accepted
+risk by design; the enrollment item is a hard functional blocker — recovery
+literally cannot complete without it).
 
 ## Key Rotation
 

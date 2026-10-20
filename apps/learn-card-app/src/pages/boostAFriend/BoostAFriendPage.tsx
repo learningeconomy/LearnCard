@@ -441,7 +441,7 @@ const BoostAFriendPage: React.FC = () => {
                                         />
 
                                         {error && (
-                                            <div className="mt-6 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 animate-fade-in-up shadow-sm shrink-0">
+                                            <div className="mt-6 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 animate-fade-in-up shadow-xs shrink-0">
                                                 <span className="text-sm text-red-700 leading-relaxed">
                                                     {error}
                                                 </span>
@@ -458,7 +458,7 @@ const BoostAFriendPage: React.FC = () => {
                                             isIssuing ||
                                             (recipientMode === 'people' && recipients.length === 0)
                                         }
-                                        className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+                                        className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xs"
                                     >
                                         {isIssuing ? (
                                             <>
@@ -484,7 +484,7 @@ const BoostAFriendPage: React.FC = () => {
                                 <div className="relative w-full max-w-[860px] mx-auto min-h-full flex flex-col justify-center animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center">
                                     <Confetti />
 
-                                    <div className="text-center space-y-6 mb-8 desktop:mb-0">
+                                    <div className="text-center space-y-v3-6 mb-8 desktop:mb-0">
                                         {celebrateCard && (
                                             <div className="flex justify-center">
                                                 <div className="w-[160px] sm:w-[200px]">
@@ -502,8 +502,8 @@ const BoostAFriendPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="animate-fade-in-up space-y-6 text-center max-w-[420px] mx-auto w-full">
-                                        <div className="bg-white p-6 rounded-[20px] shadow-sm border border-grayscale-200 flex flex-col items-center gap-4">
+                                    <div className="animate-fade-in-up space-y-v3-6 text-center max-w-[420px] mx-auto w-full">
+                                        <div className="bg-white p-6 rounded-[20px] shadow-xs border border-grayscale-200 flex flex-col items-center gap-4">
                                             <div className="w-48 h-48 relative">
                                                 <QRCodeSVG
                                                     className="w-full h-full"
@@ -533,7 +533,7 @@ const BoostAFriendPage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3">
+                                        <div className="space-y-v3-3">
                                             <button
                                                 type="button"
                                                 onClick={handleCopyLink}
@@ -571,11 +571,11 @@ const BoostAFriendPage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3 pt-5 border-t border-grayscale-200">
+                                        <div className="space-y-v3-3 pt-5 border-t border-grayscale-200">
                                             <button
                                                 type="button"
                                                 onClick={() => history.push('/wallet')}
-                                                className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm"
+                                                className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-xs"
                                             >
                                                 {m['common.done']()}
                                             </button>
@@ -594,7 +594,7 @@ const BoostAFriendPage: React.FC = () => {
 
                         {step === 'celebrate' && !claimLink && (
                             <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
-                                <div className="relative w-full max-w-[420px] mx-auto min-h-full flex flex-col justify-center text-center space-y-6 animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+                                <div className="relative w-full max-w-[420px] mx-auto min-h-full flex flex-col justify-center text-center space-y-v3-6 animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
                                     <Confetti />
 
                                     {celebrateCard && (
@@ -620,11 +620,11 @@ const BoostAFriendPage: React.FC = () => {
                                         </p>
                                     </div>
 
-                                    <div className="w-full max-w-sm mx-auto space-y-3">
+                                    <div className="w-full max-w-sm mx-auto space-y-v3-3">
                                         <button
                                             type="button"
                                             onClick={handleBoostAnother}
-                                            className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm"
+                                            className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-xs"
                                         >
                                             {m['boostAFriend.page.another']()}
                                         </button>
@@ -637,7 +637,7 @@ const BoostAFriendPage: React.FC = () => {
                                                         : '/wallet'
                                                 )
                                             }
-                                            className="w-full py-3.5 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-sm text-grayscale-700 font-medium text-base hover:bg-white transition-colors"
+                                            className="w-full py-3.5 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-xs text-grayscale-700 font-medium text-base hover:bg-white transition-colors"
                                         >
                                             {m['common.done']()}
                                         </button>

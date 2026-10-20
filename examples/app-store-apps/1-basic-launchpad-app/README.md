@@ -78,6 +78,25 @@ bun run build
 bun run preview
 ```
 
+### Server-side issuance and service endpoints
+
+The `issueCredential` server action requires `LEARNCARD_ISSUER_SEED`. Generate a
+fresh 32-byte hex seed (`openssl rand -hex 32`) and keep it server-side. Ordinary
+development loads this app's `.env` files and, unless overridden, uses the
+LearnCard SDK's production network and cloud defaults. Standalone Partner Connect
+mock mode does **not** make this server action offline.
+
+For local issuance, set **both** `LEARNCARD_NETWORK_URL` (Brain tRPC URL) and
+`LEARNCARD_CLOUD_URL` (LearnCloud tRPC URL). `PUBLIC_LEARNCARD_ORIGIN` controls the
+browser host/publish target separately; it does not configure server services.
+
+The repository's `lc verify` runner supplies the owned stack's two service URLs
+and a disposable seed in a sanitized child environment, with `LC_VERIFICATION=1`.
+That mode requires explicit loopback HTTP endpoints and a 32-byte hex seed, and
+disables Astro/Vite `.env` loading so a developer's issuer identity or service
+configuration cannot leak into the local proof. This mode is runner-controlled,
+not a replacement for configuring an ordinary deployment.
+
 ## Integration Notes
 
 - No pre-created contract URI or boost URI is required for the happy path

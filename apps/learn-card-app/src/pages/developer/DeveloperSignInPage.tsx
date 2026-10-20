@@ -337,7 +337,7 @@ const DeveloperSignInPage: React.FC = () => {
                             value={seed}
                             onChange={e => setSeed(e.target.value)}
                             placeholder="64 characters, 0–9 and a–f"
-                            className="w-full py-3 pl-4 pr-12 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono tracking-wide"
+                            className="w-full py-3 pl-4 pr-12 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono tracking-wide"
                         />
                         <button
                             type="button"
@@ -385,7 +385,7 @@ const DeveloperSignInPage: React.FC = () => {
                     )}
                 </button>
 
-                <div className="text-center space-y-2">
+                <div className="text-center space-y-v3-2">
                     <p className="text-xs text-grayscale-500">
                         {m['login.developerSignIn.notDeveloper']()}
                         <button

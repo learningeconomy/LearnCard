@@ -275,9 +275,8 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
             await Promise.all(
                 Object.entries(urisByIssuerDid).map(async ([did, uris]) => {
                     const otherUserWallet = await getBespokeLearnCard(pk!, did);
-                    const { signingAuthority: sa } = await getRegisteredSigningAuthority(
-                        otherUserWallet
-                    );
+                    const { signingAuthority: sa } =
+                        await getRegisteredSigningAuthority(otherUserWallet);
 
                     await otherUserWallet.invoke.addAutoBoostsToContract(
                         contractUri,
@@ -380,7 +379,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                         onDiscard={handleDiscard}
                         discardButtonText="Create New Contract"
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
             }, 300);
@@ -457,7 +456,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                     min={moment().format('YYYY-MM-DD')}
                 />
             </div>,
-            { sectionClassName: '!w-fit' }
+            { sectionClassName: 'w-fit!' }
         );
     };
 
@@ -555,9 +554,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
                         <IonInput
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding ${
-                                expiresAtError
-                                    ? 'border-red-mastercard border-[1px] border-solid'
-                                    : ''
+                                expiresAtError ? 'border-red-mastercard border border-solid' : ''
                             }`}
                             onIonInput={e => updateSlice('expiresAt', e.detail.value)}
                             value={contract.expiresAt}
@@ -616,7 +613,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                         const uri: string =
                                             typeof value === 'function'
                                                 ? value(contract.frontDoorBoostUri ?? '')
-                                                : value ?? '';
+                                                : (value ?? '');
 
                                         if (uri && !autoBoostUris.includes(uri)) {
                                             // add front door cred to auto-claim list
@@ -637,7 +634,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                         <div className="flex items-center justify-center w-full">
                             <button
                                 type="button"
-                                className="w-full text-center py-[8px] px-[10px] font-semibold bg-emerald-700 text-white rounded-[20px] text-[18px] disabled:opacity-60 disabled:bg-grayscale-100 disabled:text-gray-800 border-solid border-[1px] border-grayscale-200 transition-colors"
+                                className="w-full text-center py-[8px] px-[10px] font-semibold bg-emerald-700 text-white rounded-[20px] text-[18px] disabled:opacity-60 disabled:bg-grayscale-100 disabled:text-gray-800 border-solid border border-grayscale-200 transition-colors"
                                 onClick={handlePreview}
                                 disabled={
                                     contractType === ContractType.frontDoorCred &&
@@ -736,7 +733,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                         </span>
                         <button
                             type="button"
-                            className="py-[5px] px-[10px] bg-white rounded-[20px] w-fit text-[16px] shadow-box-bottom disabled:opacity-60 flex gap-[5px] items-center border-solid border-[1px] border-grayscale-200 hover:bg-grayscale-100 transition-colors"
+                            className="py-[5px] px-[10px] bg-white rounded-[20px] w-fit text-[16px] shadow-box-bottom disabled:opacity-60 flex gap-[5px] items-center border-solid border border-grayscale-200 hover:bg-grayscale-100 transition-colors"
                             onClick={() => {
                                 newModal(
                                     <ContractCredentialSelectorModal
@@ -755,7 +752,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                     <AdminManagedBoostRow
                                         key={credUri}
                                         boostUri={credUri}
-                                        className="!w-full"
+                                        className="w-full!"
                                         hideButtons
                                         issuerProfileOverride={autoBoostIssuers[credUri]}
                                     >
@@ -780,7 +777,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                     {/* Render buttons via portal if available, otherwise render inline */}
                     {sectionPortal ? (
                         createPortal(
-                            <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
+                            <div className="flex flex-col justify-center items-center relative border-none! max-w-[500px]">
                                 <button
                                     onClick={handleSubmit}
                                     type="button"
@@ -804,7 +801,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                             sectionPortal
                         )
                     ) : (
-                        <div className="flex flex-col justify-center items-center relative !border-none w-full mt-6 px-4">
+                        <div className="flex flex-col justify-center items-center relative border-none! w-full mt-6 px-4">
                             <button
                                 onClick={handleSubmit}
                                 type="button"

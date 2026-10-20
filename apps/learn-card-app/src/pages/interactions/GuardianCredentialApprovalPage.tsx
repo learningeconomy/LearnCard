@@ -192,7 +192,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
         <IonPage>
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow"
+                className="flex flex-col grow"
                 style={{ ['--background' as any]: bgColor }}
             >
                 <div

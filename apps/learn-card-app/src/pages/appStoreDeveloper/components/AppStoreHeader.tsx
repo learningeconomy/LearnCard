@@ -49,8 +49,8 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
     };
 
     return (
-        <IonHeader className="ion-no-border !overflow-visible">
-            <IonToolbar className="!shadow-none border-b border-gray-200 !overflow-visible [&>.toolbar-container]:!overflow-visible">
+        <IonHeader className="ion-no-border overflow-visible!">
+            <IonToolbar className="shadow-none! border-b border-gray-200 overflow-visible! [&>.toolbar-container]:overflow-visible!">
                 <div className="flex items-center justify-between px-2 sm:px-4 py-2 overflow-visible">
                     <button
                         onClick={() => history.push('/launchpad')}
@@ -80,7 +80,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                                 onClick={goToMyApps}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     isOnAppsPage
-                                        ? 'bg-white text-gray-800 shadow-sm'
+                                        ? 'bg-white text-gray-800 shadow-xs'
                                         : 'text-gray-500 hover:text-gray-700'
                                 }`}
                             >
@@ -92,7 +92,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                                 onClick={goToIntegrationHub}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     isOnBuildPage
-                                        ? 'bg-white text-gray-800 shadow-sm'
+                                        ? 'bg-white text-gray-800 shadow-xs'
                                         : 'text-gray-500 hover:text-gray-700'
                                 }`}
                             >

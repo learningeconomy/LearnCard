@@ -124,7 +124,7 @@ describe('VC2FrontFaceInfo', () => {
         expect(issuedBy).not.toBeNull();
         // The bug was whitespace-nowrap forcing one line that overflowed the card.
         expect(issuedBy?.className).not.toContain('whitespace-nowrap');
-        expect(issuedBy?.className).toContain('break-words');
+        expect(issuedBy?.className).toContain('wrap-break-word');
         // line-clamp-2 only clamps on a block/-webkit-box, not a flex container,
         // so the container must NOT be `flex` (the original review-miss).
         expect(issuedBy?.className).toContain('line-clamp-2');

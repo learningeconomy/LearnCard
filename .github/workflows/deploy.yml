@@ -38,6 +38,11 @@ on:
                 required: false
                 default: false
                 type: boolean
+            capgo-bundle-version:
+                description: 'LearnCard production frontend recovery only: <current package version>-recovery.N (unused N). Preserves future release versions; must satisfy native/channel update rules.'
+                required: false
+                default: ''
+                type: string
             deploy-ai-agent:
                 description: 'Deploy AI Agent (ECS + Trigger.dev)'
                 required: false
@@ -91,7 +96,23 @@ jobs:
             frontend_deployment_matrix: ${{ steps.set-env.outputs.frontend_deployment_matrix }}
             frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
         steps:
-            # Check these first - no dependencies needed
+            # Recovery validation needs only the checkout; ordinary manual runs still skip it.
+            - name: Checkout Repo
+              if: github.event_name != 'workflow_dispatch' || inputs.capgo-bundle-version != ''
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            # Validate before any service or frontend deployment can start.
+            - name: Validate CapGo recovery input
+              if: inputs.capgo-bundle-version != ''
+              env:
+                  RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
+                  TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
+                  DEPLOY_FRONTEND: ${{ inputs.deploy-frontend }}
+              run: node scripts/validate-capgo-recovery-version.mjs
+
+            # Set deployment flags only after recovery input validation succeeds.
             - name: Check if this is a manual dispatch
               id: check_manual
               run: |
@@ -114,13 +135,6 @@ jobs:
                   else
                     echo "is_release=false" >> $GITHUB_OUTPUT
                   fi
-
-            # Skip heavy steps for manual dispatch - we already know what to deploy
-            - name: Checkout Repo
-              if: github.event_name != 'workflow_dispatch'
-              uses: actions/checkout@v7
-              with:
-                  fetch-depth: 0
 
             - name: Fetch main for NX comparison
               if: github.event_name != 'workflow_dispatch'
@@ -360,10 +374,17 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            # Same as test.yml: install the escrow crates' pinned toolchain once, so
+            # nx's parallel `cargo test` runs don't race to install it (rustfmt conflict).
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
-                  timeout_minutes: 10
+                  # Matches test.yml; a large squash can make most projects affected.
+                  timeout_minutes: 20
                   max_attempts: 3
                   command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
               env:
@@ -980,7 +1001,12 @@ jobs:
                   CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
                   PROJECT_NAME: ${{ steps.vars.outputs.project_name }}
                   APP_VERSION: ${{ steps.app-version.outputs.version }}
+                  RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
               run: |
+                  if [[ -n "$RECOVERY_VERSION" ]]; then
+                    # determine-affected already validated the target and version.
+                    APP_VERSION="$RECOVERY_VERSION"
+                  fi
                   VERSION_ARGS=(--bundle "$APP_VERSION")
                   if [[ "$PROJECT_NAME" == "scouts" ]]; then
                     # OTA versions advance independently of package/store versions.
@@ -988,6 +1014,7 @@ jobs:
                     VERSION_ARGS=(--auto-bump patch --auto-set-bundle --capacitor-config capacitor.config.ts)
                   fi
 
+                  NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=${{ github.workspace }}/scripts/capgo-manifest-diagnostics.cjs" \
                   bunx --package @capgo/cli@8.50.3 capgo bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
                     --delta \
@@ -1886,7 +1913,11 @@ jobs:
               env:
                   AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
                   AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
-              run: bun run --cwd services/learn-card-network/ai-agent smoke:staging
+                  AI_AGENT_SMOKE_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+              run: |
+                  # The CloudWatch check below reads logs from here on; the scheduled-card wait can outlast its old 10-minute lookback.
+                  echo "AI_AGENT_SMOKE_STARTED_AT_MS=$(( $(date +%s) * 1000 - 60000 ))" >> "$GITHUB_ENV"
+                  bun run --cwd services/learn-card-network/ai-agent smoke:staging
 
             - name: Verify readable CloudWatch application logs
               if: always() && env.TARGET_ENVIRONMENT == 'staging'
@@ -1901,7 +1932,7 @@ jobs:
                         --stack-name '${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}' \
                         --query "Stacks[0].Outputs[?OutputKey=='ApplicationLogGroupName'].OutputValue | [0]" \
                         --output text)"
-                      START_TIME="$(( $(date +%s) * 1000 - 600000 ))"
+                      START_TIME="${AI_AGENT_SMOKE_STARTED_AT_MS:-$(( $(date +%s) * 1000 - 600000 ))}"
                       MESSAGES="$(aws logs filter-log-events \
                         --log-group-name "$LOG_GROUP" \
                         --start-time "$START_TIME" \

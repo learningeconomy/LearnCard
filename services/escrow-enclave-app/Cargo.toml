@@ -24,9 +24,10 @@ fake-nsm = ["dep:p384", "dep:x509-cert", "sha2/oid"]
 fake-kms = ["enclave-runtime"]
 fake-time = []
 fake-ledger = []
+fake-authority = []
 verified-roughtime-keys = []
 nitro = ["enclave-runtime", "dep:aws-nitro-enclaves-nsm-api", "dep:aws-nitro-enclaves-cose"]
-kms = ["enclave-runtime", "dep:aws-config", "dep:aws-sdk-kms"]
+kms = ["enclave-runtime", "dep:aws-sdk-kms", "dep:aws-smithy-async", "dep:aws-smithy-runtime-api", "dep:aws-smithy-types", "dep:rustls", "dep:webpki-roots", "dep:hyper", "dep:hyper-rustls", "dep:hyper-util", "dep:http-body-util", "dep:aws-sigv4", "dep:aws-credential-types"]
 
 [dependencies]
 tokio = { version = "~1.53.1", features = ["rt-multi-thread", "net", "io-util", "macros", "time"] }
@@ -46,16 +47,26 @@ thiserror = "~2.0.21"
 tracing = "~0.1.44"
 tracing-subscriber = "~0.3.23"
 base64 = "~0.23.1"
+bs58 = "=0.5.1"
 hex = "~0.4.3"
 ed25519-dalek = "~2.2.0"
 subtle = "~2.6.1"
 aws-nitro-enclaves-nsm-api = { version = "~0.5.2", optional = true }
 aws-nitro-enclaves-cose = { version = "~0.5.2", optional = true }
 # Newer AWS minor releases require Rust 1.94.1; resolver 3 also respects transitive MSRVs.
-aws-config = { version = "~1.8.18", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
-# The SDK's default `rustls` feature also enables legacy hyper 0.14 / rustls 0.21.
-# Select only the current hyper 1 / rustls 0.23 / AWS-LC HTTPS client.
-aws-sdk-kms = { version = "~1.111.0", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
+# No default HTTPS or credential-chain loader: transport/time and credentials are explicit.
+aws-sdk-kms = { version = "~1.111.0", optional = true, default-features = false, features = ["rt-tokio"] }
+aws-sigv4 = { version = "~1.4.5", optional = true, default-features = false, features = ["sign-http", "http1"] }
+aws-credential-types = { version = "~1.2.14", optional = true }
+aws-smithy-async = { version = "~1.2.14", optional = true }
+aws-smithy-runtime-api = { version = "~1.12.3", optional = true, features = ["client", "http-1x"] }
+aws-smithy-types = { version = "~1.5.0", optional = true, features = ["http-body-1-x"] }
+rustls = { version = "~0.23.45", optional = true, default-features = false, features = ["std", "aws_lc_rs", "tls12"] }
+webpki-roots = { version = "~1.0.9", optional = true }
+hyper = { version = "~1.11.1", optional = true }
+hyper-rustls = { version = "~0.27.10", optional = true, default-features = false, features = ["http1", "tls12", "aws-lc-rs"] }
+hyper-util = { version = "~0.1.21", optional = true, features = ["client-legacy", "http1", "tokio"] }
+http-body-util = { version = "~0.1.3", optional = true }
 rsa = { version = "~0.9.10", optional = true, features = ["sha2"] }
 cms = { version = "~0.2.3", optional = true, features = ["std"] }
 # Also enables AES-GCM's underlying key-schedule wiping in the default build.
@@ -66,6 +77,8 @@ p384 = { version = "~0.13.1", optional = true, features = ["ecdsa", "pkcs8"] }
 x509-cert = { version = "~0.2.5", optional = true, features = ["builder"] }
 
 [dev-dependencies]
+tokio = { version = "~1.53.1", features = ["sync", "test-util"] }
+tokio-rustls = { version = "~0.26.5", default-features = false, features = ["aws_lc_rs", "tls12"] }
 sha2 = { version = "~0.10.9", features = ["oid"] }
 p384 = { version = "~0.13.1", features = ["ecdsa", "pkcs8"] }
 x509-cert = { version = "~0.2.5", features = ["builder"] }

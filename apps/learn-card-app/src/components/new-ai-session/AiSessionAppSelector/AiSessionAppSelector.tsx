@@ -49,7 +49,7 @@ const AiSessionAppSelectorItem = ({
         return (
             <button
                 onClick={() => handleConsentToApp()}
-                className="h-[50px] w-[50px] rounded-[20px] overflow-hidden mr-2 border-[1px] border-solid border-grayscale-200"
+                className="h-[50px] w-[50px] rounded-[20px] overflow-hidden mr-2 border border-solid border-grayscale-200"
             >
                 <img
                     className="w-full h-full object-cover bg-white rounded-[20px] overflow-hidden "
@@ -79,7 +79,7 @@ const AiSessionAppSelectorItem = ({
             <button
                 role="button"
                 onClick={() => handleConsentToApp()}
-                className={`flex items-center justify-center rounded-full font-[600]  px-[18px] py-[2px] normal text-sm mt-2 ${
+                className={`flex items-center justify-center rounded-full font-semibold  px-[18px] py-[2px] normal text-sm mt-2 ${
                     hasConsented
                         ? `bg-gray-200 text-${primaryColor}`
                         : `bg-${primaryColor} text-white`

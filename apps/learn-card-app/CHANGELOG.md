@@ -1,5 +1,64 @@
 # Changelog
 
+## 1.100.4
+
+### Patch Changes
+
+- [#1741](https://github.com/learningeconomy/LearnCard/pull/1741) [`b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229`](https://github.com/learningeconomy/LearnCard/commit/b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Persist saved profile changes before navigation without forcing profile refetches on every mount. Keep browser query-cache storage on localforage and native storage on SQLite across initialization and reload; native persistence failures never fall back to a stale second store. Revalidate installed apps after reload and apply nested tenant registry defaults correctly.
+
+    Add the disposable `lc verify` workflow with maintained user journeys, clean-checkout preparation, independently allocated service ports, confined local-service access, interruption-safe evidence, and ownership-checked crash recovery. Repair cold-start Vite loading, pin Astro's compatible Zod dependency, and load the example's CommonJS dependency correctly during server rendering. Build credential share links from the active tenant's configured host instead of the fixed development port.
+
+    Allow CLI schema/help loading before generated snippets exist; generate snippets atomically and load token snippets only when needed.
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
+## 1.100.3
+
+### Patch Changes
+
+- [#1754](https://github.com/learningeconomy/LearnCard/pull/1754) [`7f68afd7f3bf30a07d42c18929ca90e1983825b7`](https://github.com/learningeconomy/LearnCard/commit/7f68afd7f3bf30a07d42c18929ca90e1983825b7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2284: perf(scouts): only look up troop ID status when the boost menu opens, and cache recipient lists
+
+## 1.100.2
+
+### Patch Changes
+
+- [#1712](https://github.com/learningeconomy/LearnCard/pull/1712) [`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c) Thanks [@goblincore](https://github.com/goblincore)! - Allow optional proof creation timestamps for the standardized ECDSA, EdDSA and BBS Data Integrity cryptosuites without rewriting signed payloads.
+
+    Handle one-shot CHAPI events safely across account changes, allow cancellation during exchanges, deduplicate exact reopened offers using account-scoped fingerprints of the full signed payload, and avoid retrying consumed acknowledgements or cancellations. Preserve distinct same-ID credential revisions and explain that partial saves remain after cancellation. Keep storage diagnostics useful without logging private credential payloads or counterparty messages.
+
+- [#1721](https://github.com/learningeconomy/LearnCard/pull/1721) [`dc780c9ebf94cecec66116da7faa8f2f9482d3c4`](https://github.com/learningeconomy/LearnCard/commit/dc780c9ebf94cecec66116da7faa8f2f9482d3c4) Thanks [@Custard7](https://github.com/Custard7)! - Fix crashes when a credential has a missing or unknown category. Category metadata lookups now fall back to Achievement.
+
+- Updated dependencies []:
+    - @learncard/credential-library@2.1.2
+    - @learncard/helpers@1.6.3
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/ler-rs-plugin@0.1.30
+    - @learncard/open-badge-v2-plugin@1.1.40
+    - @learncard/render-method-plugin@10.0.1
+    - @learncard/react@2.12.11
+    - @learncard/sss-key-manager@0.2.2
+
+## 1.100.1
+
+### Patch Changes
+
+- [#1708](https://github.com/learningeconomy/LearnCard/pull/1708) [`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638) Thanks [@gerardopar](https://github.com/gerardopar)! - Add a shared CLR renderer with academic, military, and neutral fallback layouts, reusable record sections, and a comprehensive military fixture.
+
+    Collection layout selection is intentionally conservative: course counts, credits,
+    and terms alone no longer select academic. Without an academic title, explicit GPA
+    or degree evidence is required in a collection whose children all have compatible
+    academic types; untyped children, certificates, licenses, and memberships fall back
+    to the general view. Explicit academic titles retain the academic view. Military
+    record titles include Joint Services Transcript, AARTS, CCAF Transcript, and service
+    branch record titles. No classification is derived from issuer names or child text.
+
+- [#1713](https://github.com/learningeconomy/LearnCard/pull/1713) [`56fd105d15d4ee5e9e1bcae51344ce54cd80762a`](https://github.com/learningeconomy/LearnCard/commit/56fd105d15d4ee5e9e1bcae51344ce54cd80762a) Thanks [@goblincore](https://github.com/goblincore)! - Recover verifier history after account initialization invalidates an earlier read, and offer Retry if the account cannot settle instead of leaving history loading indefinitely.
+
+- Updated dependencies [[`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638)]:
+    - @learncard/credential-library@2.1.1
+    - @learncard/lca-api-plugin@2.0.9
+    - @learncard/react@2.12.10
+
 ## 1.100.0
 
 ### Minor Changes

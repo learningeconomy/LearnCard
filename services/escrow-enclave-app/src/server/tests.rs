@@ -71,7 +71,7 @@ impl Fixture {
         )
         .await
         {
-            Response::CreateHold { hold } => hold,
+            Response::CreateHold { hold, .. } => hold,
             other => panic!("Unexpected response {other:?}"),
         }
     }
@@ -104,6 +104,8 @@ async fn policy_suite_through_loopback_and_http() {
             share_version: 1.0,
             pin_verifier: Some("ab".repeat(32)),
             pin_attempts_floor: None,
+            recovery_email: None,
+            recovery_language: None,
         },
         &public_key,
         "emulate",
@@ -202,6 +204,8 @@ async fn policy_suite_through_loopback_and_http() {
                 share_version: 2.0,
                 pin_verifier: None,
                 pin_attempts_floor: None,
+                recovery_email: None,
+                recovery_language: None,
             },
             &attestation_public_key,
             "emulate",
@@ -276,7 +280,7 @@ async fn policy_suite_through_loopback_and_http() {
     clock.0.fetch_add(HOLD_DURATION_MS, Ordering::SeqCst);
     let response = call(address, fixture.release(hold.clone(), "ready", None)).await;
     match response {
-        Response::Release { sealed } => {
+        Response::Release { sealed, .. } => {
             let opened = crypto::open_escrow_release(&sealed, &fixture.client.private_key).unwrap();
             assert_eq!(opened.blob.recovery_share, "ab".repeat(33));
             assert!(opened.blob.pin_verifier.is_none());
@@ -323,7 +327,10 @@ async fn policy_suite_through_loopback_and_http() {
             }
         )
         .await,
-        Response::Cancel { cancelled: true }
+        Response::Cancel {
+            cancelled: true,
+            ..
+        }
     ));
     clock.0.fetch_add(HOLD_DURATION_MS, Ordering::SeqCst);
     assert!(matches!(
@@ -482,6 +489,8 @@ async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key
             share_version: 1.0,
             pin_verifier: None,
             pin_attempts_floor: None,
+            recovery_email: None,
+            recovery_language: None,
         },
         &previous_a.public_key,
         "previous-a",
@@ -580,7 +589,7 @@ async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key
     )
     .await
     {
-        Response::CreateHold { hold } => hold,
+        Response::CreateHold { hold, .. } => hold,
         other => panic!("{other:?}"),
     };
     clock.0.fetch_add(HOLD_DURATION_MS, Ordering::SeqCst);
@@ -597,7 +606,7 @@ async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key
     )
     .await
     {
-        Response::Release { sealed } => sealed,
+        Response::Release { sealed, .. } => sealed,
         other => panic!("{other:?}"),
     };
     let release = crypto::open_escrow_release(&sealed, &client.private_key).unwrap();

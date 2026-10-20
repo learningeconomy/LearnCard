@@ -7,7 +7,7 @@ const ClrTranscriptWarningsPanel: React.FC<{
     if (warnings.length === 0) return null;
 
     return (
-        <div className="bg-amber-50 border border-amber-200 rounded-[20px] p-4 space-y-2">
+        <div className="bg-amber-50 border border-amber-200 rounded-[20px] p-4 space-y-v3-2">
             <p className="text-sm font-medium text-amber-800">Verifier Warnings</p>
             {warnings.map((warning, index) => (
                 <p

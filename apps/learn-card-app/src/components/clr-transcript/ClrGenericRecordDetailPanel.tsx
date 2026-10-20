@@ -46,11 +46,11 @@ const ClrGenericRecordDetailPanel = ({
             <div className="flex items-start justify-between gap-3 rounded-b-[30px] bg-white px-6 py-5">
                 <div className="min-w-0">
                     {canonical?.humanCode && (
-                        <p className="break-words text-sm font-medium text-grayscale-600">
+                        <p className="wrap-break-word text-sm font-medium text-grayscale-600">
                             {canonical.humanCode.value}
                         </p>
                     )}
-                    <h2 className="break-words text-xl font-semibold text-grayscale-900">
+                    <h2 className="wrap-break-word text-xl font-semibold text-grayscale-900">
                         {record.name?.value ?? m['clrTranscript.details.recordDetails']()}
                     </h2>
                     {!!canonical?.achievementTypes.length && (
@@ -70,15 +70,15 @@ const ClrGenericRecordDetailPanel = ({
                     <X className="h-5 w-5" />
                 </button>
             </div>
-            <div className="space-y-4 px-5 py-5">
+            <div className="space-y-v3-4 px-5 py-5">
                 {record.description?.value && (
-                    <p className="break-words rounded-[20px] bg-white p-4 text-sm leading-relaxed text-grayscale-600">
+                    <p className="wrap-break-word rounded-[20px] bg-white p-4 text-sm leading-relaxed text-grayscale-600">
                         {record.description.value}
                     </p>
                 )}
-                <div className="space-y-4 rounded-[20px] border border-grayscale-200 bg-white p-4">
+                <div className="space-y-v3-4 rounded-[20px] border border-grayscale-200 bg-white p-4">
                     {canonical?.term && (
-                        <p className="break-words text-sm text-grayscale-700">
+                        <p className="wrap-break-word text-sm text-grayscale-700">
                             {canonical.term.value}
                         </p>
                     )}

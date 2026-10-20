@@ -2,7 +2,7 @@
     "APPLE_OAUTH_CLIENT_IDS": "com.learncard.app,app.learncard.www",
     "DOMAIN_NAME": "staging.api.learncard.app",
     "ESCROW_ENCLAVE_ACTIVE_KEY_ID": "escrow-staging-v1",
-    "ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS": "10000",
+    "ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS": "15000",
     "ESCROW_HOLD_DURATION_MS": "600000",
     "ESCROW_HOLD_RESTART_MIN_AGE_MS": "300000",
     "GOOGLE_OAUTH_CLIENT_IDS": "776298253175-74or0s6rg2k2mmdks6d45ro0i4te1bvf.apps.googleusercontent.com,776298253175-kkf562eofl541vu0oedfdvrk40bpkbh7.apps.googleusercontent.com",

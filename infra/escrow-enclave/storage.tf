@@ -238,7 +238,7 @@ locals {
   # already comes from Object Lock COMPLIANCE mode, not a bucket policy.
   bucket_extra_policy_documents = {
     audit     = []
-    artifacts = [data.aws_iam_policy_document.deny_unconditional_sealed_key_write.json]
+    artifacts = concat([data.aws_iam_policy_document.deny_unconditional_sealed_key_write.json], var.enable_enrollment_authority ? [jsonencode(local.credential_object_policy)] : [])
   }
 }
 

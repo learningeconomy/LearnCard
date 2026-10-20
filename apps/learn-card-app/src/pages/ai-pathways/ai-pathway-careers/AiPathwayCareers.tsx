@@ -73,7 +73,7 @@ const AiPathwayCareers: React.FC<{
 
                 <ExplorePathwaysActionButton
                     onClick={handleExplorePathways}
-                    className="bg-cyan-501 !mt-4"
+                    className="bg-cyan-501 mt-4!"
                     icon={<ResolvedIconWithShape className="w-[30px] h-[30px]" />}
                     label={m['aiPathways.exploreRoles']()}
                 />

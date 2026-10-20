@@ -137,9 +137,9 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                                 >
                                     <div className="flex items-center gap-2 min-w-0">
                                         {isSetup ? (
-                                            <Settings className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                            <Settings className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                         ) : (
-                                            <LayoutDashboard className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                                            <LayoutDashboard className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                         )}
 
                                         <span
@@ -154,7 +154,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                                     </div>
 
                                     {selectedId === integration.id && (
-                                        <Check className="w-4 h-4 text-cyan-500 flex-shrink-0" />
+                                        <Check className="w-4 h-4 text-cyan-500 shrink-0" />
                                     )}
                                 </button>
                             );
@@ -174,7 +174,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                                     placeholder={m[
                                         'developerPortal.components.headerIntegrationSelector.integrationNamePlaceholder'
                                     ]()}
-                                    className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                    className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') handleCreate();
                                         if (e.key === 'Escape') {

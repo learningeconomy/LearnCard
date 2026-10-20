@@ -37,7 +37,7 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
     const previewAddress = activeTestAddress ?? liveAddress;
 
     return (
-        <div className="h-full rounded-[20px] border border-grayscale-200 bg-white shadow-sm overflow-hidden flex flex-col">
+        <div className="h-full rounded-[20px] border border-grayscale-200 bg-white shadow-xs overflow-hidden flex flex-col">
             <div className="h-12 border-b border-grayscale-200 bg-grayscale-10 flex items-center px-3 shrink-0">
                 {runsInside ? (
                     <div className="flex items-center gap-1 p-1 bg-grayscale-100 rounded-full">
