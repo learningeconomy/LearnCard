@@ -2,7 +2,11 @@ import {
     getEndorsementTargetId,
     resolveSharedCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { LCNProfile } from '@learncard/types';
+import {
+    LCNProfile,
+    type CredentialSharePreview,
+    type PublishCredentialSharePreview,
+} from '@learncard/types';
 import { QueryClient, InfiniteData } from '@tanstack/react-query';
 
 /** Preserve encoded URI components when the recipient parses the share query once. */
@@ -32,6 +36,7 @@ export const getSharedCredentialIndexQueries = (
 
 type SharedCredentialIndexReference = {
     credentialId?: string;
+    publicPreviewId?: string;
     uri: string;
     randomSeed: string;
     pin: string;
@@ -57,6 +62,7 @@ export const sharedCredentialIndexMatchesCredential = async (
         : false;
 };
 
+/** Prefer an existing preview reference when endorsements require a fresh presentation. */
 export const findMatchingSharedCredentialIndex = async <
     RecordType extends SharedCredentialIndexReference,
 >(
@@ -64,16 +70,57 @@ export const findMatchingSharedCredentialIndex = async <
     credentialId?: string,
     verifyCredential = false
 ): Promise<RecordType | undefined> => {
+    let fallback: RecordType | undefined;
     for (const record of records) {
         if (
             !verifyCredential ||
             (await sharedCredentialIndexMatchesCredential(record, credentialId))
         ) {
-            return record;
+            if (record.publicPreviewId) return record;
+            fallback ??= record;
         }
     }
 
-    return undefined;
+    return fallback;
+};
+
+/** Refresh an opted-in preview; roll back only new records if indexing fails. */
+export const publishSharePreview = async (
+    link: string,
+    metadata: CredentialSharePreview | undefined,
+    publicPreviewId: string | undefined,
+    publish: (input: PublishCredentialSharePreview) => Promise<string>,
+    saveReference: (id: string) => Promise<number>,
+    remove: (id: string) => Promise<boolean>
+): Promise<string> => {
+    if (!metadata) return link;
+    const url = new URL(link);
+    const shareUri = url.searchParams.get('uri');
+    if (!shareUri) throw new Error('Share link is missing presentation URI');
+    const previewId = await publish({
+        ...metadata,
+        shareUri,
+        ...(publicPreviewId ? { id: publicPreviewId } : {}),
+    });
+    if (!publicPreviewId) {
+        try {
+            const updated = await saveReference(previewId);
+            if (!updated) throw new Error('Unable to save public preview reference');
+        } catch (error) {
+            try {
+                await remove(previewId);
+            } catch (cleanupError) {
+                throw new AggregateError(
+                    [error, cleanupError],
+                    'Unable to save public preview reference and clean up the new preview',
+                    { cause: cleanupError }
+                );
+            }
+            throw error;
+        }
+    }
+    url.searchParams.set('preview', previewId);
+    return url.toString();
 };
 
 // Helper to insert an object and update the react infinite query cache

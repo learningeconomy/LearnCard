@@ -35,8 +35,12 @@ export const createShareBoostHandler =
     async (request: Request, context: Context): Promise<Response> => {
         const fallback = () => context.next();
         if (!crawlerUserAgent.test(request.headers.get('user-agent') ?? '')) return fallback();
-        const previewId = new URL(request.url).searchParams.get('preview');
+        const requestUrl = new URL(request.url);
+        const previewId = requestUrl.searchParams.get('preview');
+        const shareUri = requestUrl.searchParams.get('uri');
         if (
+            !shareUri ||
+            shareUri.length > 4096 ||
             !previewId ||
             !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
                 previewId
@@ -52,6 +56,7 @@ export const createShareBoostHandler =
                 `${api.pathname.replace(/\/$/, '')}/credential-share-previews/${previewId}`,
                 api.origin
             );
+            target.searchParams.set('shareUri', shareUri);
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 2500);
             let data: unknown;
@@ -70,7 +75,10 @@ export const createShareBoostHandler =
             if (!validPreview(data)) return fallback();
             const canonical = new URL(dependencies.getTenantOrigin(request.url));
             canonical.pathname = '/share-boost';
-            canonical.search = `?preview=${encodeURIComponent(previewId)}`;
+            for (const key of ['uri', 'seed', 'pin', 'preview']) {
+                const value = requestUrl.searchParams.get(key);
+                if (value !== null) canonical.searchParams.set(key, value);
+            }
             return new Response(renderCredentialSharePreviewHtml(data, canonical.toString()), {
                 status: 200,
                 headers: {

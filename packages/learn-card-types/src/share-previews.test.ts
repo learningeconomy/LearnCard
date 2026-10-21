@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CredentialSharePreviewValidator } from './share-previews';
+
+import {
+    PublishCredentialSharePreviewValidator,
+    CredentialSharePreviewValidator,
+} from './share-previews';
 
 describe('credential share preview contract', () => {
     it('accepts bounded public metadata with optional HTTPS image', () => {
@@ -36,6 +40,36 @@ describe('credential share preview contract', () => {
                 name: 'Badge',
                 issuer: 'Issuer',
                 image: 'http://example.com/image.png',
+            }).success
+        ).toBe(false);
+    });
+
+    it('requires a bounded opaque URI only for publishing', () => {
+        expect(
+            PublishCredentialSharePreviewValidator.parse({
+                name: 'Badge',
+                issuer: 'Issuer',
+                shareUri: 'urn:encrypted:opaque',
+                id: '5b58ff0c-bb55-4f25-a2a5-b4de3778c649',
+            })
+        ).toEqual({
+            name: 'Badge',
+            issuer: 'Issuer',
+            shareUri: 'urn:encrypted:opaque',
+            id: '5b58ff0c-bb55-4f25-a2a5-b4de3778c649',
+        });
+        expect(
+            CredentialSharePreviewValidator.safeParse({
+                name: 'Badge',
+                issuer: 'Issuer',
+                shareUri: 'urn:encrypted:opaque',
+            }).success
+        ).toBe(false);
+        expect(
+            PublishCredentialSharePreviewValidator.safeParse({
+                name: 'Badge',
+                issuer: 'Issuer',
+                shareUri: '',
             }).success
         ).toBe(false);
     });

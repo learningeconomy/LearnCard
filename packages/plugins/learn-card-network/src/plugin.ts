@@ -1154,6 +1154,10 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.credentialSharePreviews.publish.mutate(preview);
             },
+            deleteCredentialSharePreview: async (_learnCard, id) => {
+                await ensureUser();
+                return client.credentialSharePreviews.delete.mutate({ id });
+            },
             createShareLink: async (_learnCard, input) => {
                 await ensureUser();
 

@@ -13,7 +13,7 @@ const escapeHtml = (value: string): string =>
             })[character]!
     );
 
-/** Render only the explicitly public preview fields and a scrubbed canonical URL. */
+/** Render public metadata and the original share destination's allowlisted parameters. */
 export const renderCredentialSharePreviewHtml = (
     preview: PublicSharePreview,
     canonicalUrl: string

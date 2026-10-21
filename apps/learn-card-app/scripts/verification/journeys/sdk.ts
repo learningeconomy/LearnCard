@@ -34,7 +34,7 @@ export const boostTemplate = (issuer: string, name: string) => ({
 
 export const sdkFeature: FeatureDefinition = {
     id: 'sdk',
-    title: 'SDK from checkout source: identity, issue/verify, presentations, LearnCloud, boosts',
+    title: 'SDK from checkout source: credentials, storage, boosts and public preview ownership',
     surface: 'sdk',
     entries: [
         'sdk-identity',
@@ -42,6 +42,7 @@ export const sdkFeature: FeatureDefinition = {
         'sdk-presentation',
         'sdk-cloud-roundtrip',
         'sdk-boost-send-accept',
+        'sdk-share-preview-lifecycle',
     ],
     run: async context => {
         const { issuer, recipient } = context.actors;
@@ -124,6 +125,82 @@ export const sdkFeature: FeatureDefinition = {
             const recipients = await issuerLc.invoke.getBoostRecipients(boostUri);
             expect(recipients.some(item => item.to.profileId === recipient.profileId)).toBe(true);
             observations.boost = { boostName, boostUri, sentUri, graph };
+        });
+
+        await context.step(null, 'sdk-share-preview-lifecycle', async () => {
+            const publisher = await context.sdk(context.actors.learner);
+            const shareUri = `urn:encrypted:${randomUUID()}`;
+            const metadata = {
+                name: 'Preview ownership regression',
+                issuer: 'Example School',
+                image: 'https://cdn.example.test/badge.png',
+            };
+            const id = await publisher.invoke.publishCredentialSharePreview({
+                ...metadata,
+                shareUri,
+            });
+            const readPreview = (previewId: string, uri?: string) => {
+                const url = new URL(
+                    `${context.stack.brainApi}/credential-share-previews/${previewId}`
+                );
+                if (uri !== undefined) url.searchParams.set('shareUri', uri);
+                return fetch(url);
+            };
+            expect(await (await readPreview(id, shareUri)).json()).toEqual(metadata);
+            expect((await readPreview(id)).status).toBe(400);
+            expect((await readPreview(id, 'urn:encrypted:another')).status).toBe(404);
+
+            await expect(
+                recipientLc.invoke.publishCredentialSharePreview({
+                    id,
+                    name: 'Forged preview',
+                    issuer: 'Another issuer',
+                    shareUri,
+                })
+            ).rejects.toThrow();
+            expect(await recipientLc.invoke.deleteCredentialSharePreview(id)).toBe(false);
+            expect(await (await readPreview(id, shareUri)).json()).toEqual(metadata);
+            const auditQuery = `MATCH (:Profile {profileId: '${context.actors.learner.profileId}'})-[:PUBLISHED_CREDENTIAL_SHARE_PREVIEW]->(p:CredentialSharePreview {id: '${id}'}) RETURN p.createdAt AS createdAt`;
+            const originalAudit = await context.inspect.neo4j(auditQuery);
+            expect(originalAudit).toMatch(/\d{4}-\d{2}-\d{2}T/);
+
+            const updatedUri = `urn:encrypted:${randomUUID()}`;
+            expect(
+                await publisher.invoke.publishCredentialSharePreview({
+                    id,
+                    name: 'Updated preview',
+                    issuer: metadata.issuer,
+                    shareUri: updatedUri,
+                })
+            ).toBe(id);
+            expect((await readPreview(id, shareUri)).status).toBe(404);
+            expect(await (await readPreview(id, updatedUri)).json()).toEqual({
+                name: 'Updated preview',
+                issuer: metadata.issuer,
+            });
+            expect(await context.inspect.neo4j(auditQuery)).toBe(originalAudit);
+            expect(await publisher.invoke.deleteCredentialSharePreview(id)).toBe(true);
+            expect((await readPreview(id, updatedUri)).status).toBe(404);
+
+            const ownedIds = await Promise.all(
+                [0, 1].map(() =>
+                    publisher.invoke.publishCredentialSharePreview({ ...metadata, shareUri })
+                )
+            );
+            await publisher.invoke.deleteProfile();
+            for (const ownedId of ownedIds) {
+                expect((await readPreview(ownedId, shareUri)).status).toBe(404);
+            }
+            const remaining = await context.inspect.neo4j(
+                `MATCH (p:CredentialSharePreview) WHERE p.id IN ['${ownedIds.join("','")}'] RETURN count(p) AS n`
+            );
+            expect(remaining).toMatch(/^n\n0$/m);
+            observations.sharePreviews = {
+                ownershipEnforced: true,
+                uriBindingEnforced: true,
+                refreshedWithoutImage: true,
+                ownerAndProfileDeletion: true,
+            };
         });
 
         return {

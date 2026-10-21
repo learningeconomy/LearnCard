@@ -1,34 +1,33 @@
 import { z } from 'zod/v4';
 
 /** Public metadata for an explicitly published credential share preview. */
+const HttpsImageUrlValidator = z
+    .string()
+    .url()
+    .max(2048)
+    // No server-side fetch is performed; HTTPS is required to avoid mixed-content images.
+    .refine(value => {
+        try {
+            return new URL(value).protocol === 'https:';
+        } catch {
+            return false;
+        }
+    }, 'image must be an HTTPS URL');
+
+/** Public metadata for an explicitly published credential share preview. */
 export const CredentialSharePreviewValidator = z
     .object({
         name: z.string().min(1).max(160),
         issuer: z.string().min(1).max(160),
-        image: z
-            .string()
-            .url()
-            .max(2048)
-            .refine(value => {
-                try {
-                    const url = new URL(value);
-                    const host = url.hostname.toLowerCase();
-                    return (
-                        url.protocol === 'https:' &&
-                        host !== 'localhost' &&
-                        !host.endsWith('.localhost') &&
-                        !host.endsWith('.local') &&
-                        !/^127\./.test(host) &&
-                        !/^10\./.test(host) &&
-                        !/^192\.168\./.test(host) &&
-                        !/^172\.(1[6-9]|2\d|3[01])\./.test(host)
-                    );
-                } catch {
-                    return false;
-                }
-            }, 'image must be a public HTTPS URL')
-            .optional(),
+        image: HttpsImageUrlValidator.optional(),
     })
     .strict();
 export type CredentialSharePreview = z.infer<typeof CredentialSharePreviewValidator>;
+
+/** Input for an authenticated publish/refresh; shareUri is opaque and never returned publicly. */
+export const PublishCredentialSharePreviewValidator = CredentialSharePreviewValidator.extend({
+    shareUri: z.string().min(1).max(4096),
+    id: z.string().uuid().optional(),
+}).strict();
+export type PublishCredentialSharePreview = z.infer<typeof PublishCredentialSharePreviewValidator>;
 export const CredentialSharePreviewIdValidator = z.string().uuid();

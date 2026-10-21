@@ -86,11 +86,15 @@ Issuers can link their organization in **Developer Portal → Build → an issua
 3. To include a social preview, choose **Enable Public Preview**. This publishes only the credential name, issuer name, and available image URL. Other credential fields remain encrypted; anyone with the complete share link can still open the credential.
 4. Choose **Post to LinkedIn** to open a post with the share link filled in.
 
-Public previews are optional. Reopening Share without enabling a preview produces a link without preview metadata, but does not erase an already published preview or copies cached by social apps. LinkedIn's certification tile shows the organization's logo, not the credential image; the credential image belongs to the social preview.
+Public previews are optional. Reopening Share without enabling a preview produces a link without preview metadata, but does not erase an already published preview or copies cached by social apps. Enabling it again refreshes the existing owned preview for the current encrypted link. LinkedIn's certification tile shows the organization's logo, not the credential image; the credential image belongs to the social preview.
+
+Preview details are supplied by the person sharing, not proof of the issuer's identity or claims. Open the full credential to inspect its verification. LearnCard records the publisher and creation time, requires the matching encrypted-link address for public lookup, and removes owned server-side previews when that profile is deleted. The SDK's `deleteCredentialSharePreview(id)` can also remove an owned preview; copies held by social apps may remain.
 
 If the issuer's name cannot be loaded and is not included in the credential, public previews stay disabled rather than publishing an “Unknown” placeholder. The encrypted link remains available.
 
-Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the public preview record, and returns Open Graph metadata to social crawlers. Ordinary visitors continue to the app; unavailable previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
+Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the matching public preview record, and returns Open Graph metadata to social crawlers. The canonical destination preserves the original link's decryption parameters so a card click can open the credential. Ordinary visitors continue to the app; unavailable or mismatched previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
+
+Developer verification: `lc verify run sdk` covers owner-only refresh/deletion, URI binding, and profile cleanup; `lc verify run sharing` checks that opting in leaves other credentials' private share records unchanged and that endorsed credentials reuse one preview across new encrypted presentations.
 
 ### Private Verifier History
 

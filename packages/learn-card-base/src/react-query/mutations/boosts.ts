@@ -37,6 +37,7 @@ import {
     findMatchingSharedCredentialIndex,
     getSharedCredentialIndexQueries,
     insertItem,
+    publishSharePreview,
 } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
@@ -47,6 +48,7 @@ import { getLogger } from '../../logging/logger';
 const log = getLogger('boosts');
 
 type SharedCredentialsIndex = {
+    _id?: string;
     type: 'shared-credentials';
     sharedCredentialUri: string;
     sharedCredentialKey?: string;
@@ -116,22 +118,35 @@ export const useShareBoostMutation = () => {
             ): Promise<string> => {
                 if (!publicPreview) return link;
 
-                let previewId = index.publicPreviewId;
-                if (!previewId) {
-                    previewId = await myWallet.invoke.publishCredentialSharePreview(publicPreview);
-                    const updated = await myWallet.invoke.learnCloudUpdate<SharedCredentialsIndex>(
-                        {
-                            type: 'shared-credentials',
-                            uri: index.uri,
-                            randomSeed: index.randomSeed,
-                        },
-                        { publicPreviewId: previewId }
-                    );
-                    if (!updated) throw new Error('Unable to save public preview reference');
-                }
-                const url = new URL(link);
-                url.searchParams.set('preview', previewId);
-                return url.toString();
+                return publishSharePreview(
+                    link,
+                    publicPreview,
+                    index.publicPreviewId,
+                    input => myWallet.invoke.publishCredentialSharePreview(input),
+                    async previewId => {
+                        const storedIndex = index._id
+                            ? index
+                            : (
+                                  await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>({
+                                      randomSeed: index.randomSeed,
+                                  })
+                              ).find(
+                                  record =>
+                                      record.uri === index.uri &&
+                                      record.sharedCredentialUri === index.sharedCredentialUri &&
+                                      record.credentialId === index.credentialId
+                              );
+                        if (!storedIndex?._id) {
+                            throw new Error('Unable to find the shared credential index');
+                        }
+                        // Multi-field encrypted filters match alternatives; only _id isolates a row.
+                        return myWallet.invoke.learnCloudUpdate<SharedCredentialsIndex>(
+                            { _id: storedIndex._id },
+                            { publicPreviewId: previewId }
+                        );
+                    },
+                    previewId => myWallet.invoke.deleteCredentialSharePreview(previewId)
+                );
             };
 
             //If it already exists than we don't have to do it all again....
@@ -190,7 +205,7 @@ export const useShareBoostMutation = () => {
 
             if (!publishedVpUri) throw new Error('Unable to publish VP');
 
-            await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>({
+            const newIndex: SharedCredentialsIndex = {
                 sharedCredentialUri: credentialUri,
                 ...(credentialId ? { credentialId } : {}),
                 ...sharedCredentialIndexQueries[0],
@@ -198,7 +213,11 @@ export const useShareBoostMutation = () => {
                 randomSeed: randomKey,
                 uri: publishedVpUri,
                 type: 'shared-credentials',
-            });
+                ...(extantCredentialIndex?.publicPreviewId
+                    ? { publicPreviewId: extantCredentialIndex.publicPreviewId }
+                    : {}),
+            };
+            await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>(newIndex);
             const link = buildCredentialShareUrl(baseUrl, shareRouteName, {
                 uri: publishedVpUri,
                 seed: randomKey,
@@ -206,14 +225,7 @@ export const useShareBoostMutation = () => {
             });
 
             return {
-                link: await withPublicPreview(link, {
-                    type: 'shared-credentials',
-                    sharedCredentialUri: credentialUri,
-                    credentialId,
-                    uri: publishedVpUri,
-                    pin,
-                    randomSeed: randomKey,
-                }),
+                link: await withPublicPreview(link, newIndex),
             };
         },
     });

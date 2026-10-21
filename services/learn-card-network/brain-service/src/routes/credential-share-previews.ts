@@ -1,9 +1,12 @@
-import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { CredentialSharePreviewValidator } from '@learncard/types';
+import {
+    CredentialSharePreviewValidator,
+    PublishCredentialSharePreviewValidator,
+} from '@learncard/types';
 import {
     createCredentialSharePreview,
+    deleteCredentialSharePreview,
     getCredentialSharePreview,
 } from '@accesslayer/credential-share-previews';
 import { t, profileRoute, openRoute } from '@routes';
@@ -29,13 +32,29 @@ export const credentialSharePreviewsRouter = t.router({
                 protect: true,
             },
         })
-        .input(CredentialSharePreviewValidator)
+        .input(PublishCredentialSharePreviewValidator)
         .output(Id)
-        .mutation(async ({ input }) => {
-            const id = randomUUID();
-            await createCredentialSharePreview(id, input);
+        .mutation(async ({ ctx, input }) => {
+            const id = await createCredentialSharePreview(ctx.user.profile.profileId, input);
+            if (!id) throw new TRPCError({ code: 'CONFLICT' });
             return id;
         }),
+    delete: profileRoute
+        .meta({
+            openapi: {
+                ...openapi(
+                    'POST',
+                    '/credential-share-previews/{id}/delete',
+                    'Delete owned credential share preview'
+                ),
+                protect: true,
+            },
+        })
+        .input(z.object({ id: Id }).strict())
+        .output(z.boolean())
+        .mutation(({ ctx, input }) =>
+            deleteCredentialSharePreview(ctx.user.profile.profileId, input.id)
+        ),
     get: openRoute
         .meta({
             openapi: openapi(
@@ -44,10 +63,10 @@ export const credentialSharePreviewsRouter = t.router({
                 'Get public credential share preview'
             ),
         })
-        .input(z.object({ id: Id }).strict())
+        .input(z.object({ id: Id, shareUri: z.string().min(1).max(4096) }).strict())
         .output(previewOutput)
         .query(async ({ input }) => {
-            const preview = await getCredentialSharePreview(input.id);
+            const preview = await getCredentialSharePreview(input.id, input.shareUri);
             if (!preview) throw new TRPCError({ code: 'NOT_FOUND' });
             return preview;
         }),
