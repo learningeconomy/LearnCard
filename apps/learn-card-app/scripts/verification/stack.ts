@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { APP_ROOT as APP, REPO_ROOT as REPO, stackEndpoints } from './constants';
 import type { StackEndpoints, VerificationPorts } from './types';
 import { prepareVerification } from './prepare';
+import { createTimings } from './timings';
+import { dockerBuildArguments } from './docker-build';
 import { preflightVerification, verifyDockerTrust } from './preflight';
 import {
     cleanEnvironment,
@@ -703,6 +705,7 @@ export const startStack = async (
     directory: string,
     options: {
         signal?: AbortSignal;
+        builder?: string;
         onProgress?: (event: Record<string, unknown>) => void;
     } = {}
 ): Promise<void> => {
@@ -712,7 +715,9 @@ export const startStack = async (
     const progress = (stage: string, extra: Record<string, unknown> = {}) =>
         onProgress?.({ event: 'progress', stage, directory: canonical, ...extra });
     progress('preflight');
+    const preflightStarted = performance.now();
     const preflight = await preflightVerification(canonical, { signal });
+    const preflightDuration = Math.round(performance.now() - preflightStarted);
     progress('preflight-complete', { preflight });
     const existingState = await lstat(join(canonical, 'state.json')).then(
         () => true,
@@ -739,6 +744,10 @@ export const startStack = async (
             { cause: error }
         );
     });
+    // No diagnostic file may arbitrate ownership or prevent retrying a failed preflight.
+    const measure = createTimings(join(canonical, 'startup-timings.json'), [
+        { phase: 'preflight', status: 'passed', durationMs: preflightDuration },
+    ]);
     let allocation: PortAllocation | undefined;
     let state: StackState | undefined;
     try {
@@ -793,24 +802,14 @@ export const startStack = async (
         state.resourcesStarted = true;
         await save(state);
         progress('build', { log: join(canonical, 'build.log') });
-        await operation(
-            [
-                'docker',
-                'build',
-                '--file',
-                'Dockerfile.monorepo',
-                '--target',
-                'backend',
-                '--label',
-                `${LABEL}=${token}`,
-                '--tag',
-                `learncard-verification:${token}`,
-                '.',
-            ],
-            REPO,
-            join(canonical, 'build.log'),
-            20 * 60_000
-        );
+        await measure('build', async () => {
+            const args = await dockerBuildArguments(
+                token,
+                args => operation(args, REPO),
+                options.builder
+            );
+            await operation(args, REPO, join(canonical, 'build.log'), 20 * 60_000);
+        });
         state.imageId = await operation(
             [
                 'docker',
@@ -824,28 +823,30 @@ export const startStack = async (
         );
         await save(state);
         progress('prepare', { log: join(canonical, 'prepare.log') });
-        await prepareVerification(canonical, { signal });
+        await measure('prepare', () => prepareVerification(canonical, { signal }));
         signal?.throwIfAborted();
         await allocation.release();
         progress('compose', { log: join(canonical, 'compose.log') });
-        await operation(
-            [
-                'docker',
-                'compose',
-                '--project-name',
-                state.project,
-                '--file',
-                composePath,
-                'up',
-                '--detach',
-                '--no-build',
-                '--wait',
-                '--wait-timeout',
-                '240',
-            ],
-            canonical,
-            join(canonical, 'compose.log'),
-            300_000
+        await measure('compose', () =>
+            operation(
+                [
+                    'docker',
+                    'compose',
+                    '--project-name',
+                    current.project,
+                    '--file',
+                    composePath,
+                    'up',
+                    '--detach',
+                    '--no-build',
+                    '--wait',
+                    '--wait-timeout',
+                    '240',
+                ],
+                canonical,
+                join(canonical, 'compose.log'),
+                300_000
+            )
         );
         signal?.throwIfAborted();
         const log = openSync(join(canonical, 'frontend.log'), 'a', 0o600);
@@ -901,42 +902,48 @@ export const startStack = async (
             closeSync(log);
         }
         progress('readiness');
-        const deadline = Date.now() + 240_000;
-        let report: Record<string, unknown> | undefined;
-        while (Date.now() < deadline) {
-            signal?.throwIfAborted();
-            report = await doctorStack(canonical, { signal });
-            await writeFile(join(canonical, 'readiness.json'), JSON.stringify(report, null, 2), {
-                mode: 0o600,
-            });
-            progress('readiness-probe', { report });
-            const services = report.services as Record<
-                string,
-                { fatal?: boolean; state?: { Status?: string } }
-            >;
-            const failedService = Object.entries(services).find(
-                ([, service]) =>
-                    service.fatal ||
-                    service.state?.Status === 'exited' ||
-                    service.state?.Status === 'dead'
-            );
-            if (failedService)
-                throw new Error(
-                    `${failedService[0]} cannot become ready: ${JSON.stringify(report.failures)}; see ${join(canonical, 'readiness.json')}`
+        await measure('readiness', async () => {
+            const deadline = Date.now() + 240_000;
+            let report: Record<string, unknown> | undefined;
+            while (Date.now() < deadline) {
+                signal?.throwIfAborted();
+                report = await doctorStack(canonical, { signal });
+                await writeFile(
+                    join(canonical, 'readiness.json'),
+                    JSON.stringify(report, null, 2),
+                    {
+                        mode: 0o600,
+                    }
                 );
-            if (report.ok) {
-                current.phase = 'ready';
-                await save(current);
-                progress('ready', { endpoints: stackEndpoints(current.ports) });
-                return;
+                progress('readiness-probe', { report });
+                const services = report.services as Record<
+                    string,
+                    { fatal?: boolean; state?: { Status?: string } }
+                >;
+                const failedService = Object.entries(services).find(
+                    ([, service]) =>
+                        service.fatal ||
+                        service.state?.Status === 'exited' ||
+                        service.state?.Status === 'dead'
+                );
+                if (failedService)
+                    throw new Error(
+                        `${failedService[0]} cannot become ready: ${JSON.stringify(report.failures)}; see ${join(canonical, 'readiness.json')}`
+                    );
+                if (report.ok) {
+                    current.phase = 'ready';
+                    await save(current);
+                    progress('ready', { endpoints: stackEndpoints(current.ports) });
+                    return;
+                }
+                if (!ownsProcess(current))
+                    throw new Error(`Frontend exited; see ${join(canonical, 'frontend.log')}`);
+                await sleep(2000, undefined, { signal });
             }
-            if (!ownsProcess(current))
-                throw new Error(`Frontend exited; see ${join(canonical, 'frontend.log')}`);
-            await sleep(2000, undefined, { signal });
-        }
-        throw new Error(
-            `Readiness failed: ${JSON.stringify(report?.failures)}; retained report ${join(canonical, 'readiness.json')}`
-        );
+            throw new Error(
+                `Readiness failed: ${JSON.stringify(report?.failures)}; retained report ${join(canonical, 'readiness.json')}`
+            );
+        });
     } catch (error) {
         let diagnosis = '';
         if (state?.resourcesStarted) {
