@@ -92,7 +92,27 @@ describe('SDK HTTP adapter', () => {
         vi.mocked(verifyEnclaveAttestation).mockResolvedValue({ ...identity, keyId: 'other' });
         await expect(
             createSdk(config, async () => Response.json({ attestation: {} })).attest()
-        ).rejects.toThrow('Unexpected enclave identity');
+        ).rejects.toMatchObject({ reason: 'policy' });
+    });
+    it.each([
+        [429, 'rate_limit'],
+        [503, 'unavailable'],
+        [403, 'http_refusal'],
+    ])('maps HTTP %i to %s', async (status, reason) => {
+        await expect(
+            createSdk(config, async () => new Response('', { status })).attest()
+        ).rejects.toMatchObject({ reason });
+    });
+    it('maps transport failures and unreasoned verifier errors without leaking messages', async () => {
+        await expect(
+            createSdk(config, async () => {
+                throw new TypeError('secret-bearing socket detail');
+            }).attest()
+        ).rejects.toMatchObject({ reason: 'transport', message: 'transport' });
+        vi.mocked(verifyEnclaveAttestation).mockRejectedValue(new RangeError('cert detail'));
+        await expect(
+            createSdk(config, async () => Response.json({ attestation: {} })).attest()
+        ).rejects.toMatchObject({ reason: 'verify', causeName: 'RangeError', message: 'verify' });
     });
     it('uses the real authority route and pins generation after SDK signature/nonce/DID verification', async () => {
         const transport = vi.fn<typeof fetch>(async () =>

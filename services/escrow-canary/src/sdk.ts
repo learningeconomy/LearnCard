@@ -28,17 +28,40 @@ export interface Sdk {
 let wasmBuffer: Promise<Buffer> | undefined;
 const loadWasm = () => (wasmBuffer ??= readFile(new URL('./didkit.wasm', import.meta.url)));
 
+/** Error carrying an allowlisted metric reason; never carries server or secret text. */
+export class CanaryStepError extends Error {
+    readonly reason: string;
+    readonly causeName?: string;
+    constructor(reason: string, cause?: unknown) {
+        super(reason);
+        this.name = 'CanaryStepError';
+        this.reason = reason;
+        if (cause instanceof Error) this.causeName = cause.constructor.name;
+    }
+}
+
 export const createSdk = (config: Config, transport: typeof fetch = fetch): Sdk => {
     const policy = { mode: 'nitro' as const, pinnedMeasurements: config.measurements };
     const headers = { 'Content-Type': 'application/json', 'X-Tenant-Id': config.tenantId };
     const request = async (path: string, init: RequestInit): Promise<unknown> => {
-        const response = await transport(`${config.serverUrl}${path}`, {
-            ...init,
-            signal: AbortSignal.timeout(30_000),
-            redirect: 'error',
-        });
-        if (!response.ok) throw new Error('Canary API request failed');
-        return response.json();
+        let response: Response;
+        try {
+            response = await transport(`${config.serverUrl}${path}`, {
+                ...init,
+                signal: AbortSignal.timeout(30_000),
+                redirect: 'error',
+            });
+        } catch {
+            throw new CanaryStepError('transport');
+        }
+        if (response.status === 429) throw new CanaryStepError('rate_limit');
+        if (response.status >= 500) throw new CanaryStepError('unavailable');
+        if (!response.ok) throw new CanaryStepError('http_refusal');
+        try {
+            return await response.json();
+        } catch {
+            throw new CanaryStepError('malformed');
+        }
     };
     // WASM is packaged locally; no CDN or architecture-specific native addon.
     const wallet = async (seed: string) => initLearnCard({ seed, didkit: await loadWasm() });
@@ -66,10 +89,17 @@ export const createSdk = (config: Config, transport: typeof fetch = fetch): Sdk 
                 { method: 'GET', headers }
             );
             if (!response || typeof response !== 'object' || !('attestation' in response))
-                throw new Error('Invalid attestation response');
-            const identity = await verifyEnclaveAttestation(response.attestation, policy, nonce);
+                throw new CanaryStepError('invalid_response');
+            let identity: Awaited<ReturnType<typeof verifyEnclaveAttestation>>;
+            try {
+                identity = await verifyEnclaveAttestation(response.attestation, policy, nonce);
+            } catch (error) {
+                // SDK refusals already carry an allowlisted reason (nonce, pcr, ...).
+                if (error && typeof error === 'object' && 'reason' in error) throw error;
+                throw new CanaryStepError('verify', error);
+            }
             if (identity.keyId !== config.keyId || !identity.authority)
-                throw new Error('Unexpected enclave identity');
+                throw new CanaryStepError('policy');
             return identity;
         },
         async authority(account, token, identity) {

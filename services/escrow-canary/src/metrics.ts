@@ -27,6 +27,7 @@ const reasons = new Set([
     'signature',
     'freshness',
     'config',
+    'verify',
     'secret_read',
     'stale_event',
     'auth',
@@ -98,8 +99,17 @@ export const createMetrics =
         if (name.endsWith('.Success') || name === 'Runner.AuthFailure') {
             sets.push(Object.keys(alarm), Object.keys(base));
         }
+        // Constructor name only (never the message): a non-dimension log property.
+        const cause =
+            error &&
+            typeof error === 'object' &&
+            'causeName' in error &&
+            typeof error.causeName === 'string'
+                ? { Cause: error.causeName.replace(/[^A-Za-z0-9_]/g, '').slice(0, 64) }
+                : {};
         sink(
             JSON.stringify({
+                ...cause,
                 _aws: {
                     Timestamp: context?.timestamp ?? Date.now(),
                     CloudWatchMetrics: [
