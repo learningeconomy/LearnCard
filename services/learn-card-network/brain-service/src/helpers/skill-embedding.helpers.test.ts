@@ -644,6 +644,38 @@ describe('skill embedding helpers (Nova 2, mocked Bedrock)', () => {
                 cursor: 'c',
             });
         });
+
+        it('counts superseded embeddings toward maxEmbeddings so distinct skills stay bounded', async () => {
+            const helpers = await loadHelpers();
+            const firstPage = Array.from({ length: 100 }, (_, i) =>
+                candidate(helpers, `s${String(i).padStart(3, '0')}`, i % 2 ? 'stale' : 'missing')
+            );
+            const getCandidates = pages(firstPage, [candidate(helpers, 'z', 'missing')]);
+            const embedIndex = vi.fn(async () => unitVector(7));
+            // Source changed or skill deleted after the page was read: CAS write matches nothing.
+            const update = vi.fn(async () => false);
+
+            const stats = await helpers.runSkillEmbeddingBackfill(
+                { maxEmbeddings: 1, pageSize: 100 },
+                {
+                    getCandidates,
+                    embedIndex,
+                    update,
+                    keepAlive: async () => true,
+                    sleep: async () => undefined,
+                }
+            );
+
+            expect(embedIndex).toHaveBeenCalledTimes(1);
+            expect(update).toHaveBeenCalledTimes(1);
+            expect(getCandidates).toHaveBeenCalledTimes(1);
+            expect(stats).toMatchObject({
+                embedded: 0,
+                superseded: 1,
+                stoppedReason: 'max_embeddings',
+                cursor: 's000',
+            });
+        });
     });
 
     describe('backfill lock', () => {

@@ -490,7 +490,7 @@ export type SkillEmbeddingBackfillOptions = {
     pageSize?: number;
     /** Count work only; never calls Bedrock or writes. */
     dryRun?: boolean;
-    /** Stop after embedding this many skills (bounded runs). */
+    /** Stop after embedding this many skills, written or superseded (bounded runs). */
     maxEmbeddings?: number;
     /** Resume after this skill id. */
     cursor?: string | null;
@@ -546,7 +546,11 @@ export const runSkillEmbeddingBackfill = async (
                 continue;
             }
 
-            if (options.maxEmbeddings !== undefined && stats.embedded >= options.maxEmbeddings) {
+            // Superseded skills were still embedded (and paid for), so they count toward the cap.
+            if (
+                options.maxEmbeddings !== undefined &&
+                stats.embedded + stats.superseded >= options.maxEmbeddings
+            ) {
                 return stop('max_embeddings');
             }
 
