@@ -1,11 +1,10 @@
 # SkillFrameworksAddFrameworkAdminRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile_id** | **str** |  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skill_frameworks_add_framework_admin_request_dict = skill_frameworks_add_framewo
 # create an instance of SkillFrameworksAddFrameworkAdminRequest from a dict
 skill_frameworks_add_framework_admin_request_from_dict = SkillFrameworksAddFrameworkAdminRequest.from_dict(skill_frameworks_add_framework_admin_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

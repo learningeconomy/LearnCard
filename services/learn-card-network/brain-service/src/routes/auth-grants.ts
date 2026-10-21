@@ -139,14 +139,9 @@ export const authGrantsRouter = t.router({
         .input(
             z.object({
                 id: z.string(),
-                updates: AuthGrantValidator.partial().omit({
-                    id: true,
-                    scope: true,
-                    status: true,
-                    createdAt: true,
-                    expiresAt: true,
-                    challenge: true,
-                }),
+                // Immutable fields stay in the schema so the guard below can reject them
+                // explicitly; omitting them would strip the key and silently no-op instead.
+                updates: AuthGrantValidator.partial().strict(),
             })
         )
         .output(z.boolean())
@@ -158,13 +153,20 @@ export const authGrantsRouter = t.router({
                 });
             }
 
-            // Extra check to reject sensitive, invalid updates
-            const invalidUpdates = ['id', 'scope', 'status', 'createdAt', 'expiresAt', 'challenge'];
+            const invalidUpdates = [
+                'id',
+                'scope',
+                'actAs',
+                'status',
+                'createdAt',
+                'expiresAt',
+                'challenge',
+            ];
             if (invalidUpdates.some(key => input.updates.hasOwnProperty(key))) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message:
-                        'Cannot update id, scope, status, createdAt, expiresAt, or challenge of an AuthGrant',
+                        'Cannot update id, scope, actAs, status, createdAt, expiresAt, or challenge of an AuthGrant',
                 });
             }
 

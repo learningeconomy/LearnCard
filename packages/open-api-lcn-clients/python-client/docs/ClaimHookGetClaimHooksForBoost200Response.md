@@ -1,13 +1,12 @@
 # ClaimHookGetClaimHooksForBoost200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[ClaimHookGetClaimHooksForBoost200ResponseRecordsInner]**](ClaimHookGetClaimHooksForBoost200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                                        | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                                     |             | [optional] |
+| **has_more** | **bool**                                                                                                                    |             |
+| **records**  | [**List[ClaimHookGetClaimHooksForBoost200ResponseRecordsInner]**](ClaimHookGetClaimHooksForBoost200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ claim_hook_get_claim_hooks_for_boost200_response_dict = claim_hook_get_claim_hoo
 # create an instance of ClaimHookGetClaimHooksForBoost200Response from a dict
 claim_hook_get_claim_hooks_for_boost200_response_from_dict = ClaimHookGetClaimHooksForBoost200Response.from_dict(claim_hook_get_claim_hooks_for_boost200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

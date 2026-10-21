@@ -159,6 +159,7 @@ const CATEGORY_TO_PALETTE_KEY: Partial<Record<CredentialCategoryEnum, string>> =
     [CredentialCategoryEnum.skill]: 'Skills',
     [CredentialCategoryEnum.socialBadge]: 'Boosts',
     [CredentialCategoryEnum.achievement]: 'Achievements',
+    [CredentialCategoryEnum.qualifications]: 'Qualifications',
     [CredentialCategoryEnum.learningHistory]: 'Studies',
     [CredentialCategoryEnum.accomplishment]: 'Portfolio',
     [CredentialCategoryEnum.accommodation]: 'Assistance',

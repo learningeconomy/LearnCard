@@ -1,6 +1,6 @@
 /**
  * Atomic Operations Tests
- * 
+ *
  * Tests for split verification, atomic updates, and rollback behavior.
  */
 
@@ -13,13 +13,15 @@ import {
     atomicRecovery,
     ShareVerificationError,
     AtomicUpdateError,
+    ShareWriteRejectedError,
     type StorageOperations,
 } from './atomic-operations';
 import { generateEd25519PrivateKey } from './crypto';
 import { splitPrivateKey, reconstructFromShares } from './sss';
 
-describe('splitAndVerify', () => {
+type MockShareState = { deviceShare: string | null; authShare: string | null };
 
+describe('splitAndVerify', () => {
     it('should return verified shares that reconstruct the key', async () => {
         const privateKey = await generateEd25519PrivateKey();
 
@@ -56,6 +58,33 @@ describe('splitAndVerify', () => {
 });
 
 describe('atomicShareUpdate', () => {
+    it.each([false, true])(
+        'preserves the new share after a lost reply (existing=%s)',
+        async existing => {
+            const privateKey = await generateEd25519PrivateKey();
+            const previous = existing ? (await splitPrivateKey(privateKey)).deviceShare : undefined;
+            const storage = createMockStorage();
+            storage.deviceShare = previous ?? null;
+            storage.clearDevice = vi.fn(async () => {
+                storage.deviceShare = null;
+            });
+            storage.storeAuth = vi.fn(async share => {
+                storage.authShare = share;
+                throw new TypeError('Connection closed after commit');
+            });
+
+            await expect(
+                atomicShareUpdate(privateKey, storage, {
+                    previousDeviceShare: previous,
+                })
+            ).rejects.toMatchObject({ phase: 'store_auth', rolledBack: false });
+
+            expect(storage.clearDevice).not.toHaveBeenCalled();
+            expect(await reconstructFromShares([storage.deviceShare!, storage.authShare!])).toBe(
+                privateKey
+            );
+        }
+    );
 
     const createMockStorage = (): StorageOperations & {
         deviceShare: string | null;
@@ -64,19 +93,19 @@ describe('atomicShareUpdate', () => {
         deviceShare: null,
         authShare: null,
 
-        storeDevice: vi.fn(async function(this: any, share: string) {
+        storeDevice: vi.fn(async function (this: MockShareState, share: string) {
             this.deviceShare = share;
         }),
 
-        storeAuth: vi.fn(async function(this: any, share: string) {
+        storeAuth: vi.fn(async function (this: MockShareState, share: string) {
             this.authShare = share;
         }),
 
-        getDevice: vi.fn(async function(this: any) {
+        getDevice: vi.fn(async function (this: MockShareState) {
             return this.deviceShare;
         }),
 
-        getAuth: vi.fn(async function(this: any) {
+        getAuth: vi.fn(async function (this: MockShareState) {
             return this.authShare;
         }),
     });
@@ -101,7 +130,7 @@ describe('atomicShareUpdate', () => {
         storage.deviceShare = previousDeviceShare;
 
         // Make auth storage fail
-        storage.storeAuth = vi.fn().mockRejectedValue(new Error('Network error'));
+        storage.storeAuth = vi.fn().mockRejectedValue(new ShareWriteRejectedError('Rejected'));
 
         const onRollback = vi.fn();
 
@@ -115,6 +144,20 @@ describe('atomicShareUpdate', () => {
         // Device share should be rolled back to previous value
         expect(storage.deviceShare).toBe(previousDeviceShare);
         expect(onRollback).toHaveBeenCalled();
+    });
+
+    it('removes a fresh device share after an explicit rejection', async () => {
+        const storage = createMockStorage();
+        storage.clearDevice = vi.fn(async () => {
+            storage.deviceShare = null;
+        });
+        storage.storeAuth = vi.fn().mockRejectedValue(new ShareWriteRejectedError('Rejected'));
+
+        await expect(
+            atomicShareUpdate(await generateEd25519PrivateKey(), storage)
+        ).rejects.toMatchObject({ phase: 'store_auth', rolledBack: true });
+        expect(storage.deviceShare).toBeNull();
+        expect(storage.clearDevice).toHaveBeenCalledOnce();
     });
 
     it('should throw AtomicUpdateError with correct phase on device storage failure', async () => {
@@ -138,7 +181,9 @@ describe('atomicShareUpdate', () => {
         const privateKey = await generateEd25519PrivateKey();
         const storage = createMockStorage();
 
-        storage.storeAuth = vi.fn().mockRejectedValue(new Error('Server error'));
+        storage.storeAuth = vi
+            .fn()
+            .mockRejectedValue(new ShareWriteRejectedError('Server rejection'));
 
         try {
             await atomicShareUpdate(privateKey, storage, {
@@ -160,16 +205,12 @@ describe('atomicShareUpdate', () => {
         const shares = await atomicShareUpdate(privateKey, storage);
 
         // Verify the returned shares can reconstruct the key
-        const reconstructed = await reconstructFromShares([
-            shares.deviceShare,
-            shares.authShare,
-        ]);
+        const reconstructed = await reconstructFromShares([shares.deviceShare, shares.authShare]);
         expect(reconstructed).toBe(privateKey);
     });
 });
 
 describe('verifyStoredShares', () => {
-
     it('should return healthy=true when shares match expected DID', async () => {
         const privateKey = await generateEd25519PrivateKey();
         const shares = await splitPrivateKey(privateKey);
@@ -266,7 +307,6 @@ describe('verifyStoredShares', () => {
 });
 
 describe('atomicRecovery', () => {
-
     it('should reconstruct key and generate new shares', async () => {
         const privateKey = await generateEd25519PrivateKey();
         const originalShares = await splitPrivateKey(privateKey);
@@ -275,11 +315,11 @@ describe('atomicRecovery', () => {
             deviceShare: null as string | null,
             authShare: null as string | null,
 
-            storeDevice: vi.fn(async function(this: any, share: string) {
+            storeDevice: vi.fn(async function (this: MockShareState, share: string) {
                 this.deviceShare = share;
             }),
 
-            storeAuth: vi.fn(async function(this: any, share: string) {
+            storeAuth: vi.fn(async function (this: MockShareState, share: string) {
                 this.authShare = share;
             }),
         };

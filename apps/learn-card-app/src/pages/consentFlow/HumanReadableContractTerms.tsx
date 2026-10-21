@@ -4,21 +4,10 @@ import { isSupportedPersonalField } from '../../helpers/contract.helpers';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import { getLocale } from '../../paraglide/runtime.js';
+import { localizeContractPersonalField } from '../../i18n/contractPersonalField';
 
 type HumanReadableContractTermsProps = {
     contractDetails: ConsentFlowContractDetails;
-};
-
-/** English personal-field label → Paraglide message key. */
-const PERSONAL_FIELD_KEY: Record<string, string> = {
-    name: 'consentFlow.personalField.name',
-    email: 'consentFlow.personalField.email',
-    'profile picture': 'consentFlow.personalField.profilePicture',
-};
-
-const localizeField = (field: string): string => {
-    const fn = (m as Record<string, unknown>)[PERSONAL_FIELD_KEY[field]];
-    return typeof fn === 'function' ? (fn as () => string)() : field;
 };
 
 const HumanReadableContractTerms: React.FC<HumanReadableContractTermsProps> = ({
@@ -43,7 +32,7 @@ const HumanReadableContractTerms: React.FC<HumanReadableContractTermsProps> = ({
         const fieldList = new Intl.ListFormat(locale, {
             style: 'long',
             type: 'conjunction',
-        }).format(readPersonalFields.map(localizeField));
+        }).format(readPersonalFields.map(localizeContractPersonalField));
         pieces.push(
             <span className="font-notoSans font-[600]">
                 {m['consentFlow.terms.viewPersonal']({ fields: fieldList })}
@@ -54,7 +43,7 @@ const HumanReadableContractTerms: React.FC<HumanReadableContractTermsProps> = ({
         pieces.push(
             <TransP
                 m={m['consentFlow.terms.viewCredentials']}
-                components={[<span className="font-notoSans font-[600]" />]}
+                components={[<span key="credentials" className="font-notoSans font-[600]" />]}
             />
         );
     }

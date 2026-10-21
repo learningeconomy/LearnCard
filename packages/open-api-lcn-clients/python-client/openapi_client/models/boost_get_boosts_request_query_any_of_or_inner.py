@@ -23,6 +23,7 @@ from openapi_client.models.boost_get_boosts_request_query_any_of_or_inner_status
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
     """
@@ -38,7 +39,8 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
     __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "meta", "status", "autoConnectRecipients"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -50,8 +52,7 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -92,12 +93,16 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
         _field_dict = {}
         if self.meta:
             for _key_meta in self.meta:
-                if self.meta[_key_meta]:
-                    _field_dict[_key_meta] = self.meta[_key_meta].to_dict()
+                _field_dict[_key_meta] = self.meta[_key_meta].to_dict() if self.meta[_key_meta] is not None else None
             _dict['meta'] = _field_dict
         # override the default output from pydantic by calling `to_dict()` of status
         if self.status:
             _dict['status'] = self.status.to_dict()
+        # set to None if auto_connect_recipients (nullable) is None
+        # and model_fields_set contains the field
+        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set:
+            _dict['autoConnectRecipients'] = None
+
         return _dict
 
     @classmethod
@@ -109,7 +114,7 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "uri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["uri"]) if obj.get("uri") is not None else None,
             "name": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["name"]) if obj.get("name") is not None else None,
             "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["type"]) if obj.get("type") is not None else None,
@@ -122,7 +127,9 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
             else None,
             "status": BoostGetBoostsRequestQueryAnyOfOrInnerStatus.from_dict(obj["status"]) if obj.get("status") is not None else None,
             "autoConnectRecipients": obj.get("autoConnectRecipients")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

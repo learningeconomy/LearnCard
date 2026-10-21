@@ -1,3 +1,4 @@
+import { waitForInboxCredentialBatch } from './inbox-batch';
 import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
@@ -20,6 +21,7 @@ import {
     StoredCredentialEnvelope,
     StoredCredentialEnvelopeValidator,
     isStoredCredentialEnvelope,
+    ACT_AS_HEADER,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -28,6 +30,7 @@ import {
     getCredentialStatusArray,
     injectManagedRefreshService as injectSharedManagedRefreshService,
     isVC2Format,
+    isEncrypted,
     resolveStorageReadResult,
 } from '@learncard/helpers';
 import Mustache from 'mustache';
@@ -519,6 +522,32 @@ export * from './types';
 
 export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
 
+export { ACT_AS_HEADER };
+
+// Must match the message resolveActAs throws for a missing target
+// (services/learn-card-network/brain-service/src/routes/index.ts).
+const ACT_AS_TARGET_NOT_FOUND_MESSAGE = 'Act-as target profile not found';
+
+/**
+ * True only for errors the server's act-as resolver throws when denying the delegation
+ * itself (FORBIDDEN: not a manager / policy denies; BAD_REQUEST: malformed header;
+ * NOT_FOUND: the target profile). Any other error — including a NOT_FOUND from elsewhere —
+ * is unrelated and must surface unchanged.
+ */
+const isActAsDenial = (error: unknown): boolean => {
+    const code = (error as { data?: { code?: string } } | undefined)?.data?.code;
+    if (code === 'FORBIDDEN' || code === 'BAD_REQUEST') return true;
+    if (code === 'NOT_FOUND') {
+        return (
+            (error as { message?: unknown } | undefined)?.message ===
+            ACT_AS_TARGET_NOT_FOUND_MESSAGE
+        );
+    }
+    return false;
+};
+const getInboxFailureReason = (reason: unknown): string =>
+    reason instanceof Error ? `${reason.name}: ${reason.message}` : String(reason);
+
 /**
  * @group Plugins
  */
@@ -526,6 +555,15 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 export interface LearnCardNetworkPluginOptions extends FederationConfig {
     guardianApprovalGetter?: GuardianApprovalGetter;
     extraHeaders?: Record<string, string>;
+    /**
+     * Profile ID (or managed `did:web`) to act as for every request made by this plugin
+     * instance. Sent as the `X-LearnCard-Act-As` header ({@link ACT_AS_HEADER}). The server
+     * swaps the acting profile for the duration of the request without changing token scope;
+     * it responds `403` if the caller doesn't manage the target profile, or if an API token's
+     * grant doesn't allow acting as it. Works for both API-token and seed/DID-auth clients,
+     * since seed-based users may also manage — and act as — other profiles.
+     */
+    actAs?: string;
 }
 
 export async function getLearnCardNetworkPlugin(
@@ -554,7 +592,12 @@ export async function getLearnCardNetworkPlugin(
         extraHeaders,
         trustedFederationHosts,
         allowLocalhostFederation,
+        actAs,
     } = resolvedOptions;
+
+    // Only allocate a new headers object when actAs is actually set, so behavior/identity
+    // of `extraHeaders` is unchanged for existing callers that don't use actAs.
+    const mergedExtraHeaders = actAs ? { ...extraHeaders, [ACT_AS_HEADER]: actAs } : extraHeaders;
 
     // Parse service URL to determine origin and auto-detect localhost
     const serviceUrl = new URL(url);
@@ -581,7 +624,7 @@ export async function getLearnCardNetworkPlugin(
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = apiToken
-        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, extraHeaders)
+        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, mergedExtraHeaders)
         : await getClient(
               url,
               async challenge => {
@@ -595,7 +638,7 @@ export async function getLearnCardNetworkPlugin(
                   return jwt;
               },
               guardianApprovalGetter,
-              extraHeaders
+              mergedExtraHeaders
           );
 
     let userData: LCNProfile | undefined;
@@ -884,6 +927,31 @@ export async function getLearnCardNetworkPlugin(
             getManagedProfiles: async (_learnCard, options = {}) => {
                 return client.profileManager.getManagedProfiles.query(options);
             },
+            actAs: async (_learnCard, profileId) => {
+                const actingOptions: LearnCardNetworkPluginOptions = {
+                    ...resolvedOptions,
+                    actAs: profileId,
+                };
+
+                const actingPlugin = apiToken
+                    ? await getLearnCardNetworkPlugin(_learnCard, url, apiToken, actingOptions)
+                    : await getLearnCardNetworkPlugin(_learnCard, url, actingOptions);
+
+                // The plugin's own initial getProfile is non-fatal by design, so an act-as
+                // denial would otherwise only surface later as "Please make an account first!".
+                try {
+                    await actingPlugin.methods.getLCNClient(_learnCard).profile.getProfile.query();
+                } catch (error) {
+                    if (isActAsDenial(error)) {
+                        const message =
+                            error instanceof Error ? error.message : 'Act-as request was denied.';
+                        throw new Error(message, { cause: error });
+                    }
+                    _learnCard.debug?.('LCN actAs: getProfile failed (non-fatal)', error);
+                }
+
+                return _learnCard.addPlugin(actingPlugin);
+            },
             claimPendingGuardianLinks: async () => {
                 await ensureUser();
                 return client.inbox.claimPendingGuardianLinks.mutate({});
@@ -1082,6 +1150,73 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.invalidateInvite.mutate({ challenge });
             },
 
+            createShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.create.mutate(input);
+            },
+            putShareLinkAttachmentChunk: async (_learnCard, input) => {
+                await ensureUser();
+                return client.shareLinks.putAttachmentChunk.mutate(input);
+            },
+            deleteShareLinkAttachmentChunks: async (_learnCard, input) => {
+                await ensureUser();
+                return client.shareLinks.deleteAttachmentChunks.mutate(input);
+            },
+            getShareLinkAttachmentChunk: async (_learnCard, input) =>
+                client.publicShareLinks.attachmentChunk.mutate(input),
+            updateShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.update.mutate(input);
+            },
+            revokeShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.revoke.mutate(input);
+            },
+            getShareLink: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.get.query({ id });
+            },
+            getShareLinkOperationStatus: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.getOperationStatus.query(input);
+            },
+            retryShareLinkOperation: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.retry.mutate(input);
+            },
+            getShareLinkRecovery: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getRecovery.query({ id });
+            },
+            getShareLinkOwnerContent: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getContent.query({ id });
+            },
+            listShareLinks: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.list.query(input);
+            },
+
+            // Anonymous public methods: deliberately NO `ensureUser()`. A viewer
+            // has no account and must not need one.
+            // POST keeps an optional passcode in the request body and out of URLs,
+            // access logs, browser history and referrers.
+            resolveShareLink: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.resolve.mutate({ id, passcode }),
+            getShareLinkContent: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.content.mutate({ id, passcode }),
+            acknowledgeShareLinkView: async (_learnCard, receipt) =>
+                client.publicShareLinks.acknowledgeView.mutate({ receipt }),
+
             blockProfile: async (_learnCard, profileId) => {
                 await ensureUser();
 
@@ -1226,13 +1361,19 @@ export async function getLearnCardNetworkPlugin(
                 return client.credential.deleteCredential.mutate({ uri });
             },
 
-            sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
+            sendPresentation: async (_learnCard, profileId, vp, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
-                if (!encrypt) {
+                const metadata =
+                    typeof metadataOrEncrypt === 'object' ? metadataOrEncrypt : undefined;
+                const shouldEncrypt =
+                    typeof metadataOrEncrypt === 'boolean' ? metadataOrEncrypt : (encrypt ?? true);
+
+                if (!shouldEncrypt) {
                     return client.presentation.sendPresentation.mutate({
                         profileId,
                         presentation: vp,
+                        metadata,
                     });
                 }
 
@@ -1246,7 +1387,11 @@ export async function getLearnCardNetworkPlugin(
                     target.did,
                 ]);
 
-                return client.presentation.sendPresentation.mutate({ profileId, presentation });
+                return client.presentation.sendPresentation.mutate({
+                    profileId,
+                    presentation,
+                    metadata,
+                });
             },
             acceptPresentation: async (_learnCard, uri) => {
                 await ensureUser();
@@ -2221,6 +2366,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            addContractRecipient: async (_learnCard, contractUri, recipient) => {
+                await ensureUser();
+                return client.contracts.addContractRecipient.mutate({ contractUri, recipient });
+            },
+            removeContractRecipient: async (_learnCard, contractUri, recipient) => {
+                await ensureUser();
+                return client.contracts.removeContractRecipient.mutate({ contractUri, recipient });
+            },
             getContract: async (_learnCard, uri) => {
                 return client.contracts.getConsentFlowContract.query({ uri });
             },
@@ -2275,7 +2428,7 @@ export async function getLearnCardNetworkPlugin(
             consentToContract: async (
                 _learnCard,
                 contractUri,
-                { terms, expiresAt, oneTime },
+                { terms, expiresAt, oneTime, audienceVersion, expectedRequestId },
                 recipientToken
             ) => {
                 await ensureUser();
@@ -2285,6 +2438,8 @@ export async function getLearnCardNetworkPlugin(
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
+                    expectedRequestId,
                     recipientToken, // for SmartResume
                 });
             },
@@ -2295,7 +2450,11 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.getConsentedContracts.query(options);
             },
 
-            updateContractTerms: async (_learnCard, uri, { terms, expiresAt, oneTime }) => {
+            updateContractTerms: async (
+                _learnCard,
+                uri,
+                { terms, expiresAt, oneTime, audienceVersion }
+            ) => {
                 await ensureUser();
 
                 return client.contracts.updateConsentedContractTerms.mutate({
@@ -2303,6 +2462,7 @@ export async function getLearnCardNetworkPlugin(
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
                 });
             },
 
@@ -2342,12 +2502,18 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.verifyConsent.query({ uri, profileId });
             },
 
-            syncCredentialsToContract: async (_learnCard, termsUri, categories) => {
+            syncCredentialsToContract: async (
+                _learnCard,
+                termsUri,
+                categories,
+                audienceVersion
+            ) => {
                 await ensureUser();
 
                 return client.contracts.syncCredentialsToContract.mutate({
                     termsUri,
                     categories,
+                    audienceVersion,
                 });
             },
 
@@ -2359,6 +2525,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            sendContractRequest: async (_learnCard, request) => {
+                await ensureUser();
+                return client.contracts.sendContractRequest.mutate(request);
+            },
+            denyContractRequest: async (_learnCard, contractUri) => {
+                await ensureUser();
+                return client.contracts.denyContractRequest.mutate({ contractUri });
+            },
             sendAiInsightsContractRequest: async (
                 _learnCard,
                 contractUri,
@@ -2577,6 +2751,37 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.issue.mutate(issueInboxCredential);
             },
+            sendCredentialsViaInbox: async (_learnCard, batch) => {
+                await ensureUser();
+                return client.inbox.issueBatch.mutate(batch);
+            },
+            sendCredentialBatchViaInbox: async (_learnCard, batch) => {
+                await ensureUser();
+                return client.inbox.issueBatch.mutate(batch);
+            },
+            waitForInboxCredentialBatch: async (_learnCard, batchId, options) => {
+                await ensureUser();
+                return waitForInboxCredentialBatch(
+                    signal => client.inbox.getBatch.query({ batchId }, { signal }),
+                    options
+                );
+            },
+            sendCredentialsViaInboxAndWait: async (_learnCard, batch, options) => {
+                await ensureUser();
+                if (options?.signal?.aborted) throw options.signal.reason;
+                const receipt = await client.inbox.issueBatch.mutate(batch, {
+                    signal: options?.signal,
+                });
+                await options?.onSubmitted?.(receipt);
+                return waitForInboxCredentialBatch(
+                    signal => client.inbox.getBatch.query({ batchId: receipt.batchId }, { signal }),
+                    options
+                );
+            },
+            getInboxCredentialBatch: async (_learnCard, batchId) => {
+                await ensureUser();
+                return client.inbox.getBatch.query({ batchId });
+            },
             getMySentInboxCredentials: async (_learnCard, options) => {
                 await ensureUser();
 
@@ -2587,10 +2792,34 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
-            finalizeInboxCredentials: async _learnCard => {
+            finalizeInboxCredentials: async learnCard => {
                 await ensureUser();
-
-                return client.inbox.finalize.mutate();
+                const result = await client.inbox.finalize.mutate();
+                const results = await Promise.allSettled(
+                    result.deliveries.map(async delivery => ({
+                        ...delivery,
+                        credential: VCValidator.parse(
+                            isEncrypted(delivery.credential)
+                                ? await learnCard.invoke.decryptDagJwe(delivery.credential, [
+                                      learnCard.id.keypair(),
+                                  ])
+                                : delivery.credential
+                        ),
+                    }))
+                );
+                const deliveries = results.flatMap((delivery, index) => {
+                    if (delivery.status === 'fulfilled') return [delivery.value];
+                    console.warn(
+                        `Failed to finalize inbox delivery ${result.deliveries[index].id}: ${getInboxFailureReason(delivery.reason)}`
+                    );
+                    return [];
+                });
+                return {
+                    ...result,
+                    deliveries,
+                    verifiableCredentials: deliveries.map(delivery => delivery.credential),
+                    errors: result.errors + results.length - deliveries.length,
+                };
             },
             recoverInboxCredentials: async (learnCard, options = {}) => {
                 const result = await client.inbox.getMyInboxDeliveries.query(options);
@@ -2604,9 +2833,13 @@ export async function getLearnCardNetworkPlugin(
                         ),
                     }))
                 );
-                const records = results.flatMap(record =>
-                    record.status === 'fulfilled' ? [record.value] : []
-                );
+                const records = results.flatMap((record, index) => {
+                    if (record.status === 'fulfilled') return [record.value];
+                    console.warn(
+                        `Failed to recover inbox delivery ${result.records[index].id}: ${getInboxFailureReason(record.reason)}`
+                    );
+                    return [];
+                });
                 return { ...result, records, failed: results.length - records.length };
             },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
@@ -2921,6 +3154,24 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.unsubmitForReview.mutate({ listingId });
             },
 
+            submitAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.submitListingUpdate.mutate({ listingId });
+            },
+
+            withdrawAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.withdrawListingUpdate.mutate({ listingId });
+            },
+
+            discardAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.discardListingUpdate.mutate({ listingId });
+            },
+
             getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
                 await ensureUser();
 
@@ -2934,6 +3185,39 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.countListingsForIntegration.query({ integrationId });
+            },
+
+            submitAppManifest: async (_learnCard, integrationId, manifest) => {
+                await ensureUser();
+                return client.appStore.submitAppManifest.mutate({ integrationId, manifest });
+            },
+
+            getManifestVersions: async (_learnCard, integrationId, options) => {
+                await ensureUser();
+                return client.appStore.getManifestVersions.query({ integrationId, ...options });
+            },
+
+            getManifestVersion: async (_learnCard, integrationId, version) => {
+                await ensureUser();
+                return client.appStore.getManifestVersion.query({ integrationId, version });
+            },
+
+            getManifestDiff: async (_learnCard, integrationId, toVersion, fromVersion) => {
+                await ensureUser();
+                return client.appStore.getManifestDiff.query({
+                    integrationId,
+                    toVersion,
+                    fromVersion,
+                });
+            },
+
+            applyManifestVersion: async (_learnCard, integrationId, version, listingId) => {
+                await ensureUser();
+                return client.appStore.applyManifestVersion.mutate({
+                    integrationId,
+                    version,
+                    listingId,
+                });
             },
 
             browseAppStore: async (_learnCard, options) => {
@@ -3013,6 +3297,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.adminGetAllListings.query(options);
+            },
+
+            adminReviewListingUpdate: async (_learnCard, listingId, approve) => {
+                await ensureUser();
+
+                return client.appStore.adminReviewListingUpdate.mutate({ listingId, approve });
             },
 
             // App Store Boost Management

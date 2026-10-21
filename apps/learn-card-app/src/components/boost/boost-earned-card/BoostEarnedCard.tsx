@@ -1,8 +1,11 @@
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import ShareLinkCreate from '../../share-links/ShareLinkCreate';
 /* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential shapes and callback APIs are intentionally untyped. */
 import React from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getLocale } from '../../../paraglide/runtime.js';
+import * as m from '../../../paraglide/messages.js';
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useTheme from '../../../theme/hooks/useTheme';
@@ -45,9 +48,11 @@ import type {
     ClrAssociation,
 } from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
-import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
+import {
+    getClrTranscriptKind,
+    getClrTranscriptIssuerInfo,
+} from 'learn-card-base/helpers/credentials/clr/kind';
 
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
     getIssuanceDate,
     unwrapBoostCredential,
@@ -58,6 +63,10 @@ import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
+import {
+    getCredentialExpirationDate,
+    hasCredentialExpired,
+} from 'learn-card-base/helpers/credentialExpiration';
 import { useCredentialStatus } from '../../../hooks/useCredentialStatus';
 import CredentialUpdatedIndicator from '../../credentials/credential-history/CredentialUpdatedIndicator';
 import { useMarkCredentialUpdateRead } from '../../credentials/credential-history/useMarkCredentialUpdateRead';
@@ -66,6 +75,7 @@ type BoostEarnedCardProps = {
     credential?: VC;
     record?: Partial<LCR>;
     defaultImg?: string;
+    titleOverride?: string;
     onCheckMarkClick?: () => void;
     selectAll?: boolean;
     initialCheckmarkState?: boolean;
@@ -93,12 +103,15 @@ type BoostEarnedCardProps = {
     compact?: boolean;
     /** Renders a custom card surface while retaining this component's credential preview flow. */
     renderPreviewTrigger?: (openPreview: () => void) => React.ReactNode;
+    /** Displays the signed issuer DID where generic credential cards normally display the subject. */
+    displayIssuerAsSubject?: boolean;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     credential: _credential,
     record,
     defaultImg,
+    titleOverride,
     categoryType,
     sizeLg = 4,
     sizeSm = 4,
@@ -121,6 +134,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     isPreview = false,
     relativeDate = false,
     compact = false,
+    displayIssuerAsSubject = false,
     renderPreviewTrigger,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
@@ -152,6 +166,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     const {
         issuerName,
+        issuerDid,
         issuerProfileImageElement,
 
         // subject
@@ -167,7 +182,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         mappedInputs,
 
         // VC metadata
-        title,
+        title: credentialTitle,
         achievementType,
         formattedAchievementType,
         badgeThumbnail,
@@ -188,6 +203,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
         loading: vcInfoLoading,
     } = useGetVCInfo(cred, categoryType);
+    const displaySubjectImage = displayIssuerAsSubject
+        ? issuerProfileImageElement
+        : subjectProfileImageElement;
+    const displaySubjectName = displayIssuerAsSubject ? issuerName || issuerDid : issueeName;
+    const title = titleOverride ?? credentialTitle;
 
     const isCertificate = displayType === DisplayTypeEnum.Certificate;
     const isID = displayType === DisplayTypeEnum.ID || categoryType === 'ID';
@@ -217,11 +237,24 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const indicatorColor = colors?.indicatorColor;
     const clrBadgeKind = isClrCredential && cred ? getClrTranscriptKind(cred) : 'unknown';
 
+    const flags = useFlags();
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
             handleClose: () => closeModal(),
             boost: credential,
             boostUri: record?.uri,
+            onShareWithOtherCredentials:
+                flags?.shareMultipleEnabled === true && record?.uri
+                    ? () =>
+                          newModal(
+                              <ShareLinkCreate
+                                  initialSelectedUri={record.uri}
+                                  onDismiss={closeModal}
+                              />,
+                              {},
+                              { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                          )
+                    : undefined,
             categoryType,
         };
 
@@ -294,17 +327,18 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         }
 
         const earnedBoostIdCardProps = {
-            credential: cred,
+            credential,
+            boostUri: record?.uri,
             categoryType: categoryType,
             issuerOverride: issuerName,
-            issueeOverride: issueeName,
+            issueeOverride: displaySubjectName,
             verificationItems,
             lifecycleStatus,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
             subjectDID: idSubjectDID,
-            subjectImageComponent: subjectProfileImageElement,
+            subjectImageComponent: displaySubjectImage,
             issuerImageComponent: issuerProfileImageElement,
             customThumbComponent: isID ? (
                 <IDDisplayCard
@@ -348,12 +382,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             boostUri: record?.uri,
             categoryType: categoryType,
             issuerOverride: issuerName,
-            issueeOverride: issueeName,
+            issueeOverride: displaySubjectName,
             verificationItems,
             lifecycleStatus,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
-            subjectImageComponent: subjectProfileImageElement,
+            subjectImageComponent: displaySubjectImage,
             issuerImageComponent: issuerProfileImageElement,
             onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
             customThumbComponent: (
@@ -413,18 +447,37 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         return <>{renderPreviewTrigger(openPreview)}</>;
     }
 
-    const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-
-    const createdAtDate = new Date(getIssuanceDate(cred) ?? '');
+    const rawDateValue = getIssuanceDate(cred) || '';
+    const createdAtDate = new Date(rawDateValue);
+    const expirationDate = getCredentialExpirationDate(cred);
+    const isExpired = hasCredentialExpired(cred);
+    const expirationLabel = expirationDate
+        ? `${(isExpired ? m['wallet.expired'] : m['wallet.expires'])()} ${moment(expirationDate)
+              .locale(getLocale())
+              .format('MMMM DD YYYY')}`
+        : undefined;
     const issueDate = Number.isNaN(createdAtDate.getTime())
-        ? moment(createdAt).locale(getLocale()).format('MMMM DD YYYY')
+        ? rawDateValue
+            ? moment(rawDateValue).locale(getLocale()).format('MMMM DD YYYY')
+            : ''
         : new Intl.DateTimeFormat(getLocale(), {
               month: 'long',
               day: '2-digit',
               year: 'numeric',
           }).format(createdAtDate);
+    const customDateDisplay = showSkeleton ? (
+        <BoostTextSkeleton
+            containerClassName="w-full flex items-center justify-center"
+            skeletonStyles={{ width: '50%' }}
+        />
+    ) : expirationLabel ? (
+        <div className="flex flex-col items-center gap-0.5 text-[11px] leading-tight text-grayscale-700">
+            <span>{issueDate}</span>
+            <span className={isExpired ? 'text-amber-700 font-semibold' : ''}>
+                {expirationLabel}
+            </span>
+        </div>
+    ) : undefined;
 
     const isCardView = boostPageViewMode === BoostPageViewMode.Card;
 
@@ -441,7 +494,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     textColor={darkColor}
                     indicatorColor={indicatorColor}
                     credential={cred}
-                    mediaTitleContainerClassName="!mt-[14px]"
+                    mediaTitleContainerClassName="mt-[14px]!"
                     isEarnedBoost
                     showNewItemIndicator={showNewItemIndicator}
                 />
@@ -475,11 +528,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     customHeaderClass="boost-managed-card"
                     thumbImgSrc={badgeThumbnail}
                     dateDisplay={issueDate}
+                    customDateDisplay={customDateDisplay}
                     issuerName={issuerName}
                     customIssuerName={
                         <CustomIssuerName
                             issuerName={issuerName}
-                            subjectName={issueeName}
+                            subjectName={displaySubjectName}
                             isLoading={showSkeleton}
                             isClrCredential={isClrCredential}
                         />
@@ -501,7 +555,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 backgroundColor={backgroundColor}
                                 accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
                                 }`}
                                 badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
@@ -557,11 +611,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         customHeaderClass="boost-managed-card"
                         thumbImgSrc={badgeThumbnail}
                         dateDisplay={issueDate}
+                        customDateDisplay={customDateDisplay}
                         issuerName={issuerName}
                         customIssuerName={
                             <CustomIssuerName
                                 issuerName={issuerName}
-                                subjectName={issueeName}
+                                subjectName={displaySubjectName}
                                 isLoading={showSkeleton}
                                 isClrCredential={isClrCredential}
                             />
@@ -577,7 +632,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                     backgroundColor={backgroundColor}
                                     accentColor={accentColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                    badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                    badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
                                         isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
                                     }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
@@ -648,19 +703,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     checkStatus={initialCheckmarkState}
                     onCheckClick={onCheckMarkClick}
                     dateDisplay={issueDate}
-                    customDateDisplay={
-                        showSkeleton ? (
-                            <BoostTextSkeleton
-                                containerClassName="w-full flex items-center justify-center"
-                                skeletonStyles={{ width: '50%' }}
-                            />
-                        ) : undefined
-                    }
+                    customDateDisplay={customDateDisplay}
                     issuerName={issuerName}
                     customIssuerName={
                         <CustomIssuerName
                             issuerName={issuerName}
-                            subjectName={issueeName}
+                            subjectName={displaySubjectName}
                             isLoading={showSkeleton}
                             isClrCredential={isClrCredential}
                         />
@@ -682,7 +730,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 backgroundColor={backgroundColor}
                                 accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
                                 }`}
                                 badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"

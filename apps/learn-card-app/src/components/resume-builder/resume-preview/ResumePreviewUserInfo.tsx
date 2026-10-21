@@ -122,7 +122,7 @@ const ResumePreviewUserInfo: React.FC<{
                         {isFieldEnabled(UserInfoEnum.Name) &&
                             (readOnly ? (
                                 personalDetails.name.trim() ? (
-                                    <h1 className="w-full max-w-full break-words whitespace-normal text-3xl font-bold text-grayscale-900 tracking-tight">
+                                    <h1 className="w-full max-w-full wrap-break-word whitespace-normal text-3xl font-bold text-grayscale-900 tracking-tight">
                                         {personalDetails.name}
                                     </h1>
                                 ) : null
@@ -134,7 +134,7 @@ const ResumePreviewUserInfo: React.FC<{
                                     }
                                     placeholder={placeholderByKey[UserInfoEnum.Name]}
                                     aria-label={placeholderByKey[UserInfoEnum.Name]}
-                                    className="w-full max-w-full bg-transparent border-none outline-none text-3xl font-bold text-grayscale-900 tracking-tight placeholder:text-grayscale-400"
+                                    className="w-full max-w-full bg-transparent border-none outline-hidden text-3xl font-bold text-grayscale-900 tracking-tight placeholder:text-grayscale-400"
                                 />
                             ))}
 
@@ -193,7 +193,7 @@ const ResumePreviewUserInfo: React.FC<{
                     <div className="w-full max-w-full rounded-xl bg-indigo-50 px-3 py-3 min-h-[96px] flex flex-col justify-between sm:flex-1">
                         {readOnly ? (
                             personalDetails.summary.trim() ? (
-                                <p className="w-full max-w-full break-words text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
+                                <p className="w-full max-w-full wrap-break-word text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
                                     {personalDetails.summary}
                                 </p>
                             ) : null
@@ -206,7 +206,7 @@ const ResumePreviewUserInfo: React.FC<{
                                 placeholder={placeholderByKey[UserInfoEnum.Summary]}
                                 aria-label={placeholderByKey[UserInfoEnum.Summary]}
                                 rows={4}
-                                className="w-full max-w-full resize-none bg-transparent border-none outline-none text-[13px] text-grayscale-900 leading-relaxed placeholder:text-grayscale-500"
+                                className="w-full max-w-full resize-none bg-transparent border-none outline-hidden text-[13px] text-grayscale-900 leading-relaxed placeholder:text-grayscale-500"
                             />
                         )}
                     </div>

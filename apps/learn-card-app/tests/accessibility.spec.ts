@@ -10,13 +10,18 @@ import { TEST_CREDENTIAL_TITLE, waitForAuthenticatedState } from './test.helpers
 // catch authoring mistakes; axe verifies the composed UI after Ionic, portals,
 // and client-side routing have rendered.
 const HIGH_IMPACT_LEVELS = new Set(['serious', 'critical']);
-const REQUIRED_RULES: Record<string, true> = {
-    'meta-viewport': true,
-    'landmark-no-duplicate-main': true,
-    'landmark-one-main': true,
-    'landmark-main-is-top-level': true,
-    'landmark-unique': true,
-};
+
+// Rules gated at zero violations regardless of impact (LC-2169). Most are axe
+// `best-practice` rules rather than WCAG criteria, so an axe upgrade that
+// renames one fails every checkpoint via the "gated rule must run" check below;
+// update this list alongside any @axe-core/playwright bump.
+const GATED_RULES = new Set([
+    'meta-viewport',
+    'landmark-no-duplicate-main',
+    'landmark-one-main',
+    'landmark-main-is-top-level',
+    'landmark-unique',
+]);
 
 // Scan explicitly against WCAG 2.0/2.1/2.2 A+AA (plus axe best-practices) so
 // the report surfaces WCAG 2.2-specific rules (e.g. target-size) instead of
@@ -31,6 +36,7 @@ const AXE_SCAN_TAGS = [
     'best-practice',
 ];
 const FOCUS_RESET_SENTINEL_ID = 'playwright-a11y-focus-reset';
+const SEEDED_ISSUER_PROFILE_ID = 'testa';
 
 /**
  * The Vite server can have a hosted tenant configuration baked in. Override it
@@ -87,7 +93,8 @@ const axeAttachmentName = (checkpoint: string): string =>
 /**
  * Axe reports all impacts. The rollout gates serious and critical violations,
  * plus the viewport and main-landmark rules that LC-2169 must keep at zero.
- * On failure, attach actionable DOM targets to the test report.
+ * Every violation (any impact) is attached to the test report with its DOM
+ * targets so maintainers don't have to reproduce the page state.
  */
 const assertNoGatedViolations = async (
     page: Page,
@@ -122,28 +129,13 @@ const assertNoGatedViolations = async (
     });
 
     const results = await new AxeBuilder({ page }).withTags(AXE_SCAN_TAGS).analyze();
-    const evaluatedRuleIds = new Set(
-        [
-            ...results.passes,
-            ...results.incomplete,
-            ...results.violations,
-            ...results.inapplicable,
-        ].map(result => result.id)
-    );
-    const missingRequiredRules = Object.keys(REQUIRED_RULES).filter(
-        ruleId => !evaluatedRuleIds.has(ruleId)
-    );
-
-    expect(
-        missingRequiredRules,
-        `Expected every gated axe rule to run at "${checkpoint}" on ${page.url()}.`
-    ).toEqual([]);
     const violations = results.violations.filter(
         violation =>
-            Object.hasOwn(REQUIRED_RULES, violation.id) ||
+            GATED_RULES.has(violation.id) ||
             (violation.impact && HIGH_IMPACT_LEVELS.has(violation.impact))
     );
 
+    // Attach before any assertion so the report survives every failure mode.
     if (results.violations.length > 0) {
         await testInfo.attach(axeAttachmentName(checkpoint), {
             body: JSON.stringify(
@@ -170,6 +162,21 @@ const assertNoGatedViolations = async (
             contentType: 'application/json',
         });
     }
+
+    const evaluatedRuleIds = new Set(
+        [
+            ...results.passes,
+            ...results.incomplete,
+            ...results.violations,
+            ...results.inapplicable,
+        ].map(result => result.id)
+    );
+    const missingGatedRules = [...GATED_RULES].filter(ruleId => !evaluatedRuleIds.has(ruleId));
+
+    expect(
+        missingGatedRules,
+        `Expected every gated axe rule to run at "${checkpoint}" on ${page.url()}.`
+    ).toEqual([]);
 
     const summary = violations
         .map(
@@ -596,12 +603,13 @@ test.describe('Authenticated core-page accessibility', () => {
 
         await activateWithKeyboard(page, badgesCategory, 'Space');
         await page.waitForURL(/\/socialBadges/, { timeout: 30_000 });
-        await expect(page.getByText('Earned', { exact: true })).toBeVisible({ timeout: 30_000 });
-        await assertNoGatedViolations(page, testInfo, 'wallet-badges-category');
-
+        await expect(page.getByRole('heading', { name: /Badges/i })).toBeVisible({
+            timeout: 30_000,
+        });
         const earnedTab = page.getByRole('tab', { name: 'Earned', exact: true });
         await tabTo(page, earnedTab);
         await expect(earnedTab).toBeFocused();
+        await assertNoGatedViolations(page, testInfo, 'wallet-badges-category');
 
         await page.goto('/dashboard');
         await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({
@@ -645,7 +653,13 @@ test.describe('Authenticated core-page accessibility', () => {
 });
 
 test.describe('Public page accessibility', () => {
-    test('legal and hidden utility pages have one main landmark', async ({ page }, testInfo) => {
+    test('legal, developer sign-in, and hidden utility pages pass the gated axe scan', async ({
+        page,
+    }, testInfo) => {
+        // Seven axe scans plus a real wallet initialization exceed the base
+        // config's 120s budget on the shared E2E runner.
+        test.setTimeout(240_000);
+
         await configureLocalE2EServices(page);
 
         await page.goto('/legal/terms');
@@ -660,288 +674,287 @@ test.describe('Public page accessibility', () => {
         });
         await assertNoGatedViolations(page, testInfo, 'legal-privacy');
 
+        await page.goto('/developer/sign-in');
+        await expect(
+            page.getByRole('heading', { name: 'Sign in with your developer seed', level: 1 })
+        ).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByRole('main')).toHaveCount(1);
+        await assertNoGatedViolations(page, testInfo, 'developer-sign-in');
+
         await page.goto('/hidden/custom-wallet');
         await expect(page.getByText('Hello, please enter a seed lol')).toBeVisible({
             timeout: 30_000,
         });
-        await expect(page.locator('main')).toHaveCount(1);
+        await expect(page.getByRole('main')).toHaveCount(1);
         await assertNoGatedViolations(page, testInfo, 'custom-wallet');
 
         await page.getByRole('button', { name: 'Create Wallet' }).click();
         await expect(page.getByText('What would you like to do?', { exact: true })).toBeVisible({
             timeout: 30_000,
         });
-        await expect(page.locator('main')).toHaveCount(1);
+        await expect(page.getByRole('main')).toHaveCount(1);
         await assertNoGatedViolations(page, testInfo, 'custom-wallet-main');
 
         await page.getByRole('button', { name: 'Manage LCN Account' }).click();
-        await expect(page.getByRole('button', { name: '< Back' })).toBeVisible();
-        await expect(page.locator('main')).toHaveCount(1);
+        await expect(page.getByRole('button', { name: '< Back' })).toBeVisible({
+            timeout: 30_000,
+        });
+        await expect(page.getByRole('main')).toHaveCount(1);
         await assertNoGatedViolations(page, testInfo, 'custom-wallet-manage-account');
     });
 });
 
 test.describe('Credential lifecycle accessibility', () => {
-    // DESCOPED — this journey does not run, so claim / credential detail / share
-    // are NOT covered by the accessibility gate yet. The sign-in and
-    // authenticated-core-page journeys above still run and still gate.
-    //
-    // It is blocked on setup, not on an accessibility finding: issuance succeeds,
-    // then waitForSigningAuthorityKey times out because the issuer's did:web
-    // document never publishes `#lca-sa`. It fails identically on both attempts,
-    // so no timeout bump will help.
-    //
-    // Suspected cause, unconfirmed: the brain service builds that document in
-    // services/learn-card-network/brain-service/src/dids.ts and deliberately
-    // filters out signing authorities whose DID contains `did:web`, so if the
-    // Docker stack's signing authority registers as a did:web the key can never
-    // appear. Cache staleness is ruled out — creating the SA relationship calls
-    // deleteDidDocForProfile.
-    //
-    // Worth noting for whoever picks this up: the E2E runner does not execute
-    // claim-link.spec.ts, so this was the only spec exercising claim-link
-    // issuance. The gap it leaves may be a real backend issue rather than a test
-    // one. Re-enable by turning `test.fixme` back into `test`.
-    test.fixme(
-        'claim, credential detail, and share flows pass axe and keyboard checks',
-        async ({ page, browser, baseURL }, testInfo) => {
-            test.setTimeout(360_000);
+    test('claim, credential detail, and share flows pass axe and keyboard checks', async ({
+        page,
+        browser,
+        baseURL,
+    }, testInfo) => {
+        test.setTimeout(360_000);
 
-            await configureLocalE2EServices(page);
-            await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
+        await configureLocalE2EServices(page);
+        await waitForAuthenticatedState(page, { profileId: SEEDED_ISSUER_PROFILE_ID });
 
-            // Use separate issuer and recipient contexts so the claim journey uses
-            // the same account boundary as a real credential recipient.
-            const recipientContext = await browser.newContext({
-                ignoreHTTPSErrors: true,
-                baseURL: baseURL ?? 'http://localhost:3000',
-            });
-            await mockDidKitWasmForContext(recipientContext);
-            const recipientPage = await recipientContext.newPage();
-            await configureLocalE2EServices(recipientPage);
+        // Use separate issuer and recipient contexts so the claim journey uses
+        // the same account boundary as a real credential recipient.
+        const recipientContext = await browser.newContext({
+            ignoreHTTPSErrors: true,
+            baseURL: baseURL ?? 'http://localhost:3000',
+        });
+        await mockDidKitWasmForContext(recipientContext);
+        const recipientPage = await recipientContext.newPage();
+        await configureLocalE2EServices(recipientPage);
 
-            // The app collapses every claim failure into one generic "expired or
-            // max claims" alert, so keep the underlying diagnostics for the failure
-            // message below. console.text() renders a logged Error as just "Error",
-            // so unwrap the arguments, and record failed backend calls too.
-            const recipientDiagnostics: string[] = [];
-            recipientPage.on('console', message => {
-                if (message.type() !== 'error' && message.type() !== 'warning') return;
+        // The app collapses every claim failure into one generic "expired or
+        // max claims" alert, so keep the underlying diagnostics for the failure
+        // message below. console.text() renders a logged Error as just "Error",
+        // so unwrap the arguments, and record failed backend calls too.
+        const recipientDiagnostics: string[] = [];
+        recipientPage.on('console', message => {
+            if (message.type() !== 'error' && message.type() !== 'warning') return;
 
-                void Promise.all(
-                    message
-                        .args()
-                        .map(arg =>
-                            arg
-                                .evaluate(value =>
-                                    value instanceof Error
-                                        ? `${value.name}: ${value.message}\n${value.stack ?? ''}`
-                                        : typeof value === 'object' && value !== null
-                                        ? JSON.stringify(value)
-                                        : String(value)
-                                )
-                                .catch(() => '<unserializable>')
-                        )
-                ).then(parts => {
-                    recipientDiagnostics.push(`${message.type()}: ${parts.join(' ')}`);
-                });
-            });
-            recipientPage.on('pageerror', error => {
-                recipientDiagnostics.push(`pageerror: ${error.message}`);
-            });
-            recipientPage.on('response', response => {
-                if (response.status() < 400) return;
-
-                recipientDiagnostics.push(`http ${response.status()}: ${response.url()}`);
-            });
-
-            try {
-                await waitForAuthenticatedState(recipientPage, {
-                    seed: TEST_USER_2_SEED,
-                    profileId: TEST_USER_2_PROFILE_ID,
-                });
-
-                // Issuance is setup for the recipient-facing claim, detail, and share
-                // accessibility checkpoints below. Use the dedicated issue flow so
-                // link generation follows the same path as its focused E2E coverage.
-                await page.goto('/issue');
-                await expect(
-                    page.getByRole('heading', { name: 'What are you issuing?' })
-                ).toBeVisible({
-                    timeout: 30_000,
-                });
-
-                const badgeTypeButton = page.getByRole('button', { name: 'Badge', exact: true });
-                await activateWithKeyboard(page, badgeTypeButton, 'Enter');
-
-                const credentialName = page.getByPlaceholder('e.g. Web Development Fundamentals');
-                await expect(credentialName).toBeVisible({ timeout: 30_000 });
-                await credentialName.fill(TEST_CREDENTIAL_TITLE);
-
-                const linkModeButton = page.getByRole('button', { name: /anyone with a link/i });
-                await activateWithKeyboard(page, linkModeButton, 'Enter');
-
-                const issueButton = page.getByTestId('issue-submit');
-                await expect(issueButton).toBeEnabled();
-                await activateWithKeyboard(page, issueButton, 'Space');
-
-                const linkReadyHeading = page.getByRole('heading', { name: /your link is ready/i });
-                const issuanceError = page.getByText(
-                    /connection issue|couldn't issue|something went wrong/i
-                );
-                await expect(linkReadyHeading.or(issuanceError).first()).toBeVisible({
-                    timeout: 90_000,
-                });
-                if (await issuanceError.isVisible()) {
-                    throw new Error(
-                        `Credential setup failed: ${await issuanceError.textContent()}`
-                    );
-                }
-
-                // The public interaction URL normally passes through an edge
-                // content-negotiation endpoint. Docker exposes the same claim data
-                // directly through the in-app claim route, so decode only the
-                // opaque link envelope and keep the issued boost/challenge intact.
-                const rawClaimLink = await page.locator('p[title]').getAttribute('title');
-                expect(
-                    rawClaimLink,
-                    'Expected the issued credential to expose a claim link'
-                ).toBeTruthy();
-                const encodedClaim = new URL(rawClaimLink!).pathname.split('/').at(-1);
-                expect(encodedClaim, 'Expected an interaction claim payload').toBeTruthy();
-                const claimPayload = JSON.parse(
-                    Buffer.from(encodedClaim!, 'base64url').toString('utf8')
-                ) as { boostUri: string; challenge: string };
-
-                // The issue flow registers the issuer's `lca-sa` signing authority on
-                // demand, and claiming immediately asks the signing service to issue
-                // with `<issuer did:web>#lca-sa`. That verification method is not
-                // guaranteed to be resolvable the instant registration returns, so a
-                // brand-new signing authority can fail its first issuance. Wait for
-                // the key to be published before claiming, which is what a
-                // second-time issuer already has.
-                await waitForSigningAuthorityKey(page, TEST_USER_PROFILE_ID);
-
-                const claimUrl = `/claim/boost?boostUri=${encodeURIComponent(
-                    claimPayload.boostUri
-                )}&challenge=${encodeURIComponent(claimPayload.challenge)}`;
-
-                await recipientPage.goto(claimUrl);
-                await expect(
-                    recipientPage.getByRole('heading', { name: TEST_CREDENTIAL_TITLE, exact: true })
-                ).toBeVisible({ timeout: 30_000 });
-                await assertNoGatedViolations(recipientPage, testInfo, 'claim-link');
-
-                const acceptButton = recipientPage.getByRole('button', {
-                    name: 'Accept',
-                    exact: true,
-                });
-                await expect(acceptButton).toBeVisible({ timeout: 30_000 });
-                await assertNoGatedViolations(recipientPage, testInfo, 'claim-credential-preview');
-
-                // The success toast is intentionally brief and can disappear while
-                // Playwright waits for the post-claim render. The route transition is
-                // the stable completion signal; the wallet assertion below confirms
-                // the credential was persisted for the recipient.
-                //
-                // Claiming issues its own network round trip before the app routes
-                // home, so give it the same headroom as issuance. Race the app's
-                // claim-failure alert so a genuine failure reports its own message
-                // instead of an opaque navigation timeout.
-                const claimFailureAlert = recipientPage.getByText(
-                    /claim link has expired|couldn't claim|credential could not be claimed/i
-                );
-                const attemptClaim = async (): Promise<'claimed' | 'failed'> => {
-                    await activateWithKeyboard(recipientPage, acceptButton, 'Space', {
-                        resetFocus: false,
-                    });
-
-                    return Promise.race([
-                        recipientPage
-                            .waitForURL(
-                                url =>
-                                    url.pathname === '/' || url.pathname.startsWith('/dashboard'),
-                                { timeout: 90_000 }
+            void Promise.all(
+                message
+                    .args()
+                    .map(arg =>
+                        arg
+                            .evaluate(value =>
+                                value instanceof Error
+                                    ? `${value.name}: ${value.message}\n${value.stack ?? ''}`
+                                    : typeof value === 'object' && value !== null
+                                      ? JSON.stringify(value)
+                                      : String(value)
                             )
-                            .then(() => 'claimed' as const),
-                        claimFailureAlert
-                            .waitFor({ state: 'visible', timeout: 90_000 })
-                            .then(() => 'failed' as const)
-                            // Only the navigation branch should decide the race when
-                            // the claim never fails; let its timeout be the error.
-                            .catch(() => new Promise<never>(() => {})),
-                    ]);
-                };
+                            .catch(() => '<unserializable>')
+                    )
+            ).then(parts => {
+                recipientDiagnostics.push(`${message.type()}: ${parts.join(' ')}`);
+            });
+        });
+        recipientPage.on('pageerror', error => {
+            recipientDiagnostics.push(`pageerror: ${error.message}`);
+        });
+        recipientPage.on('response', response => {
+            if (response.status() < 400) return;
 
-                let claimOutcome = await attemptClaim();
+            recipientDiagnostics.push(`http ${response.status()}: ${response.url()}`);
+        });
 
-                if (claimOutcome === 'failed') {
-                    // The failing issuance happens before the challenge is consumed,
-                    // so the link is still claimable. Give the freshly registered
-                    // signing authority one more chance rather than failing the
-                    // accessibility run on a first-issuance race.
-                    await recipientPage
-                        .getByRole('button', { name: /okay/i })
-                        .first()
-                        .click()
-                        .catch(() => undefined);
-                    await recipientPage.goto(claimUrl);
-                    await expect(acceptButton).toBeVisible({ timeout: 30_000 });
+        try {
+            await waitForAuthenticatedState(recipientPage, {
+                seed: TEST_USER_2_SEED,
+                profileId: TEST_USER_2_PROFILE_ID,
+            });
 
-                    claimOutcome = await attemptClaim();
-                }
+            // Issuance is setup for the recipient-facing claim, detail, and share
+            // accessibility checkpoints below. Use the dedicated issue flow so
+            // link generation follows the same path as its focused E2E coverage.
+            await page.goto('/issue');
+            await expect(page.getByRole('heading', { name: 'What are you issuing?' })).toBeVisible({
+                timeout: 30_000,
+            });
 
-                if (claimOutcome === 'failed') {
-                    const alertText = await claimFailureAlert.first().textContent();
+            const badgeTypeButton = page.getByRole('button', { name: 'Badge', exact: true });
+            await activateWithKeyboard(page, badgeTypeButton, 'Enter');
 
-                    // Console argument unwrapping is asynchronous, so let the
-                    // in-flight handlers land before reading the diagnostics.
-                    await recipientPage.waitForTimeout(500);
+            const credentialName = page.getByPlaceholder('e.g. Web Development Fundamentals');
+            await expect(credentialName).toBeVisible({ timeout: 30_000 });
+            await credentialName.fill(TEST_CREDENTIAL_TITLE);
 
-                    throw new Error(
-                        `Credential claim failed: ${alertText}\n${recipientDiagnostics
-                            .slice(-15)
-                            .join('\n')}`
-                    );
-                }
-                await assertNoGatedViolations(recipientPage, testInfo, 'claim-success');
+            const linkModeButton = page.getByRole('button', { name: /anyone with a link/i });
+            await activateWithKeyboard(page, linkModeButton, 'Enter');
 
-                await recipientPage.goto('/wallet');
-                const badgesCategory = recipientPage.getByRole('button', { name: /Badges/i });
-                await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
-                await activateWithKeyboard(recipientPage, badgesCategory, 'Space');
-                await recipientPage.waitForURL(/\/socialBadges/, { timeout: 30_000 });
+            const issueButton = page.getByTestId('issue-submit');
+            await expect(issueButton).toBeEnabled();
+            await activateWithKeyboard(page, issueButton, 'Space');
 
-                const earnedCredentialCard = recipientPage.getByRole('button', {
-                    name: new RegExp(TEST_CREDENTIAL_TITLE),
-                });
-                await expect(earnedCredentialCard).toBeVisible({ timeout: 30_000 });
-                await activateWithKeyboard(recipientPage, earnedCredentialCard, 'Enter');
-
-                await expect(
-                    recipientPage.locator('.vc-card-header-main-title').first()
-                ).toContainText(TEST_CREDENTIAL_TITLE, { timeout: 30_000 });
-                await expect(recipientPage.locator('.issued-by').first()).toBeVisible({
-                    timeout: 30_000,
-                });
-                await assertNoGatedViolations(recipientPage, testInfo, 'credential-detail');
-
-                const shareButton = recipientPage.getByRole('button', {
-                    name: 'Share',
-                    exact: true,
-                });
-                await activateWithKeyboard(recipientPage, shareButton, 'Space');
-
-                const copyLinkButton = recipientPage.getByRole('button', { name: 'Copy Link' });
-                await expect(copyLinkButton).toBeVisible({ timeout: 60_000 });
-                await assertNoGatedViolations(recipientPage, testInfo, 'share-credential');
-                await activateWithKeyboard(recipientPage, copyLinkButton, 'Enter');
-                await expect(recipientPage.getByText(/share link copied/i)).toBeVisible({
-                    timeout: 30_000,
-                });
-            } finally {
-                await recipientContext.close();
+            const linkReadyHeading = page.getByRole('heading', { name: /your link is ready/i });
+            const issuanceError = page.getByText(
+                /connection issue|couldn't issue|something went wrong/i
+            );
+            await expect(linkReadyHeading.or(issuanceError).first()).toBeVisible({
+                timeout: 90_000,
+            });
+            if (await issuanceError.isVisible()) {
+                throw new Error(`Credential setup failed: ${await issuanceError.textContent()}`);
             }
+
+            // The public interaction URL normally passes through an edge
+            // content-negotiation endpoint. Docker exposes the same claim data
+            // directly through the in-app claim route, so decode only the
+            // opaque link envelope and keep the issued boost/challenge intact.
+            const rawClaimLink = await page.locator('p[title]').getAttribute('title');
+            expect(
+                rawClaimLink,
+                'Expected the issued credential to expose a claim link'
+            ).toBeTruthy();
+            const encodedClaim = new URL(rawClaimLink!).pathname.split('/').at(-1);
+            expect(encodedClaim, 'Expected an interaction claim payload').toBeTruthy();
+            const claimPayload = JSON.parse(
+                Buffer.from(encodedClaim!, 'base64url').toString('utf8')
+            ) as { boostUri: string; challenge: string };
+
+            // The issue flow registers the issuer's `lca-sa` signing authority on
+            // demand, and claiming immediately asks the signing service to issue
+            // with `<issuer did:web>#lca-sa`. That verification method is not
+            // guaranteed to be resolvable the instant registration returns, so a
+            // brand-new signing authority can fail its first issuance. Wait for
+            // the key to be published before claiming, which is what a
+            // second-time issuer already has.
+            await waitForSigningAuthorityKey(page, SEEDED_ISSUER_PROFILE_ID);
+
+            const claimUrl = `/claim/boost?boostUri=${encodeURIComponent(
+                claimPayload.boostUri
+            )}&challenge=${encodeURIComponent(claimPayload.challenge)}`;
+
+            await recipientPage.goto(claimUrl);
+            await expect(
+                recipientPage.getByRole('heading', { name: TEST_CREDENTIAL_TITLE, exact: true })
+            ).toBeVisible({ timeout: 30_000 });
+            await assertNoGatedViolations(recipientPage, testInfo, 'claim-link');
+
+            const acceptButton = recipientPage.getByRole('button', {
+                name: 'Accept',
+                exact: true,
+            });
+            await expect(acceptButton).toBeVisible({ timeout: 30_000 });
+            await assertNoGatedViolations(recipientPage, testInfo, 'claim-credential-preview');
+
+            // The success toast is intentionally brief and can disappear while
+            // Playwright waits for the post-claim render. The route transition is
+            // the stable completion signal; the wallet assertion below confirms
+            // the credential was persisted for the recipient.
+            //
+            // Claiming issues its own network round trip before the app routes
+            // home, so give it the same headroom as issuance. Race the app's
+            // claim-failure alert so a genuine failure reports its own message
+            // instead of an opaque navigation timeout.
+            const claimFailureAlert = recipientPage.getByText(
+                /claim link has expired|couldn't claim|credential could not be claimed/i
+            );
+            const attemptClaim = async (): Promise<'claimed' | 'failed'> => {
+                await activateWithKeyboard(recipientPage, acceptButton, 'Space', {
+                    resetFocus: false,
+                });
+
+                return Promise.race([
+                    recipientPage
+                        .waitForURL(
+                            url => url.pathname === '/' || url.pathname.startsWith('/dashboard'),
+                            { timeout: 90_000 }
+                        )
+                        .then(() => 'claimed' as const),
+                    claimFailureAlert
+                        .waitFor({ state: 'visible', timeout: 90_000 })
+                        .then(() => 'failed' as const)
+                        // Only the navigation branch should decide the race when
+                        // the claim never fails; let its timeout be the error.
+                        .catch(() => new Promise<never>(() => {})),
+                ]);
+            };
+
+            let claimOutcome = await attemptClaim();
+
+            if (claimOutcome === 'failed') {
+                // The failing issuance happens before the challenge is consumed,
+                // so the link is still claimable. Give the freshly registered
+                // signing authority one more chance rather than failing the
+                // accessibility run on a first-issuance race.
+                await recipientPage
+                    .getByRole('button', { name: /okay/i })
+                    .first()
+                    .click()
+                    .catch(() => undefined);
+                await recipientPage.goto(claimUrl);
+                await expect(acceptButton).toBeVisible({ timeout: 30_000 });
+
+                claimOutcome = await attemptClaim();
+            }
+
+            if (claimOutcome === 'failed') {
+                const alertText = await claimFailureAlert.first().textContent();
+
+                // Console argument unwrapping is asynchronous, so let the
+                // in-flight handlers land before reading the diagnostics.
+                await recipientPage.waitForTimeout(500);
+
+                throw new Error(
+                    `Credential claim failed: ${alertText}\n${recipientDiagnostics
+                        .slice(-15)
+                        .join('\n')}`
+                );
+            }
+            await assertNoGatedViolations(recipientPage, testInfo, 'claim-success');
+            // The connection nudge is presented asynchronously after claiming.
+            // Resolve it before navigating: the wallet can briefly be accessible
+            // before the nudge opens and hides its category tiles from axe/roles.
+            const connectionPrompt = recipientPage.getByRole('dialog', {
+                name: /^Connect with .+\?$/i,
+            });
+            await expect(connectionPrompt).toBeVisible({ timeout: 30_000 });
+            const skipConnectionButton = connectionPrompt.getByRole('button', {
+                name: 'Skip for Now',
+                exact: true,
+            });
+            await activateWithKeyboard(recipientPage, skipConnectionButton, 'Enter');
+            await expect(connectionPrompt).toBeHidden({ timeout: 30_000 });
+
+            await recipientPage.goto('/wallet');
+            const badgesCategory = recipientPage.getByRole('button', { name: /Badges/i });
+            await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
+            await activateWithKeyboard(recipientPage, badgesCategory, 'Space');
+            await recipientPage.waitForURL(/\/socialBadges/, { timeout: 30_000 });
+
+            const earnedCredentialCard = recipientPage.getByRole('button', {
+                name: new RegExp(TEST_CREDENTIAL_TITLE),
+            });
+            await expect(earnedCredentialCard).toBeVisible({ timeout: 30_000 });
+            await activateWithKeyboard(recipientPage, earnedCredentialCard, 'Enter');
+
+            await expect(recipientPage.locator('.vc-card-header-main-title').first()).toContainText(
+                TEST_CREDENTIAL_TITLE,
+                { timeout: 30_000 }
+            );
+            await expect(recipientPage.locator('.issued-by').first()).toBeVisible({
+                timeout: 30_000,
+            });
+            await assertNoGatedViolations(recipientPage, testInfo, 'credential-detail');
+
+            const shareButton = recipientPage.getByRole('button', {
+                name: 'Share',
+                exact: true,
+            });
+            await activateWithKeyboard(recipientPage, shareButton, 'Space');
+
+            const copyLinkButton = recipientPage.getByRole('button', { name: 'Copy Link' });
+            await expect(copyLinkButton).toBeVisible({ timeout: 60_000 });
+            await assertNoGatedViolations(recipientPage, testInfo, 'share-credential');
+            await activateWithKeyboard(recipientPage, copyLinkButton, 'Enter');
+            await expect(recipientPage.getByText(/share link copied/i)).toBeVisible({
+                timeout: 30_000,
+            });
+        } finally {
+            await recipientContext.close();
         }
-    );
+    });
 });

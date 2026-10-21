@@ -1,6 +1,6 @@
 # LinkedClaims Plugin
 
-Create, verify, store, and retrieve endorsement credentials using Open Badges v3 EndorsementCredential, linked to original credentials by subject id or original credential id.
+Create, verify, store, and retrieve endorsement credentials using Open Badges v3 EndorsementCredential, linked to each original credential by its unique top-level id.
 
 ## Install
 
@@ -20,9 +20,12 @@ const lc = await LearnCard.fromSomewhere().then(lc => lc.addPlugin(getLinkedClai
 const endorsement = await lc.invoke.endorseCredential(originalVc, {
     // OBv3 fields
     endorsementComment: 'I endorse this credential.',
-    name: `Endorsement of ${originalVc.id ?? originalVc.credentialSubject?.id}`,
+    name: 'Endorsement of First Aid',
     description: 'Peer endorsement',
 });
+
+// The original credential must have a unique top-level id. A holder DID in
+// credentialSubject.id does not identify a specific credential.
 
 const verified = await lc.invoke.verifyEndorsement(endorsement);
 
@@ -44,6 +47,6 @@ Uses VC v2 and OBv3 contexts:
 
 ### Endorsement Fields (details input)
 
--   `endorsementComment?: string`
--   `name?: string`
--   `description?: string`
+- `endorsementComment?: string`
+- `name?: string`
+- `description?: string`

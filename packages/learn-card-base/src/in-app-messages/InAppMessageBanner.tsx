@@ -44,8 +44,8 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
     const renderCapgoState = () => {
         if (capgo.status === 'error') {
             return (
-                <div className="mt-3 space-y-2">
-                    <div className="p-2.5 bg-red-50/80 backdrop-blur border border-red-100 rounded-xl flex items-start gap-2">
+                <div className="mt-3 space-y-v3-2">
+                    <div className="p-2.5 bg-red-50/80 backdrop-blur-sm border border-red-100 rounded-xl flex items-start gap-2">
                         <IonIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-base mt-0.5 shrink-0"
@@ -66,8 +66,8 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
 
         if (capgo.status === 'uptodate') {
             return (
-                <div className="mt-3 space-y-2">
-                    <div className="p-2.5 bg-emerald-50/80 backdrop-blur border border-emerald-100 rounded-xl flex items-start gap-2">
+                <div className="mt-3 space-y-v3-2">
+                    <div className="p-2.5 bg-emerald-50/80 backdrop-blur-sm border border-emerald-100 rounded-xl flex items-start gap-2">
                         <IonIcon
                             icon={checkmarkCircleOutline}
                             className="text-emerald-500 text-base mt-0.5 shrink-0"
@@ -94,7 +94,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
                   : 'Installing...';
 
         return (
-            <div className="mt-3 w-full py-2 px-3 rounded-[16px] bg-grayscale-900 text-white font-medium text-xs flex flex-col gap-1.5 overflow-hidden relative shadow-sm">
+            <div className="mt-3 w-full py-2 px-3 rounded-[16px] bg-grayscale-900 text-white font-medium text-xs flex flex-col gap-1.5 overflow-hidden relative shadow-xs">
                 <div className="flex items-center justify-center gap-2 relative z-10">
                     <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     <span>{progressText}</span>
@@ -139,16 +139,16 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
                 animate="visible"
                 exit="exit"
             >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
+                <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r/srgb from-transparent via-white to-transparent opacity-80" />
 
                 {message.media && message.media.type !== 'youtube' ? (
                     <img
                         src={message.media.url}
                         alt={message.media.alt ?? ''}
-                        className="w-12 h-12 rounded-[12px] object-cover shrink-0 border border-white/60 shadow-sm"
+                        className="w-12 h-12 rounded-[12px] object-cover shrink-0 border border-white/60 shadow-xs"
                     />
                 ) : message.emoji ? (
-                    <div className="w-12 h-12 rounded-[12px] bg-white/70 backdrop-blur border border-white/60 shadow-sm flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-[12px] bg-white/70 backdrop-blur-sm border border-white/60 shadow-xs flex items-center justify-center shrink-0">
                         <span className="text-[24px] leading-none" aria-hidden="true">
                             {message.emoji}
                         </span>
@@ -172,7 +172,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
                                   <button
                                       onClick={() => handleAction(primaryAction)}
                                       disabled={isLoading}
-                                      className="py-2 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-xs hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                                      className="py-2 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-xs hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-xs"
                                   >
                                       {isLoading && (
                                           <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -186,7 +186,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
                 {showCloseX && (
                     <button
                         onClick={onClose}
-                        className="absolute top-3 right-3 p-1.5 bg-white/60 backdrop-blur border border-white/60 text-grayscale-400 hover:text-grayscale-900 transition-colors rounded-full hover:bg-white/80 shrink-0 z-10"
+                        className="absolute top-3 right-3 p-1.5 bg-white/60 backdrop-blur-sm border border-white/60 text-grayscale-400 hover:text-grayscale-900 transition-colors rounded-full hover:bg-white/80 shrink-0 z-10"
                         aria-label="Close"
                     >
                         <IonIcon icon={closeOutline} className="text-lg block" />

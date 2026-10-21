@@ -315,7 +315,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                         {/* Iframe Container */}
                         <div className="flex-1 relative min-h-0">
                             {isLoading && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-linear-to-br/srgb from-indigo-50 to-blue-50 z-10">
                                     <div className="flex flex-col items-center gap-4">
                                         <div className="relative">
                                             <div className="w-16 h-16 border-4 border-indigo-200 rounded-full" />
@@ -351,7 +351,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                         </div>
 
                         {/* Diagnostics Panel */}
-                        <div className="flex-shrink-0 border-t border-gray-300">
+                        <div className="shrink-0 border-t border-gray-300">
                             <DiagnosticsPanel
                                 events={diagnosticEvents}
                                 requestedPermissions={requestedPermissions}

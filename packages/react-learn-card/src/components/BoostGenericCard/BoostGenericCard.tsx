@@ -63,7 +63,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
     return (
         <div
-            className={`flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
+            className={`boost-generic-card-wrapper flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
         >
             {isInactive && (
                 <span
@@ -94,7 +94,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
             <button
                 type="button"
-                className="z-10 flex flex-col flex-grow"
+                className="boost-generic-card-button z-10 flex flex-col grow rounded-[20px]"
                 onClick={handleInnerClick}
             >
                 {/* Thumbnail — filter on the wrapper so it desaturates a
@@ -127,7 +127,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
                 {/* Details Section: grows to fill available space */}
                 <section
-                    className={`flex flex-col flex-grow items-center justify-end pt-1 w-full ${
+                    className={`flex flex-col grow items-center justify-end pt-1 w-full ${
                         linkedCredentialsCount === 0 ? 'pb-[20px]' : ''
                     }`}
                 >
@@ -156,7 +156,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
                         {/* Verifier & Issuer */}
                         <div className="mt-1 w-full px-4 text-center">
-                            <span className="line-clamp-2 break-words text-[12px] leading-snug text-grayscale-700">
+                            <span className="line-clamp-2 wrap-break-word text-[12px] leading-snug text-grayscale-700">
                                 {verifierBadge && (
                                     <span className="mr-1 inline-block align-middle">
                                         {verifierBadge}

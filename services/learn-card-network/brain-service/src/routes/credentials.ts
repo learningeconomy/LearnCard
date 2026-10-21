@@ -71,6 +71,7 @@ export const credentialsRouter = t.router({
             // Log credential activity FIRST to get activityId
             const activityId = await logCredentialSent({
                 actorProfileId: profile.profileId,
+                onBehalfOf: ctx.user.onBehalfOf,
                 recipientType: 'profile',
                 recipientIdentifier: targetProfile.profileId,
                 recipientProfileId: targetProfile.profileId,

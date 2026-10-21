@@ -1,0 +1,64 @@
+@keyframes sl-copy-pop {
+    0% {
+        transform: scale(0.6);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.18);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes sl-qr-in {
+    from {
+        transform: scale(0.92);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes sl-soft-ping {
+    0% {
+        box-shadow: 0 0 0 0 currentColor;
+    }
+    70%,
+    100% {
+        box-shadow: 0 0 0 5px transparent;
+    }
+}
+
+.sl-copy-pop {
+    animation: sl-copy-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sl-qr-in {
+    animation: sl-qr-in 220ms ease-out;
+}
+
+.sl-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: currentColor;
+    animation: sl-soft-ping 1.8s ease-out infinite;
+}
+
+.sl-row-in {
+    animation: fade-in-up 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sl-copy-pop,
+    .sl-qr-in,
+    .sl-dot,
+    .sl-row-in {
+        animation: none !important;
+    }
+}

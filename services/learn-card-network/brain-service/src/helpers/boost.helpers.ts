@@ -22,6 +22,7 @@ import {
     parseRenderedTemplate,
     shouldAutoAppendTemplateEvidence,
 } from '@helpers/template.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
@@ -86,6 +87,29 @@ export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<
     return true;
 };
 
+/**
+ * Stamps the issuance time onto a credential built from a Boost template.
+ *
+ * A template's own issuanceDate/validFrom is when the template was written, not when this
+ * credential is issued, and templates created through the API are not date-validated: a
+ * malformed value (e.g. "2025-10-19+053008:18:16") makes DIDKit refuse to sign. VC 2.0
+ * templates get validFrom and lose any leftover issuanceDate, which the VC 2.0 context doesn't
+ * define (DIDKit rejects it as an undefined JSON-LD term). VC 1.1 templates get issuanceDate.
+ */
+export const stampIssuanceDate = <T extends UnsignedVC | VC>(
+    credential: T,
+    now: string = new Date().toISOString()
+): T => {
+    if (isVC2Format(credential)) {
+        credential.validFrom = now;
+        delete credential.issuanceDate;
+    } else {
+        credential.issuanceDate = now;
+    }
+
+    return credential;
+};
+
 export const convertCredentialToBoostTemplateJSON = (
     credential: VC | UnsignedVC,
     defaultIssuerDid?: string
@@ -95,15 +119,7 @@ export const convertCredentialToBoostTemplateJSON = (
     delete template.proof;
     template.issuer = defaultIssuerDid ?? 'did:example:123';
 
-    if (Array.isArray(template.credentialSubject)) {
-        template.credentialSubject = template.credentialSubject.map(subject => {
-            subject.id = 'did:example:123';
-
-            return subject;
-        });
-    } else {
-        template.credentialSubject.id = 'did:example:123';
-    }
+    setCredentialSubjectIds(template, 'did:example:123');
     return JSON.stringify(template);
 };
 
@@ -262,14 +278,9 @@ export const issueClaimLinkBoost = async (
 
     boostCredential.issuer = signingAuthorityForUser.relationship.did;
 
-    if (Array.isArray(boostCredential.credentialSubject)) {
-        boostCredential.credentialSubject = boostCredential.credentialSubject.map(subject => ({
-            ...subject,
-            id: getDidWeb(domain, to.profileId),
-        }));
-    } else {
-        boostCredential.credentialSubject.id = getDidWeb(domain, to.profileId);
-    }
+    stampIssuanceDate(boostCredential);
+
+    setCredentialSubjectIds(boostCredential, getDidWeb(domain, to.profileId));
 
     // Embed the boostURI into the boost credential for verification purposes.
     if (boostCredential.type.includes('BoostCredential')) {
@@ -349,33 +360,14 @@ export const prepareCredentialFromBoost = async (
 
     appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
 
-    // Set issuance date based on VC version
-    const now = new Date().toISOString();
-    if (isVC2Format(credential)) {
-        credential.validFrom = now;
-    } else {
-        credential.issuanceDate = now;
-    }
+    stampIssuanceDate(credential);
 
     // Set issuer if provided
     if (issuerDid) {
         credential.issuer = issuerDid;
     }
 
-    // Set recipient DID in credentialSubject if provided
-    if (recipientDid) {
-        if (Array.isArray(credential.credentialSubject)) {
-            credential.credentialSubject = credential.credentialSubject.map(subject => ({
-                ...subject,
-                id: recipientDid,
-            }));
-        } else {
-            credential.credentialSubject = {
-                ...(credential.credentialSubject || {}),
-                id: recipientDid,
-            };
-        }
-    }
+    if (recipientDid) setCredentialSubjectIds(credential, recipientDid);
 
     // Embed boostId for BoostCredential types
     if (credential?.type?.includes('BoostCredential')) {
@@ -459,7 +451,16 @@ export const appendTemplateEvidenceToCredential = (
     // EvidenceFile subterms — otherwise the signer fails later with an opaque
     // JSON-LD key-expansion error. Surface a clear message instead so the
     // caller can prompt the user to republish the boost.
-    if (!credentialContextSupportsDynamicEvidence(credential)) {
+    const usesEvidenceExtensions = normalizedTemplateEvidence.some(item => {
+        if (!item || typeof item !== 'object') return false;
+        const evidence = item as Record<string, unknown>;
+        const types = Array.isArray(evidence.type) ? evidence.type : [evidence.type];
+        return (
+            types.includes('EvidenceFile') ||
+            ['fileName', 'fileType', 'fileSize'].some(key => key in evidence)
+        );
+    });
+    if (usesEvidenceExtensions && !credentialContextSupportsDynamicEvidence(credential)) {
         throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message:

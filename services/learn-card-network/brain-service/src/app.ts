@@ -21,6 +21,8 @@ import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
 import { appStoreRouter, AppStoreRouter } from '@routes/app-store';
 import { activityRouter, ActivityRouter } from '@routes/activity';
 import { federationRouter, FederationRouter } from '@routes/federation';
+import { shareLinksRouter, ShareLinksRouter } from '@routes/share-links';
+import { publicShareLinksRouter, PublicShareLinksRouter } from '@routes/public-share-links';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -52,6 +54,8 @@ export const appRouter = t.router<{
     appStore: AppStoreRouter;
     activity: ActivityRouter;
     federation: FederationRouter;
+    shareLinks: ShareLinksRouter;
+    publicShareLinks: PublicShareLinksRouter;
     test?: TestRouter;
     bench?: BenchRouter;
 }>({
@@ -76,6 +80,8 @@ export const appRouter = t.router<{
     appStore: appStoreRouter,
     activity: activityRouter,
     federation: federationRouter,
+    shareLinks: shareLinksRouter,
+    publicShareLinks: publicShareLinksRouter,
     test: environment.IS_E2E_TEST ? testRouter : undefined,
     bench: environment.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
 });

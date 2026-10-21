@@ -1,12 +1,11 @@
 # SkillsAddSkillTagRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**framework_id** | **str** |  | 
-**tag** | [**SkillsAddSkillTagRequestTag**](SkillsAddSkillTagRequestTag.md) |  | 
+| Name             | Type                                                              | Description | Notes |
+| ---------------- | ----------------------------------------------------------------- | ----------- | ----- |
+| **framework_id** | **str**                                                           |             |
+| **tag**          | [**SkillsAddSkillTagRequestTag**](SkillsAddSkillTagRequestTag.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ skills_add_skill_tag_request_dict = skills_add_skill_tag_request_instance.to_dic
 # create an instance of SkillsAddSkillTagRequest from a dict
 skills_add_skill_tag_request_from_dict = SkillsAddSkillTagRequest.from_dict(skills_add_skill_tag_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

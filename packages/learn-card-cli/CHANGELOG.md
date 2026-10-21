@@ -1,5 +1,127 @@
 # @learncard/cli
 
+## 3.6.5
+
+### Patch Changes
+
+- [#1741](https://github.com/learningeconomy/LearnCard/pull/1741) [`b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229`](https://github.com/learningeconomy/LearnCard/commit/b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Persist saved profile changes before navigation without forcing profile refetches on every mount. Keep browser query-cache storage on localforage and native storage on SQLite across initialization and reload; native persistence failures never fall back to a stale second store. Revalidate installed apps after reload and apply nested tenant registry defaults correctly.
+
+    Add the disposable `lc verify` workflow with maintained user journeys, clean-checkout preparation, independently allocated service ports, confined local-service access, interruption-safe evidence, and ownership-checked crash recovery. Repair cold-start Vite loading, pin Astro's compatible Zod dependency, and load the example's CommonJS dependency correctly during server rendering. Build credential share links from the active tenant's configured host instead of the fixed development port.
+
+    Allow CLI schema/help loading before generated snippets exist; generate snippets atomically and load token snippets only when needed.
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.62
+
+## 3.6.4
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/holder-continuity@0.2.23
+    - @learncard/core@9.4.39
+    - @learncard/init@2.5.4
+    - @learncard/network-brain-client@2.5.61
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/learn-cloud-plugin@2.3.46
+    - @learncard/ler-rs-plugin@0.1.30
+    - @learncard/linked-claims-plugin@0.2.39
+    - @learncard/open-badge-v2-plugin@1.1.40
+    - @learncard/render-method-plugin@10.0.1
+
+## 3.6.3
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.60
+    - @learncard/learn-cloud-plugin@2.3.45
+    - @learncard/init@2.5.3
+    - @learncard/holder-continuity@0.2.22
+    - @learncard/lca-api-plugin@2.0.9
+
+## 3.6.2
+
+### Patch Changes
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012), [`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/types@5.23.0
+    - @learncard/network-brain-client@2.5.59
+    - @learncard/ler-rs-plugin@0.1.29
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/holder-continuity@0.2.21
+    - @learncard/core@9.4.38
+    - @learncard/init@2.5.2
+    - @learncard/lca-api-plugin@2.0.8
+    - @learncard/learn-cloud-plugin@2.3.44
+    - @learncard/linked-claims-plugin@0.2.38
+    - @learncard/open-badge-v2-plugin@1.1.39
+    - @learncard/render-method-plugin@10.0.0
+
+## 3.6.1
+
+### Patch Changes
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f)]:
+    - @learncard/types@5.22.0
+    - @learncard/holder-continuity@0.2.20
+    - @learncard/core@9.4.37
+    - @learncard/init@2.5.1
+    - @learncard/network-brain-client@2.5.58
+    - @learncard/didkit-plugin@1.10.2
+    - @learncard/lca-api-plugin@2.0.7
+    - @learncard/learn-cloud-plugin@2.3.43
+    - @learncard/ler-rs-plugin@0.1.28
+    - @learncard/linked-claims-plugin@0.2.37
+    - @learncard/open-badge-v2-plugin@1.1.38
+    - @learncard/render-method-plugin@9.0.0
+
+## 3.6.0
+
+### Minor Changes
+
+- [#1598](https://github.com/learningeconomy/LearnCard/pull/1598) [`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45) Thanks [@Custard7](https://github.com/Custard7)! - Act as a managed profile. A request may carry `X-LearnCard-Act-As: <profileId>`; the network swaps the acting profile when the authenticated profile manages the target, keeps the token's scope unchanged, and records `onBehalfOf` on the resulting activity. API tokens must opt in via a new `actAs` field on the auth grant (`'*'` or a list of profile IDs; absent = no delegation).
+
+    - `@learncard/types`: `ACT_AS_HEADER`, `AuthGrant.actAs`.
+    - `@learncard/network-plugin` / `@learncard/init`: `actAs` option on `initLearnCard` and the network plugin; `learnCard.invoke.actAs(profileId)` returns a scoped instance.
+    - `@learncard/cli`: `serviceAccounts[].actAs` in the org spec is set on the grant at creation; like scope and expiry, it is compared on re-apply and any drift errors with a revoke hint (dry-run reports `drifted`). `actAs` lists are compared as sets, so reordering profile IDs is not drift. With a `learncard-hosted` signer, `org apply` also registers a hosted signing authority on each managed profile so tokens acting as it can sign. Shown by `doctor` and `whoami`; new `examples/delegated-service-account.network.yaml`.
+
+- [#1590](https://github.com/learningeconomy/LearnCard/pull/1590) [`59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4`](https://github.com/learningeconomy/LearnCard/commit/59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4) Thanks [@Custard7](https://github.com/Custard7)! - CLI: add issuer-org tooling for partner integrations — `org apply` (declarative, idempotent org bootstrap), `doctor` (read-only preflight), `clr validate` (CLR 2.0 transcript lint), `inbox list`, `refresh history`, and `promote` (staging → production).
+
+    Credential library: the `clr/provisional-transcript` fixture now marks itself `partial: true` with a `validUntil`, and its in-progress result points at a `Status`-typed ResultDescription (was `RawScore`). `buildFinalTranscriptVariant` strips those provisional markers.
+
+    LCA API plugin: skip the encryption-key probe when the profile does not exist yet (it could only 401) and log initialization warnings as one line instead of a full stack dump.
+
+- [#1586](https://github.com/learningeconomy/LearnCard/pull/1586) [`dac4695428e42ecc99b05c1774fce937c021c657`](https://github.com/learningeconomy/LearnCard/commit/dac4695428e42ecc99b05c1774fce937c021c657) Thanks [@Custard7](https://github.com/Custard7)! - `send` now prompts for the recipient when omitted (`npx @learncard/cli send`) and rejects placeholder addresses such as `you@example.com` instead of silently sending to an undeliverable domain. Non-interactive runs (`--yes`, no TTY) still require the recipient as an argument.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Add `learncard demo refresh`, a guided demonstration of sending a refreshable badge through `sendBoost`, publishing a new version from the returned receipt, and verifying the recipient's refreshed copy. Uses fresh demo accounts, defaults to the local network, and supports `--network staging`, `--yes`, and `--json`.
+
+    Add interactive `--ui` mode for the local LearnCard app: print a demo recipient sign-in link, deliver claim and update notifications, and wait for the app to save each version. Supports a custom local `--app-url` and validates that the app and CLI use matching local services.
+
+    Add `learncard demo refresh --inbox` for the deferred Universal Inbox path: issue a refreshable certificate to a random `@example.com` address with email delivery suppressed, publish a final version before any holder exists (`notification: "not-applicable"`), then claim with a real DIDAuth presentation and refresh to an honors version. `--inbox --ui` prints a claim link for the local app, waits for the human to claim, publishes an update to the bound holder, and verifies the app replaced (not duplicated) the same entry. Terminal mode supports `--yes`/`--json`, is local-only, and takes `--lca-url` (default `http://localhost:5100/trpc`) for the local signing service. The existing direct demo is unchanged.
+
+    Add opt-in `--inbox --ui --email [address]`: prompt for an address, send a provisional certificate through normal email delivery, let the recipient sign in and claim, then publish a visible final-results update. This mode never reads recipient keys or personal credential storage. Keep the pre-claim update in the separate disposable-account walkthrough.
+
+    Stop the email walkthrough before publishing if the claim has no recipient account, and only advertise queued notifications when publication confirms them.
+
+### Patch Changes
+
+- Updated dependencies [[`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45), [`59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4`](https://github.com/learningeconomy/LearnCard/commit/59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4), [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e), [`3aa4f5553ef92bc8a36a4bba50eeeba280d57441`](https://github.com/learningeconomy/LearnCard/commit/3aa4f5553ef92bc8a36a4bba50eeeba280d57441), [`3174c09b97fde6f7b5251390245038cf6b7ea9ba`](https://github.com/learningeconomy/LearnCard/commit/3174c09b97fde6f7b5251390245038cf6b7ea9ba), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f)]:
+    - @learncard/types@5.21.0
+    - @learncard/init@2.5.0
+    - @learncard/lca-api-plugin@2.0.6
+    - @learncard/linked-claims-plugin@0.2.36
+    - @learncard/holder-continuity@0.2.19
+    - @learncard/core@9.4.36
+    - @learncard/network-brain-client@2.5.57
+    - @learncard/didkit-plugin@1.10.1
+    - @learncard/learn-cloud-plugin@2.3.42
+    - @learncard/ler-rs-plugin@0.1.27
+    - @learncard/open-badge-v2-plugin@1.1.37
+    - @learncard/render-method-plugin@8.0.0
+
 ## 3.5.1
 
 ### Patch Changes

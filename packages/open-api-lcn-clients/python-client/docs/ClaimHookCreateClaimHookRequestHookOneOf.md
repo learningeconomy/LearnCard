@@ -1,12 +1,11 @@
 # ClaimHookCreateClaimHookRequestHookOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**data** | [**ClaimHookCreateClaimHookRequestHookOneOfData**](ClaimHookCreateClaimHookRequestHookOneOfData.md) |  | 
+| Name     | Type                                                                                                | Description | Notes |
+| -------- | --------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **type** | **str**                                                                                             |             |
+| **data** | [**ClaimHookCreateClaimHookRequestHookOneOfData**](ClaimHookCreateClaimHookRequestHookOneOfData.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ claim_hook_create_claim_hook_request_hook_one_of_dict = claim_hook_create_claim_
 # create an instance of ClaimHookCreateClaimHookRequestHookOneOf from a dict
 claim_hook_create_claim_hook_request_hook_one_of_from_dict = ClaimHookCreateClaimHookRequestHookOneOf.from_dict(claim_hook_create_claim_hook_request_hook_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

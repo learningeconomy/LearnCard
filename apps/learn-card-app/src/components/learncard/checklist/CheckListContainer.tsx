@@ -8,7 +8,7 @@ import CheckListDisclaimer from './checklist-disclaimer/CheckListDisclaimer';
 import { ChecklistEnum } from 'learn-card-base';
 import GenericErrorBoundary from '../../generic/GenericErrorBoundary';
 import CredentialIntakeOptions from './CredentialIntakeOptions';
-import DemoSchoolBox from './DemoSchoolBox';
+import SamplePersonaBox from './SamplePersonaBox';
 import UploadJsonVcBox from './UploadJsonVcBox';
 
 export const CheckListContainer: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
@@ -16,10 +16,10 @@ export const CheckListContainer: React.FC<{ activeChecklistStep?: ChecklistEnum 
 }) => {
     return (
         <div className="h-full relative">
-            <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[200px]">
+            <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[200px] flex flex-col gap-4">
                 <GenericErrorBoundary>
                     <ChecklistHeader />
-                    <DemoSchoolBox />
+                    <SamplePersonaBox />
                     <CheckList activeChecklistStep={activeChecklistStep} />
                     <CredentialIntakeOptions />
                     <UploadJsonVcBox />

@@ -1,49 +1,55 @@
-# Only the shared base exports a build cache: its `bun install` layer is stable
-# across commits. Leaf targets rebuild from freshly copied source every run, so
-# exporting their layers (mode=max) costs minutes of upload and never hits.
+# Export only the dependency stage. Exporting the source image with mode=max
+# also uploads source-bearing intermediate layers that change on every commit.
+# This cache-only target supplies the browser app build.
+# The legacy Docker browser path remains a fallback. Its app dependency cache
+# is not refreshed while E2E_HOST_BROWSER_BUILD=true, so rollback may start cold.
+target "dependency-cache" {
+  context    = "."
+  dockerfile = "Dockerfile.monorepo"
+  target     = "dependencies"
+  output     = ["type=cacheonly"]
+  cache-from = ["type=gha,scope=e2e-monorepo-dependencies"]
+  cache-to   = ["type=gha,scope=e2e-monorepo-dependencies,mode=min"]
+}
+
+# The app still needs the complete build environment, but it is never loaded.
+target "browser-build-source" {
+  context    = "."
+  dockerfile = "Dockerfile.monorepo"
+  target     = "source"
+  cache-from = ["type=gha,scope=e2e-monorepo-dependencies"]
+}
+
+# Cache only backend dependencies, never changing TypeScript source layers.
+target "backend-dependency-cache" {
+  context    = "."
+  dockerfile = "Dockerfile.monorepo"
+  target     = "backend-dependencies"
+  output     = ["type=cacheonly"]
+  cache-from = ["type=gha,scope=e2e-backend-dependencies"]
+  cache-to   = ["type=gha,scope=e2e-backend-dependencies,mode=min"]
+}
+
 target "browser-base" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
-  cache-from = ["type=gha,scope=e2e-monorepo-base"]
-  cache-to   = ["type=gha,scope=e2e-monorepo-base,mode=max"]
+  target     = "backend"
+  tags       = ["learncard-monorepo-local"]
+  cache-from = ["type=gha,scope=e2e-backend-dependencies"]
 }
 
 target "browser-app" {
   context    = "."
   dockerfile = "apps/learn-card-app/Dockerfile"
   contexts = {
-    learncard-monorepo-local = "target:browser-base"
+    learncard-monorepo-local = "target:browser-build-source"
   }
   tags       = ["learn-card-e2e-app"]
 }
 
-target "browser-brain" {
-  context    = "."
-  dockerfile = "services/learn-card-network/brain-service/Dockerfile"
-  contexts = {
-    learncard-monorepo-local = "target:browser-base"
-  }
-  tags       = ["welibrary/lcn-brain-service"]
-}
-
-target "browser-cloud" {
-  context    = "."
-  dockerfile = "services/learn-card-network/learn-cloud-service/Dockerfile"
-  contexts = {
-    learncard-monorepo-local = "target:browser-base"
-  }
-  tags       = ["welibrary/lcn-cloud-service"]
-}
-
-target "browser-api" {
-  context    = "."
-  dockerfile = "services/learn-card-network/lca-api/Dockerfile"
-  contexts = {
-    learncard-monorepo-local = "target:browser-base"
-  }
-  tags       = ["lca-api-service"]
-}
-
+# The three backend containers run directly from the slim browser-base with Compose
+# command overrides. Their Dockerfiles only change WORKDIR/CMD, so building and
+# exporting three additional copies of the monorepo image wastes several minutes.
 target "browser-delete" {
   context    = "services/playwright-delete-service"
   dockerfile = "Dockerfile"
@@ -54,10 +60,10 @@ target "browser-delete" {
 
 group "browser" {
   targets = [
+    "dependency-cache",
+    "backend-dependency-cache",
+    "browser-base",
     "browser-app",
-    "browser-brain",
-    "browser-cloud",
-    "browser-api",
     "browser-delete",
   ]
 }
@@ -65,11 +71,28 @@ group "browser" {
 target "service-base" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
+  target     = "backend"
   tags       = ["learncard-monorepo-local", "lca-api-service"]
-  cache-from = ["type=gha,scope=e2e-monorepo-base"]
-  cache-to   = ["type=gha,scope=e2e-monorepo-base,mode=max"]
+  cache-from = ["type=gha,scope=e2e-backend-dependencies"]
 }
 
 group "service" {
-  targets = ["service-base"]
+  targets = ["backend-dependency-cache", "service-base"]
+}
+
+# Experiment: compile the SPA and SDK once on the host, then load only runtimes.
+variable "E2E_BROWSER_RUNTIME_CONTEXT" {
+  # run-browser.sh supplies a unique staged directory inside this workspace.
+  # Manual Bake users must stage build/, nginx.conf and Dockerfile here first.
+  default = "node_modules/.cache/e2e-browser-runtime"
+}
+
+target "hosted-browser-app" {
+  context    = E2E_BROWSER_RUNTIME_CONTEXT
+  dockerfile = "Dockerfile"
+  tags       = ["learn-card-e2e-app"]
+}
+
+group "hosted-browser-backend" {
+  targets = ["backend-dependency-cache", "browser-base", "browser-delete"]
 }

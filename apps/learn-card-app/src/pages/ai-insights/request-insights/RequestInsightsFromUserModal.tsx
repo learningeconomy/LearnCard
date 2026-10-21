@@ -1,3 +1,4 @@
+import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -36,7 +37,7 @@ export const RequestInsightsFromUserModal: React.FC<{
     contractUri: string;
     onSuccessCallback?: () => void;
     redirectToLink?: string;
-    requestStatus?: 'pending' | 'accepted' | 'denied' | null;
+    requestStatus?: ConsentFlowContractRequestStatus;
 }> = ({ profile, contractUri, onSuccessCallback, redirectToLink, requestStatus }) => {
     const { presentToast } = useToast();
     const { closeModal, closeAllModals } = useModal();
@@ -128,9 +129,9 @@ export const RequestInsightsFromUserModal: React.FC<{
                                 m={m['aiInsights.loginToRequestFrom']}
                                 values={{ name: profile?.displayName ?? '' }}
                                 components={[
-                                    <span className="font-semibold" />,
-                                    <span className="font-semibold" />,
-                                    <span className="font-semibold" />,
+                                    <span key="request-action" className="font-semibold" />,
+                                    <span key="requester-name" className="font-semibold" />,
+                                    <span key="target-name" className="font-semibold" />,
                                 ]}
                             />
                         </p>
@@ -140,7 +141,7 @@ export const RequestInsightsFromUserModal: React.FC<{
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-grayscale-50 !max-h-[100px]"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-grayscale-50/60 max-h-[100px]!"
             >
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center gap-2 justify-between max-w-[600px] ion-padding">

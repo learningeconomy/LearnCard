@@ -25,6 +25,7 @@ from openapi_client.models.contracts_get_terms_transaction_history_request_query
 from openapi_client.models.contracts_get_terms_transaction_history_request_query_terms import ContractsGetTermsTransactionHistoryRequestQueryTerms
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
     """
@@ -38,7 +39,8 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
     __properties: ClassVar[List[str]] = ["terms", "action", "date", "expiresAt", "oneTime"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -50,8 +52,7 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -88,6 +89,11 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of expires_at
         if self.expires_at:
             _dict['expiresAt'] = self.expires_at.to_dict()
+        # set to None if one_time (nullable) is None
+        # and model_fields_set contains the field
+        if self.one_time is None and "one_time" in self.model_fields_set:
+            _dict['oneTime'] = None
+
         return _dict
 
     @classmethod
@@ -99,13 +105,15 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "terms": ContractsGetTermsTransactionHistoryRequestQueryTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "action": ContractsGetTermsTransactionHistoryRequestQueryAction.from_dict(obj["action"]) if obj.get("action") is not None else None,
             "date": ContractsGetTermsTransactionHistoryRequestQueryDate.from_dict(obj["date"]) if obj.get("date") is not None else None,
             "expiresAt": ContractsGetTermsTransactionHistoryRequestQueryExpiresAt.from_dict(obj["expiresAt"]) if obj.get("expiresAt") is not None else None,
             "oneTime": obj.get("oneTime")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

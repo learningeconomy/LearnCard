@@ -56,11 +56,10 @@ export const useAutoConsentLearnCardAi = () => {
             if (autoConsentInFlight) return autoConsentInFlight;
 
             const run = (async () => {
-                let wallet: Awaited<ReturnType<typeof initWallet>> | null = null;
                 let activeWallet: Awaited<ReturnType<typeof initWallet>> | null = null;
 
                 try {
-                    wallet = await initWallet();
+                    const wallet = await initWallet();
                     if (!wallet) return false;
                     activeWallet = wallet;
                     const consentWallet = activeWallet;
@@ -85,11 +84,15 @@ export const useAutoConsentLearnCardAi = () => {
                         return true;
                     }
 
-                    const contractDetails = await consentWallet.invoke.getContract(
-                        learnCardAiContractUri
-                    );
+                    const contractDetails =
+                        await consentWallet.invoke.getContract(learnCardAiContractUri);
                     const ownerDid = contractDetails?.owner?.did;
                     if (!contractDetails?.contract || !ownerDid) return false;
+                    if (
+                        (contractDetails.audienceVersion ?? 0) > 0 ||
+                        contractDetails.recipients?.length
+                    )
+                        return false;
 
                     const consentUser: CurrentUser = {
                         uid: '',
@@ -128,7 +131,7 @@ export const useAutoConsentLearnCardAi = () => {
 
                     const enrichedTerms = await getTermsWithSharedUrisForWallet(
                         consentWallet,
-                        ownerDid,
+                        [ownerDid],
                         queryClient,
                         {
                             terms,

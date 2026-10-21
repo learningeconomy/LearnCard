@@ -1,13 +1,12 @@
 # ProfileGetAvailableProfiles200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[ProfileGetAvailableProfiles200ResponseRecordsInner]**](ProfileGetAvailableProfiles200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                                  | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                               |             | [optional] |
+| **has_more** | **bool**                                                                                                              |             |
+| **records**  | [**List[ProfileGetAvailableProfiles200ResponseRecordsInner]**](ProfileGetAvailableProfiles200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ profile_get_available_profiles200_response_dict = profile_get_available_profiles
 # create an instance of ProfileGetAvailableProfiles200Response from a dict
 profile_get_available_profiles200_response_from_dict = ProfileGetAvailableProfiles200Response.from_dict(profile_get_available_profiles200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

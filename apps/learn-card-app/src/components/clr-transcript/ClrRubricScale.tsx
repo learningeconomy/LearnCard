@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { RubricLevelDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { RubricLevelDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const isAchieved = (level: RubricLevelDisplayModel, achieved?: RubricLevelDisplayModel) =>
     achieved !== undefined &&
@@ -48,7 +48,7 @@ const ClrRubricScale: React.FC<{
     if (levels.length === 0) return null;
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
                 {title}
             </p>

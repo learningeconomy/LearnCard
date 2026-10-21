@@ -7,25 +7,25 @@ import SeedPhraseModal from './SeedPhraseModal';
 import { useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { auth } from '../../firebase/firebase';
+import { useSignInAdapter } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 
-const ExportSeedPhraseModal: React.FC<{}> = () => {
+const ExportSeedPhraseModal: React.FC = () => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
     const brandingConfig = useBrandingConfig();
-    const firebaseAuth = auth();
-    const currentFirebaseUser = firebaseAuth.currentUser;
+    const adapter = useSignInAdapter();
+    const currentFirebaseUser = adapter.getCurrentUser();
     const currentUser = useCurrentUser();
 
     const [phrase, setPhrase] = useState<string>(
-        currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
+        currentFirebaseUser?.email ?? currentFirebaseUser?.phone ?? currentUser?.email ?? ''
     );
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
-    const placeholderSource = currentFirebaseUser?.phoneNumber
+    const placeholderSource = currentFirebaseUser?.phone
         ? m['profile.export.phonePlaceholder']()
         : m['profile.export.emailPlaceholder']();
     const canExportPhrase = phrase === confirmationPhrase;
@@ -33,7 +33,7 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
     const handleExportSeed = () => {
         closeModal();
         newModal(<SeedPhraseModal />, {
-            sectionClassName: '!max-w-[450px] !bg-transparent !shadow-none',
+            sectionClassName: 'max-w-[450px]! bg-transparent! shadow-none!',
             hideButton: true,
         });
     };
@@ -82,7 +82,7 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
                 <input
                     id="export-phrase-confirmation"
                     autoCapitalize="on"
-                    className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base max-w-[400px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent"
+                    className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base max-w-[400px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent"
                     placeholder={placeholderSource}
                     onChange={event => setConfirmationPhrase(event.target.value)}
                     value={confirmationPhrase ?? ''}
@@ -124,7 +124,7 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
                                         </button>
                                     </div>
                                 </div>,
-                                { sectionClassName: '!max-w-[450px]', hideButton: true }
+                                { sectionClassName: 'max-w-[450px]!', hideButton: true }
                             );
                         }}
                         className={`text-white w-[90%] font-bold text-lg mb-4 rounded-full max-w-[400px] p-3 ${

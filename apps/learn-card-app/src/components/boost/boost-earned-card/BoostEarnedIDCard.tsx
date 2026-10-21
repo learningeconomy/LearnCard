@@ -22,7 +22,7 @@ import {
     useWallet,
     useGetVCInfo,
     CredentialCategory,
-    categoryMetadata,
+    getCategoryMetadata,
 } from 'learn-card-base';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
@@ -51,7 +51,6 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
 import { LCR } from 'learn-card-base/types/credential-records';
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 type BoostEarnedIDCardProps = {
     credential?: VC;
@@ -127,7 +126,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         menuType: BoostMenuType.earned,
     });
 
-    const type = categoryMetadata[categoryType].walletSubtype;
+    const type = getCategoryMetadata(categoryType).walletSubtype;
     const isID = categoryType === BoostCategoryOptionsEnum.id;
     const isMembership = categoryType === BoostCategoryOptionsEnum.membership;
 
@@ -135,11 +134,11 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     let idSleeveFooterClass = '';
 
     if (isID) {
-        idDisplayContainerClass = '!border-white';
-        idSleeveFooterClass = '!bg-blue-300';
+        idDisplayContainerClass = 'border-white!';
+        idSleeveFooterClass = 'bg-blue-300!';
     } else if (isMembership) {
-        idDisplayContainerClass = '!border-teal-400';
-        idSleeveFooterClass = '!bg-teal-300';
+        idDisplayContainerClass = 'border-teal-400!';
+        idSleeveFooterClass = 'bg-teal-300!';
     }
 
     const issuerThumbStyles = {
@@ -158,13 +157,18 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     const thumbImage = (cred && getImageUrlFromCredential(cred)) || defaultImg;
     const badgeThumbnail = credImg && credImg?.trim() !== '' ? credImg : thumbImage;
 
-    let issuerThumbnailSrc = cred?.boostID?.issuerThumbnail;
-    let showIssuerThumbnail = cred?.boostID?.showIssuerThumbnail;
     let subjectDID;
 
     const vcInfo = useGetVCInfo(cred);
-    let { issuerName, issuerProfileImageElement, issueeName, subjectProfileImageElement } = vcInfo;
-    const { loading: vcInfoLoading } = vcInfo;
+    let {
+        issuerName,
+        issuerProfileImageElement,
+        issueeName,
+        subjectProfileImageElement,
+        idIssuerThumbnailSrc: issuerThumbnailSrc,
+        showIdIssuerThumbnail: showIssuerThumbnail,
+    } = vcInfo;
+    const { loading: vcInfoLoading, idBackgroundImage, idDimBackgroundImage } = vcInfo;
 
     const showSkeleton = loading || resolvedBoostLoading || vcInfoLoading;
 
@@ -218,6 +222,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
 
     const earnedBoostIdCardProps = {
         credential,
+        boostUri: record?.uri,
         categoryType: categoryType,
         issuerOverride: issuerName,
         issueeOverride: issueeName,
@@ -237,8 +242,8 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                     location={cred?.address?.streetAddress}
                     issuerThumbnail={issuerThumbnailSrc}
                     showIssuerImage={showIssuerThumbnail}
-                    backgroundImage={cred?.boostID?.backgroundImage}
-                    dimBackgroundImage={cred?.boostID?.dimBackgroundImage}
+                    backgroundImage={idBackgroundImage}
+                    dimBackgroundImage={idDimBackgroundImage}
                     fontColor={cred?.boostID?.fontColor}
                     accentColor={cred?.boostID?.accentColor}
                     idIssuerName={cred?.boostID?.IDIssuerName ?? issuerName}
@@ -267,12 +272,12 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         newModal(<BoostPreview {...earnedBoostIdCardProps} />);
     };
 
-    const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const createdAtDate = new Date(getIssuanceDate(cred) ?? '');
+    const rawDateValue = getIssuanceDate(cred) || '';
+    const createdAtDate = new Date(rawDateValue);
     const issueDate = Number.isNaN(createdAtDate.getTime())
-        ? moment(createdAt).locale(getLocale()).format('MMMM DD YYYY')
+        ? rawDateValue
+            ? moment(rawDateValue).locale(getLocale()).format('MMMM DD YYYY')
+            : ''
         : new Intl.DateTimeFormat(getLocale(), {
               month: 'long',
               day: '2-digit',
@@ -367,8 +372,8 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                 issuerName={issuerName}
                 issuerThumbnail={issuerThumbnailSrc}
                 showIssuerThumbnail={showIssuerThumbnail}
-                backgroundImage={cred?.boostID?.backgroundImage}
-                dimBackgroundImage={cred?.boostID?.dimBackgroundImage}
+                backgroundImage={idBackgroundImage}
+                dimBackgroundImage={idDimBackgroundImage}
                 fontColor={cred?.boostID?.fontColor}
                 accentColor={cred?.boostID?.accentColor}
                 handleOptionsModal={handlePresentOptionsModal}

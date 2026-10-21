@@ -1,12 +1,11 @@
 # AppStoreGetBoostsForListing200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**template_alias** | **str** |  | 
-**boost_uri** | **str** |  | 
+| Name               | Type    | Description | Notes |
+| ------------------ | ------- | ----------- | ----- |
+| **template_alias** | **str** |             |
+| **boost_uri**      | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ app_store_get_boosts_for_listing200_response_inner_dict = app_store_get_boosts_f
 # create an instance of AppStoreGetBoostsForListing200ResponseInner from a dict
 app_store_get_boosts_for_listing200_response_inner_from_dict = AppStoreGetBoostsForListing200ResponseInner.from_dict(app_store_get_boosts_for_listing200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

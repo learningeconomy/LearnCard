@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { auth } from '../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { z } from 'zod';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('new-join-network-prompt');
@@ -64,6 +63,7 @@ type NewJoinNetworkPromptProps = {
 };
 
 const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleCloseModal }) => {
+    const adapter = useSignInAdapter();
     const { initWallet } = useWallet();
     const { newModal } = useModal();
     const { refetch } = useGetCurrentLCNUser();
@@ -97,7 +97,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     const primaryColor = colors?.defaults?.primaryColor;
 
     const presentLogoutErrorModal = () => {
-        newModal(<ErrorLogout />, { sectionClassName: '!max-w-[400px]' });
+        newModal(<ErrorLogout />, { sectionClassName: 'max-w-[400px]!' });
     };
 
     useEffect(() => {
@@ -235,16 +235,16 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            const firebaseUser = auth()?.currentUser;
+            const firebaseUser = adapter.getCurrentUser();
             if (!firebaseUser) {
                 presentLogoutErrorModal();
                 setIsLoading(false);
                 return;
             }
 
-            await updateProfile(firebaseUser, {
+            await adapter.updateProfile?.({
                 displayName: name ?? '',
-                photoURL: photo ?? '',
+                photoUrl: photo ?? '',
             });
 
             handleStorageUpdate();
@@ -274,7 +274,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     } else {
                         // update firebase profile
                         try {
-                            const firebaseUser = auth()?.currentUser;
+                            const firebaseUser = adapter.getCurrentUser();
                             if (!firebaseUser) {
                                 presentLogoutErrorModal();
                                 setIsLoading(false);
@@ -282,9 +282,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 return;
                             }
 
-                            await updateProfile(firebaseUser, {
+                            await adapter.updateProfile?.({
                                 displayName: name,
-                                photoURL: photo,
+                                photoUrl: photo,
                             });
                         } catch (e: unknown) {
                             presentLogoutErrorModal();
@@ -323,7 +323,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     return (
         <>
             {createLoading && (
-                <div className="absolute top-0 w-full h-full z-[10000] flex flex-col gap-[5px] items-center justify-center bg-white bg-opacity-70 backdrop-blur-[3px]">
+                <div className="absolute top-0 w-full h-full z-[10000] flex flex-col gap-[5px] items-center justify-center bg-white/70  backdrop-blur-[3px]">
                     <IonSpinner color="dark" />
                     <span className="text-grayscale-900">Joining Network...</span>
                 </div>
@@ -342,7 +342,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 <br />
                                 <HeaderBranding
                                     branding={BrandingEnum.learncard}
-                                    className="!text-black !text-xl"
+                                    className="text-black! text-xl!"
                                     disableClick
                                 />
                             </h6>

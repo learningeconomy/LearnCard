@@ -78,7 +78,7 @@ const PublishableKeyStep: React.FC<{
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.embedClaim.publishableKeyStep.title']()}
@@ -182,7 +182,7 @@ const AddTargetStep: React.FC<{
     isTransitioning?: boolean;
 }> = ({ onComplete, onBack, isTransitioning }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.embedClaim.addTargetStep.title']()}
@@ -220,7 +220,7 @@ const AddTargetStep: React.FC<{
                 </p>
 
                 <div className="flex items-center gap-3">
-                    <div className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-medium rounded-lg">
+                    <div className="px-4 py-2 bg-linear-to-r/srgb from-cyan-500 to-blue-500 text-white text-sm font-medium rounded-lg">
                         {m['developerPortal.guides.embedClaim.addTargetStep.exampleButtonLabel']()}
                     </div>
 
@@ -267,7 +267,7 @@ const LoadSdkStep: React.FC<{
     const [method, setMethod] = useState<'cdn' | 'npm'>('cdn');
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.embedClaim.loadSdkStep.title']()}
@@ -512,7 +512,7 @@ const ConfigureStep: React.FC<{
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.embedClaim.configureStep.title']()}
@@ -569,7 +569,7 @@ const ConfigureStep: React.FC<{
 
                     <div className="flex items-center gap-2">
                         {selectedIntegration && (
-                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
+                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-sm text-xs font-medium">
                                 {selectedIntegration.name}
                             </span>
                         )}
@@ -586,7 +586,7 @@ const ConfigureStep: React.FC<{
             ) : (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                     <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
                             <Key className="w-5 h-5 text-amber-600" />
                         </div>
 
@@ -621,9 +621,9 @@ const ConfigureStep: React.FC<{
             />
 
             {/* Branding & Advanced Options */}
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-v3-4">
                 {/* Branding Section */}
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Palette className="w-4 h-4 text-indigo-500" />
                         {m['developerPortal.guides.embedClaim.configureStep.modalBranding']()}
@@ -654,7 +654,7 @@ const ConfigureStep: React.FC<{
                                         setBranding({ ...branding, primaryColor: e.target.value })
                                     }
                                     placeholder="#1F51FF"
-                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                 />
                             </div>
                         </div>
@@ -681,7 +681,7 @@ const ConfigureStep: React.FC<{
                                         setBranding({ ...branding, accentColor: e.target.value })
                                     }
                                     placeholder="#0F3BD9"
-                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                 />
                             </div>
                         </div>
@@ -703,7 +703,7 @@ const ConfigureStep: React.FC<{
                             placeholder={m[
                                 'developerPortal.guides.embedClaim.configureStep.partnerNamePlaceholder'
                             ]()}
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                             style={{ colorScheme: 'light' }}
                         />
 
@@ -731,7 +731,7 @@ const ConfigureStep: React.FC<{
                                 placeholder={m[
                                     'developerPortal.guides.embedClaim.configureStep.partnerLogoPlaceholder'
                                 ]()}
-                                className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                 disabled={isUploadingLogo}
                                 style={{ colorScheme: 'light' }}
                             />
@@ -759,7 +759,7 @@ const ConfigureStep: React.FC<{
                                 alt={m[
                                     'developerPortal.guides.embedClaim.configureStep.logoPreviewAlt'
                                 ]()}
-                                className="mt-2 h-12 object-contain rounded border border-gray-200"
+                                className="mt-2 h-12 object-contain rounded-sm border border-gray-200"
                                 onError={e => {
                                     (e.target as HTMLImageElement).style.display = 'none';
                                 }}
@@ -769,7 +769,7 @@ const ConfigureStep: React.FC<{
                 </div>
 
                 {/* Background Issuance Section */}
-                <div className="space-y-3 pt-3 border-t border-gray-200">
+                <div className="space-y-v3-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Settings className="w-4 h-4 text-emerald-500" />
                         {m['developerPortal.guides.embedClaim.configureStep.advancedSettings']()}
@@ -780,7 +780,7 @@ const ConfigureStep: React.FC<{
                             type="checkbox"
                             checked={requestBackgroundIssuance}
                             onChange={e => setRequestBackgroundIssuance(e.target.checked)}
-                            className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded focus:ring-cyan-500"
+                            className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded-sm focus:ring-cyan-500"
                         />
 
                         <div>
@@ -828,7 +828,7 @@ const ConfigureStep: React.FC<{
                         placeholder={m[
                             'developerPortal.guides.embedClaim.configureStep.whitelistedDomainsPlaceholder'
                         ]()}
-                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                         style={{ colorScheme: 'light' }}
                     />
 
@@ -893,41 +893,43 @@ const ConfigureStep: React.FC<{
                     {m['developerPortal.guides.embedClaim.configureStep.importantOptions']()}
                 </h4>
 
-                <ul className="text-sm text-amber-700 space-y-1">
+                <ul className="text-sm text-amber-700 space-y-v3-1">
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">target</code>
+                        {'•'} <code className="bg-amber-100 px-1 rounded-sm">target</code>
                         {' — '}
                         {m['developerPortal.guides.embedClaim.configureStep.optionTargetDesc']()}
                     </li>
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">credential</code>
+                        {'•'} <code className="bg-amber-100 px-1 rounded-sm">credential</code>
                         {' — '}
                         {m[
                             'developerPortal.guides.embedClaim.configureStep.optionCredentialDesc'
                         ]()}
                     </li>
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">publishableKey</code>
+                        {'•'} <code className="bg-amber-100 px-1 rounded-sm">publishableKey</code>
                         {' — '}
                         {m[
                             'developerPortal.guides.embedClaim.configureStep.optionPublishableKeyDesc'
                         ]()}
                     </li>
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">branding</code>
+                        {'•'} <code className="bg-amber-100 px-1 rounded-sm">branding</code>
                         {' — '}
                         {m['developerPortal.guides.embedClaim.configureStep.optionBrandingDesc']()}
                     </li>
                     <li>
                         {'•'}{' '}
-                        <code className="bg-amber-100 px-1 rounded">requestBackgroundIssuance</code>{' '}
+                        <code className="bg-amber-100 px-1 rounded-sm">
+                            requestBackgroundIssuance
+                        </code>{' '}
                         {' — '}
                         {m[
                             'developerPortal.guides.embedClaim.configureStep.optionBackgroundDesc'
                         ]()}
                     </li>
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">onSuccess</code>
+                        {'•'} <code className="bg-amber-100 px-1 rounded-sm">onSuccess</code>
                         {' — '}
                         {m['developerPortal.guides.embedClaim.configureStep.optionOnSuccessDesc']()}
                     </li>
@@ -935,7 +937,7 @@ const ConfigureStep: React.FC<{
             </div>
 
             {/* Navigation */}
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <div className="flex gap-3">
                     <button
                         onClick={onBack}
@@ -1019,7 +1021,7 @@ const TestStep: React.FC<{
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.embedClaim.testStep.title']()}
@@ -1036,7 +1038,7 @@ const TestStep: React.FC<{
                     {m['developerPortal.guides.embedClaim.testStep.preflightChecklist']()}
                 </h4>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     {checks.map(check => (
                         <div key={check.label} className="flex items-center gap-2">
                             <CheckCircle2
@@ -1065,7 +1067,7 @@ const TestStep: React.FC<{
                         id="template-select"
                         value={selectedTemplateIdx}
                         onChange={e => setSelectedTemplateIdx(Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                     >
                         {templates.map((t, idx) => (
                             <option key={t.id || idx} value={idx}>
@@ -1102,7 +1104,7 @@ const TestStep: React.FC<{
                     {m['developerPortal.guides.embedClaim.testStep.userFlow']()}
                 </h4>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div className="flex items-start gap-3">
                         <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 text-xs font-medium flex items-center justify-center shrink-0">
                             {'1'}
@@ -1185,7 +1187,7 @@ const TestStep: React.FC<{
             </div>
 
             {/* Success */}
-            <div className="p-6 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
+            <div className="p-6 bg-linear-to-br/srgb from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
                 <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Play className="w-8 h-8 text-emerald-600" />
                 </div>

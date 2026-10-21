@@ -41,7 +41,7 @@ const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({ title, lastUpdated, c
 
                     <p className="text-xs text-grayscale-600 mb-8">Last Updated: {lastUpdated}</p>
 
-                    <div className="legal-content text-sm text-grayscale-700 leading-relaxed space-y-6">
+                    <div className="legal-content text-sm text-grayscale-700 leading-relaxed space-y-v3-6">
                         {children}
                     </div>
 

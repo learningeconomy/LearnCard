@@ -1,11 +1,10 @@
 # ContractsGetConsentedDataForContractRequestQueryCredentials
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**categories** | **Dict[str, bool]** |  | [optional] 
+| Name           | Type                          | Description | Notes      |
+| -------------- | ----------------------------- | ----------- | ---------- |
+| **categories** | **Dict[str, Optional[bool]]** |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ contracts_get_consented_data_for_contract_request_query_credentials_dict = contr
 # create an instance of ContractsGetConsentedDataForContractRequestQueryCredentials from a dict
 contracts_get_consented_data_for_contract_request_query_credentials_from_dict = ContractsGetConsentedDataForContractRequestQueryCredentials.from_dict(contracts_get_consented_data_for_contract_request_query_credentials_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

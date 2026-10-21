@@ -44,6 +44,96 @@ export {
 } from './crypto';
 
 export {
+    EMAIL_RELAY_ALGORITHM,
+    EMAIL_RELAY_ENVELOPE_VERSION,
+    encryptEmailRelayPayload,
+    decryptEmailRelayPayload,
+    generateEmailRelayConfirmationCode,
+    parseEmailRelayEnvelope,
+    parseEmailRelayPlaintext,
+} from './email-relay-crypto';
+
+export type {
+    EmailRelayBranding,
+    EmailRelayEnvelope,
+    EmailRelayPlaintext,
+} from './email-relay-crypto';
+
+export {
+    ESCROW_ENVELOPE_VERSION,
+    ESCROW_ALGORITHM,
+    ESCROW_BLOB_INFO,
+    ESCROW_RELEASE_INFO,
+    ESCROW_CLIENT_KEY_ID,
+    parseEscrowEnvelope,
+    parseEscrowBlobPlaintext,
+    parseEscrowReleasePlaintext,
+    generateEscrowKeyPair,
+    encryptEscrowBlob,
+    decryptEscrowBlob,
+    sealEscrowRelease,
+    openEscrowRelease,
+} from './escrow-crypto';
+
+export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+export {
+    encodeEscrowEnrollmentIntent,
+    signEscrowEnrollmentIntent,
+    getEscrowBlobIdentity,
+    ESCROW_ENROLLMENT_INTENT_DOMAIN,
+} from './escrow-enrollment-intent';
+export type {
+    EscrowEnrollmentIntent,
+    SignedEscrowEnrollmentIntent,
+} from './escrow-enrollment-intent.types';
+export { verifyEnclaveAttestation } from './escrow-attestation';
+export { EscrowEvidenceError } from './escrow-authority.types';
+export type { HistoricalEscrowEvidence } from './escrow-authority.types';
+export type { EscrowRecoveryExpectations } from '@learncard/types';
+export {
+    verifyEscrowAuthorityState,
+    verifyEscrowHoldState,
+    verifyEscrowCodeDelivery,
+    verifyEscrowEnrollmentCommit,
+    createEscrowEnrollmentIntent,
+    resolveEscrowEnrollmentAction,
+    violatesCarryContactRule,
+} from './escrow-authority';
+export type { EscrowEnrollmentActionInput } from './escrow-authority';
+export type {
+    VerifiedEnclaveIdentity,
+    EscrowAuthorityRecord,
+    EscrowAuthorityState,
+    VerifiedEscrowMutation,
+} from './escrow-authority.types';
+export { verifyNitroAttestationDocument, NitroAttestationError } from './escrow-nitro-attestation';
+export type { NitroAttestationReason } from './escrow-nitro-attestation';
+export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
+export type {
+    EscrowEnrollmentOptions,
+    EscrowEnrollmentState,
+    EscrowBlobStaleReason,
+    EscrowPinStatus,
+} from './types';
+export {
+    EscrowPinMismatchError,
+    EscrowPinLockedError,
+    EscrowPinThrottledError,
+    EscrowHoldRestartThrottledError,
+    EscrowPinUnavailableError,
+} from './types';
+export {
+    PIN_MIN_LENGTH,
+    PIN_MAX_LENGTH,
+    ESCROW_PIN_MAX_ATTEMPTS,
+    normalizePin,
+    validatePin,
+    generatePinSalt,
+    derivePinProof,
+    constantTimeEqualHex,
+} from './escrow-pin';
+
+export {
     createPasskeyCredential,
     deriveKeyFromPasskey,
     encryptShareWithPasskey,
@@ -60,6 +150,7 @@ export {
     generateRecoveryPhrase,
     validateRecoveryPhrase,
     countWords,
+    buildRecoveryPhraseChallengeOptions,
 } from './recovery-phrase';
 
 export type { RecoveryPhraseData } from './recovery-phrase';
@@ -71,6 +162,7 @@ export {
     atomicRecovery,
     ShareVerificationError,
     AtomicUpdateError,
+    ShareWriteRejectedError,
 } from './atomic-operations';
 
 export type {
@@ -79,7 +171,11 @@ export type {
     StorageOperations,
 } from './atomic-operations';
 
-export { createSSSStrategy } from './sss-strategy';
+export {
+    createSSSStrategy,
+    IdentityRecoverySessionConsumedError,
+    EscrowRequestError,
+} from './sss-strategy';
 
 export type { SSSStorageFunctions, SSSStrategyConfig } from './sss-strategy';
 
@@ -125,6 +221,7 @@ export type {
     AuthProvider,
     AuthUser,
     AuthProviderType,
+    DidAuthVpSigner,
     ContactMethod,
     ContactMethodType,
     RecoveryMethod,
@@ -134,6 +231,7 @@ export type {
     RecoveryResult,
     RecoverySetupInput,
     RecoverySetupResult,
+    RecoveryConfirmationInput,
     PasskeyRecoveryMethod,
     BackupFileRecoveryMethod,
     RecoveryPhraseRecoveryMethod,

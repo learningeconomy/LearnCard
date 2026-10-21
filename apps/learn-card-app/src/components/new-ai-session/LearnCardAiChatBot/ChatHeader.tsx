@@ -187,14 +187,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
     return (
         <div className="sticky top-0 z-[100] w-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] pt-[12px] sm:pt-3 pb-3 px-4">
             <div className="w-full max-w-[829px] mx-auto flex items-start gap-3">
-                <div className="flex-shrink-0 mt-[2px]">
+                <div className="shrink-0 mt-[2px]">
                     {isInsights ? (
                         <AiInsightsIconWithShape className="h-[28px] w-[28px] text-grayscale-900" />
                     ) : aiApp?.img ? (
                         <img
                             src={aiApp.img}
                             alt={`${aiApp.name ?? 'AI'} logo`}
-                            className="h-[28px] w-[28px] rounded-full object-cover bg-white border-[1px] border-solid border-grayscale-200"
+                            className="h-[28px] w-[28px] rounded-full object-cover bg-white border border-solid border-grayscale-200"
                         />
                     ) : (
                         <AiSessionsIconWithShape className="h-[28px] w-[28px] text-grayscale-900" />
@@ -221,7 +221,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
                 <button
                     type="button"
                     onClick={handleFinishSession}
-                    className="flex-shrink-0 p-1 -mr-1 text-grayscale-600"
+                    className="shrink-0 p-1 -mr-1 text-grayscale-600"
                     aria-label={m['common.close']()}
                 >
                     <X className="text-grayscale-800 w-[24px] h-[24px]" strokeWidth="3" />

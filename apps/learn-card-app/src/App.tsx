@@ -35,6 +35,7 @@ import './theme/floating-tab-bar.css';
 
 // importing styles
 import '@learncard/react/main.css';
+import './tailwind.css';
 import './index.scss';
 
 // base styles of swiper js
@@ -61,7 +62,12 @@ const App: React.FC = () => {
     const isNativePlatform = Capacitor?.isNativePlatform() ?? false;
     // If the user has not completed the intro sliders then show them
     // If they have, then show the app as usual
-    if (!introSlidesCompleted && !isLoggedIn && isNativePlatform) {
+    if (
+        !introSlidesCompleted &&
+        !isLoggedIn &&
+        isNativePlatform &&
+        !/^\/s(?:\/|$)/.test(window.location.pathname)
+    ) {
         return (
             <IonReactRouter history={history}>
                 <IonApp>

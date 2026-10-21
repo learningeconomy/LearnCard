@@ -1,4 +1,19 @@
 import { vi, describe, beforeAll, beforeEach, afterEach, it, expect } from 'vitest';
+
+// Wraps the real signer so a test can inspect the credential it was handed.
+const signingAuthorityMocks = vi.hoisted(() => ({ issueCredential: vi.fn() }));
+
+vi.mock('@helpers/signingAuthority.helpers', async importOriginal => {
+    const actual = await importOriginal<typeof import('@helpers/signingAuthority.helpers')>();
+    signingAuthorityMocks.issueCredential.mockImplementation(
+        actual.issueCredentialWithSigningAuthority
+    );
+    return {
+        ...actual,
+        issueCredentialWithSigningAuthority: signingAuthorityMocks.issueCredential,
+    };
+});
+
 import {
     promiscuousTerms,
     minimalContract,
@@ -960,6 +975,47 @@ describe('Consent Flow Contracts', () => {
             expect(data.records[0]?.terms).toEqual(normalFullTerms);
         });
 
+        it('does not require guardian approval for managed service profiles, but does for managed children', async () => {
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+
+            const managedChildData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(managedChildData.records[0]?.guardian.required).toBe(true);
+
+            await Profile.update({ isServiceProfile: true }, { where: { profileId: 'userb' } });
+            const serviceProfileData =
+                await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+            expect(serviceProfileData.records[0]?.guardian).toEqual({
+                required: false,
+                approved: false,
+            });
+        });
+
+        it('keeps guardian approval required for legacy service-flagged children', async () => {
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+            await Profile.update(
+                { type: 'child', isServiceProfile: true },
+                { where: { profileId: 'userb' } }
+            );
+
+            const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(data.records[0]?.guardian).toEqual({
+                required: true,
+                approved: false,
+            });
+        });
+
         it('should omit withdrawn consent before returning provider-facing data', async () => {
             const activeData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
@@ -1162,6 +1218,17 @@ describe('Consent Flow Contracts', () => {
                 approved: true,
                 approval,
             });
+            await Profile.update({ isServiceProfile: true }, { where: { profileId: 'userb' } });
+            const serviceProfileWithApproval =
+                await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+            expect(serviceProfileWithApproval.records[0]?.guardian).toEqual({
+                required: true,
+                approved: true,
+                approval,
+            });
+
             const current = (await getContractTermsByUri(approved.records[0]!.termsUri))!;
             expect(current.terms.guardianApproval).toEqual(approval);
             const transactions = await getTransactionsForTerms(current.terms.id, { limit: 10 });
@@ -1897,6 +1964,92 @@ describe('Consent Flow Contracts', () => {
             // At least one transaction should be an auto-boost transaction
             const hasAutoBoostTx = transactions.records.some(tx => tx.action === 'write');
             expect(hasAutoBoostTx).toBeTruthy();
+        });
+
+        describe('first-consent auto-boost issuance dates', () => {
+            // A malformed date seen on a production Boost template; DIDKit refuses to sign it.
+            const MALFORMED_DATE = '2025-10-19+053008:18:16';
+            const TEMPLATE_DATE = '2025-10-19T08:18:16.000Z';
+
+            const consentWithAutoBoost = async (credential: Record<string, unknown>) => {
+                await userA.clients.fullAuth.profile.registerSigningAuthority({
+                    endpoint: 'http://localhost:5000/api',
+                    name: 'mysa',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                });
+
+                const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                    credential: credential as typeof testUnsignedBoost,
+                    category: 'Achievement',
+                    name: 'Auto-issued Boost',
+                });
+
+                const contractUri =
+                    await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: normalContract,
+                        name: 'Auto Boost Contract',
+                        autoboosts: [
+                            {
+                                boostUri,
+                                signingAuthority: {
+                                    endpoint: 'http://localhost:5000/api',
+                                    name: 'mysa',
+                                },
+                            },
+                        ],
+                    });
+
+                signingAuthorityMocks.issueCredential.mockClear();
+                const before = Date.now();
+                const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms,
+                });
+
+                expect(signingAuthorityMocks.issueCredential).toHaveBeenCalledTimes(1);
+                const unsigned = signingAuthorityMocks.issueCredential.mock.calls[0]![1];
+                const { records } =
+                    await userB.clients.fullAuth.contracts.getCredentialsForContract({ termsUri });
+
+                return { unsigned, records, before };
+            };
+
+            const expectFreshDate = (value: unknown, before: number) => {
+                expect(typeof value).toBe('string');
+                expect(value).toBe(new Date(value as string).toISOString());
+                expect(Date.parse(value as string)).toBeGreaterThanOrEqual(before);
+            };
+
+            it('restamps a malformed issuanceDate on a VC 1.1 template', async () => {
+                const { unsigned, records, before } = await consentWithAutoBoost({
+                    ...testUnsignedBoost,
+                    issuanceDate: MALFORMED_DATE,
+                });
+
+                expectFreshDate(unsigned.issuanceDate, before);
+                // Consent swallows signing errors, so a missing record means signing failed.
+                expect(records).toHaveLength(1);
+            });
+
+            it('drops a leftover issuanceDate on a VC 2.0 template', async () => {
+                const { unsigned, records, before } = await consentWithAutoBoost({
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://ctx.learncard.com/boosts/1.0.1.json',
+                    ],
+                    type: ['VerifiableCredential', 'BoostCredential'],
+                    issuer: 'did:example:issuer',
+                    validFrom: TEMPLATE_DATE,
+                    issuanceDate: TEMPLATE_DATE,
+                    name: 'VC 2.0 Auto Boost',
+                    credentialSubject: { id: 'did:example:subject' },
+                });
+
+                expectFreshDate(unsigned.validFrom, before);
+                // The VC 2.0 context doesn't define issuanceDate, so DIDKit won't sign with it.
+                expect(unsigned).not.toHaveProperty('issuanceDate');
+                expect(records).toHaveLength(1);
+            });
         });
 
         it('should auto-issue boosts when reconsenting to a contract with auto-boosts', async () => {
@@ -3343,7 +3496,7 @@ describe('Consent Flow Contracts', () => {
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
                 name: 'a',
-                expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString(), // Set explicit expiration
+                expiresAt: '2999-01-01T00:00:00.000Z', // New consent uses Neo4j's real clock.
             });
             const { termsUri: _termsUri } =
                 await userB.clients.fullAuth.contracts.consentToContract({
@@ -3351,6 +3504,11 @@ describe('Consent Flow Contracts', () => {
                     terms: minimalTerms,
                 });
             termsUri = _termsUri;
+            // Verification's fake JS clock can still inspect an existing historical consent.
+            await ConsentFlowContract.update(
+                { expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString() },
+                { where: { id: contractUri.split(':').at(-1)! } }
+            );
         });
 
         afterAll(async () => {
@@ -3420,7 +3578,7 @@ describe('Consent Flow Contracts', () => {
                 {
                     contract: minimalContract,
                     name: 'b',
-                    expiresAt: new Date(2024, 4, 19).toISOString(),
+                    expiresAt: '2999-01-01T00:00:00.000Z',
                 }
             );
 
@@ -3428,6 +3586,10 @@ describe('Consent Flow Contracts', () => {
                 contractUri: newContractUri,
                 terms: minimalTerms,
             });
+            await ConsentFlowContract.update(
+                { expiresAt: new Date(2024, 4, 19).toISOString() },
+                { where: { id: newContractUri.split(':').at(-1)! } }
+            );
 
             expect(
                 await userA.clients.fullAuth.contracts.verifyConsent({

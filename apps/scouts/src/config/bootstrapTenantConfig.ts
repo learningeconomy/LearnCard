@@ -5,11 +5,12 @@ import {
     setAuthConfigFromTenant,
     setImageUploadConfigFromTenant,
     getTenantBaseUrl,
+    getAuthConfig,
+    initializeAuthProvider,
     type TenantConfig,
 } from 'learn-card-base';
 import { deepMerge } from 'learn-card-base/config/deepMerge';
 
-import { initializeFirebaseFromTenant } from '../firebase/firebase';
 import { environment } from './environment';
 
 const SCOUTS_TENANT_BASE_CONFIG: TenantConfig = {
@@ -162,9 +163,16 @@ const setResolvedTenantConfig = (config: TenantConfig): void => {
     getBootstrapState().resolvedConfig = config;
 };
 
-const initializeTenantSubsystems = (config: TenantConfig): void => {
-    initializeFirebaseFromTenant(config.auth.firebase);
+const initializeTenantSubsystems = async (config: TenantConfig): Promise<void> => {
+    // Bridge auth config first so getAuthConfig() resolves the tenant's
+    // actual provider before the provider-specific SDK bootstrap below runs.
     setAuthConfigFromTenant(config);
+
+    // Only the initializer registered for config.auth.provider runs (e.g.
+    // Firebase's initializeApp + analytics), so a non-Firebase tenant never
+    // touches the Firebase SDK.
+    await initializeAuthProvider(getAuthConfig());
+
     setImageUploadConfigFromTenant(config);
     initNetworkStoreFromTenant(config.apis, config.tenantId);
 };
@@ -231,7 +239,7 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
             (await resolveTenantConfig({ staticConfig: SCOUTS_TENANT_CONFIG }));
 
         setResolvedTenantConfig(config);
-        initializeTenantSubsystems(config);
+        await initializeTenantSubsystems(config);
 
         return config;
     })();

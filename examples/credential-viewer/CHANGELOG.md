@@ -1,5 +1,80 @@
 # @learncard/credential-viewer
 
+## 0.0.32
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/credential-library@2.1.2
+    - @learncard/init@2.5.4
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/sd-jwt-vc-plugin@0.2.17
+
+## 0.0.31
+
+### Patch Changes
+
+- Updated dependencies [[`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638)]:
+    - @learncard/credential-library@2.1.1
+    - @learncard/init@2.5.3
+    - @learncard/lca-api-plugin@2.0.9
+
+## 0.0.30
+
+### Patch Changes
+
+- [#1638](https://github.com/learningeconomy/LearnCard/pull/1638) [`aaeca3dad4a899a4ce7e96009ba211b4c27af7a2`](https://github.com/learningeconomy/LearnCard/commit/aaeca3dad4a899a4ce7e96009ba211b4c27af7a2) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2111] Add Qualifications across LearnCard navigation, credential organization, issuance, sharing, and resumes. Reclassify eligible automatic categories while preserving explicit choices, default qualifications to certificate displays, and keep expired credentials visible and shareable. Add illustrated test credentials and viewer support for preserving their expiration dates.
+
+    Fix Boost notification render loops by reusing URI-keyed cached Boost details.
+
+    Preserve indexed categories in sharing and classify preselected credentials once, reusing cached Boost lookups when index metadata is unavailable.
+
+    Give Qualifications a distinct navigation identity so it does not reuse another menu item's React key.
+
+    Retry truncated category scans on the next session and refresh open sharing lists after reclassification.
+
+    Keep available credentials selectable when another indexed credential cannot be loaded.
+
+    Replace Qualifications trophy placeholders with the supplied Figma SVG artwork across wallet tiles, navigation, selectors, activity filters, credential corners, and image fallbacks. Keep Colorful and Formal variants independent and preserve the existing Formal empty-state fallback.
+
+    Use an orange Qualifications palette across Passport tiles, category pages, Boost previews, notifications, and certificate displays. Match the existing section shades with orange-300 tiles and tabs, orange-400 headers, orange-200 page backgrounds, and orange-500 count badges with dark text. Keep Neutral Mode surfaces neutral while using the supplied Colorful Solid Color Qualifications icon in both Passport layouts.
+
+    Fix About Qualifications to display Qualifications artwork and explain professional credentials instead of falling back to Skills. Select descriptor content by category rather than the translated title, add the description in every supported language, and present the modal through the shared inset-owning surface.
+
+    Use white Passport category-card backgrounds in Neutral Mode for both tile and list views. Preserve the existing Colorful category backgrounds and icons.
+
+    Recognize French Qualification and Qualifications labels as legitimate cognates in the untranslated-value guard, and normalize the changed-file formatting required by CI. Resolve existing Boost helper lint errors without changing credential updates, template ordering, recipient filtering, query parameters, or image selection.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`23c30e68ca4fc5feb70ab3a5660aae71e486d63e`](https://github.com/learningeconomy/LearnCard/commit/23c30e68ca4fc5feb70ab3a5660aae71e486d63e), [`aaeca3dad4a899a4ce7e96009ba211b4c27af7a2`](https://github.com/learningeconomy/LearnCard/commit/aaeca3dad4a899a4ce7e96009ba211b4c27af7a2), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012)]:
+    - @learncard/types@5.23.0
+    - @learncard/credential-library@2.1.0
+    - @learncard/init@2.5.2
+    - @learncard/lca-api-plugin@2.0.8
+    - @learncard/sd-jwt-vc-plugin@0.2.16
+
+## 0.0.29
+
+### Patch Changes
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`2ebda517e9468476f22d3ae3b4ebddf67e8aca78`](https://github.com/learningeconomy/LearnCard/commit/2ebda517e9468476f22d3ae3b4ebddf67e8aca78), [`0e9dd47f4451d776ad1787d0a35dbd54141b9fe3`](https://github.com/learningeconomy/LearnCard/commit/0e9dd47f4451d776ad1787d0a35dbd54141b9fe3), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f), [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c)]:
+    - @learncard/types@5.22.0
+    - @learncard/credential-library@2.0.5
+    - @learncard/init@2.5.1
+    - @learncard/lca-api-plugin@2.0.7
+    - @learncard/sd-jwt-vc-plugin@0.2.15
+
+## 0.0.28
+
+### Patch Changes
+
+- Updated dependencies [[`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45), [`59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4`](https://github.com/learningeconomy/LearnCard/commit/59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4), [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e), [`3174c09b97fde6f7b5251390245038cf6b7ea9ba`](https://github.com/learningeconomy/LearnCard/commit/3174c09b97fde6f7b5251390245038cf6b7ea9ba), [`5c87de780c20924cfb94cfce2a155437014f9ea1`](https://github.com/learningeconomy/LearnCard/commit/5c87de780c20924cfb94cfce2a155437014f9ea1), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f)]:
+    - @learncard/types@5.21.0
+    - @learncard/init@2.5.0
+    - @learncard/credential-library@2.0.4
+    - @learncard/lca-api-plugin@2.0.6
+    - @learncard/sd-jwt-vc-plugin@0.2.14
+
 ## 0.0.27
 
 ### Patch Changes

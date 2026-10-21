@@ -36,7 +36,7 @@ export const ShareInsightsCardController: React.FC<{
     return (
         <button
             onClick={handleShareInsights}
-            className="h-full p-6 bg-grayscale-50 flex flex-col items-center justify-center border-l-[1px] border-solid border-grayscale-200"
+            className="h-full p-6 bg-grayscale-50 flex flex-col items-center justify-center border-l border-solid border-grayscale-200"
         >
             <QRCodeScanner className="text-indigo-600 h-[30px] w-[30px] min-h-[30px] min-w-[30px] mb-2" />
             <span className="text-indigo-600 text-sm leading-[16px] font-semibold">

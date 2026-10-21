@@ -87,7 +87,7 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
                     placeholder={m['aiPathways.usd']()}
                     type="number"
                     startIcon={<span className="text-grayscale-600 text-[14px] pb-[1px]">$</span>}
-                    inputClassName="!pl-[30px]"
+                    inputClassName="pl-[30px]!"
                 />
             </div>
 
@@ -95,13 +95,13 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
                 value={salaryType}
                 onChange={setSalaryType}
                 options={SALARY_TYPE_OPTIONS}
-                name="salary_type"
+                aria-label={m['skillProfile.step3.howMuchMoney']()}
                 columns={2}
             />
 
             <div className="flex gap-[10px] w-full">
                 <button
-                    className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border-[1px] border-solid border-grayscale-200 h-[44px]"
+                    className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border border-solid border-grayscale-200 h-[44px]"
                     onClick={handleBack}
                     disabled={isSaving}
                 >

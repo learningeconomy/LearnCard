@@ -1,12 +1,11 @@
 # CredentialAcceptCredentialRequestOptions
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**skip_notification** | **bool** |  | [optional] [default to False]
-**metadata** | **Dict[str, object]** |  | [optional] 
+| Name                  | Type                            | Description | Notes                         |
+| --------------------- | ------------------------------- | ----------- | ----------------------------- |
+| **skip_notification** | **bool**                        |             | [optional] [default to False] |
+| **metadata**          | **Dict[str, Optional[object]]** |             | [optional]                    |
 
 ## Example
 
@@ -25,6 +24,5 @@ credential_accept_credential_request_options_dict = credential_accept_credential
 # create an instance of CredentialAcceptCredentialRequestOptions from a dict
 credential_accept_credential_request_options_from_dict = CredentialAcceptCredentialRequestOptions.from_dict(credential_accept_credential_request_options_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

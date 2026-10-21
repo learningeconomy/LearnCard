@@ -54,13 +54,13 @@ export const AiPassportAppProfileOptionsItem: React.FC<{
         if (type === AiAppProfileOptionsEnum.personalization) {
             newModal(
                 <AiPassportPersonalizationContainer />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
         } else if (type === AiAppProfileOptionsEnum.appProfile) {
             newModal(
                 <AiPassportAppProfile app={app} />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
         } else if (type === AiAppProfileOptionsEnum.privacy) {
@@ -74,7 +74,7 @@ export const AiPassportAppProfileOptionsItem: React.FC<{
                     termsUri={consentedContract?.uri}
                     headerClass="bg-white"
                 />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
         }
@@ -83,7 +83,7 @@ export const AiPassportAppProfileOptionsItem: React.FC<{
     return (
         <div
             onClick={handleOnClick}
-            className="flex items-center justify-between w-full bg-white pb-[12px] pt-[12px] last:border-0 border-solid border-b-[1px] border-b-grayscale-200 cursor-pointer"
+            className="flex items-center justify-between w-full bg-white pb-[12px] pt-[12px] last:border-0 border-solid border-b border-b-grayscale-200 cursor-pointer"
         >
             <div className="flex items-center justify-start">
                 <div className="w-[45px] flex items-center justify-center mr-1">
@@ -99,7 +99,7 @@ export const AiPassportAppProfileOptionsItem: React.FC<{
                     {type === AiAppProfileOptionsEnum.appProfile && (
                         <div className="h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px]">
                             <img
-                                className="w-full h-full object-cover bg-white rounded-full overflow-hidden border-[1px] border-solid"
+                                className="w-full h-full object-cover bg-white rounded-full overflow-hidden border border-solid"
                                 alt={`${app?.name} logo`}
                                 src={app.img}
                             />

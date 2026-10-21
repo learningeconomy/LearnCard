@@ -119,12 +119,18 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                         e.stopPropagation();
                                         qrCodeOnClick?.();
                                     }}
-                                    className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] right-[45%]"
+                                    className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] left-1/2 -translate-x-1/2 z-10"
                                 >
                                     <QRCodeIcon className="text-grayscale-900 " />
                                 </button>
                             )}
-                            <img src={IDSleeve} alt="id-sleeve" className="w-full object-cover" />
+                            <img
+                                src={IDSleeve}
+                                alt="id-sleeve"
+                                width={295}
+                                height={89}
+                                className="block w-full h-auto object-cover"
+                            />
                         </div>
                     </Flipped>
 
@@ -135,8 +141,8 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                     <TruncateTextBox
                                         text={description}
                                         className="description-box"
-                                        containerClassName="!p-0 !shadow-none !text-center !w-full"
-                                        textClassName="!font-poppins !text-base !text-grayscale-700 !text-center !w-full"
+                                        containerClassName="p-0! shadow-none! text-center! w-full!"
+                                        textClassName="font-poppins! text-base! text-grayscale-700! text-center! w-full!"
                                         truncateThreshold={204}
                                     />
                                 </>
@@ -172,31 +178,31 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                 }`}
                             >
                                 {isSelfVerified && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-green-dark flex gap-[3px] items-center">
+                                    <span className="uppercase font-poppins text-base font-medium text-green-dark flex gap-[3px] items-center">
                                         <PersonBadge className="w-[20px] h-[20px]" />
                                         Self Issued
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.trustedVerifier && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-blue-light flex gap-[3px] items-center text-center">
+                                    <span className="uppercase font-poppins text-base font-medium text-blue-light flex gap-[3px] items-center text-center">
                                         <VerifiedBadge className="w-[20px] h-[20px]" />
                                         {unknownVerifierTitle ?? 'Trusted Issuer'}
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.unknownVerifier && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-orange-500 flex gap-[3px] items-center">
+                                    <span className="uppercase font-poppins text-base font-medium text-orange-500 flex gap-[3px] items-center">
                                         <UnknownVerifierBadge className="w-[20px] h-[20px]" />
                                         Unknown Issuer
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.appIssuer && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-cyan-600 flex gap-[3px] items-center">
+                                    <span className="uppercase font-poppins text-base font-medium text-cyan-600 flex gap-[3px] items-center">
                                         <VerifiedBadge className="w-[20px] h-[20px]" />
                                         App Issuer
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.untrustedVerifier && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-red-mastercard flex gap-[3px] items-center">
+                                    <span className="uppercase font-poppins text-base font-medium text-red-mastercard flex gap-[3px] items-center">
                                         <RedFlag className="w-[20px] h-[20px]" />
                                         Untrusted Issuer
                                     </span>

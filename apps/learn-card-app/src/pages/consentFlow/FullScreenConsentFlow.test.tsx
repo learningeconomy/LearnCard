@@ -18,9 +18,17 @@ import {
 import { useUpdateTerms } from 'learn-card-base/hooks/useUpdateTerms';
 import { useConsentToContract } from 'learn-card-base/hooks/useConsentToContract';
 import FullScreenConsentFlow from './FullScreenConsentFlow';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { ReferralConsentReview } from '../../components/contract-requests/ReferralModal';
 
 const state = vi.hoisted(() => ({
+    search: '',
+    push: vi.fn(),
+    closeAllModals: vi.fn(),
     child: true,
+    referralsEnabled: true,
+    service: false,
     now: 1_800_000_000_875,
     initWallet: vi.fn(),
     sign: vi.fn(),
@@ -32,16 +40,41 @@ const state = vi.hoisted(() => ({
     presentToast: vi.fn(),
 }));
 
-vi.mock('learn-card-base', () => ({
+vi.mock('../../paraglide/messages.js', async () => {
+    const catalog = (await import('../../../public/locales/en/translation.json')).default;
+    const messages: Record<string, () => string> = {};
+    const flatten = (value: object, prefix = '') => {
+        for (const [key, child] of Object.entries(value)) {
+            const name = prefix ? `${prefix}.${key}` : key;
+            if (typeof child === 'string') messages[name] = () => child;
+            else if (child && typeof child === 'object') flatten(child, name);
+        }
+    };
+    flatten(catalog);
+    return messages;
+});
+vi.mock('../../hooks/useContractRequestsEnabled', () => ({
+    useContractRequestsEnabled: () => state.referralsEnabled,
+}));
+
+vi.mock('learn-card-base', async () => ({
+    ...(await import('learn-card-base/helpers/consentErrors')),
     useConsentToContract: (...args: Parameters<typeof useConsentToContract>) =>
         useConsentToContract(...args),
     useWallet: () => ({ initWallet: state.initWallet }),
     switchedProfileStore: {
         use: {
-            isSwitchedProfile: () => state.child,
-            profileType: () => (state.child ? 'child' : 'parent'),
+            isSwitchedProfile: () => state.child || state.service,
+            profileType: () => (state.service ? 'service' : state.child ? 'child' : 'parent'),
         },
-        get: { switchedDid: () => (state.child ? 'did:example:child' : undefined) },
+        get: {
+            switchedDid: () =>
+                state.service
+                    ? 'did:example:service'
+                    : state.child
+                      ? 'did:example:child'
+                      : undefined,
+        },
     },
     currentUserStore: {
         use: { parentUserDid: () => 'did:example:parent' },
@@ -50,7 +83,11 @@ vi.mock('learn-card-base', () => ({
     useGetCurrentLCNUser: () => ({ currentLCNUser: null }),
     calculateAge: () => NaN,
     getLogger: () => ({ warn: vi.fn() }),
-    useModal: () => ({ newModal: state.newModal, closeModal: vi.fn(), closeAllModals: vi.fn() }),
+    useModal: () => ({
+        newModal: state.newModal,
+        closeModal: vi.fn(),
+        closeAllModals: state.closeAllModals,
+    }),
     useToast: () => ({ presentToast: state.presentToast }),
     useSyncConsentFlow: () => ({ refetch: vi.fn() }),
     useGetProfile: () => ({ data: undefined }),
@@ -61,9 +98,16 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { FullScreen: 'fullscreen', Cancel: 'cancel', Right: 'right' },
     ToastTypeEnum: { Error: 'error', Success: 'success' },
 }));
+vi.mock('learn-card-base/components/modals/useModal', () => ({
+    useModal: () => ({
+        newModal: state.newModal,
+        closeModal: vi.fn(),
+        closeAllModals: state.closeAllModals,
+    }),
+}));
 vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ push: vi.fn() }),
-    useLocation: () => ({ search: '' }),
+    useHistory: () => ({ push: state.push }),
+    useLocation: () => ({ search: state.search }),
 }));
 vi.mock('../../components/network-prompts/hooks/useLCNGatedAction', () => ({
     default: () => ({ gate: async () => ({ prompted: false }) }),
@@ -136,7 +180,11 @@ const approvePin = async (modalNumber: number) => {
 describe('guardian approval at the consent submission boundary', () => {
     beforeEach(() => {
         vi.resetAllMocks();
+        state.search = '';
+        networkStore.set.aiServiceUrl('https://api.example.test');
         state.child = true;
+        state.referralsEnabled = true;
+        state.service = false;
         state.now = 1_800_000_000_875;
         vi.spyOn(Date, 'now').mockImplementation(() => state.now);
         guardianApprovalStore.set.clearAllApprovals();
@@ -150,6 +198,11 @@ describe('guardian approval at the consent submission boundary', () => {
         state.upload.mockResolvedValue('lc:shared');
         state.initWallet.mockResolvedValue({
             invoke: {
+                getContract: vi.fn().mockResolvedValue(contract),
+                getConsentedContracts: vi.fn().mockResolvedValue({
+                    records: [{ uri: 'lc:terms', contract }],
+                    hasMore: false,
+                }),
                 hasPin: state.hasPin,
                 getDidAuthVp: state.sign,
                 consentToContract: state.consent,
@@ -169,6 +222,257 @@ describe('guardian approval at the consent submission boundary', () => {
         cleanup();
         queryClient.clear();
         vi.restoreAllMocks();
+    });
+
+    it.each(['query', 'contract'])(
+        'rejects known legacy %s redirect before saving consent or success',
+        async source => {
+            state.child = false;
+            if (source === 'query')
+                state.search = '?returnTo=https%3A%2F%2Fapi.example.test%2Fcallback';
+            const success = vi.fn();
+            showFlow({
+                disableRedirect: false,
+                successCallback: success,
+                contractDetails: {
+                    ...contract,
+                    uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                    ...(source === 'contract'
+                        ? { redirectUrl: 'https://api.example.test/callback' }
+                        : {}),
+                },
+            });
+            fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+            await waitFor(() =>
+                expect(state.presentToast).toHaveBeenCalledWith(
+                    expect.stringMatching(/Go back to AI Passport and sign in again/),
+                    expect.objectContaining({ type: 'error' })
+                )
+            );
+            expect(state.consent).not.toHaveBeenCalled();
+            expect(success).not.toHaveBeenCalled();
+            expect(state.closeAllModals).not.toHaveBeenCalled();
+            expect(screen.getByRole('button', { name: 'Connect' })).toBeVisible();
+        }
+    );
+    it('rejects unexpected returned redirect before success', async () => {
+        state.child = false;
+        state.consent.mockResolvedValue({ redirectUrl: 'https://api.example.test/callback' });
+        const success = vi.fn();
+        showFlow({
+            disableRedirect: false,
+            successCallback: success,
+            contractDetails: { ...contract, uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() =>
+            expect(state.presentToast).toHaveBeenCalledWith(
+                expect.stringMatching(/Go back to AI Passport/),
+                expect.objectContaining({ type: 'error' })
+            )
+        );
+        expect(state.consent).toHaveBeenCalledOnce();
+        expect(success).not.toHaveBeenCalled();
+        expect(state.closeAllModals).not.toHaveBeenCalled();
+    });
+
+    it('waits for challenged proof generation before signaling success', async () => {
+        state.child = false;
+        state.search =
+            '?returnTo=https%3A%2F%2Fapi.example.test%2Fcallback&challenge=backend-challenge&domain=https%3A%2F%2Fapi.example.test';
+        const wallet = await state.initWallet();
+        wallet.id = { did: () => 'did:key:holder' };
+        wallet.invoke.issuePresentation = vi
+            .fn()
+            .mockRejectedValue(new Error('Signing interrupted'));
+        const success = vi.fn();
+        showFlow({
+            disableRedirect: false,
+            successCallback: success,
+            contractDetails: { ...contract, uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() =>
+            expect(state.presentToast).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({ type: 'error' })
+            )
+        );
+        expect(wallet.invoke.issuePresentation).toHaveBeenCalledWith(
+            expect.any(Object),
+            expect.objectContaining({
+                challenge: 'backend-challenge',
+                domain: 'https://api.example.test',
+                proofFormat: 'jwt',
+                proofPurpose: 'authentication',
+            })
+        );
+        expect(state.consent).toHaveBeenCalledOnce();
+        expect(success).not.toHaveBeenCalled();
+        expect(state.closeAllModals).not.toHaveBeenCalled();
+    });
+    describe('challenged callback on the contract redirect origin', () => {
+        const taylorBot = 'https://taylorbot.example.test';
+        const search = (domain: string) =>
+            `?${new URLSearchParams({
+                returnTo: `${taylorBot}/auth/callback?challenge=backend-challenge&response_mode=fragment`,
+                challenge: 'backend-challenge',
+                domain,
+            })}`;
+        const showTaylorBot = () =>
+            showFlow({
+                disableRedirect: false,
+                successCallback: vi.fn(),
+                contractDetails: { ...contract, redirectUrl: `${taylorBot}/auth/callback` },
+            });
+
+        it('saves consent and signs for the contract redirect origin', async () => {
+            state.child = false;
+            state.search = search(taylorBot);
+            const wallet = await state.initWallet();
+            wallet.id = { did: () => 'did:key:holder' };
+            // Stop before navigation; the proof request is what matters here.
+            wallet.invoke.issuePresentation = vi.fn().mockRejectedValue(new Error('stop'));
+            showTaylorBot();
+            fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+            await waitFor(() => expect(wallet.invoke.issuePresentation).toHaveBeenCalledOnce());
+            expect(wallet.invoke.issuePresentation).toHaveBeenCalledWith(
+                expect.any(Object),
+                expect.objectContaining({ challenge: 'backend-challenge', domain: taylorBot })
+            );
+            expect(state.consent).toHaveBeenCalledOnce();
+        });
+
+        it('rejects a mismatched domain before saving consent', async () => {
+            state.child = false;
+            state.search = search('https://attacker.example');
+            showTaylorBot();
+            fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+            await waitFor(() =>
+                expect(state.presentToast).toHaveBeenCalledWith(
+                    expect.any(String),
+                    expect.objectContaining({ type: 'error' })
+                )
+            );
+            expect(state.consent).not.toHaveBeenCalled();
+        });
+    });
+    it('completes in-app consent with configured and returned redirects', async () => {
+        state.child = false;
+        state.consent.mockResolvedValue({ redirectUrl: 'https://api.example.test/callback' });
+        const success = vi.fn();
+        showFlow({
+            disableRedirect: true,
+            keepParentModalsOpen: true,
+            successCallback: success,
+            contractDetails: {
+                ...contract,
+                uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                redirectUrl: 'https://api.example.test/callback',
+            },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(success).toHaveBeenCalledOnce());
+        expect(state.closeAllModals).not.toHaveBeenCalled();
+        expect(state.consent).toHaveBeenCalledOnce();
+        expect(state.presentToast).not.toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ type: 'error' })
+        );
+    });
+    it.each([{}, { insightsProfile: 'profile' }, { childInsightsProfile: 'child' }])(
+        'closes standalone or insights consent with %j',
+        async props => {
+            state.child = false;
+            showFlow({ disableRedirect: true, ...props });
+            fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+            await waitFor(() => expect(state.closeAllModals).toHaveBeenCalledOnce());
+        }
+    );
+    it('keeps the parent chatbot open when already consented', async () => {
+        state.child = false;
+        const success = vi.fn();
+        state.consent.mockRejectedValueOnce(
+            new Error("You've already consented to this contract!")
+        );
+        showFlow({ keepParentModalsOpen: true, successCallback: success });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(success).toHaveBeenCalledOnce());
+        expect(state.closeAllModals).not.toHaveBeenCalled();
+    });
+    it('closes the modal stack for redirect-disabled consent with a success callback', async () => {
+        state.child = false;
+        const success = vi.fn();
+        showFlow({ successCallback: success });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.closeAllModals).toHaveBeenCalledOnce());
+        expect(success).toHaveBeenCalledOnce();
+        expect(state.push).not.toHaveBeenCalled();
+    });
+    it('closes an accepted referral review whose callback only refreshes', async () => {
+        state.child = false;
+        const refresh = vi.fn();
+        render(
+            <ReferralConsentReview
+                contractDetails={contract}
+                disableRedirect
+                successCallback={refresh}
+            />,
+            { wrapper }
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.closeAllModals).toHaveBeenCalledOnce());
+        expect(refresh).toHaveBeenCalledOnce();
+    });
+    it('navigates locally after successful AI Passport consent', async () => {
+        state.child = false;
+        state.search = '?returnTo=%2Fai%2Fsessions';
+        const success = vi.fn();
+        showFlow({
+            disableRedirect: false,
+            successCallback: success,
+            contractDetails: {
+                ...contract,
+                uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                redirectUrl: 'https://api.example.test/callback',
+            },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.push).toHaveBeenCalledWith('/ai/sessions'));
+        expect(success).toHaveBeenCalledOnce();
+        expect(state.consent).toHaveBeenCalledOnce();
+    });
+    it('keeps an audience conflict in review without calling the success callback', async () => {
+        state.child = false;
+        const onSuccess = vi.fn();
+        state.consent.mockRejectedValueOnce(
+            Object.assign(
+                new Error(
+                    'The sharing audience or consent changed. Review the contract and try again.'
+                ),
+                { data: { code: 'CONFLICT', httpStatus: 409 } }
+            )
+        );
+        showFlow({ successCallback: onSuccess });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.presentToast).toHaveBeenCalled());
+        expect(onSuccess).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy();
+        expect(state.presentToast.mock.calls[0][1].type).toBe('error');
+        expect(state.newModal).not.toHaveBeenCalled();
+    });
+
+    it('preserves the existing-consent callback for the explicit already-consented response', async () => {
+        state.child = false;
+        const onSuccess = vi.fn();
+        state.consent.mockRejectedValueOnce(
+            Object.assign(new Error("You've already consented to this contract!"), {
+                data: { code: 'CONFLICT' },
+            })
+        );
+        showFlow({ successCallback: onSuccess });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
     });
 
     it('requires a fresh PIN and signature after a slow credential upload without uploading again', async () => {
@@ -246,10 +550,11 @@ describe('guardian approval at the consent submission boundary', () => {
         expect(state.consent).not.toHaveBeenCalled();
     });
 
-    it.each(['adult', 'preview'] as const)(
+    it.each(['adult', 'service', 'preview'] as const)(
         'preserves the %s path without guardian signing',
         async mode => {
-            state.child = mode !== 'adult';
+            state.child = mode === 'preview';
+            state.service = mode === 'service';
             showFlow({ isPreview: mode === 'preview' });
             fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
             await waitFor(() => expect(state.consent).toHaveBeenCalledOnce());
@@ -258,6 +563,93 @@ describe('guardian approval at the consent submission boundary', () => {
         }
     );
 
+    it('aborts referral consent when disabled during credential preparation', async () => {
+        state.child = false;
+        let finish!: (uri: string) => void;
+        state.upload.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    finish = resolve;
+                })
+        );
+        const success = vi.fn();
+        const view = render(
+            <ReferralConsentReview
+                contractDetails={contract}
+                disableRedirect
+                successCallback={success}
+            />,
+            { wrapper }
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(finish).toBeDefined());
+        state.referralsEnabled = false;
+        view.rerender(
+            <ReferralConsentReview
+                contractDetails={contract}
+                disableRedirect
+                successCallback={success}
+            />
+        );
+        await act(async () => {
+            finish('lc:shared');
+        });
+        await waitFor(() => expect(state.presentToast).toHaveBeenCalled());
+        expect(state.consent).not.toHaveBeenCalled();
+        expect(success).not.toHaveBeenCalled();
+    });
+    it('aborts referral consent when disabled while final guardian approval is pending', async () => {
+        const view = render(<ReferralConsentReview contractDetails={contract} disableRedirect />, {
+            wrapper,
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Get an adult' }));
+        await approvePin(1);
+        state.upload.mockImplementationOnce(async () => {
+            state.now += 300_000;
+            return 'lc:shared';
+        });
+        fireEvent.click(await screen.findByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.newModal).toHaveBeenCalledTimes(2));
+        state.referralsEnabled = false;
+        view.rerender(<ReferralConsentReview contractDetails={contract} disableRedirect />);
+        await approvePin(2);
+        await waitFor(() => expect(state.presentToast).toHaveBeenCalled());
+        expect(state.consent).not.toHaveBeenCalled();
+    });
+    it('keeps ordinary consent available when referrals are disabled', async () => {
+        state.child = false;
+        state.referralsEnabled = false;
+        showFlow();
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.consent).toHaveBeenCalledOnce());
+    });
+    it('forwards the reviewed invitation ID through credential preparation and guardian validation', async () => {
+        state.child = false;
+        showFlow({ expectedRequestId: 'reviewed-request' });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.consent).toHaveBeenCalledOnce());
+        expect(state.consent.mock.calls[0][1]).toMatchObject({
+            expectedRequestId: 'reviewed-request',
+        });
+    });
+    it('returns to review on an invitation conflict instead of reporting success', async () => {
+        state.child = false;
+        const success = vi.fn();
+        state.consent.mockRejectedValue({
+            data: { code: 'CONFLICT' },
+            message: 'The sharing audience or consent changed. Review the contract and try again.',
+        });
+        showFlow({ expectedRequestId: 'cancelled-request', successCallback: success });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() =>
+            expect(state.presentToast).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({ type: 'error' })
+            )
+        );
+        expect(success).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Connect' })).toBeVisible();
+    });
     it('blocks an update when its post-preparation approval rejects', async () => {
         const { result } = renderHook(() => useUpdateTerms('lc:terms', 'did:example:owner'), {
             wrapper,

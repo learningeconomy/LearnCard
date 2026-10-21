@@ -49,7 +49,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                     setPopoverEvent(event.nativeEvent);
                     setIsOpen(true);
                 }}
-                className={`inline-flex items-center gap-2 py-1 px-4 rounded-full border-[1px] border-indigo-500 border-solid  disabled:opacity-60 disabled:cursor-not-allowed ${
+                className={`inline-flex items-center gap-2 py-1 px-4 rounded-full border border-indigo-500 border-solid  disabled:opacity-60 disabled:cursor-not-allowed ${
                     isOpen ? 'bg-indigo-50' : 'bg-white'
                 }`}
             >
@@ -154,10 +154,10 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                                     />
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div className="min-w-0">
-                                                            <p className="text-[16px] leading-[120%] font-semibold text-grayscale-900 break-words">
+                                                            <p className="text-[16px] leading-[120%] font-semibold text-grayscale-900 wrap-break-word">
                                                                 {summary.title}
                                                             </p>
-                                                            <p className="mt-1 text-[14px] leading-[120%] font-semibold text-grayscale-700 break-words">
+                                                            <p className="mt-1 text-[14px] leading-[120%] font-semibold text-grayscale-700 wrap-break-word">
                                                                 {summary.subtitle}
                                                             </p>
                                                         </div>

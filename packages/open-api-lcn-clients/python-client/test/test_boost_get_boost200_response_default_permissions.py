@@ -36,6 +36,7 @@ class TestBoostGetBoost200ResponseDefaultPermissions(unittest.TestCase):
         if include_optional:
             return BoostGetBoost200ResponseDefaultPermissions(
                 role = '',
+                can_view = True,
                 can_edit = True,
                 can_issue = True,
                 can_revoke = True,
@@ -51,6 +52,7 @@ class TestBoostGetBoost200ResponseDefaultPermissions(unittest.TestCase):
         else:
             return BoostGetBoost200ResponseDefaultPermissions(
                 role = '',
+                can_view = True,
                 can_edit = True,
                 can_issue = True,
                 can_revoke = True,

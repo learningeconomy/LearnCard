@@ -12,6 +12,7 @@ const firstStartupStore = createStore('firstStartup')<{
     version: string;
     dashboardGetStartedDismissed: boolean;
     recoveryPromptSnoozedUntil: number;
+    recoveryBackupPromptSnoozeCount: number;
 }>(
     {
         firstStart: true,
@@ -19,6 +20,7 @@ const firstStartupStore = createStore('firstStartup')<{
         version: '',
         dashboardGetStartedDismissed: false,
         recoveryPromptSnoozedUntil: 0,
+        recoveryBackupPromptSnoozeCount: 0,
     },
     { persist: { name: 'firstStartup', enabled: true } }
 );

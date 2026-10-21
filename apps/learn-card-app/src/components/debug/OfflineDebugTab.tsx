@@ -67,8 +67,8 @@ export const OfflineDebugTab: React.FC = () => {
                 connectivity === 'offline'
                     ? 'bg-amber-500/20 text-amber-400'
                     : connectivity === 'online'
-                    ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-gray-700 text-gray-500'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-gray-700 text-gray-500'
             }`}
         >
             {connectivity}
@@ -76,7 +76,7 @@ export const OfflineDebugTab: React.FC = () => {
     );
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <Section
                 title="Connectivity"
                 icon={
@@ -163,7 +163,7 @@ export const OfflineDebugTab: React.FC = () => {
                 icon={<Key className="w-3 h-3 text-gray-500" />}
                 defaultOpen
             >
-                <div className="space-y-0">
+                <div className="space-y-v3-0">
                     <KVRow
                         label="SQLite db present"
                         value={!!sqliteDb}
@@ -215,7 +215,7 @@ export const OfflineDebugTab: React.FC = () => {
                 icon={<Wifi className="w-3 h-3 text-gray-500" />}
                 defaultOpen
             >
-                <div className="space-y-0">
+                <div className="space-y-v3-0">
                     <KVRow
                         label="Gate Tag"
                         value={authGate.tag}

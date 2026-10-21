@@ -110,13 +110,8 @@ export const useGetBoost = (uri: string) => {
     return useQuery({
         queryKey: ['useGetBoost', uri],
         queryFn: async () => {
-            try {
-                const wallet = await initWallet();
-                const boost = await wallet.invoke.getBoost(uri);
-                return boost;
-            } catch (error: any) {
-                throw error;
-            }
+            const wallet = await initWallet();
+            return wallet.invoke.getBoost(uri);
         },
         enabled: !!uri,
     });
@@ -347,6 +342,29 @@ export const useGetCredentialWithEdits = (credential: VC | undefined, boostUri?:
 };
 
 /**
+ * Recipient lists are expensive on brain-service and only change when someone sends,
+ * accepts, or revokes a boost. Those paths invalidate via invalidateBoostRecipientQueries,
+ * so we don't need to refetch on every mount/focus.
+ */
+export const BOOST_RECIPIENTS_STALE_TIME = 5 * 60 * 1000;
+
+/**
+ * Invalidate every cached recipient list/count for a boost (or for all boosts when no URI
+ * is given). Call this after sending, accepting, or revoking a boost.
+ */
+export const invalidateBoostRecipientQueries = async (
+    queryClient: QueryClient,
+    boostUri?: string | null
+) => {
+    const keys = ['boostRecipients', 'useCountBoostRecipients', 'paginatedBoostRecipients'];
+    await Promise.all(
+        keys.map(key =>
+            queryClient.invalidateQueries({ queryKey: boostUri ? [key, boostUri] : [key] })
+        )
+    );
+};
+
+/**
  * Query: Count the number of recipients for a given boost.
  * @param includeUnacceptedBoosts - If true, includes pending (sent but not claimed) credentials. Default: false
  */
@@ -364,6 +382,8 @@ export const useCountBoostRecipients = (
             return wallet.invoke.countBoostRecipients(uri, includeUnacceptedBoosts);
         },
         enabled: enabled && Boolean(uri),
+        staleTime: BOOST_RECIPIENTS_STALE_TIME,
+        refetchOnWindowFocus: false,
     });
 };
 
@@ -507,6 +527,8 @@ export const useGetBoostRecipients = (
             return Array.isArray(data) ? data : [];
         },
         enabled,
+        staleTime: BOOST_RECIPIENTS_STALE_TIME,
+        refetchOnWindowFocus: false,
     });
 };
 
@@ -612,16 +634,16 @@ export const useGetPaginatedConnections = (
  * Query: Get a specific connection by profileId.
  */
 export const useGetConnection = (profileId: string) => {
-    profileId = profileId?.toLowerCase();
+    const normalizedProfileId = profileId?.toLowerCase();
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     return useQuery<LCNVisibleProfile | undefined>({
-        queryKey: ['connection', switchedDid ?? '', profileId],
+        queryKey: ['connection', switchedDid ?? '', normalizedProfileId],
         queryFn: async () => {
             const wallet = await initWallet();
             const connections = await wallet.invoke.getPaginatedConnections({ limit: 1000 });
             return connections?.records.find(
-                connection => connection?.profileId?.toLowerCase() === profileId
+                connection => connection?.profileId?.toLowerCase() === normalizedProfileId
             );
         },
     });
@@ -673,8 +695,24 @@ export const useGetConnectionsRequests = () => {
         queryKey: ['getConnectionRequests', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
-            const data = await wallet.invoke.getConnectionRequests();
-            return Array.isArray(data) ? data : [];
+            const allRecords: LCNVisibleProfile[] = [];
+            let cursor: string | undefined;
+            const MAX_PAGES = 50; // Safety limit: 50 pages × 100 = 5000 max records
+
+            for (let page = 0; page < MAX_PAGES; page++) {
+                const result = await wallet.invoke.getPaginatedConnectionRequests({
+                    limit: 100,
+                    cursor,
+                });
+                const records = result?.records;
+                if (Array.isArray(records)) {
+                    allRecords.push(...records);
+                }
+                cursor = result?.cursor;
+                if (!result?.hasMore || !cursor || !records?.length) break;
+            }
+
+            return allRecords;
         },
     });
 };
@@ -803,11 +841,7 @@ export const useGetProfile = (
     return useQuery<QueriedProfile | null>({
         enabled: enabled && (!!profileId || isLoggedIn) && (!requiresOwnWallet || walletReady),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
-        // The current user's profile changes rarely (avatar/displayName edits).
-        // Keep cached data fresh for 5 minutes so navigations between pages don't
-        // trigger background refetches that flicker dependent UI like
-        // UserProfilePicture in the header. Mutations that update the profile
-        // (e.g., editProfile) are responsible for invalidating this query.
+        // Cache profiles for 5 minutes; profile edits update the affected cache entries.
         staleTime: 5 * 60 * 1000,
         queryFn: async (): Promise<QueriedProfile | null> => {
             // Own profile: the wallet MUST resolve here. On failure, throw so React

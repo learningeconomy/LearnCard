@@ -285,7 +285,7 @@ const LaunchPad: React.FC = () => {
 
     return (
         <IonPage className="bg-white">
-            <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
+            <MainHeader customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
@@ -319,7 +319,7 @@ const LaunchPad: React.FC = () => {
                                 />
                             </div>
                         </LaunchPadHeader>
-                        <div className="flex-grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
+                        <div className="grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
                             {tab === LaunchPadTabEnum.ai && !isAiEnabled ? (
                                 <div className="w-full max-w-[600px] flex flex-col items-center justify-center text-center px-6 py-12">
                                     <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-6 max-w-[450px]">
@@ -396,7 +396,7 @@ const LaunchPad: React.FC = () => {
                                     {filteredAvailableApps.length === 0 &&
                                         !customAppFromQueryParams && (
                                             <div className="w-full flex items-center justify-center z-10">
-                                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t border-solid border-grayscale-200 pt-2">
                                                     <p className="text-grayscale-800 text-base font-normal font-notoSans">
                                                         <TransP
                                                             m={
@@ -406,7 +406,10 @@ const LaunchPad: React.FC = () => {
                                                             }
                                                             values={{ query: searchInput }}
                                                             components={[
-                                                                <span className="text-black italic" />,
+                                                                <span
+                                                                    key="query"
+                                                                    className="text-black italic"
+                                                                />,
                                                             ]}
                                                         />
                                                     </p>

@@ -20,21 +20,23 @@ import json
 from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
-from openapi_client.models.contracts_get_consented_data_for_contract_request_query_credentials import ContractsGetConsentedDataForContractRequestQueryCredentials
+from openapi_client.models.contracts_get_consented_data_for_did_request_query_credentials import ContractsGetConsentedDataForDidRequestQueryCredentials
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentedDataForDidRequestQuery(BaseModel):
     """
     ContractsGetConsentedDataForDidRequestQuery
     """ # noqa: E501
-    credentials: Optional[ContractsGetConsentedDataForContractRequestQueryCredentials] = None
+    credentials: Optional[ContractsGetConsentedDataForDidRequestQueryCredentials] = None
     personal: Optional[Dict[str, StrictBool]] = None
     id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
     __properties: ClassVar[List[str]] = ["credentials", "personal", "id"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class ContractsGetConsentedDataForDidRequestQuery(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -89,11 +90,13 @@ class ContractsGetConsentedDataForDidRequestQuery(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "credentials": ContractsGetConsentedDataForContractRequestQueryCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
+        _values = {
+            "credentials": ContractsGetConsentedDataForDidRequestQueryCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": obj.get("personal"),
             "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["id"]) if obj.get("id") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

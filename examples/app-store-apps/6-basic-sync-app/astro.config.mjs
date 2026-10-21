@@ -10,7 +10,10 @@ const monorepoRoot = path.resolve(__dirname, '../../..');
 
 export default defineConfig({
     output: 'server',
-    adapter: netlify(),
+    // No edge functions here; local edge emulation breaks on Deno 2.9+.
+    adapter: netlify({
+        devFeatures: { environmentVariables: false, images: true, edgeFunctions: false },
+    }),
     outDir: 'dist',
     integrations: [],
     vite: {

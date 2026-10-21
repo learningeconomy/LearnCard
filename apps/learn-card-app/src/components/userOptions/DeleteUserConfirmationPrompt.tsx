@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../../firebase/firebase';
+import { useSignInAdapter } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('delete-user-confirmation-prompt');
 
@@ -26,17 +26,17 @@ const DeleteUserConfirmationPrompt: React.FC<{
     showFixedFooter?: boolean;
     showCloseButton?: boolean;
 }> = ({ handleCloseModal, handleLogout, showCloseButton = true, showFixedFooter = false }) => {
-    const firebaseAuth = auth();
+    const adapter = useSignInAdapter();
     const { removeAllVCsFromWallet, initWallet } = useWallet();
     const { deleteFirebaseUser } = useFirebase();
     const currentUser = useCurrentUser();
     const { newModal } = useModal();
     const authToken = getAuthToken();
-    const currentFirebaseUser = firebaseAuth.currentUser;
+    const currentFirebaseUser = adapter.getCurrentUser();
     const brandingConfig = useBrandingConfig();
 
     const [phrase, setPhrase] = useState<string>(
-        currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
+        currentFirebaseUser?.email ?? currentFirebaseUser?.phone ?? currentUser?.email ?? ''
     );
 
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
@@ -81,7 +81,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
             if (authToken === 'dummy') {
                 await removeAllVCsFromWallet();
                 await handleLCNetworkProfileDelete();
-                newModal(<DeleteAccountModal />, { sectionClassName: '!max-w-[350px]' });
+                newModal(<DeleteAccountModal />, { sectionClassName: 'max-w-[350px]!' });
                 handleLogout(e);
                 confirmationStore.set.showConfirmation(true);
                 setIsLoading(false);
@@ -91,7 +91,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 if (userDeleted.success) {
                     await removeAllVCsFromWallet();
                     await handleLCNetworkProfileDelete();
-                    newModal(<DeleteAccountModal />, { sectionClassName: '!max-w-[350px]' });
+                    newModal(<DeleteAccountModal />, { sectionClassName: 'max-w-[350px]!' });
                     handleLogout(e);
                     confirmationStore.set.showConfirmation(true);
                     setIsLoading(false);
@@ -99,7 +99,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     if (userDeleted.message === 'auth/requires-recent-login') {
                         setError(m['profile.delete.recentLoginRequired']());
                     } else {
-                        setError(userDeleted.message);
+                        setError(String(userDeleted.message ?? ''));
                     }
                     setIsLoading(false);
                     deletingAccountStore.set.deletingAccount(false);
@@ -155,7 +155,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 <input
                     id="delete-account-confirmation"
                     autoCapitalize="on"
-                    className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base max-w-[400px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
+                    className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base max-w-[400px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                         error ? 'login-input-email-error' : ''
                     }`}
                     placeholder={phrase}

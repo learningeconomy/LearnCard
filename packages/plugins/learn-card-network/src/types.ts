@@ -1,3 +1,4 @@
+import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
@@ -11,6 +12,22 @@ import {
     VP,
     SentCredentialInfo,
     JWE,
+    CreateShareLinkInput,
+    UpdateShareLinkInput,
+    ListShareLinksInput,
+    PaginatedShareLinks,
+    ShareLinkOperationKeyInput,
+    ShareLinkOwnerCommitOutput,
+    ShareLinkOwnerContentOutput,
+    ShareLinkOwnerStatusOutput,
+    ShareLinkOwnerRecoveryOutput,
+    ShareLinkPublicState,
+    ShareLinkPublicContentView,
+    PutShareLinkAttachmentChunkInput,
+    DeleteShareLinkAttachmentChunksInput,
+    GetShareLinkAttachmentChunkInput,
+    ShareLinkAttachmentChunkOutput,
+    AcknowledgeViewOutput,
     Boost,
     BoostQuery,
     LCNSigningAuthorityForUserType,
@@ -53,6 +70,9 @@ import {
     AuthGrantType,
     AuthGrantQuery,
     IssueInboxCredentialType,
+    IssueInboxCredentialBatch,
+    InboxBatchReceipt,
+    InboxBatchStatus,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
     PaginatedSkillFrameworksType,
@@ -98,6 +118,9 @@ import {
     AppStoreListing,
     AppStoreListingCreateType,
     AppStoreListingUpdateType,
+    AppManifest,
+    AppManifestVersion,
+    AppManifestDiff,
     AppListingStatus,
     PromotionLevel,
     PaginatedAppStoreListings,
@@ -119,7 +142,7 @@ import {
     GetCredentialRefreshHistoryInput,
     GetCredentialRefreshHistoryResult,
 } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
@@ -211,6 +234,14 @@ export type LearnCardNetworkPluginMethods = {
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;
+    /**
+     * Returns a new LearnCard instance whose network plugin sends every request with the
+     * `X-LearnCard-Act-As` header set to `profileId`, asking the server to swap the acting
+     * profile for the duration of each request. Token scope is unchanged; the server responds
+     * `403` if the caller doesn't manage `profileId`, or if an API token's grant doesn't cover
+     * it. The original instance (and its headers) is left untouched.
+     */
+    actAs: (profileId: string) => Promise<ActingLearnCard>;
     claimPendingGuardianLinks: () => Promise<
         Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
     >;
@@ -280,6 +311,55 @@ export type LearnCardNetworkPluginMethods = {
 
     invalidateInvite: (challenge: string) => Promise<boolean>;
 
+    /**
+     * LC-2187 authenticated owner share-link methods. All owner identity and
+     * namespace binding is derived server-side from the authenticated session;
+     * no caller-supplied owner/namespace/object authority is accepted.
+     */
+    createShareLink: (input: CreateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    putShareLinkAttachmentChunk: (input: PutShareLinkAttachmentChunkInput) => Promise<{ ok: true }>;
+    deleteShareLinkAttachmentChunks: (
+        input: DeleteShareLinkAttachmentChunksInput
+    ) => Promise<{ ok: boolean }>;
+    getShareLinkAttachmentChunk: (
+        input: GetShareLinkAttachmentChunkInput
+    ) => Promise<ShareLinkAttachmentChunkOutput>;
+    updateShareLink: (input: UpdateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    revokeShareLink: (input: {
+        id: string;
+        expectedVersion?: number;
+        clientRequestId?: string;
+    }) => Promise<ShareLinkOwnerCommitOutput>;
+    getShareLink: (id: string) => Promise<ShareLinkOwnerStatusOutput>;
+    getShareLinkOperationStatus: (
+        input: ShareLinkOperationKeyInput
+    ) => Promise<ShareLinkOwnerStatusOutput>;
+    retryShareLinkOperation: (
+        input: ShareLinkOperationKeyInput
+    ) => Promise<ShareLinkOwnerStatusOutput>;
+    getShareLinkRecovery: (id: string) => Promise<ShareLinkOwnerRecoveryOutput>;
+    getShareLinkOwnerContent: (id: string) => Promise<ShareLinkOwnerContentOutput>;
+
+    /**
+     * Bounded, newest-first owner share list. Scope (namespace/owner) is derived
+     * server-side from the authenticated session; the input carries only a
+     * bounded `limit` and an opaque ordering cursor. Ineligible/unknown owners
+     * never receive `viewCount`/`lastViewedAt`.
+     */
+    listShareLinks: (input: ListShareLinksInput) => Promise<PaginatedShareLinks>;
+
+    /**
+     * LC-2187 PUBLIC (anonymous) share-link methods. These require no
+     * authentication and no profile: namespace/owner are derived server-side
+     * from trusted configuration and the committed share. `resolveShareLink`
+     * returns metadata only and never counts; `getShareLinkContent` returns the
+     * guarded ciphertext envelope plus a uniformly shaped opaque receipt;
+     * `acknowledgeShareLinkView` always resolves to `{ ok: true }`.
+     */
+    resolveShareLink: (id: string, passcode?: string) => Promise<ShareLinkPublicState>;
+    getShareLinkContent: (id: string, passcode?: string) => Promise<ShareLinkPublicContentView>;
+    acknowledgeShareLinkView: (receipt: string) => Promise<AcknowledgeViewOutput>;
+
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
     getBlockedProfiles: () => Promise<LCNVisibleProfile[]>;
@@ -303,7 +383,12 @@ export type LearnCardNetworkPluginMethods = {
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
 
-    sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
+    sendPresentation: (
+        profileId: string,
+        vp: VP,
+        metadataOrEncrypt?: Record<string, unknown> | boolean,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptPresentation: (uri: string) => Promise<boolean>;
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;
@@ -569,6 +654,7 @@ export type LearnCardNetworkPluginMethods = {
         image?: string;
         expiresAt?: string;
         writers?: string[];
+        recipients?: string[];
         autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
     addAutoBoostsToContract: (
@@ -576,6 +662,8 @@ export type LearnCardNetworkPluginMethods = {
         autoboosts: AutoBoostConfig[]
     ) => Promise<boolean>;
     removeAutoBoostsFromContract: (contractUri: string, boostUris: string[]) => Promise<boolean>;
+    addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
+    removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
@@ -606,6 +694,9 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
+            /** Bind acceptance to the pending referral the learner reviewed. */
+            expectedRequestId?: string;
         },
         recipientToken?: string
     ) => Promise<{ termsUri: string; redirectUrl?: string }>;
@@ -618,6 +709,7 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
         }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
@@ -638,13 +730,19 @@ export type LearnCardNetworkPluginMethods = {
 
     syncCredentialsToContract: (
         termsUri: string,
-        categories: Record<string, string[]>
+        categories: Record<string, string[]>,
+        audienceVersion?: number
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
         contractsUpdated: number;
         removedSharedUris: number;
     }>;
+
+    /** Sends one attributed request; identical pending retries are idempotent. */
+    sendContractRequest: (request: SendContractRequest) => Promise<boolean>;
+    /** Target-only denial preserves the request and its referral reference. */
+    denyContractRequest: (contractUri: string) => Promise<boolean>;
 
     sendAiInsightsContractRequest: (
         contractUri: string,
@@ -658,31 +756,25 @@ export type LearnCardNetworkPluginMethods = {
         childProfileId?: string
     ) => Promise<boolean>;
 
-    getContractSentRequests: (contractUri: string) => Promise<
-        {
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
-    >;
+    getContractSentRequests: (
+        contractUri: string
+    ) => Promise<ConsentFlowContractRequestForProfile[]>;
 
     getRequestStatusForProfile: (
         targetProfileId: string,
-        contractId?: string | undefined,
-        contractUri?: string | undefined
-    ) => Promise<{
-        profile: LCNProfile;
-        status: 'pending' | 'accepted' | 'denied' | null;
-        readStatus?: 'unseen' | 'seen' | null;
-    } | null>;
+        contractId?: string,
+        contractUri?: string
+    ) => Promise<ConsentFlowContractRequestForProfile | null>;
 
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
-        {
-            contract: ConsentFlowContract & { uri: string };
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
+        (ConsentFlowContractRequestForProfile & {
+            contract: ConsentFlowContract & {
+                uri: string;
+                name?: string;
+                image?: string;
+                description?: string;
+            };
+        })[]
     >;
 
     getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
@@ -724,6 +816,27 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
+    /** Queue 1–100 credentials; workers may start up to a minute later. Use sendCredentialViaInbox for immediate single issuance. */
+    sendCredentialsViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Explicit batch alias for sendCredentialsViaInbox. Returns a durable receipt. */
+    sendCredentialBatchViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Ordered results and disjoint success/failure/unconfirmed counts. `done` includes unconfirmed outcomes.
+     * @see https://docs.learncard.com/sdks/learncard-network/universal-inbox-api
+     */
+    getInboxCredentialBatch: (batchId: string) => Promise<InboxBatchStatus>;
+    /** Poll until done with bounded backoff. Abort/timeout stops waiting, not processing. */
+    waitForInboxCredentialBatch: (
+        batchId: string,
+        options?: WaitForInboxCredentialBatchOptions
+    ) => Promise<InboxBatchStatus>;
+    /** Submit once and wait; persist the receipt with onSubmitted for recovery after timeout. */
+    sendCredentialsViaInboxAndWait: (
+        batch: IssueInboxCredentialBatch,
+        options?: WaitForInboxCredentialBatchOptions & {
+            onSubmitted?: (receipt: InboxBatchReceipt) => void | Promise<void>;
+        }
+    ) => Promise<InboxBatchStatus>;
+    /** Issue one credential synchronously, without waiting for the batch dispatcher. */
     sendCredentialViaInbox: (
         issueInboxCredential: IssueInboxCredentialType
     ) => Promise<IssueInboxCredentialResponseType>;
@@ -902,11 +1015,62 @@ export type LearnCardNetworkPluginMethods = {
     deleteAppStoreListing: (listingId: string) => Promise<boolean>;
     submitAppStoreListingForReview: (listingId: string) => Promise<boolean>;
     unsubmitAppStoreListing: (listingId: string) => Promise<boolean>;
+    /** Sends held changes to a live app for review; the live listing is unchanged until approval. */
+    submitAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    withdrawAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    discardAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
     getListingsForIntegration: (
         integrationId: string,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedAppStoreListings>;
     countListingsForIntegration: (integrationId: string) => Promise<number>;
+
+    submitAppManifest: (
+        integrationId: string,
+        manifest: AppManifest
+    ) => Promise<{
+        version: number;
+        manifestHash: string;
+        diff: AppManifestDiff | null;
+        noop: boolean;
+    }>;
+    getManifestVersions: (
+        integrationId: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<{
+        hasMore: boolean;
+        cursor?: string;
+        records: Pick<
+            AppManifestVersion,
+            'id' | 'version' | 'manifestHash' | 'status' | 'createdAt' | 'activatedAt'
+        >[];
+    }>;
+    getManifestVersion: (
+        integrationId: string,
+        version: number
+    ) => Promise<AppManifestVersion | undefined>;
+    getManifestDiff: (
+        integrationId: string,
+        toVersion: number,
+        fromVersion?: number
+    ) => Promise<AppManifestDiff>;
+    applyManifestVersion: (
+        integrationId: string,
+        version: number,
+        listingId?: string
+    ) => Promise<{
+        applied: boolean;
+        /** True when the listing is live and the new version is waiting for review. */
+        pendingReview?: boolean;
+        version: number;
+        reconciled: {
+            templatesUpserted: number;
+            templatesSkipped: number;
+            contractsUpserted: number;
+            contractsSkipped: number;
+            signingAuthorityEnsured: boolean;
+        };
+    }>;
 
     browseAppStore: (options?: {
         limit?: number;
@@ -951,7 +1115,9 @@ export type LearnCardNetworkPluginMethods = {
         limit?: number;
         cursor?: string;
         status?: AppListingStatus;
+        pendingUpdatesOnly?: boolean;
     }) => Promise<PaginatedAppStoreListings>;
+    adminReviewListingUpdate: (listingId: string, approve: boolean) => Promise<boolean>;
 
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;
@@ -1016,6 +1182,16 @@ export type LearnCardNetworkPluginMethods = {
 };
 
 /** @group LearnCardNetwork Plugin */
+/**
+ * The wallet returned by `invoke.actAs`: the caller's existing plugins with a network
+ * plugin bound to the target profile appended. The caller's plugin list cannot be named
+ * from inside the plugin's own method map, hence the open tuple.
+ */
+export type ActingLearnCard = LearnCard<
+    [...Plugin[], LearnCardNetworkPlugin],
+    'id' | 'read' | 'store'
+>;
+
 export type LearnCardNetworkPlugin = Plugin<
     'LearnCard Network',
     'id' | 'read' | 'store',
@@ -1033,3 +1209,12 @@ export type TrustedBoostRegistryEntry = {
     url: string;
     did: string;
 };
+
+export interface WaitForInboxCredentialBatchOptions {
+    /** Overall polling deadline; defaults to ten minutes. */
+    timeoutMs?: number;
+    /** Initial interval; increases by 1.5x up to ten seconds (or this interval if larger). */
+    intervalMs?: number;
+    signal?: AbortSignal;
+    onProgress?: (status: InboxBatchStatus) => void;
+}

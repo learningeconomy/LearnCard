@@ -47,7 +47,7 @@ class TestContractsGetConsentFlowContractsRequest(unittest.TestCase):
                                     required = True, )
                                 }, ), 
                         personal = {
-                            'key' : openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_credentials_categories_value.contracts_getConsentFlowContracts_request_query_read_credentials_categories_value(
+                            'key' : openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_personal_value.contracts_getConsentFlowContracts_request_query_read_personal_value(
                                 required = True, )
                             }, ), 
                     write = openapi_client.models.contracts_get_consent_flow_contracts_request_query_write.contracts_getConsentFlowContracts_request_query_write(), )

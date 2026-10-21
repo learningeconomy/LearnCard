@@ -1,5 +1,37 @@
 # @learncard/email-templates
 
+## 1.2.1
+
+### Patch Changes
+
+- [#1621](https://github.com/learningeconomy/LearnCard/pull/1621) [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5) Thanks [@Custard7](https://github.com/Custard7)! - Add escrow hold email templates.
+
+## 1.2.0
+
+### Minor Changes
+
+- [#1529](https://github.com/learningeconomy/LearnCard/pull/1529) [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f) Thanks [@Custard7](https://github.com/Custard7)! - SSS prod hardening: confirmed recovery enrollment, lost-login identity rebind, and an isolated email relay.
+
+    - Recovery methods now carry `confirmedAt` and must be proven before they count (email confirmation code, phrase challenge words, backup re-decrypt, passkey round trip). New SSS accounts are `active` immediately; web3auth migrations stay `provisional` until a method is confirmed.
+    - New recovery-session flow lets a user whose sign-in identity is gone recover via a verified personal email and bind a new sign-in.
+    - Email recovery shares are encrypted on the client to an isolated relay's public key; `lca-api` never sees plaintext. Provider tokens move from query strings to the `X-Auth-Token` header.
+    - Sensitive key routes require a single-use DID challenge; key records are keyed by immutable provider ID.
+    - `recovery-key` email template now requires `confirmationCode`.
+    - Auth-share initialization requires the provider uniqueness index before inserting, preventing competing first writes from creating duplicate accounts. Existing records with missing or BSON-null auth material retain atomic update protection.
+    - Automatic stale-key cleanup preserves unresolved pending shares for delayed commits; explicit device forgetting still removes them. Custom SSS storage adapters now implement `deleteDeviceShare(id?)` to remove only the selected share and its version.
+
+## 1.1.0
+
+### Minor Changes
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Send managed credential update emails to a bound holder's verified email (or a verified manager for managed accounts). Include the issuer display name and a bounded credential title, with a translated link to app notifications; exclude grades, subject data, and update summaries. Keep email failures independent of publication and in-app notifications, and persist a single delivery attempt per publication notification window so retries cannot send duplicate email.
+
+    Email delivery is best effort: a failed or ambiguous provider attempt is recorded and not retried within that window. A later material update in a new window can send another email. There is no background email retry worker.
+
+    Existing verified Universal Inbox recipients also receive an initial email pointing to their app notifications when delivery is not suppressed. Local claim and update links use the frontend address.
+
+    Preserve recipient profile identities when local webhook delivery normalizes notification DIDs, so the subsequent update-email lookup can still find verified contacts.
+
 ## 1.0.6
 
 ### Patch Changes

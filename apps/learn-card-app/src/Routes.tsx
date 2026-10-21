@@ -26,7 +26,9 @@ const NotificationsPage = lazyWithRetry(
     () => import('./pages/notificationsPage/NotificationsPage')
 );
 const LoginPage = lazyWithRetry(() => import('./pages/login/LoginPage'));
+const CancelRecoveryPage = lazyWithRetry(() => import('./pages/recovery/CancelRecoveryPage'));
 const AchievementsPage = lazyWithRetry(() => import('./pages/achievements/AchievementsPage'));
+const QualificationsPage = lazyWithRetry(() => import('./pages/qualifications/QualificationsPage'));
 
 const IdsPage = lazyWithRetry(() => import('./pages/ids/IdsPage'));
 
@@ -59,6 +61,7 @@ const VerifySharedResume = lazyWithRetry(() => import('./pages/resume-builder/Ve
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const MyAssistantPage = lazyWithRetry(() => import('./pages/my-assistant/MyAssistantPage'));
 const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
+const ShareLinkViewer = lazyWithRetry(() => import('./components/share-links/ShareLinkViewer'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -108,6 +111,9 @@ const GuardianAccountApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianAccountApprovalPage')
 );
 const DeveloperSignInPage = lazyWithRetry(() => import('./pages/developer/DeveloperSignInPage'));
+const PublishSignInGate = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/submit/PublishSignInGate')
+);
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
@@ -136,33 +142,6 @@ const AppStoreAdminWithProvider: React.FC = () => (
         </DeveloperPortalProvider>
     </Suspense>
 );
-// import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
-// import CustomWallet from './pages/hidden/CustomWallet';
-// import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
-// import FamilyPage from './pages/familyPage/FamilyPage';
-const AdminToolsPage = lazyWithRetry(() => import('./pages/adminToolsPage/AdminToolsPage'));
-const ViewAllManagedBoostsPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/ViewAllManagedBoostsPage')
-);
-const BulkBoostImportPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/bulk-import/BulkBoostImportPage')
-);
-const ManageServiceProfilesPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/ManageServiceProfilePage')
-);
-const ManageConsentFlowContractsPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/ManageConsentFlowContractsPage')
-);
-const SigningAuthoritiesPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/SigningAuthoritiesPage')
-);
-const APITokensPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/api-tokens/APITokensPage')
-);
-const LearnerContextPromptTestPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/learner-context-test/LearnerContextPromptTestPage')
-);
-
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
 const ClrTranscriptRendererDemo = lazyWithRetry(
     () => import('./pages/dev/ClrTranscriptRendererDemo')
@@ -202,6 +181,13 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
     );
 };
 
+// Publish links arrive from app builders, often before the developer has an account.
+const PublishFromManifestRoute: React.FC = () => {
+    const isLoggedIn = useIsLoggedIn();
+
+    return isLoggedIn ? <DeveloperPortalRoutes /> : <PublishSignInGate />;
+};
+
 export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
@@ -232,6 +218,8 @@ export const Routes: React.FC = () => {
             >
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
+                        <SentryRoute exact path="/recovery/cancel" component={CancelRecoveryPage} />
+                        <Route exact path="/s/:id" component={ShareLinkViewer} />
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute
                             exact
@@ -264,6 +252,12 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
+                        <SentryRoute
+                            exact
+                            path="/app-store/developer/submit"
+                            component={PublishFromManifestRoute}
+                        />
+
                         {/* App Store Developer Portal - all routes wrapped in context provider */}
                         <PrivateRoute
                             path="/app-store/developer"
@@ -284,6 +278,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/contacts/search" component={AddressBook} />
                         <PrivateRoute exact path="/socialBadges" component={SocialBadgesPage} />
                         <PrivateRoute exact path="/achievements" component={AchievementsPage} />
+                        <PrivateRoute exact path="/qualifications" component={QualificationsPage} />
                         <PrivateRoute
                             exact
                             path="/accomplishments"
@@ -343,50 +338,6 @@ export const Routes: React.FC = () => {
                             component={AiSessionTopicsContainer}
                         />
                         <PrivateRoute exact path="/ai/sessions" component={AiSessionsContainer} />
-
-                        <SentryRoute
-                            path="/claim-credential/:uri"
-                            children={<VCClaimModalController />}
-                        />
-                        <SentryRoute path="/did-auth/:challenge" children={<DIDAuthModal />} />
-                        <PrivateRoute exact path="/admin-tools" component={AdminToolsPage} />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/view-managed-boosts"
-                            component={ViewAllManagedBoostsPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/bulk-import"
-                            component={BulkBoostImportPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/service-profiles"
-                            component={ManageServiceProfilesPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/manage-contracts"
-                            component={ManageConsentFlowContractsPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/signing-authorities"
-                            component={SigningAuthoritiesPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/api-tokens"
-                            component={APITokensPage}
-                        />
-                        {flags.enableLearnerContextTest && (
-                            <PrivateRoute
-                                exact
-                                path="/admin-tools/learner-context-test"
-                                component={LearnerContextPromptTestPage}
-                            />
-                        )}
 
                         <SentryRoute
                             path="/claim-credential/:uri"
@@ -489,9 +440,6 @@ const AI_GATED_PATHS = new Set([
  * await the matching preload before calling history.push, which keeps the
  * current page mounted (no Suspense fallback flash) until the destination
  * chunk is in memory.
- *
- * Note: admin-tools is intentionally excluded — it's a debug-only surface,
- * not worth eagerly downloading for end users.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/dashboard': () => DashboardPage.preload(),
@@ -503,6 +451,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/skills': () => SkillsPage.preload(),
     '/socialBadges': () => SocialBadgesPage.preload(),
     '/achievements': () => AchievementsPage.preload(),
+    '/qualifications': () => QualificationsPage.preload(),
     '/learninghistory': () => LearningHistoryPage.preload(),
     '/accomplishments': () => AccomplishmentsPage.preload(),
     '/accommodations': () => AccommodationsPage.preload(),

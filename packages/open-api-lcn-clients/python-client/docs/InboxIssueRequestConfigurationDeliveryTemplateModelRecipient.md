@@ -1,11 +1,10 @@
 # InboxIssueRequestConfigurationDeliveryTemplateModelRecipient
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** | The name of the recipient (e.g., \&quot;John Doe\&quot;). | [optional] 
+| Name     | Type    | Description                                               | Notes      |
+| -------- | ------- | --------------------------------------------------------- | ---------- |
+| **name** | **str** | The name of the recipient (e.g., \&quot;John Doe\&quot;). | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ inbox_issue_request_configuration_delivery_template_model_recipient_dict = inbox
 # create an instance of InboxIssueRequestConfigurationDeliveryTemplateModelRecipient from a dict
 inbox_issue_request_configuration_delivery_template_model_recipient_from_dict = InboxIssueRequestConfigurationDeliveryTemplateModelRecipient.from_dict(inbox_issue_request_configuration_delivery_template_model_recipient_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -11,6 +11,10 @@ import {
 } from './inbox-refresh.helpers';
 import { TRPCError } from '@trpc/server';
 import {
+    InboxDeliveryCheckpointError,
+    InboxIssuancePreflightError,
+} from './inbox-issuance-error.helpers';
+import {
     VC,
     UnsignedVC,
     LCNNotificationTypeEnumValidator,
@@ -24,6 +28,7 @@ import {
 
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import type { IssuedCredential } from 'types/credential';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getBitstringStatusListEntries } from '@learncard/helpers';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
 import { Context } from '@routes';
@@ -43,7 +48,7 @@ import { doesProfileManageProfile } from '@accesslayer/profile-manager/relations
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
 import { sendCredential } from '@helpers/credential.helpers';
-import { sendBoost } from '@helpers/boost.helpers';
+import { prepareCredentialFromBoost, getBoostUri, sendBoost } from '@helpers/boost.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
@@ -107,51 +112,48 @@ export const claimIntoInbox = async (
     );
 
     if (existingProfile) {
-        // Auto-deliver to existing user
-        let finalCredential: VC;
-
+        let issued: IssuedCredential;
         if (isSigned) {
-            finalCredential = credential as VC;
+            const signedCredential = credential as VC;
+            const learnCard = await getEmptyLearnCard();
+            issued = {
+                kind: 'issued-credential',
+                credential: await learnCard.invoke.createDagJwe(signedCredential, [
+                    existingProfile.did,
+                    issuerProfile.did,
+                ]),
+                statusEntries: getBitstringStatusListEntries(signedCredential),
+            };
         } else {
-            // For app-based SAs (listings), use the app did:web as ownerDid
+            const unsignedCredential = credential as UnsignedVC;
+            setCredentialSubjectIds(unsignedCredential, existingProfile.did);
+            // Listings sign as the app, but the issuing profile must remain a reader.
             const ownerDidOverride = listingSlug
                 ? getAppDidWeb(ctx.domain, listingSlug)
                 : undefined;
-
-            finalCredential = (
-                await issueCredentialWithSigningAuthority(
-                    { type: 'profile', profile: issuerProfile },
-                    credential as UnsignedVC,
-                    signingAuthorityForUser,
-                    ctx.domain,
-                    false, // don't encrypt
-                    ownerDidOverride
-                )
-            ).credential as VC;
+            issued = await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: issuerProfile },
+                unsignedCredential,
+                signingAuthorityForUser,
+                ctx.domain,
+                undefined,
+                ownerDidOverride,
+                undefined,
+                [issuerProfile.did]
+            );
         }
-
-        // Use the explicit-recipient API; the seeded encryption plugin also adds the service DID.
-        const learnCard = await getEmptyLearnCard();
-        const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
-            existingProfile.did,
-            issuerProfile.did,
-        ]);
         await sendCredential(
             issuerProfile,
             existingProfile,
-            {
-                kind: 'issued-credential',
-                credential: encryptedDelivery,
-                statusEntries: getBitstringStatusListEntries(finalCredential),
-            },
+            issued,
             ctx.domain,
             undefined,
             activityId,
             integrationId
         );
-        // Record successful delivery without creating temporary service-readable escrow.
         const finalizedInboxCredential = await createInboxCredential({
-            credential: JSON.stringify(finalCredential),
+            // Delivered audit rows never retain a credential payload.
+            credential: '',
             isSigned: true,
             delivered: true,
             isAccepted: true,
@@ -162,7 +164,6 @@ export const claimIntoInbox = async (
             activityId,
             expiresInDays,
         });
-
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential: finalizedInboxCredential,
@@ -207,7 +208,9 @@ export const issueToInbox = async (
         idempotencyKey?: string;
         refreshRequestDigest?: string;
     } = {},
-    ctx: Context
+    ctx: Context,
+    /** Queue ownership checkpoint immediately before delivery or inbox persistence. */
+    beforeDelivery?: () => Promise<void>
 ): Promise<{
     refresh?: import('@learncard/types').InboxCredentialRefreshReceipt;
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
@@ -242,11 +245,19 @@ export const issueToInbox = async (
     }
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
+    let deliveryCheckpointReached = beforeDelivery === undefined;
+    const checkpointDelivery = async (): Promise<void> => {
+        await beforeDelivery?.();
+        deliveryCheckpointReached = true;
+    };
+    const assertDeliveryCheckpoint = (result: InboxDeliveryCheckpointError['result']): void => {
+        if (!deliveryCheckpointReached) throw new InboxDeliveryCheckpointError(result);
+    };
 
     if (recipient.type === 'phone') {
         const isTrusted = await getRegistryService().isTrusted(issuerProfile.did);
         if (!isTrusted) {
-            throw new TRPCError({
+            throw new InboxIssuancePreflightError({
                 code: 'FORBIDDEN',
                 message:
                     'Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry. Email delivery is available for all issuers. To verify your issuer, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
@@ -274,14 +285,14 @@ export const issueToInbox = async (
              * By providing this parameter, the developer explicitly takes responsibility for the signing process. We trust them and proceed.
              **/
             if (!(await verifyCredentialCanBeSigned(credential as UnsignedVC))) {
-                throw new TRPCError({
+                throw new InboxIssuancePreflightError({
                     code: 'BAD_REQUEST',
                     message:
                         'Credential failed to pass a pre-flight issuance test. Please verify that the credential is well-formed and can be issued.',
                 });
             }
         } else {
-            throw new TRPCError({
+            throw new InboxIssuancePreflightError({
                 code: 'BAD_REQUEST',
                 message: 'Unsigned credentials require a signing authority',
             });
@@ -311,95 +322,74 @@ export const issueToInbox = async (
 
     // Check if the recipient is a managed child (has a guardian via MANAGES relationship).
     // Managed children need guardian approval for all inbox credentials, even without explicit guardianEmail.
-    const recipientManagers = existingProfile
-        ? await getProfilesThatManageAProfile(existingProfile.profileId)
-        : [];
+    // Service profiles (orgs) are managed for admin purposes, not guardianship.
+    const recipientManagers =
+        existingProfile && !existingProfile.isServiceProfile
+            ? await getProfilesThatManageAProfile(existingProfile.profileId)
+            : [];
     const recipientIsManaged = recipientManagers.length > 0;
 
     if (existingProfile && !guardianEmail && !recipientIsManaged && !configuration.refresh) {
-        // Auto-deliver to existing user
-        let finalCredential: VC;
-
+        let issued: IssuedCredential;
         if (isSigned) {
-            finalCredential = credential as VC;
+            const signedCredential = credential as VC;
+            const learnCard = await getEmptyLearnCard();
+            issued = {
+                kind: 'issued-credential',
+                credential: await learnCard.invoke.createDagJwe(signedCredential, [
+                    existingProfile.did,
+                    issuerProfile.did,
+                ]),
+                statusEntries: getBitstringStatusListEntries(signedCredential),
+            };
         } else {
-            // Sign the credential using signing authority
             const signingAuthorityForUser = await getSigningAuthorityForUserByName(
                 issuerProfile,
                 signingAuthority!.endpoint,
                 signingAuthority!.name
             );
-
             if (!signingAuthorityForUser) {
-                throw new TRPCError({
+                throw new InboxIssuancePreflightError({
                     code: 'NOT_FOUND',
                     message: 'Signing authority not found for issuer',
                 });
             }
-
-            finalCredential = (
-                await issueCredentialWithSigningAuthority(
-                    { type: 'profile', profile: issuerProfile },
-                    credential as UnsignedVC,
-                    signingAuthorityForUser,
-                    ctx.domain,
-                    false // don't encrypt
-                )
-            ).credential as VC;
+            const unsignedCredential = credential as UnsignedVC;
+            setCredentialSubjectIds(unsignedCredential, existingProfile.did);
+            issued = await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: issuerProfile },
+                unsignedCredential,
+                signingAuthorityForUser,
+                ctx.domain
+            );
         }
-
-        // Send credential using appropriate helper (sendBoost handles boost tracking)
-        // Pass activityId and integrationId so they're stored on the relationship for CLAIMED chaining
-        const learnCard = await getEmptyLearnCard();
-        const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
-            existingProfile.did,
-            issuerProfile.did,
-        ]);
-        // Carry only public status coordinates alongside the newly encrypted payload.
-        const delivery: IssuedCredential = {
-            kind: 'issued-credential',
-            credential: encryptedDelivery,
-            statusEntries: getBitstringStatusListEntries(finalCredential),
-        };
-        if (boostUri) {
-            const boost = await getBoostByUri(boostUri);
-            if (boost) {
-                await sendBoost({
-                    from: { type: 'profile', profile: issuerProfile },
-                    to: existingProfile,
-                    boost,
-                    credential: delivery,
-                    domain: ctx.domain,
-                    activityId,
-                    integrationId,
-                });
-            } else {
-                // Fallback to sendCredential if boost not found
-                await sendCredential(
-                    issuerProfile,
-                    existingProfile,
-                    delivery,
-                    ctx.domain,
-                    undefined,
-                    activityId,
-                    integrationId
-                );
-            }
+        const boost = boostUri ? await getBoostByUri(boostUri) : undefined;
+        await checkpointDelivery();
+        if (boostUri && boost) {
+            await sendBoost({
+                from: { type: 'profile', profile: issuerProfile },
+                to: existingProfile,
+                boost,
+                credential: issued,
+                domain: ctx.domain,
+                activityId,
+                integrationId,
+            });
         } else {
             await sendCredential(
                 issuerProfile,
                 existingProfile,
-                delivery,
+                issued,
                 ctx.domain,
                 undefined,
                 activityId,
                 integrationId
             );
         }
-
         // Record successful delivery without creating temporary service-readable escrow.
         const finalizedInboxCredential = await createInboxCredential({
-            credential: JSON.stringify(finalCredential),
+            // Delivered audit rows never retain a credential payload.
+            credential: '',
             isSigned: true,
             delivered: true,
             recipient,
@@ -416,6 +406,7 @@ export const issueToInbox = async (
             await logCredentialDelivered({
                 activityId,
                 actorProfileId: issuerProfile.profileId,
+                onBehalfOf: ctx.user?.onBehalfOf,
                 recipientType: recipient.type as 'email' | 'phone',
                 recipientIdentifier: recipient.value,
                 recipientProfileId: existingProfile.profileId,
@@ -464,6 +455,11 @@ export const issueToInbox = async (
             });
         }
 
+        assertDeliveryCheckpoint({
+            issuanceId: finalizedInboxCredential.id,
+            status: LCNInboxStatusEnumValidator.enum.ISSUED,
+            recipientDid: existingProfile.did,
+        });
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential: finalizedInboxCredential,
@@ -477,6 +473,7 @@ export const issueToInbox = async (
             ? await prepareInboxRefresh(credential, issuerProfile, ctx.domain)
             : undefined;
         if (preparedRefresh) credential = preparedRefresh.credential;
+        await checkpointDelivery();
         const inboxCredential = await createInboxCredential({
             ...(preparedRefresh
                 ? {
@@ -526,6 +523,7 @@ export const issueToInbox = async (
                 await logCredentialDelivered({
                     activityId,
                     actorProfileId: issuerProfile.profileId,
+                    onBehalfOf: ctx.user?.onBehalfOf,
                     recipientType: recipient.type,
                     recipientIdentifier: recipient.value,
                     recipientProfileId: existingProfile.profileId,
@@ -866,8 +864,9 @@ export const issueToInbox = async (
 
                 await deliveryService.send({
                     contactMethod: recipient,
-                    templateId: delivery?.template?.id ?? 'universal-inbox',
+                    templateId: delivery?.template?.id || 'universal-inbox-claim',
                     templateModel: {
+                        claimUrl: emailClaimUrl,
                         emailClaimUrl,
                         claimToken: emailClaimToken,
                         ...injectedTemplateFields,
@@ -975,6 +974,12 @@ export const issueToInbox = async (
             ? await recordInboxRefreshClaimUrl(inboxCredential.id, generateClaimUrl(claimToken))
             : generateClaimUrl(claimToken);
 
+        assertDeliveryCheckpoint({
+            issuanceId: inboxCredential.id,
+            status: LCNInboxStatusEnumValidator.enum.PENDING,
+            claimUrl,
+            ...(guardianEmail ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
+        });
         return {
             status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential,
@@ -983,4 +988,66 @@ export const issueToInbox = async (
             ...(guardianEmail ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
         };
     }
+};
+
+/**
+ * Resolves an input into the credential that issueToInbox consumes. Keeping this outside either
+ * route makes direct credentials and Boost templates behave identically for single and batch
+ * issuance, including template rendering, Boost metadata, and standard client-facing errors.
+ */
+export const resolveInboxCredentialInput = async (
+    input: IssueInboxCredentialType,
+    ctx: Context
+): Promise<{ credential: VC | UnsignedVC | VP; resolvedBoostUri?: string }> => {
+    const { templateUri, configuration } = input;
+    // A direct credential wins when both fields are present, matching the existing single-route
+    // behavior. A template is only loaded when the caller supplied no credential.
+    let credential = input.credential;
+    let resolvedBoostUri: string | undefined;
+
+    if (templateUri && !credential) {
+        const boostInstance = await getBoostByUri(templateUri);
+
+        if (!boostInstance) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: `Boost not found: ${templateUri}`,
+            });
+        }
+
+        if (!boostInstance.dataValues.boost) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Boost does not contain a credential template: ${templateUri}`,
+            });
+        }
+
+        try {
+            // Use shared helper to prepare credential with templateData rendering,
+            // issuance date, boostId injection, and OBv3 alignments
+            resolvedBoostUri = getBoostUri(boostInstance.id, ctx.domain);
+
+            credential = await prepareCredentialFromBoost(
+                boostInstance,
+                resolvedBoostUri,
+                ctx.domain,
+                { templateData: configuration?.templateData as Record<string, unknown> }
+            );
+        } catch (e) {
+            console.error('Failed to prepare boost credential', e);
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Failed to prepare boost credential template: ${templateUri}`,
+            });
+        }
+    }
+
+    if (!credential) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Either credential or templateUri must be provided',
+        });
+    }
+
+    return { credential, resolvedBoostUri };
 };

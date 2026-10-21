@@ -1,7 +1,7 @@
 import { useEffect, useCallback, memo, useState } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useHistory, RouteComponentProps } from 'react-router-dom';
 import queryString from 'query-string';
 
 import {
@@ -49,6 +49,7 @@ import { useSentryIdentify, initSentry } from './constants/sentry';
 import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUserId';
 import * as m from './paraglide/messages.js';
 import { useLocale } from './i18n';
+import { VC } from '@learncard/types';
 
 const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 
@@ -71,7 +72,7 @@ const AppRouter: React.FC = () => {
     useLocale();
     const { isLoading: coordinatorLoading, walletReady } = useAppAuth();
 
-    // The coordinator detects Firebase auth changes via firebaseAuthStore and
+    // The coordinator detects auth changes via authUserStore and
     // handles the full lifecycle (authenticating → deriving_key → ready).
     // Once walletReady is true, we always show the app regardless of other signals.
     const initLoading = walletReady ? false : coordinatorLoading;
@@ -115,7 +116,7 @@ const AppRouter: React.FC = () => {
     useLaunchDarklyIdentify({ debug: !IS_PRODUCTION });
     useSentryIdentify({ debug: !IS_PRODUCTION });
     useSetFirebaseAnalyticsUserId({ debug: false });
-    useSyncConsentFlow(enablePrefetch);
+    const { refetch: refetchConsentFlowSync } = useSyncConsentFlow(enablePrefetch);
     useSyncRevokedCredentials(enablePrefetch);
 
     const { newModal: newBoostSelectModal, closeModal: closeBoostSelectModal } = useModal({
@@ -129,8 +130,8 @@ const AppRouter: React.FC = () => {
                 handleCloseModal={closeBoostSelectModal}
                 showCloseButton={false}
                 showNewBoost={true}
-                history={history as any}
-                boostCredential={{} as any}
+                history={history as RouteComponentProps['history']}
+                boostCredential={{} as VC}
                 boostUri=""
                 profileId=""
             />
@@ -166,6 +167,17 @@ const AppRouter: React.FC = () => {
             }
         };
     }, [verifySignInLinkAndLogin, savedEmail]);
+
+    // Pick up contract-written credentials when the native app comes back to the foreground.
+    useEffect(() => {
+        if (!enablePrefetch || !Capacitor.isNativePlatform()) return;
+        const listener = App.addListener('resume', () => {
+            refetchConsentFlowSync();
+        });
+        return () => {
+            listener.then(handle => handle.remove());
+        };
+    }, [enablePrefetch, refetchConsentFlowSync]);
 
     useEffect(() => {
         if (!Capacitor.isNativePlatform() && savedEmail) {

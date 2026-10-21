@@ -31,7 +31,7 @@ export interface LearnCardAssistantCardCta {
 
 export interface LearnCardAssistantCardFeedback {
     type: 'thumbs-down';
-    createdAt: Date;
+    createdAt: Date | null;
 }
 
 export interface LearnCardAssistantCard {
@@ -73,7 +73,7 @@ export interface LearnCardAssistantCardResponse extends Omit<
     readAt?: string;
     feedback?: {
         type: 'thumbs-down';
-        createdAt: string;
+        createdAt: string | null;
     };
     createdAt: string;
     updatedAt: string;
@@ -123,6 +123,11 @@ export interface LearnCardAssistantFeedRuntimeOptions {
     getEncryption?: () => EncryptionService;
 }
 
+interface StoredLearnCardAssistantCardFeedback {
+    type: 'thumbs-down';
+    createdAt: string | null;
+}
+
 type StoredLearnCardAssistantCard = Omit<
     LearnCardAssistantCard,
     'origin' | 'dedupeKey' | 'title' | 'description' | 'detail' | 'cta' | 'feedback'
@@ -134,7 +139,10 @@ type StoredLearnCardAssistantCard = Omit<
     description: string | EncryptedJsonEnvelopeV1;
     detail?: string | EncryptedJsonEnvelopeV1;
     cta?: LearnCardAssistantCardCta | EncryptedJsonEnvelopeV1;
-    feedback?: LearnCardAssistantCardFeedback | EncryptedJsonEnvelopeV1;
+    feedback?:
+        | StoredLearnCardAssistantCardFeedback
+        | LearnCardAssistantCardFeedback
+        | EncryptedJsonEnvelopeV1;
 };
 
 const getDedupeKeyHash = (ownerDid: string, dedupeKey: string): string =>
@@ -169,6 +177,24 @@ export const LearnCardAssistantCardToolInputValidator = RecordLearnCardAssistant
 });
 
 const FeedbackValidator = z.object({ type: z.literal('thumbs-down') }).strict();
+const StoredFeedbackValidator = FeedbackValidator.extend({ createdAt: z.unknown().optional() });
+const FeedbackTimestampValidator = z.iso.datetime({ offset: true });
+
+// Older WASM-encrypted Dates became {}. Keep the feedback, but never invent its time.
+const getFeedbackDate = (value: unknown): Date | null => {
+    if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : null;
+    if (typeof value !== 'string' || !FeedbackTimestampValidator.safeParse(value).success) {
+        return null;
+    }
+
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date : null;
+};
+
+const rehydrateFeedback = (value: unknown): LearnCardAssistantCardFeedback => {
+    const feedback = StoredFeedbackValidator.parse(value);
+    return { type: feedback.type, createdAt: getFeedbackDate(feedback.createdAt) };
+};
 
 const clampLimit = (limit = 10): number => {
     const parsed = Math.trunc(limit);
@@ -179,17 +205,25 @@ const clampLimit = (limit = 10): number => {
 const sortLatest = (items: LearnCardAssistantCard[]): LearnCardAssistantCard[] =>
     [...items].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-const cloneItem = (item: LearnCardAssistantCard): LearnCardAssistantCard => ({
-    ...item,
-    origin: item.origin ?? 'interactive',
-    ...(item.cta ? { cta: { ...item.cta } } : {}),
-    ...(item.readAt ? { readAt: new Date(item.readAt) } : {}),
-    ...(item.feedback
-        ? { feedback: { ...item.feedback, createdAt: new Date(item.feedback.createdAt) } }
-        : {}),
-    createdAt: new Date(item.createdAt),
-    updatedAt: new Date(item.updatedAt),
-});
+const cloneItem = (item: LearnCardAssistantCard): LearnCardAssistantCard => {
+    const feedbackDate = getFeedbackDate(item.feedback?.createdAt);
+    return {
+        ...item,
+        origin: item.origin ?? 'interactive',
+        ...(item.cta ? { cta: { ...item.cta } } : {}),
+        ...(item.readAt ? { readAt: new Date(item.readAt) } : {}),
+        ...(item.feedback
+            ? {
+                  feedback: {
+                      type: item.feedback.type,
+                      createdAt: feedbackDate ? new Date(feedbackDate) : null,
+                  },
+              }
+            : {}),
+        createdAt: new Date(item.createdAt),
+        updatedAt: new Date(item.updatedAt),
+    };
+};
 
 export const toLearnCardAssistantCardResponse = (
     item: LearnCardAssistantCard
@@ -210,7 +244,7 @@ export const toLearnCardAssistantCardResponse = (
         ? {
               feedback: {
                   type: item.feedback.type,
-                  createdAt: item.feedback.createdAt.toISOString(),
+                  createdAt: getFeedbackDate(item.feedback.createdAt)?.toISOString() ?? null,
               },
           }
         : {}),
@@ -256,7 +290,16 @@ export const createMongoLearnCardAssistantFeedRepository = (
             : {}),
         ...(item.cta ? { cta: await encryption.encryptJson(item.cta, aad(item, 'cta')) } : {}),
         ...(item.feedback
-            ? { feedback: await encryption.encryptJson(item.feedback, aad(item, 'feedback')) }
+            ? {
+                  feedback: await encryption.encryptJson<StoredLearnCardAssistantCardFeedback>(
+                      {
+                          type: item.feedback.type,
+                          createdAt:
+                              getFeedbackDate(item.feedback.createdAt)?.toISOString() ?? null,
+                      },
+                      aad(item, 'feedback')
+                  ),
+              }
             : {}),
     });
 
@@ -284,11 +327,7 @@ export const createMongoLearnCardAssistantFeedRepository = (
         );
         const detail = await decryptOptional<string>(item, item.detail, 'detail');
         const cta = await decryptOptional<LearnCardAssistantCardCta>(item, item.cta, 'cta');
-        const feedback = await decryptOptional<LearnCardAssistantCardFeedback>(
-            item,
-            item.feedback,
-            'feedback'
-        );
+        const feedback = await decryptOptional<unknown>(item, item.feedback, 'feedback');
 
         return {
             item: {
@@ -307,7 +346,7 @@ export const createMongoLearnCardAssistantFeedRepository = (
                 description: description.value,
                 ...(detail.value ? { detail: detail.value } : {}),
                 ...(cta.value ? { cta: cta.value } : {}),
-                ...(feedback.value ? { feedback: feedback.value } : {}),
+                ...(feedback.value ? { feedback: rehydrateFeedback(feedback.value) } : {}),
             },
             legacyPlaintext:
                 dedupeKey.legacyPlaintext ||

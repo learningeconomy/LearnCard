@@ -1,5 +1,171 @@
 # learn-card-core
 
+## 3.1.3
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.62
+
+## 3.1.2
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.39
+    - @learncard/helpers@1.6.3
+    - @learncard/network-brain-client@2.5.61
+
+## 3.1.1
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.60
+
+## 3.1.0
+
+### Minor Changes
+
+- [#1632](https://github.com/learningeconomy/LearnCard/pull/1632) [`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad) Thanks [@goblincore](https://github.com/goblincore)! - Add explicit consent contract data recipients and audience version acknowledgements. Enforce current consent status, expiry, category sharing, and recipient membership on consented data reads. Recipient additions freeze after first consent; removals immediately revoke API access and invalidate stale consent/update/sync acknowledgements.
+
+    Update existing app consent paths to review the current data audience, encrypt for all recipients, and cache copies by the full audience. Background synchronization reloads recipients and acknowledges the current version.
+
+- [#1634](https://github.com/learningeconomy/LearnCard/pull/1634) [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085) Thanks [@goblincore](https://github.com/goblincore)! - Add attributed generic contract requests, target-only denial, retained cancellation history, and optional referral identity on consent history and exports. Preserve legacy AI request payloads and owner-only consent behavior.
+
+    Persist correlated notification intents with consent mutations and retry via a leased Lambda/Docker worker. Fan out to the owner and current data recipients; give a requester outside that audience only a minimal decision. Recheck audience membership and current consent permissions before delivery, including queued notifications, and expose stable event and delivery IDs for downstream deduplication.
+
+    Keep app request hooks and legacy AI component props aligned with the shared request status type, including retained generic cancellations.
+
+- [#1429](https://github.com/learningeconomy/LearnCard/pull/1429) [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856) Thanks [@Custard7](https://github.com/Custard7)! - Make Partner Connect apps zero-config. Apps can send credentials from inline templates (`sendCredential({ alias, template, templateData })`) and request scoped consent (`requestConsent({ read, write, reason })`) without creating boosts or contracts in LearnCard first; the network creates and versions them on first use. New `@learncard/partner-connect-core` package holds the shared template compiler, validator, and manifest helpers.
+
+    Mock mode now captures an app manifest and offers a one-click publish link (`getCapturedManifest()`, `getPublishUrl()`), and `mock: 'auto'` also activates inside AI app-builder editor previews (Lovable, Bolt, v0, Replit) while never mocking on published app addresses. Adds template validation and preview, template issuance status and recipient queries, and a typed `PartnerConnectError`.
+
+    LearnCard gains a publish-from-link page with live preview and a consent designer, a simple app dashboard with manifest version diffs and one-step "Apply & Ship", and network routes plus plugin methods to submit, compare, and apply manifest versions. The publish page asks for the real address when an app was captured on a local or app-builder preview address.
+
+    App captures are additive: submitting a manifest merges it into the latest version (`mergeCapturedManifests`), so features a run didn't exercise are kept rather than reported as removed.
+
+    Practice mode gets a redesigned look: frosted-glass notices with clear icons and plain-language copy (at most three on screen, one on phones), and a "Practice mode" panel that lists the LearnCard features your app uses in plain words with a one-tap Publish button. Both follow the system light/dark setting and respect reduced motion.
+
+    Practice mode now remembers a separate identity for each app, so apps sharing a local address publish separately. Start over from the panel or with `resetPracticeMode()` to clear just that app's practice history. App icons are picked more accurately and can travel with the publish link as a small image, with a size limit to keep links manageable.
+
+    Calling `requestConsent()` without saying what you need now shows an amber "Choose what to ask for" notice in practice mode, and the panel marks it "Not set up yet", instead of pretending it will work when published. The publish page opens the consent setup pre-filled from what your app uses, reloads the preview once it's enabled, and checks with you before submitting without it.
+
+- [#1429](https://github.com/learningeconomy/LearnCard/pull/1429) [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856) Thanks [@Custard7](https://github.com/Custard7)! - Changes to a live App Store app now go through review. Listing edits and newly applied capabilities on a `LISTED` app are held as a pending update (`pending_update` on owner and admin listing responses) and only take effect once an admin approves them. New routes and plugin methods: `submitAppStoreListingUpdate`, `withdrawAppStoreListingUpdate`, `discardAppStoreListingUpdate`, and `adminReviewListingUpdate`; `adminGetAllListings` accepts `pendingUpdatesOnly`. `applyManifestVersion` returns `applied: false, pendingReview: true` for live apps.
+
+    The publish page and listing editor now show apps that are in review or live with their saved details, let developers withdraw a submission to make changes, and submit updates to live apps. The admin dashboard has an Updates view for reviewing them.
+
+- [#1651](https://github.com/learningeconomy/LearnCard/pull/1651) [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948) Thanks [@goblincore](https://github.com/goblincore)! - Publish Resume Builder PDFs through version-bound encrypted managed attachments. Add owner chunk staging/cleanup and guarded recipient retrieval, preserve atomic share lifecycle and passcode protection, and keep original selected credential contexts and proofs intact inside LER-RS records.
+
+    LER-RS `verifications` now uses JSON-LD `@json` so embedded original credentials retain their contexts and proofs. This changes canonicalization for newly issued LER-RS credentials; it does not rewrite or re-sign embedded source credentials.
+
+- [#1637](https://github.com/learningeconomy/LearnCard/pull/1637) [`ec321885908bab179acac7fec910bf61c42deb5f`](https://github.com/learningeconomy/LearnCard/commit/ec321885908bab179acac7fec910bf61c42deb5f) Thanks [@goblincore](https://github.com/goblincore)! - Add gated referral invitations with attributed cards, audience and permission review, confirmed decline, and pending invitation recovery after alert dismissal. Require both tenant configuration and the enableContractRequests rollout flag; preserve existing AI and owner-only consent flows. Localize the experience in English, Spanish, French, and Arabic.
+
+    Show receiving organizations in consent and connected-app details and recheck current referral state before consent submission. Include a signed HTTP outcome acceptance lab and integration walkthrough.
+
+    Keep the receiving organizations visible in detailed privacy settings and connected-app access editing, while preserving the existing owner-only layout.
+
+    Bind referral acceptance to the reviewed request ID under the contract lock, reject expired contracts on consent/re-consent, and keep invitation conflicts in the review screen. Stop polling terminal invitations, localize permission summaries, retry failed dismissals, and support host-reachable webhook capture from Docker.
+
+    Document the complete referral, auto-boost, outcome, claim, synchronization and webhook lifecycle. Add tested integrator snippets for recipient contracts, signing authority setup, scoped runtime tokens and polling recovery, including the client activity required for live sharing.
+
+    Refine referral cards and review panels with compact typography, grouped audience and permission details, accessible actions, and lighter privacy settings. Keep invitation and consent behavior unchanged.
+
+### Patch Changes
+
+- [#1647](https://github.com/learningeconomy/LearnCard/pull/1647) [`544d50fddf3fd93a37e4f87fd741038168f94e17`](https://github.com/learningeconomy/LearnCard/commit/544d50fddf3fd93a37e4f87fd741038168f94e17) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2201] Encrypt known-recipient server-side credential issuance and decrypt finalized inbox deliveries in the SDK. Raw inbox finalization now returns JWEs instead of plaintext VCs; deploy the updated SDK with the backend.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948)]:
+    - @learncard/network-brain-client@2.5.59
+    - @learncard/core@9.4.38
+    - @learncard/helpers@1.6.2
+
+## Unreleased
+
+### Patch Changes
+
+- LC-2201: Decrypt encrypted inbox finalization deliveries locally before exposing
+  credentials to callers. The public `finalizeInboxCredentials()` result remains VCs;
+  failed decryptions count as errors and remain recoverable through inbox recovery.
+- LC-2201: Decryption and validation failures during inbox finalization and recovery
+  now log the affected delivery ID and rejection reason without logging credential
+  contents. Failure counts and successful sibling deliveries are unchanged.
+
+## 3.0.1
+
+### Patch Changes
+
+- [#1607](https://github.com/learningeconomy/LearnCard/pull/1607) [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993) Thanks [@goblincore](https://github.com/goblincore)! - Make `acceptPresentation` idempotent so retries of a saved collection do not create duplicate relationships. New or replacement share-link passcodes require at least eight characters; existing shorter passcodes remain valid for recipients. Public share resolution can now return `try_later` when passcode verification is unavailable or throttled.
+
+- Updated dependencies [[`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb)]:
+    - @learncard/helpers@1.6.1
+    - @learncard/core@9.4.37
+    - @learncard/network-brain-client@2.5.58
+
+## 3.0.0
+
+### Major Changes
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Managed refreshable sends through the standard send paths (LC-2198). `send({ type: 'boost', refresh: true })` now issues refreshable credentials for profile/DID recipients: with local signing the SDK asks the server to run every managed-send guard, create or reuse the boost and allocate the managed refresh service in one step, injects the service (with its inline JSON-LD context) before signing, and hands the signed credential to the server's unified send so activity/contract behavior and the canonical receipt are preserved; without local signing the request is served by the signing-authority path. Email/phone recipients now use Universal Inbox deferred issuance: allocate a stable refresh service at issue, queue unsigned updates in encrypted inbox escrow, and bind/sign the latest content at verified claim. The deferred receipt is returned at `inbox.refresh`; direct `inbox/issue` returns it at `refresh`.
+
+    `sendBoost` with literal `{ enableRefresh: true }` now returns `{ credentialUri, refresh }` instead of a plain URI string, where `refresh` is the metadata-only issuance receipt (refreshId, refreshService, credentialId, issuerDid, holderDid, credentialStatus) needed to publish future versions via `publishCredentialRefresh`. Legacy callers — boolean options, omitted options, or object options without `enableRefresh` — still receive the credential URI string; a dynamically typed `enableRefresh` degrades the result to `string | { credentialUri, refresh }`. Delivered managed credentials remain holder-encrypted even when `encrypt: false`. Pending Inbox content uses the existing service-readable encrypted escrow until claim, when it is wiped.
+
+    `@learncard/types` adds the `ManagedCredentialRefreshReceipt` validator plus optional `refresh` on the unified send input/response validators; `@learncard/helpers` adds the shared managed context preparation helpers (`prepareManagedRefreshContext`, `injectManagedRefreshService`) now also used by SDK `issueCredential` signing.
+
+    Refreshable `send` accepts an optional `idempotencyKey` so a whole call can be retried without duplicating the boost, refresh allocation or delivery.
+
+    Completed-send comparisons canonicalize nested result keys so equivalent receipts remain idempotent regardless of property insertion order. Keyed sends reuse the recipient validation already performed in the request.
+
+    Keyed pre-signed retries now recover the original result when delivery bound successfully but its intent result was not recorded, matching preparation and signing-authority retries. Pending receipt fallbacks use the holder's network profile DID consistently.
+
+    Signing a credential with a managed refresh service now rejects conflicting inline JSON-LD term definitions (including `authorization`) instead of producing a credential whose refresh terms are not correctly signed. Credentials without a managed service are unaffected.
+
+    Managed send and refresh publication recover from a stale local issuer DID document after signing-authority registration: if proof verification fails, the server refreshes the authenticated issuer's document and verifies once more without relaxing signature checks.
+
+    Universal Inbox accepts `refresh: true` and an issuance `idempotencyKey`; both claim paths bind the latest revision atomically. Publication keys survive claim, and issuer `getInboxCredential` exposes the metadata-only receipt with its bound holder DID.
+
+### Minor Changes
+
+- [#1598](https://github.com/learningeconomy/LearnCard/pull/1598) [`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45) Thanks [@Custard7](https://github.com/Custard7)! - Act as a managed profile. A request may carry `X-LearnCard-Act-As: <profileId>`; the network swaps the acting profile when the authenticated profile manages the target, keeps the token's scope unchanged, and records `onBehalfOf` on the resulting activity. API tokens must opt in via a new `actAs` field on the auth grant (`'*'` or a list of profile IDs; absent = no delegation).
+
+    - `@learncard/types`: `ACT_AS_HEADER`, `AuthGrant.actAs`.
+    - `@learncard/network-plugin` / `@learncard/init`: `actAs` option on `initLearnCard` and the network plugin; `learnCard.invoke.actAs(profileId)` returns a scoped instance.
+    - `@learncard/cli`: `serviceAccounts[].actAs` in the org spec is set on the grant at creation; like scope and expiry, it is compared on re-apply and any drift errors with a revoke hint (dry-run reports `drifted`). `actAs` lists are compared as sets, so reordering profile IDs is not drift. With a `learncard-hosted` signer, `org apply` also registers a hosted signing authority on each managed profile so tokens acting as it can sign. Shown by `doctor` and `whoami`; new `examples/delegated-service-account.network.yaml`.
+
+- [#1591](https://github.com/learningeconomy/LearnCard/pull/1591) [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Universal Inbox batch issuance through `sendCredentialsViaInbox`, tRPC
+  `inbox.issueBatch`, and `POST /inbox/issue-batch`, with public batch input and result
+  validators/types, shared configuration defaults, ordered per-item outcomes, and
+  24-hour issuer-scoped idempotency keys. Later duplicate keys in one batch conflict
+  deterministically. Completed issuances include reconciliation IDs if replay storage
+  cannot be confirmed; side-effect-free preflight failures release their keys.
+
+    Enforce a 4 MiB JSON payload budget and atomic batch quota admission without
+    charging rejected batches. Batch submission returns HTTP 202 with a durable
+    receipt. Poll `GET /inbox/batches/{batchId}` or
+    `getInboxCredentialBatch` for ordered progress and outcomes. Batch-level request IDs
+    make submission retries safe. Jobs, quota admission, dispatch records, and encrypted
+    results are stored in Neo4j; a dedicated SQS queue processes items independently of
+    notifications. Submission retries report the current batch state. Transient preparation
+    and signing failures retry before delivery. Terminal batches release their original
+    payload and remain available for 30 days, including uncertain outcomes; unresolved
+    client-keyed replay reservations stay blocked for reconciliation after job expiry.
+    Orphaned internal reservations for unkeyed items are collected after job pruning.
+    Container-backed tests exercise Neo4j, Redis, and an SQS emulator, including worker
+    recovery, duplicate delivery, polling authorization, and submission replay.
+
+    The existing single-issue route now accepts `configuration.guardianEmail`, exposing
+    guardian approval to single-issue clients. Both routes reject guardian self-approval
+    case-insensitively. Rate-limit errors use `TOO_MANY_REQUESTS` (HTTP 429); remove stale
+    TypeScript casts to `BAD_REQUEST` from existing callers. Those casts did not change
+    the runtime status code.
+
+### Patch Changes
+
+- Updated dependencies [[`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e)]:
+    - @learncard/helpers@1.6.0
+    - @learncard/core@9.4.36
+    - @learncard/network-brain-client@2.5.57
+
 ## 2.14.1
 
 ### Patch Changes

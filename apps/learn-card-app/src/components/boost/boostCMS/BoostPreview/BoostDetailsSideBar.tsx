@@ -34,10 +34,16 @@ import {
 import { VC, VerificationItem } from '@learncard/types';
 import { UnsignedVC } from '@learncard/types';
 import moment from 'moment';
+import {
+    getCredentialExpirationDate,
+    hasCredentialExpired,
+} from 'learn-card-base/helpers/credentialExpiration';
 import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
+    endorsementCredential?: VC;
+    shareCredentialUri?: string;
     categoryType?: CredentialCategoryEnum;
     customSkillsComponent?: React.ReactNode;
     verificationItems: VerificationItem[];
@@ -53,6 +59,8 @@ type BoostDetailsSideBarProps = {
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
+    endorsementCredential: endorsementCredentialProp,
+    shareCredentialUri,
     categoryType,
     customSkillsComponent,
     verificationItems,
@@ -66,6 +74,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     issuancesSummaryComponent,
     isPreview = false,
 }) => {
+    const endorsementCredential = endorsementCredentialProp ?? credential;
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -84,6 +93,9 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                   .filter(Boolean)
                   .join(' – ')
             : null;
+
+    const expirationDate = getCredentialExpirationDate(credential);
+    const isExpired = hasCredentialExpired(credential);
     const { isMobile } = useDeviceTypeByWidth();
 
     const {
@@ -101,18 +113,18 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     const isMediaDisplay = displayType === DisplayTypeEnum.Media;
 
     const credentialVerificationDisplay = (
-        <div className="w-full flex items-center justify-start text-sm text-grayscale-600 font-semibold border-t-[1px] border-solid border-grayscale-200 pt-[10px]">
+        <div className="w-full flex items-center justify-start text-sm text-grayscale-600 font-semibold border-t border-solid border-grayscale-200 pt-[10px]">
             <CredentialVerificationDisplay
                 credential={credential}
-                iconClassName="!w-[20px] !h-[20px] mr-1"
+                iconClassName="w-[20px]! h-[20px]! mr-1"
                 showText
-                className="!capitalize !text-grayscale-900 text-sm"
+                className="capitalize! text-grayscale-900! text-sm"
             />
             &nbsp;on {createdAt}
         </div>
     );
 
-    let activeTabDetails = null;
+    let activeTabDetails: React.ReactNode;
     switch (selectedTab) {
         case BoostPreviewTabsEnum.Details:
             activeTabDetails = (
@@ -137,13 +149,23 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                         {!isMediaDisplay && (
                             <span
-                                className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                                className={`text-grayscale-600 font-poppins text-[12px] font-semibold w-full ${
                                     description || dateRangeText
-                                        ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
+                                        ? 'pt-[10px] border-t border-solid border-grayscale-200'
                                         : ''
                                 }`}
                             >
                                 Awarded on {createdAt}
+                            </span>
+                        )}
+                        {!isMediaDisplay && expirationDate && (
+                            <span
+                                className={`mt-2 block w-full font-poppins text-[12px] font-semibold ${
+                                    isExpired ? 'text-amber-700' : 'text-grayscale-600'
+                                }`}
+                            >
+                                {(isExpired ? m['wallet.expired'] : m['wallet.expires'])()}{' '}
+                                {moment(expirationDate).format('MMMM DD, YYYY')}
                             </span>
                         )}
                     </TruncateTextBox>
@@ -179,14 +201,15 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     {!hideEndorsementRequestCard && (
                         <EndorsementCard
-                            credential={credential}
+                            credential={endorsementCredential}
+                            shareCredentialUri={shareCredentialUri}
                             categoryType={categoryType}
                             existingEndorsements={existingEndorsements}
                         />
                     )}
 
                     <EndorsementsList
-                        credential={credential}
+                        credential={endorsementCredential}
                         categoryType={categoryType}
                         existingEndorsements={existingEndorsements}
                     />
@@ -230,7 +253,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
         case BoostPreviewTabsEnum.Endorsements:
             activeTabDetails = (
                 <BoostEndorsementDetails
-                    credential={credential}
+                    credential={endorsementCredential}
                     categoryType={categoryType}
                     existingEndorsements={existingEndorsements}
                 />
@@ -247,7 +270,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     };
 
     return (
-        <aside className="bg-white bg-opacity-70 h-full max-w-full min-w-[375px] px-[20px]">
+        <aside className="bg-white/70  h-full max-w-full min-w-[375px] px-[20px]">
             <BoostFooterLayout
                 className="h-full"
                 footerProps={isMobile ? { handleBack: handleClose } : undefined}

@@ -1,5 +1,70 @@
+import {
+    getEndorsementTargetId,
+    resolveSharedCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { LCNProfile } from '@learncard/types';
 import { QueryClient, InfiniteData } from '@tanstack/react-query';
+
+export const getSharedCredentialIndexQueries = (
+    sharedCredentialUri: string,
+    credentialId?: string
+): Record<string, string>[] => {
+    const legacyQuery = { sharedCredentialUri };
+
+    return credentialId
+        ? [
+              { sharedCredentialKey: JSON.stringify([sharedCredentialUri, credentialId]) },
+              legacyQuery,
+          ]
+        : [legacyQuery];
+};
+
+type SharedCredentialIndexReference = {
+    credentialId?: string;
+    uri: string;
+    randomSeed: string;
+    pin: string;
+};
+
+export const sharedCredentialIndexMatchesCredential = async (
+    record: SharedCredentialIndexReference,
+    credentialId?: string
+): Promise<boolean> => {
+    if (!credentialId) return true;
+    if (record.credentialId) return record.credentialId === credentialId;
+
+    const sharedCredential = await resolveSharedCredential(
+        new URLSearchParams({
+            uri: record.uri,
+            seed: record.randomSeed,
+            pin: record.pin,
+        }).toString()
+    );
+
+    return sharedCredential
+        ? (await getEndorsementTargetId(sharedCredential)) === credentialId
+        : false;
+};
+
+export const findMatchingSharedCredentialIndex = async <
+    RecordType extends SharedCredentialIndexReference,
+>(
+    records: RecordType[],
+    credentialId?: string,
+    verifyCredential = false
+): Promise<RecordType | undefined> => {
+    for (const record of records) {
+        if (
+            !verifyCredential ||
+            (await sharedCredentialIndexMatchesCredential(record, credentialId))
+        ) {
+            return record;
+        }
+    }
+
+    return undefined;
+};
+
 // Helper to insert an object and update the react infinite query cache
 export const insertItem = <GenericObject extends Record<string, any>>(
     queryClient: QueryClient,

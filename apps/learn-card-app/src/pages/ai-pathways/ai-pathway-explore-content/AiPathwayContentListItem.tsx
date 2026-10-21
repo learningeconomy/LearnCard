@@ -59,14 +59,14 @@ const AiPathwayContentListItem: React.FC<{
             className={`flex bg-grayscale-100 rounded-[20px] relative ${mediaHeight} w-full`}
         >
             <>
-                <div className="w-[80px] relative overflow-hidden rounded-[20px] shadow-3xl min-h-[80px] max-h-[80px] flex-shrink-0">
+                <div className="w-[80px] relative overflow-hidden rounded-[20px] shadow-3xl min-h-[80px] max-h-[80px] shrink-0">
                     <div className="block h-full">
                         <img
                             src={metaData?.thumbnailUrl || EmptyImage}
                             alt={content.title || 'Video Cover'}
                             className="h-full w-full object-cover"
                         />
-                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-linear-to-t/srgb from-black to-transparent"></div>
                         <Video className="absolute left-2 bottom-2 h-[20px] w-[20px] text-white" />
                     </div>
                 </div>

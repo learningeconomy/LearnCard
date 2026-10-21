@@ -16,6 +16,7 @@ import {
     EndorsementState,
     EndorsementFormModeEnum,
     convertAttachmentsToEvidence,
+    getEndorsementTarget,
 } from './endorsement-state.helpers';
 import {
     useGetVCInfo,
@@ -24,7 +25,13 @@ import {
     CredentialCategoryEnum,
     useModal,
     ModalTypes,
+    useToast,
+    ToastTypeEnum,
+    getLogger,
 } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+
+const log = getLogger('endorsement-form');
 
 const endorsementSchema = zod.object({
     relationship: zod.object({
@@ -36,6 +43,7 @@ const endorsementSchema = zod.object({
 
 export const EndorsementForm: React.FC<{
     credential: VC;
+    targetCredential?: VC;
     categoryType: CredentialCategoryEnum;
     isRequest?: boolean;
     onSuccess?: (endorsement: EndorsementState) => void;
@@ -43,6 +51,7 @@ export const EndorsementForm: React.FC<{
     shareLinkInfo?: string;
 }> = ({
     credential,
+    targetCredential = credential,
     categoryType,
     isRequest,
     onSuccess,
@@ -55,7 +64,11 @@ export const EndorsementForm: React.FC<{
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
-    const { issueeProfile } = useGetVCInfo(credential, categoryType);
+    const { issueeProfile, loading: isCredentialInfoLoading } = useGetVCInfo(
+        credential,
+        categoryType
+    );
+    const { presentToast } = useToast();
 
     const [sendingEndorsement, setSendingEndorsement] = useState<boolean>(false);
     const [endorsement, setEdorsement] = useState<EndorsementState>(initialEndorsementState);
@@ -72,44 +85,54 @@ export const EndorsementForm: React.FC<{
     };
 
     const handleEndorsementSubmit = async () => {
-        if (!validateEndorsement()) {
-            return;
-        }
+        if (!validateEndorsement()) return;
 
         if (isLoggedIn) {
-            const wallet = await initWallet();
             setSendingEndorsement(true);
 
-            const evidence = convertAttachmentsToEvidence(endorsement.mediaAttachments);
+            try {
+                const recipientProfileId = issueeProfile?.profileId;
+                if (!recipientProfileId) {
+                    throw new Error('Unable to resolve the endorsement recipient profile');
+                }
 
-            const endorsementVC = await wallet.invoke.endorseCredential(credential, {
-                endorsementComment: endorsement.qualification,
-                name: `Endorsement of ${credential.id}`,
-                description: endorsement.description,
-                evidence,
-            });
+                const wallet = await initWallet();
+                const evidence = convertAttachmentsToEvidence(endorsement.mediaAttachments);
+                const target = await getEndorsementTarget(credential, targetCredential);
+                const endorsementVC = await wallet.invoke.endorseCredential(
+                    { id: target.id } as VC,
+                    {
+                        endorsementComment: endorsement.qualification,
+                        name: `Endorsement of ${target.name}`,
+                        description: endorsement.description,
+                        evidence,
+                    }
+                );
 
-            const sentCredential = await wallet.invoke.sendCredential(
-                issueeProfile?.profileId || '',
-                endorsementVC,
-                {
+                await wallet.invoke.sendCredential(recipientProfileId, endorsementVC, {
                     type: 'endorsement',
                     sharedUri: shareLinkInfo,
-                    credentialId: credential.id,
+                    credentialId: target.id,
                     relationship: endorsement.relationship,
-                }
-            );
+                });
+            } catch (error) {
+                log.error('endorsement.send.failed', error);
+                presentToast(m['toasts.boost.endorsementRequestFailed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            } finally {
+                setSendingEndorsement(false);
+            }
 
-            setSendingEndorsement(false);
-
-            // onSuccess
-            // if logged in -> show success modal
             closeAllModals();
             setTimeout(() => {
                 newModal(
                     <EndorsementDraftRequestSuccess
                         closeModal={closeModal}
                         credential={credential}
+                        targetCredential={targetCredential}
                         categoryType={categoryType}
                         autoSend={false}
                         endorsementState={endorsement}
@@ -132,14 +155,14 @@ export const EndorsementForm: React.FC<{
     const description = endorsement.description;
 
     return (
-        <section className="relative h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
-            <section className="bg-white max-w-[800px] w-full rounded-[20px]">
+        <section className="relative h-full w-full flex items-start justify-center overflow-hidden pt-4">
+            <section className="bg-white max-w-[800px] w-full h-full overflow-y-auto rounded-[20px]">
                 <EndorsementFormHeader
                     credential={credential}
                     categoryType={categoryType}
                     isRequest={isRequest}
                 />
-                <div className="w-full flex flex-col items-center justify-center px-4 pt-4 pb-[150px] bg-grayscale-100 h-full">
+                <div className="w-full flex flex-col items-center justify-center px-4 pt-4 pb-[200px] bg-grayscale-100 h-full">
                     <EndorsementFormBoostPreviewCard
                         credential={credential}
                         categoryType={categoryType}
@@ -178,6 +201,7 @@ export const EndorsementForm: React.FC<{
                     relationship?.label.length === 0 ||
                     relationship?.type.length === 0 ||
                     description.length === 0 ||
+                    isCredentialInfoLoading ||
                     sendingEndorsement
                 }
             />

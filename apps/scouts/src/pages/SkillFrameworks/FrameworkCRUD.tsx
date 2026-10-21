@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
@@ -25,7 +26,7 @@ type Network = {
  * Full CRUD interface for Skill Frameworks
  * Includes network attachment capabilities
  */
-export const FrameworkCRUD: React.FC = () => {
+const FrameworkCRUDContent: React.FC = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();
@@ -50,9 +51,7 @@ export const FrameworkCRUD: React.FC = () => {
             const wallet = await initWallet();
             const boosts = await wallet.invoke.getPaginatedBoosts({ limit: 100 });
             // Filter for membership/ID boosts (networks)
-            return boosts.records.filter(
-                (b: any) => b.category === 'membership' || b.category === 'id'
-            );
+            return boosts.records.filter(b => b.category === 'membership' || b.category === 'id');
         },
     });
 
@@ -85,7 +84,7 @@ export const FrameworkCRUD: React.FC = () => {
             });
             setShowCreateForm(false);
         },
-        onError: (error: any) => {
+        onError: error => {
             presentToast(m['skillFrameworks.toasts.error']({ message: error.message }), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -111,7 +110,7 @@ export const FrameworkCRUD: React.FC = () => {
                 hasDismissButton: true,
             });
         },
-        onError: (error: any) => {
+        onError: error => {
             presentToast(m['skillFrameworks.toasts.error']({ message: error.message }), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -126,7 +125,7 @@ export const FrameworkCRUD: React.FC = () => {
     };
 
     return (
-        <div className="p-4 space-y-6">
+        <div className="p-4 space-y-v3-6">
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
@@ -158,7 +157,7 @@ export const FrameworkCRUD: React.FC = () => {
                             });
                         }}
                     >
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             <div>
                                 <label className="block text-sm font-medium text-grayscale-700 mb-1">
                                     {m['skillFrameworks.fwNameLabel']()}
@@ -214,7 +213,7 @@ export const FrameworkCRUD: React.FC = () => {
 
             {/* Frameworks List */}
             {!loadingFrameworks && frameworks && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {frameworks.length === 0 ? (
                         <div className="bg-grayscale-100 p-8 rounded-lg text-center">
                             <p className="text-grayscale-600">{m['skillFrameworks.noFwYet']()}</p>
@@ -223,7 +222,7 @@ export const FrameworkCRUD: React.FC = () => {
                         frameworks.map(framework => (
                             <div
                                 key={framework.id}
-                                className="bg-white p-6 rounded-lg shadow border border-grayscale-200"
+                                className="bg-white p-6 rounded-lg shadow-sm border border-grayscale-200"
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
@@ -273,7 +272,7 @@ export const FrameworkCRUD: React.FC = () => {
 
             {/* Network Attachment Modal */}
             {showNetworkAttach && selectedFramework && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/50  flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
                         <h3 className="text-lg font-bold mb-4">
                             {m['skillFrameworks.attachTitle']({ name: selectedFramework.name })}
@@ -284,7 +283,7 @@ export const FrameworkCRUD: React.FC = () => {
                                 <IonSpinner name="crescent" />
                             </div>
                         ) : networks && networks.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 {networks.map(network => (
                                     <button
                                         key={network.uri}
@@ -329,5 +328,7 @@ export const FrameworkCRUD: React.FC = () => {
         </div>
     );
 };
+
+export const FrameworkCRUD = withCompetencyAdmin(FrameworkCRUDContent);
 
 export default FrameworkCRUD;

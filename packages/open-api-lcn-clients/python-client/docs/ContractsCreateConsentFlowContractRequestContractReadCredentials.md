@@ -1,11 +1,10 @@
 # ContractsCreateConsentFlowContractRequestContractReadCredentials
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**categories** | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]**](ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.md) |  | [optional] 
+| Name           | Type                                                                                                                                                                                 | Description | Notes      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------- |
+| **categories** | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]**](ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.md) |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ contracts_create_consent_flow_contract_request_contract_read_credentials_dict = 
 # create an instance of ContractsCreateConsentFlowContractRequestContractReadCredentials from a dict
 contracts_create_consent_flow_contract_request_contract_read_credentials_from_dict = ContractsCreateConsentFlowContractRequestContractReadCredentials.from_dict(contracts_create_consent_flow_contract_request_contract_read_credentials_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

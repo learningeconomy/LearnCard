@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth, deleteUser, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import type { TenantFirebaseConfig } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
@@ -90,3 +91,27 @@ const auth = () => {
 };
 
 export { auth, deleteUser };
+
+/** SDK boundary used only to configure the registered Firebase adapters. */
+export const getNativeAuth = (): typeof FirebaseAuthentication => FirebaseAuthentication;
+
+export const getNativeIdToken = async (
+    useNativeUser: boolean,
+    forceRefresh?: boolean
+): Promise<string> => {
+    if (useNativeUser) {
+        try {
+            const { user } = await FirebaseAuthentication.getCurrentUser();
+            if (user) {
+                return (
+                    await FirebaseAuthentication.getIdToken({ forceRefresh: forceRefresh ?? false })
+                ).token;
+            }
+        } catch (error) {
+            log.debug('Native token unavailable; trying web session', error);
+        }
+    }
+    const user = auth().currentUser;
+    if (!user) throw new Error('No Firebase user available');
+    return user.getIdToken(forceRefresh);
+};

@@ -14,15 +14,17 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
-import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
+import ClrTranscriptFullPage, {
+    createClrRecordNavigator,
+} from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
 import ClrCourseDetailPanel from '../../../clr-transcript/ClrCourseDetailPanel';
 import {
     isStandaloneCourseCredential,
     normalizeClrTranscriptDisplayModel,
     ClrTranscriptSurface,
-} from '../../../../helpers/clrRenderer.helpers';
-import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
-import { getClrIssuerLogo } from '../../../clr-transcript/clrKind.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { getDownloadableEvidence } from 'learn-card-base/helpers/credentials/clr/helpers';
+import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
 import {
     getAchievementType,
     getCredentialName,
@@ -124,7 +126,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 }) => {
     const { track } = useAnalytics();
     const { initWallet } = useWallet();
-    const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
+    const [verificationResult, setVerificationResult] = useState<{
+        credential: VC;
+        items: VerificationItem[];
+    }>();
+    const vcVerifications =
+        verificationResult?.credential === credential ? verificationResult.items : [];
     const viewedCredentialIdRef = React.useRef<string | undefined>(undefined);
     const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
@@ -145,14 +152,22 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     useEffect(() => {
         if (isPreview) return;
+        let cancelled = false;
 
         const verify = async () => {
-            const wallet = await initWallet();
-            const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            setVCVerifications(verifications);
+            try {
+                const wallet = await initWallet();
+                const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
+                if (!cancelled) setVerificationResult({ credential, items: verifications ?? [] });
+            } catch {
+                if (!cancelled) setVerificationResult({ credential, items: [] });
+            }
         };
 
         verify();
+        return () => {
+            cancelled = true;
+        };
     }, [credential, isPreview]);
 
     useEffect(() => {
@@ -196,6 +211,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         newModal(
             <BoostDetailsSideMenu
                 credential={selectedCredential}
+                shareCredentialUri={boostUri ?? credentialUri}
                 categoryType={categoryType}
                 verificationItems={detailVerificationItems}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
@@ -206,7 +222,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 isPreview={isPreview}
             />,
             {
-                className: '!bg-transparent',
+                className: 'bg-transparent!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -276,12 +292,30 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const hasClrEvidence = clrEvidence.length > 0;
     const standaloneCourse = isStandaloneCourse ? clrModel?.courses[0] : undefined;
     const showsCoursePanel = Boolean(standaloneCourse && clrModel);
+    const clrRecordNavigator = useMemo(
+        () =>
+            clrModel
+                ? createClrRecordNavigator({
+                      model: clrModel,
+                      boost: clrCredential,
+                      adminMode: false,
+                      openPanel: panel => {
+                          newModal(panel, undefined, {
+                              desktop: ModalTypes.Right,
+                              mobile: ModalTypes.Right,
+                          });
+                      },
+                  })
+                : undefined,
+        [clrCredential, clrModel, newModal]
+    );
+    const handleSelectClrRecord = clrRecordNavigator?.selectRecord;
     let previewWrapperPaddingClass = '';
     let previewContentPaddingClass = '';
 
     if (showsCoursePanel || (isMobile && isClrCredential)) {
         previewWrapperPaddingClass = 'px-0';
-        previewContentPaddingClass = '!p-0';
+        previewContentPaddingClass = 'p-0!';
     } else if (shouldUseHostCardPadding) {
         previewWrapperPaddingClass = 'px-2';
         previewContentPaddingClass = 'px-6';
@@ -347,8 +381,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         course={standaloneCourse}
                         boost={clrCredential}
                         showCloseButton={false}
-                        associations={clrModel.associations}
-                        competencies={clrModel.competencies}
+                        model={clrModel}
+                        onSelectRecord={handleSelectClrRecord}
                         issuerName={clrModel.header.issuerName?.value}
                         issuerLogo={getClrIssuerLogo(clrModel)}
                     />
@@ -363,6 +397,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 boost={clrCredential}
                 // boostUri comes from boost cards; credentialUri from direct credential views
                 boostUri={boostUri ?? credentialUri}
+                verificationItems={verifications}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
             />
         );
@@ -407,7 +442,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                 isCertificate && !isStandaloneCourse
                                     ? 'certificate-display-zoom'
                                     : ''
-                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
+                            } ${isID ? 'px-0! mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
                                 className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
@@ -423,6 +458,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                     {!isMobile && !isClrCredential && !showsCoursePanel && (
                         <BoostDetailsSideBar
                             credential={selectedCredential}
+                            shareCredentialUri={boostUri ?? credentialUri}
                             categoryType={categoryType}
                             verificationItems={detailVerificationItems}
                             customLinkedCredentialsComponent={customLinkedCredentialsComponent}

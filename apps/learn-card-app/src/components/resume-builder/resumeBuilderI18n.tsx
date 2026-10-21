@@ -15,6 +15,7 @@
  */
 import * as m from '../../paraglide/messages.js';
 import { UserInfoEnum, ResumeSectionKey } from './resume-builder.helpers';
+import { CredentialCategoryEnum } from 'learn-card-base';
 
 const tMsg = (key: string, params?: Record<string, unknown>): string => {
     const fn = (m as Record<string, unknown>)[key];
@@ -32,8 +33,17 @@ export const getUserInfoPlaceholder = (key: UserInfoEnum): string =>
     tMsg(`passport.resumeBuilder.fields.${key}.placeholder`);
 
 // ── Section labels ──────────────────────────────────────────────────────
-export const getSectionLabel = (key: ResumeSectionKey): string =>
-    tMsg(`passport.resumeBuilder.sections.${key}`);
+const SECTION_LABEL_KEYS: Record<ResumeSectionKey, string> = {
+    [CredentialCategoryEnum.workHistory]: 'passport.resumeBuilder.sections.workHistory',
+    [CredentialCategoryEnum.learningHistory]: 'passport.resumeBuilder.sections.learningHistory',
+    [CredentialCategoryEnum.achievement]: 'passport.resumeBuilder.sections.achievement',
+    [CredentialCategoryEnum.qualifications]: 'wallet.categories.qualifications',
+    [CredentialCategoryEnum.accomplishment]: 'passport.resumeBuilder.sections.accomplishment',
+    [CredentialCategoryEnum.socialBadge]: 'passport.resumeBuilder.sections.socialBadge',
+    [CredentialCategoryEnum.accommodation]: 'passport.resumeBuilder.sections.accommodation',
+};
+
+export const getSectionLabel = (key: ResumeSectionKey): string => tMsg(SECTION_LABEL_KEYS[key]);
 
 // ── Empty-section placeholder copy ──────────────────────────────────────
 export type EmptySectionCopy = {

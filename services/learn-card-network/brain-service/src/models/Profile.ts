@@ -75,8 +75,8 @@ export type ProfileRelationships = {
     presentationSent: ModelRelatedNodesI<
         typeof Presentation,
         PresentationInstance,
-        { to: string; date: string },
-        { to: string; date: string }
+        { to: string; date: string; metadata?: Record<string, unknown> },
+        { to: string; date: string; metadata?: Record<string, unknown> }
     >;
     usesSigningAuthority: ModelRelatedNodesI<
         typeof SigningAuthority,
@@ -238,6 +238,7 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 properties: {
                     to: { property: 'to', schema: { type: 'string', required: true } },
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                    metadata: { property: 'metadata', schema: { type: 'object', required: false } },
                 },
             },
             usesSigningAuthority: {

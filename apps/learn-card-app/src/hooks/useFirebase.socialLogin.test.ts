@@ -3,13 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AnalyticsEvents } from '../analytics/events';
 import { SOCIAL_LOGIN_LOCK_KEY } from './socialLoginLock';
+import { notifyGoogleSignedIn } from './signInInstrumentation';
 
 const mocks = vi.hoisted(() => ({
     appleSignIn: vi.fn(),
     credentialFromResult: vi.fn<() => object | null>(() => ({})),
     debugEvent: vi.fn(),
     firebaseAuth: { currentUser: null as null | { getIdToken: () => Promise<string> } },
-    firebaseAuthStoreSet: vi.fn(),
+    setLoginType: vi.fn(),
     flowNumber: 0,
     getCurrentUser: vi.fn(),
     getIdToken: vi.fn(),
@@ -33,42 +34,6 @@ vi.mock('@capacitor/core', () => ({
         isNativePlatform: () => mocks.isNative,
     },
 }));
-
-vi.mock('@capacitor-firebase/authentication', () => ({
-    FirebaseAuthentication: {
-        getCurrentUser: mocks.getCurrentUser,
-        getIdToken: mocks.getIdToken,
-        sendSignInLinkToEmail: vi.fn(),
-        signInWithApple: mocks.appleSignIn,
-        signInWithGoogle: mocks.googleSignIn,
-    },
-}));
-
-vi.mock('firebase/auth', () => {
-    class OAuthProvider {
-        credential = vi.fn(() => ({}));
-
-        static credentialFromError = vi.fn(() => null);
-
-        static credentialFromResult = mocks.credentialFromResult;
-    }
-
-    return {
-        deleteUser: vi.fn(),
-        EmailAuthProvider: { credentialWithLink: vi.fn() },
-        getRedirectResult: vi.fn(),
-        GoogleAuthProvider: { credential: vi.fn(() => ({})) },
-        isSignInWithEmailLink: vi.fn(),
-        OAuthProvider,
-        PhoneAuthProvider: { credential: vi.fn() },
-        sendSignInLinkToEmail: vi.fn(),
-        signInWithCredential: mocks.signInWithCredential,
-        signInWithCustomToken: vi.fn(),
-        signInWithEmailLink: vi.fn(),
-        signInWithPhoneNumber: vi.fn(),
-        signInWithPopup: mocks.signInWithPopup,
-    };
-});
 
 vi.mock('@analytics', () => ({
     AnalyticsEvents: {
@@ -110,10 +75,13 @@ vi.mock('@ionic/react', () => ({
 }));
 
 vi.mock('learn-card-base', () => ({
-    authStore: { set: { typeOfLogin: vi.fn() } },
+    authStore: { set: { typeOfLogin: mocks.setLoginType } },
+    useSignInAdapter: () => ({
+        signInWithGoogle: mocks.googleSignIn,
+        signInWithApple: mocks.appleSignIn,
+    }),
     destroyRecaptcha: vi.fn(),
     ensureRecaptcha: vi.fn(),
-    firebaseAuthStore: { set: { firebaseAuth: mocks.firebaseAuthStoreSet } },
     getLogger: () => ({
         error: mocks.logError,
         info: mocks.logInfo,
@@ -174,8 +142,7 @@ describe('useFirebase social login hardening', () => {
 
     it('allows only one provider attempt while a social login is pending', async () => {
         let resolveGoogleSignIn:
-            | ((value: { user: object; credential: object }) => void)
-            | undefined;
+            ((value: { user: object; credential: object }) => void) | undefined;
         const googleUser = { uid: 'google-user' };
 
         mocks.googleSignIn.mockReturnValue(
@@ -188,7 +155,7 @@ describe('useFirebase social login hardening', () => {
 
         const { result } = renderHook(() => useFirebase());
 
-        let googleAttempt: Promise<void> | undefined;
+        let googleAttempt: Promise<boolean> | undefined;
         await act(async () => {
             googleAttempt = result.current.googleLogin();
             await result.current.appleLogin();
@@ -216,8 +183,7 @@ describe('useFirebase social login hardening', () => {
         mocks.isNative = false;
 
         let resolveGoogleSignIn:
-            | ((value: { user: object; credential: object }) => void)
-            | undefined;
+            ((value: { user: object; credential: object }) => void) | undefined;
         const googleUser = { uid: 'google-user' };
 
         mocks.googleSignIn.mockReturnValue(
@@ -231,7 +197,7 @@ describe('useFirebase social login hardening', () => {
         const firstTab = renderHook(() => useFirebase());
         const secondTab = renderHook(() => useFirebase());
 
-        let googleAttempt: Promise<void> | undefined;
+        let googleAttempt: Promise<boolean> | undefined;
         await act(async () => {
             googleAttempt = firstTab.result.current.googleLogin();
             await secondTab.result.current.appleLogin();
@@ -250,35 +216,33 @@ describe('useFirebase social login hardening', () => {
             await googleAttempt;
         });
 
-        const appleUser = { getIdToken: vi.fn(() => Promise.resolve('not-recorded')) };
-        mocks.signInWithPopup.mockResolvedValue({ user: appleUser });
+        mocks.appleSignIn.mockResolvedValue({ id: 'apple-user', providerType: 'firebase' });
 
         await act(async () => {
             await secondTab.result.current.appleLogin();
         });
 
-        expect(mocks.signInWithPopup).toHaveBeenCalledOnce();
+        expect(mocks.appleSignIn).toHaveBeenCalledOnce();
         expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_STARTED)).toHaveLength(2);
     });
 
-    it('invokes the popup synchronously after acquiring the web lease', async () => {
+    it('invokes the adapter synchronously after acquiring the web lease', async () => {
         mocks.isNative = false;
 
         let resolveAppleSignIn:
-            | ((value: { user: { getIdToken: () => Promise<string> } }) => void)
-            | undefined;
-        mocks.signInWithPopup.mockReturnValue(
+            ((value: { user: { getIdToken: () => Promise<string> } }) => void) | undefined;
+        mocks.appleSignIn.mockReturnValue(
             new Promise(resolve => {
                 resolveAppleSignIn = resolve;
             })
         );
 
         const { result } = renderHook(() => useFirebase());
-        let appleAttempt: Promise<void> | undefined;
+        let appleAttempt: Promise<boolean> | undefined;
 
         act(() => {
             appleAttempt = result.current.appleLogin();
-            expect(mocks.signInWithPopup).toHaveBeenCalledOnce();
+            expect(mocks.appleSignIn).toHaveBeenCalledOnce();
         });
 
         await act(async () => {
@@ -293,8 +257,7 @@ describe('useFirebase social login hardening', () => {
         mocks.isNative = false;
 
         let resolveGoogleSignIn:
-            | ((value: { user: object; credential: object }) => void)
-            | undefined;
+            ((value: { user: object; credential: object }) => void) | undefined;
         const googleUser = { uid: 'google-user' };
 
         mocks.googleSignIn.mockReturnValue(
@@ -306,7 +269,7 @@ describe('useFirebase social login hardening', () => {
         mocks.getIdToken.mockResolvedValue({ token: 'not-recorded' });
 
         const { result } = renderHook(() => useFirebase());
-        let googleAttempt: Promise<void> | undefined;
+        let googleAttempt: Promise<boolean> | undefined;
 
         act(() => {
             googleAttempt = result.current.googleLogin();
@@ -350,7 +313,7 @@ describe('useFirebase social login hardening', () => {
             await result.current.appleLogin();
         });
 
-        expect(mocks.signInWithPopup).toHaveBeenCalledOnce();
+        expect(mocks.appleSignIn).toHaveBeenCalledOnce();
         expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_STARTED)).toHaveLength(2);
     });
 
@@ -407,7 +370,7 @@ describe('useFirebase social login hardening', () => {
 
     it('shows feedback and classifies a missing Apple popup result', async () => {
         mocks.isNative = false;
-        mocks.signInWithPopup.mockResolvedValue(undefined);
+        mocks.appleSignIn.mockRejectedValue(new Error('Missing popup result'));
 
         const { result } = renderHook(() => useFirebase());
 
@@ -422,8 +385,7 @@ describe('useFirebase social login hardening', () => {
     });
 
     it('shows feedback when Google returns without a user', async () => {
-        mocks.googleSignIn.mockResolvedValue({ user: null });
-        mocks.getCurrentUser.mockResolvedValue({ user: null });
+        mocks.googleSignIn.mockRejectedValue(new Error('No authenticated user after sign-in'));
 
         const { result } = renderHook(() => useFirebase());
 
@@ -438,7 +400,7 @@ describe('useFirebase social login hardening', () => {
     });
 
     it('shows feedback when native Apple auth returns without a current user', async () => {
-        mocks.appleSignIn.mockResolvedValue({ credential: {} });
+        mocks.appleSignIn.mockRejectedValue(new Error('No authenticated user after sign-in'));
 
         const { result } = renderHook(() => useFirebase());
 
@@ -454,10 +416,7 @@ describe('useFirebase social login hardening', () => {
 
     it('shows feedback and classifies a missing Apple credential', async () => {
         mocks.isNative = false;
-        mocks.signInWithPopup.mockResolvedValue({
-            user: { getIdToken: vi.fn(() => Promise.resolve('not-recorded')) },
-        });
-        mocks.credentialFromResult.mockReturnValue(null);
+        mocks.appleSignIn.mockRejectedValue(new Error('Missing OAuth credential'));
 
         const { result } = renderHook(() => useFirebase());
 
@@ -471,11 +430,9 @@ describe('useFirebase social login hardening', () => {
         expect(mocks.presentAlert).toHaveBeenCalledWith('Something went wrong. Please try again.');
     });
 
-    it('registers the Firebase auth adapter after a successful web Apple login', async () => {
+    it('records the login method after a successful web Apple login', async () => {
         mocks.isNative = false;
-        mocks.signInWithPopup.mockResolvedValue({
-            user: { getIdToken: vi.fn(() => Promise.resolve('not-recorded')) },
-        });
+        mocks.appleSignIn.mockResolvedValue({ id: 'apple-user', providerType: 'firebase' });
 
         const { result } = renderHook(() => useFirebase());
         let loginSucceeded = false;
@@ -485,6 +442,32 @@ describe('useFirebase social login hardening', () => {
         });
 
         expect(loginSucceeded).toBe(true);
-        expect(mocks.firebaseAuthStoreSet).toHaveBeenCalledOnce();
+        expect(mocks.setLoginType).toHaveBeenCalledWith('apple');
+    });
+
+    it('records Google login before credential sync completes, without double counting', async () => {
+        let finishSync: (() => void) | undefined;
+        mocks.googleSignIn.mockImplementation(async () => {
+            notifyGoogleSignedIn();
+            await new Promise<void>(resolve => {
+                finishSync = resolve;
+            });
+            return { id: 'google-user', providerType: 'firebase' };
+        });
+        const { result } = renderHook(() => useFirebase());
+        let attempt: Promise<boolean> | undefined;
+
+        act(() => {
+            attempt = result.current.googleLogin();
+        });
+        expect(getTrackedEvents(AnalyticsEvents.LOGIN)).toHaveLength(1);
+        expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_SUCCEEDED)).toHaveLength(0);
+
+        await act(async () => {
+            finishSync?.();
+            await attempt;
+        });
+        expect(getTrackedEvents(AnalyticsEvents.LOGIN)).toHaveLength(1);
+        expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_SUCCEEDED)).toHaveLength(1);
     });
 });

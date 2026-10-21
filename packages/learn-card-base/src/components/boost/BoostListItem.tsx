@@ -28,10 +28,16 @@ import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
 import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
 import { useI18nLocale, useT } from 'learn-card-base/i18n';
+import {
+    getCredentialExpirationDate,
+    hasCredentialExpired,
+} from '../../helpers/credentialExpiration';
 
 const DISPLAY_TYPE_KEYS: Record<string, string> = {
     Badge: 'badge',
     Boost: 'badge',
+    Qualification: 'qualifications',
+    Qualifications: 'qualifications',
     Family: 'family',
     Achievement: 'achievement',
     Course: 'course',
@@ -148,6 +154,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         });
         return createdAt;
     }, [activeLocale, credential, relativeDate]);
+    const expirationDate = getCredentialExpirationDate(credential);
+    const isExpired = hasCredentialExpired(credential);
 
     const { subColor } = categoryMetadata[categoryType];
 
@@ -158,6 +166,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             [CredentialCategoryEnum.learningHistory]: 'bg-emerald-500',
             [CredentialCategoryEnum.socialBadge]: 'bg-cyan-500',
             [CredentialCategoryEnum.achievement]: 'bg-orange-300',
+            [CredentialCategoryEnum.qualifications]: 'bg-emerald-500',
             [CredentialCategoryEnum.accomplishment]: 'bg-lime-300',
             [CredentialCategoryEnum.workHistory]: 'bg-blue-300',
             [CredentialCategoryEnum.accommodation]: 'bg-amber-300',
@@ -227,7 +236,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     />
                 </div>
 
-                <div className="flex flex-col items-start text-[14px] font-poppins w-[50%] space-y-1">
+                <div className="flex flex-col items-start text-[14px] font-poppins w-[50%] space-y-v3-1">
                     <BoostTextSkeleton
                         containerClassName="w-[60%]"
                         skeletonStyles={{ width: '100%' }}
@@ -256,8 +265,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     const thumbSize = compact ? 'h-[34px] w-[34px]' : 'h-[40px] w-[40px]';
     const textBlockSize = compact ? 'text-[13px]' : 'text-[14px]';
     const verificationIconClass = compact
-        ? '!w-[14px] !h-[14px] !min-w-[14px] !min-h-[14px] mr-1 z-50'
-        : '!w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] mr-1 z-50';
+        ? 'w-[14px]! h-[14px]! min-w-[14px]! min-h-[14px]! mr-1 z-50'
+        : 'w-[20px]! h-[20px]! min-w-[20px]! min-h-[20px]! mr-1 z-50';
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
         if (event.target !== event.currentTarget) return;
@@ -269,7 +278,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
 
     return (
         <IonRow
-            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 onClick ? 'cursor-pointer' : ''
             }`}
             onClick={onClick}
@@ -286,9 +295,9 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     <CredentialMediaBadge
                         credential={credential}
                         backgroundColor={backgroundColor}
-                        badgeContainerCustomClass="!m-0"
+                        badgeContainerCustomClass="m-0!"
                         showIcon={false}
-                        playIconClassName="!w-[30px] !h-[30px]"
+                        playIconClassName="w-[30px]! h-[30px]!"
                     />
                 </div>
             ) : (
@@ -397,6 +406,16 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         </>
                     )}
                 </span>
+                {expirationDate && (
+                    <span
+                        className={`text-xs ${isExpired ? 'text-amber-700 font-semibold' : 'text-grayscale-500'}`}
+                    >
+                        {t(isExpired ? 'credential.lifecycle.expired' : 'credential.expires')}{' '}
+                        {new Intl.DateTimeFormat(activeLocale, { dateStyle: 'medium' }).format(
+                            new Date(expirationDate)
+                        )}
+                    </span>
+                )}
             </div>
 
             {onOptionsClick && (
@@ -411,7 +430,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             e.stopPropagation();
                             onOptionsClick();
                         }}
-                        className="flex !h-full items-start justify-start h-[20px] w-[20px] ml-auto bg-white"
+                        className="flex h-full! items-start justify-start h-[20px] w-[20px] ml-auto bg-white"
                         aria-label="More options"
                     >
                         <ThreeDots className="text-grayscale-900" />

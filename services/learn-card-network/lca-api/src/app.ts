@@ -10,7 +10,9 @@ import { analyticsRouter } from '@routes/analytics';
 export { createContext } from '@routes';
 import { preferencesRouter } from '@routes/preferences';
 import { keysRouter } from '@routes/keys';
+import { escrowRouter } from '@routes/escrow';
 import { qrLoginRouter } from '@routes/qr-login';
+import { authRouter } from '@routes/auth';
 import { testRouter, type TestRouter } from '@routes/test';
 import { environment } from '@environment';
 
@@ -25,7 +27,9 @@ const routes = {
     analytics: analyticsRouter,
     preferences: preferencesRouter,
     keys: keysRouter,
+    escrow: escrowRouter,
     qrLogin: qrLoginRouter,
+    auth: authRouter,
 };
 
 export const appRouter = t.router<typeof routes & { test?: TestRouter }>({

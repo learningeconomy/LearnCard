@@ -1,5 +1,52 @@
 # consent-flow-test
 
+## 1.0.39
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.62
+
+## 1.0.38
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.4
+    - @learncard/network-brain-client@2.5.61
+
+## 1.0.37
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.60
+    - @learncard/init@2.5.3
+
+## 1.0.36
+
+### Patch Changes
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948)]:
+    - @learncard/network-brain-client@2.5.59
+    - @learncard/init@2.5.2
+
+## 1.0.35
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.1
+    - @learncard/network-brain-client@2.5.58
+
+## 1.0.34
+
+### Patch Changes
+
+- Updated dependencies [[`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45)]:
+    - @learncard/init@2.5.0
+    - @learncard/network-brain-client@2.5.57
+
 ## 1.0.33
 
 ### Patch Changes

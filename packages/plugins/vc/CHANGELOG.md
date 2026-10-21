@@ -1,5 +1,63 @@
 # learn-card-core
 
+## 1.6.5
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/core@9.4.39
+    - @learncard/helpers@1.6.3
+    - @learncard/didkit-plugin@1.10.4
+
+## 1.6.4
+
+### Patch Changes
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012), [`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/types@5.23.0
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/core@9.4.38
+    - @learncard/helpers@1.6.2
+
+## 1.6.3
+
+### Patch Changes
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f), [`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb)]:
+    - @learncard/types@5.22.0
+    - @learncard/helpers@1.6.1
+    - @learncard/core@9.4.37
+    - @learncard/didkit-plugin@1.10.2
+
+## 1.6.2
+
+### Patch Changes
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Managed refreshable sends through the standard send paths (LC-2198). `send({ type: 'boost', refresh: true })` now issues refreshable credentials for profile/DID recipients: with local signing the SDK asks the server to run every managed-send guard, create or reuse the boost and allocate the managed refresh service in one step, injects the service (with its inline JSON-LD context) before signing, and hands the signed credential to the server's unified send so activity/contract behavior and the canonical receipt are preserved; without local signing the request is served by the signing-authority path. Email/phone recipients now use Universal Inbox deferred issuance: allocate a stable refresh service at issue, queue unsigned updates in encrypted inbox escrow, and bind/sign the latest content at verified claim. The deferred receipt is returned at `inbox.refresh`; direct `inbox/issue` returns it at `refresh`.
+
+    `sendBoost` with literal `{ enableRefresh: true }` now returns `{ credentialUri, refresh }` instead of a plain URI string, where `refresh` is the metadata-only issuance receipt (refreshId, refreshService, credentialId, issuerDid, holderDid, credentialStatus) needed to publish future versions via `publishCredentialRefresh`. Legacy callers — boolean options, omitted options, or object options without `enableRefresh` — still receive the credential URI string; a dynamically typed `enableRefresh` degrades the result to `string | { credentialUri, refresh }`. Delivered managed credentials remain holder-encrypted even when `encrypt: false`. Pending Inbox content uses the existing service-readable encrypted escrow until claim, when it is wiped.
+
+    `@learncard/types` adds the `ManagedCredentialRefreshReceipt` validator plus optional `refresh` on the unified send input/response validators; `@learncard/helpers` adds the shared managed context preparation helpers (`prepareManagedRefreshContext`, `injectManagedRefreshService`) now also used by SDK `issueCredential` signing.
+
+    Refreshable `send` accepts an optional `idempotencyKey` so a whole call can be retried without duplicating the boost, refresh allocation or delivery.
+
+    Completed-send comparisons canonicalize nested result keys so equivalent receipts remain idempotent regardless of property insertion order. Keyed sends reuse the recipient validation already performed in the request.
+
+    Keyed pre-signed retries now recover the original result when delivery bound successfully but its intent result was not recorded, matching preparation and signing-authority retries. Pending receipt fallbacks use the holder's network profile DID consistently.
+
+    Signing a credential with a managed refresh service now rejects conflicting inline JSON-LD term definitions (including `authorization`) instead of producing a credential whose refresh terms are not correctly signed. Credentials without a managed service are unaffected.
+
+    Managed send and refresh publication recover from a stale local issuer DID document after signing-authority registration: if proof verification fails, the server refreshes the authenticated issuer's document and verifies once more without relaxing signature checks.
+
+    Universal Inbox accepts `refresh: true` and an issuance `idempotencyKey`; both claim paths bind the latest revision atomically. Publication keys survive claim, and issuer `getInboxCredential` exposes the metadata-only receipt with its bound holder DID.
+
+- Updated dependencies [[`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45), [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e), [`3174c09b97fde6f7b5251390245038cf6b7ea9ba`](https://github.com/learningeconomy/LearnCard/commit/3174c09b97fde6f7b5251390245038cf6b7ea9ba), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f)]:
+    - @learncard/types@5.21.0
+    - @learncard/helpers@1.6.0
+    - @learncard/core@9.4.36
+    - @learncard/didkit-plugin@1.10.1
+
 ## 1.6.1
 
 ### Patch Changes

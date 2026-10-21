@@ -1,3 +1,4 @@
+import { isSharePrivateSession } from '../../components/share-links/sharePrivacy';
 /**
  * Sentry feedback transport (LC-2086 Task 6).
  *
@@ -162,7 +163,7 @@ const SENTRY_DELIVERY_TIMEOUT_MS = 5_000;
  */
 export const submitSentryFeedback = async (report: FeedbackReport): Promise<{ id?: string }> => {
     const client = Sentry.getClient();
-    if (!client) {
+    if (!client || isSharePrivateSession()) {
         throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
     }
 

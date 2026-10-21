@@ -1,11 +1,10 @@
 # ContactMethodsVerifyWithCredentialRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**proof_of_login_jwt** | **str** |  | 
+| Name                   | Type    | Description | Notes |
+| ---------------------- | ------- | ----------- | ----- |
+| **proof_of_login_jwt** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ contact_methods_verify_with_credential_request_dict = contact_methods_verify_wit
 # create an instance of ContactMethodsVerifyWithCredentialRequest from a dict
 contact_methods_verify_with_credential_request_from_dict = ContactMethodsVerifyWithCredentialRequest.from_dict(contact_methods_verify_with_credential_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

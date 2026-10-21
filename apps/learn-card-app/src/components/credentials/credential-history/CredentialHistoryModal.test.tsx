@@ -134,19 +134,26 @@ vi.mock('learn-card-base/components/CredentialBadge/CredentialBadgeNew', () => (
 vi.mock('learn-card-base/svgs/ReplyIcon', () => ({ default: () => null }));
 vi.mock('learn-card-base/svgs/TimeCircle', () => ({ default: () => null }));
 
+// Keep the collection picker import graph outside these credential UI unit tests.
+vi.mock('../../share-links/ShareLinkCreate', () => ({ default: () => null }));
+vi.mock('launchdarkly-react-client-sdk', () => ({
+    useFlags: () => ({ shareMultipleEnabled: false }),
+}));
+
 vi.mock('../../../stores/loadingStore', () => ({ useLoadingLine: vi.fn() }));
 vi.mock('../../../theme/hooks/useTheme', () => ({
     default: () => ({ getThemedCategory: () => undefined }),
 }));
 vi.mock('src/hooks/useCredentialStatus', () => ({ useCredentialStatus: () => undefined }));
 vi.mock('../../boost/boostHelpers', () => ({ getDefaultDisplayType: () => 'badge' }));
-vi.mock('../../boost/clr-transcript', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/kind', () => ({
     getClrTranscriptKind: () => 'unknown',
     getClrTranscriptIssuerInfo: () => ({}),
 }));
 vi.mock('../../boost/boostCMS/BoostPreview/BoostPreview', () => ({ default: () => null }));
 vi.mock('../../boost/boostCMS/BoostPreview/NonBoostPreview', () => ({ default: () => null }));
 vi.mock('../../boost/boost-options-menu/ShareBoostLink', () => ({ default: () => null }));
+vi.mock('../../share-links/ShareLinkCreate', () => ({ default: () => null }));
 vi.mock('../../boost/boost-options-menu/JsonPreviewModal', () => ({ default: () => null }));
 vi.mock('../../boost/boost-earned-card/helpers/CustomIssuerName', () => ({ default: () => null }));
 vi.mock('../../boost/boost-earned-card/helpers/CustomBoostTitleDisplay', () => ({

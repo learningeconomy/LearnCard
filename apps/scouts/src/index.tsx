@@ -9,6 +9,8 @@ import { LocaleProvider } from './i18n';
 import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 
 import App from './App';
+// Registers the Firebase provider initializer before bootstrapTenantConfig() runs it.
+import './auth/firebaseProviderInit';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -55,6 +57,9 @@ installInsetSimulator();
     const LDProvider = await asyncWithLDProvider({
         clientSideID: tenantConfig.observability.launchDarklyClientId,
         context: ANONYMOUS_CONTEXT,
+        options: {
+            diagnosticOptOut: true,
+        },
     });
     const container = document.getElementById('root');
     if (container) {

@@ -23,6 +23,7 @@ from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_other_identifier_inner_identifier_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseModel):
     """
@@ -34,7 +35,8 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseMo
     __properties: ClassVar[List[str]] = ["type", "identifier", "identifierType"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseMo
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -94,11 +95,13 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseMo
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "identifier": obj.get("identifier"),
             "identifierType": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.from_dict(obj["identifierType"]) if obj.get("identifierType") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

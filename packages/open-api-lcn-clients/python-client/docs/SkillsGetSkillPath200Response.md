@@ -1,11 +1,10 @@
 # SkillsGetSkillPath200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**path** | [**List[SkillsCreate200Response]**](SkillsCreate200Response.md) |  | 
+| Name     | Type                                                            | Description | Notes |
+| -------- | --------------------------------------------------------------- | ----------- | ----- |
+| **path** | [**List[SkillsCreate200Response]**](SkillsCreate200Response.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skills_get_skill_path200_response_dict = skills_get_skill_path200_response_insta
 # create an instance of SkillsGetSkillPath200Response from a dict
 skills_get_skill_path200_response_from_dict = SkillsGetSkillPath200Response.from_dict(skills_get_skill_path200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

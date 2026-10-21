@@ -1,22 +1,21 @@
 # PresentationSendPresentationRequestPresentation
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**context** | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md) |  | 
-**id** | **str** |  | [optional] 
-**type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | 
-**verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |  | [optional] 
-**holder** | **str** |  | [optional] 
-**proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | 
-**protected** | **str** |  | 
-**iv** | **str** |  | 
-**ciphertext** | **str** |  | 
-**tag** | **str** |  | 
-**aad** | **str** |  | [optional] 
-**recipients** | [**List[CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner]**](CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner.md) |  | [optional] 
+| Name                      | Type                                                                                                                                                        | Description | Notes      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **context**               | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)                                     |             |
+| **id**                    | **str**                                                                                                                                                     |             | [optional] |
+| **type**                  | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md)                                     |             |
+| **verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |             | [optional] |
+| **holder**                | **str**                                                                                                                                                     |             | [optional] |
+| **proof**                 | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md)                                                         |             |
+| **protected**             | **str**                                                                                                                                                     |             |
+| **iv**                    | **str**                                                                                                                                                     |             |
+| **ciphertext**            | **str**                                                                                                                                                     |             |
+| **tag**                   | **str**                                                                                                                                                     |             |
+| **aad**                   | **str**                                                                                                                                                     |             | [optional] |
+| **recipients**            | [**List[CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner]**](CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner.md)               |             | [optional] |
 
 ## Example
 
@@ -35,6 +34,5 @@ presentation_send_presentation_request_presentation_dict = presentation_send_pre
 # create an instance of PresentationSendPresentationRequestPresentation from a dict
 presentation_send_presentation_request_presentation_from_dict = PresentationSendPresentationRequestPresentation.from_dict(presentation_send_presentation_request_presentation_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

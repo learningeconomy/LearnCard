@@ -244,7 +244,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 onReject={closeModal}
             />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -265,7 +265,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 </div>
 
                 <div className="flex-1 p-6 overflow-auto">
-                    <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="flex flex-col items-center text-center space-y-v3-4">
                         <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
                             <ShieldAlert className="w-10 h-10 text-red-600" />
                         </div>
@@ -317,7 +317,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 </div>
             </div>,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -362,7 +362,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     </div>
 
                     <div className="flex-1 p-6 overflow-auto">
-                        <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="flex flex-col items-center text-center space-y-v3-4">
                             <div className="w-16 h-16 rounded-2xl overflow-hidden bg-grayscale-100 flex items-center justify-center shadow-md">
                                 <img
                                     src={listing.icon_url}
@@ -436,7 +436,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         newModal(
             <DobEntryModal />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -623,7 +623,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     </button>
                 </li>
             </ul>,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
@@ -660,7 +660,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             contractDetails={contract}
                             redirectUrl={redirectUrl}
                         />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { sectionClassName: 'bg-transparent! shadow-none!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                     return;
@@ -753,7 +753,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     <div className="flex items-center gap-3 ion-padding mt-[var(--ion-safe-area-top,0px)]">
                         <div className="h-[65px] w-[65px] shrink-0">
                             <img
-                                className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
+                                className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border border-solid border-grayscale-200"
                                 alt={`${listing.display_name} logo`}
                                 src={listing.icon_url}
                                 onError={e => {
@@ -764,11 +764,11 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         </div>
 
                         <div className="flex flex-col items-start justify-center flex-1 min-w-0 text-start">
-                            <p className="w-full break-words text-[22px] font-semibold text-grayscale-900 font-poppins leading-tight">
+                            <p className="w-full wrap-break-word text-[22px] font-semibold text-grayscale-900 font-poppins leading-tight">
                                 {listing.display_name}
                             </p>
 
-                            <p className="w-full break-words text-sm text-grayscale-600 font-poppins mt-1">
+                            <p className="w-full wrap-break-word text-sm text-grayscale-600 font-poppins mt-1">
                                 {listing.tagline}
                             </p>
 
@@ -792,7 +792,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* iOS App Store Metadata Section */}
                     {iosMetadata && (
                         <div className="flex items-center justify-evenly ">
-                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r">
                                 <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
                                     {iosMetadata.userRatingCount >= 1000
                                         ? numeral(iosMetadata.userRatingCount).format('0.0a')
@@ -807,7 +807,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 <StaticStarRating rating={iosMetadata.averageUserRating} />
                             </div>
 
-                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r">
                                 <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
                                     AGE
                                 </p>
@@ -853,7 +853,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 <div className="w-full flex flex-col pb-[120px]">
                     {/* Screenshots Section */}
                     {screenshots.length > 0 && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                             <h3 className="text-xl text-gray-900 font-notoSans mb-4">
                                 {m['common.preview']()}
                             </h3>
@@ -863,7 +863,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     )}
 
                     {/* About Section */}
-                    <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                    <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                         <h3 className="text-xl text-gray-900 font-notoSans">
                             {m['common.about']()}
                         </h3>
@@ -890,7 +890,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* Highlights Section */}
                     {listing.highlights && listing.highlights.length > 0 && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                             <h3 className="text-xl text-gray-900 font-notoSans">
                                 {m['launchpad.detail.whyUseThisApp']()}
                             </h3>
@@ -909,7 +909,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* Promo Video Section */}
                     {listing.promo_video_url && getEmbedUrl(listing.promo_video_url) && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                             <h3 className="text-xl text-gray-900 font-notoSans mb-4">
                                 {m['launchpad.detail.watch']()}
                             </h3>
@@ -928,12 +928,12 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* Links Section */}
                     {(listing.privacy_policy_url || listing.terms_url) && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                             <h3 className="text-xl text-gray-900 font-notoSans mb-3">
                                 {m['launchpad.detail.links']()}
                             </h3>
 
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 {listing.privacy_policy_url && (
                                     <a
                                         href={listing.privacy_policy_url}
@@ -998,7 +998,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Footer */}
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center justify-between max-w-[600px] ion-padding gap-2">

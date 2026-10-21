@@ -1,14 +1,13 @@
 # ContractsWriteCredentialToContractRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**did** | **str** |  | 
-**contract_uri** | **str** |  | 
-**boost_uri** | **str** |  | 
-**credential** | [**ContractsWriteCredentialToContractRequestCredential**](ContractsWriteCredentialToContractRequestCredential.md) |  | 
+| Name             | Type                                                                                                              | Description | Notes |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **did**          | **str**                                                                                                           |             |
+| **contract_uri** | **str**                                                                                                           |             |
+| **boost_uri**    | **str**                                                                                                           |             |
+| **credential**   | [**ContractsWriteCredentialToContractRequestCredential**](ContractsWriteCredentialToContractRequestCredential.md) |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_write_credential_to_contract_request_dict = contracts_write_credential
 # create an instance of ContractsWriteCredentialToContractRequest from a dict
 contracts_write_credential_to_contract_request_from_dict = ContractsWriteCredentialToContractRequest.from_dict(contracts_write_credential_to_contract_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

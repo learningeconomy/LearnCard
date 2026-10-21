@@ -1,9 +1,48 @@
 import { describe, it, expect } from 'vitest';
 
-import { tenantConfigSchema, parseTenantConfig } from '../tenantConfigSchema';
+import {
+    tenantConfigSchema,
+    tenantAuthConfigSchema,
+    parseTenantConfig,
+} from '../tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
 
 describe('tenantConfigSchema', () => {
+    it('accepts Keycloak with default scopes', () => {
+        const auth = tenantAuthConfigSchema.parse({
+            provider: 'keycloak',
+            sss: {},
+            keycloak: {
+                serverUrl: 'https://auth.example.org',
+                realm: 'learncard',
+                clientId: 'app',
+            },
+        });
+        expect(auth.keycloak?.scopes).toEqual(['openid', 'profile', 'email', 'phone']);
+    });
+
+    it('requires the Keycloak block for the Keycloak provider', () => {
+        const result = tenantAuthConfigSchema.safeParse({ provider: 'keycloak', sss: {} });
+        expect(result.success).toBe(false);
+        expect(result.error?.issues).toContainEqual(
+            expect.objectContaining({ path: ['keycloak'] })
+        );
+    });
+
+    it('preserves unknown Keycloak config keys', () => {
+        const auth = tenantAuthConfigSchema.parse({
+            provider: 'keycloak',
+            sss: {},
+            keycloak: {
+                serverUrl: 'https://auth.example.org',
+                realm: 'learncard',
+                clientId: 'app',
+                future: true,
+            },
+        });
+        expect(auth.keycloak?.future).toBe(true);
+    });
+
     it('validates the default config successfully', () => {
         const result = tenantConfigSchema.safeParse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
@@ -88,13 +127,120 @@ describe('tenantConfigSchema', () => {
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
         expect(result.auth.sss?.enableEmailBackupShare).toBe(true);
+        expect(result.auth.sss?.escrowRelayPublicKey).toBe('');
+        expect(result.auth.sss?.escrowRelayKeyId).toBe('');
+        expect(result.auth.sss?.escrowEnclaveMode).toBe('off');
+        expect(result.auth.sss?.escrowEnclavePublicKeys).toEqual([]);
+        expect(result.auth.sss?.escrowEnclaveMeasurements).toEqual([]);
         expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(true);
         expect(result.branding.defaultTheme).toBe('colorful');
         expect(result.branding.loginRedirectPath).toBe('/waitingsofa?loginCompleted=true');
         expect(result.features.aiFeatures).toBe(true);
         expect(result.features.analytics).toBe(true);
+        expect(result.features.escrowRolloutPercent).toBe(0);
+        expect(result.features.escrowRolloutAllowlist).toEqual([]);
         expect(result.observability.analyticsProvider).toBe('noop');
         expect(result.storage.provider).toBe('filestack');
+        expect(result.registries).toEqual({ badgePackUrls: [], badgePackAssets: [] });
+    });
+
+    it.each([
+        {
+            registries: undefined,
+            expected: { badgePackUrls: [], badgePackAssets: [] },
+        },
+        {
+            registries: {},
+            expected: { badgePackUrls: [], badgePackAssets: [] },
+        },
+        {
+            registries: { badgePackUrls: ['https://example.org/badges.json'] },
+            expected: {
+                badgePackUrls: ['https://example.org/badges.json'],
+                badgePackAssets: [],
+            },
+        },
+        {
+            registries: { badgePackAssets: ['example'], future: true },
+            expected: { badgePackUrls: [], badgePackAssets: ['example'], future: true },
+        },
+    ])(
+        'fills missing registry arrays without replacing configured sources: $registries',
+        ({ registries, expected }) => {
+            const result = tenantConfigSchema.parse({
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+                registries,
+            });
+
+            expect(result.registries).toEqual(expected);
+        }
+    );
+
+    it('accepts an explicit escrow rollout percent and allowlist', () => {
+        const allowlistHash = 'a'.repeat(64);
+        const result = tenantConfigSchema.parse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutPercent: 25,
+                escrowRolloutAllowlist: [allowlistHash],
+            },
+        });
+
+        expect(result.features.escrowRolloutPercent).toBe(25);
+        expect(result.features.escrowRolloutAllowlist).toEqual([allowlistHash]);
+    });
+
+    it.each([-1, 101, 1.5])('rejects an out-of-range escrowRolloutPercent (%s)', percent => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutPercent: percent,
+            },
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects escrowRolloutAllowlist entries that are not 64-char hex hashes', () => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutAllowlist: ['not-a-hash'],
+            },
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it('validates sample persona contract configuration', () => {
+        const result = tenantConfigSchema.parse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                samplePersonas: [
+                    {
+                        id: 'student',
+                        contractUri: 'lc:network:network.example/trpc:contract:student',
+                    },
+                ],
+                legacySamplePersonaContractUris: [
+                    'lc:network:network.example/trpc:contract:legacy',
+                ],
+            },
+        });
+
+        expect(result.features.samplePersonas).toEqual([
+            {
+                id: 'student',
+                contractUri: 'lc:network:network.example/trpc:contract:student',
+            },
+        ]);
+        expect(result.features.legacySamplePersonaContractUris).toEqual([
+            'lc:network:network.example/trpc:contract:legacy',
+        ]);
     });
 
     it('accepts S3 storage config and preserves extra fields', () => {

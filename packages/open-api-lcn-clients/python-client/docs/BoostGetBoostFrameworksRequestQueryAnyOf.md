@@ -1,11 +1,10 @@
 # BoostGetBoostFrameworksRequestQueryAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**var_or** | [**List[BoostGetBoostFrameworksRequestQueryAnyOfOrInner]**](BoostGetBoostFrameworksRequestQueryAnyOfOrInner.md) |  | 
+| Name       | Type                                                                                                            | Description | Notes |
+| ---------- | --------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **var_or** | [**List[BoostGetBoostFrameworksRequestQueryAnyOfOrInner]**](BoostGetBoostFrameworksRequestQueryAnyOfOrInner.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_get_boost_frameworks_request_query_any_of_dict = boost_get_boost_framework
 # create an instance of BoostGetBoostFrameworksRequestQueryAnyOf from a dict
 boost_get_boost_frameworks_request_query_any_of_from_dict = BoostGetBoostFrameworksRequestQueryAnyOf.from_dict(boost_get_boost_frameworks_request_query_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

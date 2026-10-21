@@ -10,7 +10,7 @@ bun run dev
 
 This starts a Vite dev server (typically at `http://localhost:5173`).
 
-> **Note**: You must first build the credential-library package (`bunx nx build credential-library`) if you haven't already, or run from the monorepo root with `bunx nx dev credential-viewer`.
+The dev server reads credential-library source directly, so new fixtures appear without rebuilding the package.
 
 ## Features
 
@@ -41,7 +41,7 @@ This starts a Vite dev server (typically at `http://localhost:5173`).
 
 1. Select fixtures and click **Send**
 2. Enter a recipient profileId
-3. Each fixture is prepared, issued, and sent via the LearnCard network
+3. Each fixture is prepared, issued, and sent via the LearnCard network using its detected category
 
 ### Create New Fixtures
 
@@ -55,6 +55,24 @@ The **New Fixture** button opens a form with:
 - **Save to Disk** — Writes the `.ts` fixture file and updates `src/fixtures/index.ts` automatically
 
 > Fixture creation uses a Vite dev server plugin (`src/vite-plugin-fixtures.ts`) and is only available during development.
+
+### Testing Qualifications (LC-2111)
+
+From the monorepo root:
+
+```bash
+bun run --cwd examples/credential-viewer dev
+```
+
+1. Open the printed viewer URL. Select **Local** when testing the local LearnCard app; the recipient and viewer must use the same network.
+2. Click **Generate Wallet**, create an LCN profile if prompted, then click **Set Up Signing Authority**. The Local preset expects brain-service on port 4000, LearnCloud on 4100, and LCA API on 5100.
+3. Search **`lc-2111`** and click **Select All Valid**. This selects seven Qualifications fixtures: License, Certification, ApprenticeshipCertificate, JourneymanCertificate, MasterCertificate, an expired Certification, and a Certification with an explicit badge layout.
+4. Click **Send All**, enter your LearnCard app account's profile ID, enable **Keep fixture dates (including expired credentials)**, and send. Without that option, preparation refreshes the expired fixture's dates.
+5. In LearnCard, accept the incoming credentials and open **Passport → Qualifications**.
+
+Check that all seven appear in Qualifications. The five ordinary credentials and expired credential should use the certificate layout; **Safety Certification — Badge Layout** should retain its explicit badge layout. Check the expired credential's indicator, detail view, and selection in sharing flows.
+
+For issuer-only checks, **Issue All to Self** signs and stores credentials in the viewer's connected account. It does **not** send them to your separately signed-in LearnCard app account.
 
 ### Managed Transcript Refresh Demo
 

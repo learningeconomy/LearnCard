@@ -47,7 +47,7 @@ export const useUpdateChecklistItemCategoryMutation = () => {
             uri: string;
         }) => {
             const wallet = await initWallet();
-            await wallet.index.LearnCloud.update(id, { category });
+            await wallet.index.LearnCloud.update(id, { category, categorySource: 'manual' });
 
             try {
                 newCredsStore.set.removeCreds([uri]);

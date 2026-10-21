@@ -7,7 +7,8 @@ export const getRegistryService = (): RegistryService => {
     if (
         environment.NODE_ENV === 'test' ||
         environment.TRUSTED_ISSUERS_WHITELIST ||
-        environment.IS_CI
+        environment.IS_CI ||
+        environment.IS_E2E_TEST
     ) {
         return new WhitelistAdapter();
     }

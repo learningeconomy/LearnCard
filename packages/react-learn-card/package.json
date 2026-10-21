@@ -1,6 +1,6 @@
 {
     "name": "@learncard/react",
-    "version": "2.12.6",
+    "version": "2.12.11",
     "description": "",
     "main": "dist/cjs",
     "module": "dist/esm",
@@ -33,13 +33,11 @@
         "@storybook/react-vite": "8.6.18",
         "@storybook/test": "8.6.18",
         "@svgr/rollup": "^6.2.1",
-        "@tailwindcss/line-clamp": "^0.4.0",
         "@testing-library/jest-dom": "^5.16.4",
         "@testing-library/react": "^13.0.0",
         "@testing-library/user-event": "^14.2.1",
         "@types/numeral": "^2.0.2",
         "@types/react": "^17.0.2",
-        "autoprefixer": "^10.4.7",
         "barrelsby": "^2.3.4",
         "chromatic": "^6.5.4",
         "css-loader": "^6.7.1",
@@ -58,8 +56,10 @@
         "rollup-plugin-styles": "^4.0.0",
         "storybook": "8.6.18",
         "style-loader": "^3.3.1",
-        "tailwindcss": "^3.0.24",
-        "vite": "^6.4.3"
+        "tailwindcss": "^4.3.3",
+        "vite": "^6.4.3",
+        "@tailwindcss/postcss": "^4.3.3",
+        "@tailwindcss/node": "^4.3.3"
     },
     "dependencies": {
         "@learncard/helpers": "workspace:*",

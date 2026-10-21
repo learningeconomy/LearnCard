@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { getNotificationsEndpoint } from '../LCNWebhookEndpoints';
+import baseConfig from '../../../../../apps/learn-card-app/environments/learncard/config.json';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../config/tenantDefaults';
+import stagingConfig from '../../../../../apps/learn-card-app/environments/learncard/config.staging.json';
+import { deepMerge } from '../../config/deepMerge';
+import { parseTenantConfig } from '../../config/tenantConfigSchema';
+import { initNetworkStoreFromTenant } from '../../stores/NetworkStore';
 import { networkStore } from '../../stores/NetworkStore';
 
 describe('getNotificationsEndpoint', () => {
@@ -48,6 +54,25 @@ describe('getNotificationsEndpoint', () => {
 
         expect(getNotificationsEndpoint()).toBe(
             'https://scoutnetwork.org.evil.test/api/notifications/send'
+        );
+    });
+});
+
+// Use the shipped JSON and the same overlay merge used at runtime. Staging must
+// explicitly replace the production endpoint inherited from the baked config.
+describe('LearnCard staging notification configuration', () => {
+    it('routes new profiles to staging after applying the overlay to the production bake', () => {
+        const bakedConfig = deepMerge(
+            DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+            baseConfig
+        );
+        const config = parseTenantConfig(
+            deepMerge(bakedConfig, stagingConfig),
+            'staging routing regression'
+        );
+        initNetworkStoreFromTenant(config.apis, config.tenantId);
+        expect(getNotificationsEndpoint()).toBe(
+            'https://staging.api.learncard.app/api/notifications/send'
         );
     });
 });

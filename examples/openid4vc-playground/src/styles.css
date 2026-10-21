@@ -1,10 +1,33 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css';
+@import 'tailwindcss/utilities.css';
+@import '../../../packages/learn-card-base/src/assets/styles/tailwind-v3-compat.css';
 
 /* QR canvas the qrcode library renders into \u2014 Tailwind's reset
    removes the default block display, which breaks the canvas
    sizing path. Forcing it back keeps the QR visually contained. */
 canvas.qr {
     display: block;
+}
+
+@theme {
+    --color-grayscale-10: #fbfbfc;
+    --color-grayscale-20: #eff0f5;
+    --color-grayscale-30: #e2e3e9;
+    --color-grayscale-50: #fbfbfc;
+    --color-grayscale-70: #6f7590;
+    --color-grayscale-80: #52597a;
+    --color-grayscale-90: #353e64;
+    --color-grayscale-100: #eff0f5;
+    --color-grayscale-200: #e2e3e9;
+    --color-grayscale-300: #c5c8d3;
+    --color-grayscale-400: #a8acbd;
+    --color-grayscale-500: #8b91a7;
+    --color-grayscale-600: #6f7590;
+    --color-grayscale-700: #52597a;
+    --color-grayscale-800: #353e64;
+    --color-grayscale-900: #18224e;
+    --color-grayscale-line: #e3e5e8;
+    --font-poppins: Poppins, ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }

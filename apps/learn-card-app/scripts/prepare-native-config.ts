@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
+import { nativeBrowserCompatibility } from '../../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
 const log = getLogger();
 
 /**
@@ -64,6 +65,7 @@ import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchem
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
 import { deepMerge } from 'learn-card-base/src/config/deepMerge';
 import type { TenantConfig } from 'learn-card-base/src/config/tenantConfigSchema';
+import { renderTenantHtml } from './render-tenant-html';
 
 const requireFromHere = createRequire(import.meta.url);
 const { readDefaultChannel } = requireFromHere('../../../tools/capgo/readDefaultChannel.cjs') as {
@@ -120,6 +122,28 @@ const parseArgs = (): {
     }
 
     return { tenant, stage, useLocalAi };
+};
+
+const isDeployStage = (value: unknown): value is Stage =>
+    typeof value === 'string' && (KNOWN_STAGES as readonly string[]).includes(value);
+
+const resolveDeployStage = (
+    overlayName: string | undefined,
+    overlay: Record<string, unknown>
+): Stage => {
+    if (overlay.stage !== undefined) {
+        if (isDeployStage(overlay.stage)) return overlay.stage;
+        log.error(
+            `❌ config.${overlayName}.json declares "stage": ${JSON.stringify(overlay.stage)}; expected one of ${KNOWN_STAGES.join(', ')}.`
+        );
+        process.exit(1);
+    }
+    if (!overlayName) return 'production';
+    if (isDeployStage(overlayName)) return overlayName;
+    log.error(
+        `❌ --stage ${overlayName}: config.${overlayName}.json must declare "stage" (one of ${KNOWN_STAGES.join(', ')}).`
+    );
+    process.exit(1);
 };
 
 const { tenant: tenantArg, stage: stageArg, useLocalAi } = parseArgs();
@@ -273,6 +297,14 @@ merged['_source'] = 'baked-native';
 merged['_tenant'] = tenantArg;
 merged['_stage'] = stageArg ?? 'production';
 merged['_localAi'] = useLocalAi;
+
+// Schema-validated deploy stage (see `stage` in tenantConfigSchema.ts). Distinct from the
+// `_stage` debug metadata above: this one is a typed TenantConfig field that runtime code
+// (e.g. the escrow software-enclave guard in authConfig.ts) can read to distinguish a
+// staging deploy from production, since both build in Vite "production" mode.
+// Overlay names are free-form (e.g. keycloak-staging), so the overlay declares which
+// deploy stage it is; the edge function serves the same declaration via the same merge.
+merged['stage'] = resolveDeployStage(stageArg, stageOverrides);
 
 // ---------------------------------------------------------------------------
 // 3. Validate against the Zod schema
@@ -458,9 +490,8 @@ if (existsSync(brandingDir)) {
             const currentValue = validatedConfig.branding[configKey];
 
             if (!currentValue) {
-                (validatedConfig.branding as Record<string, unknown>)[
-                    configKey
-                ] = `/branding/${match}`;
+                (validatedConfig.branding as Record<string, unknown>)[configKey] =
+                    `/branding/${match}`;
                 log.info(`   ✓ ${match} → branding.${configKey} = /branding/${match}`);
             } else {
                 log.info(
@@ -515,6 +546,15 @@ for (const { src, dests } of CONFIG_TEMPLATE_MAP) {
         const destPath = resolve(APP_ROOT, destRel);
         mkdirSync(dirname(destPath), { recursive: true });
         cpSync(srcPath, destPath);
+        if (src === 'config/capacitor.config.json') {
+            // Enforce the browser floor even for a tenant without native overrides.
+            const raw = JSON.parse(readFileSync(destPath, 'utf-8'));
+            writeFileSync(
+                destPath,
+                JSON.stringify({ ...raw, ...nativeBrowserCompatibility(raw) }, null, 2) + '\n',
+                'utf-8'
+            );
+        }
     }
 }
 
@@ -658,7 +698,11 @@ if (nativeConfig) {
             let plist = readFileSync(infoPlistPath, 'utf-8');
             const displayName = nativeConfig.displayName;
             const bundleId = nativeConfig.bundleId;
-            const customSchemes = nativeConfig.customSchemes ?? [];
+            // The native OAuth redirect URI is `<bundleId>://login` (Keycloak sign-in
+            // sheet): always register it as a URL scheme alongside the tenant's own.
+            const customSchemes = Array.from(
+                new Set([bundleId, ...(nativeConfig.customSchemes ?? [])])
+            );
 
             plist = plist.replace(
                 /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
@@ -788,7 +832,11 @@ if (nativeConfig) {
         try {
             let manifest = readFileSync(manifestPath, 'utf-8');
             const domains = nativeConfig.deepLinkDomains ?? [];
-            const customSchemes = nativeConfig.customSchemes ?? [];
+            // Same bundle-id scheme registration as Info.plist above, so the
+            // `<bundleId>://login` OAuth callback routes back into the app.
+            const customSchemes = Array.from(
+                new Set([nativeConfig.bundleId, ...(nativeConfig.customSchemes ?? [])])
+            );
 
             // Build HTTPS deep link intent filters from tenant domains
             const httpsIntentFilters = domains.map(domain => {
@@ -844,7 +892,7 @@ if (nativeConfig) {
             // Replace everything between the LAUNCHER intent-filter and </activity>
             // (i.e. replace the deep link + custom scheme intent filters block)
             manifest = manifest.replace(
-                /(<!-- HTTPS deep linking intent-filters -->)[\s\S]*?(        <\/activity>)/,
+                /(<!-- HTTPS deep linking intent-filters -->)[\s\S]*?( {8}<\/activity>)/,
                 `<!-- HTTPS deep linking intent-filters -->\n${allIntentFilters}\n\n        </activity>`
             );
 
@@ -1050,24 +1098,10 @@ if (existsSync(indexHtmlPath)) {
     log.info('\n📄 Patching index.html with tenant branding...');
 
     try {
-        let html = readFileSync(indexHtmlPath, 'utf-8');
-
-        // Patch <title>
-        html = html.replace(/<title>[^<]*<\/title>/, `<title>${manifestName}</title>`);
-
-        // Patch apple-mobile-web-app-title
-        html = html.replace(
-            /(<meta\s+name="apple-mobile-web-app-title"\s+content=")[^"]*(")/,
-            `$1${manifestShortName}$2`
+        const html = renderTenantHtml(
+            readFileSync(indexHtmlPath, 'utf-8'),
+            validatedConfig.branding
         );
-
-        // Add apple-touch-icon link if missing
-        if (!html.includes('apple-touch-icon')) {
-            html = html.replace(
-                /(<link rel="shortcut icon"[^>]*>)/,
-                '$1\n        <link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png" />'
-            );
-        }
 
         writeFileSync(indexHtmlPath, html, 'utf-8');
         log.info(`   ✓ <title>${manifestName}</title>`);

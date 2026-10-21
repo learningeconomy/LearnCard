@@ -13,7 +13,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
-import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
+import { Overlay, QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
@@ -88,6 +88,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
     const webAuthnSupported = isWebAuthnSupported();
+
+    const handleBack = (): void => {
+        setActiveMethod(null);
+        setError(null);
+    };
 
     const handlePasskeyRecovery = async () => {
         const passkeyMethod = availableMethods.find(m => m.type === 'passkey');
@@ -229,7 +234,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     // ── Method picker ────────────────────────────────────────────
 
     if (!activeMethod) {
-        return (
+        const content = (
             <div className="p-6 max-w-md mx-auto">
                 <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -241,7 +246,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     </p>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     {methods.map(method => (
                         <button
                             key={method.id}
@@ -284,18 +289,18 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 </button>
             </div>
         );
+
+        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
     }
 
     // ── Active method detail ─────────────────────────────────────
 
-    return (
+    const content = (
         <div className="p-6 max-w-md mx-auto">
             <button
-                onClick={() => {
-                    setActiveMethod(null);
-                    setError(null);
-                }}
-                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
+                onClick={handleBack}
+                disabled={loading}
+                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 <DirectionalIcon>
                     <IonIcon icon={chevronBackOutline} className="text-xs" />
@@ -315,7 +320,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'passkey' && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.passkey.title']()}
@@ -352,7 +357,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'phrase' && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.phrase.title']()}
@@ -385,7 +390,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             onChange={e => setPhrase(e.target.value)}
                             placeholder={m['recovery.phrase.placeholder']()}
                             rows={4}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
                         />
                     </div>
 
@@ -407,7 +412,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'device' && onRecoverWithDevice && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.device.title']()}
@@ -442,7 +447,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'email' && onRecoverWithEmail && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.email.title']()}
@@ -461,12 +466,12 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         </p>
                     </div>
 
-                    <div className="p-4 bg-grayscale-100/60 rounded-2xl space-y-3">
+                    <div className="p-4 bg-grayscale-100/60 rounded-2xl space-y-v3-3">
                         <p className="text-xs font-medium text-grayscale-700">
                             {m['recovery.email.findKey']()}
                         </p>
 
-                        <ol className="text-sm text-grayscale-600 leading-relaxed space-y-2 list-none">
+                        <ol className="text-sm text-grayscale-600 leading-relaxed space-y-v3-2 list-none">
                             <li className="flex items-start gap-2.5">
                                 <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">
                                     1
@@ -500,7 +505,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             onChange={e => setEmailShare(e.target.value)}
                             placeholder={m['recovery.email.keyPlaceholder']()}
                             rows={3}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
                         />
 
                         <p className="mt-1.5 text-xs text-grayscale-400">
@@ -526,7 +531,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
 
             {activeMethod === 'backup' && (
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div>
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
                             {m['recovery.backup.title']()}
@@ -584,7 +589,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             value={backupPassword}
                             onChange={e => setBackupPassword(e.target.value)}
                             placeholder={m['recovery.backup.passPlaceholder']()}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                         />
                     </div>
 
@@ -606,6 +611,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
         </div>
     );
+
+    return <Overlay onDismiss={loading ? undefined : handleBack}>{content}</Overlay>;
 };
 
 export default RecoveryFlowModal;

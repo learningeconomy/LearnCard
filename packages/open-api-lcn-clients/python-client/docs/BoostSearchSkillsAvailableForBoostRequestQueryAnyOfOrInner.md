@@ -1,16 +1,15 @@
 # BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |  | [optional] 
-**statement** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**description** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**code** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**type** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**status** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus.md) |  | [optional] 
+| Name            | Type                                                                                                                                              | Description | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**          | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md)               |             | [optional] |
+| **statement**   | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **description** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **code**        | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **type**        | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **status**      | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus.md)       |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ boost_search_skills_available_for_boost_request_query_any_of_or_inner_dict = boo
 # create an instance of BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner from a dict
 boost_search_skills_available_for_boost_request_query_any_of_or_inner_from_dict = BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner.from_dict(boost_search_skills_available_for_boost_request_query_any_of_or_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

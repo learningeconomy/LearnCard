@@ -12,7 +12,10 @@ export const getSigningAuthorityWithEndpoint = (
     domainName: string
 ): SigningAuthorityResponseType => {
     return {
-        ...signingAuthority,
+        _id: signingAuthority._id,
+        name: signingAuthority.name,
+        ownerDid: signingAuthority.ownerDid,
+        did: signingAuthority.did,
         endpoint: getEndpoint(domainName),
     };
 };

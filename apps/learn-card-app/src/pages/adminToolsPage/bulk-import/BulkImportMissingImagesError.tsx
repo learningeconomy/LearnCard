@@ -1,6 +1,11 @@
 import React from 'react';
 
-import { BadgeDataRow, DataKeys, ImageStatus, ImageTrackingType } from './BulkBoostImportPage';
+import {
+    BadgeDataRow,
+    DataKeys,
+    ImageStatus,
+    ImageTrackingType,
+} from './AdminToolsBulkBoostImportOption';
 import WarningIcon from '../../../components/svgs/WarningIcon';
 
 type BulkImportMissingImagesErrorProps = {

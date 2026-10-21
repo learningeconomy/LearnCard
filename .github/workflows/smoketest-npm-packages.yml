@@ -15,7 +15,7 @@ name: Smoketest Published NPM Packages
 #   • workflow_call  — invoked by deploy.yml right after publish-npm succeeds.
 #                       Acts as a post-publish canary on every release.
 #   • schedule       — nightly run at 09:17 UTC (~04:17 ET, ~01:17 PT) catches
-#                       regressions that emerge after publish (CDN propagation
+#                       regressions that emerge after publish (registry publication
 #                       lag, dist-tag mistakes, latent activations of formerly-
 #                       unresolvable optional deps, etc.).
 #   • workflow_dispatch — manual runs for debugging or testing pre-release
@@ -24,6 +24,11 @@ name: Smoketest Published NPM Packages
 on:
     workflow_call:
         inputs:
+            package-versions:
+                description: 'Complete exact consumer/plugin snapshot from the publishing checkout (JSON)'
+                type: string
+                required: false
+                default: '{}'
             cli-version:
                 description: '@learncard/cli version or dist-tag to install'
                 type: string
@@ -40,10 +45,15 @@ on:
                 required: false
                 default: 'latest'
             registry-wait-seconds:
-                description: 'Seconds to wait for npm CDN propagation before installing'
+                description: 'Optional initial delay before checking registry readiness'
                 type: string
                 required: false
-                default: '60'
+                default: '0'
+            registry-timeout-seconds:
+                description: 'Maximum time to retry packages pending npm publication'
+                type: string
+                required: false
+                default: '1200'
     schedule:
         # 09:17 UTC daily. Avoids the top of the hour (heavy shared-CI window)
         # and is overnight in both US Eastern and Pacific.
@@ -63,16 +73,54 @@ on:
                 required: false
                 default: 'latest'
             registry-wait-seconds:
-                description: 'Seconds to wait for npm CDN propagation before installing'
+                description: 'Optional initial delay before checking registry readiness'
                 required: false
                 default: '0'
+            registry-timeout-seconds:
+                description: 'Maximum time to retry packages pending npm publication'
+                required: false
+                default: '1200'
 
 jobs:
+    resolve-versions:
+        name: Resolve exact package versions
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        outputs:
+            package-versions: ${{ steps.versions.outputs.package-versions }}
+        steps:
+            - name: Checkout smoke tools
+              uses: actions/checkout@v7
+            - name: Set up Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '24.12.0'
+            - name: Wait for npm CDN propagation
+              env:
+                  WAIT: ${{ inputs.registry-wait-seconds || '0' }}
+              run: |
+                  if [ "${WAIT:-0}" -gt 0 ]; then
+                      echo "Waiting ${WAIT}s for npm registry CDN propagation..."
+                      sleep "${WAIT}"
+                  fi
+            - name: Resolve versions once for every smoke job
+              id: versions
+              env:
+                  SMOKE_PACKAGE_VERSIONS: ${{ inputs.package-versions || '{}' }}
+                  CLI_VER: ${{ inputs.cli-version || 'latest' }}
+                  INIT_VER: ${{ inputs.init-version || 'latest' }}
+                  PC_VER: ${{ inputs.partner-connect-version || 'latest' }}
+                  REGISTRY_TIMEOUT_SECONDS: ${{ inputs.registry-timeout-seconds || '1200' }}
+              run: node scripts/smoketest-npm-packages.mjs versions >> "$GITHUB_OUTPUT"
+
     smoketest:
         name: Smoketest (${{ matrix.package-manager }} on Node ${{ matrix.node-version }})
         runs-on: ubuntu-latest
-        timeout-minutes: 8
+        needs: resolve-versions
+        timeout-minutes: 50
         env:
+            SMOKE_PACKAGE_VERSIONS: ${{ needs.resolve-versions.outputs.package-versions }}
+            REGISTRY_TIMEOUT_SECONDS: ${{ inputs.registry-timeout-seconds || '1200' }}
             # Yarn 4 defaults to PnP, but this workflow intentionally verifies
             # node_modules-style consumers and checks the generated .bin link.
             YARN_NODE_LINKER: node-modules
@@ -95,6 +143,9 @@ jobs:
                     # separate Node setup is needed for the install itself.
                     - { package-manager: bun, node-version: '24.12.0' }
         steps:
+            - name: Checkout smoke tools
+              uses: actions/checkout@v7
+
             - name: Set up Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v6
               with:
@@ -123,16 +174,7 @@ jobs:
               if: matrix.package-manager == 'bun'
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.3.14
-
-            - name: Wait for npm CDN propagation
-              env:
-                  WAIT: ${{ inputs.registry-wait-seconds || '0' }}
-              run: |
-                  if [ "${WAIT:-0}" -gt 0 ]; then
-                      echo "Waiting ${WAIT}s for npm registry CDN propagation..."
-                      sleep "${WAIT}"
-                  fi
+                  bun-version: 1.4.2
 
             - name: Create clean test workspace (outside the monorepo)
               run: |
@@ -152,31 +194,7 @@ jobs:
 
             - name: Install @learncard packages via ${{ matrix.package-manager }}
               working-directory: ${{ env.TESTDIR }}
-              env:
-                  CLI_VER: ${{ inputs.cli-version || 'latest' }}
-                  INIT_VER: ${{ inputs.init-version || 'latest' }}
-                  PC_VER: ${{ inputs.partner-connect-version || 'latest' }}
-              run: |
-                  set -euo pipefail
-                  CLI="@learncard/cli@${CLI_VER}"
-                  INIT="@learncard/init@${INIT_VER}"
-                  PC="@learncard/partner-connect@${PC_VER}"
-                  echo "::group::Installing ${CLI} ${INIT} ${PC} via ${{ matrix.package-manager }}"
-                  case "${{ matrix.package-manager }}" in
-                      npm)
-                          npm install --no-fund --no-audit "$CLI" "$INIT" "$PC"
-                          ;;
-                      pnpm)
-                          pnpm add "$CLI" "$INIT" "$PC"
-                          ;;
-                      yarn)
-                          yarn add "$CLI" "$INIT" "$PC"
-                          ;;
-                      bun)
-                          bun add "$CLI" "$INIT" "$PC"
-                          ;;
-                  esac
-                  echo "::endgroup::"
+              run: node "$GITHUB_WORKSPACE/scripts/smoketest-npm-packages.mjs" install ${{ matrix.package-manager }} consumers
 
             - name: Verify @learncard/init loads via ESM
               working-directory: ${{ env.TESTDIR }}
@@ -232,51 +250,7 @@ jobs:
 
             - name: Install every published @learncard/* plugin package
               working-directory: ${{ env.TESTDIR }}
-              run: |
-                  # The original incident wasn't just @learncard/init being
-                  # broken — it was that init's ESM bundle pulled in plugin
-                  # packages whose CJS shims were unanalyzable to Node's
-                  # cjs-module-lexer. Probing init transitively catches the
-                  # imports init's bundle happens to use; this step closes the
-                  # gap by exercising every plugin's published export contract
-                  # directly, the way any external consumer using a plugin
-                  # standalone would.
-                  PKGS=(
-                      @learncard/ceramic-plugin
-                      @learncard/chapi-plugin
-                      @learncard/claimable-boosts-plugin
-                      @learncard/crypto-plugin
-                      @learncard/did-web-plugin
-                      @learncard/didkey-plugin
-                      @learncard/didkit-plugin
-                      @learncard/dynamic-loader-plugin
-                      @learncard/encryption-plugin
-                      @learncard/ethereum-plugin
-                      @learncard/expiration-plugin
-                      @learncard/helpers
-                      @learncard/idx-plugin
-                      @learncard/lca-api-plugin
-                      @learncard/learn-card-plugin
-                      @learncard/learn-cloud-plugin
-                      @learncard/ler-rs-plugin
-                      @learncard/linked-claims-plugin
-                      @learncard/network-plugin
-                      @learncard/open-badge-v2-plugin
-                      @learncard/openid4vc-plugin
-                      @learncard/render-method-plugin
-                      @learncard/sd-jwt-vc-plugin
-                      @learncard/types
-                      @learncard/vc-api-plugin
-                      @learncard/vc-plugin
-                      @learncard/vc-templates-plugin
-                      @learncard/vpqr-plugin
-                  )
-                  case "${{ matrix.package-manager }}" in
-                      npm)  npm install --no-fund --no-audit "${PKGS[@]}" ;;
-                      pnpm) pnpm add "${PKGS[@]}" ;;
-                      yarn) yarn add "${PKGS[@]}" ;;
-                      bun)  bun add "${PKGS[@]}" ;;
-                  esac
+              run: node "$GITHUB_WORKSPACE/scripts/smoketest-npm-packages.mjs" install ${{ matrix.package-manager }} plugins
 
             - name: Verify each plugin loads via ESM and CJS
               working-directory: ${{ env.TESTDIR }}
@@ -387,21 +361,19 @@ jobs:
         # in CI: single binary, no config file, ~1s build.
         name: Bundler smoketest (esbuild)
         runs-on: ubuntu-latest
-        timeout-minutes: 6
+        needs: resolve-versions
+        timeout-minutes: 30
+        env:
+            SMOKE_PACKAGE_VERSIONS: ${{ needs.resolve-versions.outputs.package-versions }}
+            REGISTRY_TIMEOUT_SECONDS: ${{ inputs.registry-timeout-seconds || '1200' }}
         steps:
+            - name: Checkout smoke tools
+              uses: actions/checkout@v7
+
             - name: Set up Node.js
               uses: actions/setup-node@v6
               with:
                   node-version: '24.12.0'
-
-            - name: Wait for npm CDN propagation
-              env:
-                  WAIT: ${{ inputs.registry-wait-seconds || '0' }}
-              run: |
-                  if [ "${WAIT:-0}" -gt 0 ]; then
-                      echo "Waiting ${WAIT}s for npm registry CDN propagation..."
-                      sleep "${WAIT}"
-                  fi
 
             - name: Create clean test workspace
               run: |
@@ -415,12 +387,7 @@ jobs:
 
             - name: Install @learncard/init + esbuild
               working-directory: ${{ env.TESTDIR }}
-              env:
-                  INIT_VER: ${{ inputs.init-version || 'latest' }}
-              run: |
-                  npm install --no-fund --no-audit \
-                      "@learncard/init@${INIT_VER}" \
-                      esbuild
+              run: node "$GITHUB_WORKSPACE/scripts/smoketest-npm-packages.mjs" install npm bundler
 
             - name: Bundle a trivial consumer with esbuild
               working-directory: ${{ env.TESTDIR }}

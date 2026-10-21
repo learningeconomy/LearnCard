@@ -15,17 +15,18 @@ import CredentialVerificationDisplay from 'learn-card-base/components/Credential
 import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
 
 import type { VC } from '@learncard/types';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { formatClrGpa } from './clr.helpers';
-import { getClrIssuerLogo } from './clrKind.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
+import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
 
 const ClrTranscriptSummaryHeader: React.FC<{
     model: ClrTranscriptDisplayModel;
     boost: VC;
     boostUri?: string;
     adminMode?: boolean;
-}> = ({ model, boost, boostUri, adminMode = false }) => {
+    onSelectRecord?: (recordId: string) => void;
+}> = ({ model, boost, boostUri, adminMode = false, onSelectRecord }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const learner = useClrLearnerIdentity(model.header.learnerName?.value);
     const issuerLogo = getClrIssuerLogo(model);
@@ -65,17 +66,15 @@ const ClrTranscriptSummaryHeader: React.FC<{
     const openCompetenciesModal = () => {
         newModal(
             <ClrCompetencyDetailPanel
-                competencies={model.competencies}
-                courses={model.courses}
-                programs={model.programs}
-                associations={model.associations}
+                model={model}
+                onSelectRecord={onSelectRecord}
                 adminMode={adminMode}
             />
         );
     };
 
     return (
-        <div className="bg-white rounded-[20px] border border-grayscale-200 p-4 space-y-3 relative overflow-hidden">
+        <div className="bg-white rounded-[20px] border border-grayscale-200 p-4 space-y-v3-3 relative overflow-hidden">
             {model.meta.partial && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                     <p className="text-xs font-medium text-amber-800">
@@ -103,7 +102,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
                     </p>
                     <div className="border-t border-grayscale-200 my-2" />
                     {model.header.issuerName?.value && (
-                        <p className="text-sm font-bold uppercase text-blue-900 tracking-wide">
+                        <p className="text-sm font-bold uppercase text-grayscale-900 tracking-wide">
                             {model.header.issuerName.value}
                         </p>
                     )}
@@ -111,6 +110,9 @@ const ClrTranscriptSummaryHeader: React.FC<{
                         {transcriptTitle}
                         {model.header.issuedAt?.value && (
                             <> • Issued {formatClrDate(model.header.issuedAt.value)}</>
+                        )}
+                        {model.header.validFrom?.value && (
+                            <> • Valid from {formatClrDate(model.header.validFrom.value)}</>
                         )}
                     </p>
                     {adminMode && model.header.issuerId?.value && (
@@ -176,7 +178,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
             <div className="border-t border-grayscale-200" />
 
             {/* Awarded date + description */}
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 {model.header.awardedDate?.value && (
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-grayscale-500">
                         Awarded {formatClrDate(model.header.awardedDate.value)}
@@ -199,8 +201,8 @@ const ClrTranscriptSummaryHeader: React.FC<{
                 <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center bg-grayscale-100 rounded-full px-2 py-1">
                         <CredentialVerificationDisplay
-                            className="!bg-grayscale-100"
-                            iconClassName="!w-4 !h-4"
+                            className="bg-grayscale-100!"
+                            iconClassName="w-4! h-4!"
                             credential={boost}
                             showText
                             spanClassName="text-[#026BFF]"

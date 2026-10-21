@@ -5,7 +5,7 @@ import ReactCodeInput from 'react-code-input';
 import Countdown from 'react-countdown';
 import { z } from 'zod';
 
-import { IonCheckbox, IonCol, IonToggle, IonRouterLink } from '@ionic/react';
+import { IonCheckbox, IonCol, IonInput, IonToggle, IonRouterLink } from '@ionic/react';
 
 import { useFirebase } from '../../../hooks/useFirebase';
 
@@ -39,7 +39,10 @@ const CodeValidator = z.object({
     code: z.string().min(6, 'Invalid code'),
 });
 
+import { useSignInAdapter } from 'learn-card-base';
+
 const EmailForm: React.FC = () => {
+    const adapter = useSignInAdapter();
     const flags = useFlags();
     const query = usePathQuery();
     const history = useHistory();
@@ -48,7 +51,9 @@ const EmailForm: React.FC = () => {
     const { sendSignInLink, signInWithCustomFirebaseToken } = useFirebase();
     const locale = useLocale();
 
-    const enableMagicLinkLogin = flags?.enableMagicLinkLogin ?? false;
+    const enableMagicLinkLogin =
+        adapter.capabilities.emailLink &&
+        ((flags?.enableMagicLinkLogin ?? false) || !adapter.capabilities.emailOtp);
 
     const verificationEmail = redirectStore.get.email();
     const shouldVerifyCode = Boolean(query.get('verifyCode') || verificationEmail);
@@ -274,7 +279,7 @@ const EmailForm: React.FC = () => {
                 <input
                     aria-label={m['login.emailPlaceholder']()}
                     autoCapitalize="on"
-                    className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         emailError ? 'border-red-300' : 'border-grayscale-200'
                     } ${emailError ? 'login-input-email-error' : ''}`}
                     placeholder={m['login.emailPlaceholder']()}
@@ -407,14 +412,14 @@ const EmailForm: React.FC = () => {
                                         e.stopPropagation();
                                         handleResendCode();
                                     }}
-                                    className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px] font-notoSans"
+                                    className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b font-notoSans"
                                 >
                                     {resendCodeButtonText}
                                 </button>
                             ) : (
                                 <button
                                     disabled
-                                    className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px] font-notoSans"
+                                    className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b font-notoSans"
                                 >
                                     {m['common.resendIn']({ seconds })}
                                 </button>

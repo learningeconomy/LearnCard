@@ -115,6 +115,7 @@ import {
     prepareCredentialFromBoost,
     appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import {
     BoostValidator,
     BoostGenerateClaimLinkInput,
@@ -1059,6 +1060,7 @@ export const boostsRouter = t.router({
             // Log credential activity FIRST to get activityId for chaining
             const activityId = await logCredentialSent({
                 actorProfileId: profile.profileId,
+                onBehalfOf: ctx.user.onBehalfOf,
                 recipientType: 'profile',
                 recipientIdentifier: targetProfile.profileId,
                 recipientProfileId: targetProfile.profileId,
@@ -1592,6 +1594,7 @@ export const boostsRouter = t.router({
                             const activityId = await traceDb('logCredentialSent:refresh', () =>
                                 logCredentialSent({
                                     actorProfileId: profile.profileId,
+                                    onBehalfOf: ctx.user.onBehalfOf,
                                     recipientType: 'profile',
                                     recipientIdentifier: targetProfile.profileId,
                                     recipientProfileId: targetProfile.profileId,
@@ -1651,6 +1654,7 @@ export const boostsRouter = t.router({
                                     logCredentialFailed({
                                         activityId,
                                         actorProfileId: profile.profileId,
+                                        onBehalfOf: ctx.user.onBehalfOf,
                                         recipientType: 'profile',
                                         recipientIdentifier: targetProfile.profileId,
                                         recipientProfileId: targetProfile.profileId,
@@ -1739,6 +1743,7 @@ export const boostsRouter = t.router({
                         const activityId = await traceDb('logCredentialSent:inbox', () =>
                             logCredentialSent({
                                 actorProfileId: profile.profileId,
+                                onBehalfOf: ctx.user.onBehalfOf,
                                 recipientType: inboxRecipient.type,
                                 recipientIdentifier: inboxRecipient.value,
                                 boostUri,
@@ -1794,6 +1799,7 @@ export const boostsRouter = t.router({
                                 logCredentialFailed({
                                     activityId,
                                     actorProfileId: profile.profileId,
+                                    onBehalfOf: ctx.user.onBehalfOf,
                                     recipientType: inboxRecipient.type,
                                     recipientIdentifier: inboxRecipient.value,
                                     boostUri,
@@ -1860,6 +1866,7 @@ export const boostsRouter = t.router({
                                 });
                             }
 
+                            // encrypt=false on purpose: the federated receiving server may not accept LearnCard JWEs. See LC-2201.
                             signedVc = await traceInternal(
                                 'issueCredentialWithSigningAuthority:remoteInbox',
                                 async () =>
@@ -1882,6 +1889,7 @@ export const boostsRouter = t.router({
                         const activityId = await traceDb('logCredentialSent:remoteInbox', () =>
                             logCredentialSent({
                                 actorProfileId: profile.profileId,
+                                onBehalfOf: ctx.user.onBehalfOf,
                                 recipientType: 'profile',
                                 recipientIdentifier: input.recipient,
                                 boostUri,
@@ -1924,6 +1932,7 @@ export const boostsRouter = t.router({
                                 logCredentialFailed({
                                     activityId,
                                     actorProfileId: profile.profileId,
+                                    onBehalfOf: ctx.user.onBehalfOf,
                                     recipientType: 'profile',
                                     recipientIdentifier: input.recipient,
                                     boostUri,
@@ -1991,7 +2000,7 @@ export const boostsRouter = t.router({
                         contractUri,
                     });
 
-                    let signedVc: VC | JWE;
+                    let signedVc: VC | JWE | IssuedCredential;
 
                     if (input.signedCredential) {
                         signedVc = input.signedCredential;
@@ -2031,19 +2040,16 @@ export const boostsRouter = t.router({
                         signedVc = await traceInternal(
                             'issueCredentialWithSigningAuthority',
                             async () =>
-                                (
-                                    await issueCredentialWithSigningAuthority(
-                                        { type: 'profile', profile },
-                                        await appendBitstringStatusListEntries(
-                                            unsignedVc,
-                                            profile.profileId,
-                                            domain
-                                        ),
-                                        signingAuthority,
-                                        domain,
-                                        false
-                                    )
-                                ).credential
+                                issueCredentialWithSigningAuthority(
+                                    { type: 'profile', profile },
+                                    await appendBitstringStatusListEntries(
+                                        unsignedVc,
+                                        profile.profileId,
+                                        domain
+                                    ),
+                                    signingAuthority,
+                                    domain
+                                )
                         );
                     }
 
@@ -2053,6 +2059,7 @@ export const boostsRouter = t.router({
                     const activityId = await traceDb('logCredentialSent', () =>
                         logCredentialSent({
                             actorProfileId: profile.profileId,
+                            onBehalfOf: ctx.user.onBehalfOf,
                             recipientType: 'profile',
                             recipientIdentifier: targetProfile.profileId,
                             recipientProfileId: targetProfile.profileId,
@@ -2083,6 +2090,7 @@ export const boostsRouter = t.router({
                             logCredentialFailed({
                                 activityId,
                                 actorProfileId: profile.profileId,
+                                onBehalfOf: ctx.user.onBehalfOf,
                                 recipientType: 'profile',
                                 recipientIdentifier: targetProfile.profileId,
                                 recipientProfileId: targetProfile.profileId,
@@ -4540,17 +4548,7 @@ export const boostsRouter = t.router({
                 }
                 unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
 
-                if (Array.isArray(unsignedVc.credentialSubject)) {
-                    unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
-                        ...subject,
-                        id: getDidWeb(ctx.domain, targetProfile.profileId),
-                    }));
-                } else {
-                    unsignedVc.credentialSubject = {
-                        ...unsignedVc.credentialSubject,
-                        id: getDidWeb(ctx.domain, targetProfile.profileId),
-                    };
-                }
+                setCredentialSubjectIds(unsignedVc, getDidWeb(ctx.domain, targetProfile.profileId));
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
                 // Inject OBv3 skill alignments based on boost's framework/skills
                 await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, ctx.domain);

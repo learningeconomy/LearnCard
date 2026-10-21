@@ -1,3 +1,4 @@
+import { useSharePrivateSession } from '../../components/share-links/sharePrivacy';
 import { useMemo } from 'react';
 
 import {
@@ -105,6 +106,7 @@ export const getFeedbackReportingEligibility = ({
  * mutates preferences.
  */
 export const useFeedbackReportingEligibility = (): FeedbackReportingEligibility => {
+    const privateSession = useSharePrivateSession();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const profileType = switchedProfileStore.use.profileType();
     const { data: preferences, isLoading } = useGetPreferencesForDid();
@@ -112,7 +114,7 @@ export const useFeedbackReportingEligibility = (): FeedbackReportingEligibility 
     return useMemo(
         () =>
             getFeedbackReportingEligibility({
-                hasAuthenticatedProfile: Boolean(currentLCNUser),
+                hasAuthenticatedProfile: Boolean(currentLCNUser) && !privateSession,
                 profileId: currentLCNUser?.profileId,
                 isLoading,
                 preferences,
@@ -120,6 +122,6 @@ export const useFeedbackReportingEligibility = (): FeedbackReportingEligibility 
                 dob: currentLCNUser?.dob,
                 country: currentLCNUser?.country,
             }),
-        [currentLCNUser, isLoading, preferences, profileType]
+        [currentLCNUser, isLoading, preferences, profileType, privateSession]
     );
 };

@@ -1,16 +1,17 @@
 import cloneDeep from 'lodash/cloneDeep';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
+import { getIDsQueryKey } from '../queries/idCredentials';
 import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
     CredentialCategoryEnum,
-    getBaseUrl,
     getCategoryForCredential,
     queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
+    useTenantBaseUrl,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -31,7 +32,11 @@ import {
     SELF_ASSIGNED_SKILLS_BOOST_NAME,
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { insertItem } from './mutation.helpers';
+import {
+    findMatchingSharedCredentialIndex,
+    getSharedCredentialIndexQueries,
+    insertItem,
+} from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
 import { LCR } from 'learn-card-base/types/credential-records';
@@ -43,6 +48,8 @@ const log = getLogger('boosts');
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
     sharedCredentialUri: string;
+    sharedCredentialKey?: string;
+    credentialId?: string;
     pin: string;
     randomSeed: string;
     uri: string;
@@ -53,18 +60,21 @@ export const baseBoostShareRouteName = 'share-boost';
 /* creates a VP that wraps a boost, returns a published vp and a sharable link*/
 export const useShareBoostMutation = () => {
     const { initWallet } = useWallet();
+    const tenantBaseUrl = useTenantBaseUrl();
 
     return useMutation({
         mutationFn: async ({
             credential,
+            credentialId: requestedCredentialId,
             credentialUri,
             shareRouteName = baseBoostShareRouteName,
         }: {
             credential: VC | UnsignedVC;
             credentialUri: string;
+            credentialId?: string;
             shareRouteName?: string;
         }) => {
-            const baseUrl = getBaseUrl();
+            const baseUrl = new URL(tenantBaseUrl).host;
 
             // get current index data stored on ceramic for user
             // currentUser's wallet
@@ -72,12 +82,28 @@ export const useShareBoostMutation = () => {
 
             const pin = Math.floor(Math.random() * 9000 + 1000)?.toString();
 
-            let currentIndex = await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>({
-                sharedCredentialUri: credentialUri,
-            });
+            const credentialId = requestedCredentialId ?? credential.id;
+            const sharedCredentialIndexQueries = getSharedCredentialIndexQueries(
+                credentialUri,
+                credentialId
+            );
+            let extantCredentialIndex: SharedCredentialsIndex | undefined;
 
-            //Find if credential is already stored in index, if so return that instead
-            const extantCredentialIndex = currentIndex?.length > 0 && currentIndex[0];
+            for (const [index, query] of sharedCredentialIndexQueries.entries()) {
+                const candidates =
+                    (await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>(query)) ?? [];
+                const isLegacyFallback = Boolean(credentialId) && index > 0;
+                const candidate = await findMatchingSharedCredentialIndex(
+                    candidates,
+                    credentialId,
+                    isLegacyFallback
+                );
+
+                if (candidate) {
+                    extantCredentialIndex = candidate;
+                    break;
+                }
+            }
 
             const endorsementVCs: VC[] = await getEndorsementsForVC(myWallet, credential, 'public');
 
@@ -135,6 +161,8 @@ export const useShareBoostMutation = () => {
 
             await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>({
                 sharedCredentialUri: credentialUri,
+                ...(credentialId ? { credentialId } : {}),
+                ...sharedCredentialIndexQueries[0],
                 pin,
                 randomSeed: randomKey,
                 uri: publishedVpUri,
@@ -1014,7 +1042,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 queryKey: ['boosts'],
             });
             await queryClient.cancelQueries({
-                queryKey: ['useGetIDs', didWeb],
+                queryKey: getIDsQueryKey(didWeb),
             });
 
             const currentQuery = queryClient.getQueryData([
@@ -1028,7 +1056,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 didWeb ?? '',
                 category,
             ]);
-            const currentIDQueryList = queryClient.getQueryData(['useGetIDs', didWeb ?? '']);
+            const currentIDQueryList = queryClient.getQueryData(getIDsQueryKey(didWeb));
 
             // update cache optimistically
             // remove from useGetCredentials cache
@@ -1076,10 +1104,8 @@ export const useDeleteEarnedBoostMutation = () => {
                     updatedQueryList
                 );
 
-                queryClient.setQueryData(
-                    ['useGetIDs', didWeb ?? ''],
-                    (oldData: (VC | VC_WITH_URI)[] = []) =>
-                        oldData.filter(credential => credential.uri !== boostUri)
+                queryClient.setQueryData(getIDsQueryKey(didWeb), (oldData: VC_WITH_URI[] = []) =>
+                    oldData.filter(credential => credential.uri !== boostUri)
                 );
 
                 return { currentQuery, oldStaleTime, oldListStaleTime }; //use in OnError
@@ -1102,6 +1128,7 @@ export const useDeleteEarnedBoostMutation = () => {
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', didWeb ?? '', category],
             });
+            // Invalidate both the current records key and any persisted legacy ID entries.
             queryClient.invalidateQueries({
                 queryKey: ['useGetIDs', didWeb ?? ''],
             });

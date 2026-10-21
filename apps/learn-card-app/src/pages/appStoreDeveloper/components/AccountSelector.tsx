@@ -77,14 +77,14 @@ const Avatar: React.FC<{ image?: string; name?: string; size?: string }> = ({
             <img
                 src={image}
                 alt={name || 'Profile'}
-                className={`${size} rounded-full object-cover flex-shrink-0`}
+                className={`${size} rounded-full object-cover shrink-0`}
             />
         );
     }
 
     return (
         <div
-            className={`${size} rounded-full bg-cyan-500 flex items-center justify-center text-white font-medium flex-shrink-0`}
+            className={`${size} rounded-full bg-cyan-500 flex items-center justify-center text-white font-medium shrink-0`}
         >
             {name?.charAt(0)?.toUpperCase() || '?'}
         </div>
@@ -136,7 +136,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const parentUser = currentUserStore.get.parentUser();
     const parentUserDid = currentUserStore.get.parentUserDid();
-    const isCurrentUserServiceProfile = currentLCNUser?.isServiceProfile;
+    const isCurrentUserServiceProfile =
+        currentLCNUser?.type !== 'child' && currentLCNUser?.isServiceProfile === true;
 
     const { mutateAsync: createBoost } = useCreateBoost();
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
@@ -172,9 +173,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     });
 
     // Filter to only show service profiles (organizations)
-    const profileRecords = (profiles as any)?.records ?? [];
+    const profileRecords = Array.isArray(profiles?.records) ? profiles.records : [];
     const serviceProfiles = profileRecords.filter(
-        ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
+        ({ profile }: { profile: LCNProfile }) =>
+            profile.type !== 'child' && profile.isServiceProfile
     );
 
     // Sync with external selection
@@ -242,7 +244,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
         onSelect?.(account);
     };
 
-    const handleSelectExistingProfile = async (profile: LCNProfile, manager: LCNProfile) => {
+    const handleSelectExistingProfile = async (profile: LCNProfile) => {
         const accountProfile: AccountProfile = {
             did: profile.did!,
             profileId: profile.profileId!,
@@ -253,15 +255,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
         handleSelectProfile(accountProfile);
 
-        // Switch to this profile
-        const switchedUser = {
-            ...manager,
-            did: profile.did,
-            profileId: profile.profileId,
-            isServiceProfile: profile.isServiceProfile,
-        };
-
-        await handleSwitchAccount(switchedUser as LCNProfile);
+        await handleSwitchAccount(profile);
 
         // Invalidate developer portal queries so they refetch for the new account
         queryClient.invalidateQueries({ queryKey: ['developer'] });
@@ -277,7 +271,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             profileId: currentLCNUser.profileId!,
             displayName: currentLCNUser.displayName!,
             image: currentLCNUser.image,
-            isServiceProfile: currentLCNUser.isServiceProfile ?? false,
+            isServiceProfile: isCurrentUserServiceProfile,
         };
 
         handleSelectProfile(accountProfile);
@@ -285,10 +279,14 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
     const handleUseParentAccount = async () => {
         if (!parentUser || !parentUserDid) return;
+        const parentProfileId =
+            'profileId' in parentUser && typeof parentUser.profileId === 'string'
+                ? parentUser.profileId
+                : (parentUser.name ?? '');
 
         const parentProfile: AccountProfile = {
             did: parentUserDid,
-            profileId: (parentUser as any).profileId ?? parentUser.name ?? '',
+            profileId: parentProfileId,
             displayName: parentUser.name ?? 'Personal Account',
             image: parentUser.profileImage,
             isServiceProfile: false,
@@ -474,10 +472,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             setProfileId('');
             setImage(undefined);
             setShowAdvanced(false);
-        } catch (e: any) {
+        } catch (e) {
             presentToast(
                 m['developerPortal.components.accountSelector.failedToCreateOrganization']({
-                    message: e?.message,
+                    message: e instanceof Error ? e.message : String(e),
                 }),
                 {
                     type: ToastTypeEnum.Error,
@@ -503,10 +501,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     }
 
     return (
-        <div className={compact ? 'space-y-4' : 'space-y-6'}>
+        <div className={compact ? 'space-y-v3-4' : 'space-y-v3-6'}>
             {showInfoBanner && mode === 'select' && (
                 <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <Building className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <Building className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
 
                     <div className="text-sm text-blue-800">
                         <p className="font-medium mb-1">
@@ -524,7 +522,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             {mode === 'select' ? (
                 <>
                     {/* Current Account Option */}
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <h3 className="font-medium text-gray-800 text-sm">
                             {m['developerPortal.components.accountSelector.currentAccount']()}
                         </h3>
@@ -572,7 +570,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
                     {/* Root Personal Account Option (when on a service profile) */}
                     {isCurrentUserServiceProfile && isSwitchedProfile && parentUser && (
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <h3 className="font-medium text-gray-800 text-sm">
                                 {m['developerPortal.components.accountSelector.personalAccount']()}
                             </h3>
@@ -621,27 +619,19 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
                     {/* Existing Organization Accounts */}
                     {serviceProfiles.length > 0 && (
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <h3 className="font-medium text-gray-800 text-sm">
                                 {m[
                                     'developerPortal.components.accountSelector.organizationAccounts'
                                 ]()}
                             </h3>
 
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 {serviceProfiles.map(
-                                    (
-                                        {
-                                            profile,
-                                            manager,
-                                        }: { profile: LCNProfile; manager: LCNProfile },
-                                        index: number
-                                    ) => (
+                                    ({ profile }: { profile: LCNProfile }, index: number) => (
                                         <button
                                             key={index}
-                                            onClick={() =>
-                                                handleSelectExistingProfile(profile, manager)
-                                            }
+                                            onClick={() => handleSelectExistingProfile(profile)}
                                             disabled={isSwitching}
                                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                                                 selectedProfile?.did === profile.did
@@ -714,7 +704,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                 </>
             ) : (
                 /* Create Organization Form */
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <button
                         onClick={() => setMode('select')}
                         className="text-sm text-gray-500 hover:text-gray-700"
@@ -723,7 +713,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     </button>
 
                     {/* Organization Name */}
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <label className="block text-sm font-medium text-gray-700">
                             {m['developerPortal.components.accountSelector.organizationName']()}{' '}
                             <span className="text-red-500">*</span>
@@ -739,7 +729,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                             placeholder={m[
                                 'developerPortal.components.accountSelector.organizationNamePlaceholder'
                             ]()}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-sm text-gray-800"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden text-sm text-gray-800"
                         />
 
                         {nameError && (
@@ -751,7 +741,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     </div>
 
                     {/* Logo Upload */}
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <label className="block text-sm font-medium text-gray-700">
                             {m['developerPortal.components.accountSelector.organizationLogo']()}
                         </label>
@@ -799,7 +789,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     </button>
 
                     {showAdvanced && (
-                        <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
+                        <div className="space-y-v3-2 p-4 bg-gray-50 rounded-xl">
                             <label className="block text-sm font-medium text-gray-700">
                                 {m['developerPortal.components.accountSelector.profileId']()}{' '}
                                 <span className="text-red-500">*</span>
@@ -812,7 +802,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                     value={profileId}
                                     onChange={e => handleProfileIdInput(e.target.value)}
                                     placeholder="organization-id"
-                                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-sm text-gray-800"
+                                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden text-sm text-gray-800"
                                 />
                             </div>
 

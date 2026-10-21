@@ -1,8 +1,8 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { VC } from '@learncard/types';
+import { VerificationStatusEnum, type VC } from '@learncard/types';
 import { BoostCategoryOptionsEnum, DisplayTypeEnum } from 'learn-card-base';
 
 type MenuProps = {
@@ -10,8 +10,17 @@ type MenuProps = {
 };
 
 type FooterLayoutProps = React.PropsWithChildren<{
-    footerProps?: { handleDotMenu?: () => void; handleDetails?: () => void };
+    footerProps?: {
+        handleClose?: () => void;
+        handleDotMenu?: () => void;
+        handleDetails?: () => void;
+    };
 }>;
+const mocks = vi.hoisted(() => ({
+    newModal: vi.fn(),
+    verify: vi.fn(),
+    fullPage: vi.fn(),
+}));
 
 vi.mock('learn-card-base', () => ({
     boostPreviewStore: {
@@ -21,8 +30,8 @@ vi.mock('learn-card-base', () => ({
             updateSelectedDisplayView: vi.fn(),
         },
     },
-    useWallet: () => ({ initWallet: vi.fn() }),
-    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    useWallet: () => ({ initWallet: async () => ({ invoke: { verifyCredential: mocks.verify } }) }),
+    useModal: () => ({ newModal: mocks.newModal, closeModal: vi.fn() }),
     ModalTypes: { Right: 'right' },
     useDeviceTypeByWidth: () => ({ isMobile: true }),
     DisplayTypeEnum: {
@@ -75,8 +84,17 @@ vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({ children, footerProps }: FooterLayoutProps) => (
         <div>
             {children}
+            {footerProps?.handleClose && (
+                <button type="button" onClick={footerProps.handleClose}>
+                    Footer close
+                </button>
+            )}
             {footerProps?.handleDotMenu && <button type="button">Footer options</button>}
-            {footerProps?.handleDetails && <button type="button">Footer details</button>}
+            {footerProps?.handleDetails && (
+                <button type="button" onClick={footerProps.handleDetails}>
+                    Footer details
+                </button>
+            )}
         </div>
     ),
 }));
@@ -91,12 +109,19 @@ vi.mock('./BoostMediaPreview', () => ({
     ),
 }));
 vi.mock('../../../clr-transcript/surfaces/ClrTranscriptFullPage', () => ({
-    default: () => null,
+    default: (props: unknown) => {
+        mocks.fullPage(props);
+        return null;
+    },
+    createClrRecordNavigator: () => ({
+        selectRecord: vi.fn(),
+        openRecord: vi.fn(),
+    }),
 }));
 vi.mock('../../../clr-transcript/ClrCourseDetailPanel', () => ({
     default: () => <div>CLR course detail</div>,
 }));
-vi.mock('../../../../helpers/clrRenderer.helpers', () => {
+vi.mock('learn-card-base/helpers/credentials/clr/renderer', () => {
     const getAchievement = (rawCredential: Record<string, unknown>) => {
         const subject = rawCredential.credentialSubject as Record<string, unknown> | undefined;
         return subject?.achievement as Record<string, unknown> | undefined;
@@ -131,7 +156,7 @@ vi.mock('../../../../helpers/clrRenderer.helpers', () => {
         ClrTranscriptSurface: { Full: 'full' },
     };
 });
-vi.mock('../../../clr-transcript/clr.helpers', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/helpers', () => ({
     getDownloadableEvidence: () => [],
 }));
 
@@ -164,7 +189,28 @@ const courseCredential = {
 } as unknown as VC;
 
 describe('NonBoostPreview', () => {
+    it('passes computed proof results to the full CLR renderer', async () => {
+        const verificationItems = [{ check: 'proof', status: VerificationStatusEnum.Failed }];
+        mocks.verify.mockResolvedValue(verificationItems);
+        render(
+            <NonBoostPreview
+                credential={credential}
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.learningHistory}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                isClrCredential
+            />
+        );
+        await waitFor(() =>
+            expect(mocks.fullPage.mock.lastCall?.[0].verificationItems).toEqual(verificationItems)
+        );
+    });
     it('only exposes credential options through the preview footer', () => {
+        const handleCloseModal = vi.fn();
         render(
             <NonBoostPreview
                 credential={credential}
@@ -174,7 +220,7 @@ describe('NonBoostPreview', () => {
                 customBodyCardComponent={null}
                 customFooterComponent={null}
                 customIssueHistoryComponent={null}
-                handleCloseModal={vi.fn()}
+                handleCloseModal={handleCloseModal}
                 handleShareBoost={vi.fn()}
                 onDotsClick={vi.fn()}
                 displayType={DisplayTypeEnum.Certificate}
@@ -184,6 +230,34 @@ describe('NonBoostPreview', () => {
 
         expect(screen.getByRole('button', { name: 'Footer options' })).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Embedded options' })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Footer close' }));
+        expect(handleCloseModal).toHaveBeenCalledOnce();
+    });
+
+    it('passes the credential record URI to earned credential options', () => {
+        render(
+            <NonBoostPreview
+                credential={credential}
+                credentialUri="lc:credential:record-a"
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.achievement}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                displayType={DisplayTypeEnum.Certificate}
+                isPreview
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Footer details' }));
+
+        const detailsElement = mocks.newModal.mock.calls[0][0] as React.ReactElement<{
+            shareCredentialUri?: string;
+        }>;
+        expect(detailsElement.props.shareCredentialUri).toBe('lc:credential:record-a');
     });
 
     it('keeps credential options available for media previews', () => {

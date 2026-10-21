@@ -508,6 +508,49 @@ describe('Spec coverage', () => {
 // ---------------------------------------------------------------------------
 
 describe('prepareFixture', () => {
+    it.each(['validUntil', 'expirationDate'])(
+        'refreshes stale %s even with a historical validFrom',
+        field => {
+            const fixture = getFixture('vc-v2/basic');
+            const original = {
+                ...fixture,
+                credential: { ...fixture.credential, [field]: '2001-01-01T00:00:00Z' },
+            };
+            const before = Date.now();
+            const prepared = prepareFixture(original, {
+                issuerDid: 'did:example:issuer',
+                validFrom: '2000-01-01T00:00:00Z',
+            });
+            const expiry = new Date(prepared[field] as string).getTime();
+            expect(expiry).toBeGreaterThanOrEqual(before + 180 * 24 * 60 * 60 * 1000);
+            expect(original.credential[field]).toBe('2001-01-01T00:00:00Z');
+        }
+    );
+
+    it.each(['validUntil', 'expirationDate'])(
+        'keeps regenerated %s after a future validFrom',
+        field => {
+            const fixture = getFixture('vc-v2/basic');
+            const from = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+            const prepared = prepareFixture(
+                { ...fixture, credential: { ...fixture.credential, [field]: from } },
+                { issuerDid: 'did:example:issuer', validFrom: from }
+            );
+            expect(new Date(prepared[field] as string).getTime()).toBe(
+                new Date(from).getTime() + 180 * 24 * 60 * 60 * 1000
+            );
+        }
+    );
+
+    it.each(['validUntil', 'expirationDate'])('preserves an explicit past %s override', field => {
+        const fixture = getFixture('vc-v2/basic');
+        const expiry = '2001-01-01T00:00:00Z';
+        const prepared = prepareFixture(
+            { ...fixture, credential: { ...fixture.credential, [field]: expiry } },
+            { issuerDid: 'did:example:issuer', validUntil: expiry }
+        );
+        expect(prepared[field]).toBe(expiry);
+    });
     const issuerDid = 'did:key:z6MkTestIssuer123';
     const subjectDid = 'did:key:z6MkTestSubject456';
 
@@ -537,6 +580,37 @@ describe('prepareFixture', () => {
         const subject = prepared.credentialSubject as Record<string, unknown>;
 
         expect(subject.id).toBe(subjectDid);
+    });
+
+    it('preserves signed credentials nested in a CLR', () => {
+        const fixture = getFixture('vc-v2/basic');
+        const signedEmbeddedCredential = {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            id: fixture.credential.id,
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:nested-issuer',
+            validFrom: '2025-01-01T00:00:00Z',
+            credentialSubject: { id: 'did:example:signed-subject' },
+            proof: { type: 'DataIntegrityProof', proofValue: 'signed-value' },
+        };
+        const prepared = prepareFixture(
+            {
+                ...fixture,
+                credential: {
+                    ...fixture.credential,
+                    credentialSubject: {
+                        id: 'did:example:old-root',
+                        verifiableCredential: [signedEmbeddedCredential],
+                    },
+                },
+            },
+            { issuerDid, subjectDid }
+        );
+        const subject = prepared.credentialSubject as UnknownRecord;
+        const embedded = subject.verifiableCredential as UnknownRecord[];
+
+        expect(subject.id).toBe(subjectDid);
+        expect(embedded[0]).toEqual(signedEmbeddedCredential);
     });
 
     it('generates fresh UUIDs for id fields by default', () => {

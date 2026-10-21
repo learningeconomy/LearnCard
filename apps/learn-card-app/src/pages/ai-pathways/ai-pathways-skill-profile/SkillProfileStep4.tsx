@@ -114,10 +114,10 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
                 value={workLifeBalance}
                 onChange={setWorkLifeBalance}
                 options={getWorkLifeBalanceOptions()}
-                name="work_life_balance"
+                aria-label={m['aiPathways.workLifeBalance']()}
                 columns={2}
                 allowDeselect
-                className="pb-[30px] border-b-[1px] border-solid border-grayscale-200"
+                className="pb-[30px] border-b border-solid border-grayscale-200"
             />
 
             <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
@@ -128,14 +128,14 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
                 value={jobStability}
                 onChange={setJobStability}
                 options={getJobStabilityOptions()}
-                name="job_stability"
+                aria-label={m['aiPathways.jobStability']()}
                 columns={2}
                 allowDeselect
             />
 
             <div className="flex gap-[10px] w-full">
                 <button
-                    className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border-[1px] border-solid border-grayscale-200 h-[44px]"
+                    className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border border-solid border-grayscale-200 h-[44px]"
                     onClick={handleBack}
                     disabled={isSaving}
                 >

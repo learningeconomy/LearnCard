@@ -34,12 +34,17 @@ export type CredentialRefreshMetadata = {
 
 export type CredentialMetadata = {
     category: CredentialCategory;
+    /**
+     * All holder-driven category changes must set 'manual' so automatic backfills preserve them.
+     * Unmarked historical categories are treated as automatic defaults.
+     */
+    categorySource?: 'manual';
     title?: string;
     imgUrl?: string;
     subcategory?: string;
     from?: string;
     date?: string;
-    sharedUris?: Record<string, string[]>; // {'contractUri': ['boostUri1', 'boostUri2']}
+    sharedUris?: Record<string, string[]>; // Full audience cache keys (legacy owner DID keys are retained for selection lookup)
     contractUri?: string;
     boostUri?: string;
     refresh?: CredentialRefreshMetadata;

@@ -16,6 +16,12 @@ import React, {
 } from 'react';
 
 import { AuthCoordinator, createAuthCoordinator } from './AuthCoordinator';
+import { createRecoverySetupRunner, type RecoverySetupRunner } from './recoverySetup';
+import { getAuthConfig } from '../config/authConfig';
+import { isEscrowRolloutEnabledFor } from '../config/escrowRollout';
+import { getLogger } from '../logging/logger';
+
+const log = getLogger('auth-coordinator-provider');
 
 import type {
     AuthProvider,
@@ -33,6 +39,7 @@ export interface AuthCoordinatorContextValue {
     isLoading: boolean;
     needsSetup: boolean;
     needsMigration: boolean;
+    needsActivation: boolean;
     needsRecovery: boolean;
     hasError: boolean;
     error: string | null;
@@ -46,6 +53,9 @@ export interface AuthCoordinatorContextValue {
     /** Whether the auth provider session (e.g. Firebase JWT) is currently valid */
     authSessionValid: boolean;
 
+    /** A previously confirmed session ended in this mounted tab (not anonymous startup). */
+    hasEndedAuthSession?: boolean;
+
     /** Declarative feature flags from the active key derivation strategy */
     capabilities: KeyDerivationCapabilities;
 
@@ -55,8 +65,32 @@ export interface AuthCoordinatorContextValue {
     initialize: () => Promise<void>;
     setupNewKey: (privateKey: string, did: string) => Promise<void>;
     migrate: (privateKey: string, did: string) => Promise<void>;
+    activate: () => Promise<void>;
+    /** Terminal recovery setup/confirmation plus activation, with activation-only retries. */
+    runRecoverySetup: RecoverySetupRunner['run'];
+    /** Call before generating replacement phrase, backup, or email recovery material. */
+    resetRecoverySetup: RecoverySetupRunner['reset'];
+    /** Changes only after setup AND activation succeed; consumers refresh method counts. */
+    recoverySetupRevision: number;
     setMigrationData: (data: Record<string, unknown>) => void;
     recover: (input: unknown) => Promise<void>;
+    startEscrowRecovery: AuthCoordinator['startEscrowRecovery'];
+    getEscrowRecoveryStatus: AuthCoordinator['getEscrowRecoveryStatus'];
+    confirmEscrowRecovery: AuthCoordinator['confirmEscrowRecovery'];
+    resendEscrowRecoveryCode: AuthCoordinator['resendEscrowRecoveryCode'];
+    cancelEscrowRecovery: AuthCoordinator['cancelEscrowRecovery'];
+    disableEscrowRecovery: AuthCoordinator['disableEscrowRecovery'];
+    enableEscrowRecovery: AuthCoordinator['enableEscrowRecovery'];
+    setEscrowPin: AuthCoordinator['setEscrowPin'];
+    clearEscrowPin: AuthCoordinator['clearEscrowPin'];
+    getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
+    beginIdentityRecovery: () => void;
+    sendIdentityRecoveryCode: (email: string) => Promise<void>;
+    verifyIdentityRecoveryCode: (code: string) => Promise<void>;
+    prepareIdentityRecovery: (input: unknown) => Promise<void>;
+    continueIdentityRecoveryLogin: () => void;
+    finishIdentityRecovery: () => void;
+    cancelIdentityRecovery: () => void;
     logout: () => Promise<void>;
     forgetDevice: () => Promise<void>;
     retry: () => Promise<void>;
@@ -109,13 +143,19 @@ export interface AuthCoordinatorProviderProps {
     didFromPrivateKey?: (privateKey: string) => Promise<string>;
 
     /** Function to sign a DID-Auth VP JWT proving private key ownership for server write ops */
-    signDidAuthVp?: (privateKey: string) => Promise<string>;
+    signDidAuthVp?: (privateKey: string, challenge?: string) => Promise<string>;
 
     /** Optional: retrieve a cached private key for private-key-first init */
     getCachedPrivateKey?: () => Promise<string | null>;
 
+    /** App locale for vault-sent recovery emails (`en`/`es`/`fr`/`ar`); required for Nitro enrollment. */
+    getRecoveryLanguage?: () => string | undefined;
+
     /** Called after the coordinator finishes its own logout cleanup. Use for app-specific store/DB clearing. */
     onLogout?: () => Promise<void>;
+
+    /** Wipes pending escrow recovery requests on `forgetDevice()`; defaults to the web storage copy. */
+    clearPendingEscrowRecovery?: () => Promise<void>;
 
     /** Debug event callback for logging/debugging */
     onDebugEvent?: (
@@ -168,19 +208,63 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     didFromPrivateKey,
     signDidAuthVp,
     getCachedPrivateKey,
+    getRecoveryLanguage,
     onLogout,
+    clearPendingEscrowRecovery,
     onDebugEvent,
     enabled = true,
     legacyAccountThresholdMs,
 }) => {
-    const [state, setState] = useState<UnifiedAuthState>({ status: 'idle' });
+    // `idle` means storage/session restoration has finished without an account.
+    // On the first render, even the no-op auth provider must await the native
+    // cached-key read. Publishing idle here briefly exposes persisted account
+    // UI before deriving_key brings the startup loader back.
+    const [state, setState] = useState<UnifiedAuthState>(() => ({
+        status: enabled ? 'authenticating' : 'idle',
+    }));
     const coordinatorRef = useRef<AuthCoordinator | null>(null);
+    // Cold cached-key startup is deliberate. Once this mounted tab has seen a
+    // live account, losing the provider must instead end that account session.
+    const observedAuthSessionRef = useRef(false);
+    const sessionEndedRef = useRef(false);
+    const [hasEndedAuthSession, setHasEndedAuthSession] = useState(false);
+    const [recoverySetupIdentity, setRecoverySetupIdentity] = useState<object>({});
+    const recoverySetupIdentityRef = useRef(recoverySetupIdentity);
+    const recoverySetupAccountRef = useRef<{
+        did: string;
+        userId?: string;
+        strategy: KeyDerivationStrategy;
+    } | null>(null);
+    const [recoverySetupRevision, setRecoverySetupRevision] = useState(0);
+    const recoverySetupRef = useRef<RecoverySetupRunner | null>(null);
+    const invalidateRecoverySetup = useCallback(() => {
+        const identity = {};
+        recoverySetupIdentityRef.current = identity;
+        setRecoverySetupIdentity(identity);
+    }, []);
+    useEffect(() => {
+        recoverySetupRef.current = createRecoverySetupRunner(
+            () => {
+                const coordinator = coordinatorRef.current;
+                const current = coordinator?.getState();
+                if (!coordinator || current?.status !== 'ready') return null;
+                return {
+                    identity: recoverySetupIdentityRef.current,
+                    needsActivation: current.sssActivationState === 'provisional',
+                    activate: () => coordinator.activate(),
+                };
+            },
+            () => setRecoverySetupRevision(revision => revision + 1)
+        );
+        return () => {
+            recoverySetupRef.current = null;
+        };
+    }, []);
 
     // Mirror of `state` readable inside the (re)creation effect without adding
     // `state` to its deps (which would recreate the coordinator on every
     // state transition).
     const stateRef = useRef(state);
-    stateRef.current = state;
 
     // Helper to determine event level from state
     const getStateEventLevel = useCallback((newState: UnifiedAuthState): DebugEventLevel => {
@@ -238,15 +322,54 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     useEffect(() => {
         if (!enabled) {
             coordinatorRef.current = null;
+            stateRef.current = { status: 'idle' };
+            // Synchronize React with the disabled external coordinator lifecycle.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setState({ status: 'idle' });
             return;
         }
 
         let stale = false;
+        if (authProvider) {
+            sessionEndedRef.current = false;
+        } else if (observedAuthSessionRef.current) {
+            sessionEndedRef.current = true;
+        }
 
         const handleStateChange = (newState: UnifiedAuthState) => {
             if (stale) return;
+            setHasEndedAuthSession(sessionEndedRef.current);
+            if ('authUser' in newState && newState.authUser?.id) {
+                observedAuthSessionRef.current = true;
+            }
 
+            if (newState.status === 'ready') {
+                const previous = recoverySetupAccountRef.current;
+                if (
+                    !previous ||
+                    previous.did !== newState.did ||
+                    previous.strategy !== keyDerivation ||
+                    (previous.userId &&
+                        newState.authUser?.id &&
+                        previous.userId !== newState.authUser.id)
+                ) {
+                    invalidateRecoverySetup();
+                }
+                recoverySetupAccountRef.current = {
+                    did: newState.did,
+                    userId: newState.authUser?.id ?? previous?.userId,
+                    strategy: keyDerivation,
+                };
+            } else if (
+                ['idle', 'needs_setup', 'needs_migration', 'needs_recovery', 'error'].includes(
+                    newState.status
+                )
+            ) {
+                invalidateRecoverySetup();
+                recoverySetupAccountRef.current = null;
+            }
+
+            stateRef.current = newState;
             setState(newState);
 
             onDebugEvent?.(
@@ -264,8 +387,12 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             didFromPrivateKey,
             signDidAuthVp,
             getCachedPrivateKey,
+            getRecoveryLanguage,
             onLogout,
+            clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
+            isEscrowEnrollmentAllowed: userKey =>
+                isEscrowRolloutEnabledFor({ tenantId: getAuthConfig().tenantId, userKey }),
         });
 
         coordinatorRef.current = coordinator;
@@ -285,10 +412,19 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             handleStateChange({ status: 'authenticating' });
         }
 
-        coordinator.initialize();
+        if (!authProvider && sessionEndedRef.current) {
+            // Firebase can clear auth in this tab after another tab signs out.
+            // Re-running cached-key initialization would recreate `ready` from
+            // this tab's in-memory key even though the account signed out.
+            handleStateChange({ status: 'idle' });
+            log.info('Auth session ended; cached account resume skipped');
+        } else {
+            coordinator.initialize();
+        }
 
         return () => {
             stale = true;
+            coordinator.destroy();
             coordinatorRef.current = null;
         };
     }, [
@@ -299,13 +435,17 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         didFromPrivateKey,
         signDidAuthVp,
         getCachedPrivateKey,
+        getRecoveryLanguage,
         onLogout,
+        clearPendingEscrowRecovery,
         onDebugEvent,
         getStateEventLevel,
         extractStateDetails,
+        invalidateRecoverySetup,
     ]);
 
     const initialize = useCallback(async () => {
+        if (sessionEndedRef.current) return;
         if (coordinatorRef.current) {
             await coordinatorRef.current.initialize();
         }
@@ -325,6 +465,13 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         await coordinatorRef.current.migrate(privateKey, did);
     }, []);
 
+    const activate = useCallback(async () => {
+        if (!coordinatorRef.current) {
+            throw new Error('Coordinator not initialized');
+        }
+        await coordinatorRef.current.activate();
+    }, []);
+
     const setMigrationData = useCallback((data: Record<string, unknown>) => {
         if (!coordinatorRef.current) {
             throw new Error('Coordinator not initialized');
@@ -336,14 +483,103 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         if (!coordinatorRef.current) {
             throw new Error('Coordinator not initialized');
         }
-        await coordinatorRef.current.recover(input);
+        const result = await coordinatorRef.current.recover(input);
+        if (result.status === 'error') throw new Error(result.error);
+    }, []);
+
+    const beginIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.beginIdentityRecovery();
+    }, []);
+
+    const startEscrowRecovery = useCallback(async (options?: { restart?: boolean }) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        return coordinatorRef.current.startEscrowRecovery(options);
+    }, []);
+    const getEscrowRecoveryStatus = useCallback(
+        async (proof?: { holdId: string; resumeToken: string }) => {
+            if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+            return coordinatorRef.current.getEscrowRecoveryStatus(proof);
+        },
+        []
+    );
+    const confirmEscrowRecovery = useCallback(
+        async (params: { holdId: string; resumeToken: string; code: string }) => {
+            if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+            return coordinatorRef.current.confirmEscrowRecovery(params);
+        },
+        []
+    );
+    const resendEscrowRecoveryCode = useCallback(
+        async (params: { holdId: string; resumeToken: string }) => {
+            if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+            return coordinatorRef.current.resendEscrowRecoveryCode(params);
+        },
+        []
+    );
+    const cancelEscrowRecovery = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        return coordinatorRef.current.cancelEscrowRecovery();
+    }, []);
+
+    const disableEscrowRecovery = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.disableEscrowRecovery();
+    }, []);
+    const enableEscrowRecovery = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.enableEscrowRecovery();
+    }, []);
+    const setEscrowPin = useCallback(async (pin: string) => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.setEscrowPin(pin);
+    }, []);
+    const clearEscrowPin = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.clearEscrowPin();
+    }, []);
+    const getEscrowEnrollmentState = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.getEscrowEnrollmentState();
+    }, []);
+
+    const sendIdentityRecoveryCode = useCallback(async (email: string) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.sendIdentityRecoveryCode(email);
+    }, []);
+
+    const verifyIdentityRecoveryCode = useCallback(async (code: string) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.verifyIdentityRecoveryCode(code);
+    }, []);
+
+    const prepareIdentityRecovery = useCallback(async (input: unknown) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.prepareIdentityRecovery(input);
+    }, []);
+
+    const continueIdentityRecoveryLogin = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.continueIdentityRecoveryLogin();
+    }, []);
+
+    const finishIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.finishIdentityRecovery();
+    }, []);
+
+    const cancelIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.cancelIdentityRecovery();
     }, []);
 
     const logout = useCallback(async () => {
+        invalidateRecoverySetup();
+        recoverySetupAccountRef.current = null;
         if (coordinatorRef.current) {
             await coordinatorRef.current.logout();
         }
-    }, []);
+    }, [invalidateRecoverySetup]);
 
     const forgetDevice = useCallback(async () => {
         if (coordinatorRef.current) {
@@ -352,6 +588,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     }, []);
 
     const retry = useCallback(async () => {
+        if (sessionEndedRef.current) return;
         if (coordinatorRef.current) {
             await coordinatorRef.current.retry();
         }
@@ -371,41 +608,99 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         return coordinatorRef.current.refreshAuthSession();
     }, []);
 
-    // Derived state
-    const isReady = state.status === 'ready';
-    const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(
-        state.status
-    );
-    const needsSetup = state.status === 'needs_setup';
-    const needsMigration = state.status === 'needs_migration';
-    const needsRecovery = state.status === 'needs_recovery';
-    const hasError = state.status === 'error';
-    const error = state.status === 'error' ? state.error : null;
+    // When disabled, expose idle immediately rather than synchronously resetting
+    // state from the effect that tears down the coordinator.
+    const renderedState: UnifiedAuthState = enabled ? state : { status: 'idle' };
 
-    const privateKey = state.status === 'ready' ? state.privateKey : null;
-    const did = state.status === 'ready' ? state.did : null;
-    const authSessionValid = state.status === 'ready' ? state.authSessionValid : false;
+    // Derived state
+    const isReady = renderedState.status === 'ready';
+    const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(
+        renderedState.status
+    );
+    const needsSetup = renderedState.status === 'needs_setup';
+    const needsMigration = renderedState.status === 'needs_migration';
+    const needsActivation =
+        renderedState.status === 'ready' && renderedState.sssActivationState === 'provisional';
+    const needsRecovery = renderedState.status === 'needs_recovery';
+    const hasError = renderedState.status === 'error';
+    const error = renderedState.status === 'error' ? renderedState.error : null;
+
+    const privateKey = renderedState.status === 'ready' ? renderedState.privateKey : null;
+    const did = renderedState.status === 'ready' ? renderedState.did : null;
+    const authSessionValid =
+        renderedState.status === 'ready' ? renderedState.authSessionValid : false;
+
+    // Modal callbacks may outlive their render (or await token acquisition before
+    // entering the runner). Bind them to the initiating session, not the account
+    // that happens to be current when that await finishes.
+    const runRecoverySetup = useCallback(
+        async <T,>(method: string, action: () => Promise<T>): Promise<T> => {
+            if (
+                !recoverySetupRef.current ||
+                recoverySetupIdentityRef.current !== recoverySetupIdentity
+            ) {
+                throw new Error('Please sign in again to set up account recovery.');
+            }
+            return recoverySetupRef.current.run(method, action);
+        },
+        [recoverySetupIdentity]
+    );
+    const resetRecoverySetup = useCallback(
+        (method: string): void => {
+            if (
+                !recoverySetupRef.current ||
+                recoverySetupIdentityRef.current !== recoverySetupIdentity
+            ) {
+                throw new Error('Please sign in again to set up account recovery.');
+            }
+            recoverySetupRef.current.reset(method);
+        },
+        [recoverySetupIdentity]
+    );
 
     const value: AuthCoordinatorContextValue = useMemo(
         () => ({
-            state,
+            state: renderedState,
             isReady,
             isLoading,
             needsSetup,
             needsMigration,
+            needsActivation,
             needsRecovery,
             hasError,
             error,
             privateKey,
             did,
             authSessionValid,
+            hasEndedAuthSession,
             capabilities: keyDerivation.capabilities,
             keyDerivation,
             initialize,
             setupNewKey,
             migrate,
+            activate,
+            runRecoverySetup,
+            resetRecoverySetup,
+            recoverySetupRevision,
             setMigrationData,
             recover,
+            startEscrowRecovery,
+            getEscrowRecoveryStatus,
+            confirmEscrowRecovery,
+            resendEscrowRecoveryCode,
+            cancelEscrowRecovery,
+            disableEscrowRecovery,
+            enableEscrowRecovery,
+            setEscrowPin,
+            clearEscrowPin,
+            getEscrowEnrollmentState,
+            beginIdentityRecovery,
+            sendIdentityRecoveryCode,
+            verifyIdentityRecoveryCode,
+            prepareIdentityRecovery,
+            continueIdentityRecoveryLogin,
+            finishIdentityRecovery,
+            cancelIdentityRecovery,
             logout,
             forgetDevice,
             retry,
@@ -413,23 +708,46 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             refreshAuthSession,
         }),
         [
-            state,
+            renderedState,
             isReady,
             isLoading,
             needsSetup,
             needsMigration,
+            needsActivation,
             needsRecovery,
             hasError,
             error,
             privateKey,
             did,
             authSessionValid,
+            hasEndedAuthSession,
             keyDerivation,
             initialize,
             setupNewKey,
             migrate,
+            activate,
+            runRecoverySetup,
+            resetRecoverySetup,
+            recoverySetupRevision,
             setMigrationData,
             recover,
+            startEscrowRecovery,
+            getEscrowRecoveryStatus,
+            confirmEscrowRecovery,
+            resendEscrowRecoveryCode,
+            cancelEscrowRecovery,
+            disableEscrowRecovery,
+            enableEscrowRecovery,
+            setEscrowPin,
+            clearEscrowPin,
+            getEscrowEnrollmentState,
+            beginIdentityRecovery,
+            sendIdentityRecoveryCode,
+            verifyIdentityRecoveryCode,
+            prepareIdentityRecovery,
+            continueIdentityRecoveryLogin,
+            finishIdentityRecovery,
+            cancelIdentityRecovery,
             logout,
             forgetDevice,
             retry,

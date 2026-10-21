@@ -39,7 +39,7 @@ export const AppReviewSlider: React.FC<{ reviews: AppStoreAppReview[] }> = ({ re
 
                     return (
                         <SwiperSlide key={index}>
-                            <div className="ion-padding border-[1px] border-solid rounded-[20px]">
+                            <div className="ion-padding border border-solid rounded-[20px]">
                                 <h2 className="text-grayscale-900 font-semibold font-notoSans text-base line-clamp-1 text-left">
                                     {title}
                                 </h2>
