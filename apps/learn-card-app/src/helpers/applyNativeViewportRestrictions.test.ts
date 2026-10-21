@@ -7,7 +7,7 @@ const NATIVE_VIEWPORT_CONTENT = `${WEB_VIEWPORT_CONTENT}, minimum-scale=1.0, max
 
 describe('applyNativeViewportRestrictions', () => {
     afterEach(() => {
-        document.head.replaceChildren();
+        document.head.querySelector('meta[name="viewport"]')?.remove();
     });
 
     it('restores fixed scaling for native builds', () => {
@@ -16,6 +16,18 @@ describe('applyNativeViewportRestrictions', () => {
         viewport.content = WEB_VIEWPORT_CONTENT;
         document.head.append(viewport);
 
+        applyNativeViewportRestrictions(true);
+
+        expect(viewport.content).toBe(NATIVE_VIEWPORT_CONTENT);
+    });
+
+    it('is idempotent when applied more than once', () => {
+        const viewport = document.createElement('meta');
+        viewport.name = 'viewport';
+        viewport.content = WEB_VIEWPORT_CONTENT;
+        document.head.append(viewport);
+
+        applyNativeViewportRestrictions(true);
         applyNativeViewportRestrictions(true);
 
         expect(viewport.content).toBe(NATIVE_VIEWPORT_CONTENT);
