@@ -103,6 +103,7 @@ describe('IndexedDB issuance recovery', () => {
             ['Score']
         ).draft;
         run.scopes = { Score: 'perRecipient' };
+        run.draft.reservedVariables = ['sheet_quiz_1'];
         const csv = exportRosterCsv(run.draft, ['Score'], run.scopes, {});
         run.draft = mergeSpreadsheet(run.draft, parseSpreadsheet(readSpreadsheetText(csv)), [
             'Score',
@@ -110,6 +111,7 @@ describe('IndexedDB issuance recovery', () => {
         await saveIssuanceRun(run);
         const restored = await readIssuanceRun(run.id, run.scope);
         expect(restored!.draft.source!.exportHeaders).toEqual({ Score: 'Score' });
+        expect(restored!.draft.reservedVariables).toEqual(['sheet_quiz_1']);
     });
 
     it.each([null, 123456, undefined])(

@@ -106,6 +106,7 @@ export const useIssueRoster = (options: RosterOptions) => {
     const [source, setSource] = useState<ParsedSpreadsheet>();
     const [scopes, setScopes] = useState<ColumnScopes>({});
     const [mappings, setMappings] = useState<ColumnMapping[]>([]);
+    const [reservedVariables, setReservedVariables] = useState<string[]>([]);
     const [formulaCells, setFormulaCells] = useState<RosterDraft['formulaCells']>({});
     const [evidence, setEvidence] = useState<Record<string, string>>({});
     const [run, setRun] = useState<IssuanceRun | null>(null);
@@ -141,6 +142,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         evidence,
         formulaCells,
         mappings,
+        reservedVariables,
         attachments: options.attachments,
         source,
         sourceName: source?.source.name,
@@ -198,6 +200,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         setEvidence(saved.draft.evidence);
         setFormulaCells(saved.draft.formulaCells ?? {});
         setMappings(saved.draft.mappings ?? []);
+        setReservedVariables(saved.draft.reservedVariables ?? []);
         options.setRecipients(saved.draft.recipients);
         options.setValues(saved.draft.values);
         options.setShared(saved.shared);
@@ -214,6 +217,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         changeDraftId(crypto.randomUUID());
         setSource(undefined);
         setMappings([]);
+        setReservedVariables([]);
         setFormulaCells({});
         setScopes({});
         setEvidence({});
@@ -245,6 +249,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 changeDraftId(crypto.randomUUID());
                 setSource(undefined);
                 setMappings([]);
+                setReservedVariables([]);
                 setFormulaCells({});
                 setEvidence({});
                 setScopes({});
@@ -312,6 +317,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 saved.scopes,
                 saved.draft.evidence,
                 saved.draft.formulaCells ?? {},
+                saved.draft.reservedVariables ?? [],
                 saved.draft.attachments ?? {},
                 saved.draft.source ?? null,
             ]);
@@ -396,6 +402,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         evidence,
         formulaCells,
         mappings,
+        reservedVariables,
         options.template,
         options.recipients,
         options.shared,
@@ -463,7 +470,9 @@ export const useIssueRoster = (options: RosterOptions) => {
             const ids = new Set(sheet.rows.map(row => row.exportedRunId).filter(Boolean));
             if (ids.size > 1) throw new SpreadsheetError('run');
             const importedId = [...ids][0];
-            let saved = runRef.current;
+            // Pending edits in this run are authoritative; only a different run
+            // is restored from storage. Reimport must not resurrect retired fields.
+            let saved = runRef.current ? capture() : null;
             let baseDraft = draft;
             let baseScopes = effectiveScopes;
             let shared = options.shared;
@@ -549,6 +558,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 setEvidence(merged.draft.evidence);
                 setFormulaCells(merged.draft.formulaCells ?? {});
                 setMappings(merged.draft.mappings ?? []);
+                setReservedVariables(merged.draft.reservedVariables ?? []);
                 setScopes(nextScopes);
                 options.onPeople();
             }
@@ -835,6 +845,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         options.setValues(result.draft.values);
         setFormulaCells(result.draft.formulaCells ?? {});
         setMappings(result.draft.mappings ?? []);
+        setReservedVariables(result.draft.reservedVariables ?? []);
         setScopes(previous => ({ ...previous, [result.variable]: 'perRecipient' }));
     };
     const removeColumn = (variable: string): void => {
@@ -843,6 +854,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         const result = removeSpreadsheetMapping(options.template, draft, variable);
         options.onRestoreTemplate(result.template);
         setMappings(result.draft.mappings ?? []);
+        setReservedVariables(result.draft.reservedVariables ?? []);
     };
     const replaceTemplate = (template: OBv3CredentialTemplate, preserveMappings: boolean): void => {
         if (busy || runRef.current?.templateUri) throw new IssuanceRecoveryError('locked');
@@ -857,6 +869,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         options.setValues(next.draft.values);
         setFormulaCells(next.draft.formulaCells ?? {});
         setMappings(next.draft.mappings ?? []);
+        setReservedVariables(next.draft.reservedVariables ?? []);
         setScopes(
             Object.fromEntries(
                 (next.draft.mappings ?? []).map(mapping => [mapping.variable, 'perRecipient'])

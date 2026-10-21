@@ -123,6 +123,8 @@ export const mapSpreadsheetColumn = (
     const used = new Set([
         ...extractVariablesByType(template).dynamic,
         ...extractVariablesByType(template).system,
+        ...(draft.reservedVariables ?? []),
+        ...Object.keys(draft.source?.exportHeaders ?? {}),
         ...(draft.mappings ?? []).map(mapping => mapping.variable),
     ]);
     const prefix = `sheet_${labelToVariableName(column.label) || column.index + 1}`;
@@ -199,7 +201,20 @@ export const mapSpreadsheetColumn = (
     return {
         template: next,
         variable,
-        draft: { ...draft, values, formulaCells, mappings: [...(draft.mappings ?? []), mapping] },
+        draft: {
+            ...draft,
+            values,
+            formulaCells,
+            mappings: [...(draft.mappings ?? []), mapping],
+            reservedVariables: [
+                ...new Set([
+                    ...(draft.reservedVariables ?? []),
+                    ...(draft.mappings ?? []).map(item => item.variable),
+                    ...Object.keys(draft.source.exportHeaders ?? {}),
+                    variable,
+                ]),
+            ],
+        },
     };
 };
 
@@ -315,7 +330,11 @@ export const removeSpreadsheetMapping = (
         .replaceAll(`{{${variable}}}`, '');
     return {
         template: next,
-        draft: { ...draft, mappings: draft.mappings?.filter(item => item.variable !== variable) },
+        draft: {
+            ...draft,
+            mappings: draft.mappings?.filter(item => item.variable !== variable),
+            reservedVariables: [...new Set([...(draft.reservedVariables ?? []), variable])],
+        },
     };
 };
 
@@ -328,7 +347,19 @@ export const replaceSpreadsheetTemplate = (
 ): { template: OBv3CredentialTemplate; draft: RosterDraft } => {
     let next = {
         template,
-        draft: { ...draft, mappings: [], values: {}, formulaCells: {} } as RosterDraft,
+        draft: {
+            ...draft,
+            mappings: [],
+            values: {},
+            formulaCells: {},
+            reservedVariables: [
+                ...new Set([
+                    ...(draft.reservedVariables ?? []),
+                    ...(draft.mappings ?? []).map(mapping => mapping.variable),
+                    ...Object.keys(draft.source?.exportHeaders ?? {}),
+                ]),
+            ],
+        } as RosterDraft,
     };
     if (!preserveMappings || (template.schemaType && template.schemaType !== 'obv3')) return next;
     const exportedNames = rosterCsvFieldNames(

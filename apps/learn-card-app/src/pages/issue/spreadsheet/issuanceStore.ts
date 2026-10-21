@@ -110,6 +110,7 @@ const runValidator = z
                 source: parsedSource.optional(),
                 sourceName: z.string().optional(),
                 mappings: mappings.optional(),
+                reservedVariables: z.array(z.string()).optional(),
                 formulaCells: z.record(z.string(), z.record(z.string(), z.string())).optional(),
                 attachments: z
                     .record(

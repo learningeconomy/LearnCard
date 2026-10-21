@@ -79,6 +79,8 @@ export interface RosterDraft {
     id: string;
     sourceName?: string;
     mappings?: ColumnMapping[];
+    /** Mapping variable IDs allocated in this run, including retired fields. */
+    reservedVariables?: string[];
     recipients: Recipient[];
     values: Record<string, Record<string, string>>;
     evidence: Record<string, string>;

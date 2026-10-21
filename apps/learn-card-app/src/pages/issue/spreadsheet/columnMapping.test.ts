@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 import { describe, expect, it, vi } from 'vitest';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
-import { mergeSpreadsheet, exportRosterCsv } from './roster';
+import { mergeSpreadsheet, exportRosterCsv, rosterCsvFieldNames } from './roster';
 import {
     credentialRowProblems,
     mapSpreadsheetColumn,
@@ -607,6 +607,49 @@ describe('canonical export identity collisions', () => {
             'X-Y',
             'X Y',
         ]);
+    });
+    it('never transfers a retired export alias to a different column with the same variable prefix', () => {
+        const run = makeRun(0);
+        const draft = mergeSpreadsheet(
+            run.draft,
+            parseSpreadsheet(
+                readSpreadsheetText('Email,Quiz-1,Quiz 1\na@test.com,Old quiz score,New quiz score')
+            ),
+            []
+        ).draft;
+        const first = mapSpreadsheetColumn(
+            run.template,
+            draft,
+            draft.source!.columns[1],
+            'description',
+            options
+        );
+        first.draft.source!.exportHeaders = rosterCsvFieldNames(first.draft, [first.variable]);
+        const oldCsv = exportRosterCsv(
+            first.draft,
+            [first.variable],
+            { [first.variable]: 'perRecipient' },
+            {}
+        );
+        // Also exercise removal of legacy saved mappings that predate an allocation ledger.
+        delete first.draft.reservedVariables;
+        const removed = removeSpreadsheetMapping(first.template, first.draft, first.variable);
+        const next = mapSpreadsheetColumn(
+            removed.template,
+            removed.draft,
+            removed.draft.source!.columns[2],
+            'description',
+            options
+        );
+        expect(next.variable).not.toBe(first.variable);
+        expect(() =>
+            mergeSpreadsheet(next.draft, parseSpreadsheet(readSpreadsheetText(oldCsv)), [
+                next.variable,
+            ])
+        ).toThrow();
+        expect(next.draft.values[next.draft.recipients[0].rowId!][next.variable]).toBe(
+            'New quiz score'
+        );
     });
     it('keeps mapped and additional evidence separate when the export contains only new recipients', () => {
         const run = makeRun(0);

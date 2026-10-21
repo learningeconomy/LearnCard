@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Papa from 'papaparse';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useIssueRoster } from './useIssueRoster';
@@ -9,7 +9,8 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { dynamicField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import { mapSpreadsheetColumn } from './columnMapping';
-import { exportRosterCsv, mergeSpreadsheet } from './roster';
+import { extractVariablesByType } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
+import { exportRosterCsv, mergeSpreadsheet, rosterCsvFieldNames } from './roster';
 import { exportIssuanceCsv } from './exportIssuance';
 import { addSubmissionAttempts } from './issuance';
 import { validateCredentialJsonLd } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/validateJsonLd';
@@ -574,6 +575,75 @@ describe('roster autosave and sending', () => {
         act(() => result.current.correct());
         expect(result.current.hasProblems).toBe(false);
     });
+    it('keeps retired mapping IDs through the hook when a different column is included', async () => {
+        const run = makeRun(0);
+        const draft = mergeSpreadsheet(
+            run.draft,
+            parseSpreadsheet(
+                readSpreadsheetText('Email,Quiz-1,Quiz 1\na@test.com,Old quiz score,New quiz score')
+            ),
+            []
+        ).draft;
+        const first = mapSpreadsheetColumn(
+            run.template,
+            draft,
+            draft.source!.columns[1],
+            'description',
+            { dateFormat: 'iso', numericFormat: 'dot' }
+        );
+        run.template = first.template;
+        run.draft = first.draft;
+        run.scopes = { [first.variable]: 'perRecipient' };
+        run.draft.source!.exportHeaders = rosterCsvFieldNames(run.draft, [first.variable]);
+        const oldCsv = exportRosterCsv(run.draft, [first.variable], run.scopes, {});
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(run);
+        store.save.mockResolvedValue(undefined);
+        const options = emptyOptions(run);
+        const { result } = renderHook(() => {
+            const [recipients, setRecipients] = useState(run.draft.recipients);
+            const [values, setValues] = useState(run.draft.values);
+            const [shared, setShared] = useState(options.shared);
+            const [template, setTemplate] = useState(run.template);
+            const variables = useMemo(() => extractVariablesByType(template).dynamic, [template]);
+            return useIssueRoster({
+                ...options,
+                recipients,
+                setRecipients,
+                values,
+                setValues,
+                shared,
+                setShared,
+                template,
+                variables,
+                onRestoreTemplate: next => {
+                    if (next) setTemplate(next);
+                },
+            });
+        });
+        act(() => result.current.restore(run));
+        act(() => result.current.removeColumn(first.variable));
+        act(() =>
+            result.current.addColumn('column-2', 'description', {
+                dateFormat: 'iso',
+                numericFormat: 'dot',
+            })
+        );
+        const current = result.current.draft.mappings![0].variable;
+        expect(current).not.toBe(first.variable);
+        expect(result.current.draft.reservedVariables).toEqual(
+            expect.arrayContaining([first.variable, current])
+        );
+        await act(async () => {
+            await expect(
+                result.current.importSheet(parseSpreadsheet(readSpreadsheetText(oldCsv)))
+            ).rejects.toMatchObject({ code: 'mappedColumnMissing' });
+        });
+        expect(result.current.draft.values[run.draft.recipients[0].rowId!][current]).toBe(
+            'New quiz score'
+        );
+    });
+
     it('waits for this tab autosave before importing instead of racing its storage lock', async () => {
         vi.useFakeTimers();
         const run = makeRun();
