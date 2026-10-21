@@ -1853,6 +1853,8 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "Go back to AI Passport and sign in again.",
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",

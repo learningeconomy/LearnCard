@@ -1,4 +1,5 @@
 import React from 'react';
+import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 
 import { m } from '../../../paraglide/messages.js';
 
@@ -26,10 +27,19 @@ const AiSessionAppSelectorItem = ({
 
     const handleConsentToApp = () => {
         if (!hasConsented) {
-            openConsentFlowModal(true, () => {
-                handleSetAiApp(app);
-                closeModal();
-            });
+            openConsentFlowModal(
+                true,
+                () => {
+                    handleSetAiApp(app);
+                    closeModal();
+                },
+                undefined,
+                undefined,
+                isLearnCardAiPassportContractUri(app.contractUri),
+                undefined,
+                undefined,
+                true
+            );
         } else {
             handleSetAiApp(app);
         }

@@ -1853,6 +1853,8 @@
         "previewCredentials": "Aperçu de {{count}} justificatifs"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "Retournez sur AI Passport et reconnectez-vous.",
+        "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "guardianApprovalRequired": "Demandez à un gestionnaire actuel du compte d’approuver cette connexion, puis réessayez.",
         "title": "Consentement",
         "acceptAndSync": "Accepter et synchroniser",

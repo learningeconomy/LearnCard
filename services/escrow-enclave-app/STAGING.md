@@ -15,6 +15,136 @@ either in full.
 > operations and privileged-administrator risks still require review.
 > For this cutover, use the ordered sections below before the older bring-up notes.
 
+## CloudTrail trail and alarm drills — operator only
+
+**Nothing is applied by this PR.** The operator's 2026-10-20 read-only inspection
+found no account/shadow/organization trail for staging. Event history contained
+36 PutKeyPolicy calls in 90 days, but kms-governance and all six authority-* rules
+had zero TriggeredRules in 60 days. Governance alarms were **inert**, not quiet
+evidence of safety. The bootstrap trail fixes the missing source after deployment;
+the following drills are required before relying on that mitigation.
+
+Apply order for the **existing staging account**, from the repository root:
+
+1. Pause recovery using the existing release kill switch and coordinate with
+   security/on-call. Inventory the actual core `authority_generation`, region,
+   backend and existing inputs; do not invent a new generation for this update.
+   In the ignored bootstrap tfvars add `authority_generations = ["<LIVE_GENERATION>"]`
+   (include every retained/overlapping generation). All ARNs are computed from
+   that list, region and the caller account; no dependency on core state exists.
+   Default `cloudtrail_retention_days = 365` is shared by staging and production.
+   An explicitly reviewed shorter staging override is allowed for **new** log
+   objects only; COMPLIANCE retention on existing versions cannot be shortened.
+2. Obtain a fresh MFA `escrow-kms-admin-session` with the existing helper. Run
+   bootstrap using that profile, **not SSO/OrganizationAccountAccessRole**: only
+   the MFA role can administer the new log key. Review the proposed changes and
+   require second-person approval before confirming each apply:
+
+    ```sh
+    bash infra/escrow-enclave-bootstrap/mfa-session.sh '<TOTP>'
+    AWS_PROFILE=escrow-kms-admin-session terraform -chdir=infra/escrow-enclave-bootstrap init \
+      -backend-config=backend-staging.hcl
+    AWS_PROFILE=escrow-kms-admin-session terraform -chdir=infra/escrow-enclave-bootstrap apply \
+      -var-file=staging.tfvars
+    ```
+
+    Use the approved local tfvars path if the operator keeps it elsewhere. This
+    creates the multi-region trail, dedicated log bucket, COMPLIANCE retention,
+    versioning/public block/TLS/delete protections and dedicated KMS key. No
+    lifecycle expiry is configured; retention is a minimum, not automatic deletion.
+    For a brand-new account, first create/enroll bootstrap MFA users/role using the
+    resource-only procedure in [PRODUCTION.md](PRODUCTION.md), then apply the trail
+    as that role; do not disable the KMS lockout safety check.
+
+3. From **management-account security credentials**, initialize the separate
+   guardrail root against its existing security-owned backend and apply its
+   existing ignored inputs (`enable_enrollment_authority=true`, member account,
+   exact MFA users, environment). Do not use the member-account profile here:
+
+    ```sh
+    AWS_PROFILE='<MANAGEMENT_SECURITY_PROFILE>' terraform -chdir=infra/escrow-enclave-bootstrap/authority-guardrail init \
+      -backend-config='<ABSOLUTE_GUARDRAIL_BACKEND_FILE>'
+    AWS_PROFILE='<MANAGEMENT_SECURITY_PROFILE>' terraform -chdir=infra/escrow-enclave-bootstrap/authority-guardrail apply \
+      -var-file='<ABSOLUTE_GUARDRAIL_TFVARS>'
+    ```
+
+    Independently verify **both** attached SCP contents. The existing second policy
+    now denies trail stop/delete/update/selector changes and bucket policy,
+    lifecycle, Object Lock, versioning, encryption and replication changes except
+    the existing MFA-admin ARN. No per-request MFA condition or extra attachment
+    is introduced. Management-account administrators remain trusted.
+
+4. Verify logging **before core**. With the escrow MFA profile and actual region:
+
+    ```sh
+    aws cloudtrail get-trail-status --profile escrow-kms-admin-session \
+      --name escrow-enclave-staging-audit --region '<REGION>'
+    aws cloudtrail get-event-selectors --profile escrow-kms-admin-session \
+      --trail-name escrow-enclave-staging-audit --region '<REGION>'
+    aws s3api get-object-lock-configuration --profile escrow-kms-admin-session \
+      --bucket '<BOOTSTRAP_CLOUDTRAIL_BUCKET>'
+    ```
+
+    Require `IsLogging=true`, recent delivery, no delivery/digest errors, management
+    reads **and** writes without KMS exclusion, and exact expected authority table
+    ARNs with `readOnly=false`. Confirm delivered object versions have the expected
+    retention and logs can be decrypted by the MFA admin. Restrict access to raw
+    CloudTrail records: they can contain sensitive request metadata.
+
+5. Refresh MFA as needed and apply **core**, retaining all existing approved
+   image/PCR/credential settings and `enable_enrollment_authority=true`. Do not
+   reset authority state or provision credentials for this monitoring-only change:
+
+    ```sh
+    AWS_PROFILE=escrow-kms-admin-session terraform -chdir=infra/escrow-enclave init \
+      -backend-config='<ABSOLUTE_CORE_BACKEND_FILE>'
+    AWS_PROFILE=escrow-kms-admin-session terraform -chdir=infra/escrow-enclave apply \
+      -var-file='<ABSOLUTE_CORE_TFVARS>'
+    ```
+
+    Confirm the monitor SNS subscription (not only bootstrap's separate alarm
+    topic), the new targets and DLQ authorization. Tamper monitoring is always on;
+    authority-write rules are gated by `enable_enrollment_authority`. Direct
+    EventBridge → SNS delivery does not depend on monitor Lambda/CloudWatch metrics.
+
+**Required alarm drills (retain timestamps, event IDs, page receipts and latency):**
+
+- With a known nonwriter **SSO** role, attempt one standalone write against a
+  disposable, non-user key in the actual authority table. First have security
+  verify the effective SCP/resource denies; never use a real enrollment key:
+
+    ```sh
+    aws dynamodb put-item --profile '<ESCROW_SSO_PROFILE>' --region '<REGION>' \
+      --table-name 'escrow-enclave-staging-authority-<LIVE_GENERATION>' \
+      --item '{"pk":{"S":"ALARM-DRILL"},"sk":{"S":"DENIED-WRITE"}}' \
+      --condition-expression 'attribute_not_exists(pk)'
+    ```
+
+    Expect **AccessDenied**, no mutation, and both
+    `AuthorityGovernance:unexpected_write` and `AuthorityGovernance:denied_write`
+    on monitor SNS. Success is a security incident, not permission to clean up
+    through an unreviewed bypass. If denied but no page arrives, inspect the locked
+    CloudTrail record's `resources`, `readOnly`, `userIdentity`, and `errorCode`,
+    EventBridge matches/failed invocations, subscription and DLQ. **Do not accept
+    the mitigation until the real event shape and end-to-end delivery are proved.**
+
+- During the next reviewed image roll, the normal MFA-admin `PutKeyPolicy` on
+  the escrow CMK must trigger `EscrowKmsGovernanceChange`. Do not weaken the key
+  policy just to test the alarm. Retain that page alongside the image-roll approval.
+- With security approval, an SSO `StopLogging` attempt on the exact trail must
+  be denied and trigger `EscrowCloudTrailTamper`; immediately verify logging is
+  still on. Never run this drill as the excepted MFA admin. Also verify a normal
+  successful enclave transaction is logged but does not produce a nonwriter alert.
+
+The trail is multi-region; EventBridge rules are regional. These new rules cover
+the home-region trail/log bucket and authority table. Existing forwarding covers
+IAM/root/sign-in events from us-east-1. Other-region API attempts remain in the
+trail but are not claimed to page without additional regional forwarding.
+CloudTrail/EventBridge delivery is best effort; an administrator disabling the
+detector can suppress the very tamper event. Monitor logging/delivery independently
+and retain explicit security acceptance of R-AUTHORITY-ROLLBACK. Locked API logs
+are not the deferred signed-authority archiver, required before 50% rollout.
+
 ## PR 2 authority cutover — operator only
 
 None of these AWS commands/applies, credential provisioning, resets or deployments
@@ -665,13 +795,11 @@ administrators" section):
   could otherwise create a grant instead of editing the policy directly),
 - explicit `Deny kms:Decrypt` statements matching the all-zero debug-mode PCR0/ImageSha384 values.
 
-**Not yet confirmed done**: a CloudTrail alarm on `PutKeyPolicy`/`CreateGrant`/`ScheduleKeyDeletion`
-against the escrow CMK was tracked as a P7.1 follow-up. `services/escrow-ledger-monitor/README.md`
-lists `EscrowKmsGovernanceChange` as a documented alarm signal — **before treating D10 as fully
-mitigated, confirm this alarm is actually wired to real CloudTrail events in the deployed monitor
-Terraform (`monitor.tf`) and firing in staging, not just documented as a signal name.** If it turns
-out to still be a stub, that gap should be closed (or explicitly re-accepted) before general
-availability, per the residual-risk sign-off process described in `infra/escrow-enclave/README.md`.
+**Confirmed gap, code fix awaiting deployment:** the rules existed but were inert
+without an enabled CloudTrail trail, as verified on 2026-10-20. Apply bootstrap's
+trail, updated guardrails and core monitoring, then complete the
+[CloudTrail drills](#cloudtrail-trail-and-alarm-drills--operator-only). Do not
+describe D10 as mitigated merely because Terraform contains an EventBridge rule.
 
 The alternative of an **immutable key policy** (`bypass_policy_lockout_safety_check = true`, no
 principal — including root — retains `kms:PutKeyPolicy`) was considered and rejected for now: it

@@ -6,11 +6,13 @@
 # - escrow-kms-admin role, assumable only with an MFA-authenticated session
 # - IAM users for the humans who hold that role (no inline access; MFA enforced)
 # - Alarm SNS topic with an email subscription
+# - Multi-region CloudTrail and dedicated COMPLIANCE-locked, KMS-encrypted logs
 #
 # First apply runs with local state (this stack creates the state bucket);
 # afterwards the state is migrated into that bucket with
 # `terraform init -migrate-state -backend-config=backend-<env>.hcl`.
-# Run with the account's OrganizationAccountAccessRole (profile escrow-staging).
+# First create the state bucket/MFA users/role with OrganizationAccountAccessRole;
+# enroll MFA, then apply the full stack as escrow-kms-admin (log key admin only).
 # =============================================================================
 
 terraform {

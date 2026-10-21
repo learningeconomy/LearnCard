@@ -18,6 +18,14 @@ run "protects_keys_and_admin_trust_from_org_admin" {
     admin_user_arns             = ["arn:aws:iam::123456789012:user/escrow-security-admin"]
   }
   assert {
+    condition = alltrue([for action in ["cloudtrail:StopLogging", "cloudtrail:DeleteTrail", "cloudtrail:UpdateTrail", "cloudtrail:PutEventSelectors", "cloudtrail:PutInsightSelectors"] :
+      anytrue([for s in local.monitor_guardrail.Statement : s.Sid == "DenyTrailTampering" && s.Effect == "Deny" && contains(try(s.Action, []), action) && s.Resource == "arn:aws:cloudtrail:*:123456789012:trail/escrow-enclave-staging-audit" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.admin])
+      ]) && alltrue([for action in ["s3:PutBucketPolicy", "s3:DeleteBucketPolicy", "s3:PutLifecycleConfiguration", "s3:PutBucketObjectLockConfiguration", "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls", "s3:PutBucketAcl", "s3:PutObjectAcl", "s3:PutObjectVersionAcl"] :
+      anytrue([for s in local.monitor_guardrail.Statement : s.Sid == "DenyTrailBucketReconfiguration" && s.Effect == "Deny" && contains(try(s.Action, []), action) && toset(s.Resource) == toset(["arn:aws:s3:::learncard-escrow-cloudtrail-staging-123456789012", "arn:aws:s3:::learncard-escrow-cloudtrail-staging-123456789012/*"]) && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.admin])
+    ])
+    error_message = "Trail and log-bucket tampering must be denied with exactly the existing MFA-admin ARN exception."
+  }
+  assert {
     condition     = length(aws_organizations_policy.authority[0].content) <= 5120 && aws_organizations_policy_attachment.authority[0].target_id == "123456789012" && anytrue([for s in local.guardrail.Statement : s.Sid == "DenyAccessKeyManagementExceptMfaAdmin" && s.Effect == "Deny" && alltrue([for action in ["iam:CreateAccessKey", "iam:UpdateAccessKey", "iam:DeleteAccessKey"] : contains(s.Action, action)]) && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == "arn:aws:iam::123456789012:role/escrow-kms-admin"])
     error_message = "SCP must protect all access-key management from everyone except escrow-kms-admin."
   }
