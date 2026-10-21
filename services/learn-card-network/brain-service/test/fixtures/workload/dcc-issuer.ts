@@ -1,5 +1,14 @@
 import type { WorkloadComponent, WorkloadPackage } from '@learncard/types';
 
+// Phase 5 pinned the real digests via a separate, narrower core-only builder
+// (profile `core` = issuer-coordinator + signing-service only) in
+// `scripts/fixtures/dcc-workload.ts`, re-exported below. It is intentionally NOT
+// merged into this fixture: workload-packages.spec.ts asserts on this fixture's
+// exact 6-component/3-profile shape (profile-id renaming, component/endpoint counts,
+// secret names), so changing it here would break those tests. Use
+// `buildDccCoreWorkloadPackage` for new core-only coverage instead.
+export { buildDccCoreWorkloadPackage } from '../../../scripts/fixtures/dcc-workload';
+
 // PLACEHOLDER digest — phase 5 pins real digests (signing-service 1.2.0, issuer-coordinator 1.0.0, status-service-db 0.1.0, workflow-coordinator 1.0.1, dcc-admin-dashboard 1.0.1)
 const digest = '0'.repeat(64);
 const component = (id: string, port: number, dependsOn: string[] = []): WorkloadComponent => ({

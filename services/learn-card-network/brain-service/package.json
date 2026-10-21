@@ -24,6 +24,7 @@
         "seed:dev-wallets": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dev-wallets.ts",
         "seed:dev-all": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dev-all.ts",
         "seed:dcc-tools": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dcc-tools.ts",
+        "seed:dcc-workload": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dcc-workload.ts",
         "seed:education-os": "SKIP_DIDKIT_NAPI=true bun scripts/seed-education-os.ts",
         "dev:bootstrap": "bun run backfill:listing-kind && bun run seed:education-os && bun run seed:dcc-tools",
         "seed:demo-persona": "SKIP_DIDKIT_NAPI=true bun --conditions=development scripts/seed-demo-persona.ts",

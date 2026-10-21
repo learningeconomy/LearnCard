@@ -99,6 +99,7 @@ const steps: string[][] = [
     ],
     ['seed:dev-wallets'],
     ['seed:dcc-tools'],
+    ['seed:dcc-workload'],
     [
         'seed:dev-bundle',
         '--slug',

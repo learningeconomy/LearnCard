@@ -27,7 +27,14 @@ services:
             WORKLOAD_REDIS_URL: redis://redis:6379
             WORKLOAD_AGENT_POLL_MS: ${WORKLOAD_AGENT_POLL_MS:-5000}
             WORKLOAD_SECRETS_DIR: /var/lib/lcn-workloads/secrets
-            WORKLOAD_IMAGE_ALLOWLIST: ${WORKLOAD_IMAGE_ALLOWLIST:-}
+            # Default: the two DCC core (profile `core`) pinned images from
+            # services/learn-card-network/brain-service/scripts/fixtures/dcc-workload.ts
+            # (issuer-coordinator 1.0.0, signing-service 1.2.0). Entries containing
+            # "@sha256:" must match a component's image exactly — see the allow-list
+            # check in services/learn-card-network/workload-agent/src/render.ts.
+            WORKLOAD_IMAGE_ALLOWLIST: ${WORKLOAD_IMAGE_ALLOWLIST:-docker.io/digitalcredentials/issuer-coordinator@sha256:ecc5cd955fdf0587b0959482fb7b701d1ec7bd44ee411ceb9b9d5721c518dbfa,docker.io/digitalcredentials/signing-service@sha256:446bed585c34417968cb28f52b3618295d84009de19f8b7aec37faadde07d141}
+            # Ceilings must stay >= the DCC core sizing sum (cpu 750m / mem 768MiB /
+            # pids 192 from dcc-workload.ts); current defaults already clear that bar.
             WORKLOAD_MAX_CPU_MILLIS: ${WORKLOAD_MAX_CPU_MILLIS:-2000}
             WORKLOAD_MAX_MEMORY_MIB: ${WORKLOAD_MAX_MEMORY_MIB:-2048}
             WORKLOAD_MAX_PIDS: ${WORKLOAD_MAX_PIDS:-512}
