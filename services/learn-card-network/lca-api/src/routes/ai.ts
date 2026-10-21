@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { t, didAndChallengeRoute } from '@routes';
 import { TRPCError } from '@trpc/server';
+import { GenerateSkillIconsInputValidator } from '@learncard/types';
 
 import * as filestack from 'filestack-js';
 import { BoostSkillHierarchy, BoostSkillHierarchyValidator } from 'types/skills';
@@ -204,7 +205,7 @@ export const aiRouter = t.router({
                     'Given a list of skill names, returns a mapping of each name to a single unicode emoji that best represents it. No skin tones, flags, or multi-character sequences.',
             },
         })
-        .input(z.object({ names: z.array(z.string().nonempty()).min(1) }))
+        .input(GenerateSkillIconsInputValidator)
         .output(IconMapValidator)
         .query(async ({ input, ctx }) => {
             const {

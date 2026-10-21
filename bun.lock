@@ -682,6 +682,7 @@
         "zustand": "^3.7.2",
       },
       "devDependencies": {
+        "@learncard/lca-api-client": "workspace:*",
         "@tanstack/react-query": "^5.80.3",
         "@types/async": "^3.2.24",
         "@types/lodash": "^4.14.191",
