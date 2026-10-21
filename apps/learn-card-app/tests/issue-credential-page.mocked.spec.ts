@@ -200,7 +200,9 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         });
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
         await page.getByRole('button', { name: 'Add People', exact: true }).click();
-        await expect(page.getByText('2 people · people.xlsx', { exact: true })).toBeVisible();
+        await expect(page.getByText('ada@test.com', { exact: true }).first()).toBeVisible();
+        await expect(page.getByText('bob@test.com', { exact: true }).first()).toBeVisible();
+        await expect(page.getByText('1 of 2 · Ada', { exact: true })).toBeVisible();
     });
 
     test('imports ten people, summarizes recipients, edits errors and restores the draft', async ({
