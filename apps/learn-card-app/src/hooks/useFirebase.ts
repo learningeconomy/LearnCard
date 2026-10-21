@@ -546,6 +546,7 @@ export const useFirebase = () => {
         } catch (error) {
             log.info('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(getAuthErrorDetails(error).message);
+            return;
         }
 
         if (!user) {
