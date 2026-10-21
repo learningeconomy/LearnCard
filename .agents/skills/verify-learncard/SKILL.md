@@ -66,7 +66,41 @@ gh workflow run verification.yml --ref <branch>
 gh run list --workflow verification.yml
 ```
 
-The workflow also runs for non-draft PRs touching the covered surfaces, on an ephemeral GitHub-hosted Ubuntu runner, never `pull_request_target` or a privileged self-hosted runner. It installs the pinned toolchain/dependencies/Chromium, prepares, preflights, runs the fresh catalog, and always attempts ownership-checked teardown. Only allowlisted status/count summaries are uploaded; raw reports, logs, sessions, traces and seeds stay off artifacts. Hosted execution is unobserved until a workflow run actually completes; local results are not a hosted-CI pass.
+The workflow also runs for non-draft PRs touching the covered surfaces, on an ephemeral GitHub-hosted Ubuntu runner, never `pull_request_target` or a privileged self-hosted runner. It installs the pinned toolchain/dependencies/Chromium, prepares, preflights, runs the fresh catalog, and always attempts ownership-checked teardown. Only allowlisted status/count summaries and numeric phase/journey durations are uploaded; raw reports, logs, sessions, traces and seeds stay off artifacts. Hosted execution is unobserved until a workflow run actually completes; local results are not a hosted-CI pass.
+
+### Build caching and timings
+
+Normal PR verification and manual runs use the standard Docker build with timing reports.
+Docker caching is an opt-in manual experiment: select `use_docker_cache` in the dispatch UI,
+or run `gh workflow run verification.yml --ref <branch> -f use_docker_cache=true`.
+Current samples do not demonstrate a net speedup, so normal PRs skip cache warming,
+export and dedicated-builder cleanup. The related hosted E2E/build-cache investigation is
+[PR #1681](https://github.com/learningeconomy/LearnCard/pull/1681).
+
+When opted in, the hosted workflow warms a dedicated local Buildx builder's `backend-dependencies`
+stage from GitHub's layer cache, also accepting the E2E workflow's cache for that same stage.
+Only dependency layers are exported (`mode=min`), never changing source layers, database
+volumes, browser sessions or runtime evidence. Cache export failures are non-fatal; a miss
+uses the same cold dependency build. GitHub scopes PR caches to that PR; a manually dispatched
+run on `main` can seed the default-branch cache that other PRs can restore. The source image
+is still built from the tested checkout, with the stack's unique ownership label and tag.
+
+Local builds keep using `docker build` by default. To use a prewarmed builder, supply
+`--docker-builder NAME` to `up` or a fresh `run`. Use a dedicated `docker-container` Buildx
+builder whose only node explicitly uses `unix:///var/run/docker.sock`; context names and
+remote builders are rejected. Stack teardown does not own the external builder or its cache.
+The hosted setup action owns builder cleanup. Cache runtime tokens stay inside the cache
+warming action; verifier child environments remain unchanged.
+
+`startup-timings.json` records preflight, checkout Docker build,
+preparation, Compose startup and readiness. Each run's `timings.json` records total startup,
+catalog and teardown; `report.json` records each journey's `durationMs`, including evidence
+capture and closure. Durations use a monotonic clock. Startup timing files are created only
+after ownership is claimed, so a failed preflight can be retried in the same directory.
+Timing writes are best-effort diagnostics: a storage failure cannot prevent work or mask its
+original error. Completed/failed phases are saved at each boundary when storage is available; a killed process can leave a phase marked running without a final duration.
+The hosted Markdown/JSON summaries retain only allowlisted phase/feature names, statuses,
+coverage counts and validated numeric durations. Raw timestamps and error text are excluded.
 
 ### Sharing a live stack between agents
 

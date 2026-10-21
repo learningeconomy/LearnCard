@@ -1,4 +1,17 @@
-import { getResultValidationError } from '../components/resultField';
+import { materializeCredentialFields } from '@learncard/helpers';
+import {
+    mapSpreadsheetColumn,
+    credentialRowProblems,
+    removeSpreadsheetMapping,
+    replaceSpreadsheetTemplate,
+} from './columnMapping';
+import type {
+    ColumnMapping,
+    MappingTarget,
+    RowFieldProblems,
+    RowProblem,
+    RosterProblemField,
+} from './types';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -25,6 +38,7 @@ import {
     getRowProblems,
     mergeSpreadsheet,
     downloadRosterCsv,
+    rosterCsvFieldNames,
     type ColumnScopes,
 } from './roster';
 import { exportIssuanceCsv, issuanceRowValues } from './exportIssuance';
@@ -63,7 +77,7 @@ interface RosterOptions {
     setAttachments: Dispatch<SetStateAction<Record<string, SimpleMediaAttachment[]>>>;
     variables: string[];
     template: OBv3CredentialTemplate | null;
-    onRestoreTemplate: (template: OBv3CredentialTemplate) => void;
+    onRestoreTemplate: (template: OBv3CredentialTemplate | null) => void;
     onPeople: () => void;
     initWallet: () => Promise<BespokeLearnCard>;
     ensureSigningAuthority: (wallet: BespokeLearnCard) => Promise<unknown>;
@@ -91,6 +105,8 @@ export const useIssueRoster = (options: RosterOptions) => {
     };
     const [source, setSource] = useState<ParsedSpreadsheet>();
     const [scopes, setScopes] = useState<ColumnScopes>({});
+    const [mappings, setMappings] = useState<ColumnMapping[]>([]);
+    const [reservedVariables, setReservedVariables] = useState<string[]>([]);
     const [formulaCells, setFormulaCells] = useState<RosterDraft['formulaCells']>({});
     const [evidence, setEvidence] = useState<Record<string, string>>({});
     const [run, setRun] = useState<IssuanceRun | null>(null);
@@ -125,6 +141,8 @@ export const useIssueRoster = (options: RosterOptions) => {
         values: options.values,
         evidence,
         formulaCells,
+        mappings,
+        reservedVariables,
         attachments: options.attachments,
         source,
         sourceName: source?.source.name,
@@ -181,11 +199,13 @@ export const useIssueRoster = (options: RosterOptions) => {
         setScopes(saved.scopes);
         setEvidence(saved.draft.evidence);
         setFormulaCells(saved.draft.formulaCells ?? {});
+        setMappings(saved.draft.mappings ?? []);
+        setReservedVariables(saved.draft.reservedVariables ?? []);
         options.setRecipients(saved.draft.recipients);
         options.setValues(saved.draft.values);
         options.setShared(saved.shared);
         options.setAttachments(saved.draft.attachments ?? {});
-        options.onRestoreTemplate(saved.template);
+        options.onRestoreTemplate(saved.templateSelected === false ? null : saved.template);
         options.onPeople();
         setRun(saved);
         runRef.current = saved;
@@ -196,6 +216,8 @@ export const useIssueRoster = (options: RosterOptions) => {
         abort.current?.abort();
         changeDraftId(crypto.randomUUID());
         setSource(undefined);
+        setMappings([]);
+        setReservedVariables([]);
         setFormulaCells({});
         setScopes({});
         setEvidence({});
@@ -226,6 +248,8 @@ export const useIssueRoster = (options: RosterOptions) => {
                 setDismissedRecoverable(null);
                 changeDraftId(crypto.randomUUID());
                 setSource(undefined);
+                setMappings([]);
+                setReservedVariables([]);
                 setFormulaCells({});
                 setEvidence({});
                 setScopes({});
@@ -271,6 +295,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 ? base.template
                 : (options.template ??
                   buildSimpleTemplate({ credentialType: 'badge', name: '', description: '' })),
+            templateSelected: base?.templateUri ? true : Boolean(options.template),
             templateUri: base?.templateUri,
             draft,
             scopes: effectiveScopes,
@@ -292,6 +317,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                 saved.scopes,
                 saved.draft.evidence,
                 saved.draft.formulaCells ?? {},
+                saved.draft.reservedVariables ?? [],
                 saved.draft.attachments ?? {},
                 saved.draft.source ?? null,
             ]);
@@ -358,7 +384,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         }
     };
     useEffect(() => {
-        if (busy || !scope.issuer || !options.template || !options.recipients.length) return;
+        if (busy || !scope.issuer || !options.recipients.length) return;
         const timer = setTimeout(() => {
             if (executing.current) return;
             void saveDraft(capture()).catch(reason => {
@@ -375,6 +401,8 @@ export const useIssueRoster = (options: RosterOptions) => {
         scopes,
         evidence,
         formulaCells,
+        mappings,
+        reservedVariables,
         options.template,
         options.recipients,
         options.shared,
@@ -383,100 +411,160 @@ export const useIssueRoster = (options: RosterOptions) => {
     ]);
 
     const download = async (failuresOnly = false): Promise<void> => {
-        const saved = capture();
-        if (saved.draft.recipients.length) await saveDraft(saved);
-        downloadRosterCsv(
-            exportIssuanceCsv(saved, options.variables, failuresOnly),
-            failuresOnly ? 'people-to-retry.csv' : 'credential-recipients.csv'
-        );
-    };
-    const importSheet = async (sheet: ParsedSpreadsheet): Promise<void> => {
-        if (busy) throw new IssuanceRecoveryError('busy');
-        const ids = new Set(sheet.rows.map(row => row.exportedRunId).filter(Boolean));
-        if (ids.size > 1) throw new SpreadsheetError('run');
-        const importedId = [...ids][0];
-        let saved = runRef.current;
-        let baseDraft = draft;
-        let baseScopes = effectiveScopes;
-        let shared = options.shared;
-        if (importedId && importedId !== id) {
-            saved = (await readIssuanceRun(importedId, scope)) ?? null;
-            if (!saved) throw new SpreadsheetError('run');
-            baseDraft = saved.draft;
-            baseScopes = saved.scopes;
-            shared = saved.shared;
-        }
-        const variables = saved
-            ? extractVariablesByType(saved.template).dynamic
-            : options.variables;
-        // Seed every existing row before switching a shared column to per-person.
-        baseDraft = {
-            ...baseDraft,
-            values: Object.fromEntries(
-                baseDraft.recipients.map(row => [
-                    recipientKey(row),
-                    {
-                        ...baseDraft.values[recipientKey(row)],
-                        ...(saved &&
-                        !['ready', 'failed'].includes(
-                            saved.outcomes[recipientKey(row)]?.state ?? 'ready'
-                        )
-                            ? issuanceRowValues(saved, row, variables)
-                            : effectiveRowValues(
-                                  row,
-                                  variables,
-                                  baseScopes,
-                                  shared,
-                                  baseDraft.values
-                              )),
+        if (busy || executing.current) throw new IssuanceRecoveryError('busy');
+        executing.current = true;
+        clearTimeout(draftSaveTimer.current);
+        setBusy(true);
+        try {
+            await Promise.all([...pendingDraftSaves.current]);
+            if (issuanceScopeKey(scope) !== issuanceScopeKey(currentScope()))
+                throw new IssuanceRecoveryError('context');
+            const saved = capture();
+            const sourceAtExport = saved.draft.source;
+            if (sourceAtExport)
+                saved.draft = {
+                    ...saved.draft,
+                    source: {
+                        ...sourceAtExport,
+                        exportHeaders: {
+                            ...sourceAtExport.exportHeaders,
+                            ...rosterCsvFieldNames(saved.draft, options.variables),
+                        },
                     },
-                ])
-            ),
-        };
-        const merged = mergeSpreadsheet(baseDraft, sheet, variables);
-        if (saved?.templateUri) {
-            for (const existing of saved.draft.recipients) {
-                const key = recipientKey(existing);
-                if (['ready', 'failed'].includes(saved.outcomes[key]?.state ?? 'ready')) continue;
-                const incoming = sheet.rows.find(
-                    row =>
-                        row.exportedRowId === key ||
-                        (existing.kind === 'email' && normalizeEmail(existing.email) === row.email)
-                );
-                if (!incoming) continue;
-                const before = issuanceRowValues(saved, existing, variables);
-                const canonical = merged.draft.recipients.find(row => recipientKey(row) === key);
-                const after = merged.draft.values[key] ?? {};
-                if (
-                    (existing.kind === 'email' &&
-                        (canonical?.kind !== 'email' ||
-                            normalizeEmail(canonical.email) !== normalizeEmail(existing.email))) ||
-                    merged.mapped.some(name => after[name] !== before[name]) ||
-                    (merged.draft.evidence[key]?.trim() ?? '') !==
-                        (saved.draft.evidence[key]?.trim() ?? '')
-                )
-                    throw new IssuanceRecoveryError('locked');
-                merged.draft.recipients = merged.draft.recipients.map(row =>
-                    recipientKey(row) === key ? existing : row
+                };
+            if (saved.draft.recipients.length) await saveDraft(saved);
+            if (
+                sourceAtExport &&
+                mounted.current &&
+                activeDraftId.current === saved.id &&
+                issuanceScopeKey(saved.scope) === issuanceScopeKey(currentScope())
+            ) {
+                setSource(previous =>
+                    previous === sourceAtExport ? saved.draft.source : previous
                 );
             }
+            downloadRosterCsv(
+                exportIssuanceCsv(saved, options.variables, failuresOnly),
+                failuresOnly ? 'people-to-retry.csv' : 'credential-recipients.csv'
+            );
+        } finally {
+            executing.current = false;
+            if (mounted.current) setBusy(false);
         }
-        const nextScopes = {
-            ...baseScopes,
-            ...Object.fromEntries(merged.mapped.map(name => [name, 'perRecipient' as const])),
-        };
-        if (saved) {
-            const next = { ...saved, draft: merged.draft, scopes: nextScopes, shared };
-            await saveDraft(next);
-            apply(next);
-        } else {
-            setSource(merged.draft.source);
-            options.setRecipients(merged.draft.recipients);
-            options.setValues(merged.draft.values);
-            setEvidence(merged.draft.evidence);
-            setFormulaCells(merged.draft.formulaCells ?? {});
-            setScopes(nextScopes);
-            options.onPeople();
+    };
+    const importSheet = async (sheet: ParsedSpreadsheet): Promise<void> => {
+        if (issuanceScopeKey(scope) !== issuanceScopeKey(currentScope()))
+            throw new IssuanceRecoveryError('context');
+        if (busy || executing.current) throw new IssuanceRecoveryError('busy');
+        const draftIdAtStart = activeDraftId.current;
+        executing.current = true;
+        clearTimeout(draftSaveTimer.current);
+        setBusy(true);
+        try {
+            await Promise.all([...pendingDraftSaves.current]);
+            if (
+                activeDraftId.current !== draftIdAtStart ||
+                issuanceScopeKey(scope) !== issuanceScopeKey(currentScope())
+            )
+                throw new IssuanceRecoveryError('context');
+            const ids = new Set(sheet.rows.map(row => row.exportedRunId).filter(Boolean));
+            if (ids.size > 1) throw new SpreadsheetError('run');
+            const importedId = [...ids][0];
+            // Pending edits in this run are authoritative; only a different run
+            // is restored from storage. Reimport must not resurrect retired fields.
+            let saved = runRef.current ? capture() : null;
+            let baseDraft = draft;
+            let baseScopes = effectiveScopes;
+            let shared = options.shared;
+            if (importedId && importedId !== id) {
+                saved = (await readIssuanceRun(importedId, scope)) ?? null;
+                if (!saved) throw new SpreadsheetError('run');
+                baseDraft = saved.draft;
+                baseScopes = saved.scopes;
+                shared = saved.shared;
+            }
+            const variables = saved
+                ? extractVariablesByType(saved.template).dynamic
+                : options.variables;
+            // Seed every existing row before switching a shared column to per-person.
+            baseDraft = {
+                ...baseDraft,
+                values: Object.fromEntries(
+                    baseDraft.recipients.map(row => [
+                        recipientKey(row),
+                        {
+                            ...baseDraft.values[recipientKey(row)],
+                            ...(saved &&
+                            !['ready', 'failed'].includes(
+                                saved.outcomes[recipientKey(row)]?.state ?? 'ready'
+                            )
+                                ? issuanceRowValues(saved, row, variables)
+                                : effectiveRowValues(
+                                      row,
+                                      variables,
+                                      baseScopes,
+                                      shared,
+                                      baseDraft.values
+                                  )),
+                        },
+                    ])
+                ),
+            };
+            const merged = mergeSpreadsheet(baseDraft, sheet, variables);
+            if (saved?.templateUri) {
+                for (const existing of saved.draft.recipients) {
+                    const key = recipientKey(existing);
+                    if (['ready', 'failed'].includes(saved.outcomes[key]?.state ?? 'ready'))
+                        continue;
+                    const incoming = sheet.rows.find(
+                        row =>
+                            row.exportedRowId === key ||
+                            (existing.kind === 'email' &&
+                                normalizeEmail(existing.email) === row.email)
+                    );
+                    if (!incoming) continue;
+                    const before = issuanceRowValues(saved, existing, variables);
+                    const canonical = merged.draft.recipients.find(
+                        row => recipientKey(row) === key
+                    );
+                    const after = merged.draft.values[key] ?? {};
+                    if (
+                        (existing.kind === 'email' &&
+                            (canonical?.kind !== 'email' ||
+                                normalizeEmail(canonical.email) !==
+                                    normalizeEmail(existing.email))) ||
+                        merged.mapped.some(name => after[name] !== before[name]) ||
+                        (merged.draft.evidence[key]?.trim() ?? '') !==
+                            (saved.draft.evidence[key]?.trim() ?? '')
+                    )
+                        throw new IssuanceRecoveryError('locked');
+                    merged.draft.recipients = merged.draft.recipients.map(row =>
+                        recipientKey(row) === key ? existing : row
+                    );
+                }
+            }
+            const nextScopes = {
+                ...baseScopes,
+                ...Object.fromEntries(merged.mapped.map(name => [name, 'perRecipient' as const])),
+            };
+            if (saved) {
+                const next = { ...saved, draft: merged.draft, scopes: nextScopes, shared };
+                await saveDraft(next);
+                apply(next);
+            } else {
+                setSource(merged.draft.source);
+                options.setRecipients(merged.draft.recipients);
+                options.setValues(merged.draft.values);
+                setEvidence(merged.draft.evidence);
+                setFormulaCells(merged.draft.formulaCells ?? {});
+                setMappings(merged.draft.mappings ?? []);
+                setReservedVariables(merged.draft.reservedVariables ?? []);
+                setScopes(nextScopes);
+                options.onPeople();
+            }
+        } finally {
+            executing.current = false;
+            if (mounted.current) setBusy(false);
         }
     };
     const execute = async (
@@ -544,7 +632,7 @@ export const useIssueRoster = (options: RosterOptions) => {
                     candidates.some(
                         row =>
                             issues[recipientKey(row)]?.length ||
-                            getResultValidationError(
+                            credentialRowProblems(
                                 saved.template,
                                 effectiveRowValues(
                                     row,
@@ -553,20 +641,22 @@ export const useIssueRoster = (options: RosterOptions) => {
                                     saved.shared,
                                     saved.draft.values
                                 )
-                            )
+                            ).length
                     )
                 )
                     throw new SpreadsheetError('mapping');
                 const checked = new Set<string>();
                 for (const row of candidates) {
-                    const filled = applyVariableValues(
-                        templateToJson(saved.template),
-                        effectiveRowValues(
-                            row,
-                            variables,
-                            saved.scopes,
-                            saved.shared,
-                            saved.draft.values
+                    const filled = materializeCredentialFields(
+                        applyVariableValues(
+                            templateToJson(saved.template),
+                            effectiveRowValues(
+                                row,
+                                variables,
+                                saved.scopes,
+                                saved.shared,
+                                saved.draft.values
+                            )
                         )
                     );
                     const identity = JSON.stringify(filled);
@@ -696,6 +786,22 @@ export const useIssueRoster = (options: RosterOptions) => {
             recipients.map(row => ({ ...row, rowId: row.rowId ?? crypto.randomUUID() }))
         );
     };
+    const fieldProblems: Record<string, RowFieldProblems> = Object.create(null);
+    const reportProblem = (rowId: string, problem: RowProblem, field: RosterProblemField): void => {
+        if (
+            locked(rowId) ||
+            (typeof field !== 'string' && !options.variables.includes(field.variable))
+        )
+            return;
+        const row = (fieldProblems[rowId] ??= {
+            recipient: [],
+            evidence: [],
+            variables: Object.create(null),
+        });
+        const list =
+            typeof field === 'string' ? row[field] : (row.variables[field.variable] ??= []);
+        if (!list.includes(problem)) list.push(problem);
+    };
     const allProblems = getRowProblems(
         options.recipients,
         options.variables,
@@ -703,11 +809,74 @@ export const useIssueRoster = (options: RosterOptions) => {
         options.shared,
         options.values,
         evidence,
-        formulaCells
+        formulaCells,
+        reportProblem
     );
     const problems = Object.fromEntries(
-        Object.entries(allProblems).filter(([key]) => !locked(key))
+        options.recipients
+            .filter(row => !locked(recipientKey(row)))
+            .map(row => {
+                const key = recipientKey(row);
+                return [
+                    key,
+                    [
+                        ...(allProblems[key] ?? []),
+                        ...(options.template
+                            ? credentialRowProblems(
+                                  options.template,
+                                  valuesForRow(row),
+                                  (problem, variable) => reportProblem(key, problem, { variable })
+                              )
+                            : []),
+                    ],
+                ];
+            })
     );
+    const addColumn = (
+        columnId: string,
+        target: MappingTarget,
+        config: Pick<ColumnMapping, 'dateFormat' | 'numericFormat' | 'creditUnit'>
+    ): void => {
+        if (busy || run?.templateUri) throw new IssuanceRecoveryError('busy');
+        const column = source?.columns.find(item => item.id === columnId);
+        if (!options.template || !column) throw new SpreadsheetError('mapping');
+        const result = mapSpreadsheetColumn(options.template, draft, column, target, config);
+        options.onRestoreTemplate(result.template);
+        options.setValues(result.draft.values);
+        setFormulaCells(result.draft.formulaCells ?? {});
+        setMappings(result.draft.mappings ?? []);
+        setReservedVariables(result.draft.reservedVariables ?? []);
+        setScopes(previous => ({ ...previous, [result.variable]: 'perRecipient' }));
+    };
+    const removeColumn = (variable: string): void => {
+        if (busy || run?.templateUri) throw new IssuanceRecoveryError('busy');
+        if (!options.template) return;
+        const result = removeSpreadsheetMapping(options.template, draft, variable);
+        options.onRestoreTemplate(result.template);
+        setMappings(result.draft.mappings ?? []);
+        setReservedVariables(result.draft.reservedVariables ?? []);
+    };
+    const replaceTemplate = (template: OBv3CredentialTemplate, preserveMappings: boolean): void => {
+        if (busy || runRef.current?.templateUri) throw new IssuanceRecoveryError('locked');
+        const next = replaceSpreadsheetTemplate(
+            template,
+            draft,
+            preserveMappings,
+            options.variables
+        );
+        setSource(next.draft.source);
+        options.setShared({});
+        options.setValues(next.draft.values);
+        setFormulaCells(next.draft.formulaCells ?? {});
+        setMappings(next.draft.mappings ?? []);
+        setReservedVariables(next.draft.reservedVariables ?? []);
+        setScopes(
+            Object.fromEntries(
+                (next.draft.mappings ?? []).map(mapping => [mapping.variable, 'perRecipient'])
+            )
+        );
+        options.onRestoreTemplate(next.template);
+    };
     const previewRecipient =
         options.recipients[Math.min(previewIndex, Math.max(0, options.recipients.length - 1))];
     const changeScope = (name: string, value: 'shared' | 'perRecipient'): void => {
@@ -735,6 +904,10 @@ export const useIssueRoster = (options: RosterOptions) => {
     return {
         id,
         source,
+        mappings,
+        addColumn,
+        removeColumn,
+        replaceTemplate,
         draft,
         scopes: effectiveScopes,
         evidence,
@@ -761,6 +934,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         changeRecipients,
         valuesForRow,
         problems,
+        fieldProblems,
         hasProblems: Object.values(problems).some(value => value.length > 0),
         previewRecipient,
         previewIndex,

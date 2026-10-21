@@ -222,6 +222,9 @@ export default defineConfig(async ({ mode, command }) => {
             // the initial dependency scan. Pre-bundle them before serving the first page:
             // discovering them during sign-in replaces chunks and reloads active navigation.
             include: [
+                // Lazy XLSX workers must not discover dependencies and reload an active import.
+                'xlsx',
+                'fflate',
                 'buffer',
                 'process',
                 'react-router',

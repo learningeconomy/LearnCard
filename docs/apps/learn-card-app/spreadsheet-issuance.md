@@ -24,6 +24,37 @@ flowchart LR
     Results --> Retry[Retry definite failures]
 ```
 
+## File size and processing limits
+
+Spreadsheet files are parsed on your device. The original CSV, TSV, or XLSX file is not uploaded to the issuance server. Selected evidence links are referenced without fetching them during import.
+
+Imports allow at most 10 MiB of file data, 10,000 people, 200 columns, and 2,000,000 cells. CSV parsing stops when a row, column, or cell limit is reached. XLSX archives also allow at most 1,000 members and 32 MiB of actual expanded data across all members, including hidden sheets and embedded media. Declared ZIP sizes alone do not determine acceptance. Duplicate or ambiguous member paths are rejected.
+
+XLSX parsing runs in a separate browser worker. The app terminates the worker after 20 seconds, or when parsing succeeds or fails. If a workbook is too complex, remove unused sheets and media or split it into smaller files. These processing limits are not a fixed ceiling on the browser's total memory use.
+
+The issuance API separately enforces a 4 MiB JSON request limit and at most 100 items per batch. Accepted email batches use a durable queue and an issuer-specific hourly admission quota (10,000 items by default, configurable by the service operator). These limits do not replace deployment-level request-rate, connection, or aggregate-concurrency controls.
+
+## Start with a spreadsheet
+
+You can also choose **Start from a link, file, or ID** before selecting a credential type. Upload a spreadsheet or paste its rows, review the recipient column, and choose **Add People**. The people and original cells remain available when choosing or changing the credential type.
+
+Choose **Map columns** to open the column workspace. Each row shows the source column, example values, and its credential field. Choose **Include** to add it, or select an included column to remove it; the original cells remain available. Expand **Format options** for number and date settings.
+
+| Column         | Credential field                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Score or grade | An independent result linked to its scale; several grade columns can coexist.                                         |
+| Credits        | A numeric credits-earned value, including zero.                                                                       |
+| Hours          | Description text by default. To count hours as credits, choose **Credits earned** and enter the intended credit unit. |
+| Evidence URL   | Standard Open Badges Evidence.                                                                                        |
+| Awarded date   | When the achievement was awarded; issuance time remains separate.                                                     |
+| Other text     | A personalized description field, preserving leading-zero identifiers.                                                |
+
+Choose the spreadsheet's decimal format before adding numeric columns. Reviewed numeric values use a decimal point and no grouping separators. A percentage cell displayed as `95%` becomes a Percent result of `95`.
+
+Choose an explicit date format for day/month or month/day text. An ISO calendar date keeps its day; a timestamp must include its timezone. Invalid dates and numbers stay visible for correction or skipping.
+
+These mappings use the [Open Badges 3.0 fields](https://www.imsglobal.org/spec/ob/v3p0): standard Evidence, linked results, numeric credits, and awardedDate. Files and links do not require LearnCard-specific credential terms.
+
 ## Resume an interrupted run
 
 Recovery data is saved in this browser's IndexedDB for the issuing account, network, and organization. Return to **Issue Credentials**, then choose **Restore Saved Run** and **Resume**. A draft that has not started is sent with **Issue Credential**. Stay on the original device and browser; clearing browser data or signing out removes recovery records, including unconfirmed sends. The server may still finish accepted work after sign-out, so check delivery before starting another run. Recovery must save successfully before a send starts.
@@ -46,13 +77,23 @@ Choose **View delivery status** in the batch card to search every recipient and 
 
 Date fields use a calendar picker and a readable date. Timestamps are shown in UTC; changing the calendar date preserves the time. New dates use midnight UTC. Opening the workspace leaves the saved timestamp unchanged. Invalid source values stay visible until corrected.
 
+Column mapping currently supports Open Badges credentials. Choose each Evidence or Portfolio column separately to include its links; importing the sheet alone does not add these fields. Selected columns stay visible with a checkmark so they can be removed. Exported CSVs distinguish mapped columns from the table’s separate Evidence link and preserve both on re-import.
+
+The **Additional evidence** field and attachments in **Review people** supplement any evidence columns included through **Map columns**.
+
 ## Sending to people without a spreadsheet
 
 All **Specific people** sends use the same saved-run flow, including a single profile selected from the picker. This intentionally requires IndexedDB and the browser's Web Locks API: if recovery cannot be saved safely, sending stops. Each different filled credential is validated before any submission, so large personalized rosters can take longer to prepare. The sending state remains visible during validation. Profile sends have no automatic transport retry because a lost response can follow a successful send.
 
-Changing the credential type preserves recipient rows and their entered values. Only variables used by the selected template become credential fields; review those fields and previews before sending. Spreadsheet column mapping remains Open Badges only.
+Changing the credential type preserves recipient rows and corrected cells for included spreadsheet mappings; shared values and unrelated template variables reset. Only variables used by the selected template become credential fields; review those fields and previews before sending. Spreadsheet column mapping remains Open Badges only.
 
 Evidence uses standard Open Badges `Evidence` entries. Attachment names remain in the standard `name` field; the unsupported `EvidenceFile`, `fileName`, and `fileType` extensions are omitted from all issuance modes so credentials work without a LearnCard extension context.
+
+### Template and field boundaries
+
+Changing credential type re-applies the included spreadsheet mappings and preserves corrected mapped cells. Importing a replacement credential clears mappings and previous template values; the source spreadsheet remains available for mapping again. Shared values from an earlier template do not silently populate a replacement. Every included column is required for each active recipient; remove an optional column or skip a recipient when a cell should not be issued.
+
+Calendar award dates represent midnight UTC, so a generic local-time viewer may show the previous day. Timestamps require seconds and an explicit timezone and normalize to UTC before signing. Unsupported date spellings are rejected rather than guessed.
 
 ### CSV corrections and failure-only retries
 

@@ -30,6 +30,7 @@ import {
     getCredentialStatusArray,
     injectManagedRefreshService as injectSharedManagedRefreshService,
     isVC2Format,
+    materializeCredentialFields,
     isEncrypted,
     resolveStorageReadResult,
 } from '@learncard/helpers';
@@ -445,7 +446,11 @@ const issueCredentialWithNetworkStatus = async (
     statusPurposes?: BitstringCredentialStatusPurpose[]
 ): Promise<VC> => {
     return learnCard.invoke.issueCredential(
-        await appendNetworkCredentialStatus(client, credential, statusPurposes)
+        await appendNetworkCredentialStatus(
+            client,
+            materializeCredentialFields(credential) as UnsignedVC,
+            statusPurposes
+        )
     );
 };
 
