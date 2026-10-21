@@ -15,6 +15,14 @@ import { useTheme } from '../../../theme/hooks/useTheme';
 import { IonCol } from '@ionic/react';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
 import AccessibleCodeInput from './AccessibleCodeInput';
+import LoginErrorMessage from './LoginErrorMessage';
+import {
+    MAX_PHONE_CODE_ATTEMPTS,
+    RESEND_CODE_COOLDOWN_MS,
+    classifyPhoneAuthError,
+    getPhoneAuthErrorMessage,
+    type PhoneAuthErrorKind,
+} from './phoneAuthErrors';
 
 import { PhoneFormStepsEnum } from 'learn-card-base';
 
@@ -72,11 +80,48 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     const [autoValidateCodeTriggered, setAutoValidateCodeTriggered] = useState(false);
 
     const [errors, setErrors] = useState<Record<string, string[]>>({});
-    const [error, setError] = useState<string>('');
-    const [codeError, setCodeError] = useState<string>('');
+    const [error, setError] = useState<PhoneAuthErrorKind | null>(null);
+    const [codeError, setCodeError] = useState<PhoneAuthErrorKind | null>(null);
+    const [isVerifyLocked, setIsVerifyLocked] = useState<boolean>(false);
+    const [countdownEndTime, setCountdownEndTime] = useState<number | null>(null);
+    const [codeInputKey, setCodeInputKey] = useState<number>(0);
+    const failedAttemptsRef = useRef<number>(0);
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
+
+    // Called whenever a fresh code is sent (first send or resend): new session, new limits.
+    const startVerificationSession = () => {
+        failedAttemptsRef.current = 0;
+        setIsVerifyLocked(false);
+        setCodeError(null);
+        setError(null);
+        setCode('');
+        setCodeInputKey(k => k + 1);
+        setAutoValidateCodeTriggered(false);
+        setCountdownEndTime(Date.now() + RESEND_CODE_COOLDOWN_MS);
+        setCurrentStep(PhoneFormStepsEnum.verification);
+        setShowSocialLogins(false);
+    };
+
+    const handleSendError = (err: unknown, resendCode: boolean) => {
+        setIsLoading(false);
+        setIsResendCodeLoading(false);
+        const kind = classifyPhoneAuthError(err);
+        if (kind === 'cancelled') return;
+        if (resendCode) setCodeError(kind);
+        else setError(kind);
+    };
+
+    const handleVerifyError = (err: unknown) => {
+        setIsLoading(false);
+        const kind = classifyPhoneAuthError(err);
+        if (kind === 'invalidCode') failedAttemptsRef.current += 1;
+        if (kind === 'tooManyRequests') {
+            setIsVerifyLocked(true);
+        }
+        setCodeError(kind);
+    };
 
     // The adapter subscriptions below are set up once per adapter; keep the latest
     // hook function reachable so the auto-verify callback never runs a stale closure.
@@ -87,10 +132,9 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         const unsubscribeSent = adapter.onPhoneCodeSent(() => {
             if (Capacitor.isNativePlatform()) {
                 showSuccessToast();
-                setCurrentStep(PhoneFormStepsEnum.verification);
                 setIsLoading(false);
                 setIsResendCodeLoading(false);
-                setShowSocialLogins(false);
+                startVerificationSession();
             }
         });
 
@@ -100,18 +144,21 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 () => {
                     setIsLoading(false);
                 },
-                (err: string) => {
+                (err: unknown) => {
                     setIsLoading(false);
-                    setCodeError(err || '');
+                    setCodeError(classifyPhoneAuthError(err));
                 }
             );
         });
         const unsubscribeFailed = adapter.onPhoneVerificationFailed(error => {
             setIsLoading(false);
             setIsResendCodeLoading(false);
-            setError(error instanceof Error ? error.message : '');
-            setCodeError('');
+            const kind = classifyPhoneAuthError(error);
+            if (kind === 'cancelled') return;
+            setError(kind);
+            setCodeError(null);
             setCode('');
+            setCountdownEndTime(null);
             setAutoValidateCodeTriggered(false);
             setCurrentStep(PhoneFormStepsEnum.phone);
             setShowSocialLogins(true);
@@ -129,6 +176,15 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         setCurrentStep(PhoneFormStepsEnum.phone);
         setPhone('');
         setCode('');
+        setError(null);
+        setCodeError(null);
+        setErrors({});
+        setIsVerifyLocked(false);
+        failedAttemptsRef.current = 0;
+        setCountdownEndTime(null);
+        setAutoValidateCodeTriggered(false);
+        setIsLoading(false);
+        setIsResendCodeLoading(false);
         setShowSocialLogins(true);
     };
 
@@ -191,9 +247,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 if (Capacitor.isNativePlatform()) {
                     void adapter.sendPhoneOtp(phone).catch(error => {
                         log.error('Phone code request failed', error);
-                        setIsLoading(false);
-                        setIsResendCodeLoading(false);
-                        setError(error instanceof Error ? error.message : '');
+                        handleSendError(error, resendCode);
                     });
                 } else {
                     // web sms auth
@@ -203,19 +257,26 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                             setIsLoading(false);
                             setIsResendCodeLoading(false);
                             showSuccessToast();
-                            setCurrentStep(PhoneFormStepsEnum.verification);
-                            setShowSocialLogins(false);
+                            startVerificationSession();
                         },
-                        (err: string) => {
-                            setIsLoading(false);
-                            setIsResendCodeLoading(false);
-                            setError(err);
-                        }
+                        (err: unknown) => handleSendError(err, resendCode)
                     );
                 }
             }
         } else if (currentStep === PhoneFormStepsEnum.verification) {
+            if (isVerifyLocked) {
+                setIsLoading(false);
+                return;
+            }
+            // Same as the email server limit: the attempt after the 5th failure is rejected.
+            if (failedAttemptsRef.current >= MAX_PHONE_CODE_ATTEMPTS) {
+                setIsLoading(false);
+                setIsVerifyLocked(true);
+                setCodeError('tooManyAttempts');
+                return;
+            }
             if (validateCode()) {
+                setCodeError(null);
                 if (Capacitor.isNativePlatform()) {
                     // native sms code  verification
                     await verifySmsAuthCodeOnNative(
@@ -223,10 +284,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         () => {
                             setIsLoading(false);
                         },
-                        (err: string) => {
-                            setIsLoading(false);
-                            setCodeError(err);
-                        }
+                        handleVerifyError
                     );
                 } else {
                     // web sms code  verification
@@ -235,10 +293,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         () => {
                             setIsLoading(false);
                         },
-                        (err: string) => {
-                            setIsLoading(false);
-                            setCodeError(err);
-                        }
+                        handleVerifyError
                     );
                 }
             }
@@ -260,6 +315,20 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         ? m['common.sendingCode']()
         : m['common.resendCode']();
 
+    const phoneErrorMessage = errors?.phone?.[0] ?? (error ? getPhoneAuthErrorMessage(error) : '');
+    const verificationError =
+        errors?.code?.[0] ?? (codeError ? getPhoneAuthErrorMessage(codeError) : '');
+    // "Too many attempts" sits below the button; every other error sits above it.
+    const isAttemptLimitError = !errors?.code?.[0] && codeError === 'tooManyAttempts';
+    const errorAboveButton =
+        currentStep === PhoneFormStepsEnum.phone
+            ? phoneErrorMessage
+            : isAttemptLimitError
+              ? ''
+              : verificationError;
+    const errorAboveButtonId =
+        currentStep === PhoneFormStepsEnum.phone ? 'login-phone-error' : 'login-phone-code-error';
+
     let disabled = isLoading;
     if (currentStep === PhoneFormStepsEnum.phone) {
         formTitle = null;
@@ -271,47 +340,25 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 </label>
                 <PhoneInput
                     id="login-phone"
-                    aria-invalid={Boolean(errors?.phone || error)}
-                    aria-describedby={
-                        errors?.phone?.[0]
-                            ? 'login-phone-error'
-                            : error
-                              ? 'login-phone-service-error'
-                              : undefined
-                    }
+                    aria-invalid={Boolean(phoneErrorMessage)}
+                    aria-describedby={phoneErrorMessage ? 'login-phone-error' : undefined}
                     placeholder={m['login.phone.placeholder']()}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
                     defaultCountry="US"
                     value={phone}
-                    onChange={setPhone}
+                    onChange={value => {
+                        setPhone(value ?? '');
+                        setError(null);
+                    }}
                     className={`login-phone-input ${phoneInputClassNameOverride ?? ''} ${
                         errors?.phone || error ? 'login-phone-input-error' : ''
                     }`}
                 />
-                {errors?.phone?.[0] && (
-                    <p
-                        id="login-phone-error"
-                        role="alert"
-                        className="w-full text-center mt-2 text-red-500 font-medium"
-                    >
-                        {errors?.phone?.[0]}
-                    </p>
-                )}
-                {error && (
-                    <p
-                        id="login-phone-service-error"
-                        role="alert"
-                        className="w-full text-center mt-2 text-red-500 font-medium"
-                    >
-                        {error}
-                    </p>
-                )}
             </IonCol>
         );
         buttonTitle = isLoading ? m['common.loading']() : m['login.phone.button']();
         disabled = !phone || isLoading;
     } else if (currentStep === PhoneFormStepsEnum.verification) {
-        const verificationError = errors?.code?.[0] ?? codeError;
         formTitle = (
             <TransP
                 m={m['common.enterVerificationCode']}
@@ -332,6 +379,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
             >
                 <AccessibleCodeInput
+                    key={codeInputKey}
                     name="phoneVerification"
                     label={m['common.enterVerificationCode']()}
                     errorId={verificationError ? 'login-phone-code-error' : undefined}
@@ -344,18 +392,10 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         verificationCodeInputClassName ?? ''
                     } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
                 />
-                {verificationError && (
-                    <p
-                        id="login-phone-code-error"
-                        role="alert"
-                        className="w-full text-center mt-2 text-red-500 font-medium"
-                    >
-                        {verificationError}
-                    </p>
-                )}
             </IonCol>
         );
         buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
+        disabled = code?.length < 6 || isLoading || isVerifyLocked;
     }
 
     return (
@@ -366,6 +406,13 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 </IonCol>
             )}
             {activeStep}
+            {errorAboveButton && (
+                <LoginErrorMessage
+                    id={errorAboveButtonId}
+                    message={errorAboveButton}
+                    className={currentStep === PhoneFormStepsEnum.phone ? 'mt-4' : 'mt-2.5'}
+                />
+            )}
             <div className="flex items-center justify-center mt-[20px] pb-[20px]">
                 <button
                     type="submit"
@@ -383,14 +430,23 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 </button>
             </div>
             {currentStep === PhoneFormStepsEnum.phone && <AppStoreDownloadButtons />}
+            {currentStep === PhoneFormStepsEnum.verification && isAttemptLimitError && (
+                <LoginErrorMessage
+                    id="login-phone-code-error"
+                    message={verificationError}
+                    className="mb-4"
+                />
+            )}
             {currentStep === PhoneFormStepsEnum.verification && (
                 <div className="flex items-center justify-center w-full">
                     <Countdown
-                        date={Date.now() + 30000} // 30 seconds
+                        key={countdownEndTime ?? 0}
+                        date={countdownEndTime ?? Date.now()}
                         renderer={({ seconds, completed }) =>
-                            completed ? (
+                            completed || !countdownEndTime ? (
                                 <button
                                     type="button"
+                                    disabled={isResendCodeLoading}
                                     onClick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
