@@ -674,6 +674,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page.getByTestId('issue-spreadsheet-file').setInputFiles(exportedPath);
             await page.getByRole('button', { name: 'Add People', exact: true }).click();
             await page.getByRole('button', { name: 'Certificate', exact: true }).click();
+            await fillName(page, 'Mapped certificate');
             await page.getByRole('button', { name: 'Review people', exact: true }).click();
             await expect(page.getByLabel('Ada Credits', { exact: true })).toHaveValue('3');
             await expect(page.getByLabel('Bob Credits', { exact: true })).toHaveAttribute(
