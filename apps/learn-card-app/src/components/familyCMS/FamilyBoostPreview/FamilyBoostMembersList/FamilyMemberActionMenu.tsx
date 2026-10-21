@@ -75,7 +75,7 @@ export const FamilyMemberActionMenu: React.FC<{
                     if (modalRef.token) forceCloseModalByToken(modalRef.token);
                 }}
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -239,7 +239,7 @@ export const FamilyMemberActionMenu: React.FC<{
                         <button
                             key={id}
                             onClick={() => onClick?.()}
-                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0"
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-2 last:border-0"
                             disabled={isLoading}
                         >
                             <p

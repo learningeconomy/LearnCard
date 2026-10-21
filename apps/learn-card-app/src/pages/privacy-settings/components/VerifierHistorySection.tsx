@@ -183,7 +183,7 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                     {m['verifierHistory.description']()}
                 </p>
             </div>
-            <GlassCard className="p-6 space-y-4">
+            <GlassCard className="p-6 space-y-v3-4">
                 {!allowed ? (
                     <p className="text-sm text-grayscale-600">
                         {m['verifierHistory.managedUnavailable']()}

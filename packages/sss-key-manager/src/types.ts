@@ -104,6 +104,11 @@ export interface EscrowHoldStatus {
 
 /** Persist these secrets securely until completion; a null token means an existing hold. */
 export type EscrowRecoveryStart = EscrowHoldStatus & {
+    codeSent?: boolean;
+    delivery?: {
+        codeSent: boolean;
+        proof: import('./escrow-authority.types').EscrowAuthorityRecord;
+    };
     /** Persist with the secrets, never rebuild from server status. Required for Nitro resume. */
     expectations?: import('@learncard/types').EscrowRecoveryExpectations;
     resumeToken: string | null;

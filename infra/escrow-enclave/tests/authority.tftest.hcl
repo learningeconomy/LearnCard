@@ -1,7 +1,7 @@
 # ALL provider calls are mocked. New policies use local jsonencode, so assertions
 # inspect real policy computations rather than mocked aws_iam_policy_document JSON.
 mock_provider "aws" {
-  mock_resource "aws_launch_template" { defaults = { id = "lt-0123456789abcdef0" } }
+  mock_resource "aws_launch_template" { defaults = { id = "lt-0123456789abcdef0", latest_version = 7 } }
   mock_resource "aws_iam_role" { defaults = { arn = "arn:aws:iam::123456789012:role/test" } }
   mock_resource "aws_sns_topic" { defaults = { arn = "arn:aws:sns:us-east-1:123456789012:monitor" } }
   mock_resource "aws_sqs_queue" { defaults = { arn = "arn:aws:sqs:us-east-1:123456789012:dlq", id = "https://sqs.us-east-1.amazonaws.com/123456789012/dlq" } }
@@ -64,6 +64,32 @@ variables {
 run "disabled_is_structurally_a_noop" {
   command = apply
   assert {
+    condition = (
+      toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][0].detail.eventName) == toset(["StopLogging", "DeleteTrail", "UpdateTrail", "PutEventSelectors", "PutInsightSelectors"]) &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][0].detail.requestParameters.name[0] == "escrow-enclave-staging-audit" &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][1].detail.requestParameters.trailName[0] == "escrow-enclave-staging-audit" &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.requestParameters.bucketName == ["learncard-escrow-cloudtrail-staging-123456789012"] &&
+      alltrue([for name in ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"] : contains(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.eventName, name)]) &&
+      jsondecode(aws_cloudwatch_event_target.trail_tamper.input).alarm == "EscrowCloudTrailTamper" &&
+      aws_cloudwatch_event_target.trail_tamper.arn == aws_sns_topic.monitor.arn &&
+      aws_cloudwatch_event_target.trail_tamper.dead_letter_config[0].arn == aws_sqs_queue.monitor_dlq.arn
+    )
+    error_message = "Always-on tamper monitoring must cover the exact trail/bucket APIs, both CloudTrail parameter names, and fixed SNS/DLQ delivery."
+  }
+  assert {
+    condition     = var.host_ami_id == null && length(data.aws_ssm_parameter.al2023_ami) == 1 && aws_launch_template.enclave_host.image_id == data.aws_ssm_parameter.al2023_ami[0].value
+    error_message = "Default staging must retain the same latest-AL2023 lookup and launch-template image."
+  }
+  assert {
+    condition = (
+      aws_autoscaling_group.enclave_host.launch_template[0].version == "$Latest" &&
+      aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].min_healthy_percentage == 50 &&
+      aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].max_healthy_percentage == 100 &&
+      !aws_lb.enclave_host.enable_deletion_protection
+    )
+    error_message = "Production safety settings must not change staging behavior."
+  }
+  assert {
     condition = alltrue([
       length(aws_dynamodb_table.authority) == 0, length(aws_dynamodb_resource_policy.authority) == 0,
       length(aws_iam_user.authority_writer) == 0, length(aws_iam_user.email_sender) == 0,
@@ -98,8 +124,8 @@ run "disabled_is_structurally_a_noop" {
     error_message = "Disabled user-data must remain byte-identical to the baseline."
   }
   assert {
-    condition     = length(local.bucket_extra_policy_documents.artifacts) == 1 && length(jsondecode(aws_sns_topic_policy.monitor.policy).Statement) == 2 && length(jsondecode(aws_sqs_queue_policy.monitor_dlq.policy).Statement[0].Condition.ArnEquals["aws:SourceArn"]) == 2 && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "CREDENTIAL_OBJECT")
-    error_message = "Existing bucket/SNS/DLQ policies and host settings must not change while disabled."
+    condition     = length(local.bucket_extra_policy_documents.artifacts) == 1 && length(jsondecode(aws_sns_topic_policy.monitor.policy).Statement) == 2 && length(jsondecode(aws_sqs_queue_policy.monitor_dlq.policy).Statement[0].Condition.ArnEquals["aws:SourceArn"]) == 3 && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "CREDENTIAL_OBJECT")
+    error_message = "Disabled authority must retain bucket/SNS/host settings; DLQ also admits the always-on trail tamper rule."
   }
 }
 run "authority_writer_is_only_data_principal" {
@@ -109,6 +135,25 @@ run "authority_writer_is_only_data_principal" {
     authority_generation          = "g1"
     authority_tenant              = "learncard"
     authority_guardrail_policy_id = "p-12345678"
+  }
+  assert {
+    condition = (
+      jsondecode(aws_cloudwatch_event_rule.authority_governance["unexpected_write"].event_pattern).detail.userIdentity.arn[0]["anything-but"] == aws_iam_user.authority_writer[0].arn &&
+      jsondecode(aws_cloudwatch_event_rule.authority_governance["unexpected_write"].event_pattern).detail.resources.ARN == [local.authority_table_arn] &&
+      jsondecode(aws_cloudwatch_event_rule.authority_governance["unexpected_write"].event_pattern).detail.readOnly == [false, "false"] &&
+      jsondecode(aws_cloudwatch_event_rule.authority_governance["denied_write"].event_pattern).detail.errorCode[0].prefix == "AccessDenied" &&
+      !can(jsondecode(aws_cloudwatch_event_rule.authority_governance["denied_write"].event_pattern).detail.userIdentity)
+    )
+    error_message = "All authority data writes by non-writers, and denied writes including the writer, must alarm."
+  }
+  assert {
+    condition = alltrue([for name in ["unexpected_write", "denied_write"] :
+      aws_cloudwatch_event_target.authority_governance[name].arn == aws_sns_topic.monitor.arn &&
+      jsondecode(aws_cloudwatch_event_target.authority_governance[name].input).alarm == "AuthorityGovernance:${name}" &&
+      aws_cloudwatch_event_target.authority_governance[name].dead_letter_config[0].arn == aws_sqs_queue.monitor_dlq.arn &&
+      contains(jsondecode(aws_sqs_queue_policy.monitor_dlq.policy).Statement[0].Condition.ArnEquals["aws:SourceArn"], aws_cloudwatch_event_rule.authority_governance[name].arn)
+    ]) && aws_cloudwatch_event_target.trail_tamper.arn == aws_sns_topic.monitor.arn
+    error_message = "Write/tamper alerts must target monitor SNS with fixed messages and authorized DLQ delivery."
   }
   assert {
     condition     = aws_dynamodb_table.authority[0].billing_mode == "PAY_PER_REQUEST" && aws_dynamodb_table.authority[0].deletion_protection_enabled && aws_dynamodb_table.authority[0].point_in_time_recovery[0].enabled && aws_dynamodb_table.authority[0].server_side_encryption[0].enabled && !anytrue([for ttl in aws_dynamodb_table.authority[0].ttl : try(ttl.enabled, false)])
@@ -196,10 +241,60 @@ run "email_external_dns_and_delivery" {
     error_message = "Authority writer may use only the table key, only through DynamoDB."
   }
   assert {
-    condition     = strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8002 email.us-east-1.amazonaws.com 443") && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "ESCROW_AUTHORITY_CREDENTIAL_OBJECT=credentials/authority-writer/g1") && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "ESCROW_EMAIL_CREDENTIAL_OBJECT=credentials/email-sender/g1") && length(aws_cloudwatch_event_rule.authority_governance) == 5 && strcontains(aws_cloudwatch_event_rule.authority_governance["table_control"].event_pattern, "DeleteResourcePolicy")
+    condition     = strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8002 email.us-east-1.amazonaws.com 443") && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "ESCROW_AUTHORITY_CREDENTIAL_OBJECT=credentials/authority-writer/g1") && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "ESCROW_EMAIL_CREDENTIAL_OBJECT=credentials/email-sender/g1") && length(aws_cloudwatch_event_rule.authority_governance) == 7 && strcontains(aws_cloudwatch_event_rule.authority_governance["table_control"].event_pattern, "DeleteResourcePolicy")
     error_message = "Enabled proxy/delivery paths and governance alarm coverage must be present."
   }
 }
+run "production_safety_and_domain" {
+  command = apply
+  variables {
+    environment                   = "production"
+    host_ami_id                   = "ami-0123456789abcdef0"
+    enable_enrollment_authority   = true
+    enable_enclave_email          = true
+    authority_generation          = "g1"
+    authority_tenant              = "learncard"
+    authority_guardrail_policy_id = "p-12345678"
+    sending_domain                = "vault.notify.learncard.com"
+    create_sending_zone           = true
+    email_dmarc_policy            = "reject"
+  }
+  assert {
+    condition     = aws_launch_template.enclave_host.image_id == var.host_ami_id && length(data.aws_ssm_parameter.al2023_ami) == 0
+    error_message = "Production must use the pinned AMI without any latest-AMI lookup."
+  }
+  assert {
+    condition = (
+      aws_autoscaling_group.enclave_host.min_size >= 2 &&
+      aws_autoscaling_group.enclave_host.launch_template[0].version == "7" &&
+      aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].min_healthy_percentage == 100 &&
+      aws_autoscaling_group.enclave_host.instance_refresh[0].preferences[0].max_healthy_percentage == 200 &&
+      aws_lb.enclave_host.enable_deletion_protection
+    )
+    error_message = "Production must roll new-host-first on numeric template changes and protect the NLB."
+  }
+  assert {
+    condition     = aws_route53_record.sending["dmarc"].records == toset(["v=DMARC1; p=reject"]) && aws_ses_domain_mail_from.enclave[0].mail_from_domain == "bounce.vault.notify.learncard.com"
+    error_message = "Production sending domain and DMARC policy must be independent of staging."
+  }
+}
+
+run "production_requires_pinned_ami" {
+  command = plan
+  variables {
+    environment = "production"
+  }
+  expect_failures = [var.host_ami_id]
+}
+
+run "reject_malformed_ami" {
+  command = plan
+  variables {
+    host_ami_id = "ami-latest"
+  }
+  expect_failures = [var.host_ami_id]
+}
+
 run "delegated_sending_zone_and_cross_region_global_events" {
   command = apply
   variables {

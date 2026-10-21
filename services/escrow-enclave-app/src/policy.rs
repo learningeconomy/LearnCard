@@ -544,6 +544,15 @@ impl<'a> Policy<'a> {
         &mut self,
         req: CreateHoldRequest<'_>,
     ) -> Result<SignedHoldRecord, ErrorCode> {
+        self.create_hold_with_delivery(req)
+            .await
+            .map(|(hold, _)| hold)
+    }
+
+    pub async fn create_hold_with_delivery(
+        &mut self,
+        req: CreateHoldRequest<'_>,
+    ) -> Result<(SignedHoldRecord, Option<crate::wire::v1::CodeDelivery>), ErrorCode> {
         #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
         if self.authority.is_some() {
             return self.authority_create_hold(req).await;
@@ -597,7 +606,7 @@ impl<'a> Policy<'a> {
             .await
             .map_err(ledger_error)?;
         signed.hold.signature = STANDARD.encode(record.sig);
-        Ok(signed)
+        Ok((signed, None))
     }
 
     async fn verify_hold(&mut self, req: &ReleaseRequest<'_>) -> Result<VerifiedHold, ErrorCode> {

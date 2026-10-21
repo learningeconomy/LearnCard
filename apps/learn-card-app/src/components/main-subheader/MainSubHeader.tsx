@@ -91,7 +91,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const handlePersonalizeMyAi = () => {
         newModal(
             <AiPassportPersonalizationContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -123,7 +123,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
             <span>{translatedLead}</span>{' '}
             {translatedLink && (
                 <button
-                    className="font-[600] underline"
+                    className="font-semibold underline"
                     onClick={() => presentCategoryDescriptorModal()}
                 >
                     {translatedLink}.

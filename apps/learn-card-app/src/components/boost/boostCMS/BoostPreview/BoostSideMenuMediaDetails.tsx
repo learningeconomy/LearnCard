@@ -45,7 +45,7 @@ export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ creden
                                 key={idx}
                                 type="button"
                                 onClick={() => handleClick(img?.url, img?.fileName || img?.title)}
-                                className="hover:underline focus:outline-none text-left break-words"
+                                className="hover:underline focus:outline-hidden text-left wrap-break-word"
                             >
                                 {img?.fileName || img?.url}
                                 {idx < imageAttachments.length - 1 && ','}

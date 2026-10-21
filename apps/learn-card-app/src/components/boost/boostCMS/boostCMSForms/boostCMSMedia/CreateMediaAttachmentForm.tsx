@@ -93,7 +93,7 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
                         displayType === BoostCMSAppearanceDisplayTypeEnum.Media &&
                         type === BoostMediaOptionsEnum.video
                     ) {
-                        styles = '!w-[100%]';
+                        styles = 'w-full!';
                     }
 
                     const handleMediaSelect = () => {
@@ -105,7 +105,7 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
                         ) {
                             newModal(
                                 <BoostCMSAttachmentWarning />,
-                                { sectionClassName: '!max-w-[500px]' },
+                                { sectionClassName: 'max-w-[500px]!' },
                                 {
                                     desktop: ModalTypes.Cancel,
                                     mobile: ModalTypes.Cancel,
@@ -132,7 +132,7 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
                     return (
                         <button
                             key={id}
-                            className={`flex flex-col items-center justify-center text-center ion-padding h-[122px] m-2 bg-grayscale-100 rounded-[20px] ${styles} w-[45%] xs:!w-[60%]`}
+                            className={`flex flex-col items-center justify-center text-center ion-padding h-[122px] m-2 bg-grayscale-100 rounded-[20px] ${styles} w-[45%] xs:w-[60%]!`}
                             onClick={handleMediaSelect}
                         >
                             <Icon

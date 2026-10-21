@@ -84,14 +84,14 @@ export const PendingUpdatePanel: React.FC<PendingUpdatePanelProps> = ({
             )}
 
             {(rows.length > 0 || update.manifest_version !== undefined) && (
-                <dl className="mt-4 space-y-3">
+                <dl className="mt-4 space-y-v3-3">
                     {rows.map(row => (
                         <div key={row.label}>
                             <dt className="text-xs font-medium text-grayscale-700">{row.label}</dt>
                             {row.values.map((value, index) => (
                                 <dd
                                     key={index}
-                                    className="mt-1 text-sm text-grayscale-900 whitespace-pre-wrap break-words"
+                                    className="mt-1 text-sm text-grayscale-900 whitespace-pre-wrap wrap-break-word"
                                 >
                                     {value}
                                 </dd>

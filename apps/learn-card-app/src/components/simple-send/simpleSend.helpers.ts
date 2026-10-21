@@ -282,7 +282,7 @@ const stripUnresolvedRecipientId = (credential: Record<string, unknown>): void =
  * network fills them per-issuance — substitution + signing happen at send time
  * via `templateData`, keeping the stored boost a genuine reusable template.
  */
-const buildReusableBoostTemplate = (
+export const buildReusableBoostTemplate = (
     template: OBv3CredentialTemplate,
     issuerDid: string,
     recipientDid?: string

@@ -35,7 +35,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
               : 'bg-red-500';
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.analytics.title']()}
@@ -48,7 +48,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
             {/* Hero Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Claim Rate - Large Card */}
-                <div className="md:col-span-1 p-6 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl text-white">
+                <div className="md:col-span-1 p-6 bg-linear-to-br/srgb from-cyan-500 to-cyan-600 rounded-2xl text-white">
                     <div className="flex items-center justify-between mb-4">
                         <span className="text-cyan-100 text-sm font-medium">
                             {m['developerPortal.dashboards.tabs.analytics.claimRate']()}
@@ -168,7 +168,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                     {m['developerPortal.dashboards.tabs.analytics.credentialFunnel']()}
                 </h3>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {/* Issued */}
                     <div className="flex items-center gap-4">
                         <div className="w-24 text-sm text-gray-600">
@@ -176,7 +176,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                         </div>
                         <div className="flex-1 h-10 bg-gray-200 rounded-lg overflow-hidden relative">
                             <div
-                                className="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded-lg flex items-center justify-end pr-3"
+                                className="h-full bg-linear-to-r/srgb from-violet-500 to-violet-400 rounded-lg flex items-center justify-end pr-3"
                                 style={{ width: '100%' }}
                             >
                                 <span className="text-white font-medium text-sm">
@@ -193,7 +193,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                         </div>
                         <div className="flex-1 h-10 bg-gray-200 rounded-lg overflow-hidden relative">
                             <div
-                                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-lg flex items-center justify-end pr-3"
+                                className="h-full bg-linear-to-r/srgb from-emerald-500 to-emerald-400 rounded-lg flex items-center justify-end pr-3"
                                 style={{
                                     width:
                                         stats.totalIssued > 0
@@ -217,7 +217,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                         </div>
                         <div className="flex-1 h-10 bg-gray-200 rounded-lg overflow-hidden relative">
                             <div
-                                className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-lg flex items-center justify-end pr-3"
+                                className="h-full bg-linear-to-r/srgb from-amber-500 to-amber-400 rounded-lg flex items-center justify-end pr-3"
                                 style={{
                                     width:
                                         stats.totalIssued > 0
@@ -243,7 +243,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                         {m['developerPortal.dashboards.tabs.analytics.performanceInsights']()}
                     </h3>
 
-                    <div className="space-y-4">
+                    <div className="space-y-v3-4">
                         <div className="flex items-center justify-between">
                             <span className="text-gray-600">
                                 {m['developerPortal.dashboards.tabs.analytics.claimSuccessRate']()}
@@ -300,10 +300,10 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                         {m['developerPortal.dashboards.tabs.analytics.quickTips']()}
                     </h3>
 
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         {stats.claimRate < 50 && (
                             <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
-                                <ArrowUpRight className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <ArrowUpRight className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-amber-800">
                                         {m[
@@ -321,7 +321,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
 
                         {stats.templateCount === 0 && (
                             <div className="flex items-start gap-3 p-3 bg-violet-50 rounded-lg">
-                                <Award className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                                <Award className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-violet-800">
                                         {m[
@@ -339,7 +339,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
 
                         {stats.totalIssued === 0 && (
                             <div className="flex items-start gap-3 p-3 bg-cyan-50 rounded-lg">
-                                <Zap className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                <Zap className="w-5 h-5 text-cyan-600 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-cyan-800">
                                         {m[
@@ -357,7 +357,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
 
                         {stats.claimRate >= 70 && stats.totalIssued > 0 && (
                             <div className="flex items-start gap-3 p-3 bg-emerald-50 rounded-lg">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-emerald-800">
                                         {m[

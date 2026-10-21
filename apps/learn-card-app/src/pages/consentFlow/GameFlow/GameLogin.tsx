@@ -51,13 +51,13 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                 formTitleOverride="Email"
                 buttonTitleOverride="Continue"
                 formTitleClassNameOverride="text-grayscale-800 text-base text-center font-medium"
-                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !mt-0 !bg-emerald-700 hover:opacity-90 active:opacity-85 transition-opacity"
+                buttonClassName="font-poppins text-[16px]! leading-[28px] tracking-[0.75px] mt-0! bg-emerald-700! hover:opacity-90 active:opacity-85 transition-opacity"
                 emailInputClassName="bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 tracking-normal"
                 emailInputVariant="appStore"
                 emailErrorPlacement="below"
                 verificationCodeInputClassName="gameflow"
                 startOverClassNameOverride="text-grayscale-800 underline font-bold"
-                resendCodeButtonClassNameOverride="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px]"
+                resendCodeButtonClassNameOverride="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b"
                 suppressRedirect
                 customRedirectUrl={window.location.href}
                 resetRedirectPath={null}
@@ -70,13 +70,13 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
         LoginTypeForm = (
             <PhoneForm
                 formTitleOverride="Phone"
-                formTitleClassNameOverride="font-montserrat text-[14px] font-[500] leading-[24px] text-grayscale-600 uppercase"
-                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !bg-emerald-700 hover:opacity-90 active:opacity-85 transition-opacity"
+                formTitleClassNameOverride="font-montserrat text-[14px] font-medium leading-[24px] text-grayscale-600 uppercase"
+                buttonClassName="font-poppins text-[16px]! leading-[28px] tracking-[0.75px] bg-emerald-700! hover:opacity-90 active:opacity-85 transition-opacity"
                 smallVerificationInput
                 phoneInputClassNameOverride="gameflow"
                 verificationCodeInputClassName="gameflow"
                 startOverClassNameOverride="text-grayscale-800 underline font-bold"
-                resendCodeButtonClassNameOverride="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px]"
+                resendCodeButtonClassNameOverride="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b"
                 setShowSocialLogins={setShowSocialLogins}
                 showSocialLogins={showSocialLogins}
             />
@@ -137,13 +137,13 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                     {brandingConfig?.name}
                 </h6>
 
-                <p className="text-grayscale-500 font-montserrat text-[14px] font-[500] mr-auto">
+                <p className="text-grayscale-500 font-montserrat text-[14px] font-medium mr-auto">
                     Login to Learncard
                 </p>
 
                 <div className="w-full max-w-[500px]">
                     {showSocialLogins && (
-                        <div className="w-full flex gap-[20px] border-grayscale-500  border-opacity-30 pb-[30px]">
+                        <div className="w-full flex gap-[20px] border-grayscale-500/30   pb-[30px]">
                             <button
                                 className="flex items-center justify-center bg-grayscale-900 border-solid border-grayscale-100 rounded-full w-[45px] h-[45px] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                                 onClick={handleActiveLoginType}
@@ -163,7 +163,7 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                                 return (
                                     <button
                                         key={id}
-                                        className="flex items-center justify-center border-solid border-[1px] border-grayscale-100 rounded-full w-[45px] h-[45px] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="flex items-center justify-center border-solid border border-grayscale-100 rounded-full w-[45px] h-[45px] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                                         disabled={activeSocialLogin !== null}
                                         aria-busy={isActiveSocialLogin}
                                         onClick={() => void handleSocialLogin(type, onClick)}

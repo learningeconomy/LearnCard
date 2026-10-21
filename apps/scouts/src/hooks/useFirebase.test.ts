@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     adapter: {
@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
     toast: vi.fn(),
     alert: vi.fn(),
     modal: vi.fn(),
+    log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: mocks.native } }));
@@ -49,7 +50,7 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { Cancel: 'cancel' },
     useToast: () => ({ presentToast: mocks.toast }),
     ToastTypeEnum: { Success: 'success', Error: 'error' },
-    getLogger: () => ({ debug: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+    getLogger: () => mocks.log,
 }));
 
 import { useFirebase } from './useFirebase';
@@ -64,11 +65,109 @@ describe('Scouts sign-in adapter routing', () => {
         });
     });
 
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
+
+    it.each([
+        ['auth/network-request-failed', 'error', false],
+        ['auth/popup-closed-by-user', 'warn', false],
+        ['auth/popup-blocked', 'warn', false],
+        ['auth/cancelled-popup-request', 'warn', false],
+        ['unknown', 'error', true],
+    ] as const)(
+        'records Google failure %s before presenting help',
+        async (code, level, assertion) => {
+            vi.spyOn(performance, 'now').mockReturnValueOnce(1000).mockReturnValueOnce(31000);
+            const error = assertion
+                ? new Error('INTERNAL ASSERTION FAILED: Pending promise was never set')
+                : { code, customData: { email: 'private@example.org', idToken: 'private-token' } };
+            mocks.adapter.signInWithGoogle.mockRejectedValue(error);
+            mocks.adapter.getCurrentUser.mockReturnValue({ id: 'private-user-id' });
+
+            await useFirebase().googleLogin();
+
+            const context = {
+                attemptId: expect.any(Number),
+                provider: 'google',
+                isNativePlatform: false,
+            };
+            expect(mocks.log.info).toHaveBeenCalledWith('Google sign-in started', context);
+            expect(mocks.log[level]).toHaveBeenCalledExactlyOnceWith(
+                level === 'warn' ? 'Google sign-in did not complete' : 'Google sign-in failed',
+                {
+                    ...context,
+                    elapsedMs: 30000,
+                    authUserPresent: true,
+                    errorCode: code,
+                    internalAssertion: assertion,
+                }
+            );
+            if (code === 'auth/cancelled-popup-request') {
+                expect(mocks.modal).not.toHaveBeenCalled();
+            } else {
+                expect(mocks.modal).toHaveBeenCalledOnce();
+                expect(mocks.log[level].mock.invocationCallOrder[0]).toBeLessThan(
+                    mocks.modal.mock.invocationCallOrder[0]!
+                );
+            }
+            expect(mocks.analytics).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each([undefined, 'SDK failure containing synthetic.oauth.credential'])(
+        'shows safe Google fallback copy for an unknown error with message %s',
+        async message => {
+            mocks.adapter.signInWithGoogle.mockRejectedValue({
+                code: 'auth/unknown-failure',
+                message,
+            });
+            mocks.adapter.getCurrentUser.mockReturnValue(null);
+
+            await useFirebase().googleLogin();
+
+            expect(mocks.modal).toHaveBeenCalledOnce();
+            expect(mocks.modal.mock.calls[0]?.[0].props.message).toBe(
+                'Sign-in failed. Please try again or use a different browser.'
+            );
+            expect(mocks.log.error).toHaveBeenCalledWith(
+                'Google sign-in failed',
+                expect.objectContaining({ authUserPresent: false })
+            );
+            expect(JSON.stringify(mocks.log.error.mock.calls)).not.toContain(
+                'synthetic.oauth.credential'
+            );
+        }
+    );
+
+    it('keeps the original failure visible when reading auth state also fails', async () => {
+        mocks.adapter.signInWithGoogle.mockRejectedValue({ code: 'auth/network-request-failed' });
+        mocks.adapter.getCurrentUser.mockImplementation(() => {
+            throw new Error('Auth unavailable');
+        });
+
+        await useFirebase().googleLogin();
+
+        expect(mocks.modal).toHaveBeenCalledOnce();
+        expect(mocks.log.error).toHaveBeenCalledWith(
+            'Google sign-in failed',
+            expect.objectContaining({
+                errorCode: 'auth/network-request-failed',
+                authUserPresent: undefined,
+            })
+        );
+    });
+
     it('preserves Google login bookkeeping and help for blocked popups', async () => {
         const hook = useFirebase();
         await hook.googleLogin();
         expect(mocks.adapter.signInWithGoogle).toHaveBeenCalledOnce();
         expect(mocks.analytics).toHaveBeenCalledWith('login', { method: 'google' });
+        expect(mocks.log.info).toHaveBeenCalledWith(
+            'Google sign-in succeeded',
+            expect.objectContaining({ provider: 'google', elapsedMs: expect.any(Number) })
+        );
         mocks.adapter.signInWithGoogle.mockRejectedValue({ code: 'auth/popup-blocked' });
         await hook.googleLogin();
         expect(mocks.modal).toHaveBeenCalledOnce();

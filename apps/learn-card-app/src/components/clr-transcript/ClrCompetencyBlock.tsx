@@ -20,7 +20,7 @@ const ClrCompetencyBlock: React.FC<{
     const primaryAlignment = competency.alignments[0];
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <SkillCompetencyCard
                 name={competency.name?.value ?? 'Competency'}
                 frameworkName={primaryAlignment?.targetFramework?.value}

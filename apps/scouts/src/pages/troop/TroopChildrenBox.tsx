@@ -171,7 +171,9 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
                     troopName={networkName ?? ''}
                     credentialType={category}
                     childGenerations={isNetworkAdmin ? 1 : undefined}
-                />
+                />,
+                // Paint the surface's padded edge as well as the content above it.
+                { sectionClassName: 'bg-grayscale-100!' }
             );
         },
         [newModal, uri, networkName]

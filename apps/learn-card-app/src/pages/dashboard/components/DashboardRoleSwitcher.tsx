@@ -108,7 +108,7 @@ const DashboardRoleSwitcher: React.FC = () => {
         });
     };
 
-    const pillClassName = `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-grayscale-100 text-grayscale-800 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+    const pillClassName = `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-grayscale-100 text-grayscale-800 text-[13px] font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
         isChildProfile ? 'cursor-default' : 'cursor-pointer hover:bg-grayscale-200'
     }`;
 
@@ -148,7 +148,7 @@ const DashboardRoleSwitcher: React.FC = () => {
                 </MenuButton>
                 <MenuItems
                     anchor="bottom start"
-                    className="bg-white rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] p-[8px] my-[6px] focus:outline-none z-[1000] min-w-[220px] flex flex-col gap-[4px]"
+                    className="bg-white rounded-[15px] shadow-bottom-2-6 p-[8px] my-[6px] focus:outline-hidden z-[1000] min-w-[220px] flex flex-col gap-[4px]"
                 >
                     {visibleRoles.map(roleItem => {
                         const isSelected = roleItem.type === activeRole;
@@ -158,7 +158,7 @@ const DashboardRoleSwitcher: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => handleRoleChange(roleItem.type)}
-                                        className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                        className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                             focus ? 'bg-grayscale-100' : ''
                                         }`}
                                     >
@@ -197,7 +197,7 @@ const DashboardRoleSwitcher: React.FC = () => {
             onClick={() =>
                 newModal(
                     <LaunchPadRoleSelector role={activeRole} setRole={handleRoleChange} />,
-                    { sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]' },
+                    { sectionClassName: 'max-w-[600px]! mx-auto! max-h-full!' },
                     { mobile: ModalTypes.BottomSheet, desktop: ModalTypes.BottomSheet }
                 )
             }

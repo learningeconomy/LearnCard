@@ -39,7 +39,7 @@ export const LaunchPadHeaderUserGreeting: React.FC = () => {
 
         newModal(<LaunchPadActionModal />, {
             className: 'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
-            sectionClassName: '!max-w-[500px] disable-scrollbars',
+            sectionClassName: 'max-w-[500px]! disable-scrollbars',
         });
     };
 
@@ -57,7 +57,7 @@ export const LaunchPadHeaderUserGreeting: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => void handleOpenActionModal()}
-                        className="w-full max-w-[600px] flex items-center justify-between px-[10px] py-[5px] rounded-[10px] shadow-[0_2px_2px_0_rgba(0,0,0,0.25)] border-solid border border-grayscale-200"
+                        className="w-full max-w-[600px] flex items-center justify-between px-[10px] py-[5px] rounded-[10px] shadow-soft-bottom border-solid border border-grayscale-200"
                         style={{ backgroundColor: quickActionBgColor }}
                     >
                         <div className="flex items-center">

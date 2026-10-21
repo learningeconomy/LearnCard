@@ -123,7 +123,7 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
                     onPaste={handlePaste}
                     disabled={disabled}
                     aria-label={`${isCode ? 'Code' : 'PIN'} digit ${index + 1}`}
-                    className={`flex-1 min-w-0 max-w-12 h-12 sm:h-14 px-0 text-center text-xl font-semibold rounded-xl border bg-white focus:outline-none focus:ring-2 transition-colors ${
+                    className={`flex-1 min-w-0 max-w-12 h-12 sm:h-14 px-0 text-center text-xl font-semibold rounded-xl border bg-white focus:outline-hidden focus:ring-2 transition-colors ${
                         error
                             ? 'border-red-300 focus:ring-red-500 focus:border-transparent text-red-900'
                             : 'border-grayscale-300 focus:ring-emerald-500 focus:border-transparent text-grayscale-900'

@@ -107,7 +107,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     );
 
     const renderInput = () => {
-        const baseClasses = `w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors ${
+        const baseClasses = `w-full px-3 py-2 border rounded-lg text-sm outline-hidden transition-colors ${
             showError
                 ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500'
                 : field.isDynamic
@@ -169,7 +169,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             const hasImageUrl = field.value && /^https?:\/\/.+/i.test(field.value);
 
             return (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <div className="flex gap-2">
                         <input
                             type={type}
@@ -207,7 +207,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                             <img
                                 src={field.value}
                                 alt="Uploaded preview"
-                                className="w-10 h-10 rounded object-cover border border-gray-200"
+                                className="w-10 h-10 rounded-sm object-cover border border-gray-200"
                                 onError={e => {
                                     (e.target as HTMLImageElement).style.display = 'none';
                                 }}
@@ -241,7 +241,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     // Render system field (non-editable, auto-injected)
     if (field.isSystem) {
         return (
-            <div className="space-y-1">
+            <div className="space-y-v3-1">
                 <div className="flex items-center justify-between">
                     <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
                         {label}
@@ -257,18 +257,18 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                         )}
                     </label>
 
-                    <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-medium bg-amber-100 text-amber-700">
                         <Settings className="w-3 h-3" />
                         {m['developerPortal.credentialBuilder.fieldEditor.system']()}
                     </span>
                 </div>
 
                 {showHelp && helpText && (
-                    <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded">{helpText}</p>
+                    <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded-sm">{helpText}</p>
                 )}
 
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                    <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <Lock className="w-4 h-4 text-amber-600 shrink-0" />
 
                     <div className="flex-1">
                         <p className="text-sm text-amber-800 font-medium">
@@ -287,7 +287,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     }
 
     return (
-        <div className="space-y-1">
+        <div className="space-y-v3-1">
             <div className="flex items-center justify-between">
                 <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
                     {label}
@@ -332,7 +332,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             </div>
 
             {showHelp && helpText && (
-                <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded">{helpText}</p>
+                <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded-sm">{helpText}</p>
             )}
 
             {renderInput()}
@@ -350,11 +350,11 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                             type="text"
                             value={field.variableName}
                             onChange={e => handleVariableNameChange(e.target.value)}
-                            className="flex-1 px-2 py-0.5 text-xs border border-violet-200 rounded bg-violet-50 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                            className="flex-1 px-2 py-0.5 text-xs border border-violet-200 rounded-sm bg-violet-50 focus:outline-hidden focus:ring-1 focus:ring-violet-500"
                             placeholder="variable_name"
                         />
                     ) : (
-                        <code className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded">
+                        <code className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-sm">
                             {`{{${field.variableName || labelToVariableName(label)}}}`}
                         </code>
                     )}
@@ -405,20 +405,20 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
                 onClick={onToggle}
                 className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
             >
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-xs">
                     {icon}
                 </div>
 
                 <span className="flex-1 text-left font-medium text-gray-800">{title}</span>
 
                 {optional && (
-                    <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-200 rounded">
+                    <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-200 rounded-sm">
                         {m['developerPortal.credentialBuilder.optional']()}
                     </span>
                 )}
 
                 {badge && (
-                    <span className="text-xs text-cyan-700 px-2 py-0.5 bg-cyan-100 rounded">
+                    <span className="text-xs text-cyan-700 px-2 py-0.5 bg-cyan-100 rounded-sm">
                         {badge}
                     </span>
                 )}
@@ -431,7 +431,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
             </button>
 
             {isExpanded && (
-                <div className="p-4 space-y-4 border-t border-gray-100">
+                <div className="p-4 space-y-v3-4 border-t border-gray-100">
                     {children}
 
                     {(onAdd || onRemove) && (

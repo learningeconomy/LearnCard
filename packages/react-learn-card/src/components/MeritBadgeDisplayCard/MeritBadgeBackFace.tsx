@@ -85,9 +85,7 @@ export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
             <TruncateTextBox headerText="About" text={description}>
                 <span
                     className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
-                        description
-                            ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
-                            : ''
+                        description ? 'pt-[10px] border-t border-solid border-grayscale-200' : ''
                     }`}
                 >
                     Awarded on {createdAt}

@@ -97,7 +97,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     const primaryColor = colors?.defaults?.primaryColor;
 
     const presentLogoutErrorModal = () => {
-        newModal(<ErrorLogout />, { sectionClassName: '!max-w-[400px]' });
+        newModal(<ErrorLogout />, { sectionClassName: 'max-w-[400px]!' });
     };
 
     useEffect(() => {
@@ -323,7 +323,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     return (
         <>
             {createLoading && (
-                <div className="absolute top-0 w-full h-full z-[10000] flex flex-col gap-[5px] items-center justify-center bg-white bg-opacity-70 backdrop-blur-[3px]">
+                <div className="absolute top-0 w-full h-full z-[10000] flex flex-col gap-[5px] items-center justify-center bg-white/70  backdrop-blur-[3px]">
                     <IonSpinner color="dark" />
                     <span className="text-grayscale-900">Joining Network...</span>
                 </div>
@@ -342,7 +342,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 <br />
                                 <HeaderBranding
                                     branding={BrandingEnum.learncard}
-                                    className="!text-black !text-xl"
+                                    className="text-black! text-xl!"
                                     disableClick
                                 />
                             </h6>

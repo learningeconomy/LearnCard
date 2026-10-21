@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 describe('Vite environment definitions', () => {
+    // The first case cold-imports Vite and its plugin graph; match the other case's CI budget.
     it('bakes the staging tenant domain into production-mode staging/native builds', async () => {
         const previousClientId = process.env.VITE_WEB3AUTH_CLIENT_ID;
         const previousNodeEnv = process.env.VITE_NODE_ENV;
@@ -19,7 +20,7 @@ describe('Vite environment definitions', () => {
             if (previousNodeEnv === undefined) delete process.env.VITE_NODE_ENV;
             else process.env.VITE_NODE_ENV = previousNodeEnv;
         }
-    });
+    }, 30_000);
 
     it('never serializes the build runner environment', async () => {
         const previousAwsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;

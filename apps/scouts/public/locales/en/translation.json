@@ -408,6 +408,7 @@
         "deletingAccount": "Deleting Account...",
         "deleteForever": "Delete Forever",
         "fullName": "Full Name",
+        "fullNameOptional": "Full Name (optional)",
         "emailAddress": "Email address",
         "phoneNumber": "Phone Number",
         "userID": "User ID",
@@ -631,6 +632,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "We couldn’t save your profile. Check your connection and try again.",
         "welcomeTo": "Welcome to",
         "setupProf": "Set up your profile to get started!",
         "dataOwn": "You own your own data.",

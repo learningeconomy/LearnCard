@@ -1,0 +1,203 @@
+{
+    "date": "2026-10-19",
+    "sourceParent": "0db28b60fe425bc6ec00af15993b0ae9239eec7a",
+    "sourceChange": "ScoutNews.tsx removes competing justify-start; retains justify-center.",
+    "type": "Manual signed-in smoke evidence, not deterministic screenshot baselines",
+    "web": {
+        "browser": "Chrome",
+        "url": "http://127.0.0.1:9332",
+        "viewport": [1656, 839],
+        "build": "VITE_DOCKER_SOURCE=true VITE_NODE_ENV=production bunx vite build",
+        "news": "Bundled fallback articles: local static preview has no /api/scout-news endpoint."
+    },
+    "native": {
+        "platform": "iOS 26.4 Simulator",
+        "device": "iPhone 17 Pro",
+        "bundleId": "org.scoutpass.app",
+        "build": "Bundled Capacitor Debug app; ad hoc signed; source-mode production web assets",
+        "serverUrl": null,
+        "localAutoUpdate": false,
+        "productionConfigModified": false,
+        "news": "Live pass.scout.org feed."
+    },
+    "validation": {
+        "newsTests": "5/5 passed",
+        "productionWebBuild": "passed",
+        "nativeSimulatorBuild": "passed",
+        "campfireDesktopJustifyContent": "center",
+        "campfireDesktopCenterOffsetPx": 0,
+        "populatedData": {
+            "meritBadges": 14,
+            "troopMemberships": 11
+        }
+    },
+    "images": [
+        {
+            "file": "ios-badges-tailwind4.png",
+            "width": 1206,
+            "height": 2622,
+            "sha256": "d12811838e51c46acaad4dd37f6ce25799e282dc7f7b1313b586370b72b20d32",
+            "capturedAt": "2026-10-19T16:31:32.296059+00:00"
+        },
+        {
+            "file": "ios-campfire-tailwind4.png",
+            "width": 1206,
+            "height": 2622,
+            "sha256": "e0a3d27e9b73986577e21e319bcb0bc87ca42cbd1ce6a32b0b67f09e13d1595f",
+            "capturedAt": "2026-10-19T16:31:20.503970+00:00"
+        },
+        {
+            "file": "ios-troops-tailwind4.png",
+            "width": 1206,
+            "height": 2622,
+            "sha256": "54805d6e23ed48d6225f4073ed348897818cfde633932c951f70db5f1295d055",
+            "capturedAt": "2026-10-19T16:31:50.074834+00:00"
+        },
+        {
+            "file": "ios-wallet-tailwind4.png",
+            "width": 1206,
+            "height": 2622,
+            "sha256": "54ac8072be73314c3d49f63065ecac8ce600a6e59db2b7bd0bfedc52ce40674f",
+            "capturedAt": "2026-10-19T16:32:02.443106+00:00"
+        },
+        {
+            "file": "web-badges-tailwind4.png",
+            "width": 65536,
+            "height": 4292542531,
+            "sha256": "a11dd6dcfff687d23b4be455ce4b1a6019a55da0fd6e94d0d5c68c81ed7c3e41",
+            "capturedAt": "2026-10-19T16:28:46.960324+00:00"
+        },
+        {
+            "file": "web-campfire-tailwind4.png",
+            "width": 65536,
+            "height": 4292542531,
+            "sha256": "16f08db10eaf41a2136da4cb9e9ad8a15b1e53bdf26427b700bc5a1f3a31ba9f",
+            "capturedAt": "2026-10-19T16:24:53.119490+00:00"
+        },
+        {
+            "file": "web-troops-tailwind4.png",
+            "width": 65536,
+            "height": 4292542531,
+            "sha256": "437fc93c8371307ceae080ee1d91301bacec25d295e386be18d288bfd7597571",
+            "capturedAt": "2026-10-19T16:29:34.657554+00:00"
+        },
+        {
+            "file": "web-wallet-tailwind4.png",
+            "width": 65536,
+            "height": 4292542531,
+            "sha256": "817ae83404296ce796880d618f2a4a52156263d793edfc28511577ea2cb8c125",
+            "capturedAt": "2026-10-19T16:25:08.506022+00:00"
+        }
+    ],
+    "nestedModalFollowup": {
+        "sourceParent": "e4de3dd3a85ef3815547beceb726fefca6c7146d",
+        "sourceChange": "TroopChildrenBox passes bg-grayscale-100! to the child modal surface, painting its padded edge.",
+        "nativePlatform": "iPhone 17 Pro, iOS 26.4 Simulator, bundled Capacitor app",
+        "validation": {
+            "existingTroopChildrenBoxAndNewsTests": "6/6 passed",
+            "webBuild": "passed",
+            "nativeBuild": "passed",
+            "safeAreaGate": "passed",
+            "webSurfaceBackgroundBothCategories": "rgb(239, 240, 245)"
+        },
+        "images": [
+            {
+                "file": "ios-network-badges-tailwind4.png",
+                "width": 1206,
+                "height": 2622,
+                "sha256": "424934625ace1c9f7c853c64f4b274c36ab6018963bfe6d7cc7bd7a95f7e7548",
+                "capturedAt": "2026-10-19T16:43:42.286400+00:00"
+            },
+            {
+                "file": "ios-network-boosts-tailwind4.png",
+                "width": 1206,
+                "height": 2622,
+                "sha256": "db8776d68572310872eb9b4b6435a18a73f48f07f19aaa7b6057d6e3fdfb1400",
+                "capturedAt": "2026-10-19T16:44:17.720800+00:00"
+            }
+        ],
+        "status": "Intermediate background-only fix; superseded by fullHeightFollowup."
+    },
+    "scrollLayoutFollowup": {
+        "sourceParent": "fa3a1c07f0ccd795da38b6d93225dc5eda9fd46a",
+        "sourceChange": "TroopCredentialsModal uses a bounded min-h-0 flex layout and one relative native HTML scroll region; fixed header/search and 20px content-end spacing. Replaces nested IonContent.",
+        "validation": {
+            "web": {
+                "meritBadges": {
+                    "clientHeight": 444,
+                    "headingTop": 0,
+                    "lastCardBottom": 574.47265625,
+                    "lastCardFullyVisible": true,
+                    "lastCardTop": 251.474609375,
+                    "outerClientHeight": 600,
+                    "outerScrollHeight": 600,
+                    "outerScrollTop": 0,
+                    "scrollHeight": 676,
+                    "scrollTop": 232.5,
+                    "scrollerBottom": 600,
+                    "scrollerTop": 155.9765625,
+                    "viewport": [390, 600]
+                },
+                "socialBoosts": {
+                    "clientHeight": 444,
+                    "headingTop": 0,
+                    "lastCardBottom": 574.7265625,
+                    "lastCardFullyVisible": true,
+                    "lastCardTop": 269.7265625,
+                    "outerClientHeight": 600,
+                    "outerScrollHeight": 600,
+                    "outerScrollTop": 0,
+                    "scrollHeight": 640,
+                    "scrollTop": 196.25,
+                    "scrollerBottom": 600,
+                    "scrollerTop": 155.9765625,
+                    "viewport": [390, 600]
+                }
+            },
+            "unitTests": "6/6 existing TroopChildrenBox/news tests passed",
+            "webBuild": "passed",
+            "nativeBuild": "passed",
+            "safeAreaGate": "passed",
+            "nativeSwipe": "User supplied scrolled native screenshots; final behavior confirmed after the full-height correction."
+        },
+        "images": [
+            {
+                "file": "web-network-badges-scrolled-tailwind4.png",
+                "width": 65536,
+                "height": 4293001752,
+                "sha256": "c85f309ea9cf5cb4d41a613c6169183ff014630c2bc0fb3c8637971424795270",
+                "capturedAt": "2026-10-19T16:53:59.022977+00:00"
+            },
+            {
+                "file": "web-network-boosts-scrolled-tailwind4.png",
+                "width": 65536,
+                "height": 4293001752,
+                "sha256": "205184657a4b7b733e43d4c77289580487122e0f008ab806ed9e41a9cca2429e",
+                "capturedAt": "2026-10-19T16:54:33.709112+00:00"
+            }
+        ],
+        "status": "Intermediate bounded-scroll fix; superseded by fullHeightFollowup."
+    },
+    "fullHeightFollowup": {
+        "sourceParent": "3e25559ab41e46a26b81d5af7fd96eee9a28764c",
+        "sourceChange": "Opt-in lc-content-owns-bottom/lc-scroll-to-edge moves shared surface bottom clearance to end-of-scroll padding; pinned search has 8px bottom spacing and grid top padding is removed.",
+        "validation": {
+            "nativeInitialPosition": "Complete final Test badge and Award action visible without scrolling on iPhone 17 Pro, iOS 26.4. No permanent bottom clipping band.",
+            "userConfirmation": "cool yes it works as expected now",
+            "unitTests": "6 TroopChildrenBox/news + 6 AppModal tests passed",
+            "webBuild": "passed",
+            "nativeBuild": "passed",
+            "safeAreaGate": "passed"
+        },
+        "images": [
+            {
+                "file": "ios-network-badges-fullheight-tailwind4.png",
+                "width": 1206,
+                "height": 2622,
+                "sha256": "319dc03811d7b4a7de9c4540af33e07a500864ab6a5934d282d9d669767ac4fc",
+                "capturedAt": "2026-10-19T16:59:15.333591+00:00",
+                "scrollPosition": "Initial position; no scroll gesture after opening"
+            }
+        ]
+    }
+}

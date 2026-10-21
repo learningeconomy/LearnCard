@@ -63,7 +63,7 @@ const ScoutsIdView: React.FC<ScoutsIdViewProps> = ({ user }) => {
                 >
                     {/* <CredentialVerificationDisplay
                                 credential={credential}
-                                iconClassName="!h-[17px] !w-[17px]"
+                                iconClassName="h-[17px]! w-[17px]!"
                             /> */}
                     ScoutPass
                 </span>

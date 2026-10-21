@@ -6,7 +6,7 @@ import type { VerifierReceipt } from '../../../helpers/verifier-history/history'
 import * as m from '../../../paraglide/messages.js';
 
 export const historyButton =
-    'min-h-[44px] py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-grayscale-100 text-grayscale-700 font-medium text-sm hover:bg-grayscale-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:bg-grayscale-100 disabled:border-grayscale-200 disabled:text-grayscale-500 disabled:cursor-not-allowed disabled:hover:bg-grayscale-100';
+    'min-h-[44px] py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-grayscale-100 text-grayscale-700 font-medium text-sm hover:bg-grayscale-200 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:bg-grayscale-100 disabled:border-grayscale-200 disabled:text-grayscale-500 disabled:cursor-not-allowed disabled:hover:bg-grayscale-100';
 
 type EntryProps = {
     receipt: VerifierReceipt;
@@ -24,14 +24,14 @@ const VerifierHistoryEntry: React.FC<EntryProps> = ({ receipt, loading, onDelete
         <li className="rounded-2xl border border-grayscale-200 overflow-hidden">
             <button
                 type="button"
-                className="w-full min-h-[44px] p-4 rounded-[20px] text-start space-y-2 hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
+                className="w-full min-h-[44px] p-4 rounded-[20px] text-start space-y-v3-2 hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
                 aria-label={m['verifierHistory.viewCredentials']({ verifier })}
                 aria-expanded={expanded}
                 aria-controls={detailsId}
                 onClick={() => setExpanded(value => !value)}
             >
                 <span className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium text-grayscale-900 break-words min-w-0">
+                    <span className="text-sm font-medium text-grayscale-900 wrap-break-word min-w-0">
                         {verifier}
                     </span>
                     <IonIcon
@@ -41,7 +41,7 @@ const VerifierHistoryEntry: React.FC<EntryProps> = ({ receipt, loading, onDelete
                     />
                 </span>
                 {receipt.label && receipt.origin && (
-                    <span className="block text-xs text-grayscale-600 break-words">
+                    <span className="block text-xs text-grayscale-600 wrap-break-word">
                         {receipt.origin}
                     </span>
                 )}
@@ -57,20 +57,20 @@ const VerifierHistoryEntry: React.FC<EntryProps> = ({ receipt, loading, onDelete
                     })}
                 </span>
                 {receipt.purpose && (
-                    <span className="block text-xs text-grayscale-600 break-words">
+                    <span className="block text-xs text-grayscale-600 wrap-break-word">
                         {receipt.purpose}
                     </span>
                 )}
             </button>
-            <div id={detailsId} hidden={!expanded} className="px-4 pb-4 space-y-2">
+            <div id={detailsId} hidden={!expanded} className="px-4 pb-4 space-y-v3-2">
                 <p className="text-xs font-medium text-grayscale-700">
                     {m['verifierHistory.credentialsList']()}
                 </p>
-                <ul aria-label={m['verifierHistory.credentialsList']()} className="space-y-2">
+                <ul aria-label={m['verifierHistory.credentialsList']()} className="space-y-v3-2">
                     {receipt.titles.map((title, index) => (
                         <li
                             key={index}
-                            className="rounded-xl bg-grayscale-100 p-3 text-sm text-grayscale-900 break-words"
+                            className="rounded-xl bg-grayscale-100 p-3 text-sm text-grayscale-900 wrap-break-word"
                         >
                             {title === 'Credential' ? m['verifierHistory.credential']() : title}
                         </li>
@@ -98,7 +98,7 @@ export const VerifierHistoryList: React.FC<{
     loading: boolean;
     onDelete: (eventId: string) => void;
 }> = ({ receipts, loading, onDelete }) => (
-    <ul className="space-y-3" aria-label={m['verifierHistory.title']()}>
+    <ul className="space-y-v3-3" aria-label={m['verifierHistory.title']()}>
         {receipts.map(receipt => (
             <VerifierHistoryEntry
                 key={receipt.eventId}

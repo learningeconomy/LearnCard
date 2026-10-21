@@ -42,8 +42,8 @@ describe('Toast', () => {
         expect(screen.queryByTestId('toast-success-icon')).toBeNull();
 
         // jsdom cannot measure overflow; these classes are proxies for the required layout behavior.
-        expect(title.className).toContain('[overflow-wrap:anywhere]');
-        expect(message.className).toContain('[overflow-wrap:anywhere]');
+        expect(title.className).toContain('wrap-anywhere');
+        expect(message.className).toContain('wrap-anywhere');
         expect(message.parentElement?.className).toContain('min-w-0');
     });
 });

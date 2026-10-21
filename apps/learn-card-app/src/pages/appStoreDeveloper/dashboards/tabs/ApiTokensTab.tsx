@@ -115,7 +115,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
     const revokedGrants = authGrants.filter(g => g.status === 'revoked');
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-800">
@@ -139,7 +139,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
 
             {/* Create Token Form */}
             {showCreateForm && (
-                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-4">
+                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-v3-4">
                     <h3 className="font-medium text-gray-800">
                         {m['developerPortal.dashboards.tabs.apiTokens.createNewToken']()}
                     </h3>
@@ -153,7 +153,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                             value={newTokenName}
                             onChange={e => setNewTokenName(e.target.value)}
                             placeholder="e.g., Production Server"
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                         />
                     </div>
 
@@ -164,7 +164,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                         <select
                             value={selectedScope}
                             onChange={e => setSelectedScope(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                         >
                             {getScopeOptions().map(option => (
                                 <option key={option.value} value={option.value}>
@@ -207,7 +207,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
 
             {/* Security Warning */}
             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-800">
                     <strong>
                         {m['developerPortal.dashboards.tabs.apiTokens.securityWarning']()}:
@@ -217,7 +217,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
             </div>
 
             {/* Usage Guide */}
-            <div className="p-4 border border-gray-200 rounded-xl space-y-3">
+            <div className="p-4 border border-gray-200 rounded-xl space-y-v3-3">
                 <div className="flex items-center gap-2">
                     <Code className="w-4 h-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-700">
@@ -225,7 +225,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                     </span>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-500 mb-1">
                             {m['developerPortal.dashboards.tabs.apiTokens.sdkLabel']()}
@@ -262,7 +262,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                     </p>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {activeGrants.map(grant => (
                         <div key={grant.id} className="p-4 border border-gray-200 rounded-xl">
                             <div className="flex items-center justify-between">
@@ -331,7 +331,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                         {m['developerPortal.dashboards.tabs.apiTokens.revokedTokens']()}
                     </h3>
 
-                    <div className="space-y-2 opacity-60">
+                    <div className="space-y-v3-2 opacity-60">
                         {revokedGrants.map(grant => (
                             <div
                                 key={grant.id}

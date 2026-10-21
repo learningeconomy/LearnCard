@@ -111,7 +111,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.contracts.title']()}
@@ -137,7 +137,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                 {m['developerPortal.dashboards.tabs.contracts.howToAddTitle']()}
                             </strong>
                         </p>
-                        <ol className="text-xs text-gray-400 mt-1 space-y-1 list-decimal list-inside">
+                        <ol className="text-xs text-gray-400 mt-1 space-y-v3-1 list-decimal list-inside">
                             <li>
                                 {m['developerPortal.dashboards.tabs.contracts.howToAddStep1']()}
                             </li>
@@ -151,7 +151,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                     </div>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {configuredContracts.map(contract => (
                         <div
                             key={contract.uri}
@@ -162,7 +162,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                     <div
                                         className={`w-10 h-10 ${getContractColor(
                                             contract.type
-                                        )} rounded-lg flex items-center justify-center flex-shrink-0`}
+                                        )} rounded-lg flex items-center justify-center shrink-0`}
                                     >
                                         {getContractIcon(contract.type)}
                                     </div>
@@ -176,7 +176,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                         </p>
 
                                         <div className="mt-2 flex items-center gap-2">
-                                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-sm">
                                                 {contract.feature}
                                             </span>
                                         </div>
@@ -196,7 +196,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
 
                                 <button
                                     onClick={() => copyContractUri(contract.uri)}
-                                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex-shrink-0"
+                                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors shrink-0"
                                     title={m['developerPortal.dashboards.tabs.contracts.copyUri']()}
                                 >
                                     {copiedId === contract.uri ? (
@@ -210,7 +210,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                     ))}
 
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-                        <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                         <p className="text-sm text-blue-700">
                             {m['developerPortal.dashboards.tabs.contracts.infoBanner']()}
                         </p>

@@ -17,7 +17,7 @@ export const RecentlyAdded: React.FC = () => {
     const openSeeAll = () =>
         newModal(<AllCredentialsModal onClose={closeModal} />, {
             hideButton: true,
-            sectionClassName: '!max-w-[760px]',
+            sectionClassName: 'max-w-[760px]!',
         });
 
     const items = useMemo(() => {
@@ -40,12 +40,12 @@ export const RecentlyAdded: React.FC = () => {
                 <button
                     type="button"
                     onClick={openSeeAll}
-                    className="font-poppins text-[13px] font-medium text-grayscale-800 hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="font-poppins text-[13px] font-medium text-grayscale-800 hover:text-grayscale-900 transition-colors rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['passport.activity.seeAll']()}
                 </button>
             </div>
-            <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-2 md:overflow-visible md:px-0 md:flex-wrap">
+            <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-2 md:overflow-visible md:px-0 md:flex-wrap">
                 {items.map(record => (
                     <PassportCredentialCard
                         key={record.uri}

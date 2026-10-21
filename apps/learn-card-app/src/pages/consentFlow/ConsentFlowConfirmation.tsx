@@ -347,7 +347,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                     <button
                         type="button"
                         onClick={openPrivacyAndData}
-                        className="flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] border-t-[1px] border-solid border-grayscale-200"
+                        className="flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] border-t border-solid border-grayscale-200"
                     >
                         <LockBroken />
                         {m['consentFlow.privacyAndData']()}
@@ -358,7 +358,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                         <button
                             type="button"
                             onClick={handleDisconnect}
-                            className="flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] border-t-[1px] border-solid border-grayscale-200 disabled:opacity-80"
+                            className="flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] border-t border-solid border-grayscale-200 disabled:opacity-80"
                             disabled={isLoadingContractCreds || isWithdrawingConsent}
                         >
                             <BrokenLink version="2" className="h-[30px] w-[30px]" />
@@ -373,9 +373,9 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                         <button
                             type="button"
                             onClick={() => newModal(<AiPassportAppProfileContainer app={app} />)}
-                            className="flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] border-t-[1px] border-solid border-grayscale-200"
+                            className="flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] border-t border-solid border-grayscale-200"
                         >
-                            <div className="w-[30px] h-[30px] rounded-[10px] border-[1px] border-grayscale-200 border-solid overflow-hidden">
+                            <div className="w-[30px] h-[30px] rounded-[10px] border border-grayscale-200 border-solid overflow-hidden">
                                 <img
                                     src={image}
                                     alt="Contract Icon"

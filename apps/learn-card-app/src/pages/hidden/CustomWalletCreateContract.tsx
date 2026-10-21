@@ -68,7 +68,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
                         value={contract.name}
                         onChange={e => updateSlice('name', e.target.value)}
                         required
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         type="text"
                     />
                 </label>
@@ -78,7 +78,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
                     <input
                         value={contract.subtitle}
                         onChange={e => updateSlice('subtitle', e.target.value)}
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         type="text"
                     />
                 </label>
@@ -88,7 +88,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
                     <textarea
                         value={contract.description}
                         onChange={e => updateSlice('description', e.target.value)}
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                     />
                 </label>
 
@@ -97,7 +97,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
                     <input
                         value={contract.image}
                         onChange={e => updateSlice('image', e.target.value)}
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         type="text"
                     />
                 </label>
@@ -107,7 +107,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
                     <input
                         value={contract.expiresAt}
                         onChange={e => updateSlice('expiresAt', e.target.value)}
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         type="text"
                     />
                 </label>
@@ -175,7 +175,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
 
             <button
                 type="submit"
-                className="transition-colors h-full w-full rounded border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600 disabled:opacity-60"
+                className="transition-colors h-full w-full rounded-sm border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600 disabled:opacity-60"
                 disabled={loading}
             >
                 {loading ? 'Creating...' : 'Create'}

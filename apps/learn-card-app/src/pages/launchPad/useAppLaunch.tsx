@@ -103,7 +103,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                 </div>
 
                 <div className="flex-1 p-6 overflow-auto">
-                    <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="flex flex-col items-center text-center space-y-v3-4">
                         <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
                             <ShieldAlert className="w-10 h-10 text-red-600" />
                         </div>
@@ -157,7 +157,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                 </div>
             </div>,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -178,7 +178,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                             contractDetails={contract}
                             redirectUrl={redirectUrl}
                         />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { sectionClassName: 'bg-transparent! shadow-none!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                     return;
@@ -207,9 +207,8 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
 
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',

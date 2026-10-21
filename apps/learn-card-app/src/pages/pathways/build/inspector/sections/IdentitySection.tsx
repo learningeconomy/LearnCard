@@ -32,7 +32,7 @@ interface IdentitySectionProps {
 // Kept identical to the inputs used elsewhere in Build so the whole
 // inspector feels like one form, not a patchwork.
 const INPUT =
-    'w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-poppins';
+    'w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-poppins';
 
 const LABEL = 'text-xs font-medium text-grayscale-700';
 
@@ -73,8 +73,8 @@ const IdentitySection: React.FC<IdentitySectionProps> = ({
             defaultOpen
             sticky={false}
         >
-            <div className="space-y-3">
-                <div className="space-y-1.5">
+            <div className="space-y-v3-3">
+                <div className="space-y-v3-1.5">
                     <label className={LABEL} htmlFor="node-title">
                         Title
                     </label>
@@ -89,7 +89,7 @@ const IdentitySection: React.FC<IdentitySectionProps> = ({
                     />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     <label className={LABEL} htmlFor="node-description">
                         Description
                     </label>

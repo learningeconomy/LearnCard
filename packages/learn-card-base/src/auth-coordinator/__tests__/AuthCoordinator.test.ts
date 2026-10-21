@@ -24,6 +24,9 @@ import {
 } from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
 
+const logoutLogs = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
+vi.mock('../../logging/logger', () => ({ getLogger: () => logoutLogs }));
+
 import type {
     AuthProvider,
     AuthUser,
@@ -2194,6 +2197,55 @@ describe('AuthCoordinator', () => {
     // -----------------------------------------------------------------------
 
     describe('logout()', () => {
+        it('records sign-out and cleanup phases in order without account data', async () => {
+            const { coordinator } = setup({ config: { onLogout: vi.fn() } });
+            await coordinator.initialize();
+            logoutLogs.info.mockClear();
+
+            await coordinator.logout();
+
+            const phases = logoutLogs.info.mock.calls
+                .filter(([message]) => message === 'Logout phase completed')
+                .map(([, context]) => context.phase);
+            expect(phases).toEqual([
+                'pending_recovery',
+                'provider_sign_out',
+                'key_cleanup',
+                'app_cleanup',
+            ]);
+            expect(logoutLogs.info).toHaveBeenCalledWith(
+                'Logout completed',
+                expect.objectContaining({
+                    logoutAttemptId: expect.any(Number),
+                    elapsedMs: expect.any(Number),
+                })
+            );
+            const serialized = JSON.stringify(logoutLogs.info.mock.calls);
+            expect(serialized).not.toContain(mockUser.email);
+            expect(serialized).not.toContain(mockUser.id);
+            expect(serialized).not.toContain('local-key-abc');
+        });
+
+        it('logs the failed phase and propagates the original sign-out failure before app cleanup', async () => {
+            const failure = new Error('secret-token-private@example.org');
+            const onLogout = vi.fn();
+            const { coordinator } = setup({
+                authProvider: { signOut: vi.fn().mockRejectedValue(failure) },
+                config: { onLogout },
+            });
+            await coordinator.initialize();
+            logoutLogs.error.mockClear();
+
+            await expect(coordinator.logout()).rejects.toBe(failure);
+
+            expect(onLogout).not.toHaveBeenCalled();
+            expect(logoutLogs.error).toHaveBeenCalledExactlyOnceWith(
+                'Logout failed',
+                expect.objectContaining({ phase: 'provider_sign_out', errorType: 'error' })
+            );
+            expect(JSON.stringify(logoutLogs.error.mock.calls)).not.toContain(failure.message);
+        });
+
         it('signs out, calls cleanup + onLogout, preserves device share, and returns to idle', async () => {
             const onLogout = vi.fn().mockResolvedValue(undefined);
 

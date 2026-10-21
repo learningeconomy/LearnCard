@@ -47,7 +47,7 @@ export const ClrRenderer = (props: ClrRendererProps) => {
         );
         return (
             <ClrCollectionFrame layout={presentation.kind} insetTop={false}>
-                <div className="mx-auto w-full space-y-5">
+                <div className="mx-auto w-full space-y-v3-5">
                     {adminMode && warnings.length > 0 && (
                         <ClrTranscriptWarningsPanel warnings={warnings} />
                     )}
@@ -107,7 +107,9 @@ const InteractiveClrRenderer = (props: ClrRendererProps & { presentation: ClrPre
     const warnings = model.warnings.filter(warning => !ACADEMIC_ONLY_WARNINGS.has(warning.code));
     return (
         <ClrCollectionFrame layout={kind} insetTop={full && insetTop}>
-            <div className={`mx-auto w-full space-y-5 ${full ? 'max-w-[800px] p-4 sm:p-8' : ''}`}>
+            <div
+                className={`mx-auto w-full space-y-v3-5 ${full ? 'max-w-[800px] p-4 sm:p-8' : ''}`}
+            >
                 {adminMode && warnings.length > 0 && (
                     <ClrTranscriptWarningsPanel warnings={warnings} />
                 )}

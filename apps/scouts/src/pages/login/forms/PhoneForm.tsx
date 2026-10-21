@@ -376,7 +376,7 @@ const PhoneForm: React.FC = () => {
                 <IonCol size="12">
                     <button
                         onClick={e => handleOnClick(e, true)}
-                        className="text-gray-700 ion-padding w-full font-bold rounded-[30px] mt-4 border-solid border-gray-300 border-[2px]"
+                        className="text-gray-700 ion-padding w-full font-bold rounded-[30px] mt-4 border-solid border-gray-300 border-2"
                     >
                         {resendCodeButtonText}
                     </button>

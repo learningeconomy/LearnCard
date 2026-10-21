@@ -1,4 +1,5 @@
 import { timingSafeEqual, randomUUID, randomBytes } from 'crypto';
+import { logEscrowFailure } from '../services/escrow-enclave/logFailure';
 import {
     AuthorityCommitValidator,
     AuthorityHoldReceiptValidator,
@@ -79,6 +80,7 @@ import {
     getEnclaveAttestationIdentity,
     notifyEscrowHoldEvent,
     EscrowPolicyError,
+    EscrowCodeError,
     EscrowBlobError,
     EscrowUnavailableError,
     EscrowPinMismatchError,
@@ -247,6 +249,10 @@ const enclaveOperation = async <T>(
     try {
         return await operation();
     } catch (error) {
+        logEscrowFailure(error);
+        if (error instanceof EscrowCodeError) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: error.reason });
+        }
         if (error instanceof EscrowUnavailableError) {
             throw new TRPCError({
                 code: 'PRECONDITION_FAILED',
@@ -760,6 +766,10 @@ export const escrowRouter = t.router({
                     status: z.literal('pending'),
                     resumeToken: z.string().nullable(),
                     pinSalt: EscrowPinSaltValidator.optional(),
+                    codeSent: z.boolean().optional(),
+                    delivery: z
+                        .object({ codeSent: z.boolean(), proof: AuthorityHoldReceiptValidator })
+                        .optional(),
                 })
         )
         .mutation(async ({ input, ctx }) => {
@@ -872,7 +882,7 @@ export const escrowRouter = t.router({
             // suppressed entirely rather than racing/duplicating it.
             const isAuthorityManagedHold =
                 input.releasePolicy === 'hold' && Boolean(getEscrowEnclave().confirmHold);
-            const { holdRecord } = await enclaveOperation(() =>
+            const { holdRecord, delivery } = await enclaveOperation(() =>
                 getEscrowEnclave().createHold({
                     envelope: userKey.escrowBlob!.envelope,
                     holdId: randomUUID(),
@@ -959,6 +969,7 @@ export const escrowRouter = t.router({
                 ...serializeHold(hold),
                 status: 'pending' as const,
                 resumeToken,
+                ...(delivery ? { delivery, codeSent: delivery.codeSent } : {}),
                 ...(input.releasePolicy === 'pin' ? { pinSalt: userKey.escrowPin!.salt } : {}),
             };
         }),
@@ -1302,8 +1313,10 @@ export const escrowRouter = t.router({
                     };
                 } catch (error) {
                     // Keep the typed mismatch inside the wrapper; never expose enclave internals.
-                    if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError)
+                    if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError) {
+                        logEscrowFailure(error);
                         return { mismatch: true as const };
+                    }
                     if (reserved && hold.holdRecord.hold.policyVersion !== 2)
                         await refundEscrowPinAttempt(
                             hold.authProvider,

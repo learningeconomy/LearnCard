@@ -122,7 +122,7 @@ const SkillCompetencyLevelDisplay: React.FC<{
     const scaleColor = colorForScaleIndex(scaleItems, activeScaleIndex);
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <div className="flex items-baseline justify-between gap-3">
                 <p className="min-w-0 text-base font-semibold text-grayscale-900">
                     Level: <span className={scaleColor.textClass}>{String(level.value)}</span>
@@ -144,7 +144,7 @@ const SkillCompetencyLevelDisplay: React.FC<{
             )}
 
             {scaleItems.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <div
                         className="grid h-2 gap-1 overflow-hidden rounded-full"
                         style={{
@@ -234,7 +234,7 @@ export const SkillCompetencyCard: React.FC<SkillCompetencyCardProps> = ({
 
     return (
         <div
-            className="w-full space-y-3 rounded-xl border border-grayscale-200 bg-grayscale-50 px-3.5 py-3 font-poppins"
+            className="w-full space-y-v3-3 rounded-xl border border-grayscale-200 bg-grayscale-50 px-3.5 py-3 font-poppins"
             data-testid="skill-competency-card"
         >
             <div className="flex items-start justify-between gap-2">
@@ -242,7 +242,7 @@ export const SkillCompetencyCard: React.FC<SkillCompetencyCardProps> = ({
                     <span className="shrink-0 text-grayscale-700">
                         <SkillIcon />
                     </span>
-                    <span className="min-w-0 break-words text-xs font-semibold leading-snug text-grayscale-900">
+                    <span className="min-w-0 wrap-break-word text-xs font-semibold leading-snug text-grayscale-900">
                         {name}
                     </span>
                 </div>
@@ -262,7 +262,7 @@ export const SkillCompetencyCard: React.FC<SkillCompetencyCardProps> = ({
             )}
 
             {levels.length > 0 && (
-                <div className="space-y-4 border-t border-grayscale-100 pt-4">
+                <div className="space-y-v3-4 border-t border-grayscale-100 pt-4">
                     {levels.map((level, index) => (
                         <div
                             key={`${level.label ?? 'level'}-${String(level.value)}-${index}`}

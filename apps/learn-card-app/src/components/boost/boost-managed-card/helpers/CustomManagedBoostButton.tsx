@@ -57,7 +57,7 @@ export const CustomManagedBoostButton: React.FC<{
             <div className="flex w-full flex-col items-center justify-center">
                 <div
                     onClick={boostVC ? () => handleShowShortBoostModal() : undefined}
-                    className="cursor-pointer small-boost-boost-btn boost-btn-click rounded-[35px] w-[140px] h-[32px] flex gap-[5px] justify-center items-center border-[2px]"
+                    className="cursor-pointer small-boost-boost-btn boost-btn-click rounded-[35px] w-[140px] h-[32px] flex gap-[5px] justify-center items-center border-2"
                     style={{
                         color: buttonBgColor,
                         borderColor: buttonBgColor,

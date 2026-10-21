@@ -191,7 +191,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                         <button
                             type="button"
                             onClick={handleResetJson}
-                            className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-sm hover:bg-gray-200 transition-colors"
                         >
                             <RefreshCw className="w-3 h-3" />
                             {m['developerPortal.credentialBuilder.jsonPreview.reset']()}
@@ -201,7 +201,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     <button
                         type="button"
                         onClick={handleCopy}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-sm hover:bg-gray-200 transition-colors"
                     >
                         {copied ? (
                             <>
@@ -258,7 +258,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
             {/* Error Banner */}
             {parseError && (
                 <div className="flex items-start gap-2 p-3 bg-red-50 border-b border-red-200">
-                    <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
 
                     <div className="flex-1">
                         <p className="text-xs font-medium text-red-700">
@@ -272,7 +272,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
             {/* Test Issue Error Banner */}
             {testIssueError && (
                 <div className="flex items-start gap-2 p-3 bg-red-50 border-b border-red-200">
-                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
 
                     <div className="flex-1">
                         <p className="text-xs font-medium text-red-700">
@@ -285,7 +285,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
 
             {/* Variables Summary */}
             {(dynamicVariables.length > 0 || systemVariables.length > 0) && !editMode && (
-                <div className="p-3 bg-gray-50 border-b border-gray-200 space-y-2">
+                <div className="p-3 bg-gray-50 border-b border-gray-200 space-y-v3-2">
                     {/* Dynamic Variables - user must provide */}
                     {dynamicVariables.length > 0 && (
                         <div>
@@ -306,7 +306,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                                 {dynamicVariables.map(v => (
                                     <code
                                         key={v}
-                                        className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded"
+                                        className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-sm"
                                     >
                                         {`{{${v}}}`}
                                     </code>
@@ -335,7 +335,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                                 {systemVariables.map(v => (
                                     <code
                                         key={v}
-                                        className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded"
+                                        className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-sm"
                                     >
                                         {`{{${v}}}`}
                                     </code>
@@ -352,7 +352,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     <textarea
                         value={jsonText}
                         onChange={e => handleJsonChange(e.target.value)}
-                        className={`w-full h-full p-4 font-mono text-xs resize-none outline-none ${
+                        className={`w-full h-full p-4 font-mono text-xs resize-none outline-hidden ${
                             parseError ? 'bg-red-50' : 'bg-gray-900 text-gray-100'
                         }`}
                         style={{ minHeight: '400px' }}
@@ -380,7 +380,7 @@ const JsonHighlighter: React.FC<{ json: string }> = ({ json }) => {
         .replace(/: (true|false|null)/g, ': <span class="text-rose-400">$1</span>')
         .replace(
             /\{\{(\w+)\}\}/g,
-            '<span class="text-violet-400 bg-violet-900/30 px-0.5 rounded">{{$1}}</span>'
+            '<span class="text-violet-400 bg-violet-900/30 px-0.5 rounded-sm">{{$1}}</span>'
         );
 
     return <code dangerouslySetInnerHTML={{ __html: highlighted }} />;
