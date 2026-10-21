@@ -80,6 +80,22 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 - Emit actions after successful completion, excluding no-ops/failures. Include `actionSource` alongside
   authored action indexes; bridge actions have no index/source. Capgo completion can be lost on reload.
 
+### Message destinations (LC-2264)
+
+- `deepLinkRequestStore` is memory-only. Preserve request tokens when clearing: completion of an
+  older presentation must never clear a newer `openMessage` request. Clear on account change/logout.
+- Direct requests precede ordinary selection but retain the presentation gate, localization,
+  enabled/platform checks and seen → fatigue → shown ordering. Their event source is `deepLink`.
+  Unknown IDs expire after five seconds; known requests wait for the gate without expiring.
+- `InAppMessageDeepLinkRoute` belongs behind authentication in both apps. Preserve `/m/:id` through
+  login, then replace the transient route with branded home. Native listeners handle cold and warm URLs.
+- The shared runner only performs `openApp` when the host supplies `onOpenApp` (LearnCard App).
+  Keep ScoutPass a no-op and reject both new actions at the untrusted iframe bridge boundary.
+- Validate app paths at schema and runtime boundaries. `launchPad/buildEmbedUrlWithPath` is the
+  pure URL-joining authority for initial pages and notification navigation. Preserve the embed
+  origin, reject traversal/encoded escapes, and pin the host override. Installation still requires consent.
+- Ship `openApp`/`openMessage` campaigns through V2 only; legacy fallback rejects these actions.
+
 ### Rollout rules for new presentations
 
 Older clients parse the whole legacy flag and reject every campaign if any presentation enum is unknown.

@@ -33,6 +33,28 @@ export interface InAppMessageTemplate {
 
 export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
     {
+        key: 'openapp-test',
+        label: 'Open an app page',
+        category: 'Basics',
+        description: 'Replace the listing ID with an embedded app from your app store.',
+        json: {
+            id: 'debug-openapp-test',
+            title: 'Continue learning',
+            presentation: 'modal',
+            actions: [
+                {
+                    label: 'Open app',
+                    style: 'primary',
+                    action: {
+                        type: 'openApp',
+                        listingId: 'replace-with-listing-id',
+                        path: '/learn',
+                    },
+                },
+            ],
+        },
+    },
+    {
         key: 'story-test',
         label: 'Story walkthrough',
         category: 'Basics',

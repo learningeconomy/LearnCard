@@ -180,13 +180,15 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 
 `{ "label": string, "style": "primary"|"secondary"|"positive"|"dismiss", "action": {…}, "closeOnComplete"?: boolean }`
 
-| `action.type`  | Extra fields                        | Behavior                                                                  |
-| -------------- | ----------------------------------- | ------------------------------------------------------------------------- |
-| `internalLink` | `path: string`                      | `history.push(path)` — navigate within the app                            |
-| `externalLink` | `url: string`                       | Capacitor `Browser.open` on native, new tab on web                        |
-| `appStore`     | `iosUrl?`, `androidUrl?`, `webUrl?` | Opens the store page per platform; falls back to tenant `links` config    |
-| `capgoUpdate`  | —                                   | Runs OTA check → download (with progress) → reload; button shows progress |
-| `dismiss`      | —                                   | Closes the message                                                        |
+| `action.type`  | Extra fields                        | Behavior                                                                           |
+| -------------- | ----------------------------------- | ---------------------------------------------------------------------------------- |
+| `internalLink` | `path: string`                      | `history.push(path)` — navigate within the app                                     |
+| `externalLink` | `url: string`                       | Capacitor `Browser.open` on native, new tab on web                                 |
+| `appStore`     | `iosUrl?`, `androidUrl?`, `webUrl?` | Opens the store page per platform; falls back to tenant `links` config             |
+| `capgoUpdate`  | —                                   | Runs OTA check → download (with progress) → reload; button shows progress          |
+| `dismiss`      | —                                   | Closes the message                                                                 |
+| `openApp`      | `listingId`, optional `path`        | LearnCard App: open a listed embedded app, installing with consent first if needed |
+| `openMessage`  | `messageId`                         | Request another enabled message from the current flag                              |
 
 `closeOnComplete` (default `true`) closes the message after the action runs. `capgoUpdate` never
 auto-closes — it swaps into an inline progress state instead. `appStore` can no-op when no URL is
@@ -611,7 +613,7 @@ parent.postMessage(
 ```
 
 The app verifies the sender's window, the configured URL's exact origin, the envelope, and the action.
-Only existing actions are supported; `capgoUpdate` and future `openApp`/`openMessage` targets are
+Only the navigation/dismiss actions listed in the bridge protocol are supported; `capgoUpdate` and `openApp`/`openMessage` targets are
 rejected. Internal navigation is **denied by default**. A destination must exactly match an entry in
 the campaign's `iframe.allowedInternalPaths`, including its query string and fragment. No prefix,
 wildcard, decoding, or query-stripping match is performed. For example, approving `/passport` does
@@ -654,7 +656,7 @@ The host optionally calls `onEvent` with `type` (`shown`, `action`, `dismissed`)
 `presentation`, `source` (`flag`, `deepLink`, `override`), and optional zero-based `actionIndex`,
 `stepIndex`, `actionSource` (`step` or `message`), and `actionType`. An `actionIndex` indexes
 `steps[stepIndex].actions` when `actionSource` is `step`, otherwise `message.actions`.
-`deepLink` is reserved for LC-2264. Bridge actions have no authored action index or action source.
+`deepLink` identifies `/m/` and `openMessage` requests. Bridge actions have no authored action index or action source.
 Action events are emitted after the runner succeeds, never for pending, rejected, or no-op actions.
 Capgo reports after a successful update/check; failures are excluded, and an immediate webview reload
 may prevent delivery of the completion event. Seen state is recorded before fatigue, then shown is emitted. Screen changes and retries
@@ -686,6 +688,76 @@ real debug-preview story path, not flag delivery, analytics, or remote iframe ho
 `language` / `sdk` catalog journeys and the full catalog near PR readiness. macOS needs a Linux host
 or the hosted verification workflow; ScoutPass and native webviews require separate checks.
 
+## App destinations and direct message links (LC-2264)
+
+Use these actions only in `inAppMessagesV2`; older clients do not recognize them.
+
+```json
+{
+    "id": "course-next-step",
+    "title": "Continue learning",
+    "actions": [
+        {
+            "label": "Open course",
+            "action": {
+                "type": "openApp",
+                "listingId": "your-listing-id",
+                "path": "/courses/intro?lesson=2#start"
+            }
+        },
+        {
+            "label": "See the guide",
+            "action": { "type": "openMessage", "messageId": "achievement-intro" }
+        }
+    ]
+}
+```
+
+`openApp` is **LearnCard App only**. ScoutPass returns a no-op and keeps the message open.
+Use an embedded-app listing ID, not an arbitrary URL. The app routes through
+`/app/:listingId?launch=1&path=...`: installed apps launch once; other apps still require the normal
+installation/consent flow before launching. The fullscreen `/apps/:appId` route replaces the listing,
+so Back returns to the preceding page. Other listing launch types are not destinations for this action.
+The shared `useAppLaunch` hook also accepts `handleLaunch({ path, replace })` for embedded destinations.
+
+Paths start with one `/`. Schemes, protocol-relative URLs, backslashes, whitespace/control characters,
+dot traversal and their encoded forms are rejected. `buildEmbedUrlWithPath` appends the page under
+the listing's configured base path, keeps its origin and existing query parameters, applies the page's
+query/fragment, and pins `lc_host_override` to the host app origin. Notification navigation uses the
+same helper. Without a path, the configured page is retained.
+
+Share `https://<tenant-host>/m/<encoded-message-id>` to open a message directly. Both apps protect
+the route with sign-in and preserve the destination through login. The route requests the message
+in memory and replaces itself with the tenant's branded home. Native listeners handle warm links
+and the initial launch URL. The tracked iOS association files already allow `*`; Android's
+`handle_all_urls` relations and HTTPS intent filters have no path restriction, so they include `/m/`.
+Deployed association files, tenant domains/signing certificates, and actual OS handoff still need
+device verification; repository configuration alone does not prove cold/warm native entry.
+
+Requests take precedence over ordinary campaigns once the presentation gate opens. They bypass
+targeting, triggers, previous impressions, session-close suppression and fatigue eligibility, but
+still require an enabled, valid, platform-supported message. They use the same localization path,
+mark seen and record applicable blocking fatigue before emitting `shown` with `source: "deepLink"`.
+Debug previews retain their separate override behavior. Unknown, disabled or unsupported IDs clear
+silently after five seconds; known IDs wait for the gate. Each request has a unique token, so an older
+action completion cannot clear a new request, and the same ID can be explicitly requested again.
+Account switching and logout clear pending requests. Requests never persist to disk.
+
+QA: expand a flag message in Dev Debug → Messages and use **Copy /m/ link** or **Test deep link**.
+The status panel shows the pending ID. Scouts exposes `__inAppMessages.openDeepLink(id)`.
+Use **Open an app page** in the builder with a real embedded listing ID, then test installed and
+uninstalled states, Back, invalid paths, locale switching, closed gates and unknown message IDs.
+Test a message that fails normal targeting and has already been seen: direct entry must still show
+it once per request. Keep iframe bridge `openApp`/`openMessage` rejection in place; remote content
+cannot use these actions to bypass campaign targeting or access privileged app destinations.
+
+Run `lc verify script packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs --dir <owned-stack> --video`
+from the repository root through the app's `lc` command. It seeds the existing local partner app,
+uses the debug preview UI to open/install it, confirms the initial URL and Back history, corroborates
+installation with the learner SDK, and checks unknown `/m/` routing. The hosted verification workflow
+runs this before the full catalog. It cannot prove known flag-message delivery or analytics because
+those services are disabled in the harness; use staging for those checks and devices for OS links.
+
 ## File map
 
 ```
@@ -702,6 +774,9 @@ in-app-messages/
 ├── useRuntimeContext.ts      — gathers { platform, native/web/capgo versions, role }
 ├── useCapgoUpdate.ts         — OTA check → download (progress) → set/reload
 ├── useInAppMessageActions.ts — runs an action target (router / browser / store / capgo)
+├── MessageNavigationContext.ts — optional LearnCard App navigation supplied by the host
+├── deepLinkRequestStore.ts   — memory-only tokenized direct message requests
+├── InAppMessageDeepLinkRoute.tsx — requests a message and replaces the route with branded home
 ├── useInAppMessages.ts       — reads flag, evaluates targeting + frequency, picks winner; builds report
 ├── routeSuppression.ts       — pure critical-route denylist + isRouteSuppressed (unit-tested)
 ├── usePresentationGate.ts    — gate: auth-settled + logged-in + route + onboarding + settle delay
