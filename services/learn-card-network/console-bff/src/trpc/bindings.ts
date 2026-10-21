@@ -5,13 +5,13 @@ import type {
     BindingEndpoint,
     ConsentDecisionRecord,
     ConsoleSurface,
-    InstallTarget,
 } from '@learncard/types';
 
 import { DidAuthBearerFactory } from '../brain/did-auth';
 import { authorizedCall, type BrainServiceTransport } from '../brain';
 import type { KeyManagementService, ManagedKeyRef } from '@kms';
 import { router, protectedProcedure, type ConsoleContext } from './trpc';
+import { toWorkloadDeploymentTarget, type EcosystemInstallTarget } from './workload-target';
 
 type AuthedContext = Omit<ConsoleContext, 'session'> & {
     session: NonNullable<ConsoleContext['session']>;
@@ -22,13 +22,6 @@ export type BindingRecord = Binding & {
     revision: number;
     createdAt: string;
     updatedAt: string;
-};
-
-// Mirrors brain listInstallTargets output: any install target plus catalog enrichment.
-export type EcosystemInstallTarget = InstallTarget & {
-    listingId?: string;
-    displayName?: string;
-    tagline?: string;
 };
 
 // Mirrors brain InstallIntentAuditEventValidator (types/install-intent-audit.ts).
@@ -172,9 +165,11 @@ export const installTargetsRouter = router({
     list: protectedProcedure.input(EcosystemInput).query(async ({ ctx, input }) => {
         const { query } = await makeCallers(ctx);
 
-        return asArray<EcosystemInstallTarget>(
+        const targets = asArray<EcosystemInstallTarget>(
             await query('installIntent.listInstallTargets', input)
         );
+
+        return targets.map(toWorkloadDeploymentTarget);
     }),
 });
 

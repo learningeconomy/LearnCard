@@ -161,6 +161,153 @@ export function InstallActions({
         { label: 'Registry lookups', detail: 'Resolve issuers, skills, and credit references' },
     ];
 
+    const renderWorkloadReview = () => {
+        if (!intent?.plan?.targets) return null;
+        const workloads = intent.plan.targets.filter(
+            t => t.targetType === 'WORKLOAD_DEPLOYMENT' && t.workload
+        );
+        if (workloads.length === 0) return null;
+
+        return (
+            <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                    Workload Deployment Review
+                </p>
+                {/* ADR-009 amendment: workloads install via bundle only in this increment */}
+                <div className="space-y-4">
+                    {workloads.map((target, idx) => {
+                        const w = target.workload!;
+                        return (
+                            <div
+                                key={idx}
+                                className="bg-muted/30 rounded-md p-3 text-sm border border-border/50"
+                            >
+                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block">
+                                            Package
+                                        </span>
+                                        <span className="font-mono text-xs">{w.packageId}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block">
+                                            Version
+                                        </span>
+                                        <span className="font-mono text-xs">
+                                            {w.packageVersionId}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {w.profiles && w.profiles.length > 0 && (
+                                    <div className="mb-3">
+                                        <span className="text-muted-foreground text-xs block mb-1">
+                                            Profiles
+                                        </span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {w.profiles.map(p => (
+                                                <Badge
+                                                    key={p}
+                                                    variant="outline"
+                                                    className="text-[10px]"
+                                                >
+                                                    {p}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {w.components && w.components.length > 0 && (
+                                    <div className="mb-3">
+                                        <span className="text-muted-foreground text-xs block mb-1">
+                                            Components
+                                        </span>
+                                        <div className="space-y-1">
+                                            {w.components.map(c => {
+                                                const digestMatch =
+                                                    c.image.match(/@sha256:([a-f0-9]{7})/);
+                                                const shortDigest = digestMatch
+                                                    ? digestMatch[1]
+                                                    : c.image.split(':').pop()?.substring(0, 7) ||
+                                                      '';
+                                                return (
+                                                    <div
+                                                        key={c.id}
+                                                        className="flex items-center justify-between bg-background border rounded px-2 py-1 text-xs"
+                                                    >
+                                                        <span className="font-medium">{c.id}</span>
+                                                        <span className="font-mono text-muted-foreground">
+                                                            {shortDigest}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {w.endpoints && w.endpoints.length > 0 && (
+                                    <div className="mb-3">
+                                        <span className="text-muted-foreground text-xs block mb-1">
+                                            Endpoints
+                                        </span>
+                                        <div className="space-y-1">
+                                            {w.endpoints.map((e, index) => {
+                                                const id = typeof e.id === 'string' ? e.id : '';
+                                                const visibility =
+                                                    typeof e.visibility === 'string'
+                                                        ? e.visibility
+                                                        : '';
+                                                return (
+                                                    <div
+                                                        key={id || index}
+                                                        className="flex items-center justify-between bg-background border rounded px-2 py-1 text-xs"
+                                                    >
+                                                        <span className="font-medium">{id}</span>
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="text-[9px]"
+                                                        >
+                                                            {visibility}
+                                                        </Badge>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {w.supportBoundary && (
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block mb-1">
+                                            Support Boundary
+                                        </span>
+                                        <div className="bg-background border rounded p-2 text-xs space-y-1">
+                                            {Object.entries(w.supportBoundary).map(([k, v]) => (
+                                                <div key={k} className="flex justify-between gap-2">
+                                                    <span className="text-muted-foreground">
+                                                        {k}:
+                                                    </span>
+                                                    <span
+                                                        className="text-right truncate"
+                                                        title={String(v)}
+                                                    >
+                                                        {String(v)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
     const renderPermissions = () => {
         if (isNoAccessIntegration(intent)) {
             return (
@@ -278,6 +425,7 @@ export function InstallActions({
                                 Permissions requested
                             </p>
                             {renderPermissions()}
+                            {renderWorkloadReview()}
                         </div>
 
                         {/* Approve */}

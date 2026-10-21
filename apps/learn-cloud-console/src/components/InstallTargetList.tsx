@@ -1,15 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from './ui/badge';
+import type { RegistrySubscription, WorkloadDeployment } from '../api';
 
-export type InstallTargetSummary = {
-    id: string;
-    intentId: string;
-    status: string;
-    createdAt: string;
-    listingId?: string;
-    displayName?: string;
-    tagline?: string;
-};
+// Inferred from the server router (WorkloadDeployment / RegistrySubscription) rather
+// than hand-written, so it stays in sync with the optional `workload` projection the
+// backend adds for WORKLOAD_DEPLOYMENT targets. InstallTargetCatalogPage is fed by
+// either endpoint depending on `targetType`.
+export type InstallTargetSummary = WorkloadDeployment | RegistrySubscription;
 
 type BadgeVariant = 'success' | 'warning' | 'destructive' | 'outline';
 

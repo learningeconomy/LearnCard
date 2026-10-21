@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { Loader2, Search, type LucideIcon } from 'lucide-react';
+import {
+    Loader2,
+    Search,
+    type LucideIcon,
+    ChevronDown,
+    ChevronRight,
+    Copy,
+    Check,
+} from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { ClampText } from './ClampText';
@@ -74,6 +82,8 @@ export function InstallTargetCatalogPage({
     const [enablement, setEnablement] = useState<CatalogEnablement | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [expandedSupport, setExpandedSupport] = useState<Record<string, boolean>>({});
+    const [copiedEndpoint, setCopiedEndpoint] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         if (!ecosystemId) return;
@@ -186,6 +196,25 @@ export function InstallTargetCatalogPage({
         void Promise.resolve().then(load);
     }, [load]);
 
+    useEffect(() => {
+        if (targetType !== 'WORKLOAD_DEPLOYMENT') return;
+
+        const hasPending = entries.some(e => {
+            const target = e.target;
+            if (!target || !('workload' in target)) return false;
+            const { lifecycle } = target.workload;
+            return lifecycle === 'PENDING' || lifecycle === 'APPLYING' || lifecycle === 'RETIRING';
+        });
+
+        if (!hasPending) return;
+
+        const interval = setInterval(() => {
+            void Promise.resolve().then(load);
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [entries, load, targetType]);
+
     if (!ecosystemId) {
         return <div className="p-6 text-muted-foreground">No ecosystem access.</div>;
     }
@@ -215,6 +244,204 @@ export function InstallTargetCatalogPage({
 
     const isEnabled = (listingId: string) =>
         enablement?.allowedListings?.includes(listingId) ?? false;
+
+    const handleCopy = (text: string, id: string) => {
+        navigator.clipboard.writeText(text);
+        setCopiedEndpoint(id);
+        setTimeout(() => setCopiedEndpoint(null), 2000);
+    };
+
+    const renderWorkloadCard = (entry: CatalogEntry) => {
+        const target = entry.target;
+        if (!target || !('workload' in target)) return renderCard(entry);
+        const { workload } = target;
+
+        const name = entry.listing?.display_name ?? workload.packageId;
+        const isExpanded = expandedSupport[entry.listingId];
+
+        let badgeVariant: 'success' | 'warning' | 'destructive' | 'outline' | 'secondary' =
+            'secondary';
+        let showSpinner = false;
+        if (workload.lifecycle === 'READY') badgeVariant = 'success';
+        else if (workload.lifecycle === 'DEGRADED') badgeVariant = 'warning';
+        else if (workload.lifecycle === 'FAILED') badgeVariant = 'destructive';
+        else if (workload.lifecycle === 'RETIRING' || workload.lifecycle === 'RETIRED')
+            badgeVariant = 'outline';
+        else if (workload.lifecycle === 'APPLYING' || workload.lifecycle === 'PENDING') {
+            badgeVariant = 'secondary';
+            showSpinner = true;
+        }
+
+        const failureMessage =
+            workload.failureCode === 'DRIVER_FAILED'
+                ? 'The deployment agent reported a failure'
+                : workload.failureCode === 'AGENT_STALE'
+                  ? 'The deployment agent stopped reporting'
+                  : workload.failureCode;
+
+        const publicEndpoints = workload.endpoints.filter(
+            e => e.visibility === 'ecosystem' || e.visibility === 'public'
+        );
+
+        return (
+            <div
+                key={entry.listingId}
+                className="bg-card border rounded-xl p-4 md:p-6 shadow-card transition-all hover:shadow-md border-emerald/30"
+            >
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary overflow-hidden">
+                            {entry.listing?.icon_url ? (
+                                <img
+                                    src={entry.listing.icon_url}
+                                    alt={name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <Icon className="w-5 h-5" />
+                            )}
+                        </div>
+                        <div>
+                            <h3 className="font-display font-bold text-foreground">{name}</h3>
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <Badge variant="secondary" className="text-xs">
+                                    {sectionLabel}
+                                </Badge>
+                                <Badge
+                                    variant={badgeVariant}
+                                    className="text-[10px] flex items-center gap-1"
+                                >
+                                    {showSpinner && <Loader2 className="w-3 h-3 animate-spin" />}
+                                    {workload.lifecycle}
+                                </Badge>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {entry.viaBundles.length > 0 && (
+                    <p className="text-xs text-muted-foreground mb-3">
+                        Installed via{' '}
+                        {entry.viaBundles.map((bundle, index) => (
+                            <span key={bundle.listing_id}>
+                                {index > 0 && ', '}
+                                <Link
+                                    href={`/bundles/${bundle.listing_id}`}
+                                    className="text-primary hover:underline"
+                                >
+                                    {bundle.display_name}
+                                </Link>
+                            </span>
+                        ))}
+                    </p>
+                )}
+
+                {failureMessage && (
+                    <div className="mb-3 text-sm text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
+                        {failureMessage}
+                    </div>
+                )}
+
+                {workload.components.length > 0 && (
+                    <div className="mb-4">
+                        <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                            Components
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                            {workload.components.map(c => (
+                                <div
+                                    key={c.id}
+                                    className="flex items-center gap-1.5 bg-muted/50 border rounded px-2 py-1 text-xs"
+                                >
+                                    <div
+                                        className={`w-2 h-2 rounded-full ${c.healthy ? 'bg-emerald' : 'bg-destructive'}`}
+                                    />
+                                    <span className="font-mono">{c.id}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {publicEndpoints.length > 0 && (
+                    <div className="mb-4">
+                        <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                            Endpoints
+                        </div>
+                        <div className="space-y-1.5">
+                            {publicEndpoints.map(e => (
+                                <div
+                                    key={e.id}
+                                    className="flex items-center justify-between bg-muted/30 border rounded px-2 py-1.5 text-xs"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <span className="font-medium text-muted-foreground shrink-0">
+                                            {e.id}
+                                        </span>
+                                        <span className="font-mono truncate text-foreground">
+                                            {e.url}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleCopy(e.url, e.id)}
+                                        className="text-muted-foreground hover:text-foreground shrink-0 ml-2"
+                                    >
+                                        {copiedEndpoint === e.id ? (
+                                            <Check className="w-3.5 h-3.5 text-emerald" />
+                                        ) : (
+                                            <Copy className="w-3.5 h-3.5" />
+                                        )}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-4 border-t pt-3">
+                    <button
+                        onClick={() =>
+                            setExpandedSupport(prev => ({
+                                ...prev,
+                                [entry.listingId]: !prev[entry.listingId],
+                            }))
+                        }
+                        className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        {isExpanded ? (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                        ) : (
+                            <ChevronRight className="w-3.5 h-3.5" />
+                        )}
+                        Support boundary
+                    </button>
+
+                    {isExpanded && (
+                        <div className="mt-2 space-y-1.5 text-xs bg-muted/20 p-3 rounded-md border">
+                            {Object.entries(workload.supportBoundary).map(([key, value]) => (
+                                <div key={key} className="flex flex-col sm:flex-row sm:gap-2">
+                                    <span className="text-muted-foreground font-medium min-w-[100px]">
+                                        {key}:
+                                    </span>
+                                    <span className="text-foreground break-words">{value}</span>
+                                </div>
+                            ))}
+                            {workload.retainedObligations.length > 0 && (
+                                <div className="flex flex-col sm:flex-row sm:gap-2 mt-2 pt-2 border-t border-border/50">
+                                    <span className="text-muted-foreground font-medium min-w-[100px]">
+                                        Retained after retirement:
+                                    </span>
+                                    <span className="text-foreground break-words">
+                                        {workload.retainedObligations.join(', ')}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
 
     const renderCard = (entry: CatalogEntry) => {
         const installed = !!entry.target;
@@ -367,7 +594,11 @@ export function InstallTargetCatalogPage({
                         </Badge>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-3 md:gap-4">
-                        {activeItems.map(renderCard)}
+                        {activeItems.map(entry =>
+                            targetType === 'WORKLOAD_DEPLOYMENT'
+                                ? renderWorkloadCard(entry)
+                                : renderCard(entry)
+                        )}
                     </div>
                 </section>
             )}
@@ -385,7 +616,13 @@ export function InstallTargetCatalogPage({
                 </div>
             )}
 
-            <div className="grid sm:grid-cols-2 gap-3 md:gap-4">{browseItems.map(renderCard)}</div>
+            <div className="grid sm:grid-cols-2 gap-3 md:gap-4">
+                {browseItems.map(entry =>
+                    targetType === 'WORKLOAD_DEPLOYMENT'
+                        ? renderWorkloadCard(entry)
+                        : renderCard(entry)
+                )}
+            </div>
 
             {filtered.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">{emptyMessage}</div>

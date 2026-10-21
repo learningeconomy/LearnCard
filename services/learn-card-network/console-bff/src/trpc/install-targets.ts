@@ -1,19 +1,11 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import type { InstallTarget } from '@learncard/types';
-
-// Brain enriches ecosystem-scoped target reads with catalog metadata resolved
-// from the persisted listingId (see brain listRegistrySubscriptions).
-type EnrichedInstallTarget = InstallTarget & {
-    listingId?: string;
-    displayName?: string;
-    tagline?: string;
-};
 
 import { DidAuthBearerFactory } from '../brain/did-auth';
 import { authorizedCall, type BrainServiceTransport } from '../brain';
 import type { KeyManagementService, ManagedKeyRef } from '@kms';
 import { router, protectedProcedure, type ConsoleContext } from './trpc';
+import { toWorkloadDeploymentTarget, type EcosystemInstallTarget } from './workload-target';
 
 type AuthedContext = Omit<ConsoleContext, 'session'> & {
     session: NonNullable<ConsoleContext['session']>;
@@ -37,13 +29,13 @@ const listInstallTargets = async (
     ctx: AuthedContext,
     path: string,
     ecosystemId: string
-): Promise<EnrichedInstallTarget[]> => {
+): Promise<EcosystemInstallTarget[]> => {
     const keyRef = await ctx.keyRefFor(ctx.session.managedDid);
     if (!keyRef) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No managed key' });
 
     const query = makeBrainCaller(ctx.kms, ctx.transport, ctx.session.managedDid, keyRef);
 
-    const targets = await query<EnrichedInstallTarget[]>(path, { ecosystemId });
+    const targets = await query<EcosystemInstallTarget[]>(path, { ecosystemId });
 
     // Stubbed transports return {} for every query — normalize to a safe shape.
     return Array.isArray(targets) ? targets : [];
@@ -52,11 +44,14 @@ const listInstallTargets = async (
 const EcosystemInput = z.object({ ecosystemId: z.string().min(1) });
 
 export const infraRouter = router({
-    listDeployments: protectedProcedure
-        .input(EcosystemInput)
-        .query(({ ctx, input }) =>
-            listInstallTargets(ctx, 'installIntent.listWorkloadDeployments', input.ecosystemId)
-        ),
+    listDeployments: protectedProcedure.input(EcosystemInput).query(async ({ ctx, input }) => {
+        const targets = await listInstallTargets(
+            ctx,
+            'installIntent.listWorkloadDeployments',
+            input.ecosystemId
+        );
+        return targets.map(toWorkloadDeploymentTarget);
+    }),
 });
 
 export const registriesRouter = router({
