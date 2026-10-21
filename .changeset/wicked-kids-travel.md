@@ -1,5 +1,6 @@
 ---
 '@learncard/network-brain-service': minor
+'@learncard/network-brain-client': minor
 '@learncard/network-plugin': minor
 '@learncard/types': minor
 'learn-card-base': patch
