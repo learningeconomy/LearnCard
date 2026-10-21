@@ -35,6 +35,7 @@ import {
 } from '@helpers/inbox-queue.helpers';
 import { fingerprint } from '@helpers/inbox-batch.helpers';
 import * as jobStore from '@accesslayer/inbox-batch/store';
+import { createInboxBatchSchemaInitializer } from '@accesslayer/inbox-batch/schema';
 import * as issuance from '@helpers/inbox.helpers';
 import { SQSClient, SendMessageCommand, SendMessageBatchCommand } from '@aws-sdk/client-sqs';
 
@@ -173,6 +174,36 @@ describe('Universal Inbox batch issuance', () => {
             'MATCH (i:InboxBatchItem {batchId: $batchId}) SET i.leaseUntil = 0',
             { batchId }
         );
+
+    it('initializes an empty batch schema concurrently in independent cold API and worker instances', async () => {
+        // Testcontainers owns this database. Recreate the cold condition rather than
+        // exercising the process-local cache against already-created schema.
+        for (let round = 0; round < 3; round++) {
+            const constraints = await neogma.queryRunner.run(
+                'SHOW CONSTRAINTS YIELD name WHERE name STARTS WITH "inboxbatch" RETURN name'
+            );
+            for (const record of constraints.records)
+                await neogma.queryRunner.run(`DROP CONSTRAINT ${record.get('name')}`);
+            const indexes = await neogma.queryRunner.run(
+                'SHOW INDEXES YIELD name WHERE name STARTS WITH "inbox_batch_" RETURN name'
+            );
+            for (const record of indexes.records)
+                await neogma.queryRunner.run(`DROP INDEX ${record.get('name')}`);
+
+            const processes = Array.from({ length: 4 }, () =>
+                createInboxBatchSchemaInitializer(neogma.driver)
+            );
+            await Promise.all(processes.map(ensure => ensure()));
+            const ready = await neogma.queryRunner.run(
+                'SHOW CONSTRAINTS YIELD name WHERE name STARTS WITH "inboxbatch" RETURN count(*) AS total'
+            );
+            expect(ready.records[0].get('total').toNumber()).toBe(4);
+            const readyIndexes = await neogma.queryRunner.run(
+                'SHOW INDEXES YIELD name WHERE name STARTS WITH "inbox_batch_" RETURN count(*) AS total'
+            );
+            expect(readyIndexes.records[0].get('total').toNumber()).toBe(6);
+        }
+    });
 
     it('accepts a one-item batch without waiting for a slow worker and restricts polling to its issuer', async () => {
         const receipt = await submit({
