@@ -1,3 +1,5 @@
+import { readSpreadsheetFile, readSpreadsheetText } from '../spreadsheet/parseSpreadsheet';
+import type { IssueImportSource } from './issueImport';
 import { getLogger } from 'learn-card-base';
 
 import { detectSource, type DetectedSource } from './detectSource';
@@ -20,7 +22,10 @@ const FETCH_TIMEOUT_MS = 12000;
 const MAX_BYTES = 2_000_000;
 
 export class ImportError extends Error {
-    constructor(message: string, readonly canPasteInstead = false) {
+    constructor(
+        message: string,
+        readonly canPasteInstead = false
+    ) {
         super(message);
         this.name = 'ImportError';
     }
@@ -144,11 +149,20 @@ export const ingest = async (detected: DetectedSource): Promise<NormalizedImport
     }
 };
 
-export const ingestText = (text: string): Promise<NormalizedImport> => ingest(detectSource(text));
+export const ingestText = async (text: string): Promise<IssueImportSource> => {
+    const detected = detectSource(text);
+    return detected.kind === 'spreadsheet'
+        ? { kind: 'spreadsheet', source: readSpreadsheetText(text, 'pasted.csv') }
+        : { kind: 'credential', value: await ingest(detected) };
+};
 
-export const ingestFile = async (file: File): Promise<NormalizedImport> => {
+export const ingestFile = async (file: File): Promise<IssueImportSource> => {
+    if (/\.(csv|tsv|xlsx)$/i.test(file.name))
+        return { kind: 'spreadsheet', source: await readSpreadsheetFile(file) };
     if (file.size > MAX_BYTES) throw new ImportError('That file is too large to import.');
-    const text = await file.text();
-    const parsed = parseJsonText(text);
-    return normalizeToObv3(parsed, { source: 'file', label: file.name });
+    const parsed = parseJsonText(await file.text());
+    return {
+        kind: 'credential',
+        value: normalizeToObv3(parsed, { source: 'file', label: file.name }),
+    };
 };
