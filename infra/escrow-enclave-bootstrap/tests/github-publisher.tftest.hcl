@@ -1,5 +1,17 @@
 # All managed resources and account lookup overridden; real policy-document
 # computation only. No AWS calls, ambient credentials, backend, plan/apply CLI.
+override_resource { target = aws_s3_bucket.cloudtrail }
+override_resource { target = aws_s3_bucket_versioning.cloudtrail }
+override_resource { target = aws_s3_bucket_object_lock_configuration.cloudtrail }
+override_resource { target = aws_s3_bucket_public_access_block.cloudtrail }
+override_resource { target = aws_s3_bucket_ownership_controls.cloudtrail }
+override_resource { target = aws_s3_bucket_server_side_encryption_configuration.cloudtrail }
+override_resource { target = aws_s3_bucket_policy.cloudtrail }
+override_resource {
+  target = aws_kms_key.cloudtrail
+  values = { arn = "arn:aws:kms:us-east-1:123456789012:key/00000000-1111-2222-3333-444444444444" }
+}
+override_resource { target = aws_cloudtrail.escrow }
 provider "aws" {
   region                      = "us-east-1"
   access_key                  = "test"
@@ -11,8 +23,9 @@ provider "aws" {
 }
 
 variables {
-  environment     = "staging"
-  kms_admin_users = ["test-operator"]
+  authority_generations = ["test"]
+  environment           = "staging"
+  kms_admin_users       = ["test-operator"]
 }
 
 override_data {

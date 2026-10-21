@@ -676,3 +676,10 @@ run "host_cannot_read_other_ssm_parameters" {
     error_message = "The host role must explicitly deny SSM parameter reads outside its three host parameters"
   }
 }
+override_resource {
+  target = aws_cloudwatch_event_rule.trail_tamper
+  values = { arn = "arn:aws:events:us-east-1:123456789012:rule/trail-tamper" }
+}
+override_resource {
+  target = aws_cloudwatch_event_target.trail_tamper
+}
