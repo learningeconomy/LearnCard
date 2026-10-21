@@ -4,6 +4,20 @@ import { createSdk } from './sdk';
 import { createSecretStore } from './secrets';
 import { runCanary } from './runner';
 
+const handlerFailureReasons: Record<string, string> = {
+    Error: 'config',
+    RunnerAuthError: 'auth',
+    EscrowPinMismatchError: 'pin_mismatch',
+    EscrowPinThrottledError: 'rate_limit',
+    EscrowRequestError: 'unexpected',
+};
+
+const constructorName = (error: unknown): string => {
+    if (!error || (typeof error !== 'object' && typeof error !== 'function')) return 'UnknownError';
+    const name = (error.constructor as { name?: unknown } | undefined)?.name;
+    return typeof name === 'string' && name.length > 0 ? name : 'UnknownError';
+};
+
 export const handler = async (event: unknown): Promise<void> => {
     // The Lambda's configured tier is authoritative even for a malformed event.
     const tier = process.env.CANARY_TIER === '2' ? 2 : 1;
@@ -14,6 +28,7 @@ export const handler = async (event: unknown): Promise<void> => {
         metrics(...args);
         if (args[0] === `Tier${tier}.Success`) reported = true;
     };
+    let startupError: unknown;
     try {
         if (
             !event ||
@@ -30,15 +45,22 @@ export const handler = async (event: unknown): Promise<void> => {
             sdk: createSdk(config),
             emit,
         });
-    } catch {
+    } catch (error) {
         // Never send raw startup exceptions to Lambda logs.
+        startupError = error;
+        console.log(
+            JSON.stringify({
+                event: 'escrow-canary.handler.error',
+                errorName: constructorName(error),
+            })
+        );
     } finally {
         if (!reported)
             emit(
                 `Tier${tier}.Success`,
                 0,
                 undefined,
-                { reason: 'config' },
+                { reason: handlerFailureReasons[constructorName(startupError)] ?? 'config' },
                 {
                     account: accountForEvent(tier, Date.now()),
                 }

@@ -26,15 +26,18 @@ describe('handler terminal metrics', () => {
             });
             const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
             await handler({ tier, time: new Date().toISOString() });
-            expect(log).toHaveBeenCalledOnce();
-            const metric = JSON.parse(log.mock.calls[0][0]);
+            expect(log).toHaveBeenCalledTimes(2);
+            const metric = JSON.parse(log.mock.calls[1][0]);
             expect(metric).toMatchObject({
                 Environment: 'production',
                 Tier: String(tier),
                 Reason: 'config',
                 [`Tier${tier}.Success`]: 0,
             });
-            expect(JSON.stringify(metric)).not.toContain('private');
+            expect(log.mock.calls[0][0]).toBe(
+                JSON.stringify({ event: 'escrow-canary.handler.error', errorName: 'Error' })
+            );
+            expect(JSON.stringify(log.mock.calls)).not.toContain('private');
             if (tier === 2) expect(['pin-a', 'pin-b']).toContain(metric.Account);
         }
     );
@@ -44,7 +47,7 @@ describe('handler terminal metrics', () => {
             vi.stubEnv('CANARY_TIER', '1');
             const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
             await handler(event);
-            expect(JSON.parse(log.mock.calls[0][0])).toMatchObject({
+            expect(JSON.parse(log.mock.calls.at(-1)![0])).toMatchObject({
                 'Tier1.Success': 0,
                 Reason: 'config',
             });
@@ -58,10 +61,26 @@ describe('handler terminal metrics', () => {
         });
         const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
         await handler({ tier: 2, time: new Date().toISOString() });
-        expect(JSON.parse(log.mock.calls[0][0])).toMatchObject({
+        expect(JSON.parse(log.mock.calls.at(-1)![0])).toMatchObject({
             'Tier2.Success': 0,
             Reason: 'config',
         });
+    });
+    it('logs only the error constructor name and maps it to an allowlisted reason', async () => {
+        vi.stubEnv('CANARY_TIER', '1');
+        vi.mocked(loadConfig).mockImplementation(() => {
+            throw Object.assign(new Error('secret-value-not-for-logs'), { name: 'CustomError' });
+        });
+        const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        await handler({ tier: 1, time: new Date().toISOString() });
+        expect(log.mock.calls[0][0]).toBe(
+            JSON.stringify({ event: 'escrow-canary.handler.error', errorName: 'Error' })
+        );
+        expect(JSON.parse(log.mock.calls[1][0])).toMatchObject({
+            'Tier1.Success': 0,
+            Reason: 'config',
+        });
+        expect(JSON.stringify(log.mock.calls)).not.toContain('secret-value-not-for-logs');
     });
     it('does not double-report a runner result', async () => {
         vi.stubEnv('CANARY_TIER', '1');

@@ -145,7 +145,11 @@ describe('scheduled canary orchestration', () => {
             needsPinReset: false,
             deviceState: { shares: { 'sss-device-share': 'reset-secret-share' } },
         });
-        expect(f.lines.join()).toContain('"Tier2.Success":1');
+        const result = f.lines
+            .map(line => JSON.parse(line))
+            .find(metric => 'Tier2.Success' in metric);
+        expect(result['Tier2.Success']).toBe(1);
+        expect(result._aws.Timestamp).toBe(Date.parse(f.event.time));
     });
     it.each([false, true])(
         'repairs a retired PIN / interrupted run before recovery (%s)',

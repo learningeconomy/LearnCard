@@ -51,6 +51,7 @@ export const runCanary = async (
     try {
         if (!Number.isFinite(time) || Math.abs(Date.now() - time) > 5 * 60_000)
             throw new Error('Invalid scheduled time');
+        if (event.tier === 2) context.timestamp = time;
         const slot = Math.floor(time / 1_800_000);
         const selected = config.accounts[event.tier === 1 ? 0 : 1 + (slot % 2)];
         const secret = await timed('secret', () => secrets.read(selected.secretArn));
