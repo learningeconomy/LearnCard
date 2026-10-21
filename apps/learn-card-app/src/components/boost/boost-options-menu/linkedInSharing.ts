@@ -4,7 +4,7 @@ type LinkedInCertification = {
     organizationId?: string;
     issuedAt?: string;
     credentialId?: string;
-    boostUri?: string;
+    credentialRecordUri?: string;
     shareLink: string;
 };
 
@@ -15,7 +15,7 @@ export const buildLinkedInCertificationUrl = ({
     organizationId,
     issuedAt,
     credentialId,
-    boostUri,
+    credentialRecordUri,
     shareLink,
 }: LinkedInCertification): string => {
     const url = new URL('https://www.linkedin.com/profile/add');
@@ -34,7 +34,7 @@ export const buildLinkedInCertificationUrl = ({
         }
     }
     url.searchParams.set('certUrl', shareLink);
-    const certId = credentialId || boostUri;
+    const certId = credentialId || credentialRecordUri;
     if (certId) url.searchParams.set('certId', certId);
     return url.toString();
 };

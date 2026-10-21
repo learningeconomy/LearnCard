@@ -4661,6 +4661,19 @@
             "unlimited": "Ilimitado"
         }
     },
+    "credentialShare": {
+        "copyLink": "Copiar enlace",
+        "publicPreviewPersistent": "La vista previa pública está publicada y puede seguir disponible. Las redes sociales pueden conservar copias, aunque cambies la configuración de uso compartido.",
+        "publicPreviewPrivate": "La vista previa pública muestra el nombre, la entidad emisora y la imagen de la credencial. Puede seguir disponible tras publicarse, y las redes sociales pueden conservar copias. El resto permanece cifrado.",
+        "issuerUnavailable": "No hay datos de la entidad emisora. Aún puedes compartir el enlace cifrado.",
+        "enablePreview": "Activar vista previa pública",
+        "publishingPreview": "Publicando vista previa...",
+        "addToLinkedIn": "Añadir a LinkedIn",
+        "postToLinkedIn": "Publicar en LinkedIn",
+        "linkedInOrgId": "ID de organización de LinkedIn (opcional)",
+        "linkedInOrgIdHelp": "Busca el ID numérico en la URL de administración de LinkedIn. Introduce el número, no el nombre de la página. Déjalo en blanco para eliminarlo.",
+        "linkedInOrgIdError": "Introduce solo dígitos."
+    },
     "developerPortal": {
         "shell": {
             "title": "Portal de Desarrolladores",

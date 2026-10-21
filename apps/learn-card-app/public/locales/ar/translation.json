@@ -4658,6 +4658,19 @@
             "unlimited": "غير محدود"
         }
     },
+    "credentialShare": {
+        "copyLink": "نسخ الرابط",
+        "publicPreviewPersistent": "تم نشر المعاينة العامة وقد تظل متاحة. قد تحتفظ منصات التواصل بنسخ منها حتى بعد تغيير إعدادات المشاركة.",
+        "publicPreviewPrivate": "تعرض المعاينة العامة اسم بيانات الاعتماد والجهة المُصدرة والصورة. وقد تظل متاحة بعد نشرها، كما قد تحتفظ منصات التواصل بنسخ منها. وتبقى بقية البيانات مشفرة.",
+        "issuerUnavailable": "تفاصيل الجهة المُصدرة غير متاحة. لا يزال بإمكانك مشاركة الرابط المشفر.",
+        "enablePreview": "تفعيل المعاينة العامة",
+        "publishingPreview": "جارٍ نشر المعاينة...",
+        "addToLinkedIn": "إضافة إلى LinkedIn",
+        "postToLinkedIn": "النشر على LinkedIn",
+        "linkedInOrgId": "معرّف مؤسسة LinkedIn (اختياري)",
+        "linkedInOrgIdHelp": "اعثر على المعرّف الرقمي في عنوان URL لصفحة إدارة LinkedIn. أدخل الرقم لا اسم الصفحة، واتركه فارغًا لإزالته.",
+        "linkedInOrgIdError": "أدخل أرقامًا فقط."
+    },
     "developerPortal": {
         "shell": {
             "title": "بوابة المطورين",

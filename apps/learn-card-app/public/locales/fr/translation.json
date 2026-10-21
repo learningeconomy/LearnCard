@@ -4661,6 +4661,19 @@
             "unlimited": "Illimité"
         }
     },
+    "credentialShare": {
+        "copyLink": "Copier le lien",
+        "publicPreviewPersistent": "L’aperçu public est publié et peut rester accessible. Les réseaux sociaux peuvent en conserver des copies, même si vous modifiez ensuite les paramètres de partage.",
+        "publicPreviewPrivate": "L’aperçu public affiche le nom, l’émetteur et l’image du justificatif. Il peut rester accessible après sa publication, et les réseaux sociaux peuvent en conserver des copies. Le reste demeure chiffré.",
+        "issuerUnavailable": "Les informations sur l’émetteur sont indisponibles. Vous pouvez toujours partager le lien chiffré.",
+        "enablePreview": "Activer l’aperçu public",
+        "publishingPreview": "Publication de l’aperçu...",
+        "addToLinkedIn": "Ajouter à LinkedIn",
+        "postToLinkedIn": "Publier sur LinkedIn",
+        "linkedInOrgId": "ID d’organisation LinkedIn (facultatif)",
+        "linkedInOrgIdHelp": "Trouvez l’ID numérique dans l’URL de votre page d’administration LinkedIn. Saisissez le numéro, pas le nom de la page. Laissez vide pour le supprimer.",
+        "linkedInOrgIdError": "Saisissez uniquement des chiffres."
+    },
     "developerPortal": {
         "shell": {
             "title": "Portail Développeur",

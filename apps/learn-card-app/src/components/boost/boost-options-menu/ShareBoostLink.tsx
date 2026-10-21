@@ -49,6 +49,7 @@ type ShareBoostLinkProps = {
     handleClose?: () => void;
     boost: VC | UnsignedVC;
     boostUri?: string;
+    credentialRecordUri?: string;
     credentialId?: string;
     customClassName?: string;
     categoryType: BoostCategoryOptionsEnum | CredentialCategoryEnum;
@@ -62,6 +63,7 @@ type ShareBoostLinkProps = {
 const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     boost,
     boostUri,
+    credentialRecordUri,
     credentialId,
     customClassName,
     handleClose,
@@ -298,8 +300,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
               issuer: issuerName || '',
               organizationId: profileId ? profile?.linkedInOrganizationId : undefined,
               issuedAt: dateValue,
-              credentialId: cred?.id || boost.id,
-              boostUri,
+              credentialId: cred?.id,
+              credentialRecordUri,
               shareLink,
           })
         : undefined;
@@ -471,7 +473,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     onClick={() => copyBoostLinkToClipBoard()}
                                     className="min-w-[108px] flex items-center justify-end text-grayscale-700"
                                 >
-                                    Copy Link
+                                    {m['credentialShare.copyLink']()}
                                 </button>
                             </div>
                         )}
@@ -480,16 +482,15 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             <div className="w-full px-4 py-3 font-poppins">
                                 <p className="text-xs text-grayscale-600 leading-relaxed mb-3">
                                     {includePublicPreview && shareLink && !isLinkLoading
-                                        ? 'Public preview enabled. Only the credential name, issuer and image are public.'
-                                        : 'Enable a public preview to show the credential name, issuer and image on social apps. Everything else stays encrypted.'}
+                                        ? m['credentialShare.publicPreviewPersistent']()
+                                        : m['credentialShare.publicPreviewPrivate']()}
                                 </p>
                                 {!isLoading && !previewIssuerName && (
                                     <p
                                         role="status"
                                         className="mb-3 text-xs text-grayscale-600 leading-relaxed"
                                     >
-                                        Issuer details are unavailable. You can still share the
-                                        encrypted link.
+                                        {m['credentialShare.issuerUnavailable']()}
                                     </p>
                                 )}
                                 {!includePublicPreview && (
@@ -502,7 +503,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         }}
                                         className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
-                                        Enable Public Preview
+                                        {m['credentialShare.enablePreview']()}
                                     </button>
                                 )}
                                 {includePublicPreview && isLinkLoading && (
@@ -511,7 +512,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         className="flex items-center justify-center gap-2 text-sm text-grayscale-600"
                                     >
                                         <IonSpinner name="crescent" className="w-4 h-4" />
-                                        Publishing preview...
+                                        {m['credentialShare.publishingPreview']()}
                                     </span>
                                 )}
                             </div>
@@ -545,7 +546,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     >
                                         <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                                     </svg>
-                                    Add to LinkedIn
+                                    {m['credentialShare.addToLinkedIn']()}
                                 </a>
                                 {!isEndorsementRequest && (
                                     <a
@@ -554,7 +555,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         rel="noopener noreferrer"
                                         className="mt-3 flex items-center justify-center w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                                     >
-                                        Post to LinkedIn
+                                        {m['credentialShare.postToLinkedIn']()}
                                     </a>
                                 )}
                             </div>
@@ -573,7 +574,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     >
                                         <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                                     </svg>
-                                    Add to LinkedIn
+                                    {m['credentialShare.addToLinkedIn']()}
                                 </button>
                             </div>
                         )}

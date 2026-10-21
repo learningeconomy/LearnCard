@@ -15,7 +15,7 @@ describe('LinkedIn sharing URLs', () => {
                 ...input,
                 organizationId: '12345',
                 credentialId: 'urn:uuid:credential',
-                boostUri: 'lc:boost:fallback',
+                credentialRecordUri: 'lc:credential:fallback',
             })
         );
         expect(url.searchParams.get('organizationId')).toBe('12345');
@@ -36,12 +36,17 @@ describe('LinkedIn sharing URLs', () => {
         }
     );
 
-    it('uses the boost URI consistently when there is no credential ID', () => {
-        const params = { ...input, boostUri: 'lc:boost:original' };
+    it('uses a unique credential record URI when there is no credential ID', () => {
+        const params = { ...input, credentialRecordUri: 'lc:credential:record-1' };
         const first = new URL(buildLinkedInCertificationUrl(params));
-        const second = new URL(buildLinkedInCertificationUrl(params));
-        expect(first.searchParams.get('certId')).toBe('lc:boost:original');
-        expect(second.searchParams.get('certId')).toBe(first.searchParams.get('certId'));
+        const second = new URL(
+            buildLinkedInCertificationUrl({
+                ...params,
+                credentialRecordUri: 'lc:credential:record-2',
+            })
+        );
+        expect(first.searchParams.get('certId')).toBe('lc:credential:record-1');
+        expect(second.searchParams.get('certId')).toBe('lc:credential:record-2');
     });
 
     it('omits a missing credential ID and invalid or missing issuance dates', () => {

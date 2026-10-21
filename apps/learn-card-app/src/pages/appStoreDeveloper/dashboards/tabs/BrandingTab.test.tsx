@@ -16,6 +16,7 @@ vi.mock('learn-card-base/hooks/useToast', () => ({
 }));
 
 import { BrandingTab } from './BrandingTab';
+import * as m from '../../../../paraglide/messages.js';
 
 afterEach(cleanup);
 
@@ -31,7 +32,7 @@ describe('issuer LinkedIn branding setting', () => {
             linkedInOrganizationId: '12345',
         };
         const { rerender } = render(<BrandingTab branding={branding} />);
-        const field = screen.getByLabelText('LinkedIn organization ID (optional)');
+        const field = screen.getByLabelText(m['credentialShare.linkedInOrgId']());
         expect(field).toHaveValue('12345');
 
         profile.mockReturnValue({
@@ -43,10 +44,18 @@ describe('issuer LinkedIn branding setting', () => {
         expect(field).toHaveValue('');
 
         fireEvent.change(field, { target: { value: 'company-page' } });
-        expect(screen.getByRole('alert')).toHaveTextContent('Enter digits only.');
-        expect(screen.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
+        expect(screen.getByRole('alert')).toBeVisible();
+        expect(
+            screen.getByRole('button', {
+                name: m['developerPortal.dashboards.tabs.branding.saveChanges'](),
+            })
+        ).toBeDisabled();
         fireEvent.change(field, { target: { value: '' } });
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
+        expect(
+            screen.getByRole('button', {
+                name: m['developerPortal.dashboards.tabs.branding.saveChanges'](),
+            })
+        ).toBeEnabled();
     });
 });

@@ -82,7 +82,7 @@ For browser application requests (CHAPI or VC-API), use the credential list to s
 Issuers can link their organization in **Developer Portal → Build → an issuance project → Branding**. Enter the numeric **LinkedIn organization ID** from the organization's LinkedIn admin-page URL, not its public page name. Leave it blank to use the issuer name without an organization link. Saving a blank value removes a previous ID.
 
 1. Open an earned credential and choose **Share**.
-2. Choose **Add to LinkedIn** to add it under Licenses & certifications. LinkedIn uses the configured organization ID to find the issuer's page and logo. The certification ID uses the credential's real ID or its saved address; it is never generated from the current time.
+2. Choose **Add to LinkedIn** to add it under Licenses & certifications. LinkedIn uses the configured organization ID to find the issuer's page and logo. The certification ID uses the credential's own ID or your individual saved credential address, never a shared template or the current time. If neither is available, the certification ID is omitted.
 3. To include a social preview, choose **Enable Public Preview**. This publishes only the credential name, issuer name, and available image URL. Other credential fields remain encrypted; anyone with the complete share link can still open the credential.
 4. Choose **Post to LinkedIn** to open a post with the share link filled in.
 
@@ -91,6 +91,8 @@ Public previews are optional. Reopening Share without enabling a preview produce
 Preview details are supplied by the person sharing, not proof of the issuer's identity or claims. Open the full credential to inspect its verification. LearnCard records the publisher and creation time, requires the matching encrypted-link address for public lookup, and removes owned server-side previews when that profile is deleted. The SDK's `deleteCredentialSharePreview(id)` can also remove an owned preview; copies held by social apps may remain.
 
 If the issuer's name cannot be loaded and is not included in the credential, public previews stay disabled rather than publishing an “Unknown” placeholder. The encrypted link remains available.
+
+LinkedIn sharing controls follow your app language.
 
 Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the matching public preview record, and returns Open Graph metadata to social crawlers. The canonical destination preserves the original link's decryption parameters so a card click can open the credential. Ordinary visitors continue to the app; unavailable or mismatched previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
 

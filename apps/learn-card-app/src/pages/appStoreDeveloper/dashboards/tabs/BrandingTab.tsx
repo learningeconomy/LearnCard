@@ -405,7 +405,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             htmlFor="issuer-linkedin-organization-id"
                             className="mb-1 block text-sm font-medium text-grayscale-700"
                         >
-                            LinkedIn organization ID (optional)
+                            {m['credentialShare.linkedInOrgId']()}
                         </label>
                         <input
                             id="issuer-linkedin-organization-id"
@@ -425,8 +425,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             id="issuer-linkedin-organization-id-help"
                             className="mt-1 text-sm text-grayscale-600"
                         >
-                            Find the numeric ID in your LinkedIn admin page URL. Enter the number,
-                            not the page slug. Leave blank to remove it.
+                            {m['credentialShare.linkedInOrgIdHelp']()}
                         </p>
                         {!/^\d*$/.test(linkedInOrganizationId) && (
                             <p
@@ -434,7 +433,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 role="alert"
                                 className="mt-1 text-sm text-red-700"
                             >
-                                Enter digits only.
+                                {m['credentialShare.linkedInOrgIdError']()}
                             </p>
                         )}
                     </div>

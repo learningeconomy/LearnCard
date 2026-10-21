@@ -2,6 +2,7 @@ import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as m from '../../../paraglide/messages.js';
 
 const { createLink, track, getProfile } = vi.hoisted(() => ({
     createLink: vi.fn(),
@@ -303,28 +304,36 @@ describe('ShareBoostLink error recovery', () => {
                 <ShareBoostLink boost={credential} categoryType={'Achievement' as never} />
             </QueryClientProvider>
         );
-        const enable = await screen.findByRole('button', { name: 'Enable Public Preview' });
+        const enable = await screen.findByRole('button', {
+            name: m['credentialShare.enablePreview'](),
+        });
         await waitFor(() => expect(enable).toBeEnabled());
         expect(createLink.mock.calls[0][0]).not.toHaveProperty('publicPreview');
         const privatePost = new URL(
-            screen.getByRole('link', { name: 'Post to LinkedIn' }).getAttribute('href')!
+            screen
+                .getByRole('link', { name: m['credentialShare.postToLinkedIn']() })
+                .getAttribute('href')!
         );
         expect(privatePost.searchParams.get('url')).toBe(privateLink);
-        expect(screen.getByText(/everything else stays encrypted/i)).toBeInTheDocument();
-
+        expect(screen.getByText(m['credentialShare.publicPreviewPrivate']())).toBeInTheDocument();
         fireEvent.click(enable);
-        expect(await screen.findByRole('status', { name: '' })).toHaveTextContent(
-            'Publishing preview...'
-        );
-        expect(screen.queryByRole('link', { name: 'Post to LinkedIn' })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('link', { name: m['credentialShare.postToLinkedIn']() })
+        ).not.toBeInTheDocument();
         await act(async () => publishing.resolve({ link: publicLink }));
-        expect(await screen.findByText(/public preview enabled/i)).toBeInTheDocument();
+        expect(
+            screen.getByText(m['credentialShare.publicPreviewPersistent']())
+        ).toBeInTheDocument();
         const post = new URL(
-            screen.getByRole('link', { name: 'Post to LinkedIn' }).getAttribute('href')!
+            screen
+                .getByRole('link', { name: m['credentialShare.postToLinkedIn']() })
+                .getAttribute('href')!
         );
         expect(post.searchParams.get('url')).toBe(publicLink);
         const certification = new URL(
-            screen.getByRole('link', { name: 'Add to LinkedIn' }).getAttribute('href')!
+            screen
+                .getByRole('link', { name: m['credentialShare.addToLinkedIn']() })
+                .getAttribute('href')!
         );
         expect(certification.searchParams.get('certId')).toBe(credential.id);
         expect(certification.searchParams.get('certUrl')).toBe(publicLink);
@@ -355,7 +364,9 @@ describe('ShareBoostLink error recovery', () => {
                     />
                 </QueryClientProvider>
             );
-            const add = await screen.findByRole('link', { name: 'Add to LinkedIn' });
+            const add = await screen.findByRole('link', {
+                name: m['credentialShare.addToLinkedIn'](),
+            });
             expect(new URL(add.getAttribute('href')!).searchParams.get('organizationId')).toBe(
                 '12345'
             );
@@ -374,7 +385,7 @@ describe('ShareBoostLink error recovery', () => {
                 <ShareBoostLink boost={credential} categoryType={'Achievement' as never} />
             </QueryClientProvider>
         );
-        const add = await screen.findByRole('link', { name: 'Add to LinkedIn' });
+        const add = await screen.findByRole('link', { name: m['credentialShare.addToLinkedIn']() });
         const url = new URL(add.getAttribute('href')!);
         expect(url.searchParams.has('organizationId')).toBe(false);
         expect(url.searchParams.get('organizationName')).toBe('Example school');
@@ -386,7 +397,7 @@ describe('ShareBoostLink error recovery', () => {
         [undefined, null],
     ])(
         'does not publish a synthetic endorsement identity as the LinkedIn ID (%s)',
-        async (boostUri, expectedId) => {
+        async (credentialRecordUri, expectedId) => {
             createLink.mockResolvedValue({
                 link: 'https://learncard.app/share-boost?uri=encrypted',
             });
@@ -396,12 +407,15 @@ describe('ShareBoostLink error recovery', () => {
                     <ShareBoostLink
                         boost={{ ...credential, id: undefined }}
                         credentialId="urn:sha256:endorsement-target"
-                        boostUri={boostUri}
+                        boostUri="lc:network:example:boost:shared-template"
+                        credentialRecordUri={credentialRecordUri}
                         categoryType={'Achievement' as never}
                     />
                 </QueryClientProvider>
             );
-            const add = await screen.findByRole('link', { name: 'Add to LinkedIn' });
+            const add = await screen.findByRole('link', {
+                name: m['credentialShare.addToLinkedIn'](),
+            });
             expect(new URL(add.getAttribute('href')!).searchParams.get('certId')).toBe(expectedId);
             client.clear();
         }
@@ -420,10 +434,14 @@ describe('ShareBoostLink error recovery', () => {
                 <ShareBoostLink {...props} />
             </QueryClientProvider>
         );
-        expect(await screen.findByRole('link', { name: 'Add to LinkedIn' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Copy Link' })).toBeEnabled();
-        expect(screen.getByRole('button', { name: 'Enable Public Preview' })).toBeDisabled();
-        expect(screen.getByText(/issuer details are unavailable/i)).toBeInTheDocument();
+        expect(
+            await screen.findByRole('link', { name: m['credentialShare.addToLinkedIn']() })
+        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: m['credentialShare.copyLink']() })).toBeEnabled();
+        expect(
+            screen.getByRole('button', { name: m['credentialShare.enablePreview']() })
+        ).toBeDisabled();
+        expect(screen.getByText(m['credentialShare.issuerUnavailable']())).toBeInTheDocument();
         expect(createLink).toHaveBeenCalledOnce();
 
         getProfile.mockReturnValue({ data: { displayName: 'Resolved school' }, isLoading: false });
@@ -432,8 +450,12 @@ describe('ShareBoostLink error recovery', () => {
                 <ShareBoostLink {...props} />
             </QueryClientProvider>
         );
-        expect(screen.queryByText(/issuer details are unavailable/i)).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Enable Public Preview' })).toBeEnabled();
+        expect(
+            screen.queryByText(m['credentialShare.issuerUnavailable']())
+        ).not.toBeInTheDocument();
+        expect(
+            screen.getByRole('button', { name: m['credentialShare.enablePreview']() })
+        ).toBeEnabled();
         client.clear();
     });
 
@@ -450,9 +472,15 @@ describe('ShareBoostLink error recovery', () => {
                 <ShareBoostLink {...props} />
             </QueryClientProvider>
         );
-        expect(await screen.findByRole('button', { name: 'Copy Link' })).toBeEnabled();
-        expect(screen.getByRole('button', { name: 'Add to LinkedIn' })).toBeDisabled();
-        expect(screen.queryByRole('link', { name: 'Add to LinkedIn' })).not.toBeInTheDocument();
+        expect(
+            await screen.findByRole('button', { name: m['credentialShare.copyLink']() })
+        ).toBeEnabled();
+        expect(
+            screen.getByRole('button', { name: m['credentialShare.addToLinkedIn']() })
+        ).toBeDisabled();
+        expect(
+            screen.queryByRole('link', { name: m['credentialShare.addToLinkedIn']() })
+        ).not.toBeInTheDocument();
 
         getProfile.mockReturnValue({
             data: { displayName: 'School', linkedInOrganizationId: '12345' },

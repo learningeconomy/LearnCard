@@ -8,7 +8,13 @@ import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
 import FamilyInviteGuardian from './FamilyBoostInviteModal/FamilyInviteGuardian';
 
 import { VC } from '@learncard/types';
-import { ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
+import {
+    ModalTypes,
+    useModal,
+    BoostCategoryOptionsEnum,
+    CredentialCategoryEnum,
+    useGetCredentialList,
+} from 'learn-card-base';
 
 export const FamilyPreview: React.FC<{
     credential: VC;
@@ -19,6 +25,12 @@ export const FamilyPreview: React.FC<{
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
+    const { data: familyRecords } = useGetCredentialList(CredentialCategoryEnum.family);
+    const credentialRecordUri = familyRecords?.pages.some(page =>
+        page.records?.some(record => record.uri === boostUri)
+    )
+        ? boostUri
+        : undefined;
 
     const [isFront, setIsFront] = useState<boolean>(true);
 
@@ -32,6 +44,7 @@ export const FamilyPreview: React.FC<{
             handleClose: () => closeModal(),
             boost: credential,
             boostUri: boostUri,
+            credentialRecordUri,
             categoryType: BoostCategoryOptionsEnum.family,
         };
 
