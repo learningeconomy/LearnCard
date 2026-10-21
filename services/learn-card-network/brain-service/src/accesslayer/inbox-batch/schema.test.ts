@@ -53,7 +53,9 @@ describe('inbox batch schema readiness', () => {
             undefined,
             undefined,
         ]);
-        expect(api.run.mock.calls[0][0]).toBe(api.run.mock.calls[1][0]);
+        const firstQuery =
+            'CREATE CONSTRAINT inboxbatch_id IF NOT EXISTS FOR (n:InboxBatch) REQUIRE n.id IS UNIQUE';
+        expect(api.run.mock.calls.slice(0, 2)).toEqual([[firstQuery], [firstQuery]]);
         expect(api.run).toHaveBeenCalledTimes(11);
         expect(worker.run).toHaveBeenCalledTimes(10);
     });
