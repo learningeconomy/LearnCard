@@ -19,8 +19,10 @@ both documented model output limits. Although the current cards advertise native
 Schema output, this migration retains AI Passport's required-function pattern and
 local validation to preserve existing optional-category semantics.
 
-`generateImage` remains on first-party OpenAI (`dall-e-3`, `OPENAI_API_KEY`), including
-its existing Filestack storage. Embeddings and Nova are outside this migration.
+`generateImage` defaults to Bedrock Stable Image Core (`stability.stable-image-core-v1:1`)
+in us-west-2, signed with SigV4 from the execution role, and still stores the result
+through Filestack. DALL-E 3 (`OPENAI_API_KEY`) is only an explicit `IMAGE_PROVIDER=openai`
+fallback; see `image-generation.md`. Embeddings and Nova are outside this migration.
 
 ## Runtime contract
 
@@ -64,8 +66,9 @@ policy requires filtering, a separately approved pre-invocation path is a rollou
 The deployed Lambda role must have approved Bedrock/default-project access for both
 exact cross-region US profiles and access to the Runtime endpoint. Confirm rotating
 credential/token operation and the applicable retention, DPA, subprocessor, guardrail
-and invocation-logging posture before learner traffic. The reviewed dev policy is managed by Serverless/CloudFormation; it has not been
-applied. This PR does not port AI Passport's
+and invocation-logging posture before learner traffic. The reviewed dev policy is managed by
+Serverless/CloudFormation and is created with the stack on a `dev`/`us-east-1` deploy, so no
+manual IAM edits are needed. This PR does not port AI Passport's
 application-specific privacy gateway into LCA. US profiles can route across US regions;
 the endpoint is not a single-region processing guarantee.
 
