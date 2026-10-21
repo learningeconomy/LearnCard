@@ -5,6 +5,8 @@ import type { TrpcMock, BrainOutputs } from './mocks/trpc';
 import { installNetwork } from './mocks/network';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
+import { resolve } from 'path';
+import { zipSync } from 'fflate';
 
 const NAME_PLACEHOLDER = 'e.g. Web Development Fundamentals';
 
@@ -151,6 +153,46 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await selectBadgeType(page);
         await page.getByRole('button', { name: 'JSON', exact: true }).click({ timeout: 30_000 });
         await expect(page.locator('textarea.font-mono')).toBeVisible({ timeout: 30_000 });
+    });
+
+    test('rejects an excessive XLSX archive and then imports a real Google Sheets export through the browser worker', async ({
+        page,
+    }) => {
+        await selectBadgeType(page);
+        await page.getByRole('button', { name: /specific people/i }).click();
+        const archive = zipSync(
+            Object.fromEntries(
+                Array.from({ length: 1_001 }, (_, index) => [
+                    `unused-${index}.xml`,
+                    new Uint8Array(),
+                ])
+            )
+        );
+        await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+            name: 'too-many-parts.xlsx',
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            buffer: Buffer.from(archive),
+        });
+        await expect(
+            page.getByText(
+                'This workbook is too complex to import. Remove unused sheets or split it into smaller files.',
+                { exact: true }
+            )
+        ).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toHaveCount(0);
+
+        // The unchanged bytes were downloaded from Google Sheets, not generated
+        // by the same parser library that is being tested (see fixtures/README.md).
+        await page
+            .getByTestId('issue-spreadsheet-file')
+            .setInputFiles(
+                resolve('src/pages/issue/spreadsheet/fixtures/google-sheets-roster.xlsx')
+            );
+        await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
+        await page.getByRole('button', { name: 'Add People', exact: true }).click();
+        await expect(page.getByText('ada@example.test', { exact: true }).first()).toBeVisible();
+        await expect(page.getByText('bao@example.test', { exact: true }).first()).toBeVisible();
+        await expect(page.getByText('1 of 2 · Ada Rivera', { exact: true })).toBeVisible();
     });
 
     test('imports ten people, summarizes recipients, edits errors and restores the draft', async ({
@@ -395,11 +437,23 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expect
                 .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
                 .not.toBe('none');
+            const scene = page.locator('.batch-delivery-illustration');
+            const card = page.getByTestId('issuance-progress');
+            const sceneBounds = await scene.boundingBox();
+            const cardBounds = await card.boundingBox();
+            expect(sceneBounds!.width).toBeGreaterThan(cardBounds!.width * 0.85);
+            const start = await flyer.boundingBox();
+            await expect
+                .poll(async () => Math.abs((await flyer.boundingBox())!.x - start!.x))
+                .toBeGreaterThan(30);
             await page.emulateMedia({ reducedMotion: 'reduce' });
+            await page.screenshot({
+                path: testInfo.outputPath('batch-delivery-scene.png'),
+                animations: 'disabled',
+            });
             await expect
                 .poll(() => flyer.evaluate(element => getComputedStyle(element).animationName))
                 .toBe('none');
-            const scene = page.locator('.batch-delivery-illustration');
             await page.setViewportSize({ width: 390, height: 844 });
             const phoneScene = await scene.boundingBox();
             expect(phoneScene!.height).toBeLessThanOrEqual(96);
@@ -477,6 +531,386 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         } finally {
             releaseBatch();
         }
+    });
+
+    for (const viewport of [
+        { width: 1440, height: 1000 },
+        { width: 390, height: 844 },
+    ]) {
+        test(`highlights invalid mapped fields and clears them after correction at ${viewport.width}px`, async ({
+            page,
+        }, testInfo) => {
+            await page.setViewportSize(viewport);
+            test.setTimeout(180000);
+            await selectBadgeType(page);
+            await page
+                .getByRole('button', {
+                    name: viewport.width <= 991 ? /^People$/ : /specific people/i,
+                })
+                .click();
+            await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+                name: 'field-errors.csv',
+                mimeType: 'text/csv',
+                buffer: Buffer.from(
+                    'Email,Name,Credits,Completed Date,Evidence\nada@example.test,Ada,not-a-number,2026-10-01,https://proof.test/ada\nbao@example.test,Bao,1.5,not-a-date,https://proof.test/bao\ncora@example.test,Cora,1.5,2026-10-01,not-a-link'
+                ),
+            });
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            for (const column of ['Credits', 'Completed Date', 'Evidence']) {
+                await page.getByRole('button', { name: `Include ${column}`, exact: true }).click();
+            }
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            const credits = page.getByRole('textbox', { name: 'Ada Credits', exact: true });
+            const date = page.getByLabel('Bao Completed Date', { exact: true });
+            const evidence = page.getByRole('textbox', { name: 'Cora Evidence', exact: true });
+            const email = page.getByRole('textbox', { name: 'Email for Ada', exact: true });
+            await expect(email).toHaveAttribute('aria-invalid', 'false');
+            for (const field of [credits, date, evidence]) {
+                await expect(field).toHaveAttribute('aria-invalid', 'true');
+                await expect(field).toHaveAttribute('aria-describedby', /.+/);
+            }
+            await expect(credits).toHaveAccessibleDescription(
+                'Use a number with a decimal point, without units.'
+            );
+            await expect(date).toHaveAccessibleDescription(
+                'Use YYYY-MM-DD or a timestamp with a timezone.'
+            );
+            await expect(evidence).toHaveAccessibleDescription(
+                'Enter a complete http or https evidence link.'
+            );
+            const normalBorder = await email.evaluate(
+                element => getComputedStyle(element).borderColor
+            );
+            await expect
+                .poll(() => credits.evaluate(element => getComputedStyle(element).borderColor))
+                .not.toBe(normalBorder);
+            await credits.scrollIntoViewIfNeeded();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('field-errors.png'),
+            });
+            await credits.fill('1.5');
+            await date.fill('2026-10-01');
+            await evidence.fill('https://proof.test/cora');
+            await page.getByRole('searchbox', { name: 'Search people', exact: true }).click();
+            for (const field of [credits, date, evidence]) {
+                await expect(field).toHaveAttribute('aria-invalid', 'false');
+                await expect(field).not.toHaveAttribute('aria-describedby');
+            }
+            await expect
+                .poll(() => credits.evaluate(element => getComputedStyle(element).borderColor))
+                .toBe(normalBorder);
+            await expect(
+                page.getByRole('button', { name: 'Needs attention · 0', exact: true })
+            ).toBeVisible();
+            await credits.scrollIntoViewIfNeeded();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('field-errors-corrected.png'),
+            });
+            await page.getByText('Credential fields · 3', { exact: true }).click();
+            await page
+                .getByRole('combobox', { name: 'Credits', exact: true })
+                .selectOption('shared');
+            const sharedCredits = page.getByRole('textbox', { name: 'Credits', exact: true });
+            await sharedCredits.fill('not-a-number');
+            await expect(sharedCredits).toHaveAttribute('aria-invalid', 'true');
+            await expect(sharedCredits).toHaveAccessibleDescription(
+                'Use a number with a decimal point, without units.'
+            );
+            await expect(credits).toBeDisabled();
+            await expect(credits).toHaveAttribute('aria-invalid', 'false');
+            await expect(credits).not.toHaveAttribute('aria-describedby');
+            await expect(
+                page.getByText('Use a number with a decimal point, without units.', { exact: true })
+            ).toHaveCount(1);
+            await expect(
+                page.getByRole('button', { name: 'Needs attention · 3', exact: true })
+            ).toBeVisible();
+            await sharedCredits.scrollIntoViewIfNeeded();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('shared-error.png'),
+            });
+            await sharedCredits.fill('1.5');
+            await expect(sharedCredits).toHaveAttribute('aria-invalid', 'false');
+            await expect(
+                page.getByRole('button', { name: 'Needs attention · 0', exact: true })
+            ).toBeVisible();
+        });
+
+        test(`preserves mappings through CSV reimport and shared media edits at ${viewport.width}px`, async ({
+            page,
+        }, testInfo) => {
+            await page.setViewportSize(viewport);
+            test.setTimeout(180000);
+            await selectBadgeType(page);
+            await page
+                .getByRole('button', {
+                    name: viewport.width <= 991 ? /^People$/ : /specific people/i,
+                })
+                .click();
+            await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+                name: 'mapping-reimport.csv',
+                mimeType: 'text/csv',
+                buffer: Buffer.from(
+                    'Email,Name,Code,Portfolio,Credits\nada@example.test,Ada,0012,https://proof.test/ada,3\nbob@example.test,Bob,0009,https://proof.test/bob,'
+                ),
+            });
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            for (const label of ['Portfolio', 'Credits'])
+                await page.getByRole('button', { name: `Include ${label}`, exact: true }).click();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            const downloadPromise = page.waitForEvent('download');
+            await page.getByRole('button', { name: 'Download table', exact: true }).click();
+            const downloaded = await downloadPromise;
+            const exportedPath = testInfo.outputPath('exported-roster.csv');
+            await downloaded.saveAs(exportedPath);
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByTestId('issue-spreadsheet-file').setInputFiles(exportedPath);
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.getByRole('button', { name: 'Certificate', exact: true }).click();
+            await fillName(page, 'Mapped certificate');
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            await expect(page.getByLabel('Ada Credits', { exact: true })).toHaveValue('3');
+            await expect(page.getByLabel('Bob Credits', { exact: true })).toHaveAttribute(
+                'aria-invalid',
+                'true'
+            );
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            await expect(
+                page.getByRole('button', { name: 'Remove Portfolio', exact: true })
+            ).toBeVisible();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('reimport-mappings.png'),
+            });
+            await page.getByRole('button', { name: 'Remove Credits', exact: true }).click();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await expect(issueButton(page)).toBeEnabled();
+            await page
+                .getByPlaceholder('https://example.com/proof', { exact: true })
+                .fill('https://proof.test/shared');
+            await page
+                .getByPlaceholder('Link title (optional)', { exact: true })
+                .fill('Shared course evidence');
+            await page
+                .locator('section')
+                .filter({
+                    has: page.getByRole('heading', { name: 'Evidence & media', exact: true }),
+                })
+                .getByRole('button', { name: 'Link', exact: true })
+                .click();
+            await page.getByRole('button', { name: 'JSON', exact: true }).click();
+            const jsonText = page.locator('textarea.font-mono');
+            let credential = JSON.parse(await jsonText.inputValue());
+            expect(credential.evidence).toHaveLength(2);
+            expect(
+                credential.evidence.some((item: { id: string }) =>
+                    item.id.includes('sheet_portfolio')
+                )
+            ).toBe(true);
+            expect(
+                credential.evidence.some(
+                    (item: { id: string }) => item.id === 'https://proof.test/shared'
+                )
+            ).toBe(true);
+            await page.getByRole('button', { name: 'JSON', exact: true }).click();
+            await page.getByRole('button', { name: 'Remove attachment', exact: true }).click();
+            await page.getByRole('button', { name: 'JSON', exact: true }).click();
+            credential = JSON.parse(await jsonText.inputValue());
+            expect(credential.evidence).toHaveLength(1);
+            expect(credential.evidence[0].id).toContain('sheet_portfolio');
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('mapped-evidence-preserved.png'),
+                fullPage: true,
+            });
+        });
+
+        test(`maps imported columns through the workspace at ${viewport.width}px`, async ({
+            page,
+        }, testInfo) => {
+            await page.setViewportSize(viewport);
+            test.setTimeout(180000);
+            await page
+                .getByRole('button', {
+                    name: 'Start from a link, file, or spreadsheet',
+                    exact: true,
+                })
+                .click();
+            const csv =
+                'Email,Name,Quiz Score,Final Grade,Hours,Completed Date,Evidence,Portfolio,Student Code\nada@test.com,Ada,95%,A-,12,03/04/2024,https://proof.test/ada,https://portfolio.test/ada,0012\nbob@test.com,Bob,85%,B+,8,04/04/2024,https://proof.test/bob,https://portfolio.test/bob,0009\ncarol@test.com,Carol,75%,C,10,05/04/2024,https://proof.test/carol,https://portfolio.test/carol,0007\ndan@test.com,Dan,100%,A,5,06/04/2024,https://proof.test/dan,https://portfolio.test/dan,0005';
+            await page.getByTestId('issue-import-file').setInputFiles({
+                name: 'grades.csv',
+                mimeType: 'text/csv',
+                buffer: Buffer.from(csv),
+            });
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('import-review.png'),
+            });
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            await expect(
+                page.getByRole('button', { name: 'Include Quiz Score', exact: true })
+            ).toBeDisabled();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await selectBadgeType(page);
+            await fillName(page, 'Spreadsheet Badge');
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            await page.getByRole('button', { name: 'Include Quiz Score', exact: true }).click();
+            await page.getByRole('button', { name: 'Include Final Grade', exact: true }).click();
+            await page
+                .getByRole('combobox', { name: 'Use Hours as', exact: true })
+                .selectOption('credits');
+            await expect(
+                page.getByRole('button', { name: 'Include Hours', exact: true })
+            ).toBeDisabled();
+            await page.getByPlaceholder('For example, semester credit hours').fill('hours');
+            await page.getByRole('button', { name: 'Include Hours', exact: true }).click();
+            await page
+                .getByRole('region', { name: 'Completed Date', exact: true })
+                .getByText('Format options', { exact: true })
+                .click();
+            await page
+                .getByRole('combobox', { name: /Spreadsheet date format/ })
+                .selectOption('dmy');
+            await page.getByRole('button', { name: 'Include Completed Date', exact: true }).click();
+            await page.getByRole('button', { name: 'Include Evidence', exact: true }).click();
+            await page.getByRole('button', { name: 'Include Portfolio', exact: true }).click();
+            await page.getByRole('button', { name: 'Include Student Code', exact: true }).click();
+            await page
+                .getByRole('region', { name: 'Quiz Score', exact: true })
+                .scrollIntoViewIfNeeded();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('column-mapping.png'),
+            });
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await expect(issueButton(page)).toBeEnabled();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            await expect(
+                page.getByRole('textbox', { name: 'Ada Quiz Score', exact: true })
+            ).toHaveValue('95');
+            await expect(
+                page.getByRole('textbox', { name: 'Ada Final Grade', exact: true })
+            ).toHaveValue('A-');
+            await expect(
+                page.getByRole('textbox', { name: 'Ada Student Code', exact: true })
+            ).toHaveValue('0012');
+            await expect(page.getByLabel('Ada Completed Date', { exact: true })).toHaveValue(
+                '2024-04-03'
+            );
+            await expect(page.getByText('Apr 3, 2024', { exact: true })).toBeVisible();
+            if (viewport.width > 991) {
+                const tableView = page.getByRole('region', { name: 'Review people', exact: true });
+                const email = page.getByRole('textbox', { name: 'Email for Ada', exact: true });
+                // The modal entrance moves the whole table. Wait for aligned positions
+                // rather than comparing two different animation frames.
+                await expect
+                    .poll(async () => {
+                        const emailBounds = await email.boundingBox();
+                        const dateBounds = await page
+                            .getByLabel('Ada Completed Date', { exact: true })
+                            .boundingBox();
+                        return Math.abs(emailBounds!.y - dateBounds!.y);
+                    })
+                    .toBeLessThan(2);
+                const before = await email.boundingBox();
+                await tableView.evaluate(element => {
+                    element.scrollLeft = element.scrollWidth;
+                });
+                await expect
+                    .poll(() => tableView.evaluate(element => element.scrollLeft))
+                    .toBeGreaterThan(0);
+                const after = await email.boundingBox();
+                expect(Math.abs(after!.x - before!.x)).toBeLessThan(2);
+                await tableView.evaluate(element => {
+                    element.scrollLeft = 0;
+                });
+                await tableView.press('ArrowRight');
+                await expect
+                    .poll(() => tableView.evaluate(element => element.scrollLeft))
+                    .toBeGreaterThan(0);
+                await tableView.evaluate(element => {
+                    element.scrollLeft = 0;
+                });
+            }
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('recipient-fields.png'),
+            });
+            const datePicker = page.getByLabel('Ada Completed Date', { exact: true });
+            await datePicker.fill('2024-04-04');
+            await expect(page.getByText('Apr 4, 2024', { exact: true }).first()).toBeVisible();
+            await datePicker.fill('2024-04-03');
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            await page.getByRole('button', { name: 'Remove Quiz Score', exact: true }).click();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            await expect(
+                page.getByRole('textbox', { name: 'Ada Quiz Score', exact: true })
+            ).toHaveCount(0);
+            await expect(
+                page.getByRole('textbox', { name: 'Ada Final Grade', exact: true })
+            ).toHaveValue('A-');
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            await page.getByRole('button', { name: 'Include Quiz Score', exact: true }).click();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            // Type changes rebuild mapping fields while preserving corrected cells.
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            await page.getByLabel('Ada Quiz Score', { exact: true }).fill('96');
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Certificate', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            await expect(page.getByLabel('Ada Quiz Score', { exact: true })).toHaveValue('96');
+            await expect(page.getByLabel('Ada Final Grade', { exact: true })).toHaveValue('A-');
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Next person', exact: true }).click();
+            await expect(page.getByText('2 of 4 · Bob', { exact: true })).toBeVisible();
+            await page.getByRole('button', { name: 'JSON', exact: true }).click();
+            const json = JSON.parse(await page.locator('textarea.font-mono').inputValue());
+            expect(json.credentialSubject.result).toHaveLength(2);
+            expect(json.evidence).toHaveLength(2);
+            expect(
+                json.evidence.every((item: { type: string[] }) => item.type[0] === 'Evidence')
+            ).toBe(true);
+            expect(json.awardedDate).toMatch(/sheet_completed_date/);
+            expect(JSON.stringify(json['@context'])).not.toContain('ctx.learncard');
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('mapped-roster.png'),
+                fullPage: true,
+            });
+        });
+    }
+
+    test('imports URL-first pasted rows through the import modal without treating them as a link', async ({
+        page,
+    }) => {
+        await page
+            .getByRole('button', { name: 'Start from a link, file, or spreadsheet', exact: true })
+            .click();
+        await page
+            .locator('textarea')
+            .fill(
+                'https://proof.test/ada\tada@test.com\tAda\nhttps://proof.test/bob\tbob@test.com\tBob'
+            );
+        await page.getByRole('button', { name: /Bring it in/i }).click();
+        await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
+        await page.getByRole('button', { name: 'Add People', exact: true }).click();
+        await page.getByRole('button', { name: 'Review people', exact: true }).click();
+        await expect(page.getByRole('textbox', { name: 'Email for Ada', exact: true })).toHaveValue(
+            'ada@test.com'
+        );
     });
 
     // Completing an issuance (self / person / link) is a real signing +

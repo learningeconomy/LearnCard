@@ -36,6 +36,7 @@ export interface IssuanceRun {
     dismissedAt?: number;
     draft: RosterDraft;
     template: OBv3CredentialTemplate;
+    templateSelected?: boolean;
     templateUri?: string;
     scopes: ColumnScopes;
     shared: Record<string, string>;
