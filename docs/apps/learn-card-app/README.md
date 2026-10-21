@@ -77,6 +77,19 @@ flowchart LR
 
 For browser application requests (CHAPI or VC-API), use the credential list to search and filter by category. **View selected** shows the entire selected batch, even when search hides some items. **Deselect all** clears the selection. Open **Review** to check or remove items before sending; returning to selection sends nothing. Suggested credentials remain editable.
 
+### Sharing to LinkedIn
+
+Issuers can link their organization in **Developer Portal → Build → an issuance project → Branding**. Enter the numeric **LinkedIn organization ID** from the organization's LinkedIn admin-page URL, not its public page name. Leave it blank to use the issuer name without an organization link. Saving a blank value removes a previous ID.
+
+1. Open an earned credential and choose **Share**.
+2. Choose **Add to LinkedIn** to add it under Licenses & certifications. LinkedIn uses the configured organization ID to find the issuer's page and logo. The certification ID uses the credential's real ID or its saved address; it is never generated from the current time.
+3. To include a social preview, choose **Enable Public Preview**. This publishes only the credential name, issuer name, and available image URL. Other credential fields remain encrypted; anyone with the complete share link can still open the credential.
+4. Choose **Post to LinkedIn** to open a post with the share link filled in.
+
+Public previews are optional. Reopening Share without enabling a preview produces a link without preview metadata, but does not erase an already published preview or copies cached by social apps. LinkedIn's certification tile shows the organization's logo, not the credential image; the credential image belongs to the social preview.
+
+Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the public preview record, and returns Open Graph metadata to social crawlers. Ordinary visitors continue to the app; unavailable previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
+
 ### Private Verifier History
 
 Click a verifier entry to expand the list of credential names recorded for that send. This uses the existing encrypted history; it does not fetch full credentials or show every claim sent.

@@ -43,6 +43,7 @@ import {
     createEndorsementShareLinkInfo,
     getEndorsementRequestBaseUrl,
 } from '../../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
+import { buildLinkedInCertificationUrl, buildLinkedInPostUrl } from './linkedInSharing';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
@@ -76,6 +77,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const endorsementRequestBaseUrl = getEndorsementRequestBaseUrl(useTenantBaseUrl());
     const [shareLink, setShareLink] = useState<string | undefined>('');
     const [hasLinkGenerationError, setHasLinkGenerationError] = useState(false);
+    const [includePublicPreview, setIncludePublicPreview] = useState(false);
 
     const { track } = useAnalytics();
     const qrTrackedRef = React.useRef(false);
@@ -110,19 +112,21 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     let issueeName;
     let profileId;
 
-    const isIssuerString = typeof cred?.issuer === 'string' || cred?.issuer instanceof String;
+    const issuerDid = typeof cred?.issuer === 'string' ? cred.issuer : cred?.issuer?.id;
     const isIssueeString =
         typeof cred?.credentialSubject?.id === 'string' ||
         cred?.credentialSubject?.id instanceof String;
 
-    const isLCNetworkUrlIssuer = isIssuerString ? cred?.issuer?.includes('did:web') : false;
+    const isLCNetworkUrlIssuer = Boolean(
+        issuerDid?.includes('did:web') && issuerDid?.includes(':users:')
+    );
 
     const isLCNetworkUrlIssuee = isIssueeString
         ? cred?.credentialSubject?.id?.includes('did:web')
         : false;
     if (isLCNetworkUrlIssuer) {
         const regex = /(users:)(.*)/;
-        profileId = cred?.issuer?.match(regex)?.[2];
+        profileId = issuerDid?.match(regex)?.[2];
     }
 
     const { data: profile, isLoading, isError } = useGetProfile(profileId);
@@ -163,7 +167,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         </div>
     );
 
-    const generateShareLink = () => {
+    const generateShareLink = (publishPreview = includePublicPreview) => {
         const credentialUri = boostUri ?? sharedCredentialId;
 
         setHasLinkGenerationError(false);
@@ -179,6 +183,18 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                 credential: boost,
                 credentialUri,
                 credentialId: sharedCredentialId,
+                ...(publishPreview
+                    ? {
+                          publicPreview: {
+                              name: (title?.trim() || 'Credential').slice(0, 160),
+                              issuer: (issuerName?.trim() || 'Unknown issuer').slice(0, 160),
+                              ...(badgeThumbnail?.startsWith('https://') &&
+                              badgeThumbnail.length <= 2048
+                                  ? { image: badgeThumbnail }
+                                  : {}),
+                          },
+                      }
+                    : {}),
             },
             {
                 onSuccess(data) {
@@ -274,24 +290,17 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         backgroundAttachment: 'fixed',
     };
 
-    const generateLinkedInUrl = () => {
-        const name = encodeURIComponent(title || '');
-        const organization = encodeURIComponent(issuerName || '');
-        const issueYear = moment(dateValue).format('YYYY');
-        const issueMonth = moment(dateValue).format('M');
-
-        // Use shareLink as the base for certUrl, fallback to a generated URL if not available
-        const certUrl = encodeURIComponent(
-            shareLink || `https://network.learncard.com/credential/${cred.id || 'unknown'}`
-        );
-
-        // Use cred.id if available, otherwise use boostId or generate an ID
-        const certId = encodeURIComponent(cred.id || cred?.boostId || `boost-${moment().unix()}`);
-
-        const linkedInUrl = `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${name}&organizationName=${organization}&issueYear=${issueYear}&issueMonth=${issueMonth}&certUrl=${certUrl}&certId=${certId}`;
-
-        return linkedInUrl;
-    };
+    const linkedInCertificationUrl = shareLink
+        ? buildLinkedInCertificationUrl({
+              name: title || '',
+              issuer: issuerName || '',
+              organizationId: profileId ? profile?.linkedInOrganizationId : undefined,
+              issuedAt: dateValue,
+              credentialId: cred?.id || boost.id,
+              boostUri,
+              shareLink,
+          })
+        : undefined;
 
     if (compact) {
         return (
@@ -304,7 +313,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             </span>
                             <button
                                 type="button"
-                                onClick={generateShareLink}
+                                onClick={() => generateShareLink()}
                                 title={m['toasts.boost.shareLinkGenerationFailed']()}
                                 className="flex h-[50px] w-[50px] flex-col items-center justify-center rounded-[20px] text-red-700 hover:bg-red-50 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
@@ -402,7 +411,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={generateShareLink}
+                                        onClick={() => generateShareLink()}
                                         className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
                                         {m['common.tryAgain']()}
@@ -465,10 +474,46 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             </div>
                         )}
 
+                        {!isEndorsementRequest && !compact && (
+                            <div className="w-full px-4 py-3 font-poppins">
+                                <p className="text-xs text-grayscale-600 leading-relaxed mb-3">
+                                    {includePublicPreview && shareLink && !isLinkLoading
+                                        ? 'Public preview enabled. Only the credential name, issuer and image are public.'
+                                        : 'Enable a public preview to show the credential name, issuer and image on social apps. Everything else stays encrypted.'}
+                                </p>
+                                {!includePublicPreview && (
+                                    <button
+                                        type="button"
+                                        disabled={
+                                            isLinkLoading ||
+                                            !shareLink ||
+                                            (Boolean(profileId) && isLoading)
+                                        }
+                                        onClick={() => {
+                                            setIncludePublicPreview(true);
+                                            generateShareLink(true);
+                                        }}
+                                        className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        Enable Public Preview
+                                    </button>
+                                )}
+                                {includePublicPreview && isLinkLoading && (
+                                    <span
+                                        role="status"
+                                        className="flex items-center justify-center gap-2 text-sm text-grayscale-600"
+                                    >
+                                        <IonSpinner name="crescent" className="w-4 h-4" />
+                                        Publishing preview...
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
                         {!isLinkLoading && shareLink && shareLink?.length > 0 && !hideLinkedIn ? (
                             <div className="w-full bg-white px-4 py-3">
                                 <a
-                                    href={generateLinkedInUrl()}
+                                    href={linkedInCertificationUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={() =>
@@ -479,11 +524,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                             surface: 'wallet',
                                         })
                                     }
-                                    className="group flex items-center justify-center w-full bg-white text-grayscale-600 font-semibold py-2 px-4 rounded-full border-2 border-grayscale-20 hover:border-[#0A66C2] hover:bg-[#0A66C2] hover:text-white transition-colors duration-300"
+                                    className="group flex items-center justify-center w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                                 >
                                     <svg
                                         aria-hidden="true"
-                                        className="w-5 h-5 mr-2 fill-[#0A66C2] group-hover:fill-white transition-colors duration-300"
+                                        className="w-5 h-5 mr-2 fill-current"
                                         viewBox="0 0 24 24"
                                         xmlns="http://www.w3.org/2000/svg"
                                     >
@@ -491,6 +536,16 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     </svg>
                                     Add to LinkedIn
                                 </a>
+                                {!isEndorsementRequest && (
+                                    <a
+                                        href={buildLinkedInPostUrl(shareLink)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="mt-3 flex items-center justify-center w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                                    >
+                                        Post to LinkedIn
+                                    </a>
+                                )}
                             </div>
                         ) : (
                             <div className={hideLinkedIn ? 'hidden' : 'w-full bg-white px-4 py-3'}>

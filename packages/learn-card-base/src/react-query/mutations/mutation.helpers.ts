@@ -5,6 +5,17 @@ import {
 import { LCNProfile } from '@learncard/types';
 import { QueryClient, InfiniteData } from '@tanstack/react-query';
 
+/** Preserve encoded URI components when the recipient parses the share query once. */
+export const buildCredentialShareUrl = (
+    host: string,
+    route: string,
+    params: { uri: string; seed: string; pin: string }
+): string => {
+    const url = new URL(`https://${host}/${route}`);
+    url.search = new URLSearchParams(params).toString();
+    return url.toString();
+};
+
 export const getSharedCredentialIndexQueries = (
     sharedCredentialUri: string,
     credentialId?: string

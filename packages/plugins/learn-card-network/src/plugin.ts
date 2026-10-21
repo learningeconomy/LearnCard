@@ -1150,6 +1150,10 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.invalidateInvite.mutate({ challenge });
             },
 
+            publishCredentialSharePreview: async (_learnCard, preview) => {
+                await ensureUser();
+                return client.credentialSharePreviews.publish.mutate(preview);
+            },
             createShareLink: async (_learnCard, input) => {
                 await ensureUser();
 

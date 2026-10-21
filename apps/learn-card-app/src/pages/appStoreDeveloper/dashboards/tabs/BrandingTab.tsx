@@ -90,10 +90,16 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     const { initWallet } = useWallet();
     const { currentLCNUser, refetch: refetchCurrentUser } = useGetCurrentLCNUser();
     const { presentToast } = useToast();
+    const storedLinkedInOrganizationId = branding
+        ? branding.linkedInOrganizationId || ''
+        : currentLCNUser?.linkedInOrganizationId || '';
 
     const [displayName, setDisplayName] = useState(branding?.displayName || '');
     const [image, setImage] = useState(branding?.image || '');
     const [shortBio, setShortBio] = useState(branding?.shortBio || '');
+    const [linkedInOrganizationId, setLinkedInOrganizationId] = useState(
+        storedLinkedInOrganizationId
+    );
     const [bio, setBio] = useState(branding?.bio || '');
 
     const [display, setDisplay] = useState<ProfileDisplay>(
@@ -146,6 +152,10 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
         }
     }, [currentLCNUser, branding]);
 
+    useEffect(() => {
+        setLinkedInOrganizationId(storedLinkedInOrganizationId);
+    }, [currentLCNUser?.profileId, storedLinkedInOrganizationId]);
+
     const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } =
         useImageUpload({
             fileType: IMAGE_MIME_TYPES,
@@ -174,6 +184,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     };
 
     const handleSaveProfile = async () => {
+        if (!/^\d*$/.test(linkedInOrganizationId)) return;
         setIsSaving(true);
 
         try {
@@ -184,6 +195,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                 image,
                 shortBio,
                 bio,
+                linkedInOrganizationId: linkedInOrganizationId || '',
                 display: {
                     backgroundColor: display.backgroundColor,
                     backgroundImage: display.backgroundImage,
@@ -211,6 +223,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                 image,
                 shortBio,
                 bio,
+                linkedInOrganizationId: linkedInOrganizationId || undefined,
                 display: display as Record<string, unknown>,
             };
 
@@ -254,7 +267,12 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                 <button
                     onClick={handleSaveProfile}
-                    disabled={!isDirty || isSaving || !displayName.trim()}
+                    disabled={
+                        !isDirty ||
+                        isSaving ||
+                        !displayName.trim() ||
+                        !/^\d*$/.test(linkedInOrganizationId)
+                    }
                     className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isSaving ? (
@@ -380,6 +398,45 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             ]()}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                         />
+                    </div>
+
+                    <div>
+                        <label
+                            htmlFor="issuer-linkedin-organization-id"
+                            className="mb-1 block text-sm font-medium text-grayscale-700"
+                        >
+                            LinkedIn organization ID (optional)
+                        </label>
+                        <input
+                            id="issuer-linkedin-organization-id"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={linkedInOrganizationId}
+                            aria-invalid={!/^\d*$/.test(linkedInOrganizationId)}
+                            aria-describedby="issuer-linkedin-organization-id-help issuer-linkedin-organization-id-error"
+                            onChange={event => {
+                                setLinkedInOrganizationId(event.target.value);
+                                setIsDirty(true);
+                            }}
+                            className="w-full rounded-xl border border-grayscale-200 bg-white px-4 py-3 text-grayscale-900 placeholder:text-grayscale-400 outline-hidden focus:border-transparent focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        />
+                        <p
+                            id="issuer-linkedin-organization-id-help"
+                            className="mt-1 text-sm text-grayscale-600"
+                        >
+                            Find the numeric ID in your LinkedIn admin page URL. Enter the number,
+                            not the page slug. Leave blank to remove it.
+                        </p>
+                        {!/^\d*$/.test(linkedInOrganizationId) && (
+                            <p
+                                id="issuer-linkedin-organization-id-error"
+                                role="alert"
+                                className="mt-1 text-sm text-red-700"
+                            >
+                                Enter digits only.
+                            </p>
+                        )}
                     </div>
 
                     <div>

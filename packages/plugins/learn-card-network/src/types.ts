@@ -141,6 +141,7 @@ import {
     PublishCredentialRefreshResult,
     GetCredentialRefreshHistoryInput,
     GetCredentialRefreshHistoryResult,
+    CredentialSharePreview,
 } from '@learncard/types';
 import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -213,6 +214,11 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
+    /**
+     * Publish only explicitly opted-in public share metadata (name, issuer, optional image).
+     * Returns an opaque UUID for use in the public preview URL.
+     */
+    publishCredentialSharePreview: (preview: CredentialSharePreview) => Promise<string>;
     createProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }
     ) => Promise<string>;

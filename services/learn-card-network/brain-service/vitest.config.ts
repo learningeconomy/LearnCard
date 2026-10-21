@@ -16,6 +16,7 @@ export default createVitestConfig(brainServicePreset, {
             NEO4J_SKIP_INDICES: 'true',
         },
         include: [
+            'test/credential-share-previews.spec.ts',
             'test/share-link-*.unit.spec.ts',
             'test/share-content-client.*.spec.ts',
             'test/uri-helpers.spec.ts',

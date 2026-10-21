@@ -33,6 +33,7 @@ import {
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
 import {
+    buildCredentialShareUrl,
     findMatchingSharedCredentialIndex,
     getSharedCredentialIndexQueries,
     insertItem,
@@ -53,6 +54,7 @@ type SharedCredentialsIndex = {
     pin: string;
     randomSeed: string;
     uri: string;
+    publicPreviewId?: string;
 };
 
 export const baseBoostShareRouteName = 'share-boost';
@@ -68,11 +70,13 @@ export const useShareBoostMutation = () => {
             credentialId: requestedCredentialId,
             credentialUri,
             shareRouteName = baseBoostShareRouteName,
+            publicPreview,
         }: {
             credential: VC | UnsignedVC;
             credentialUri: string;
             credentialId?: string;
             shareRouteName?: string;
+            publicPreview?: { name: string; issuer: string; image?: string };
         }) => {
             const baseUrl = new URL(tenantBaseUrl).host;
 
@@ -106,12 +110,39 @@ export const useShareBoostMutation = () => {
             }
 
             const endorsementVCs: VC[] = await getEndorsementsForVC(myWallet, credential, 'public');
+            const withPublicPreview = async (
+                link: string,
+                index: SharedCredentialsIndex
+            ): Promise<string> => {
+                if (!publicPreview) return link;
+
+                let previewId = index.publicPreviewId;
+                if (!previewId) {
+                    previewId = await myWallet.invoke.publishCredentialSharePreview(publicPreview);
+                    const updated = await myWallet.invoke.learnCloudUpdate<SharedCredentialsIndex>(
+                        {
+                            type: 'shared-credentials',
+                            uri: index.uri,
+                            randomSeed: index.randomSeed,
+                        },
+                        { publicPreviewId: previewId }
+                    );
+                    if (!updated) throw new Error('Unable to save public preview reference');
+                }
+                const url = new URL(link);
+                url.searchParams.set('preview', previewId);
+                return url.toString();
+            };
 
             //If it already exists than we don't have to do it all again....
             if (extantCredentialIndex && endorsementVCs.length === 0) {
-                const link = `https://${baseUrl}/${shareRouteName}?uri=${extantCredentialIndex?.uri}&seed=${extantCredentialIndex?.randomSeed}&pin=${extantCredentialIndex?.pin}`;
+                const link = buildCredentialShareUrl(baseUrl, shareRouteName, {
+                    uri: extantCredentialIndex.uri,
+                    seed: extantCredentialIndex.randomSeed,
+                    pin: extantCredentialIndex.pin,
+                });
                 return {
-                    link,
+                    link: await withPublicPreview(link, extantCredentialIndex),
                 };
             }
 
@@ -168,10 +199,21 @@ export const useShareBoostMutation = () => {
                 uri: publishedVpUri,
                 type: 'shared-credentials',
             });
-            const link = `https://${baseUrl}/${shareRouteName}?uri=${publishedVpUri}&seed=${randomKey}&pin=${pin}`;
+            const link = buildCredentialShareUrl(baseUrl, shareRouteName, {
+                uri: publishedVpUri,
+                seed: randomKey,
+                pin,
+            });
 
             return {
-                link,
+                link: await withPublicPreview(link, {
+                    type: 'shared-credentials',
+                    sharedCredentialUri: credentialUri,
+                    credentialId,
+                    uri: publishedVpUri,
+                    pin,
+                    randomSeed: randomKey,
+                }),
             };
         },
     });

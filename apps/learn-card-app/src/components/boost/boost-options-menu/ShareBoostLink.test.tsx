@@ -3,7 +3,11 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createLink, track } = vi.hoisted(() => ({ createLink: vi.fn(), track: vi.fn() }));
+const { createLink, track, getProfile } = vi.hoisted(() => ({
+    createLink: vi.fn(),
+    track: vi.fn(),
+    getProfile: vi.fn(),
+}));
 
 vi.mock('learn-card-base', () => {
     return {
@@ -13,7 +17,7 @@ vi.mock('learn-card-base', () => {
         ProfilePicture: () => null,
         getBoostMetadata: () => ({ IconComponent: () => null, title: 'Achievement' }),
         truncateWithEllipsis: (value: string) => value,
-        useGetProfile: () => ({ data: undefined }),
+        useGetProfile: (...args: unknown[]) => getProfile(...args),
         useShareBoostMutation: () => useMutation({ mutationFn: createLink, retry: false }),
         ToastTypeEnum: { Error: 'error' },
         useToast: () => ({ presentToast: vi.fn() }),
@@ -63,7 +67,10 @@ const deferredLink = () => {
 };
 
 describe('ShareBoostLink error recovery', () => {
-    beforeEach(() => vi.clearAllMocks());
+    beforeEach(() => {
+        vi.clearAllMocks();
+        getProfile.mockReturnValue({ data: undefined });
+    });
     afterEach(cleanup);
 
     it.each([
@@ -282,4 +289,121 @@ describe('ShareBoostLink error recovery', () => {
         ).toBeInTheDocument();
         client.clear();
     });
+
+    it('waits for explicit public-preview consent and updates social links after publishing', async () => {
+        const privateLink = 'https://learncard.app/share-boost?uri=encrypted&seed=secret&pin=1234';
+        const publicLink = `${privateLink}&preview=public-id`;
+        const publishing = deferredLink();
+        createLink
+            .mockResolvedValueOnce({ link: privateLink })
+            .mockReturnValueOnce(publishing.promise);
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink boost={credential} categoryType={'Achievement' as never} />
+            </QueryClientProvider>
+        );
+        const enable = await screen.findByRole('button', { name: 'Enable Public Preview' });
+        await waitFor(() => expect(enable).toBeEnabled());
+        expect(createLink.mock.calls[0][0]).not.toHaveProperty('publicPreview');
+        const privatePost = new URL(
+            screen.getByRole('link', { name: 'Post to LinkedIn' }).getAttribute('href')!
+        );
+        expect(privatePost.searchParams.get('url')).toBe(privateLink);
+        expect(screen.getByText(/everything else stays encrypted/i)).toBeInTheDocument();
+
+        fireEvent.click(enable);
+        expect(await screen.findByRole('status', { name: '' })).toHaveTextContent(
+            'Publishing preview...'
+        );
+        expect(screen.queryByRole('link', { name: 'Post to LinkedIn' })).not.toBeInTheDocument();
+        await act(async () => publishing.resolve({ link: publicLink }));
+        expect(await screen.findByText(/public preview enabled/i)).toBeInTheDocument();
+        const post = new URL(
+            screen.getByRole('link', { name: 'Post to LinkedIn' }).getAttribute('href')!
+        );
+        expect(post.searchParams.get('url')).toBe(publicLink);
+        const certification = new URL(
+            screen.getByRole('link', { name: 'Add to LinkedIn' }).getAttribute('href')!
+        );
+        expect(certification.searchParams.get('certId')).toBe(credential.id);
+        expect(certification.searchParams.get('certUrl')).toBe(publicLink);
+        client.clear();
+    });
+
+    it.each([
+        'did:web:network.example:users:school',
+        { id: 'did:web:network.example:users:school', name: 'Example school' },
+    ])(
+        'reads the LinkedIn organization from the credential issuer, including object issuers',
+        async issuer => {
+            createLink.mockResolvedValue({
+                link: 'https://learncard.app/share-boost?uri=encrypted',
+            });
+            getProfile.mockImplementation((profileId?: string) => ({
+                data:
+                    profileId === 'school'
+                        ? { displayName: 'Example school', linkedInOrganizationId: '12345' }
+                        : { displayName: 'Learner', linkedInOrganizationId: '99999' },
+            }));
+            const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+            render(
+                <QueryClientProvider client={client}>
+                    <ShareBoostLink
+                        boost={{ ...credential, issuer }}
+                        categoryType={'Achievement' as never}
+                    />
+                </QueryClientProvider>
+            );
+            const add = await screen.findByRole('link', { name: 'Add to LinkedIn' });
+            expect(new URL(add.getAttribute('href')!).searchParams.get('organizationId')).toBe(
+                '12345'
+            );
+            client.clear();
+        }
+    );
+
+    it('never uses the learner organization for an external issuer', async () => {
+        createLink.mockResolvedValue({ link: 'https://learncard.app/share-boost?uri=encrypted' });
+        getProfile.mockReturnValue({
+            data: { displayName: 'Learner', linkedInOrganizationId: '99999' },
+        });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink boost={credential} categoryType={'Achievement' as never} />
+            </QueryClientProvider>
+        );
+        const add = await screen.findByRole('link', { name: 'Add to LinkedIn' });
+        const url = new URL(add.getAttribute('href')!);
+        expect(url.searchParams.has('organizationId')).toBe(false);
+        expect(url.searchParams.get('organizationName')).toBe('Example school');
+        client.clear();
+    });
+
+    it.each([
+        ['lc:credential:record', 'lc:credential:record'],
+        [undefined, null],
+    ])(
+        'does not publish a synthetic endorsement identity as the LinkedIn ID (%s)',
+        async (boostUri, expectedId) => {
+            createLink.mockResolvedValue({
+                link: 'https://learncard.app/share-boost?uri=encrypted',
+            });
+            const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+            render(
+                <QueryClientProvider client={client}>
+                    <ShareBoostLink
+                        boost={{ ...credential, id: undefined }}
+                        credentialId="urn:sha256:endorsement-target"
+                        boostUri={boostUri}
+                        categoryType={'Achievement' as never}
+                    />
+                </QueryClientProvider>
+            );
+            const add = await screen.findByRole('link', { name: 'Add to LinkedIn' });
+            expect(new URL(add.getAttribute('href')!).searchParams.get('certId')).toBe(expectedId);
+            client.clear();
+        }
+    );
 });
