@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import canvasGradebook from './fixtures/canvas-gradebook.csv?raw';
+import { describe, it, expect, vi } from 'vitest';
 import { utils, write } from 'xlsx';
 import JSZip from 'jszip';
 import Papa from 'papaparse';
@@ -15,6 +16,27 @@ import { makeRun } from './fixtures.test-support';
 
 const parse = (text: string) => parseSpreadsheet(readSpreadsheetText(text));
 describe('spreadsheet parsing and editable roster', () => {
+    it('handles the upstream Canvas gradebook header and metadata without guessing login IDs are emails', () => {
+        const source = readSpreadsheetText(canvasGradebook, 'canvas.csv');
+        const withoutEmails = parseSpreadsheet(source);
+        expect(withoutEmails.emailColumn).toBeUndefined();
+        expect(withoutEmails.rows).toEqual([]);
+        expect(withoutEmails.columns[2].label).toBe('SIS Login ID');
+        const withEmails = structuredClone(source);
+        withEmails.sheets.Sheet1.slice(2).forEach((row, index) => {
+            if (!row.some(cell => cell.text.trim())) return;
+            row[2] = { text: `person${index}@example.test` };
+            row[6] = { text: String(90 + index) };
+        });
+        const parsed = parseSpreadsheet(withEmails);
+        expect(parsed.rows).toHaveLength(7);
+        expect(parsed.rows[0]).toMatchObject({
+            displayName: 'Blend, Bill',
+            email: 'person0@example.test',
+        });
+        expect(parsed.rows[0].cells['column-6'].text).toBe('90');
+        expect(parsed.rows.some(row => row.displayName === 'Points Possible')).toBe(false);
+    });
     it('reads UTF-8 names losslessly and rejects legacy CSV bytes before import', async () => {
         const file = (bytes: Uint8Array): File =>
             ({
@@ -100,6 +122,28 @@ describe('spreadsheet parsing and editable roster', () => {
         expect(cells[2].date).toBe('2023-03-15');
         expect(cells[3].problem).toBe('formula');
     });
+    it('bounds expanded cells across visible XLSX worksheets', () => {
+        const workbook = utils.book_new();
+        for (const name of ['One', 'Two'])
+            utils.book_append_sheet(
+                workbook,
+                utils.aoa_to_sheet([
+                    ['Email', 'Name'],
+                    ['a@test.com', 'Ada'],
+                ]),
+                name
+            );
+        const limit = SPREADSHEET_LIMITS.cells;
+        try {
+            SPREADSHEET_LIMITS.cells = 6;
+            expect(() =>
+                readXlsx(write(workbook, { type: 'array', bookType: 'xlsx' }), 'many.xlsx')
+            ).toThrow('limit');
+        } finally {
+            SPREADSHEET_LIMITS.cells = limit;
+        }
+    });
+
     it('ignores a full-sheet formatting range but still rejects distant actual data', async () => {
         const workbook = utils.book_new();
         const sheet = utils.aoa_to_sheet([
@@ -145,10 +189,34 @@ describe('spreadsheet parsing and editable roster', () => {
             second: ['duplicate'],
         });
     });
+    it('locates every missing or unresolved cell without attributing it to the recipient email', () => {
+        const draft = makeRun(1).draft;
+        const report = vi.fn();
+        expect(
+            getRowProblems(
+                draft.recipients,
+                ['score', 'notes', 'other'],
+                { score: 'perRecipient', notes: 'perRecipient', other: 'perRecipient' },
+                {},
+                { 'row-0': { score: '#REF!', notes: '', other: '#DIV/0!' } },
+                { 'row-0': 'not-a-link' },
+                { 'row-0': { score: '#REF!', other: '#DIV/0!' } },
+                report
+            )
+        ).toEqual({ 'row-0': ['required', 'evidence', 'formula'] });
+        expect(report.mock.calls).toEqual([
+            ['row-0', 'required', { variable: 'notes' }],
+            ['row-0', 'evidence', 'evidence'],
+            ['row-0', 'formula', { variable: 'score' }],
+            ['row-0', 'formula', { variable: 'other' }],
+        ]);
+    });
     it.each([
         { t: 'n', f: '1/0', expected: '', problems: ['required', 'formula'] },
         { t: 'e', f: '1/0', v: 7, expected: '#DIV/0!', problems: ['formula'] },
         { t: 'e', f: 'A99', v: 23, expected: '#REF!', problems: ['formula'] },
+        { t: 'e', f: undefined, v: 7, expected: '#DIV/0!', problems: ['formula'] },
+        { t: 'e', f: undefined, v: 23, expected: '#REF!', problems: ['formula'] },
         { t: 'n', f: 'SUM(90,5)', v: 95, expected: '95', problems: [] },
     ] as const)('validates imported XLSX formula results: $expected', cell => {
         const workbook = utils.book_new();
@@ -332,7 +400,7 @@ describe('spreadsheet parsing and editable roster', () => {
             ).toBe("'=NEW(A1)");
         }
     );
-    it('normalizes placeholder headers, preserves duplicates and validates evidence', () => {
+    it('normalizes placeholder headers, preserves duplicates and leaves evidence opt-in', () => {
         const run = makeRun(0);
         const { draft, mapped } = mergeSpreadsheet(
             run.draft,
@@ -351,7 +419,9 @@ describe('spreadsheet parsing and editable roster', () => {
             draft.values,
             draft.evidence
         );
-        expect(Object.values(problems)).toEqual([['duplicate'], ['duplicate', 'evidence']]);
+        expect(Object.values(problems)).toEqual([['duplicate'], ['duplicate']]);
+        expect(draft.evidence).toEqual({});
+        expect(draft.source!.rows[1].cells['column-2'].text).toBe('https://');
     });
     it('round-trips stable row IDs after email correction and formula escaping', () => {
         const run = makeRun();

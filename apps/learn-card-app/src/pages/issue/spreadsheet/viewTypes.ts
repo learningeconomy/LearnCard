@@ -5,6 +5,7 @@ export interface SpreadsheetView {
     onPaste: (text: string) => void;
     sourceName?: string;
     details: ReactNode;
+    mappings?: ReactNode;
     results: ReactNode;
     previewControls: ReactNode;
     templateLocked: boolean;
