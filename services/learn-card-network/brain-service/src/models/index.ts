@@ -1,5 +1,6 @@
 import { environment } from '@environment';
 import { neogma } from '@instance';
+import { contractEventMaintenanceSchema } from '@helpers/contract-event-maintenance.helpers';
 
 import { Boost } from './Boost';
 import { Profile } from './Profile';
@@ -11,6 +12,7 @@ import { Skill } from './Skill';
 import { Tag } from './Tag';
 import { AppStoreListing } from './AppStoreListing';
 import { Integration } from './Integration';
+import { AppManifestVersion } from './AppManifestVersion';
 import { CredentialActivity } from './CredentialActivity';
 import { CredentialRefresh } from './CredentialRefresh';
 import { StatusList } from './StatusList';
@@ -92,6 +94,19 @@ Integration.addRelationships({
         direction: 'out',
         name: 'PUBLISHES_LISTING',
     },
+    hasManifestVersion: {
+        model: AppManifestVersion,
+        direction: 'out',
+        name: 'HAS_MANIFEST_VERSION',
+    },
+});
+
+AppStoreListing.addRelationships({
+    usesManifestVersion: {
+        model: AppManifestVersion,
+        direction: 'out',
+        name: 'USES_MANIFEST_VERSION',
+    },
 });
 
 Profile.addRelationships({
@@ -128,10 +143,15 @@ const shouldCreateIndices =
     environment.NODE_ENV === 'production' || !environment.NEO4J_SKIP_INDICES;
 
 const indexQueries = [
+    'CREATE CONSTRAINT consent_event_id IF NOT EXISTS FOR (e:ConsentFlowEvent) REQUIRE e.id IS UNIQUE',
+    'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',
+    ...contractEventMaintenanceSchema,
     'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)',
     'CREATE INDEX profile_did_idx IF NOT EXISTS FOR (p:Profile) ON (p.did)',
     'CREATE TEXT INDEX profileId_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.profileId)',
     'CREATE TEXT INDEX profile_displayname_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.displayName)',
+    // Backs case-insensitive profile search (see accesslayer/profile/search-fields.ts)
+    'CREATE TEXT INDEX profile_displayname_lower_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.displayNameLower)',
     'CREATE INDEX boost_id_idx IF NOT EXISTS FOR (b:Boost) ON (b.id)',
     'CREATE INDEX boost_category_idx IF NOT EXISTS FOR (b:Boost) ON (b.category)',
     'CREATE INDEX boost_autoconnect_idx IF NOT EXISTS FOR (b:Boost) ON (b.autoConnectRecipients)',
@@ -152,6 +172,10 @@ const indexQueries = [
     'CREATE INDEX claim_hook_updated_idx IF NOT EXISTS FOR (c:ClaimHook) ON (c.updatedAt)',
     'CREATE INDEX integration_id_idx IF NOT EXISTS FOR (i:Integration) ON (i.id)',
     'CREATE INDEX integration_publishablekey_idx IF NOT EXISTS FOR (i:Integration) ON (i.publishableKey)',
+    'CREATE INDEX app_manifest_version_id_idx IF NOT EXISTS FOR (m:AppManifestVersion) ON (m.id)',
+    'CREATE INDEX app_manifest_version_version_idx IF NOT EXISTS FOR (m:AppManifestVersion) ON (m.version)',
+    'CREATE INDEX app_manifest_version_hash_idx IF NOT EXISTS FOR (m:AppManifestVersion) ON (m.manifestHash)',
+    'CREATE INDEX app_manifest_version_status_idx IF NOT EXISTS FOR (m:AppManifestVersion) ON (m.status)',
     'CREATE INDEX skill_framework_id_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.id)',
     'CREATE TEXT INDEX skill_framework_name_text_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.name)',
     'CREATE INDEX skill_id_idx IF NOT EXISTS FOR (s:Skill) ON (s.id)',
@@ -188,6 +212,10 @@ const indexQueries = [
     'CREATE INDEX contact_method_primary_idx IF NOT EXISTS FOR (c:ContactMethod) ON (c.isPrimary)',
     'CREATE INDEX credential_refresh_credential_id_idx IF NOT EXISTS FOR (r:CredentialRefresh) ON (r.credentialId)',
     'CREATE INDEX credential_refresh_version_refresh_id_idx IF NOT EXISTS FOR (c:Credential) ON (c.refreshId)',
+    // Credential activity reads join each CredentialActivity to its credential through
+    // (sender)-[:CREDENTIAL_SENT { activityId }]->(credential). Without this index every
+    // activity row scans all CREDENTIAL_SENT relationships.
+    'CREATE INDEX credential_sent_activity_id_idx IF NOT EXISTS FOR ()-[r:CREDENTIAL_SENT]-() ON (r.activityId)',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -218,11 +246,16 @@ const runIndexQuery = async (query: string): Promise<void> => {
 };
 
 if (shouldCreateIndices) {
-    void ensureCredentialRefreshConstraints().catch(err => {
-        console.error('Error creating credential refresh constraints:', err);
-    });
-
     (async function createIndices() {
+        // Constraints first, then indexes, one schema statement at a time. Running the two
+        // lists concurrently made every cold start contend with itself for schema locks.
+        // The readiness promise is memoized, so refresh routes awaiting it later reuse this run.
+        try {
+            await ensureCredentialRefreshConstraints();
+        } catch (err) {
+            console.error('Error creating credential refresh constraints:', err);
+        }
+
         try {
             for (const query of indexQueries) {
                 await runIndexQuery(query);
@@ -254,6 +287,7 @@ export * from './SkillFramework';
 export * from './Skill';
 export * from './Tag';
 export * from './Integration';
+export * from './AppManifestVersion';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
 export * from './CredentialRefresh';

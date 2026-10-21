@@ -48,7 +48,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     setTerm: saveTerm,
     category,
     required,
-    contractOwnerDid,
+    contractOwnerDid: _contractOwnerDid,
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -82,7 +82,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                 />
             </div>,
             {
-                sectionClassName: '!max-w-[350px]',
+                sectionClassName: 'max-w-[350px]!',
             }
         );
     };
@@ -95,17 +95,21 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         fetchNextPage,
     } = useGetCredentialList(category as CredentialCategory);
 
-    const hasCredentials = records?.pages?.[0]?.records?.length > 0;
+    const hasCredentials = (records?.pages?.[0]?.records?.length ?? 0) > 0;
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '200px', [
-        records?.pages?.[0]?.records?.length,
-    ]);
+    const onScreen = useOnScreen(
+        infiniteScrollRef as React.MutableRefObject<HTMLDivElement>,
+        '200px',
+        [records?.pages?.[0]?.records?.length]
+    );
 
     useEffect(() => {
         if (onScreen && hasNextPage) fetchNextPage();
     }, [fetchNextPage, hasNextPage, onScreen]);
 
-    const allCreds = records?.pages.flatMap(page => page?.records);
+    const allCreds = records?.pages
+        .flatMap(page => page?.records)
+        .filter((credential): credential is NonNullable<typeof credential> => Boolean(credential));
     const allUris = allCreds?.map(credential => credential?.uri) ?? [];
 
     const totalCount = typeof count === 'number' ? count : '?';
@@ -115,19 +119,20 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         closeModal();
     };
 
-    const getAlreadySharedUri = (credential: CredentialRecord<CredentialMetadata>) => {
-        return credential.sharedUris?.[contractOwnerDid]?.at(-1);
-    };
+    // Historical copies identify the original credential for selection only.
+    // Submission materializes it for the current audience before reusing any ciphertext.
+    const getAlreadySharedUris = (credential: CredentialRecord<CredentialMetadata>) =>
+        Object.values(credential.sharedUris ?? {}).flat();
 
     const getIsSelected = (credential: CredentialRecord<CredentialMetadata>) => {
-        const alreadySharedUri = getAlreadySharedUri(credential);
+        const alreadySharedUris = getAlreadySharedUris(credential);
         return term.shared?.some(
-            termUri => credential.uri === termUri || alreadySharedUri === termUri
+            termUri => credential.uri === termUri || alreadySharedUris.includes(termUri)
         );
     };
 
     const toggleCredentialSelected = (credential: CredentialRecord<CredentialMetadata>) => {
-        const alreadySharedUri = getAlreadySharedUri(credential);
+        const alreadySharedUris = getAlreadySharedUris(credential);
         const isSelected = getIsSelected(credential);
 
         if (term.shareAll) {
@@ -138,13 +143,13 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                             ...term,
                             shareAll: false,
                             shared: allUris.filter(
-                                uri => uri !== credential.uri && uri !== alreadySharedUri
+                                uri => uri !== credential.uri && !alreadySharedUris.includes(uri)
                             ),
                         });
                     }}
                 />,
                 {
-                    sectionClassName: '!max-w-[350px] !shadow-none !bg-transparent',
+                    sectionClassName: 'max-w-[350px]! shadow-none! bg-transparent!',
                     hideButton: true,
                 }
             );
@@ -155,8 +160,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             ...term,
             shareAll: false,
             shared: isSelected
-                ? term?.shared?.filter(uri => uri !== credential.uri && uri !== alreadySharedUri)
-                : [...(term.shared ?? []), alreadySharedUri || credential.uri],
+                ? term?.shared?.filter(
+                      uri => uri !== credential.uri && !alreadySharedUris.includes(uri)
+                  )
+                : [...(term.shared ?? []), credential.uri],
         });
     };
 
@@ -169,12 +176,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             setFormerSharedUris(term.shared ?? []);
         }
 
-        const allSharedUris = allCreds
-            ?.map(cred => {
-                if (!cred) return;
-                return getAlreadySharedUri(cred) ?? cred.uri;
-            })
-            .filter(c => !!c);
+        const allSharedUris = allCreds?.map(credential => credential.uri) ?? [];
 
         setTerm({ ...term, shared: allSharedUris, shareAll: true, sharing: true });
     };
@@ -226,7 +228,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                     <IonRow className="px-5 pb-5 w-full max-w-[800px]">
                         <IonCol
                             size="12"
-                            className="w-full bg-white rounded-[15px] shadow-[0px_2px_4px_0px_rgba(0,0,0,0.25)] py-2 px-5"
+                            className="w-full bg-white rounded-[15px] shadow-box-bottom py-2 px-5"
                         >
                             <fieldset className="w-full flex flex-col gap-3 border-b border-solid border-b-gray-200 py-3">
                                 <section className="w-full justify-between items-center flex gap-3">

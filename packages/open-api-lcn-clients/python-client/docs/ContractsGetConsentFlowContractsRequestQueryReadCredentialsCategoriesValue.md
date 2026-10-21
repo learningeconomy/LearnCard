@@ -1,11 +1,10 @@
 # ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**required** | **bool** |  | [optional] 
+| Name         | Type     | Description | Notes      |
+| ------------ | -------- | ----------- | ---------- |
+| **required** | **bool** |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ contracts_get_consent_flow_contracts_request_query_read_credentials_categories_v
 # create an instance of ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue from a dict
 contracts_get_consent_flow_contracts_request_query_read_credentials_categories_value_from_dict = ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue.from_dict(contracts_get_consent_flow_contracts_request_query_read_credentials_categories_value_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,13 +1,12 @@
 # ProfileGenerateInviteRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**expiration** | **float** |  | [optional] [default to 2592000]
-**challenge** | **str** |  | [optional] 
-**max_uses** | **int** |  | [optional] [default to 1]
+| Name           | Type      | Description | Notes                           |
+| -------------- | --------- | ----------- | ------------------------------- |
+| **expiration** | **float** |             | [optional] [default to 2592000] |
+| **challenge**  | **str**   |             | [optional]                      |
+| **max_uses**   | **int**   |             | [optional] [default to 1]       |
 
 ## Example
 
@@ -26,6 +25,5 @@ profile_generate_invite_request_dict = profile_generate_invite_request_instance.
 # create an instance of ProfileGenerateInviteRequest from a dict
 profile_generate_invite_request_from_dict = ProfileGenerateInviteRequest.from_dict(profile_generate_invite_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

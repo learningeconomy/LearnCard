@@ -1,5 +1,38 @@
 # @learncard/openid4vc-plugin
 
+## 0.3.12
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/vc-plugin@1.6.5
+
+## 0.3.11
+
+### Patch Changes
+
+- [#1646](https://github.com/learningeconomy/LearnCard/pull/1646) [`880014a5c2c19df944e8e59d6998a1031d4e5a0b`](https://github.com/learningeconomy/LearnCard/commit/880014a5c2c19df944e8e59d6998a1031d4e5a0b) Thanks [@goblincore](https://github.com/goblincore)! - Add opt-in encrypted verifier history with recording controls, bounded retention and exact deletion. Keep receipts outside credential indexes and suppress capture before viewing private history.
+
+    OID4VP transport errors now expose stable codes and HTTP status without response URLs, fetch causes, verifier status text or response bodies. Consumers that previously inspected `VpSubmitError.body` or `.cause` must use `code` and `status`; successful submission responses still expose `body`.
+
+    Capture consent from an owner-encrypted local snapshot without pre-send Cloud reads. Quarantine unreadable history, allow exact-ID recovery Clear, preserve future-dated/recent other-generation receipts, and share live eligibility/cancellation guards across flows. Known JARM failures expose an allowlisted `jarmCode`; unexpected response preparation failures use `internal_error` without private causes.
+
+- Updated dependencies [[`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/core@9.4.38
+    - @learncard/vc-plugin@1.6.4
+
+## 0.3.10
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.37
+    - @learncard/didkit-plugin@1.10.2
+    - @learncard/vc-plugin@1.6.3
+
 ## 0.3.9
 
 ### Patch Changes

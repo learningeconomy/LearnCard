@@ -24,18 +24,28 @@ import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
+import { KeycloakReAuthForm } from './KeycloakReAuthForm';
+import type { ReauthAction } from '../../auth/keycloakReauth';
+import type { RecoverySetupType } from '../recovery/RecoverySetupModal';
 
 type ReAuthState = 'refreshing' | 'needs_reauth' | 'reauthing' | 'success' | 'error';
 
 interface ReAuthOverlayProps {
     onSuccess: () => void;
     onCancel: () => void;
+    resumeAction?: ReauthAction;
+    resumeMethod?: RecoverySetupType;
 }
 
 const UID_MISMATCH_ERROR =
     'You signed in with a different account. Please try again with the correct account.';
 
-const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) => {
+const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
+    onSuccess,
+    onCancel,
+    resumeAction = 'recovery-setup',
+    resumeMethod,
+}) => {
     const { refreshAuthSession } = useAppAuth();
     const adapter = useSignInAdapter();
 
@@ -150,7 +160,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
     // --- Refreshing state ---
     if (state === 'refreshing') {
         return (
-            <div className="p-8 text-center space-y-5 bg-white rounded-[20px] font-poppins">
+            <div className="p-8 text-center space-y-v3-5 bg-white rounded-[20px] font-poppins">
                 <div className="flex justify-center">
                     <span className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin" />
                 </div>
@@ -163,7 +173,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
     // --- Success state ---
     if (state === 'success') {
         return (
-            <div className="p-8 text-center space-y-5 bg-white rounded-[20px] font-poppins">
+            <div className="p-8 text-center space-y-v3-5 bg-white rounded-[20px] font-poppins">
                 <div className="flex justify-center">
                     <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-4xl" />
                 </div>
@@ -176,12 +186,23 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
     }
 
     // --- Determine which re-auth buttons to show ---
+    if (adapter.providerType === 'keycloak') {
+        return (
+            <KeycloakReAuthForm
+                action={resumeAction}
+                initialMethod={resumeMethod}
+                onCancel={onCancel}
+                onComplete={onSuccess}
+            />
+        );
+    }
+
     const isGoogle = adapter.capabilities.google && loginType === SocialLoginTypes.google;
     const isApple = adapter.capabilities.apple && loginType === SocialLoginTypes.apple;
     const hasSocialReAuth = isGoogle || isApple;
 
     return (
-        <div className="p-8 text-center space-y-5 bg-white rounded-[20px] font-poppins">
+        <div className="p-8 text-center space-y-v3-5 bg-white rounded-[20px] font-poppins">
             <div className="flex justify-center">
                 <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
             </div>

@@ -1,5 +1,6 @@
 {
     "_comment": "Local dev overrides for LearnCard. Merged on top of config.json via deepMerge.",
+    "stage": "local",
     "devDomain": "localhost:3000",
     "apis": {
         "brainService": "http://localhost:4000/trpc",
@@ -27,6 +28,11 @@
         "analyticsProvider": "noop"
     },
     "auth": {
+        "keycloak": {
+            "serverUrl": "http://localhost:8081",
+            "realm": "learncard",
+            "clientId": "learncard-app"
+        },
         "keyDerivation": "sss",
         "sss": {
             "serverUrl": "http://localhost:5100/api",

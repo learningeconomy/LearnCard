@@ -17,8 +17,7 @@ export const mediaToEvidenceTemplates = (
 
 /**
  * Plain OBv3 evidence entries for `templateData.evidence`, which the network
- * applies per-recipient at send time. Mirrors the shape of
- * `convertAttachmentsToEvidence` used by the boost flow.
+ * applies per-recipient at send time. File links use standard Evidence terms.
  */
 export const attachmentsToEvidence = (
     attachments: SimpleMediaAttachment[]
@@ -27,9 +26,7 @@ export const attachmentsToEvidence = (
         .filter(a => a.url)
         .map(a => ({
             id: a.url,
-            type: ['Evidence', 'EvidenceFile'],
+            type: ['Evidence'],
             name: a.title || a.fileName || a.url,
             genre: a.type,
-            ...(a.fileName ? { fileName: a.fileName } : {}),
-            ...(a.fileType ? { fileType: a.fileType } : {}),
         }));

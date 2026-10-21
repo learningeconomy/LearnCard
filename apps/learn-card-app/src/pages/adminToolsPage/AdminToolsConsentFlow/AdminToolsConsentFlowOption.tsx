@@ -32,10 +32,10 @@ export const AdminToolsConsentFlowOption: React.FC<{ option: AdminToolOption }> 
 
     const openNewContractModal = () => {
         newModal(<CreateContractModal onSuccess={() => refetch()} />, {
-            sectionClassName: '!max-w-[500px] !max-h-[70vh]',
+            sectionClassName: 'max-w-[500px]! max-h-[70vh]!',
             usePortal: true,
             hideButton: true,
-            portalClassName: '!max-w-[500px]',
+            portalClassName: 'max-w-[500px]!',
         });
     };
 
@@ -49,7 +49,7 @@ export const AdminToolsConsentFlowOption: React.FC<{ option: AdminToolOption }> 
                 />
 
                 <div className="flex items-center justify-center w-full px-4">
-                    <div className="flex items-center justify-center w-full border-grayscale-100 border-[1px] rounded-[20px]" />
+                    <div className="flex items-center justify-center w-full border-grayscale-100 border rounded-[20px]" />
                 </div>
 
                 {!isServiceProfile && <AdminToolsConsentFlowServiceProfileWarning />}

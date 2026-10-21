@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
-import { useSignInAdapter } from 'learn-card-base';
+import { authUserStore, useSignInAdapter } from 'learn-card-base';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
@@ -25,6 +25,9 @@ import {
     useImageUpload,
     getLogger,
     Toggle,
+    getSSSConfig,
+    authStore,
+    SocialLoginTypes,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -47,6 +50,7 @@ import { inferCountryCode } from './countryInference';
 import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
 import { RecoveryPinStep } from './RecoveryPinStep';
+import { waitForEscrowEnrollment } from './waitForEscrowEnrollment';
 import { writeRecoveryPinPromptFlag } from '../../recovery/recoveryPinPromptFlag';
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
@@ -82,8 +86,12 @@ type OnboardingFlowProps = {
 
 const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const adapter = useSignInAdapter();
+    const authUser = authUserStore.use.currentUser();
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState, setupNewKey, setEscrowPin, authProvider } = useAppAuth();
+    // Async handlers must read the live coordinator state, not their render-time snapshot.
+    const coordinatorStateRef = useRef(coordinatorState);
+    coordinatorStateRef.current = coordinatorState;
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
     const { mutateAsync: updatePreferences } = useUpdatePreferences();
@@ -103,6 +111,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const currentUser = useCurrentUser();
     const authToken = getAuthToken();
+    const loginType = authStore.use.typeOfLogin();
+    const isAppleLogin = loginType === SocialLoginTypes.apple;
 
     // Scroll focused input into view when keyboard opens on native
     const containerRef = useRef<HTMLDivElement>(null);
@@ -277,10 +287,15 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [euParentalConsentRequested, setEuParentalConsentRequested] = useState(false);
     const [guardianEmail, setGuardianEmail] = useState('');
 
-    const [name, setName] = useState(currentUser?.name ?? '');
+    const [name, setName] = useState(
+        () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
+    );
+    const nameEditedRef = useRef(false);
+    const [anonymousHandle] = useState(() => `learner-${generateRandomSuffix()}`);
     const [photo, setPhoto] = useState(currentUser?.profileImage ?? '');
     const [profileId, setProfileId] = useState('');
     const [isHandleManuallyEdited, setIsHandleManuallyEdited] = useState(false);
+    const displayName = name.trim() || (isAppleLogin ? profileId : '');
 
     const [privacyPreferences, setPrivacyPreferences] =
         useState<OnboardingPrivacyPreferences | null>(null);
@@ -326,7 +341,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
         const trimmed = name.trim();
         if (!trimmed) {
-            setProfileId('');
+            setProfileId(isAppleLogin ? anonymousHandle : '');
             return;
         }
 
@@ -338,7 +353,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         }, 400);
 
         return () => window.clearTimeout(timeout);
-    }, [name, isHandleManuallyEdited]);
+    }, [name, isHandleManuallyEdited, isAppleLogin, anonymousHandle]);
 
     // Handle collision resolution
     useEffect(() => {
@@ -356,14 +371,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         }
     }, [uniqueProfile, uniqueProfileFetching, isHandleManuallyEdited, profileId]);
 
-    // Pre-fill from Firebase
+    // Auth enrichment can finish after this form mounts. Preserve intentional edits.
     useEffect(() => {
         const fbUser = adapter.getCurrentUser();
-        if (fbUser) {
-            if (fbUser.displayName && !name) setName(fbUser.displayName);
-            if (fbUser.photoUrl && !photo) setPhoto(fbUser.photoUrl);
+        if (!nameEditedRef.current) {
+            setName(fbUser?.displayName?.trim() || currentUser?.name || '');
         }
-    }, [name, photo, adapter]);
+        if (fbUser?.photoUrl && !photo) setPhoto(fbUser.photoUrl);
+    }, [authUser?.displayName, currentUser?.name, loginType, photo, adapter]);
 
     // Photo Upload
     const onUpload = (data: UploadRes) => {
@@ -475,7 +490,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 />,
                 {
                     sectionClassName:
-                        '!bg-transparent !border-none !shadow-none !rounded-none p-[20px] !mx-auto',
+                        'bg-transparent! border-none! shadow-none! rounded-none! p-[20px] mx-auto!',
                 },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
@@ -495,6 +510,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     // Screen 2 Logic
     const handleCreateProfile = async () => {
+        if (!isAppleLogin && !name.trim()) return;
+
         const parsedData = ProfileIDStateValidator.safeParse({ profileId });
         if (!parsedData.success) {
             setProfileIdError(
@@ -539,7 +556,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             const didWeb = await wallet.invoke.createProfile({
                 profileId,
-                displayName: name,
+                displayName,
                 shortBio: '',
                 bio: '',
                 image: photo,
@@ -613,7 +630,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         const fbUser = adapter.getCurrentUser();
                         if (fbUser) {
                             await adapter.updateProfile?.({
-                                displayName: name,
+                                displayName,
                                 photoUrl: photo,
                             });
                         }
@@ -623,10 +640,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 }
 
                 if (currentUser?.privateKey) {
-                    await updateCurrentUser(currentUser.uid, { name, profileImage: photo });
+                    await updateCurrentUser(currentUser.uid, {
+                        name: displayName,
+                        profileImage: photo,
+                    });
                     currentUserStore.set.currentUser({
                         ...currentUser,
-                        name,
+                        name: displayName,
                         profileImage: photo,
                     });
                 }
@@ -641,7 +661,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     try {
                         await autoConsentLearnCardAi({
                             enabled: aiEnabled && preferencesInitialized,
-                            userOverrides: { name, profileImage: photo },
+                            userOverrides: { name: displayName, profileImage: photo },
                         });
                     } catch (err) {
                         log.error('Failed to auto-consent LearnCard AI:', err);
@@ -653,16 +673,24 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         <GuardianLinkedModal onDismiss={closeModal}>
                             {claimedChildren}
                         </GuardianLinkedModal>,
-                        { sectionClassName: '!max-w-[400px]' },
+                        { sectionClassName: 'max-w-[400px]!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                     );
                 }
 
                 trackOnboardingStepCompleted('profile', 2);
 
-                const pinAvailable =
-                    coordinatorState.status === 'ready' &&
-                    coordinatorState.escrowEnrollment === 'enrolled';
+                const pinAvailable = await waitForEscrowEnrollment(
+                    () => {
+                        const state = coordinatorStateRef.current;
+                        return {
+                            status: state.status,
+                            escrowEnrollment:
+                                state.status === 'ready' ? state.escrowEnrollment : undefined,
+                        };
+                    },
+                    { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
+                );
                 setStep(pinAvailable ? 'pin' : 'celebrate');
             }
         } catch (err: unknown) {
@@ -759,12 +787,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             {step === 'age-country' && (
                 <div className="relative z-10 w-full h-full flex flex-col">
-                    <div className="flex-1 flex flex-col justify-start desktop:justify-center items-center px-4 pt-[calc(var(--ion-safe-area-top,0px)_+_1rem)] pb-8">
+                    <div className="flex-1 flex flex-col justify-start desktop:justify-center items-center px-4 pt-[calc(var(--ion-safe-area-top,0px)+1rem)] pb-8">
                         <div className="w-full max-w-[420px] animate-fade-in-up">
                             {renderProgress(1)}
 
                             <div className="text-center mb-8">
-                                <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm border border-emerald-100/50">
+                                <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center shadow-xs border border-emerald-100/50">
                                     <ShieldCheck
                                         className="w-8 h-8 text-emerald-600"
                                         strokeWidth={1.5}
@@ -781,7 +809,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             {error && (
                                 <div
                                     role="alert"
-                                    className="mb-6 p-3 bg-red-50/80 backdrop-blur-sm border border-red-100 rounded-2xl shadow-sm"
+                                    className="mb-6 p-3 bg-red-50/80 backdrop-blur-xs border border-red-100 rounded-2xl shadow-xs"
                                 >
                                     <span className="text-sm text-red-700 leading-relaxed">
                                         {error}
@@ -789,7 +817,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 </div>
                             )}
 
-                            <div className="space-y-4">
+                            <div className="space-y-v3-4">
                                 <div>
                                     <p className="block text-xs font-medium text-grayscale-700 mb-1.5">
                                         {m['onboarding.profile.dateOfBirth']()}
@@ -810,7 +838,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     </span>
                                     <button
                                         aria-labelledby="onboarding-country-label onboarding-country-value"
-                                        className="w-full flex items-center justify-between bg-white/80 backdrop-blur-sm text-grayscale-900 rounded-2xl font-medium px-4 py-4 text-sm border border-grayscale-200/60 shadow-sm motion-safe:hover:-translate-y-0.5 active:scale-[0.98] transition-all"
+                                        className="w-full flex items-center justify-between bg-white/80 backdrop-blur-xs text-grayscale-900 rounded-2xl font-medium px-4 py-4 text-sm border border-grayscale-200/60 shadow-xs motion-safe:hover:-translate-y-0.5 active:scale-[0.98] transition-all"
                                         onClick={() => {
                                             newModal(
                                                 <CountrySelectorModal
@@ -822,7 +850,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 />,
                                                 {
                                                     sectionClassName:
-                                                        '!bg-transparent !border-none !shadow-none !rounded-none',
+                                                        'bg-transparent! border-none! shadow-none! rounded-none!',
                                                 },
                                                 {
                                                     desktop: ModalTypes.Cancel,
@@ -847,7 +875,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 </div>
 
                                 {isUnder13 && (
-                                    <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-2 animate-fade-in-up shadow-sm">
+                                    <div className="mt-4 p-4 bg-white/80 backdrop-blur-xs border border-grayscale-200/60 rounded-2xl space-y-v3-2 animate-fade-in-up shadow-xs">
                                         <h2 className="text-sm font-semibold text-grayscale-900">
                                             {m['onboarding.v2.under13Title']()}
                                         </h2>
@@ -858,7 +886,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 )}
 
                                 {needsUSConsent && (
-                                    <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-3 animate-fade-in-up shadow-sm">
+                                    <div className="mt-4 p-4 bg-white/80 backdrop-blur-xs border border-grayscale-200/60 rounded-2xl space-y-v3-3 animate-fade-in-up shadow-xs">
                                         <h2 className="text-sm font-semibold text-grayscale-900">
                                             {m['onboarding.v2.usNoticeTitle']()}
                                         </h2>
@@ -870,7 +898,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 type="checkbox"
                                                 checked={usMinorConsent}
                                                 onChange={e => setUsMinorConsent(e.target.checked)}
-                                                className="mt-0.5 w-4 h-4 rounded border-grayscale-300 text-emerald-600 focus-visible:ring-emerald-500 transition-colors"
+                                                className="mt-0.5 w-4 h-4 rounded-sm border-grayscale-300 text-emerald-600 focus-visible:ring-emerald-500 transition-colors"
                                             />
                                             <span className="text-xs font-medium text-grayscale-700 group-hover:text-grayscale-900 transition-colors">
                                                 {m['onboarding.v2.usConsentCheck']()}
@@ -880,7 +908,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 )}
 
                                 {needsEUConsent && (
-                                    <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-3 animate-fade-in-up shadow-sm">
+                                    <div className="mt-4 p-4 bg-white/80 backdrop-blur-xs border border-grayscale-200/60 rounded-2xl space-y-v3-3 animate-fade-in-up shadow-xs">
                                         <h2 className="text-sm font-semibold text-grayscale-900">
                                             {m['onboarding.consent.eu.heading']()}
                                         </h2>
@@ -900,7 +928,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 value={guardianEmail}
                                                 onChange={e => setGuardianEmail(e.target.value)}
                                                 placeholder={m['onboarding.v2.guardianEmailHint']()}
-                                                className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent bg-white/50 transition-all"
+                                                className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent bg-white/50 transition-all"
                                             />
                                         </div>
                                     </div>
@@ -909,7 +937,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
 
-                    <div className="w-full bg-white/70 backdrop-blur-xl border-t border-grayscale-200/60 px-4 pt-4 pb-[calc(var(--ion-safe-area-bottom,0px)_+_1.5rem)]">
+                    <div className="w-full bg-white/70 backdrop-blur-xl border-t border-grayscale-200/60 px-4 pt-4 pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)]">
                         <div className="max-w-[420px] mx-auto">
                             <button
                                 type="button"
@@ -932,7 +960,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             {step === 'profile' && (
                 <div className="relative z-10 w-full h-full flex flex-col">
-                    <div className="flex-1 flex flex-col items-center desktop:justify-center px-4 pt-[calc(var(--ion-safe-area-top,0px)_+_2rem)] pb-8 overflow-y-auto">
+                    <div className="flex-1 flex flex-col items-center desktop:justify-center px-4 pt-[calc(var(--ion-safe-area-top,0px)+2rem)] pb-8 overflow-y-auto">
                         <div className="w-full max-w-[420px] desktop:max-w-[900px] animate-fade-in-up">
                             {renderProgress(2)}
 
@@ -948,7 +976,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             {error && (
                                 <div
                                     role="alert"
-                                    className="mb-6 p-3 bg-red-50/80 backdrop-blur-sm border border-red-100 rounded-2xl shadow-sm"
+                                    className="mb-6 p-3 bg-red-50/80 backdrop-blur-xs border border-red-100 rounded-2xl shadow-xs"
                                 >
                                     <span className="text-sm text-red-700 leading-relaxed">
                                         {error}
@@ -956,11 +984,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 </div>
                             )}
 
-                            <div className="flex flex-col desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center items-center space-y-5 desktop:space-y-0">
+                            <div className="flex flex-col desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center items-center space-y-v3-5 desktop:space-y-v3-0">
                                 {/* LEFT COLUMN: Hero Card Preview */}
                                 <div className="w-full flex justify-center">
                                     <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-6 pt-8 flex flex-col items-center gap-3 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-emerald-50/5 to-transparent pointer-events-none" />
+                                        <div className="absolute inset-0 bg-linear-to-br/srgb from-emerald-400/15 via-emerald-50/5 to-transparent pointer-events-none" />
                                         <div className="relative">
                                             <div className="relative flex justify-center items-center h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 transition-transform duration-300 group-hover:scale-105">
                                                 {photo ? (
@@ -971,7 +999,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         referrerPolicy="no-referrer"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-semibold text-3xl">
+                                                    <div className="w-full h-full flex items-center justify-center bg-linear-to-br/srgb from-emerald-400 to-emerald-600 text-white font-semibold text-3xl">
                                                         {(
                                                             name?.trim()?.[0] ||
                                                             profileId?.trim()?.[0] ||
@@ -1001,7 +1029,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                         </div>
                                         <div className="text-center relative z-10 w-full">
                                             <h2 className="text-xl font-semibold text-grayscale-900 truncate px-2">
-                                                {name || m['onboarding.v2.yourName']()}
+                                                {displayName || m['onboarding.v2.yourName']()}
                                             </h2>
                                             <p className="text-sm text-grayscale-600 font-medium truncate px-2">
                                                 @{profileId || m['onboarding.v2.username']()}
@@ -1011,22 +1039,29 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 </div>
 
                                 {/* RIGHT COLUMN: Profile Card + Privacy Card */}
-                                <div className="w-full flex flex-col space-y-5">
-                                    <div className="w-full bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm p-5 space-y-4">
+                                <div className="w-full flex flex-col space-y-v3-5">
+                                    <div className="w-full bg-white/80 backdrop-blur-xs border border-grayscale-200/60 rounded-3xl shadow-xs p-5 space-y-v3-4">
                                         <div>
                                             <label
                                                 htmlFor="onboarding-full-name"
                                                 className="block text-xs font-medium text-grayscale-700 mb-1.5"
                                             >
-                                                {m['onboarding.profile.fullName']()}
+                                                {isAppleLogin
+                                                    ? m['onboarding.profile.fullNameOptional']()
+                                                    : m['onboarding.profile.fullName']()}
                                             </label>
                                             <input
                                                 id="onboarding-full-name"
                                                 type="text"
                                                 value={name}
-                                                onChange={e => setName(e.target.value)}
+                                                onChange={e => {
+                                                    nameEditedRef.current = true;
+                                                    setName(e.target.value);
+                                                }}
+                                                required={!isAppleLogin}
+                                                autoComplete="name"
                                                 placeholder={m['onboarding.v2.yourName']()}
-                                                className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent bg-white/50 transition-all"
+                                                className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent bg-white/50 transition-all"
                                             />
                                         </div>
 
@@ -1070,7 +1105,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         setProfileIdError('');
                                                     }}
                                                     placeholder={m['onboarding.v2.username']()}
-                                                    className="block w-full min-w-0 box-border py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none bg-transparent"
+                                                    className="block w-full min-w-0 box-border py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden bg-transparent"
                                                 />
                                                 <div className="pr-4 flex items-center">
                                                     {uniqueProfileFetching && (
@@ -1103,7 +1138,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             ) ? (
                                                 <div
                                                     id="onboarding-profile-id-hint"
-                                                    className="mt-2 space-y-1"
+                                                    className="mt-2 space-y-v3-1"
                                                 >
                                                     <div
                                                         className={`flex items-center gap-1.5 text-xs transition-colors ${
@@ -1171,7 +1206,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                         </div>
                                     </div>
 
-                                    <div className="w-full p-5 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm space-y-5">
+                                    <div className="w-full p-5 bg-white/80 backdrop-blur-xs border border-grayscale-200/60 rounded-3xl shadow-xs space-y-v3-5">
                                         <div>
                                             <h3 className="text-sm font-semibold text-grayscale-900">
                                                 {m['onboarding.v2.privacyTitle']()}
@@ -1181,7 +1216,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             </p>
                                         </div>
 
-                                        <div className="space-y-4">
+                                        <div className="space-y-v3-4">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.brandAi']({
@@ -1210,7 +1245,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 />
                                             </div>
                                             {privacyPreferences?.isMinor && (
-                                                <p className="text-xs text-amber-700 bg-amber-50/80 backdrop-blur-sm p-2.5 rounded-xl border border-amber-100/50">
+                                                <p className="text-xs text-amber-700 bg-amber-50/80 backdrop-blur-xs p-2.5 rounded-xl border border-amber-100/50">
                                                     {m['onboarding.v2.aiMinorNote']()}
                                                 </p>
                                             )}
@@ -1265,7 +1300,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
 
-                    <div className="w-full bg-white/70 backdrop-blur-xl border-t border-grayscale-200/60 px-4 pt-4 pb-[calc(var(--ion-safe-area-bottom,0px)_+_1.5rem)]">
+                    <div className="w-full bg-white/70 backdrop-blur-xl border-t border-grayscale-200/60 px-4 pt-4 pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)]">
                         <div className="max-w-[420px] mx-auto">
                             <button
                                 type="button"
@@ -1274,7 +1309,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 onClick={handleCreateProfile}
                                 disabled={
                                     isCreating ||
-                                    !name ||
+                                    (!isAppleLogin && !name.trim()) ||
                                     !profileId ||
                                     !isUniqueValid ||
                                     !isLengthValid ||
@@ -1314,7 +1349,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             )}
 
             {step === 'celebrate' && (
-                <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)_+_2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)_+_1.5rem)]">
+                <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)+2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)]">
                     <Confetti />
 
                     <div className="text-center mb-8">
@@ -1331,7 +1366,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     </div>
 
                     <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 flex flex-col items-center gap-5 relative overflow-hidden mb-10">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-50" />
+                        <div className="absolute inset-0 bg-linear-to-br/srgb from-blue-50/50 to-transparent opacity-50" />
                         <div className="relative flex justify-center items-center h-28 w-28 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 z-10">
                             {photo ? (
                                 <img
@@ -1341,7 +1376,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     referrerPolicy="no-referrer"
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-semibold text-4xl">
+                                <div className="w-full h-full flex items-center justify-center bg-linear-to-br/srgb from-emerald-400 to-emerald-600 text-white font-semibold text-4xl">
                                     {(
                                         name?.trim()?.[0] ||
                                         profileId?.trim()?.[0] ||
@@ -1357,7 +1392,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                         <div className="text-center relative z-10 w-full">
                             <h2 className="text-2xl font-semibold text-grayscale-900 truncate px-2">
-                                {name}
+                                {displayName}
                             </h2>
                             <p className="text-base text-grayscale-600 font-medium truncate px-2">
                                 @{profileId}
@@ -1365,7 +1400,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
 
-                    <div className="w-full max-w-sm space-y-4 mb-8">
+                    <div className="w-full max-w-sm space-y-v3-4 mb-8">
                         <p className="text-sm font-medium text-grayscale-700 text-center">
                             {m['onboarding.v2.whoAreYou']()}
                         </p>
@@ -1376,7 +1411,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     type="button"
                                     aria-pressed={role === r.type}
                                     onClick={() => handleRoleSelect(r.type)}
-                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all motion-safe:hover:-translate-y-0.5 active:scale-[0.97] shadow-sm ${
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all motion-safe:hover:-translate-y-0.5 active:scale-[0.97] shadow-xs ${
                                         role === r.type
                                             ? 'bg-grayscale-900 text-white shadow-md'
                                             : 'bg-grayscale-100 border border-grayscale-200 text-grayscale-700 hover:bg-grayscale-200'

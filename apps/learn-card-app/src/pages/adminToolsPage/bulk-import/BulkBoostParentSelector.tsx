@@ -26,7 +26,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     const presentModal = () => {
         newModal(
             <BulkBoostParentSelectorModal parentUri={parentUri} setParentUri={setParentUri} />,
-            { sectionClassName: '!max-w-[600px]', hideButton: true }
+            { sectionClassName: 'max-w-[600px]!', hideButton: true }
         );
     };
 
@@ -34,7 +34,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
         <div className="flex flex-col gap-[3px] w-full">
             <button
                 onClick={() => presentModal()}
-                className="w-full rounded-full pl-2 pr-4 flex items-center justify-between border-[1px] border-solid border-grayscale-300 h-[58px]"
+                className="w-full rounded-full pl-2 pr-4 flex items-center justify-between border border-solid border-grayscale-300 h-[58px]"
                 type="button"
             >
                 {!parentUri && (

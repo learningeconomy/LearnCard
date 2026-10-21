@@ -31,7 +31,7 @@ interface ResultFieldEditorProps {
 const RESULT_VARIABLE_NAME = 'grade';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const newEditorId = (): string =>
     typeof crypto !== 'undefined' && crypto.randomUUID
@@ -153,7 +153,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     };
 
     return (
-        <div className="sm:col-span-2 space-y-3">
+        <div className="sm:col-span-2 space-y-v3-3">
             <div>
                 <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-grayscale-700">
@@ -301,7 +301,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
             )}
 
             {selectedType === 'RubricCriterionLevel' && (
-                <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 space-y-4">
+                <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 space-y-v3-4">
                     <div>
                         <p className="text-sm font-medium text-grayscale-900">
                             {m['issueFlow.result.editor.rubricLevels']()}
@@ -313,7 +313,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                     {(state.rubricCriterionLevel ?? []).map((level, index) => (
                         <div
                             key={`${index}-${level.id}`}
-                            className="rounded-xl border border-grayscale-200 bg-white p-3 space-y-3"
+                            className="rounded-xl border border-grayscale-200 bg-white p-3 space-y-v3-3"
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-grayscale-700">
@@ -467,11 +467,11 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         </p>
                     </div>
                 </summary>
-                <div className="space-y-3 mt-4">
+                <div className="space-y-v3-3 mt-4">
                     {(state.alignment ?? []).map((alignment, index) => (
                         <div
                             key={alignment.id}
-                            className="rounded-xl border border-grayscale-200 bg-grayscale-10 p-3 space-y-3"
+                            className="rounded-xl border border-grayscale-200 bg-grayscale-10 p-3 space-y-v3-3"
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-grayscale-700">

@@ -12,6 +12,7 @@ import type { TenantBranding } from '@learncard/email-templates';
 
 import { t, openRoute, didRoute, didAndChallengeRoute } from '@routes';
 import { getDeliveryService, getFrom } from '../services/delivery';
+import { getEscrowBlobStaleReason } from '../services/escrow-enclave';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { maskEmail } from '@helpers/maskEmail';
@@ -348,6 +349,10 @@ export const keysRouter = t.router({
                 recoverySessionToken: RecoverySessionTokenValidator,
                 recoveryMethods: z.array(RecoveryMethodResponseValidator),
                 escrowPin: EscrowPinStatusValidator,
+                // Same source as the key-status `primaryDid` (getAuthShare): lets
+                // the client bind a no-provider Nitro escrow hold start/restart to
+                // the verified account without a signed-in identity proof.
+                primaryDid: z.string().nullable(),
             })
         )
         .mutation(async ({ input }) => {
@@ -406,6 +411,7 @@ export const keysRouter = t.router({
                 recoverySessionToken,
                 recoveryMethods,
                 escrowPin: getEscrowPinStatus(userKey),
+                primaryDid: userKey.primaryDid ?? null,
             };
         }),
 
@@ -636,6 +642,7 @@ export const keysRouter = t.router({
                     maskedRecoveryEmail: z.string().nullable(),
                     escrowOptedOut: z.boolean(),
                     escrowPin: EscrowPinStatusValidator,
+                    escrowStale: z.enum(['mode-mismatch', 'key-rotated']).optional(),
                     sssActivationState: z.enum(['provisional', 'active']),
                 })
                 .nullable()
@@ -710,6 +717,9 @@ export const keysRouter = t.router({
                 sssActivationState: getSssActivationState(userKey),
                 escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
                 escrowPin: getEscrowPinStatus(userKey),
+                escrowStale: userKey.escrowBlob
+                    ? await getEscrowBlobStaleReason(userKey.escrowBlob)
+                    : undefined,
             };
         }),
 

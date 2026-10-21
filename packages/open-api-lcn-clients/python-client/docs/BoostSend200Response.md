@@ -1,15 +1,15 @@
 # BoostSend200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**credential_uri** | **str** |  | 
-**uri** | **str** |  | 
-**activity_id** | **str** | Links to the activity lifecycle for this issuance | 
-**inbox** | [**BoostSend200ResponseInbox**](BoostSend200ResponseInbox.md) |  | [optional] 
+| Name               | Type                                                              | Description                                       | Notes      |
+| ------------------ | ----------------------------------------------------------------- | ------------------------------------------------- | ---------- |
+| **type**           | **str**                                                           |                                                   |
+| **credential_uri** | **str**                                                           |                                                   |
+| **uri**            | **str**                                                           |                                                   |
+| **activity_id**    | **str**                                                           | Links to the activity lifecycle for this issuance |
+| **inbox**          | [**BoostSend200ResponseInbox**](BoostSend200ResponseInbox.md)     |                                                   | [optional] |
+| **refresh**        | [**BoostSend200ResponseRefresh**](BoostSend200ResponseRefresh.md) |                                                   | [optional] |
 
 ## Example
 
@@ -28,6 +28,5 @@ boost_send200_response_dict = boost_send200_response_instance.to_dict()
 # create an instance of BoostSend200Response from a dict
 boost_send200_response_from_dict = BoostSend200Response.from_dict(boost_send200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -71,7 +71,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
             </div>
 
             {/* Form */}
-            <div className="w-full bg-white shadow-button-bottom px-6 pt-4 pb-6 rounded-[15px] space-y-4">
+            <div className="w-full bg-white shadow-button-bottom px-6 pt-4 pb-6 rounded-[15px] space-y-v3-4">
                 {/* Credential Name */}
                 <div>
                     <label className="block text-sm font-semibold text-grayscale-700 mb-1">
@@ -85,7 +85,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                             updateField('credentialSubject.achievement.name', e.target.value)
                         }
                         placeholder={m['passport.buildMyLearnCard.editView.namePlaceholder']()}
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400"
+                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:border-grayscale-400"
                     />
                 </div>
 
@@ -109,7 +109,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                         placeholder={m[
                             'passport.buildMyLearnCard.editView.descriptionPlaceholder'
                         ]()}
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400 resize-y"
+                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:border-grayscale-400 resize-y"
                     />
                 </div>
 
@@ -142,7 +142,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                                             />,
                                             {
                                                 sectionClassName:
-                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
+                                                    'bg-transparent! border-none! shadow-none! rounded-none!',
                                             },
                                             {
                                                 desktop: ModalTypes.Center,
@@ -213,7 +213,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                             )
                         }
                         placeholder={m['passport.buildMyLearnCard.editView.criteriaPlaceholder']()}
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400 resize-y"
+                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:border-grayscale-400 resize-y"
                     />
                 </div>
 

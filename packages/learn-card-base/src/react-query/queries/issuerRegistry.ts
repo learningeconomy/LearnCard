@@ -111,10 +111,12 @@ const lookupIssuers = async (
 /** Registry labels are informational; decoding federation JWTs does not verify signatures. */
 export const knownDIDRegistryQueryOptions = (client: QueryClient, did?: string) =>
     queryOptions({
-        queryKey: ['knownDIDRegistry', did],
+        queryKey: ['knownDidRegistry', did],
         enabled: !!did,
-        // Re-evaluate partial failures on remount; successful documents retain their own TTL.
-        staleTime: 0,
+        // Preserve main's result freshness; documents are shared separately across issuers.
+        staleTime: query => (query.state.data?.incomplete ? 60_000 : 60 * 60_000),
+        gcTime: 60 * 60_000,
+        retry: 1,
         queryFn: async () => {
             if (!did) throw new Error('Missing issuer DID');
             const [trusted, untrusted] = await Promise.all([
@@ -129,11 +131,22 @@ export const knownDIDRegistryQueryOptions = (client: QueryClient, did?: string) 
                 lookupIssuers(client, untrusted, did),
             ]);
             if (trustedResults.matchingIssuers.length) {
-                return { source: 'trusted' as const, results: trustedResults };
+                return { source: 'trusted' as const, results: trustedResults, incomplete: false };
             }
             if (untrustedResults.matchingIssuers.length) {
-                return { source: 'untrusted' as const, results: untrustedResults };
+                return {
+                    source: 'untrusted' as const,
+                    results: untrustedResults,
+                    incomplete: trustedResults.uncheckedRegistries.length > 0,
+                };
             }
-            return { source: 'unknown' as const, results: {} };
+            return {
+                source: 'unknown' as const,
+                results: {},
+                incomplete:
+                    trustedResults.uncheckedRegistries.length +
+                        untrustedResults.uncheckedRegistries.length >
+                    0,
+            };
         },
     });

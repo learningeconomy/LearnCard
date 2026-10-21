@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials_categories_value import ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsUpdateConsentedContractTermsRequestTermsReadCredentials(BaseModel):
     """
@@ -33,7 +34,8 @@ class ContractsUpdateConsentedContractTermsRequestTermsReadCredentials(BaseModel
     __properties: ClassVar[List[str]] = ["shareAll", "sharing", "categories"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -45,8 +47,7 @@ class ContractsUpdateConsentedContractTermsRequestTermsReadCredentials(BaseModel
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -75,9 +76,18 @@ class ContractsUpdateConsentedContractTermsRequestTermsReadCredentials(BaseModel
         _field_dict = {}
         if self.categories:
             for _key_categories in self.categories:
-                if self.categories[_key_categories]:
-                    _field_dict[_key_categories] = self.categories[_key_categories].to_dict()
+                _field_dict[_key_categories] = self.categories[_key_categories].to_dict() if self.categories[_key_categories] is not None else None
             _dict['categories'] = _field_dict
+        # set to None if share_all (nullable) is None
+        # and model_fields_set contains the field
+        if self.share_all is None and "share_all" in self.model_fields_set:
+            _dict['shareAll'] = None
+
+        # set to None if sharing (nullable) is None
+        # and model_fields_set contains the field
+        if self.sharing is None and "sharing" in self.model_fields_set:
+            _dict['sharing'] = None
+
         return _dict
 
     @classmethod
@@ -89,7 +99,7 @@ class ContractsUpdateConsentedContractTermsRequestTermsReadCredentials(BaseModel
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "shareAll": obj.get("shareAll"),
             "sharing": obj.get("sharing"),
             "categories": dict(
@@ -98,7 +108,9 @@ class ContractsUpdateConsentedContractTermsRequestTermsReadCredentials(BaseModel
             )
             if obj.get("categories") is not None
             else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

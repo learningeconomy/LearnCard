@@ -167,7 +167,7 @@ export const createContext = async (
 // request, this strips anything secret-shaped before it can leave the
 // process.
 const SECRET_FIELD_RE =
-    /share|token|seed|recoverykey|blob|envelope|sealed|ephemeral|resumetoken|pinproof|pinverifier/i;
+    /share|token|seed|recoverykey|blob|envelope|sealed|ephemeral|resumetoken|pinproof|pinverifier|signedintent|receipt|authoritystateproof/i;
 
 /**
  * Recursively replaces values whose key matches SECRET_FIELD_RE with

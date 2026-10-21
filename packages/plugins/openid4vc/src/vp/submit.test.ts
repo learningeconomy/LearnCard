@@ -1,4 +1,6 @@
-import { vi } from 'vitest';
+import { vi, afterEach } from 'vitest';
+import * as encryption from './encrypt';
+afterEach(() => vi.restoreAllMocks());
 import { submitPresentation, VpSubmitError } from './submit';
 import { PresentationSubmission } from './select';
 
@@ -218,7 +220,7 @@ describe('submitPresentation — error handling', () => {
         ).rejects.toMatchObject({ code: 'network_error' });
     });
 
-    it('throws server_error with status + body on a 4xx response', async () => {
+    it('throws server_error with status and no verifier-controlled diagnostic content on a 4xx response', async () => {
         const { fetchImpl } = mockFetchOk(
             { error: 'invalid_presentation', error_description: 'bad signature' },
             { status: 400 }
@@ -237,10 +239,8 @@ describe('submitPresentation — error handling', () => {
             const err = e as VpSubmitError;
             expect(err.code).toBe('server_error');
             expect(err.status).toBe(400);
-            expect(err.body).toEqual({
-                error: 'invalid_presentation',
-                error_description: 'bad signature',
-            });
+            expect(err.body).toBeUndefined();
+            expect((err as Error & { cause?: unknown }).cause).toBeUndefined();
         }
     });
 
@@ -260,5 +260,79 @@ describe('submitPresentation — error handling', () => {
             expect(err.code).toBe('server_error');
             expect(err.status).toBe(500);
         }
+    });
+});
+
+describe('transport error privacy', () => {
+    it('excludes response URI, verifier body, status text and nested fetch cause', async () => {
+        for (const fetchImpl of [
+            async () => {
+                throw new Error('FETCH_CAUSE_CANARY');
+            },
+            async () => new Response('BODY_CANARY', { status: 400, statusText: 'STATUS_CANARY' }),
+        ]) {
+            try {
+                await submitPresentation({
+                    responseUri: 'https://verifier.example/PATH_CANARY?token=TOKEN_CANARY',
+                    vpToken: 'VP_CANARY',
+                    fetchImpl: fetchImpl as typeof fetch,
+                });
+                throw new Error('Expected failure');
+            } catch (error) {
+                expect(error).toBeInstanceOf(VpSubmitError);
+                expect(String(error)).not.toContain('CANARY');
+                expect(JSON.stringify(error)).not.toContain('CANARY');
+                expect((error as VpSubmitError).body).toBeUndefined();
+                expect((error as Error & { cause?: unknown }).cause).toBeUndefined();
+            }
+        }
+    });
+});
+
+describe('safe JARM diagnostics', () => {
+    const options = {
+        responseUri: RESPONSE_URI,
+        vpToken: 'VP_CANARY',
+        responseMode: 'direct_post.jwt' as const,
+        clientMetadata: {},
+        nonce: 'NONCE_CANARY',
+        fetchImpl: mockFetchOk(undefined).fetchImpl,
+    };
+    it('keeps an allowlisted encryption code without the error message or cause', async () => {
+        vi.spyOn(encryption, 'encryptResponseObject').mockRejectedValue(
+            new encryption.JarmEncryptError('unsupported_alg', 'JARM_CANARY', {
+                cause: new Error('CAUSE_CANARY'),
+            })
+        );
+        await expect(submitPresentation(options)).rejects.toMatchObject({
+            code: 'jarm_encrypt_failed',
+            jarmCode: 'unsupported_alg',
+        });
+        try {
+            await submitPresentation(options);
+        } catch (error) {
+            expect(JSON.stringify(error)).not.toContain('CANARY');
+            expect((error as Error).cause).toBeUndefined();
+        }
+    });
+    it('distinguishes unexpected programming errors without exposing their private values', async () => {
+        vi.spyOn(encryption, 'encryptResponseObject').mockRejectedValue(
+            new TypeError('PROGRAMMING_CANARY')
+        );
+        await expect(submitPresentation(options)).rejects.toMatchObject({
+            code: 'internal_error',
+            message: 'Unable to prepare the verifier response',
+        });
+    });
+    it('drops deprecated body/cause and invalid runtime JARM codes', () => {
+        const error = new VpSubmitError('jarm_encrypt_failed', 'Unable to encrypt', {
+            body: 'BODY_CANARY',
+            cause: new Error('CAUSE_CANARY'),
+            jarmCode: 'CODE_CANARY' as never,
+        });
+        expect(JSON.stringify(error)).not.toContain('CANARY');
+        expect(error.body).toBeUndefined();
+        expect(error.cause).toBeUndefined();
+        expect(error.jarmCode).toBeUndefined();
     });
 });

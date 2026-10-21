@@ -1,11 +1,10 @@
 # PresentationAcceptPresentationRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
+| Name    | Type    | Description | Notes |
+| ------- | ------- | ----------- | ----- |
+| **uri** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ presentation_accept_presentation_request_dict = presentation_accept_presentation
 # create an instance of PresentationAcceptPresentationRequest from a dict
 presentation_accept_presentation_request_from_dict = PresentationAcceptPresentationRequest.from_dict(presentation_accept_presentation_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

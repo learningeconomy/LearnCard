@@ -17,13 +17,14 @@ import {
     searchCredentialsFromCache,
     CredentialListSkeleton,
 } from 'learn-card-base';
+import type { CredentialCategory } from 'learn-card-base/types/credentials';
 import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
 import CategoryEmptyPlaceholder from '../../empty-placeholder/CategoryEmptyPlaceHolder';
 
-type CategoryType = keyof typeof CredentialCategoryEnum | 'Hidden' | 'Course';
+type CategoryType = CredentialCategory | 'Hidden';
 
 type BoostEarnedListProps = {
     category: CategoryType;
@@ -111,6 +112,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         [CredentialCategoryEnum.learningHistory]: 'emerald-700',
         [CredentialCategoryEnum.socialBadge]: 'blue-400',
         [CredentialCategoryEnum.achievement]: 'pink-400',
+        [CredentialCategoryEnum.qualifications]: 'orange-700',
         [CredentialCategoryEnum.accomplishment]: 'yellow-400',
         [CredentialCategoryEnum.workHistory]: 'blue-600',
         [CredentialCategoryEnum.accommodation]: 'violet-500',
@@ -226,7 +228,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                             </div>
                         )}
                         <div
-                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] z-[-50] ${bgFillerColor}`}
+                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
                     </IonCol>
                 </>

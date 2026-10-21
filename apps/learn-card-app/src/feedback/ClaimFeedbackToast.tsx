@@ -30,7 +30,7 @@ export const ClaimFeedbackToast: React.FC<{ surface: FeedbackSurface }> = ({ sur
             <SentimentStrip
                 surface={surface}
                 onAnswered={handleAnswered}
-                className="!justify-start"
+                className="justify-start!"
                 countUnmountAsIgnore={false}
             />
         </div>

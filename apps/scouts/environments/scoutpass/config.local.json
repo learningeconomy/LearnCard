@@ -7,6 +7,13 @@
         "lcaApi": "http://localhost:5100/trpc",
         "xapi": "http://localhost:4100/xapi"
     },
+    "auth": {
+        "keycloak": {
+            "serverUrl": "http://localhost:8081",
+            "realm": "learncard",
+            "clientId": "learncard-app"
+        }
+    },
     "features": {
         "analytics": false
     },

@@ -44,6 +44,7 @@ import {
     useResolveManyCredentials,
     useGetCredentials,
     useGetCredentialsForSkills,
+    useGetCredentialsPaginated,
 } from './vcQueries';
 
 const vc = {
@@ -129,4 +130,28 @@ describe('credential query consumers', () => {
         expect(read).toHaveBeenCalledTimes(1);
         expect(result.current.data).toHaveLength(9);
     });
+});
+
+it('keeps readable paginated credentials, category metadata and shared document identity', async () => {
+    const { read } = makeWallet();
+    const wallet = host.wallet!;
+    wallet.index.LearnCloud.getPage = vi.fn().mockResolvedValue({
+        records: [
+            { uri: 'uri', category: 'ID' },
+            { uri: 'missing', category: 'ID' },
+        ],
+        hasMore: false,
+    });
+    read.mockImplementation(async uri => (uri === 'missing' ? undefined : vc));
+    const { result } = renderHook(
+        () => ({
+            single: useGetResolvedCredential('uri'),
+            page: useGetCredentialsPaginated(undefined, undefined, true),
+        }),
+        { wrapper }
+    );
+    await waitFor(() => expect(result.current.page.isSuccess).toBe(true));
+    expect(result.current.page.data).toEqual([{ vc, uri: 'uri', category: 'ID' }]);
+    expect(read.mock.calls.filter(([uri]) => uri === 'uri')).toHaveLength(1);
+    expect(vc).not.toHaveProperty('uri');
 });

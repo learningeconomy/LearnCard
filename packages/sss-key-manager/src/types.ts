@@ -23,6 +23,7 @@ export {
     type DidAuthVpSigner,
     type EscrowEnrollmentOptions,
     type EscrowEnrollmentState,
+    type EscrowBlobStaleReason,
     type EscrowPinStatus,
 } from '@learncard/types';
 
@@ -71,7 +72,17 @@ export type RecoveryMethodType = 'passkey' | 'backup' | 'phrase' | 'email' | 'es
 /** Trust policy for the enclave that receives recovery material. */
 export type EscrowAttestationPolicy =
     | { mode: 'software'; pinnedPublicKeys: string[] }
-    | { mode: 'nitro'; pinnedMeasurements: { imageSha384: string }[]; rootCertificatePem?: string };
+    | {
+          mode: 'nitro';
+          /** Legacy image-only pins remain assignable but never match an attestation. */
+          pinnedMeasurements: (
+              | { pcr0: string; pcr1: string; pcr2: string; imageSha384?: string }
+              | { imageSha384: string; pcr0?: string; pcr1?: string; pcr2?: string }
+          )[];
+          rootCertificateSha256?: string;
+          /** Maximum age in milliseconds; defaults to five minutes. */
+          maxAgeMs?: number;
+      };
 
 /** Public status of an escrow recovery waiting period. */
 export interface EscrowHoldStatus {
@@ -82,10 +93,24 @@ export interface EscrowHoldStatus {
     releaseAfter: string;
     cancelledAt?: string;
     completedAt?: string;
+    /** Only present for an authority-mode hold-policy hold; `confirmed` only appears alongside it. */
+    requiresConfirmation?: boolean;
+    confirmed?: boolean;
+    /** Opaque enclave-signed `SignedHoldRecord`; present only in authority
+     * (nitro) mode. Callers must verify it with `verifyEscrowHoldRecord`
+     * before trusting any field inside it — see escrow-authority.ts. */
+    holdRecord?: import('./escrow-authority').EscrowHoldRecordLike;
 }
 
 /** Persist these secrets securely until completion; a null token means an existing hold. */
 export type EscrowRecoveryStart = EscrowHoldStatus & {
+    codeSent?: boolean;
+    delivery?: {
+        codeSent: boolean;
+        proof: import('./escrow-authority.types').EscrowAuthorityRecord;
+    };
+    /** Persist with the secrets, never rebuild from server status. Required for Nitro resume. */
+    expectations?: import('@learncard/types').EscrowRecoveryExpectations;
     resumeToken: string | null;
     clientEphemeralPrivateKey: string;
     pinSalt?: string;
@@ -155,8 +180,15 @@ export type RecoveryMethod =
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
-    | { method: 'escrow-pin'; pin: string }
-    | { method: 'escrow'; holdId: string; resumeToken: string; clientEphemeralPrivateKey: string }
+    | { method: 'escrow-pin'; pin: string; expectedDid?: string }
+    | {
+          method: 'escrow';
+          holdId: string;
+          resumeToken: string;
+          clientEphemeralPrivateKey: string;
+          /** Original start bindings loaded with the private key, required for Nitro. */
+          expectations?: import('@learncard/types').EscrowRecoveryExpectations;
+      }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
     | { method: 'backup'; fileContents: string; password: string }
@@ -274,7 +306,10 @@ export type SSSKeyDerivationStrategy = KeyDerivationStrategy<
     RecoverySetupInput,
     RecoverySetupResult,
     RecoveryConfirmationInput
->;
+> & {
+    /** Last receipt/snapshot-verified ciphertext for this session, never a freshness oracle. */
+    getVerifiedEscrowEnvelope?(): import('./escrow-crypto').EscrowEnvelope | null;
+};
 
 // ---------------------------------------------------------------------------
 // Legacy types (deprecated)

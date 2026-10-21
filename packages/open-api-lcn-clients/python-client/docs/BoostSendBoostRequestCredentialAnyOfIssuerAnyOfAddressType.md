@@ -1,10 +1,9 @@
 # BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
 
 ## Example
 
@@ -23,6 +22,5 @@ boost_send_boost_request_credential_any_of_issuer_any_of_address_type_dict = boo
 # create an instance of BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType from a dict
 boost_send_boost_request_credential_any_of_issuer_any_of_address_type_from_dict = BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.from_dict(boost_send_boost_request_credential_any_of_issuer_any_of_address_type_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

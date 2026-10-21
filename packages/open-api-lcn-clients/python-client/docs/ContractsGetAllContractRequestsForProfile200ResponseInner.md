@@ -1,14 +1,13 @@
 # ContractsGetAllContractRequestsForProfile200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**contract** | [**ContractsGetAllContractRequestsForProfile200ResponseInnerContract**](ContractsGetAllContractRequestsForProfile200ResponseInnerContract.md) |  | 
-**profile** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
-**status** | **str** |  | 
-**read_status** | **str** |  | [optional] 
+| Name            | Type                                                                                                                                          | Description | Notes      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **contract**    | [**ContractsGetAllContractRequestsForProfile200ResponseInnerContract**](ContractsGetAllContractRequestsForProfile200ResponseInnerContract.md) |             |
+| **profile**     | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)                                     |             |
+| **status**      | **str**                                                                                                                                       |             |
+| **read_status** | **str**                                                                                                                                       |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_get_all_contract_requests_for_profile200_response_inner_dict = contrac
 # create an instance of ContractsGetAllContractRequestsForProfile200ResponseInner from a dict
 contracts_get_all_contract_requests_for_profile200_response_inner_from_dict = ContractsGetAllContractRequestsForProfile200ResponseInner.from_dict(contracts_get_all_contract_requests_for_profile200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

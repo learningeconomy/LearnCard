@@ -24,6 +24,9 @@ import {
 } from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
 
+const logoutLogs = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
+vi.mock('../../logging/logger', () => ({ getLogger: () => logoutLogs }));
+
 import type {
     AuthProvider,
     AuthUser,
@@ -338,9 +341,15 @@ describe('AuthCoordinator', () => {
         });
         it('repairs enrollment without allowing rejection to change ready state', async () => {
             const ensureEscrowEnrollment = vi.fn().mockRejectedValue(new Error('unavailable'));
+            const getEscrowEnrollmentState = vi.fn().mockResolvedValue('enrolled');
+            const getEscrowRecoveryStatus = vi.fn().mockResolvedValue(null);
             const signDidAuthVp = vi.fn().mockResolvedValue('proof');
             const { coordinator } = setup({
-                keyDerivation: { ensureEscrowEnrollment },
+                keyDerivation: {
+                    ensureEscrowEnrollment,
+                    getEscrowEnrollmentState,
+                    getEscrowRecoveryStatus,
+                },
                 config: { signDidAuthVp },
             });
             await coordinator.initialize();
@@ -350,9 +359,12 @@ describe('AuthCoordinator', () => {
                     providerType: 'firebase',
                     privateKey: 'reconstructed-private-key',
                     signDidAuthVp,
+                    options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
                 })
             );
             expect(coordinator.getState().status).toBe('ready');
+            await vi.waitFor(() => expect(getEscrowRecoveryStatus).toHaveBeenCalled());
+            expect(getEscrowEnrollmentState).not.toHaveBeenCalled();
         });
         it('requires ready state and forwards automatic recovery controls with owner credentials', async () => {
             const disableEscrowRecovery = vi.fn().mockResolvedValue(undefined);
@@ -392,6 +404,7 @@ describe('AuthCoordinator', () => {
                 ...credentials,
                 privateKey: 'reconstructed-private-key',
                 signDidAuthVp,
+                options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
             });
             expect(getEscrowEnrollmentState).toHaveBeenCalledWith(credentials);
             disableEscrowRecovery.mockRejectedValueOnce(
@@ -526,6 +539,7 @@ describe('AuthCoordinator', () => {
                 privateKey: 'reconstructed-private-key',
                 signDidAuthVp,
                 pin: '135790',
+                options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
             });
 
             const loggingOut = coordinator.logout();
@@ -566,7 +580,9 @@ describe('AuthCoordinator', () => {
             expect(executeRecovery).toHaveBeenCalledWith({
                 token: 'mock-token',
                 providerType: 'firebase',
-                input,
+                // The DID independently known from needs_recovery fills in for
+                // PIN release, which has no persisted hold of its own to carry it.
+                input: { ...input, expectedDid: 'did:key:z123' },
                 didFromPrivateKey: expect.any(Function),
             });
         });
@@ -624,6 +640,191 @@ describe('AuthCoordinator', () => {
             await vi.waitFor(() =>
                 expect(coordinator.getState()).toMatchObject({ escrowEnrollment: 'enrolled' })
             );
+        });
+
+        describe('staged rollout gate (isEscrowEnrollmentAllowed)', () => {
+            it('calls ensureEscrowEnrollment with the DID when the gate allows it (no status prefetch available)', async () => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: true, shareVersion: 2 });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(true);
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                expect(isEscrowEnrollmentAllowed).toHaveBeenCalledWith('did:key:z123');
+            });
+
+            it('skips ensureEscrowEnrollment for a user outside the rollout, without prompting (no status prefetch available)', async () => {
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({ enrolled: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalledTimes(1));
+                expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+                expect(coordinator.getState().status).toBe('ready');
+            });
+
+            it('calls ensureEscrowEnrollment for a not-enrolled user inside the rollout (status prefetched)', async () => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: true, shareVersion: 1 });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(true);
+                const getEscrowEnrollmentState = vi
+                    .fn()
+                    .mockResolvedValue({ state: 'not-enrolled' });
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                expect(isEscrowEnrollmentAllowed).toHaveBeenCalledWith('did:key:z123');
+            });
+
+            it('skips ensureEscrowEnrollment for a not-enrolled user outside the rollout, publishing the prefetched status without a second round-trip', async () => {
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({ enrolled: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const getEscrowEnrollmentState = vi
+                    .fn()
+                    .mockResolvedValue({ state: 'not-enrolled' });
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalledTimes(1));
+                expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({
+                        escrowEnrollment: 'not-enrolled',
+                    })
+                );
+                // Only the ONE prefetch read — the gate's own lookup already proved the status,
+                // so refreshEscrow must not fetch it again to publish it.
+                expect(getEscrowEnrollmentState).toHaveBeenCalledTimes(1);
+            });
+
+            it.each(['enrolled', 'stale'] as const)(
+                'always attempts ensureEscrowEnrollment for an already-%s user, bypassing the rollout gate entirely',
+                async state => {
+                    const ensureEscrowEnrollment = vi
+                        .fn()
+                        .mockResolvedValue({ enrolled: true, changed: false });
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                    const getEscrowEnrollmentState = vi.fn().mockResolvedValue({ state });
+                    const getEscrowRecoveryStatus = vi.fn().mockResolvedValue(null);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            ensureEscrowEnrollment,
+                            getEscrowEnrollmentState,
+                            getEscrowRecoveryStatus,
+                        },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+
+                    // Share-version rotation re-seal and P6.1's stale-blob repair both depend on
+                    // this call actually running for an account that already has escrow
+                    // material — a lowered (or zero) rollout percent must never block it. The
+                    // gate doesn't even need to consult the rollout predicate for this status.
+                    await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                    expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
+
+                    // Recovery execution and hold discovery are separate code paths from the
+                    // automatic-enrollment gate and keep working regardless of rollout bucket.
+                    await coordinator.cancelEscrowRecovery().catch(() => {});
+                    expect(getEscrowRecoveryStatus).toHaveBeenCalled();
+                }
+            );
+
+            it('repairs version-stale enrollment at zero rollout and publishes the repaired state', async () => {
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({
+                    enrolled: true,
+                    changed: true,
+                    shareVersion: 3,
+                });
+                // Version mismatches use stale without an enclave-specific staleReason.
+                const getEscrowEnrollmentState = vi
+                    .fn()
+                    .mockResolvedValueOnce({ state: 'stale' })
+                    .mockResolvedValue({ state: 'enrolled' });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({
+                        escrowEnrollment: 'enrolled',
+                    })
+                );
+                expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+                expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
+            });
+
+            it.each(['opted-out', 'disabled'] as const)(
+                'always attempts ensureEscrowEnrollment for a %s user, same as before the rollout gate existed',
+                async state => {
+                    const ensureEscrowEnrollment = vi
+                        .fn()
+                        .mockResolvedValue({ enrolled: false, reason: state });
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                    const getEscrowEnrollmentState = vi.fn().mockResolvedValue({ state });
+                    const { coordinator } = setup({
+                        keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+                    await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                    expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
+                }
+            );
+
+            it('falls back to the rollout gate when the enrollment-state lookup fails, without logging the userKey', async () => {
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+                const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({ enrolled: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const getEscrowEnrollmentState = vi.fn().mockRejectedValue(new Error('offline'));
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalledTimes(1));
+                expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+
+                const userKey = 'did:key:z123';
+                for (const spy of [...errorSpy.mock.calls, ...warnSpy.mock.calls]) {
+                    expect(JSON.stringify(spy)).not.toContain(userKey);
+                }
+            });
+
+            it('fails closed and does not log the userKey when the gate predicate itself rejects', async () => {
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+                const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({ enrolled: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockRejectedValue(new Error('offline'));
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalledTimes(1));
+                expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+
+                const userKey = 'did:key:z123';
+                for (const spy of [...errorSpy.mock.calls, ...warnSpy.mock.calls]) {
+                    expect(JSON.stringify(spy)).not.toContain(userKey);
+                }
+            });
         });
 
         it('carries server PIN availability into needs_recovery', async () => {
@@ -692,10 +893,60 @@ describe('AuthCoordinator', () => {
                 expect(startEscrowRecovery).toHaveBeenCalledWith({
                     token: 'mock-token',
                     providerType: 'firebase',
+                    // Independently known from the key-status lookup in initialize(),
+                    // not from any escrow response.
+                    expectedDid: 'did:key:z123',
                     options,
                 });
             }
         );
+        // The hold-start response's `expectations` (initiating-client bindings,
+        // persisted by the app alongside the resume token) are opaque to the
+        // coordinator -- it must pass them through to the strategy unchanged
+        // rather than deriving or stripping anything.
+        it('forwards expectations unchanged to getEscrowRecoveryStatus and confirmEscrowRecovery', async () => {
+            const expectations = {
+                tenant: 'learncard',
+                did: 'did:key:z123',
+                holdId: 'hold',
+                clientEphemeralPublicKey: 'ephemeral-pub',
+                blobHash: 'blob-hash',
+                authorityGeneration: 'generation-1',
+                holdDigest: 'hold-digest',
+                ledgerPublicKey: 'ledger-pub',
+                keyId: 'key-1',
+            };
+            const getEscrowRecoveryStatus = vi.fn().mockResolvedValue(null);
+            const confirmEscrowRecovery = vi.fn().mockResolvedValue({ success: true });
+            const { coordinator } = setup({
+                keyDerivation: { getEscrowRecoveryStatus, confirmEscrowRecovery },
+            });
+            await coordinator.initialize();
+
+            await coordinator.getEscrowRecoveryStatus({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                expectations,
+            });
+            expect(getEscrowRecoveryStatus).toHaveBeenCalledWith({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                expectations,
+            });
+
+            await coordinator.confirmEscrowRecovery({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                code: '12345678',
+                expectations,
+            });
+            expect(confirmEscrowRecovery).toHaveBeenCalledWith({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                code: '12345678',
+                expectations,
+            });
+        });
     });
     describe('initial state', () => {
         it('starts in idle state', () => {
@@ -1142,6 +1393,9 @@ describe('AuthCoordinator', () => {
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryMethods).toEqual(recoveryMethods);
                 expect(result.recoveryReason).toBe('new_device');
+                // Independently known from this key-status lookup -- required by
+                // Nitro escrow recovery (startEscrowRecovery, PIN release).
+                expect(result.expectedDid).toBe('did:key:z123');
             }
         });
 
@@ -1165,6 +1419,7 @@ describe('AuthCoordinator', () => {
 
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryReason).toBe('missing_server_data');
+                expect(result.expectedDid).toBe('did:key:z123');
             }
         });
 
@@ -1289,6 +1544,7 @@ describe('AuthCoordinator', () => {
 
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryReason).toBe('stale_local_key');
+                expect(result.expectedDid).toBe('did:key:zExpected');
             }
         });
 
@@ -1928,6 +2184,10 @@ describe('AuthCoordinator', () => {
             if (result.status === 'error') {
                 expect(result.error).toBe('No auth share found on server');
                 expect(result.previousState?.status).toBe('needs_recovery');
+                // retry() restores this previousState -- a cleared expectedDid
+                // would permanently strand Nitro escrow recovery after one
+                // unrelated failed attempt.
+                expect(result.previousState).toMatchObject({ expectedDid: 'did:key:z123' });
             }
         });
     });
@@ -1937,6 +2197,55 @@ describe('AuthCoordinator', () => {
     // -----------------------------------------------------------------------
 
     describe('logout()', () => {
+        it('records sign-out and cleanup phases in order without account data', async () => {
+            const { coordinator } = setup({ config: { onLogout: vi.fn() } });
+            await coordinator.initialize();
+            logoutLogs.info.mockClear();
+
+            await coordinator.logout();
+
+            const phases = logoutLogs.info.mock.calls
+                .filter(([message]) => message === 'Logout phase completed')
+                .map(([, context]) => context.phase);
+            expect(phases).toEqual([
+                'pending_recovery',
+                'provider_sign_out',
+                'key_cleanup',
+                'app_cleanup',
+            ]);
+            expect(logoutLogs.info).toHaveBeenCalledWith(
+                'Logout completed',
+                expect.objectContaining({
+                    logoutAttemptId: expect.any(Number),
+                    elapsedMs: expect.any(Number),
+                })
+            );
+            const serialized = JSON.stringify(logoutLogs.info.mock.calls);
+            expect(serialized).not.toContain(mockUser.email);
+            expect(serialized).not.toContain(mockUser.id);
+            expect(serialized).not.toContain('local-key-abc');
+        });
+
+        it('logs the failed phase and propagates the original sign-out failure before app cleanup', async () => {
+            const failure = new Error('secret-token-private@example.org');
+            const onLogout = vi.fn();
+            const { coordinator } = setup({
+                authProvider: { signOut: vi.fn().mockRejectedValue(failure) },
+                config: { onLogout },
+            });
+            await coordinator.initialize();
+            logoutLogs.error.mockClear();
+
+            await expect(coordinator.logout()).rejects.toBe(failure);
+
+            expect(onLogout).not.toHaveBeenCalled();
+            expect(logoutLogs.error).toHaveBeenCalledExactlyOnceWith(
+                'Logout failed',
+                expect.objectContaining({ phase: 'provider_sign_out', errorType: 'error' })
+            );
+            expect(JSON.stringify(logoutLogs.error.mock.calls)).not.toContain(failure.message);
+        });
+
         it('signs out, calls cleanup + onLogout, preserves device share, and returns to idle', async () => {
             const onLogout = vi.fn().mockResolvedValue(undefined);
 
@@ -2345,6 +2654,81 @@ describe('AuthCoordinator', () => {
             expect(coordinator.getState()).toEqual({
                 status: 'awaiting_rebind',
                 did: 'did:key:z123',
+            });
+        });
+
+        // Regression for the P1 finding: a verified no-provider identity-recovery
+        // session must still carry the account's DID into a Nitro escrow hold
+        // start/restart, since the server guard rejects every Nitro start without it.
+        it('forwards the verified DID to startEscrowRecovery on start and restart without a provider session', async () => {
+            const recoveryMethods = [{ type: 'escrow', createdAt: new Date() }];
+            const verifyIdentityRecovery = vi.fn().mockResolvedValue({
+                recoverySessionToken: 'recovery-session-token',
+                recoveryMethods,
+                primaryDid: 'did:key:zRecovered',
+            });
+            const startEscrowRecovery = vi.fn().mockResolvedValue({ holdId: 'hold' });
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                    verifyIdentityRecovery,
+                    startEscrowRecovery,
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            await coordinator.verifyIdentityRecoveryCode('123456');
+            expect(coordinator.getState()).toMatchObject({
+                status: 'identity_recovery',
+                phase: 'choose_method',
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+            });
+
+            await coordinator.startEscrowRecovery();
+            expect(startEscrowRecovery).toHaveBeenNthCalledWith(1, {
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+                options: undefined,
+            });
+
+            await coordinator.startEscrowRecovery({ restart: true });
+            expect(startEscrowRecovery).toHaveBeenNthCalledWith(2, {
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: 'did:key:zRecovered',
+                options: { restart: true },
+            });
+        });
+
+        it('normalizes a null verified DID to undefined rather than forwarding null', async () => {
+            const recoveryMethods = [{ type: 'escrow', createdAt: new Date() }];
+            const startEscrowRecovery = vi.fn().mockResolvedValue({ holdId: 'hold' });
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                    verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                        recoverySessionToken: 'recovery-session-token',
+                        recoveryMethods,
+                        primaryDid: null,
+                    }),
+                    startEscrowRecovery,
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            await coordinator.verifyIdentityRecoveryCode('123456');
+            expect(coordinator.getState().status).toBe('identity_recovery');
+            expect(
+                (coordinator.getState() as { expectedDid?: string }).expectedDid
+            ).toBeUndefined();
+
+            await coordinator.startEscrowRecovery();
+            expect(startEscrowRecovery).toHaveBeenCalledWith({
+                recoverySessionToken: 'recovery-session-token',
+                expectedDid: undefined,
+                options: undefined,
             });
         });
 

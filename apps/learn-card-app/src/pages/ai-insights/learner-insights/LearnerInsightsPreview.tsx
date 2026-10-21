@@ -1,3 +1,4 @@
+import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
@@ -28,7 +29,7 @@ import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks
 export const LearnerInsightsPreview: React.FC<{
     profile: LCNProfile;
     readStatus?: 'unseen' | 'seen' | null | undefined;
-    status?: 'pending' | 'accepted' | 'denied' | null | undefined;
+    status?: ConsentFlowContractRequestStatus | undefined;
 }> = ({ profile, readStatus, status }) => {
     const { closeModal } = useModal();
     const { getThemedCategoryColors } = useTheme();
@@ -81,7 +82,7 @@ export const LearnerInsightsPreview: React.FC<{
                     </div>
                 </div>
             </IonContent>
-            <footer className="absolute bottom-0 left-0 w-full bg-white bg-opacity-70 border-t-[1px] border-solid border-white p-[20px] backdrop-blur-[10px] z-50">
+            <footer className="absolute bottom-0 left-0 w-full bg-white/70  border-t border-solid border-white p-[20px] backdrop-blur-[10px] z-50">
                 <div className="max-w-[600px] flex gap-[10px] items-center mx-auto">
                     <button
                         type="button"

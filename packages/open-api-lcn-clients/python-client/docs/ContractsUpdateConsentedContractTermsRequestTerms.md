@@ -1,13 +1,12 @@
 # ContractsUpdateConsentedContractTermsRequestTerms
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**ContractsUpdateConsentedContractTermsRequestTermsRead**](ContractsUpdateConsentedContractTermsRequestTermsRead.md) |  | [optional] 
-**write** | [**ContractsConsentToContractRequestTermsWrite**](ContractsConsentToContractRequestTermsWrite.md) |  | [optional] 
-**denied_writers** | **List[str]** |  | [optional] 
+| Name               | Type                                                                                                                  | Description | Notes      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**           | [**ContractsUpdateConsentedContractTermsRequestTermsRead**](ContractsUpdateConsentedContractTermsRequestTermsRead.md) |             | [optional] |
+| **write**          | [**ContractsConsentToContractRequestTermsWrite**](ContractsConsentToContractRequestTermsWrite.md)                     |             | [optional] |
+| **denied_writers** | **List[str]**                                                                                                         |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_update_consented_contract_terms_request_terms_dict = contracts_update_
 # create an instance of ContractsUpdateConsentedContractTermsRequestTerms from a dict
 contracts_update_consented_contract_terms_request_terms_from_dict = ContractsUpdateConsentedContractTermsRequestTerms.from_dict(contracts_update_consented_contract_terms_request_terms_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

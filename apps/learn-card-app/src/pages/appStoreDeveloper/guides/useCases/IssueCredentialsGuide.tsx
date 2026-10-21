@@ -183,7 +183,7 @@ const ApiTokenStep: React.FC<{
     const hasActiveToken = activeGrants.length > 0;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.issueCredentials.apiTokenStep.title']()}
@@ -211,7 +211,7 @@ const ApiTokenStep: React.FC<{
 
             {/* Create form */}
             {showCreateForm && (
-                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-v3-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             {m[
@@ -224,7 +224,7 @@ const ApiTokenStep: React.FC<{
                             value={newTokenName}
                             onChange={e => setNewTokenName(e.target.value)}
                             placeholder="e.g., Production Server"
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
 
@@ -238,7 +238,7 @@ const ApiTokenStep: React.FC<{
                         <select
                             value={selectedScope}
                             onChange={e => setSelectedScope(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                         >
                             {getScopeOptions().map(option => (
                                 <option key={option.value} value={option.value}>
@@ -435,7 +435,7 @@ const SigningAuthorityStep: React.FC<{
     const hasSigningAuthority = primarySA !== null;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.issueCredentials.signingAuthorityStep.title']()}
@@ -531,7 +531,7 @@ const SigningAuthorityStep: React.FC<{
                     {m['developerPortal.guides.issueCredentials.signingAuthorityStep.infoTitle']()}
                 </h4>
 
-                <ul className="text-sm text-blue-700 space-y-1">
+                <ul className="text-sm text-blue-700 space-y-v3-1">
                     <li>
                         {'•'}{' '}
                         {m[
@@ -589,7 +589,7 @@ const CreateTemplatesStep: React.FC<{
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.issueCredentials.createTemplatesStep.title']()}
@@ -613,7 +613,7 @@ const CreateTemplatesStep: React.FC<{
             />
 
             {/* Navigation */}
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <div className="flex gap-3">
                     <button
                         onClick={onBack}
@@ -909,7 +909,7 @@ else:
   }'`;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.issueCredentials.issueVerifyStep.title']()}
@@ -972,7 +972,7 @@ else:
                     )}
 
                     {showTemplateSelector && templates.length > 1 && (
-                        <div className="mt-3 pt-3 border-t border-cyan-200 space-y-2">
+                        <div className="mt-3 pt-3 border-t border-cyan-200 space-y-v3-2">
                             {templates.map(template => (
                                 <button
                                     key={template.boostUri}
@@ -997,7 +997,7 @@ else:
                                     </div>
 
                                     {selectedTemplateUri === template.boostUri && (
-                                        <CheckCircle2 className="w-5 h-5 text-cyan-600 flex-shrink-0" />
+                                        <CheckCircle2 className="w-5 h-5 text-cyan-600 shrink-0" />
                                     )}
                                 </button>
                             ))}
@@ -1095,7 +1095,7 @@ else:
                                 .
                             </p>
                         ) : (
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 {authGrants.map(grant => (
                                     <button
                                         key={grant.id}
@@ -1151,7 +1151,7 @@ else:
                     placeholder={m[
                         'developerPortal.guides.issueCredentials.issueVerifyStep.recipientPlaceholder'
                     ]()}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                     style={{ colorScheme: 'light' }}
                 />
 
@@ -1171,9 +1171,9 @@ else:
             />
 
             {/* Verification Polling Section */}
-            <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
+            <div className="p-4 bg-linear-to-br/srgb from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
                 <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
                         <Send className="w-5 h-5 text-indigo-600" />
                     </div>
 
@@ -1234,9 +1234,9 @@ else:
                                 }`}
                             >
                                 {pollResult.success ? (
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                                 ) : (
-                                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                                 )}
 
                                 <div>

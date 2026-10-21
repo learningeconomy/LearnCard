@@ -1,12 +1,11 @@
 # ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | 
-**endpoint** | **str** |  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **name**     | **str** |             |
+| **endpoint** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authorit
 # create an instance of ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority from a dict
 contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority_from_dict = ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority.from_dict(contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

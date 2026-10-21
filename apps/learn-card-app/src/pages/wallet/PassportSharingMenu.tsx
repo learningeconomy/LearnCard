@@ -44,12 +44,12 @@ const SharingActions: React.FC<SharingActionsProps> = ({
             </div>
         )}
 
-        <div className={showHeading ? 'space-y-2' : ''} role="menu">
+        <div className={showHeading ? 'space-y-v3-2' : ''} role="menu">
             <button
                 type="button"
                 role="menuitem"
                 onClick={onShare}
-                className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-emerald-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors group-hover:bg-emerald-200">
                     <IonIcon icon={shareOutline} className="text-xl" aria-hidden="true" />
@@ -68,7 +68,7 @@ const SharingActions: React.FC<SharingActionsProps> = ({
                 type="button"
                 role="menuitem"
                 onClick={onViewShared}
-                className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-grayscale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-grayscale-100 text-grayscale-700 transition-colors group-hover:bg-grayscale-200">
                     <IonIcon icon={eyeOutline} className="text-xl" aria-hidden="true" />
@@ -140,7 +140,7 @@ const PassportSharingMenu: React.FC<PassportSharingMenuProps> = ({ onViewShared 
                     onShare={() => openShareModal(true)}
                     onViewShared={() => viewShared(true)}
                 />,
-                { sectionClassName: '!max-w-[500px]' },
+                { sectionClassName: 'max-w-[500px]!' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
             );
             return;
@@ -158,7 +158,7 @@ const PassportSharingMenu: React.FC<PassportSharingMenuProps> = ({ onViewShared 
                 aria-label={m['common.share']()}
                 aria-haspopup="menu"
                 aria-expanded={isMobile ? undefined : popoverOpen}
-                className="flex h-10 items-center justify-center gap-2 rounded-[20px] border border-grayscale-200 bg-white py-1 pl-1.5 pr-3 text-sm font-medium text-grayscale-900 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="flex h-10 items-center justify-center gap-2 rounded-[20px] border border-grayscale-200 bg-white py-1 pl-1.5 pr-3 text-sm font-medium text-grayscale-900 shadow-xs transition-colors hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
                 <ShareCredentialsIllustration className="h-8 w-8" />
                 <span className="hidden sm:inline">{m['common.share']()}</span>

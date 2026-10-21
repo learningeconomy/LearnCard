@@ -14,16 +14,27 @@ export type ConsentFlowRelationships = {
         { signingAuthorityEndpoint: string; signingAuthorityName: string; issuer?: string }
     >;
     canWrite: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    sharesDataWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     relatedTo: ModelRelatedNodesI<typeof Boost, BoostInstance>;
     requestedFor: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
         {
-            status: 'pending' | 'accepted' | 'denied';
+            status: 'pending' | 'accepted' | 'denied' | 'cancelled';
+            requestId?: string;
+            requestedBy?: string;
+            externalReferenceId?: string;
+            message?: string;
+            requestedAt?: string;
             readStatus?: 'unseen' | 'seen' | null;
         },
         {
-            status: 'pending' | 'accepted' | 'denied';
+            status: 'pending' | 'accepted' | 'denied' | 'cancelled';
+            requestId?: string;
+            requestedBy?: string;
+            externalReferenceId?: string;
+            message?: string;
+            requestedAt?: string;
             readStatus?: 'unseen' | 'seen' | null;
         }
     >;
@@ -47,6 +58,8 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
             createdAt: { type: 'string', required: true },
             updatedAt: { type: 'string', required: true },
             expiresAt: { type: 'string', required: false },
+            audienceVersion: { type: 'number', required: false },
+            hasConsented: { type: 'boolean', required: false },
         } as any,
         relationships: {
             createdBy: { model: Profile, direction: 'out', name: 'CREATED_BY' },
@@ -70,17 +83,35 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
                 },
             },
             canWrite: { model: Profile, direction: 'out', name: 'CAN_WRITE' },
+            sharesDataWith: { model: Profile, direction: 'out', name: 'SHARES_DATA_WITH' },
             relatedTo: { model: Boost, direction: 'out', name: 'RELATED_TO' },
             requestedFor: {
                 model: Profile,
                 direction: 'out',
                 name: 'REQUESTED_FOR',
                 properties: {
+                    requestId: {
+                        property: 'requestId',
+                        schema: { type: 'string', required: false },
+                    },
+                    requestedBy: {
+                        property: 'requestedBy',
+                        schema: { type: 'string', required: false },
+                    },
+                    externalReferenceId: {
+                        property: 'externalReferenceId',
+                        schema: { type: 'string', required: false },
+                    },
+                    message: { property: 'message', schema: { type: 'string', required: false } },
+                    requestedAt: {
+                        property: 'requestedAt',
+                        schema: { type: 'string', required: false },
+                    },
                     status: {
                         property: 'status',
                         schema: {
                             type: 'string',
-                            enum: ['pending', 'accepted', 'denied'],
+                            enum: ['pending', 'accepted', 'denied', 'cancelled'],
                             required: false,
                         },
                     },

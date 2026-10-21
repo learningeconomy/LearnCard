@@ -1,5 +1,6 @@
 {
     "_comment": "Staging overrides for LearnCard. Merged on top of config.json via deepMerge.",
+    "stage": "staging",
     "domain": "staging.learncard.ai",
     "apis": {
         "brainService": "https://staging.network.learncard.com/trpc",
@@ -12,6 +13,8 @@
     },
     "features": {
         "analytics": false,
+        "escrowRolloutPercent": 100,
+        "contractRequests": true,
         "useSeededSkillFrameworks": true,
         "samplePersonas": [
             {
@@ -30,9 +33,16 @@
         "keyDerivation": "sss",
         "sss": {
             "serverUrl": "https://staging.api.learncard.app/api",
-            "escrowEnclaveMode": "software",
+            "escrowEnclaveMode": "nitro",
             "escrowEnclavePublicKeys": [
-                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdi2P3bj3ZuaVMRl3CKa78AgtRoIB8NcWX5DX+PmIx7SU6ZJGenmhHiLWzNxgvfAIucQtE4y//dS6W1sgkrJ2Tw=="
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErzuapPkQxSAb0oEQdYHWQIGXt8aSTKZwUWxrFoysw6WggnF8caCLNZiaFBeAfBd2PUty+/pXmgmpFsIo86zzcQ=="
+            ],
+            "escrowEnclaveMeasurements": [
+                {
+                    "pcr0": "69543e24d0bc0df81108411308cc721bc9b957f714e43a23e75118d3f14ccfabdd057be9b2f9fb6ea6bbe1f772864396",
+                    "pcr1": "4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493",
+                    "pcr2": "5113a698a18534fe44a25149cd717c72227e4c6d54fc710f0b81262aee6052c12cd791f30d046ac69a739d635b0ab8b8"
+                }
             ]
         }
     }

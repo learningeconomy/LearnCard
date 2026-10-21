@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { test } from './fixtures/test';
+import { test } from './fixtures/isolated-test';
 import {
     issueBadgeToSelf,
     openBoostAFriendBadgePicker,
@@ -7,17 +7,16 @@ import {
     TEST_CREDENTIAL_TITLE,
     waitForAuthenticatedState,
 } from './test.helpers';
-import { TEST_USER_2_SEED, TEST_USER_PROFILE_ID, TEST_USER_2_PROFILE_ID } from './constants';
 import { mockDidKitWasmForContext } from './route.helpers';
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('wallet-credentials.spec');
 
 test.describe('Wallet Credentials', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, actors }) => {
         // Create a network profile so the LCN gate lets the boost flow open
         // instead of OnboardingContainer.
-        await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
+        await waitForAuthenticatedState(page, actors.learner);
     });
 
     test('Issue a badge to yourself', async ({ page }) => {
@@ -28,7 +27,7 @@ test.describe('Wallet Credentials', () => {
         });
     });
 
-    test('Issue a badge to someone else', async ({ page, browser }) => {
+    test('Issue a badge to someone else', async ({ page, browser, actors }) => {
         // Capture console errors for debugging
         const consoleErrors: string[] = [];
         page.on('console', msg => {
@@ -42,18 +41,18 @@ test.describe('Wallet Credentials', () => {
         await mockDidKitWasmForContext(context2);
         const page2 = await context2.newPage();
         await waitForAuthenticatedState(page2, {
-            seed: TEST_USER_2_SEED,
-            profileId: TEST_USER_2_PROFILE_ID,
+            seed: actors.recipient.seed,
+            profileId: actors.recipient.profileId,
         });
 
         // User 1: Create a peer badge and send it to user 2.
         await openBoostAFriendBadgePicker(page);
         await personalizeTestBadge(page);
 
-        await page.getByPlaceholder('Search people...').fill(TEST_USER_2_PROFILE_ID);
+        await page.getByPlaceholder('Search people...').fill(actors.recipient.profileId);
         const recipientResult = page
             .getByRole('button')
-            .filter({ hasText: TEST_USER_2_PROFILE_ID })
+            .filter({ hasText: actors.recipient.profileId })
             .first();
         await expect(recipientResult).toBeVisible({ timeout: 30_000 });
         await recipientResult.click();

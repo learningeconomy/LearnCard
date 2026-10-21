@@ -1,4 +1,6 @@
 import React from 'react';
+import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
+import { useDismissCompetencyAdminModal } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 
 import { useModal, useListMySkillFrameworks, ModalTypes } from 'learn-card-base';
@@ -16,7 +18,7 @@ type SelectFrameworkToManageModalProps = {
     hideCreateFramework?: boolean;
 };
 
-const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> = ({
+const SelectFrameworkToManageModalContent: React.FC<SelectFrameworkToManageModalProps> = ({
     onFrameworkSelectOverride,
     hideCreateFramework,
 }) => {
@@ -29,7 +31,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             newModal(
                 <CreateFrameworkModal />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none',
+                    sectionClassName: 'bg-transparent! shadow-none!',
                 },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
             );
@@ -68,7 +70,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                                     newModal(
                                         <ManageSkills initialFrameworkId={framework.id} />,
                                         {
-                                            sectionClassName: '!bg-transparent !shadow-none',
+                                            sectionClassName: 'bg-transparent! shadow-none!',
                                         },
                                         { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
                                     );
@@ -94,6 +96,22 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                 {m['common.back']()}
             </button>
         </div>
+    );
+};
+
+const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> = props => {
+    const canManageCompetencies = useCanManageCompetencies();
+    const canSelectFramework = canManageCompetencies || Boolean(props.onFrameworkSelectOverride);
+    useDismissCompetencyAdminModal(canSelectFramework);
+
+    // Badge authors can select existing competencies without managing the framework.
+    if (!canSelectFramework) return null;
+
+    return (
+        <SelectFrameworkToManageModalContent
+            {...props}
+            hideCreateFramework={props.hideCreateFramework || !canManageCompetencies}
+        />
     );
 };
 

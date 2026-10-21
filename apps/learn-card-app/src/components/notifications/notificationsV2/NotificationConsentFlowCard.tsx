@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import type { NotificationType } from '@learncard/lca-api-plugin';
+import { useContractRequestsEnabled } from '../../../hooks/useContractRequestsEnabled';
+import { ContractRequest } from '../../contract-requests/ContractRequest';
 import moment from 'moment';
 
 import { ErrorBoundary } from '@sentry/react';
@@ -13,7 +16,7 @@ import {
 import { NotificationTypeEnum, NotificationTypeStyles, notificationCardStyles } from './types';
 
 type NotificationConsentFlowCardProps = {
-    notification: any;
+    notification: NotificationType;
     claimStatus?: boolean;
     handleArchive?: () => void;
     handleRead?: () => void;
@@ -30,25 +33,56 @@ const NotificationConsentFlowCard: React.FC<NotificationConsentFlowCardProps> = 
     const { textStyles, typeText } =
         NotificationTypeStyles[NotificationTypeEnum.consentFlowTransaction];
 
+    const notificationId = notification._id;
     const transactionDate = notification.data?.transaction?.date ?? notification.sent;
     const formattedDate = moment(transactionDate).format('MMM DD YYYY');
 
     const [isRead, setIsRead] = useState<boolean>(notification?.read || false);
 
-    const { mutate: updateNotification } = useUpdateNotification();
+    const { mutate: updateNotification, mutateAsync: dismissNotification } =
+        useUpdateNotification();
 
+    const requestsEnabled = useContractRequestsEnabled();
     const isLoading = cardLoading;
 
     const handleReadStatus = async () => {
+        if (!notificationId) return;
         setIsRead(true);
         await updateNotification({
-            notificationId: notification?._id,
+            notificationId,
             payload: { read: true },
         });
     };
 
     const isAiInsightsNotification =
         notification.data?.metadata?.type === CredentialCategoryEnum.aiInsight;
+
+    const metadata = notification.data?.metadata;
+    if (
+        requestsEnabled &&
+        metadata?.type === 'contract-request' &&
+        typeof metadata.contractUri === 'string' &&
+        metadata.contractUri.length > 0 &&
+        typeof metadata.requestId === 'string' &&
+        metadata.requestId.length > 0
+    ) {
+        return (
+            <ContractRequest
+                contractUri={metadata.contractUri}
+                requestId={metadata.requestId}
+                onDismiss={
+                    notificationId
+                        ? async () => {
+                              await dismissNotification({
+                                  notificationId,
+                                  payload: { archived: true },
+                              });
+                          }
+                        : undefined
+                }
+            />
+        );
+    }
 
     if (isAiInsightsNotification) {
         return (

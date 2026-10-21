@@ -1,6 +1,6 @@
 {
     "name": "@learncard/partner-connect",
-    "version": "0.5.1",
+    "version": "0.6.1",
     "repository": {
         "type": "git",
         "url": "https://github.com/learningeconomy/LearnCard"
@@ -43,6 +43,7 @@
     "license": "MIT",
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "dependencies": {
+        "@learncard/partner-connect-core": "workspace:*",
         "@learncard/types": "workspace:*"
     },
     "devDependencies": {

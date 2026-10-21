@@ -4,12 +4,12 @@ Branding for email/SMS delivery
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**issuer_name** | **str** | Name of the issuing organization | [optional] 
-**issuer_logo_url** | **str** | Logo URL of the issuing organization | [optional] 
-**credential_name** | **str** | Display name for the credential | [optional] 
-**recipient_name** | **str** | Name of the recipient for personalization | [optional] 
+| Name                | Type    | Description                               | Notes      |
+| ------------------- | ------- | ----------------------------------------- | ---------- |
+| **issuer_name**     | **str** | Name of the issuing organization          | [optional] |
+| **issuer_logo_url** | **str** | Logo URL of the issuing organization      | [optional] |
+| **credential_name** | **str** | Display name for the credential           | [optional] |
+| **recipient_name**  | **str** | Name of the recipient for personalization | [optional] |
 
 ## Example
 
@@ -28,6 +28,5 @@ boost_send_request_options_branding_dict = boost_send_request_options_branding_i
 # create an instance of BoostSendRequestOptionsBranding from a dict
 boost_send_request_options_branding_from_dict = BoostSendRequestOptionsBranding.from_dict(boost_send_request_options_branding_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

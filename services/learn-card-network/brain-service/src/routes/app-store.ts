@@ -2,10 +2,20 @@ import { TRPCError } from '@trpc/server';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import {
+    PendingListingUpdateValidator,
+    AppManifestDiffValidator,
+    AppManifestValidator,
+    AppManifestVersionValidator,
     AppEventValidator,
     LCNNotificationTypeEnumValidator,
     SendNotificationEventValidator,
 } from '@learncard/types';
+import { mergeCapturedManifests } from '@learncard/partner-connect-core';
+import type {
+    ConsentRequest,
+    InlineCredentialTemplate,
+    NormalizedConsentScopes,
+} from '@learncard/partner-connect-core';
 import type { UnsignedVC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
@@ -18,18 +28,28 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { PerfTracker } from '@helpers/perf';
+import {
+    buildConsentFlowContractFromScopes,
+    buildScopedConsentContractName,
+    computeConsentScopeHash,
+    normalizeConsentScopes,
+} from '@helpers/consent-scopes.helpers';
+import { diffManifests, hashManifest } from '@helpers/app-manifest.helpers';
 import cache from '@cache';
 import {
     getBoostForListingCached,
+    getConsentContractForListingByScopeHashCached,
     readAppStoreListingByIdCached,
     getIntegrationForListingCached,
     getOwnerProfileForIntegrationCached,
     getPrimarySigningAuthorityForListingCached,
     getPrimarySigningAuthorityForIntegrationCached,
+    invalidateBoostForListingCache,
+    invalidateConsentContractForListingByScopeHashCache,
 } from '@cache/app-store.caches';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
-import { resolveUri } from '@helpers/uri.helpers';
+import { constructUri, resolveUri } from '@helpers/uri.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import {
@@ -52,13 +72,17 @@ import {
     countInstalledAppsForProfile,
     checkIfProfileInstalledApp,
 } from '@accesslayer/app-store-listing/read';
-import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
+import {
+    clearPendingListingUpdate,
+    updateAppStoreListing,
+} from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
     associateListingWithSubmitter,
     installAppForProfile,
     associateBoostWithListing,
+    associateConsentContractWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
 import {
     uninstallAppForProfile,
@@ -91,11 +115,13 @@ import {
     PromotionLevel,
     AppStoreListingValidator,
     AgeRating,
+    StoredPendingListingUpdateValidator,
 } from 'types/app-store-listing';
 import type {
     AppStoreListingCreateType,
     AppStoreListingType,
     AppStoreListingUpdateType,
+    StoredPendingListingUpdate,
 } from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import {
@@ -106,9 +132,30 @@ import {
 } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { createBoostForListing } from '@accesslayer/boost/create';
+import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
+import { createAppManifestVersion } from '@accesslayer/app-manifest-version/create';
+import {
+    getActiveManifestVersionForIntegration,
+    getLatestManifestVersionForIntegration,
+    getManifestVersionForIntegration,
+    getManifestVersionsForIntegration,
+} from '@accesslayer/app-manifest-version/read';
+import {
+    associateListingWithManifestVersion,
+    markManifestVersionsSuperseded,
+    updateAppManifestVersion,
+} from '@accesslayer/app-manifest-version/update';
 import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import type { IssuedCredential } from '../types/credential';
+import {
+    computeInlineTemplateHash,
+    ensureManagedSigningAuthorityForListing,
+    getInlineTemplateVersion,
+    readInlineTemplateBoostMeta,
+    upsertInlineTemplateBoostForListing,
+    validateInlineTemplateDataOrThrow,
+} from '@helpers/inline-template.helpers';
 import {
     renderBoostTemplate,
     parseRenderedTemplate,
@@ -179,8 +226,14 @@ const isAllowedImageUrl = (url: string): boolean => {
 const isValidIframeUrl = (url: string): boolean => {
     try {
         const parsed = new URL(url);
-        // Only allow https URLs for iframes
-        if (parsed.protocol !== 'https:') return false;
+        // Only allow https URLs for iframes (except for local preview of draft listings)
+        if (parsed.protocol !== 'https:') {
+            const isLocalhost =
+                parsed.hostname === 'localhost' ||
+                parsed.hostname === '127.0.0.1' ||
+                parsed.hostname === '[::1]';
+            if (!isLocalhost) return false;
+        }
         // Block javascript:, data:, and vbscript: schemes (already handled by URL parsing, but be explicit)
         const lowerUrl = url.toLowerCase();
         if (
@@ -292,7 +345,14 @@ const iframeUrlRefinement = (
             if (config.iframeUrl && !isValidIframeUrl(config.iframeUrl)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    message: 'Iframe URL must be a valid HTTPS URL',
+                    message: 'Iframe URL must be a valid HTTPS URL (or localhost for testing)',
+                    path: ['launch_config_json'],
+                });
+            }
+            if (config.url && !isValidIframeUrl(config.url)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'URL must be a valid HTTPS URL (or localhost for testing)',
                     path: ['launch_config_json'],
                 });
             }
@@ -302,12 +362,16 @@ const iframeUrlRefinement = (
     }
 };
 
+type PendingStorageField =
+    'pending_update_json' | 'pending_update_status' | 'pending_update_submitted_at';
+
 type AppStoreListingResponse<T extends AppStoreListingType> = Omit<
     T,
-    'highlights_json' | 'screenshots_json'
+    'highlights_json' | 'screenshots_json' | PendingStorageField
 > & {
     highlights?: string[];
     screenshots?: string[];
+    pending_update?: z.infer<typeof PendingListingUpdateValidator>;
 };
 
 type ListingStorageInput<T extends Record<string, unknown>> = Omit<
@@ -321,17 +385,71 @@ type ListingStorageInput<T extends Record<string, unknown>> = Omit<
 // Helper to strip sensitive fields (contact_email) from listings for public responses
 const stripSensitiveFields = <T extends Record<string, unknown>>(
     listing: T
-): Omit<T, 'contact_email'> => {
-    const { contact_email, ...rest } = listing;
-    return rest as Omit<T, 'contact_email'>;
+): Omit<T, 'contact_email' | 'pending_update'> => {
+    const { contact_email, pending_update, ...rest } = listing;
+    return rest as Omit<T, 'contact_email' | 'pending_update'>;
+};
+
+const parseJsonArray = (value: unknown): string[] | undefined => {
+    if (typeof value !== 'string' || !value) return undefined;
+    try {
+        const parsed: unknown = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string') : [];
+    } catch {
+        return [];
+    }
+};
+
+const readPendingUpdate = (listing: AppStoreListingType): StoredPendingListingUpdate | null => {
+    if (!listing.pending_update_json) return null;
+    try {
+        const parsed = StoredPendingListingUpdateValidator.safeParse(
+            JSON.parse(listing.pending_update_json)
+        );
+        return parsed.success ? parsed.data : null;
+    } catch {
+        return null;
+    }
+};
+
+const toPendingUpdateResponse = (
+    listing: AppStoreListingType
+): z.infer<typeof PendingListingUpdateValidator> | undefined => {
+    const pending = readPendingUpdate(listing);
+    if (!pending || !listing.pending_update_status) return undefined;
+
+    const { highlights_json, screenshots_json, ...changes } = pending.changes;
+    const highlights = parseJsonArray(highlights_json);
+    const screenshots = parseJsonArray(screenshots_json);
+
+    return PendingListingUpdateValidator.parse({
+        status: listing.pending_update_status,
+        submitted_at: listing.pending_update_submitted_at,
+        changes: {
+            ...changes,
+            ...(highlights ? { highlights } : {}),
+            ...(screenshots ? { screenshots } : {}),
+        },
+        manifest_version: pending.manifestVersion,
+    });
 };
 
 // Helper to transform listing for API response (JSON strings -> arrays)
 const transformListingForResponse = <T extends AppStoreListingType & Record<string, unknown>>(
     listing: T
 ): AppStoreListingResponse<T> => {
-    const { highlights_json, screenshots_json, ...rest } = listing;
+    const {
+        highlights_json,
+        screenshots_json,
+        pending_update_json,
+        pending_update_status,
+        pending_update_submitted_at,
+        ...rest
+    } = listing;
     const result = { ...rest } as AppStoreListingResponse<T>;
+
+    const pendingUpdate = toPendingUpdateResponse(listing);
+    if (pendingUpdate) result.pending_update = pendingUpdate;
 
     if (highlights_json) {
         try {
@@ -442,9 +560,13 @@ const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
     highlights: z.array(z.string()).optional(),
     screenshots: z.array(z.string()).optional(),
     submitter: AppStoreListingSubmitterValidator.optional(),
+    pending_update: PendingListingUpdateValidator.optional(),
 }).omit({
     highlights_json: true,
     screenshots_json: true,
+    pending_update_json: true,
+    pending_update_status: true,
+    pending_update_submitted_at: true,
 });
 
 const PaginatedAppStoreListingsValidator = z.object({
@@ -478,6 +600,45 @@ const PaginatedAppCredentialsValidator = z.object({
     cursor: z.string().optional(),
     records: z.array(AppCredentialRecordValidator),
     totalCount: z.number(),
+});
+
+const AppManifestVersionSummaryValidator = AppManifestVersionValidator.omit({ manifest: true });
+
+const PaginatedAppManifestVersionsValidator = z.object({
+    hasMore: z.boolean(),
+    cursor: z.string().optional(),
+    records: z.array(AppManifestVersionSummaryValidator),
+});
+
+const SubmitAppManifestResponseValidator = z.object({
+    version: z.number().int().min(1),
+    manifestHash: z.string(),
+    diff: AppManifestDiffValidator.nullable(),
+    noop: z.boolean(),
+});
+
+const ApplyManifestVersionResponseValidator = z.object({
+    applied: z.boolean(),
+    pendingReview: z.boolean().optional(),
+    version: z.number().int().min(1),
+    reconciled: z.object({
+        templatesUpserted: z.number().int().min(0),
+        templatesSkipped: z.number().int().min(0),
+        contractsUpserted: z.number().int().min(0),
+        contractsSkipped: z.number().int().min(0),
+        signingAuthorityEnsured: z.boolean(),
+    }),
+});
+
+const toManifestVersionSummary = (
+    manifestVersion: z.infer<typeof AppManifestVersionValidator>
+): z.infer<typeof AppManifestVersionSummaryValidator> => ({
+    id: manifestVersion.id,
+    version: manifestVersion.version,
+    manifestHash: manifestVersion.manifestHash,
+    status: manifestVersion.status,
+    createdAt: manifestVersion.createdAt,
+    activatedAt: manifestVersion.activatedAt,
 });
 
 // Helper to verify integration ownership
@@ -558,12 +719,17 @@ export const handleSendCredentialEvent = async (
 ): Promise<Record<string, unknown>> => {
     const perf = perfTracker ?? new PerfTracker('handleSendCredentialEvent');
 
-    const templateAlias = event.templateAlias as string | undefined;
+    const templateAlias =
+        (event.templateAlias as string | undefined) ?? (event.alias as string | undefined);
+    const inlineTemplate = event.template as
+        import('@learncard/partner-connect-core').InlineCredentialTemplate | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
     const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
+    const isInlineTemplateEvent = Boolean(inlineTemplate);
+    let templateVersion: number | undefined = undefined;
 
     if (!templateAlias) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or alias required' });
     }
 
     // LC-1644 Phase 1b: Fire the four input-only lookups in parallel. All depend only on
@@ -572,17 +738,16 @@ export const handleSendCredentialEvent = async (
     // parallel batching + 30s LRU cache on the first three below compounds to ~50-150ms
     // saved on warm lambda invocations. targetProfile is keyed by the requester's
     // profileId (varies per user) so it's not cached.
-    const [boostResult, listing, integration, targetProfile] = await Promise.all([
-        getBoostForListingCached(listingId, templateAlias, ctx.domain),
+    const [cachedBoostResult, listing, integration, targetProfile] = await Promise.all([
+        isInlineTemplateEvent
+            ? Promise.resolve(null)
+            : getBoostForListingCached(listingId, templateAlias, ctx.domain),
         readAppStoreListingByIdCached(listingId),
         getIntegrationForListingCached(listingId),
         getProfilesByProfileIds([profile.profileId]),
     ]);
     perf.mark('parallelReads');
 
-    if (!boostResult) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
-    }
     if (!listing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
     }
@@ -594,7 +759,30 @@ export const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
 
+    const boostResult = isInlineTemplateEvent
+        ? await upsertInlineTemplateBoostForListing({
+              listing,
+              integration,
+              templateAlias,
+              template: inlineTemplate!,
+              domain: ctx.domain,
+          })
+        : cachedBoostResult;
+
+    if (!boostResult) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+    }
+
+    if (isInlineTemplateEvent) {
+        const inlineBoostResult = boostResult as Awaited<
+            ReturnType<typeof upsertInlineTemplateBoostForListing>
+        >;
+        validateInlineTemplateDataOrThrow(inlineBoostResult.manifest, templateData);
+        templateVersion = inlineBoostResult.templateVersion;
+    }
+
     const { boost, boostUri } = boostResult;
+    templateVersion ??= getInlineTemplateVersion(boost);
 
     // NOTE: This is best-effort duplicate prevention, not a guarantee.
     // There is a race condition window between checking and creating the credential
@@ -618,6 +806,7 @@ export const handleSendCredentialEvent = async (
                 receivedDate: existingCredential.receivedDate ?? existingCredential.sentDate,
                 status: existingCredential.status,
                 boostUri,
+                ...(templateVersion !== undefined ? { templateVersion } : {}),
                 // credential not included — frontend skips modal when alreadyClaimed=true
             };
         }
@@ -652,16 +841,18 @@ export const handleSendCredentialEvent = async (
         listingSa || integrationSa
             ? undefined
             : await getPrimarySigningAuthorityForUser(integrationOwner);
-    const sa = listingSa ?? integrationSa ?? ownerSa;
+    const sa =
+        listingSa ??
+        integrationSa ??
+        ownerSa ??
+        (await ensureManagedSigningAuthorityForListing(
+            listing,
+            integration,
+            integrationOwner,
+            ctx.domain
+        ));
 
     perf.mark('saResolve');
-
-    if (!sa) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'No signing authority configured for this app',
-        });
-    }
 
     // Build unsigned credential from boost template
     let unsignedVc: UnsignedVC;
@@ -826,11 +1017,336 @@ export const handleSendCredentialEvent = async (
     return {
         credentialUri,
         boostUri,
+        ...(templateVersion !== undefined ? { templateVersion } : {}),
         // LC-1644: pre-resolved (enriched) credential so the frontend modal
         // can render the proper title + issuer info without shimmer or
         // background re-fetch. See enrichment block above for details.
         credential: responseCredential,
     };
+};
+
+const normalizeConsentRequestOrThrow = (scopes: ConsentRequest): NormalizedConsentScopes => {
+    try {
+        return normalizeConsentScopes(scopes);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Invalid consent scopes';
+
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `CONSENT_SCOPES_INVALID: ${message}`,
+        });
+    }
+};
+
+const handleUpsertConsentContractEvent = async (
+    ctx: { domain: string },
+    listing: AppStoreListingType,
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<{ contractUri: string; created: boolean }> => {
+    const rawScopes = event.scopes as ConsentRequest;
+    const normalizedScopes = normalizeConsentRequestOrThrow(rawScopes);
+    return upsertConsentContractForListingScopes({
+        ctx,
+        listing,
+        listingId,
+        normalizedScopes,
+        reason:
+            typeof rawScopes.reason === 'string' && rawScopes.reason.trim().length > 0
+                ? rawScopes.reason
+                : undefined,
+    });
+};
+
+const upsertConsentContractForListingScopes = async ({
+    ctx,
+    listing,
+    listingId,
+    normalizedScopes,
+    reason,
+}: {
+    ctx: { domain: string };
+    listing: AppStoreListingType;
+    listingId: string;
+    normalizedScopes: NormalizedConsentScopes;
+    reason?: string;
+}): Promise<{ contractUri: string; created: boolean; scopeHash: string }> => {
+    const scopeHash = computeConsentScopeHash(normalizedScopes);
+    const existingContract = await getConsentContractForListingByScopeHashCached(
+        listingId,
+        scopeHash
+    );
+
+    if (existingContract) {
+        return {
+            contractUri: constructUri('contract', existingContract.id, ctx.domain),
+            created: false,
+            scopeHash,
+        };
+    }
+
+    const integration = await getIntegrationForListingCached(listingId);
+
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+
+    const ownerProfile = await getOwnerProfileForIntegrationCached(integration.id);
+
+    if (!ownerProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    const createdContract = await createConsentFlowContract({
+        contract: buildConsentFlowContractFromScopes(normalizedScopes),
+        ownerProfileId: ownerProfile.profileId,
+        name: buildScopedConsentContractName(listing.display_name),
+        description: listing.tagline,
+        reasonForAccessing: reason,
+    });
+
+    await associateConsentContractWithListing(listingId, createdContract.id, scopeHash);
+    invalidateConsentContractForListingByScopeHashCache(listingId, scopeHash);
+
+    return {
+        contractUri: constructUri('contract', createdContract.id, ctx.domain),
+        created: true,
+        scopeHash,
+    };
+};
+
+const resolveManifestApplyListing = async ({
+    integrationId,
+    listingId,
+    profileId,
+}: {
+    integrationId: string;
+    listingId: string | undefined;
+    profileId: string;
+}): Promise<AppStoreListingType> => {
+    if (listingId) {
+        const { listing, integration } = await verifyListingOwnership(listingId, profileId);
+
+        if (integration.id !== integrationId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Listing does not belong to the provided Integration',
+            });
+        }
+
+        return listing;
+    }
+
+    const listings = await getListingsForIntegration(integrationId, { limit: 2 });
+
+    if (listings.length === 0) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No App Store Listing found for this Integration',
+        });
+    }
+
+    if (listings.length > 1) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'listingId is required when an Integration has multiple listings',
+        });
+    }
+
+    return listings[0]!;
+};
+
+type ManifestVersionRecord = NonNullable<
+    Awaited<ReturnType<typeof getManifestVersionForIntegration>>
+>;
+type IntegrationRecord = Awaited<ReturnType<typeof verifyIntegrationOwnership>>;
+type OwnerProfileRecord = NonNullable<Awaited<ReturnType<typeof getOwnerProfileForIntegration>>>;
+
+const reconcileManifestVersionForListing = async ({
+    ctx,
+    integration,
+    integrationOwner,
+    listing,
+    manifestVersion,
+}: {
+    ctx: { domain: string };
+    integration: IntegrationRecord;
+    integrationOwner: OwnerProfileRecord;
+    listing: AppStoreListingType;
+    manifestVersion: ManifestVersionRecord;
+}) => {
+    let templatesUpserted = 0;
+    let templatesSkipped = 0;
+    let contractsUpserted = 0;
+    let contractsSkipped = 0;
+
+    for (const templateRecord of manifestVersion.manifest.templates) {
+        const inlineTemplate = templateRecord.template as InlineCredentialTemplate;
+        const existingBoost = await getBoostForListingByTemplateAlias(
+            listing.listing_id,
+            templateRecord.alias,
+            ctx.domain
+        );
+        const desiredTemplateHash = computeInlineTemplateHash(inlineTemplate).contentHash;
+
+        const existingBoostMeta = existingBoost
+            ? await readInlineTemplateBoostMeta(existingBoost.boost)
+            : undefined;
+
+        if (
+            existingBoostMeta?.inlineTemplateHash === desiredTemplateHash &&
+            existingBoostMeta.inlineTemplateVersion === templateRecord.version
+        ) {
+            templatesSkipped += 1;
+            continue;
+        }
+
+        await upsertInlineTemplateBoostForListing({
+            listing,
+            integration,
+            templateAlias: templateRecord.alias,
+            template: inlineTemplate,
+            domain: ctx.domain,
+            desiredVersion: templateRecord.version,
+        });
+
+        templatesUpserted += 1;
+
+        invalidateBoostForListingCache(listing.listing_id, templateRecord.alias, ctx.domain);
+    }
+
+    for (const consentRecord of manifestVersion.manifest.consentRequests) {
+        const upsertedConsent = await upsertConsentContractForListingScopes({
+            ctx,
+            listing,
+            listingId: listing.listing_id,
+            normalizedScopes: consentRecord.scopes,
+            reason: consentRecord.reason,
+        });
+
+        if (upsertedConsent.created) {
+            contractsUpserted += 1;
+        } else {
+            contractsSkipped += 1;
+        }
+
+        invalidateConsentContractForListingByScopeHashCache(
+            listing.listing_id,
+            upsertedConsent.scopeHash
+        );
+    }
+
+    await markManifestVersionsSuperseded(integration.id, manifestVersion.id);
+
+    if (manifestVersion.status !== 'active' || !manifestVersion.activatedAt) {
+        await updateAppManifestVersion(manifestVersion.id, {
+            status: 'active',
+            activatedAt: manifestVersion.activatedAt ?? new Date().toISOString(),
+        });
+    }
+
+    await associateListingWithManifestVersion(listing.listing_id, manifestVersion.id);
+
+    await ensureManagedSigningAuthorityForListing(
+        listing,
+        integration,
+        integrationOwner,
+        ctx.domain
+    );
+
+    return {
+        templatesUpserted,
+        templatesSkipped,
+        contractsUpserted,
+        contractsSkipped,
+        signingAuthorityEnsured: true,
+    };
+};
+
+const PENDING_UPDATE_IN_REVIEW_MESSAGE =
+    'An update for this app is already in review. Withdraw it to make more changes.';
+
+/**
+ * Records changes to a LISTED app as a pending update instead of applying them, so
+ * nothing about a live app changes until an admin approves it.
+ */
+const holdChangesForReview = async (
+    listing: AppStoreListingType,
+    {
+        changes = {},
+        manifestVersion,
+    }: { changes?: Record<string, unknown>; manifestVersion?: number }
+): Promise<boolean> => {
+    if (listing.pending_update_status === 'PENDING_REVIEW') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: PENDING_UPDATE_IN_REVIEW_MESSAGE });
+    }
+
+    const existing = readPendingUpdate(listing);
+    const next: StoredPendingListingUpdate = {
+        changes: { ...existing?.changes, ...changes },
+        manifestVersion: manifestVersion ?? existing?.manifestVersion,
+    };
+
+    return updateAppStoreListing(listing, {
+        pending_update_json: JSON.stringify(next),
+        pending_update_status: 'DRAFT',
+    });
+};
+
+const assertLaunchConfigSubmittable = (launchType: string, launchConfigJson: string): void => {
+    if (launchType !== 'EMBEDDED_IFRAME' || !launchConfigJson) return;
+
+    try {
+        const config = JSON.parse(launchConfigJson);
+        const urlToCheck = config.url || config.iframeUrl;
+        if (!urlToCheck) return;
+
+        const parsed = new URL(urlToCheck);
+        const isLocalhost =
+            parsed.hostname === 'localhost' ||
+            parsed.hostname === '127.0.0.1' ||
+            parsed.hostname === '[::1]';
+        if (isLocalhost || parsed.protocol !== 'https:') {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message:
+                    'Cannot submit an app for review with a localhost or non-HTTPS URL. Please update the launch configuration with your production URL.',
+            });
+        }
+    } catch (e) {
+        if (e instanceof TRPCError) throw e;
+        // Unparseable config is rejected by input validation.
+    }
+};
+
+const notifyAppStoreAdmins = async (
+    from: Parameters<typeof addNotificationToQueue>[0]['from'],
+    type: 'APP_LISTING_SUBMITTED' | 'APP_LISTING_WITHDRAWN',
+    listing: AppStoreListingType,
+    metadata: Record<string, unknown> = {}
+): Promise<void> => {
+    if (APP_STORE_ADMIN_PROFILE_IDS.length === 0) return;
+
+    const adminProfiles = await getProfilesByProfileIds(APP_STORE_ADMIN_PROFILE_IDS);
+    for (const adminProfile of adminProfiles) {
+        await addNotificationToQueue({
+            type,
+            to: adminProfile,
+            from,
+            message: getNotificationMessage(
+                type === 'APP_LISTING_SUBMITTED' ? 'appListingSubmitted' : 'appListingWithdrawn',
+                resolveRecipientLocale(adminProfile),
+                { displayName: listing.display_name }
+            ),
+            data: {
+                metadata: {
+                    listingId: listing.listing_id,
+                    listingName: listing.display_name,
+                    ...metadata,
+                },
+            },
+        });
+    }
 };
 
 const handleCheckCredentialEvent = async (
@@ -1830,6 +2346,274 @@ export const appStoreRouter = t.router({
             return countListingsForIntegration(input.integrationId);
         }),
 
+    submitAppManifest: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/integration/{integrationId}/manifest/submit',
+                tags: ['App Store'],
+                summary: 'Submit App Manifest',
+                description:
+                    'Create a versioned app manifest draft for an integration, idempotently by manifest hash.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                manifest: AppManifestValidator,
+            })
+        )
+        .output(SubmitAppManifestResponseValidator)
+        .mutation(async ({ input, ctx }) => {
+            await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
+
+            const latestManifestVersion = await getLatestManifestVersionForIntegration(
+                input.integrationId
+            );
+            const activeManifestVersion = await getActiveManifestVersionForIntegration(
+                input.integrationId
+            );
+            // Each capture is one run of the app; merging keeps what earlier runs saw
+            // so an unexercised feature never shows up as removed.
+            const manifest = latestManifestVersion
+                ? mergeCapturedManifests(latestManifestVersion.manifest, input.manifest)
+                : input.manifest;
+            const manifestHash = hashManifest(manifest);
+
+            if (latestManifestVersion?.manifestHash === manifestHash) {
+                return {
+                    version: latestManifestVersion.version,
+                    manifestHash,
+                    diff: null,
+                    noop: true,
+                };
+            }
+
+            const createdManifestVersion = await createAppManifestVersion({
+                integrationId: input.integrationId,
+                version: (latestManifestVersion?.version ?? 0) + 1,
+                manifestHash,
+                manifest,
+                status: 'draft',
+            });
+
+            return {
+                version: createdManifestVersion.version,
+                manifestHash,
+                diff: activeManifestVersion
+                    ? diffManifests(activeManifestVersion.manifest, manifest)
+                    : null,
+                noop: false,
+            };
+        }),
+
+    getManifestVersions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/integration/{integrationId}/manifest/versions',
+                tags: ['App Store'],
+                summary: 'Get App Manifest Versions',
+                description: 'List paginated app manifest versions for an integration.',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                limit: z.number().int().min(1).max(100).optional(),
+                cursor: z.string().optional(),
+            })
+        )
+        .output(PaginatedAppManifestVersionsValidator)
+        .query(async ({ input, ctx }) => {
+            await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
+
+            const limit = input.limit ?? 25;
+            const versions = await getManifestVersionsForIntegration(input.integrationId, {
+                limit: limit + 1,
+                cursor: input.cursor,
+            });
+
+            const hasMore = versions.length > limit;
+            const records = (hasMore ? versions.slice(0, limit) : versions).map(
+                toManifestVersionSummary
+            );
+
+            return {
+                hasMore,
+                cursor: hasMore ? String(records[records.length - 1]?.version) : undefined,
+                records,
+            };
+        }),
+
+    getManifestVersion: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/integration/{integrationId}/manifest/{version}',
+                tags: ['App Store'],
+                summary: 'Get App Manifest Version',
+                description: 'Get a full app manifest version for an integration.',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                version: z.number().int().min(1),
+            })
+        )
+        .output(AppManifestVersionValidator)
+        .query(async ({ input, ctx }) => {
+            await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
+
+            const manifestVersion = await getManifestVersionForIntegration(
+                input.integrationId,
+                input.version
+            );
+
+            if (!manifestVersion) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'App manifest version not found',
+                });
+            }
+
+            return manifestVersion;
+        }),
+
+    getManifestDiff: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/integration/{integrationId}/manifest/diff/{toVersion}',
+                tags: ['App Store'],
+                summary: 'Get App Manifest Diff',
+                description: 'Diff one app manifest version against another for an integration.',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                fromVersion: z.number().int().min(1).optional(),
+                toVersion: z.number().int().min(1),
+            })
+        )
+        .output(AppManifestDiffValidator)
+        .query(async ({ input, ctx }) => {
+            await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
+
+            const toManifestVersion = await getManifestVersionForIntegration(
+                input.integrationId,
+                input.toVersion
+            );
+
+            if (!toManifestVersion) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Target app manifest version not found',
+                });
+            }
+
+            const fromManifestVersion = input.fromVersion
+                ? await getManifestVersionForIntegration(input.integrationId, input.fromVersion)
+                : await getActiveManifestVersionForIntegration(input.integrationId);
+
+            if (!fromManifestVersion) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Source app manifest version not found',
+                });
+            }
+
+            return diffManifests(fromManifestVersion.manifest, toManifestVersion.manifest);
+        }),
+
+    applyManifestVersion: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/integration/{integrationId}/manifest/{version}/apply',
+                tags: ['App Store'],
+                summary: 'Apply App Manifest Version',
+                description:
+                    'Mark an app manifest version active and idempotently reconcile derived listing entities.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                version: z.number().int().min(1),
+                listingId: z.string().optional(),
+            })
+        )
+        .output(ApplyManifestVersionResponseValidator)
+        .mutation(async ({ input, ctx }) => {
+            const integration = await verifyIntegrationOwnership(
+                input.integrationId,
+                ctx.user.profile.profileId
+            );
+            const manifestVersion = await getManifestVersionForIntegration(
+                input.integrationId,
+                input.version
+            );
+
+            if (!manifestVersion) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'App manifest version not found',
+                });
+            }
+
+            const listing = await resolveManifestApplyListing({
+                integrationId: input.integrationId,
+                listingId: input.listingId,
+                profileId: ctx.user.profile.profileId,
+            });
+            const integrationOwner = await getOwnerProfileForIntegration(input.integrationId);
+
+            if (!integrationOwner) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+            }
+
+            if (listing.app_listing_status === 'LISTED' && manifestVersion.status !== 'active') {
+                // A live app's new capabilities wait for review instead of taking effect.
+                await holdChangesForReview(listing, { manifestVersion: manifestVersion.version });
+
+                return {
+                    applied: false,
+                    pendingReview: true,
+                    version: manifestVersion.version,
+                    reconciled: {
+                        templatesUpserted: 0,
+                        templatesSkipped: 0,
+                        contractsUpserted: 0,
+                        contractsSkipped: 0,
+                        signingAuthorityEnsured: false,
+                    },
+                };
+            }
+
+            const reconciled = await reconcileManifestVersionForListing({
+                ctx,
+                integration,
+                integrationOwner,
+                listing,
+                manifestVersion,
+            });
+
+            return { applied: true, version: manifestVersion.version, reconciled };
+        }),
+
     updateListing: profileRoute
         .meta({
             openapi: {
@@ -1860,6 +2644,10 @@ export const appStoreRouter = t.router({
             >({
                 ...input.updates,
             });
+
+            if (listing.app_listing_status === 'LISTED') {
+                return holdChangesForReview(listing, { changes: storageUpdates });
+            }
 
             if (!listing.slug) {
                 const displayName = storageUpdates.display_name ?? listing.display_name;
@@ -2016,6 +2804,8 @@ export const appStoreRouter = t.router({
                 });
             }
 
+            assertLaunchConfigSubmittable(listing.launch_type, listing.launch_config_json);
+
             const submittedAt = new Date().toISOString();
 
             // Update status on the listing node
@@ -2116,6 +2906,125 @@ export const appStoreRouter = t.router({
             return result;
         }),
 
+    submitListingUpdate: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/update/submit',
+                tags: ['App Store'],
+                summary: 'Submit Listing Update for Review',
+                description:
+                    'Send pending changes to a LISTED app for admin review. The live listing is unchanged until approval.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+            const pending = readPendingUpdate(listing);
+
+            if (listing.app_listing_status !== 'LISTED' || !pending) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'There are no changes to submit for this app.',
+                });
+            }
+            if (listing.pending_update_status === 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: PENDING_UPDATE_IN_REVIEW_MESSAGE,
+                });
+            }
+
+            const nextLaunchType = pending.changes.launch_type ?? listing.launch_type;
+            const nextLaunchConfig =
+                pending.changes.launch_config_json ?? listing.launch_config_json;
+            assertLaunchConfigSubmittable(String(nextLaunchType), String(nextLaunchConfig));
+
+            const result = await updateAppStoreListing(listing, {
+                pending_update_status: 'PENDING_REVIEW',
+                pending_update_submitted_at: new Date().toISOString(),
+            });
+
+            await notifyAppStoreAdmins(ctx.user.profile, 'APP_LISTING_SUBMITTED', listing, {
+                isUpdate: true,
+            });
+
+            return result;
+        }),
+
+    withdrawListingUpdate: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/update/withdraw',
+                tags: ['App Store'],
+                summary: 'Withdraw Listing Update from Review',
+                description: 'Return a submitted update to a LISTED app back to editable changes.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            if (listing.pending_update_status !== 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'There is no update in review for this app.',
+                });
+            }
+
+            const result = await updateAppStoreListing(listing, { pending_update_status: 'DRAFT' });
+
+            await notifyAppStoreAdmins(ctx.user.profile, 'APP_LISTING_WITHDRAWN', listing, {
+                isUpdate: true,
+            });
+
+            return result;
+        }),
+
+    discardListingUpdate: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/update/discard',
+                tags: ['App Store'],
+                summary: 'Discard Listing Update',
+                description: 'Throw away unsubmitted changes to a LISTED app.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            if (listing.pending_update_status === 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: PENDING_UPDATE_IN_REVIEW_MESSAGE,
+                });
+            }
+
+            await clearPendingListingUpdate(listing.listing_id);
+            return true;
+        }),
+
     deleteListing: profileRoute
         .meta({
             openapi: {
@@ -2124,14 +3033,34 @@ export const appStoreRouter = t.router({
                 path: '/app-store/listing/{listingId}',
                 tags: ['App Store'],
                 summary: 'Delete App Store Listing',
-                description: 'Delete an App Store Listing',
+                description:
+                    'Delete an App Store Listing. Only draft or rejected listings may be deleted; in-review and live listings must be withdrawn or removed from the store first.',
             },
             requiredScope: 'app-store:delete',
         })
         .input(z.object({ listingId: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            await verifyListingOwnership(input.listingId, ctx.user.profile.profileId);
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            // ARCHIVED is how a rejected listing is represented (there is no
+            // separate REJECTED status), so DRAFT and ARCHIVED are deletable.
+            if (listing.app_listing_status === 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'Only draft apps can be deleted. Withdraw it from review first.',
+                });
+            }
+
+            if (listing.app_listing_status === 'LISTED') {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: "Live apps can't be deleted. Remove it from the store first.",
+                });
+            }
 
             await deleteAppStoreListing(input.listingId);
 
@@ -2829,6 +3758,10 @@ export const appStoreRouter = t.router({
                 );
             }
 
+            if (eventType === 'upsert-consent-contract') {
+                return handleUpsertConsentContractEvent(ctx, listing, resolvedListingId, event);
+            }
+
             if (eventType === 'send-ai-session-credential') {
                 return handleSendAiSessionCredentialEvent(ctx, profile, resolvedListingId, event);
             }
@@ -2938,6 +3871,98 @@ export const appStoreRouter = t.router({
             return result;
         }),
 
+    adminReviewListingUpdate: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/admin/listing/{listingId}/update/review',
+                tags: ['App Store Admin'],
+                summary: 'Review Listing Update (Admin)',
+                description:
+                    'Approve (apply to the live listing) or reject a submitted update to a LISTED app.',
+            },
+            requiredScope: 'app-store:admin',
+        })
+        .input(z.object({ listingId: z.string(), approve: z.boolean() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            verifyAppStoreAdmin(ctx.user.profile.profileId);
+
+            const listing = await getListingOrThrow(input.listingId);
+            const pending = readPendingUpdate(listing);
+
+            if (listing.pending_update_status !== 'PENDING_REVIEW' || !pending) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'This app has no update waiting for review.',
+                });
+            }
+
+            const integration = await getIntegrationForListing(input.listingId);
+            const ownerProfile = integration
+                ? await getOwnerProfileForIntegration(integration.id)
+                : null;
+
+            if (input.approve) {
+                if (pending.manifestVersion !== undefined) {
+                    if (!integration || !ownerProfile) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: 'Integration for this listing was not found',
+                        });
+                    }
+                    const manifestVersion = await getManifestVersionForIntegration(
+                        integration.id,
+                        pending.manifestVersion
+                    );
+                    if (manifestVersion) {
+                        await reconcileManifestVersionForListing({
+                            ctx,
+                            integration,
+                            integrationOwner: ownerProfile,
+                            listing,
+                            manifestVersion,
+                        });
+                    }
+                }
+
+                await updateAppStoreListing(listing, pending.changes as AppStoreListingUpdateType);
+                await clearPendingListingUpdate(listing.listing_id);
+            } else {
+                await updateAppStoreListing(listing, { pending_update_status: 'DRAFT' });
+            }
+
+            if (ownerProfile) {
+                const approvedName =
+                    typeof pending.changes.display_name === 'string' && input.approve
+                        ? pending.changes.display_name
+                        : listing.display_name;
+
+                await addNotificationToQueue({
+                    type: input.approve
+                        ? LCNNotificationTypeEnumValidator.enum.APP_LISTING_APPROVED
+                        : LCNNotificationTypeEnumValidator.enum.APP_LISTING_REJECTED,
+                    to: ownerProfile,
+                    from: ctx.user.profile,
+                    message: getNotificationMessage(
+                        input.approve ? 'appListingApproved' : 'appListingRejected',
+                        resolveRecipientLocale(ownerProfile),
+                        { displayName: approvedName }
+                    ),
+                    data: {
+                        metadata: {
+                            listingId: listing.listing_id,
+                            listingName: approvedName,
+                            isUpdate: true,
+                        },
+                    },
+                });
+            }
+
+            return true;
+        }),
+
     adminUpdatePromotionLevel: profileRoute
         .meta({
             openapi: {
@@ -2983,6 +4008,7 @@ export const appStoreRouter = t.router({
                     limit: z.number().optional(),
                     cursor: z.string().optional(),
                     status: AppListingStatus.optional(),
+                    pendingUpdatesOnly: z.boolean().optional(),
                 })
                 .optional()
         )
@@ -3000,6 +4026,7 @@ export const appStoreRouter = t.router({
                 status: input?.status,
                 includeAllStatuses: !input?.status, // Include all if no specific status filter
                 excludeDemoted: false, // Admin can see demoted listings
+                pendingUpdatesOnly: input?.pendingUpdatesOnly,
             });
 
             const hasMore = results.length > limit;

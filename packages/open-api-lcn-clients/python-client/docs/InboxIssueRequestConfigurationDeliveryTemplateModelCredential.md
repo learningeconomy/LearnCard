@@ -1,12 +1,11 @@
 # InboxIssueRequestConfigurationDeliveryTemplateModelCredential
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** | The name of the credential (e.g., \&quot;Bachelor of Science\&quot;). | [optional] 
-**type** | **str** | The type of the credential (e.g., \&quot;degree\&quot;, \&quot;certificate\&quot;). | [optional] 
+| Name     | Type    | Description                                                                         | Notes      |
+| -------- | ------- | ----------------------------------------------------------------------------------- | ---------- |
+| **name** | **str** | The name of the credential (e.g., \&quot;Bachelor of Science\&quot;).               | [optional] |
+| **type** | **str** | The type of the credential (e.g., \&quot;degree\&quot;, \&quot;certificate\&quot;). | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_issue_request_configuration_delivery_template_model_credential_dict = inbo
 # create an instance of InboxIssueRequestConfigurationDeliveryTemplateModelCredential from a dict
 inbox_issue_request_configuration_delivery_template_model_credential_from_dict = InboxIssueRequestConfigurationDeliveryTemplateModelCredential.from_dict(inbox_issue_request_configuration_delivery_template_model_credential_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

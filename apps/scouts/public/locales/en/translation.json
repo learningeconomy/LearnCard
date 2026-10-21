@@ -137,6 +137,8 @@
         "neutralMode": "Neutral Mode"
     },
     "scanner": {
+        "incompatibleTitle": "QR code not supported",
+        "incompatible": "The QR code you have scanned is not compatible.",
         "cameraPermission": "Camera permission required",
         "failed": "Failed to import credential",
         "importCredential": "Import Credential",
@@ -406,6 +408,7 @@
         "deletingAccount": "Deleting Account...",
         "deleteForever": "Delete Forever",
         "fullName": "Full Name",
+        "fullNameOptional": "Full Name (optional)",
         "emailAddress": "Email address",
         "phoneNumber": "Phone Number",
         "userID": "User ID",
@@ -629,6 +632,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "We couldn’t save your profile. Check your connection and try again.",
         "welcomeTo": "Welcome to",
         "setupProf": "Set up your profile to get started!",
         "dataOwn": "You own your own data.",
@@ -1589,6 +1593,7 @@
         "createBtn": "Create new merit badge"
     },
     "consentFlow": {
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "yes": "Yes",
         "no": "No",
         "useDataTo": "will use data to:",

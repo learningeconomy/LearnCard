@@ -147,6 +147,13 @@
     --lc-overlay-inset-bottom: var(--lc-safe-bottom);
 }
 
+// A scrolling view can own the bottom edge too. Keep its viewport full-height
+// and reserve device clearance only AFTER its content, rather than clipping
+// every scroll position above a permanently padded surface edge.
+.lc-surface .lc-scroll-to-edge {
+    padding-bottom: calc(20px + var(--lc-safe-bottom));
+}
+
 // ─── COMPAT SHIMS — DELETE IN LC-1962 GROUP 5 (Task 11) ─────────────────────
 // Until groups 4–5 remove per-leaf safe-area handling, neutralize it inside
 // surfaces so insets are never double-applied while the stack lands.

@@ -1,16 +1,15 @@
 # BoostGetBoostChildrenRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**uri** | **str** |  | 
-**query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
-**number_of_generations** | **float** |  | [optional] 
+| Name                      | Type                                                                | Description | Notes                      |
+| ------------------------- | ------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**                 | **float**                                                           |             | [optional] [default to 25] |
+| **cursor**                | **str**                                                             |             | [optional]                 |
+| **sort**                  | **str**                                                             |             | [optional]                 |
+| **uri**                   | **str**                                                             |             |
+| **query**                 | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |             | [optional]                 |
+| **number_of_generations** | **float**                                                           |             | [optional]                 |
 
 ## Example
 
@@ -29,6 +28,5 @@ boost_get_boost_children_request_dict = boost_get_boost_children_request_instanc
 # create an instance of BoostGetBoostChildrenRequest from a dict
 boost_get_boost_children_request_from_dict = BoostGetBoostChildrenRequest.from_dict(boost_get_boost_children_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

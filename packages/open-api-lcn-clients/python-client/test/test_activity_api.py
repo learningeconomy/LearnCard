@@ -54,6 +54,13 @@ class TestActivityApi(unittest.TestCase):
         """
         pass
 
+    def test_activity_get_my_credential_lifecycle_statuses(self) -> None:
+        """Test case for activity_get_my_credential_lifecycle_statuses
+
+        Get Credential Lifecycle Statuses
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

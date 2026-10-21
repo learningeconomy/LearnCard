@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { cloneDeep } from 'lodash';
+import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 import {
     useModal,
     ModalTypes,
@@ -62,6 +63,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     setSelectedSkills: _setSelectedSkills,
     handleApproveOverride,
 }) => {
+    const canManageCompetencies = useCanManageCompetencies();
     const { presentToast } = useToast();
     const { initWallet } = useWallet();
     const { newModal, closeModal, closeAllModals } = useModal();
@@ -71,9 +73,10 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     const [search, setSearch] = useState('');
     const [isFullScreenSearch, setIsFullScreenSearch] = useState(false);
     const [selectedPath, setSelectedPath] = useState<SkillFrameworkNode[]>([]);
-    const [isEdit, setIsEdit] = useState(isApproveFlow);
+    const [editRequested, setIsEdit] = useState(isApproveFlow);
+    const isEdit = canManageCompetencies && editRequested;
     const [pageWidth, setPageWidth] = useState<number>(0);
-    const pageRef = useRef<any>(null);
+    const pageRef = useRef<HTMLDivElement>(null);
 
     const [addedNodes, setAddedNodes] = useState<
         Record<string, (SkillFrameworkNode & { path: SkillFrameworkNode[] })[]>
@@ -202,6 +205,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     const apiSkills = frameworkSkills?.records;
 
     const openManageJsonModal = () => {
+        if (!canManageCompetencies) return;
         newModal(
             <ManageSkills
                 initialFrameworkId={frameworkInfo.id}
@@ -215,7 +219,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                 onSuccessClose={_handleClose}
             />,
             {
-                sectionClassName: '!bg-transparent !shadow-none',
+                sectionClassName: 'bg-transparent! shadow-none!',
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
         );
@@ -545,6 +549,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     };
 
     const handleApprove = async () => {
+        if (!canManageCompetencies) return;
         if (handleApproveOverride && fullSkillTree) {
             // account for edits, adds, and deletes in fullSkillTree
             let updatedFullSkillTree = cloneDeep(fullSkillTree);
@@ -689,7 +694,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                                 />,
                                 {
                                     sectionClassName:
-                                        '!bg-transparent !shadow-none !overflow-visible',
+                                        'bg-transparent! shadow-none! overflow-visible!',
                                     onClose: () => {
                                         // close modals if they exist success modal via clicking on background space
                                         // closeAllModals();
@@ -714,7 +719,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                     }}
                 />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+                    sectionClassName: 'bg-transparent! shadow-none! overflow-visible!',
                 },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
@@ -736,7 +741,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                         }, 301);
                     }}
                 />,
-                { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+                { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } else {
@@ -799,7 +804,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                         }, 301);
                     }}
                 />,
-                { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+                { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } else {
@@ -967,14 +972,14 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
             ) : (
                 <div className="flex w-full relative h-full overflow-y-hidden">
                     {search && maxColumns > 1 && !isFullScreenSearch && (
-                        <div className="absolute h-full w-full bg-grayscale-100 bg-opacity-50 backdrop-blur-[15px] z-[1]" />
+                        <div className="absolute h-full w-full bg-grayscale-100/50  backdrop-blur-[15px] z-[1]" />
                     )}
 
                     {isFullScreenSearch && (
                         <FrameworkSearchResults
                             searchResults={searchResults}
                             frameworkInfo={frameworkInfo}
-                            className="!pt-[15px] !pb-[200px]"
+                            className="pt-[15px]! pb-[200px]!"
                             onClick={onSearchResultItemClick}
                             isSelectSkillsFlow={isSelectSkillsFlow}
                             selectedSkills={selectedSkills}

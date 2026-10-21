@@ -89,7 +89,9 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     } = useAppAuth();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
 
-    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken } = useModal();
+    const { newModal, newModalWithToken, closeModal, closeModalById, forceCloseModalByToken } =
+        useModal();
+    const history = useHistory();
     const { handleLogout, isLoggingOut } = useLogout();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
@@ -163,7 +165,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                         showNetworkSettings={true}
                         showNotificationsModal={false}
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
             },
@@ -253,7 +255,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                 const showReAuth = () => {
                     newModal(
                         <ReAuthOverlay onSuccess={closeModal} onCancel={closeModal} />,
-                        { sectionClassName: '!max-w-[480px]' },
+                        { sectionClassName: 'max-w-[480px]!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                 };
@@ -571,7 +573,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                         onClose={closeRecoveryModal}
                     />,
                     {
-                        sectionClassName: '!max-w-[480px]',
+                        sectionClassName: 'max-w-[480px]!',
                         // Backdrop/Escape: let the modal guard an unfinished check.
                         onClose: () => {
                             if (!requestClose) return true;
@@ -598,14 +600,14 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     }
 
     const handleQrCodeClick = () => {
-        newModal(
+        const cardId = newModal(
             <QrCodeUserCardModal
                 branding={branding}
                 history={history}
-                connections={connections ?? []}
+                handleQRCodeCardModal={() => closeModalById(cardId)}
                 qrOnly
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -659,7 +661,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
         >
             <section className="min-h-[calc(100%-85px)] p-[20px] flex items-center justify-center">
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
-                    <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">
+                    <div className="bg-white/70  backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">
                             <ScoutsIdView user={user} />
                         </div>

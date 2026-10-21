@@ -32,11 +32,13 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
     const { data: earnedBoostIDs } = useGetIDs();
 
     const nationalNetworkIds =
-        (earnedBoostIDs as any[])?.filter(
-            cred =>
-                getDefaultCategoryForCredential(cred as any) ===
-                CredentialCategoryEnum.nationalNetworkAdminId
-        ) ?? [];
+        earnedBoostIDs
+            ?.map(({ vc }) => vc)
+            .filter(
+                cred =>
+                    getDefaultCategoryForCredential(cred) ===
+                    CredentialCategoryEnum.nationalNetworkAdminId
+            ) ?? [];
 
     const nationalNetworkIdsCount = nationalNetworkIds.length ?? 0;
 
@@ -52,7 +54,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                 state={state}
                 setState={setState}
                 viewMode={viewMode}
-                nationalNetworkIds={nationalNetworkIds as any}
+                nationalNetworkIds={nationalNetworkIds}
             />
         );
     };
@@ -68,7 +70,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
         const globalNetwork = state?.parentID;
 
         return (
-            <div className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4">
+            <div className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-300 mt-4 mb-4">
                 <div className="flex items-center justify-start">
                     <div className="h-[40px] w-[40px] rounded-full bg-white mr-2 overflow-hidden">
                         {isParentBoostLoading ? (
@@ -119,7 +121,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
         <button
             disabled={disableClick}
             onClick={() => openNetworkList()}
-            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4"
+            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-300 mt-4 mb-4"
         >
             <div className="flex items-center justify-start">
                 <div className="w-[40px] h-[40px] rounded-full bg-white mr-2 overflow-hidden">

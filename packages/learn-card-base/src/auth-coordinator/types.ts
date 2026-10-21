@@ -32,6 +32,7 @@ export type {
     EscrowEnrollmentState,
     EscrowEnrollmentOptions,
     EscrowPinStatus,
+    EscrowRecoveryExpectations,
 } from '@learncard/types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---
@@ -80,6 +81,13 @@ export type UnifiedAuthState =
           recoveryReason: RecoveryReason;
           maskedRecoveryEmail?: string | null;
           sssActivationState?: SssActivationState | null;
+          /**
+           * The account's DID as independently known from the server key-status
+           * lookup (never from an escrow status response). Required by Nitro
+           * escrow recovery (hold start and PIN release) to bind the request to
+           * this account; see `EscrowRecoveryExpectations`.
+           */
+          expectedDid?: string;
       }
     | {
           status: 'identity_recovery';
@@ -89,6 +97,14 @@ export type UnifiedAuthState =
           recoveryMethods: RecoveryMethodInfo[];
           recoveredDid?: string;
           error?: string;
+          /**
+           * The verified account's DID, independently known from the
+           * verify-recovery-session response (never from an escrow response).
+           * Required by Nitro escrow recovery (hold start/restart) to bind the
+           * request to this account when no provider session exists yet; see
+           * `expectedDid` on the `needs_recovery` state above.
+           */
+          expectedDid?: string;
       }
     | { status: 'awaiting_rebind'; did: string }
     | {
@@ -156,6 +172,22 @@ export interface AuthCoordinatorConfig {
     clearPendingEscrowRecovery?: () => Promise<void>;
 
     /**
+     * Optional: gate AUTOMATIC escrow enrollment for a specific user (staged
+     * rollout). Called with the user's DID before `refreshEscrow` invokes the
+     * strategy's `ensureEscrowEnrollment`; returning `false` skips that call
+     * for this account this cycle. A rejected promise is treated as `false`
+     * (fail closed — never silently auto-enroll on a broken gate).
+     *
+     * Only the automatic-enrollment call is gated: reads
+     * (`getEscrowEnrollmentState`, `getEscrowRecoveryStatus`) and explicit
+     * user actions (`enableEscrowRecovery`, recovery execution) are never
+     * gated, so already-enrolled users keep working even when this returns
+     * `false`. Defaults to always-allowed when omitted, which preserves
+     * existing behavior for any consumer that doesn't configure a rollout.
+     */
+    isEscrowEnrollmentAllowed?: (userKey: string) => Promise<boolean>;
+
+    /**
      * Optional: threshold (in ms) for detecting legacy accounts that need migration.
      *
      * When `fetchServerKeyStatus` returns `exists: false` but the auth user's
@@ -187,4 +219,16 @@ export interface AuthCoordinatorConfig {
      * @default 4000
      */
     serverStatusTimeoutMs?: number;
+
+    /**
+     * P9.1 (attack C): optional, app-supplied current locale (one of the
+     * app's compiled recovery-email languages, e.g. 'en'/'es'/'fr'/'ar'),
+     * bound alongside the account email into the sealed escrow blob on every
+     * enroll/replace. The device is the source of truth for this binding —
+     * lca-api cannot read or change it afterward; changing the recovery
+     * address or language requires a fresh enrollment from the device, not
+     * an edit. Omitted/unrecognized values fail closed at the enclave for
+     * nitro/authority-mode enroll/replace, never silently defaulted.
+     */
+    getRecoveryLanguage?: () => string | undefined;
 }

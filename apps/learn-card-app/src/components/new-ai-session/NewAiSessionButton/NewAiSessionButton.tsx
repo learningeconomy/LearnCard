@@ -133,7 +133,7 @@ export const NewAiSessionButton: React.FC<{
                         : () => handleNewSession(false, NewAiSessionStepEnum.revisitTopic)
                 }
                 disabled={!hasConsentedToAiApps || existingTopics.length === 0}
-                className={`bg-white text-xl text-${primaryColor} flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px] border-[2px] border-solid border-${primaryColor} ${
+                className={`bg-white text-xl text-${primaryColor} flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px] border-2 border-solid border-${primaryColor} ${
                     !hasConsentedToAiApps || existingTopics.length === 0
                         ? 'cursor-not-allowed opacity-50'
                         : ''
@@ -176,7 +176,7 @@ export const NewAiSessionButton: React.FC<{
                               handleNewSession(undefined, NewAiSessionStepEnum.newTopic);
                           }
                 }
-                className={`text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid !bg-white border-grayscale-200 p-2 flex items-center justify-start mt-[10px] gap-1 shadow-md ${className}`}
+                className={`text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border border-solid bg-white! border-grayscale-200 p-2 flex items-center justify-start mt-[10px] gap-1 shadow-md ${className}`}
             >
                 <NewAiSessionIcon className="w-[32px] h-[32px]" version={iconType} />
             </button>
@@ -197,7 +197,7 @@ export const NewAiSessionButton: React.FC<{
                               handleNewSession(undefined, NewAiSessionStepEnum.newTopic);
                           }
                 }
-                className={`text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid !bg-grayscale-200 border-grayscale-200 p-[10px] w-full flex items-center justify-start mt-[10px] gap-1 ${className}`}
+                className={`text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border border-solid bg-grayscale-200! border-grayscale-200 p-[10px] w-full flex items-center justify-start mt-[10px] gap-1 ${className}`}
             >
                 {iconType && <NewAiSessionIcon version={iconType} />}
                 {text ?? m['ai.newSession']()}

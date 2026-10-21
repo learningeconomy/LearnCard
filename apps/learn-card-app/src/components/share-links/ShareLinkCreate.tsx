@@ -1,13 +1,9 @@
+import { ShareCredentialPicker } from './ShareCredentialPicker';
 import { downloadSharePdf } from './sharePdf';
-import { ShareCategoryFilter } from './ShareCategoryFilter';
-import './ShareLinkCreate.css';
-import { ShareSearchEmpty } from './ShareSearchEmpty';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
-import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
-    searchOutline,
     arrowBackOutline,
     arrowForwardOutline,
     checkmarkOutline,
@@ -22,10 +18,8 @@ import {
 import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet, type CredentialCategoryEnum } from 'learn-card-base';
-import useTheme from '../../theme/hooks/useTheme';
+import { useWallet } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { isShareLinkError } from 'learn-card-base/helpers/share-links';
 import { environment } from '../../config/environment';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
@@ -38,6 +32,7 @@ import {
     mapWithConcurrency,
     prepareShare,
     prepareShareUpdate,
+    prepareShareMetadataUpdate,
     readShareRecovery,
     resolveExpiryIso,
     shareLinkOrigin,
@@ -50,13 +45,16 @@ import {
     type ShareWallet,
 } from './shareLinkFlow';
 import { ShareLinkPreview } from './ShareLinkPreview';
+import { ProtectedResumePreview } from './ProtectedResumePreview';
+import { enterSharePrivacy } from './sharePrivacy';
+import { hasProtectedResumePdf } from '../../helpers/resume-publishing/protectedPdf';
 
 export const primary =
     'px-5 py-3 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-emerald-500';
 export const secondary =
     'px-5 py-3 rounded-[20px] ring-1 ring-inset ring-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40';
 const inputClass =
-    'w-full px-4 py-3 rounded-xl border border-grayscale-300 text-sm text-grayscale-900 bg-white placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
+    'w-full px-4 py-3 rounded-xl border border-grayscale-300 text-sm text-grayscale-900 bg-white placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
 export const Busy = ({ children }: { children: React.ReactNode }) => (
     <span className="inline-flex items-center gap-2">
         <span
@@ -91,6 +89,8 @@ export const ShareLinkCreate = ({
     initialSelectedUri,
 }: ShareLinkCreateProps) => {
     const { initWallet } = useWallet();
+    const assetEdit = Boolean(editShare?.attachmentId);
+    if (assetEdit) enterSharePrivacy();
     const qrExport = useRef<HTMLDivElement>(null);
     const [savingQr, setSavingQr] = useState(false);
     const [qrError, setQrError] = useState(false);
@@ -106,7 +106,6 @@ export const ShareLinkCreate = ({
             setSavingQr(false);
         }
     };
-    const { getThemedCategory } = useTheme();
     const [categoryFilter, setCategoryFilter] = useState('');
     const [selectedOnly, setSelectedOnly] = useState(false);
     const searchInput = useRef<HTMLInputElement>(null);
@@ -125,7 +124,9 @@ export const ShareLinkCreate = ({
     const [failedReads, setFailedReads] = useState(new Set<string>());
     const readQueue = useRef(Promise.resolve());
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState<'choose' | 'details' | 'preview' | 'done'>('choose');
+    const [step, setStep] = useState<'choose' | 'details' | 'preview' | 'done'>(
+        assetEdit ? 'details' : 'choose'
+    );
     const [search, setSearch] = useState('');
     const [settledSearch, setSettledSearch] = useState('');
     const searchPending = search.trim() !== settledSearch;
@@ -136,6 +137,7 @@ export const ShareLinkCreate = ({
     const [title, setTitle] = useState(editShare?.title ?? '');
     const [note, setNote] = useState(editShare?.note ?? '');
     const [error, setError] = useState(false);
+    const [resumeOnly, setResumeOnly] = useState(false);
     const [tooLarge, setTooLarge] = useState(false);
     const [unsupportedBase, setUnsupportedBase] = useState(false);
     const [pending, setPending] = useState(false);
@@ -163,12 +165,21 @@ export const ShareLinkCreate = ({
         busy.current = true;
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         try {
             const wallet = shareWallet(await walletRef.current());
             const editRows: CredentialChoice[] = [];
             if (editShare) {
                 const recovery = await readShareRecovery(wallet, editShare);
                 editRecovery.current = recovery;
+                if (assetEdit) {
+                    if (alive.current) {
+                        setSelected(recovery.selection.map(item => item.ref));
+                        setIndexReady(true);
+                        setStep('details');
+                    }
+                    return;
+                }
                 const refs = [...recovery.selection]
                     .sort((a, b) => a.order - b.order)
                     .map(item => item.ref);
@@ -255,6 +266,7 @@ export const ShareLinkCreate = ({
         busy.current = true;
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         setTooLarge(false);
         try {
             const wallet = shareWallet(await walletRef.current());
@@ -306,43 +318,62 @@ export const ShareLinkCreate = ({
         busy.current = true;
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         setTooLarge(false);
         setUnsupportedBase(false);
         try {
             if (!guardBase()) return;
             const wallet = shareWallet(await walletRef.current());
-            prepared.current = editShare
-                ? await prepareShareUpdate(
-                      wallet,
-                      editShare,
-                      editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
-                      selected,
-                      title,
-                      note,
-                      {
-                          ...(passcodeEnabled
-                              ? passcode
-                                  ? { passcode }
-                                  : {}
-                              : { passcode: null }),
-                          notifyOnView,
-                      }
-                  )
-                : await prepareShare(
-                      wallet,
-                      selected,
-                      title,
-                      note,
-                      resolveExpiryIso(expiryChoice),
-                      {
-                          ...(passcodeEnabled ? { passcode } : {}),
-                          notifyOnView,
-                      }
-                  );
+            prepared.current =
+                editShare && assetEdit
+                    ? await prepareShareMetadataUpdate(
+                          wallet,
+                          editShare,
+                          editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
+                          title,
+                          note,
+                          {
+                              ...(passcodeEnabled
+                                  ? passcode
+                                      ? { passcode }
+                                      : {}
+                                  : { passcode: null }),
+                              notifyOnView,
+                          }
+                      )
+                    : editShare
+                      ? await prepareShareUpdate(
+                            wallet,
+                            editShare,
+                            editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
+                            selected,
+                            title,
+                            note,
+                            {
+                                ...(passcodeEnabled
+                                    ? passcode
+                                        ? { passcode }
+                                        : {}
+                                    : { passcode: null }),
+                                notifyOnView,
+                            }
+                        )
+                      : await prepareShare(
+                            wallet,
+                            selected,
+                            title,
+                            note,
+                            resolveExpiryIso(expiryChoice),
+                            {
+                                ...(passcodeEnabled ? { passcode } : {}),
+                                notifyOnView,
+                            }
+                        );
             if (!alive.current) return;
             setStep('preview');
         } catch (cause) {
             if (alive.current) {
+                setResumeOnly(cause instanceof Error && cause.message === 'managed-resume');
                 setError(true);
                 setTooLarge(
                     isShareLinkError(cause) &&
@@ -415,6 +446,7 @@ export const ShareLinkCreate = ({
         busy.current = true;
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         setTooLarge(false);
         setPending(false);
         try {
@@ -443,6 +475,7 @@ export const ShareLinkCreate = ({
     const copy = async () => {
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         try {
             await Clipboard.write({ string: link });
             setCopied(true);
@@ -530,7 +563,7 @@ export const ShareLinkCreate = ({
                     {m['shareLinks.share']()}
                 </span>
                 <button
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 hover:bg-grayscale-100 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     aria-label={m['shareLinks.close']()}
                     onClick={onDismiss}
                 >
@@ -538,7 +571,7 @@ export const ShareLinkCreate = ({
                 </button>
             </header>
             <div className="flex-1 overflow-y-auto px-6 py-8 md:py-12">
-                <div className="max-w-2xl mx-auto space-y-6">
+                <div className="max-w-2xl mx-auto space-y-v3-6">
                     <ShareCredentialsIllustration complete={step === 'done'} />
                     <div>
                         <p className="text-xs font-medium text-grayscale-500 mb-2">
@@ -580,192 +613,51 @@ export const ShareLinkCreate = ({
                         <p role="alert" className="p-4 rounded-2xl bg-red-50 text-red-700 text-sm">
                             {unsupportedBase
                                 ? m['shareLinks.unsupportedBase']()
-                                : tooLarge
-                                  ? m['shareLinks.tooLarge']()
-                                  : m['shareLinks.error']()}
+                                : resumeOnly
+                                  ? m['resumePublishing.publishInBuilder']()
+                                  : tooLarge
+                                    ? m['shareLinks.tooLarge']()
+                                    : m['shareLinks.error']()}
                         </p>
                     )}
                     {step === 'choose' && (
                         <>
-                            <div hidden={selectedOnly} className="space-y-4">
-                                <div>
-                                    <label
-                                        htmlFor="share-credential-search"
-                                        className="block text-xs font-medium text-grayscale-700 mb-2"
-                                    >
-                                        {m['shareLinks.search']()}
-                                    </label>
-                                    <div className="relative flex items-stretch gap-2">
-                                        <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-grayscale-300 bg-grayscale-10 px-3 transition-colors hover:border-grayscale-400 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500">
-                                            <IonIcon
-                                                aria-hidden="true"
-                                                icon={searchOutline}
-                                                className="h-5 w-5 shrink-0 text-grayscale-400 transition-colors group-focus-within:text-emerald-600"
-                                            />
-                                            <input
-                                                ref={searchInput}
-                                                id="share-credential-search"
-                                                className="w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
-                                                placeholder={m['shareLinks.searchPlaceholder']()}
-                                                value={search}
-                                                onChange={event => setSearch(event.target.value)}
-                                                type="search"
-                                            />
-                                            {search && (
-                                                <button
-                                                    type="button"
-                                                    aria-label={m['shareLinks.clearSearch']()}
-                                                    onClick={() => {
-                                                        setSearch('');
-                                                        setSettledSearch('');
-                                                        searchInput.current?.focus();
-                                                    }}
-                                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                                >
-                                                    <IonIcon
-                                                        aria-hidden="true"
-                                                        icon={closeOutline}
-                                                        className="h-4 w-4"
-                                                    />
-                                                </button>
-                                            )}
-                                        </div>
-                                        <ShareCategoryFilter
-                                            value={categoryFilter}
-                                            onChange={setCategoryFilter}
-                                            categories={categories}
-                                        />
-                                    </div>
-                                </div>
-                                {categoryFilter && (
-                                    <p className="text-xs text-grayscale-600">
-                                        {m['shareLinks.categoryFilter']()}:{' '}
-                                        {getThemedCategory(categoryFilter as CredentialCategoryEnum)
-                                            ?.category?.labels.plural || categoryFilter}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="rounded-2xl bg-grayscale-100 p-4 space-y-3">
-                                <div className="flex justify-between items-start gap-3 text-xs text-grayscale-600">
-                                    <div>
-                                        <p className="font-medium text-grayscale-900">
-                                            {m['shareLinks.selected']({
-                                                count: String(selected.length),
-                                            })}
-                                        </p>
-                                        {selectedCategoryCount > 0 && (
-                                            <p className="mt-1">
-                                                {selectedCategoryCount === 1
-                                                    ? m['shareLinks.oneCategory']()
-                                                    : m['shareLinks.categoryCount']({
-                                                          count: String(selectedCategoryCount),
-                                                      })}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <span className="shrink-0">{m['shareLinks.limit']()}</span>
-                                </div>
-                                {selected.length > 0 && (
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <button
-                                            type="button"
-                                            aria-pressed={selectedOnly}
-                                            onClick={() => setSelectedOnly(current => !current)}
-                                            className="rounded-[20px] bg-white px-4 py-2 text-xs font-medium text-grayscale-900 hover:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                        >
-                                            {selectedOnly
-                                                ? m['shareLinks.browseAll']()
-                                                : m['shareLinks.viewSelected']()}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                invalidateDraft();
-                                                setSelected([]);
-                                                setSelectedOnly(false);
-                                            }}
-                                            className="rounded-[20px] px-3 py-2 text-xs font-medium text-grayscale-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                        >
-                                            {m['shareLinks.deselectAll']()}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                            <p role="status" className="min-h-5 text-xs text-grayscale-500">
-                                {searchPending
-                                    ? m['shareLinks.searchUpdating']()
-                                    : !indexReady
-                                      ? m['shareLinks.loading']()
-                                      : null}
-                            </p>
-                            <div
-                                aria-busy={searchPending}
-                                className={`space-y-3 motion-safe:transition-opacity motion-safe:duration-200 ${searchPending ? 'opacity-60' : 'opacity-100'}`}
-                            >
-                                {filtered.map(choice => {
-                                    const text = credentialText(choice.credential);
-                                    const checked = selected.includes(choice.uri);
-                                    return (
-                                        <label
-                                            key={choice.uri}
-                                            className={`flex items-center gap-4 p-4 rounded-[20px] border cursor-pointer transition-colors ${checked ? 'border-emerald-600 bg-emerald-50' : 'border-grayscale-200 hover:bg-grayscale-10'}`}
-                                        >
-                                            <ShareCredentialThumbnail
-                                                credential={choice.credential}
-                                                category={choice.category}
-                                            />
-                                            <span className="flex-1 min-w-0">
-                                                <span className="block text-sm font-medium break-words">
-                                                    {text.name ||
-                                                        choice.title ||
-                                                        m['shareLinks.credential']()}
-                                                </span>
-                                                {choice.credential ? (
-                                                    <ShareCredentialMetadata
-                                                        credential={choice.credential}
-                                                        category={choice.category}
-                                                    />
-                                                ) : (
-                                                    <span className="block mt-1 text-xs text-grayscale-600">
-                                                        {failedReads.has(choice.uri)
-                                                            ? m['shareLinks.loadFailed']()
-                                                            : m['shareLinks.loading']()}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <input
-                                                type="checkbox"
-                                                className="w-5 h-5 accent-emerald-600 shrink-0"
-                                                checked={checked}
-                                                disabled={
-                                                    !choice.credential ||
-                                                    (!checked && selected.length >= 50)
-                                                }
-                                                onChange={() => {
-                                                    invalidateDraft();
-                                                    setSelected(current =>
-                                                        checked
-                                                            ? current.filter(
-                                                                  uri => uri !== choice.uri
-                                                              )
-                                                            : [...current, choice.uri]
-                                                    );
-                                                }}
-                                            />
-                                        </label>
+                            <ShareCredentialPicker
+                                filtered={filtered}
+                                selected={selected}
+                                onToggle={uri => {
+                                    invalidateDraft();
+                                    setSelected(current =>
+                                        current.includes(uri)
+                                            ? current.filter(item => item !== uri)
+                                            : [...current, uri]
                                     );
-                                })}
-                            </div>
-                            {!filtered.length && !loading && !searchPending && (
-                                <ShareSearchEmpty
-                                    searching={Boolean(settledSearch)}
-                                    onClear={() => {
-                                        setSearch('');
-                                        setSettledSearch('');
-                                        searchInput.current?.focus();
-                                    }}
-                                />
-                            )}
+                                }}
+                                onDeselectAll={() => {
+                                    invalidateDraft();
+                                    setSelected([]);
+                                    setSelectedOnly(false);
+                                }}
+                                selectedOnly={selectedOnly}
+                                setSelectedOnly={setSelectedOnly}
+                                selectedCategoryCount={selectedCategoryCount}
+                                selectionLimit={50}
+                                search={search}
+                                setSearch={setSearch}
+                                onClearSearch={() => {
+                                    setSearch('');
+                                    setSettledSearch('');
+                                }}
+                                searchInput={searchInput}
+                                settledSearch={settledSearch}
+                                searchPending={searchPending}
+                                categoryFilter={categoryFilter}
+                                setCategoryFilter={setCategoryFilter}
+                                categories={categories}
+                                indexReady={indexReady}
+                                loading={loading}
+                                failedReads={failedReads}
+                            />
                             {filtered.some(
                                 choice => !choice.credential && failedReads.has(choice.uri)
                             ) && (
@@ -799,7 +691,12 @@ export const ShareLinkCreate = ({
                         </>
                     )}
                     {step === 'details' && (
-                        <div className="space-y-5">
+                        <div className="space-y-v3-5">
+                            {assetEdit && (
+                                <p className="rounded-[20px] border border-grayscale-200 bg-grayscale-100 p-4 text-sm text-grayscale-700">
+                                    {m['resumePublishing.manageContent']()}
+                                </p>
+                            )}
                             <div className="p-4 rounded-2xl bg-grayscale-100 text-sm">
                                 <p>
                                     {m['shareLinks.selected']({ count: String(selected.length) })}
@@ -814,7 +711,7 @@ export const ShareLinkCreate = ({
                                     </p>
                                 )}
                             </div>
-                            <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-4">
+                            <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-v3-4">
                                 <div className="flex gap-3">
                                     <IonIcon
                                         icon={lockClosedOutline}
@@ -839,7 +736,7 @@ export const ShareLinkCreate = ({
                                             >
                                                 <span
                                                     aria-hidden="true"
-                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${passcodeEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${passcodeEnabled ? 'translate-x-5' : 'translate-x-0'}`}
                                                 />
                                             </button>
                                         </span>
@@ -880,7 +777,7 @@ export const ShareLinkCreate = ({
                                                 aria-pressed={showPasscode}
                                                 disabled={fieldsLocked}
                                                 onClick={() => setShowPasscode(shown => !shown)}
-                                                className="absolute inset-y-0 end-1 my-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-lg text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                                                className="absolute inset-y-0 inset-e-1 my-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-lg text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
                                             >
                                                 <IonIcon
                                                     aria-hidden="true"
@@ -921,7 +818,7 @@ export const ShareLinkCreate = ({
                                             >
                                                 <span
                                                     aria-hidden="true"
-                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${notifyOnView ? 'translate-x-5' : 'translate-x-0'}`}
+                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${notifyOnView ? 'translate-x-5' : 'translate-x-0'}`}
                                                 />
                                             </button>
                                         </span>
@@ -972,7 +869,7 @@ export const ShareLinkCreate = ({
                                         : m['shareLinks.neverExpires']()}
                                 </p>
                             ) : (
-                                <fieldset className="space-y-2">
+                                <fieldset className="space-y-v3-2">
                                     <legend className="text-xs font-medium text-grayscale-700">
                                         {m['shareLinks.expiry']()}
                                     </legend>
@@ -1020,16 +917,21 @@ export const ShareLinkCreate = ({
                         </div>
                     )}
                     {step === 'preview' && prepared.current && (
-                        <div className="space-y-5">
+                        <div className="space-y-v3-5">
                             <ShareLinkPreview
                                 heading={m['shareLinks.previewHeading']()}
-                                title={prepared.current.input.title}
-                                note={prepared.current.input.note}
+                                title={prepared.current.input.title ?? editShare?.title ?? title}
+                                note={prepared.current.input.note ?? undefined}
                                 sharerName={prepared.current.payload.sharer.displayName}
                                 expiresAt={
                                     editShare?.expiresAt ?? prepared.current.input.expiresAt ?? null
                                 }
                                 payload={prepared.current.payload}
+                                renderCredential={credential =>
+                                    hasProtectedResumePdf(credential) ? (
+                                        <ProtectedResumePreview credential={credential} />
+                                    ) : undefined
+                                }
                             />
                             <p className="text-xs text-grayscale-600 leading-relaxed">
                                 {m['shareLinks.privacyHint']()}
@@ -1045,9 +947,9 @@ export const ShareLinkCreate = ({
                         </div>
                     )}
                     {step === 'done' && (
-                        <div ref={qrExport} className="space-y-5">
+                        <div ref={qrExport} className="space-y-v3-5">
                             <section className="p-5 rounded-[20px] border border-grayscale-200">
-                                <p className="font-medium break-words">{title}</p>
+                                <p className="font-medium wrap-break-word">{title}</p>
                                 <p className="text-xs text-grayscale-500 mt-2">
                                     {m['shareLinks.selected']({ count: String(selected.length) })}
                                 </p>
@@ -1132,13 +1034,14 @@ export const ShareLinkCreate = ({
             </div>
             <footer className="border-t border-grayscale-100 px-6 py-5">
                 <div className="max-w-2xl mx-auto flex justify-between gap-3">
-                    {step === 'details' ? (
+                    {step === 'details' && !assetEdit ? (
                         <button
                             disabled={loading}
                             className={`${secondary} inline-flex items-center justify-center gap-2`}
                             onClick={() => {
                                 setStep('choose');
                                 setError(false);
+                                setResumeOnly(false);
                                 setUnsupportedBase(false);
                             }}
                         >
@@ -1159,6 +1062,7 @@ export const ShareLinkCreate = ({
                                 setPending(false);
                                 setStep('details');
                                 setError(false);
+                                setResumeOnly(false);
                             }}
                         >
                             <IonIcon
@@ -1178,6 +1082,7 @@ export const ShareLinkCreate = ({
                             onClick={() => {
                                 setStep('details');
                                 setError(false);
+                                setResumeOnly(false);
                             }}
                         >
                             {m['shareLinks.continue']()}{' '}

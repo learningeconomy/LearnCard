@@ -137,6 +137,8 @@
         "neutralMode": "Modo neutro"
     },
     "scanner": {
+        "incompatibleTitle": "Código QR no compatible",
+        "incompatible": "El código QR que has escaneado no es compatible.",
         "title": "Escanear código QR",
         "description": "Apunta la cámara a un código QR",
         "frameLabel": "Coloca el QR dentro del marco",
@@ -406,6 +408,7 @@
         "deletingAccount": "Eliminando Cuenta...",
         "deleteForever": "Eliminar Permanentemente",
         "fullName": "Nombre Completo",
+        "fullNameOptional": "Nombre completo (opcional)",
         "emailAddress": "Dirección de correo",
         "phoneNumber": "Número de Teléfono",
         "userID": "ID de Usuario",
@@ -629,6 +632,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "No pudimos guardar tu perfil. Comprueba tu conexión e inténtalo de nuevo.",
         "welcomeTo": "Bienvenido a",
         "setupProf": "¡Configura tu perfil para empezar!",
         "dataOwn": "Tus datos te pertenecen.",
@@ -1589,6 +1593,7 @@
         "createBtn": "Crear nueva insignia de mérito"
     },
     "consentFlow": {
+        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "yes": "Sí",
         "no": "No",
         "useDataTo": "usará datos para:",

@@ -112,6 +112,44 @@ ConsentFlow is a consent management system where:
     3. The signing authority signs the credential and returns it
     4. The `issueCredentialWithSigningAuthority()` helper handles this flow
 - A common pattern is to get a signing authority with `getSigningAuthorityForUserByName(profile, endpoint, name)`
+- Known-recipient sends use the helper's `encrypt = true` default. Preserve its
+  `IssuedCredential` wrapper through storage so public status-list coordinates remain
+  available without decrypting the credential. Inbox finalization returns encrypted
+  deliveries; the network SDK decrypts them locally before returning VCs to the app.
+- Ordinary accepted inbox finalization signs and allocates status-list indices before
+  opening its bounded Neo4j transaction (30 seconds). Retries or a lost claim race may
+  leave indices unused; this is intentional to avoid signing while holding graph locks.
+  The transaction atomically commits escrow removal, encrypted recovery, credential/
+  boost/sent/received indexes, shared claim hooks, default claimed roles, and claim audit.
+  Notifications remain outside it; invalidate permission-related caches only after commit.
+  Failed graph writes leave the pending record retryable and concurrent claims cannot
+  duplicate acceptance.
+- CI runs `bunx nx run network-brain-service:test:inbox:e2e`, which includes
+  `test/credential-storage.neo4j.spec.ts` and `test/inbox.spec.ts`. Keep the storage
+  trust-boundary guard and finalization rollback/concurrency coverage in this CI-run
+  configuration, not only the locally invoked integration suite.
+- Unsigned inbox subjects are bound to the verified recipient before signing; supplied
+  subject IDs are replaced. Pre-signed subjects are not rewritten.
+- Ordinary unsigned finalization intentionally adds the issuer's profile DID as a reader
+  alongside the managed/app owner DID. This preserves the issuer's `did:key` access when
+  the signing authority uses an app `did:web` owner; it does not add the brain signer.
+- Three interoperable delivery paths intentionally request plaintext (`LC-2201`):
+    - `routes/workflows.ts`: boost claim-link exchanges return a VC inside a presentation
+      to wallets that may not support LearnCard JWE decryption.
+    - `routes/workflows.ts`: inbox claim-link exchanges have the same interoperability requirement.
+    - `routes/boosts.ts`: federated `/send` forwards to another network's inbox endpoint,
+      whose accepted encryption format is outside this server's control.
+- Managed refresh issuance is a separate existing boundary: refresh sends, inbox refresh
+  finalization, and refresh publication inspect the signed VC before encrypting it for
+  storage. LC-2201 does not change those refresh flows.
+  Its separate inbox finalization path does not use the ordinary-claim index transaction;
+  do not assume every refresh inbox finalization creates these network relationships.
+  Refresh inbox creation always persists `refreshId` alongside its `pending_holder`
+  aggregate; finalization dispatches those records to `finalizeInboxRefresh`, whose
+  accepted binding transitions the aggregate directly to `active`. Ordinary records
+  without `refreshId` do not own an `awaiting_claim` aggregate through this flow.
+  Normal `acceptCredential` also attempts activation after its already-received guard,
+  and the holder refresh endpoint can lazily reconcile acceptance.
 
 ### AutoBoosts
 
@@ -888,3 +926,17 @@ Tenant is resolved once per request in `createContext` via `resolveTenantFromReq
 4. Call `deliveryService.send()` from the route, passing `branding: ctx.tenant?.emailBranding`.
 
 See [Tenant-Branded Emails (architecture)](../../../docs/core-concepts/tenant-branded-emails.md) for the end-to-end flow and [Configure Tenant-Branded Emails](../../../docs/how-to-guides/configure-tenant-branded-emails.md) for operator-facing setup.
+
+### Attributed contract requests and event delivery
+
+- Integrator documentation lives in `docs/how-to-guides/consent-flow/brokered-referrals.md`, with the complete lifecycle sequence in `docs/core-concepts/consent-and-permissions/brokered-referral-lifecycle.md` and webhook fields in `docs/sdks/learncard-network/contract-requests-and-events.md`. Keep embedded `docs/snippets/contract-requests/` modules synchronized with `node scripts/check-docs-snippets.mjs --fix`; `tests/e2e/tests/docs-contract-requests.spec.ts` executes them against synthetic local services. The brain route `getConsentedDataForDid` is the SDK's `getConsentFlowDataForDid`; polling reconciles current state but cannot trigger learner claim/live sync. Scope grants never replace role or consent authorization.
+- Generic `REQUESTED_FOR` edges have `requestId`, `requestedBy`, optional `externalReferenceId`/`message`, and `requestedAt`. Exact pending retries are idempotent; conflicting or terminal requests do not reopen. Legacy edges have no request ID and retain legacy AI behavior.
+- Snapshot referral identity onto Terms and every related transaction, including issuance and maintenance. Do not infer historical correlation from the latest mutable request edge.
+- Append `ConsentFlowEvent` + per-recipient `ConsentFlowEventDelivery` in the same locked query as consent/request state changes. The contract audience lock serializes request decisions, consent and recipient changes.
+- `contract-events.helpers.ts` dispatches a bounded batch with leases; scheduler Lambda and Docker use the same worker. Contract notification callers opt in to typed permanent rejection errors (missing/disabled webhook or definitive HTTP 4xx, excluding 408/425/429); legacy boolean notification callers keep their behavior. Temporary failures and negative storage acknowledgements retry with exponential backoff (1 minute up to 1 hour), at most 12 claims or 24 hours from event creation. Count claims before external work so abandoned leases consume the budget. Terminal deliveries are delivered/skipped/rejected/failed; cleanup discards payload/message once all deliveries are terminal, retaining stable IDs and coarse failure reasons. Serialize fan-out completion on the event lock and recheck the lease before updating delivery state. Cleanup requires a running worker. Successful SQS enqueue completes the outbox delivery; its consumer acknowledges permanent contract rejection and leaves temporary failures to the queue policy. Consumers deduplicate `data.metadata.deliveryKey`.
+- Recheck current audience membership and consent/category permissions before outbox delivery and again in the SQS consumer. Nonaudience requesters receive only a decision, no transaction payload or Terms URI.
+- Referral management is separate from data access: owner/writers can inspect all requests; recipient-only callers can inspect only their own `requestedBy` requests, and targets their own incoming status. Enforce the role predicate in the Neo4j read query too, not just an earlier route check. Hidden status returns null like a missing request. Denial/cancellation fan-out is owner plus original requester, excluding the actor; suppress former broad queued deliveries. Consent data still reaches the current audience, but redact another referrer's `externalReferenceId` from metadata AND transaction.referral (and private message) unless the recipient is owner/writer or the original requester. Keep the full stored snapshot for learner-only history/exports.
+- Referral clients pass `expectedRequestId` through SDK/consent options. Check exact ID + pending status and contract expiry under the same contract lock as consent/re-consent writes, including after a route loaded a snapshot. Direct/legacy calls omit the ID and remain independent of invitation cancellation, but expired contracts cannot accept new consent. Only actual already-consented errors count as idempotent success in the app; other conflicts return to review.
+- Contract integration tests use `bun run test:integration -- test/contract-requests.spec.ts`; the default unit config excludes them.
+- From the repository root, `bun run test:referrals` wraps the referral and notification integration suites with Docker preflight, a synthetic seed, container reuse disabled, readable suite results, and temporary logs. `--full` includes consent/credential regressions. It uses the existing integration global setup and mock-instance database, never a configured live database; it does not start HTTP services or test the app.
+- Inline dispatch matches one event by its unique ID. Global cleanup uses indexed `cleanupPending=true`, removed on final cleanup; pending deliveries carry immutable `eventCreatedAt` and use separate indexed UNION branches for next attempt, age and attempts, deduplicated before claiming. The global worker runs a serialized one-time `indexed-outbox-v1` backfill for older retained bodies/pending deliveries. Drain old service writers before that backfill during rollout. Never replace this with a nullable event-ID OR or an every-tick history scan. Preserve the event lock and recheck pending deliveries after locking. The 12-attempt schedule normally exhausts after about six hours of uninterrupted failures; 24 hours is an additional age ceiling.

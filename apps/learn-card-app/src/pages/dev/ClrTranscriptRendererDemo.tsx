@@ -1,47 +1,27 @@
 import { useState } from 'react';
+import {
+    useLocale,
+    useChangeLocale,
+    SUPPORTED_LANGUAGES,
+    type SupportedLanguage,
+} from '../../i18n';
+import * as m from '../../paraglide/messages.js';
 import { IonItem, IonLabel, IonList, IonPopover } from '@ionic/react';
 import type { VC } from '@learncard/types';
 
-import {
-    clrUniversityTranscript,
-    clrNdStudentTranscript,
-    clrGreatPlainsFull,
-    clrMinimal,
-    clrWestbridgeFull,
-    clrCompetencyAligned,
-    clrAchievementIdAssociations,
-} from '@learncard/credential-library';
+import { CLR_TRANSCRIPT_DEMO_FIXTURES as FIXTURES } from './clrTranscriptDemo.fixtures';
 
 import {
     normalizeClrTranscriptDisplayModel,
+    inferClrLayout,
     ClrTranscriptSurface,
     type ClrTranscriptViewer,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
     ClrTranscriptCard,
     ClrTranscriptEmbedWidget,
     ClrTranscriptFullPage,
 } from '../../components/clr-transcript';
-
-const FIXTURES = {
-    westbridge: clrWestbridgeFull.credential as Record<string, unknown>,
-    university: clrUniversityTranscript.credential as Record<string, unknown>,
-    nd: clrNdStudentTranscript.credential as Record<string, unknown>,
-    greatPlains: clrGreatPlainsFull.credential as Record<string, unknown>,
-    minimal: clrMinimal.credential as Record<string, unknown>,
-    competencyAligned: clrCompetencyAligned.credential as Record<string, unknown>,
-    relationships: clrAchievementIdAssociations.credential as Record<string, unknown>,
-};
-
-const FIXTURE_LABELS: Record<string, string> = {
-    westbridge: 'Westbridge (Full)',
-    university: 'University',
-    nd: 'North Dakota',
-    greatPlains: 'Great Plains',
-    minimal: 'Minimal',
-    competencyAligned: 'Competency Aligned',
-    relationships: 'Relationships and Scales',
-};
 
 const VIEWER_LABELS: Record<string, string> = {
     student: 'Student',
@@ -53,6 +33,8 @@ const VIEWER_LABELS: Record<string, string> = {
 type FixtureKey = keyof typeof FIXTURES;
 
 const ClrTranscriptRendererDemo = () => {
+    const locale = useLocale();
+    const changeLocale = useChangeLocale();
     const [fixture, setFixture] = useState<FixtureKey>('westbridge');
     const [viewer, setViewer] = useState<ClrTranscriptViewer>('student');
     const [surface, setSurface] = useState<ClrTranscriptSurface>(ClrTranscriptSurface.Full);
@@ -63,26 +45,18 @@ const ClrTranscriptRendererDemo = () => {
     const [viewerPopoverOpen, setViewerPopoverOpen] = useState(false);
     const [viewerPopoverEvent, setViewerPopoverEvent] = useState<Event | undefined>(undefined);
 
-    const currentModel = normalizeClrTranscriptDisplayModel(FIXTURES[fixture]);
-
-    // return (
-    //     <div className="bg-grayscale-10 h-screen overflow-y-auto font-poppins flex flex-col">
-    //         <ClrTranscriptFullPage
-    //             model={currentModel}
-    //             credential={FIXTURES[fixture] as any}
-    //             options={{ viewer, surface }}
-    //         />
-    //     </div>
-    // );
+    const currentModel = normalizeClrTranscriptDisplayModel(
+        FIXTURES[fixture].credential as Record<string, unknown>
+    );
 
     return (
-        <div className="bg-grayscale-10 h-dvh overflow-hidden font-poppins flex flex-col pt-[var(--ion-safe-area-top,0px)] pb-[var(--ion-safe-area-bottom,0px)]">
+        <div className="bg-grayscale-10 h-full overflow-hidden font-poppins flex flex-col pt-[var(--ion-safe-area-top,0px)] pb-[var(--ion-safe-area-bottom,0px)]">
             {/* Controls header */}
-            <div className="px-4 pt-4 pb-3 space-y-3 bg-white border-b border-grayscale-200 shrink-0">
+            <div className="px-4 pt-4 pb-3 space-y-v3-3 bg-white border-b border-grayscale-200 shrink-0">
                 <div className="flex items-center justify-between">
                     <h1 className="text-base font-semibold text-grayscale-900">CLR Renderer</h1>
                     <span className="text-xs text-grayscale-400 font-mono">
-                        {currentModel.quality.level}
+                        {inferClrLayout(currentModel.canonical).kind}
                     </span>
                 </div>
 
@@ -97,8 +71,10 @@ const ClrTranscriptRendererDemo = () => {
                         }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-grayscale-200 bg-grayscale-50 text-sm font-medium text-grayscale-800"
                     >
-                        {FIXTURE_LABELS[fixture]}
-                        <span className="text-grayscale-400 text-xs">▾</span>
+                        {FIXTURES[fixture].label}
+                        <span aria-hidden="true" className="text-grayscale-400 text-xs">
+                            ▾
+                        </span>
                     </button>
 
                     <IonPopover
@@ -128,7 +104,7 @@ const ClrTranscriptRendererDemo = () => {
                                         }}
                                     >
                                         <IonLabel className="text-sm font-medium text-grayscale-900 font-poppins py-1">
-                                            {FIXTURE_LABELS[key]}
+                                            {FIXTURES[key].label}
                                         </IonLabel>
                                     </IonItem>
                                 ))}
@@ -137,7 +113,7 @@ const ClrTranscriptRendererDemo = () => {
                     </IonPopover>
 
                     {/* Viewer picker */}
-                    {/* <button
+                    <button
                         type="button"
                         onClick={e => {
                             setViewerPopoverEvent(e.nativeEvent);
@@ -147,7 +123,7 @@ const ClrTranscriptRendererDemo = () => {
                     >
                         {VIEWER_LABELS[viewer]}
                         <span className="text-grayscale-400 text-xs">▾</span>
-                    </button> */}
+                    </button>
 
                     <IonPopover
                         isOpen={viewerPopoverOpen}
@@ -185,8 +161,23 @@ const ClrTranscriptRendererDemo = () => {
                     </IonPopover>
                 </div>
 
+                <label className="flex items-center gap-2 text-xs font-medium text-grayscale-700">
+                    {m['clrRenderer.language']()}
+                    <select
+                        aria-label={m['clrRenderer.language']()}
+                        value={locale}
+                        onChange={event => changeLocale(event.target.value as SupportedLanguage)}
+                        className="rounded-xl border border-grayscale-300 bg-white px-3 py-2 text-sm text-grayscale-900 focus:ring-2 focus:ring-emerald-500"
+                    >
+                        {SUPPORTED_LANGUAGES.map(language => (
+                            <option key={language} value={language}>
+                                {language}
+                            </option>
+                        ))}
+                    </select>
+                </label>
                 {/* Surface tabs */}
-                {/* <div className="bg-grayscale-100 flex rounded-full py-[2px] px-[1px]">
+                <div className="bg-grayscale-100 flex rounded-full py-[2px] px-[1px]">
                     {(
                         [
                             ClrTranscriptSurface.Full,
@@ -197,33 +188,39 @@ const ClrTranscriptRendererDemo = () => {
                         <button
                             key={s}
                             type="button"
+                            aria-pressed={surface === s}
                             onClick={() => setSurface(s)}
                             className={`flex-1 py-[12px] rounded-full text-[14px] font-semibold font-poppins text-grayscale-900 transition-colors ${
-                                surface === s ? 'bg-white shadow-sm' : ''
+                                surface === s ? 'bg-white shadow-xs' : ''
                             }`}
                         >
                             {s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>
                     ))}
-                </div> */}
+                </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-v3-4">
                 {surface === ClrTranscriptSurface.Card && (
                     <ClrTranscriptCard
                         model={currentModel}
-                        boost={FIXTURES[fixture] as unknown as VC}
+                        options={{ viewer, surface }}
+                        boost={FIXTURES[fixture].credential as unknown as VC}
                         onViewDetails={() => setSurface(ClrTranscriptSurface.Full)}
                     />
                 )}
                 {surface === ClrTranscriptSurface.Embed && (
-                    <ClrTranscriptEmbedWidget model={currentModel} />
+                    <ClrTranscriptEmbedWidget
+                        model={currentModel}
+                        boost={FIXTURES[fixture].credential as unknown as VC}
+                        options={{ viewer, surface }}
+                    />
                 )}
                 {surface === ClrTranscriptSurface.Full && (
                     <ClrTranscriptFullPage
                         model={currentModel}
-                        boost={FIXTURES[fixture] as unknown as VC}
+                        boost={FIXTURES[fixture].credential as unknown as VC}
                         options={{ viewer, surface }}
                         insetTop={false}
                     />

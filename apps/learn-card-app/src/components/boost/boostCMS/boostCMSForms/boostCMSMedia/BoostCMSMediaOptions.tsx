@@ -87,7 +87,7 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                 showCloseButtonState &&
                 createPortal(
                     <div className="w-full flex items-center justify-center">
-                        <div className="flex flex-col justify-center items-center relative !border-none w-full max-w-[500px]">
+                        <div className="flex flex-col justify-center items-center relative border-none! w-full max-w-[500px]">
                             <button
                                 onClick={closeModal}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"

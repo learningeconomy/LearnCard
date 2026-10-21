@@ -13,6 +13,19 @@ on:
                 default: 'changeset-release/main'
 
 jobs:
+    deployment-tools:
+        name: Deployment recovery tools
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24.12.0'
+            - name: Test recovery validation, manifest diagnostics, and registry retries
+              run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs
+
     Test:
         runs-on: ubuntu-latest
         environment: ci-tests
@@ -30,15 +43,71 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            # The escrow Rust crates share one pinned toolchain; installing it here
+            # stops nx's parallel `cargo test` runs racing to install it.
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
-                  timeout_minutes: 10
+                  # Full-suite PRs (shared packages touched) run ~9 min under load.
+                  timeout_minutes: 20
                   max_attempts: 3
                   command: bunx nx affected --target=test --base=origin/main --head=HEAD
               env:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+
+    escrow-integration:
+        name: Escrow integration (lca-api)
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+
+            - name: Detect escrow changes
+              id: changes
+              run: |
+                  git fetch --no-tags --prune origin main
+                  if git diff --quiet origin/main...HEAD -- \
+                      services/learn-card-network/lca-api \
+                      services/escrow-enclave-app \
+                      packages/sss-key-manager \
+                      .github/workflows/test.yml; then
+                    echo "run=false" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "run=true" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Use Composite Setup Action
+              if: steps.changes.outputs.run == 'true'
+              uses: ./.github/actions/setup
+
+            # Live-Mongo (mongodb-memory-server) specs; the nx `test` target only
+            # runs vitest.config.ts, so these are otherwise never exercised in CI.
+            - name: Run escrow integration specs
+              if: steps.changes.outputs.run == 'true'
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/keys-escrow.spec.ts
+                  test/models/escrow.spec.ts
+                  test/jobs/escrowBlobRewrap.spec.ts
+                  test/jobs/escrowHoldReminders.spec.ts
 
     ai-agent:
         name: AI Agent CI
@@ -64,6 +133,12 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
 
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
             - name: Use composite setup action
               uses: ./.github/actions/setup
 
@@ -77,11 +152,47 @@ jobs:
             - name: Run AI Agent tests
               run: bun run --cwd services/learn-card-network/ai-agent test -- run
 
+            - name: Verify feed with real DIDKit WASM
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:feed-wasm
+
+            - name: Verify private Sentry telemetry
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:sentry
+
             - name: Build AI Agent
               run: bun run --cwd services/learn-card-network/ai-agent build
 
             - name: Lint CloudFormation template
               run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
+
+    share-link-security:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Test share lifecycle and attachment publication races with Neo4j
+              working-directory: services/learn-card-network/brain-service
+              run: bunx vitest run --config vitest.share-links-neo4j.config.ts
+
+    profile-search:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+            - name: Test profile search normalization and filters with Neo4j
+              run: bunx nx run network-brain-service:test:profile-search
 
     inbox-security:
         runs-on: ubuntu-latest
@@ -92,8 +203,30 @@ jobs:
                   ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
                   fetch-depth: 0
             - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
             - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
               run: bunx nx run network-brain-service:test:inbox:e2e
+
+    boost-recipients:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+            - name: Test boost recipient lists, counts and pagination with Neo4j
+              run: bunx nx run network-brain-service:test:boost-recipients
 
     # Temporary manual fallback during the hosted-runner cutover.
     # Remove after one sprint of stable GitHub-hosted E2E operation.

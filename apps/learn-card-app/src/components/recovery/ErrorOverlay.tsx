@@ -8,6 +8,12 @@ import React from 'react';
 import { Overlay } from './Overlay';
 import { m } from '../../paraglide/messages.js';
 
+// Use localized safe copy rather than rendering arbitrary service error text.
+const displayError = (error: string): string =>
+    /network|offline|failed to fetch|connection/i.test(error)
+        ? m['error.network']()
+        : m['error.generic']();
+
 interface ErrorOverlayProps {
     error: string;
     canRetry: boolean;
@@ -22,18 +28,18 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
     onLogout,
 }) => (
     <Overlay>
-        <div className="p-8 text-center space-y-5">
+        <div className="p-8 text-center space-y-v3-5">
             <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center">
                 <span className="text-red-500 text-2xl font-semibold">!</span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <h2 className="text-xl font-semibold text-grayscale-900">{m['error.generic']()}</h2>
 
-                <p className="text-sm text-grayscale-600 leading-relaxed">{error}</p>
+                <p className="text-sm text-grayscale-600 leading-relaxed">{displayError(error)}</p>
             </div>
 
-            <div className="space-y-3 pt-1">
+            <div className="space-y-v3-3 pt-1">
                 {canRetry && (
                     <button
                         onClick={onRetry}

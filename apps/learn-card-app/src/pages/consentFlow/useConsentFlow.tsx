@@ -39,7 +39,8 @@ export const useConsentFlow = (
 
     const { mutateAsync: updateTermsMutation } = useUpdateTerms(
         consentedContract?.uri ?? '',
-        consentedContract?.contract?.owner.did ?? ''
+        consentedContract?.contract?.owner.did ?? '',
+        consentedContract?.contract?.uri
     );
     // isPending from useUpdateTerms isn't working, so we'll do it ourselves 😤
     const [updatingTerms, setUpdatingTerms] = useState(false);
@@ -51,7 +52,8 @@ export const useConsentFlow = (
         childInsightsProfile?: LCNProfile | string,
         disableRedirect?: boolean,
         onCloseCallback?: () => void,
-        onBackCallback?: () => void
+        onBackCallback?: () => void,
+        keepParentModalsOpen?: boolean
     ) => {
         if (contract?.needsGuardianConsent && !hasConsented) {
             newModal(
@@ -70,6 +72,7 @@ export const useConsentFlow = (
                     insightsProfile={insightsProfile}
                     childInsightsProfile={childInsightsProfile}
                     disableRedirect={disableRedirect}
+                    keepParentModalsOpen={keepParentModalsOpen}
                     onCloseCallback={onCloseCallback}
                     onBackCallback={onBackCallback}
                 />,

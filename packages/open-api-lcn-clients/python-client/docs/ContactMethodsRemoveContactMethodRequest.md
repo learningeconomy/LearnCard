@@ -1,11 +1,10 @@
 # ContactMethodsRemoveContactMethodRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
+| Name   | Type    | Description | Notes |
+| ------ | ------- | ----------- | ----- |
+| **id** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ contact_methods_remove_contact_method_request_dict = contact_methods_remove_cont
 # create an instance of ContactMethodsRemoveContactMethodRequest from a dict
 contact_methods_remove_contact_method_request_from_dict = ContactMethodsRemoveContactMethodRequest.from_dict(contact_methods_remove_contact_method_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

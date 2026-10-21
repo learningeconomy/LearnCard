@@ -73,7 +73,7 @@ export const EndorsementMediaAttachmentButtons: React.FC<{
                     return (
                         <button
                             key={id}
-                            className={`flex flex-col items-center justify-center text-center ion-padding h-[122px] m-2 bg-grayscale-100 rounded-[20px] ${styles} w-[45%] xs:!w-[60%]`}
+                            className={`flex flex-col items-center justify-center text-center ion-padding h-[122px] m-2 bg-grayscale-100 rounded-[20px] ${styles} w-[45%] xs:w-[60%]!`}
                             onClick={handleMediaSelect}
                         >
                             <Icon

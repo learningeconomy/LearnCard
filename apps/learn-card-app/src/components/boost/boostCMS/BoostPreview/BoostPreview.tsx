@@ -122,6 +122,12 @@ const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ 
                     {m['wallet.categoriesSingular.achievements']()}
                 </span>
             );
+        case BoostCategoryOptionsEnum.qualifications:
+            return (
+                <span className="text-[12px] font-semibold text-orange-700">
+                    {m['wallet.categoriesSingular.qualifications']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.learningHistory:
             return (
                 <span className="text-[12px] font-semibold text-emerald-600">
@@ -300,7 +306,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 isPreview={isPreview}
             />,
             {
-                className: '!bg-transparent',
+                className: 'bg-transparent!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -424,7 +430,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         <div
                             className={`w-full flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                                 isCertificate ? 'certificate-display-zoom' : ''
-                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
+                            } ${isID ? 'px-0! mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
                                 className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${

@@ -126,7 +126,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
     const apiBaseUrl = getLCNApiUrl();
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.embedConfig.title']()}
@@ -186,9 +186,9 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
             )}
 
             {/* Branding & Advanced Options */}
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-v3-4">
                 {/* Modal Branding */}
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Palette className="w-4 h-4 text-indigo-500" />
                         {m['developerPortal.dashboards.tabs.embedConfig.modalBranding']()}
@@ -215,7 +215,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                                         setBranding({ ...branding, primaryColor: e.target.value })
                                     }
                                     placeholder="#1F51FF"
-                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                 />
                             </div>
                         </div>
@@ -240,7 +240,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                                         setBranding({ ...branding, accentColor: e.target.value })
                                     }
                                     placeholder="#0F3BD9"
-                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                 />
                             </div>
                         </div>
@@ -263,7 +263,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                             placeholder={m[
                                 'developerPortal.dashboards.tabs.embedConfig.partnerNamePlaceholder'
                             ]()}
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                             style={{ colorScheme: 'light' }}
                         />
                         <p className="text-xs text-gray-500 mt-1">
@@ -289,7 +289,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                                     setBranding({ ...branding, partnerLogoUrl: e.target.value })
                                 }
                                 placeholder="https://example.com/logo.png"
-                                className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                 disabled={isUploadingLogo}
                                 style={{ colorScheme: 'light' }}
                             />
@@ -313,7 +313,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                             <img
                                 src={branding.partnerLogoUrl}
                                 alt={m['developerPortal.components.accountSelector.logoPreview']()}
-                                className="mt-2 h-12 object-contain rounded border border-gray-200"
+                                className="mt-2 h-12 object-contain rounded-sm border border-gray-200"
                                 onError={e => {
                                     (e.target as HTMLImageElement).style.display = 'none';
                                 }}
@@ -323,7 +323,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                 </div>
 
                 {/* Advanced Settings */}
-                <div className="space-y-3 pt-3 border-t border-gray-200">
+                <div className="space-y-v3-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Settings className="w-4 h-4 text-emerald-500" />
                         {m['developerPortal.dashboards.tabs.embedConfig.advancedSettings']()}
@@ -334,7 +334,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                             type="checkbox"
                             checked={requestBackgroundIssuance}
                             onChange={e => setRequestBackgroundIssuance(e.target.checked)}
-                            className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded focus:ring-cyan-500"
+                            className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded-sm focus:ring-cyan-500"
                         />
                         <div>
                             <span className="text-sm font-medium text-gray-700">
@@ -377,7 +377,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                             }
                         }}
                         placeholder="e.g., yourcompany.com"
-                        className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                         style={{ colorScheme: 'light' }}
                     />
                     <button

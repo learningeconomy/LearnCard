@@ -21,6 +21,7 @@ export const removeRequestedForRelationship = async (
             identifier: 'profile',
         })
         .match({ optional: true, literal: '(contract)-[r:REQUESTED_FOR]->(profile)' })
+        .where('r.requestId IS NULL')
         .with('r')
         .delete('r')
         .return('r')

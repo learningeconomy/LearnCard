@@ -26,6 +26,13 @@ class TestUtilitiesApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
+    def test_utilities_deep_health_check(self) -> None:
+        """Test case for utilities_deep_health_check
+
+        Deep health check (exercises DIDKit end to end)
+        """
+        pass
+
     def test_utilities_get_challenges(self) -> None:
         """Test case for utilities_get_challenges
 
@@ -44,6 +51,13 @@ class TestUtilitiesApi(unittest.TestCase):
         """Test case for utilities_health_check
 
         Check health of endpoint
+        """
+        pass
+
+    def test_utilities_resolve_email_locale(self) -> None:
+        """Test case for utilities_resolve_email_locale
+
+        Resolve a recipient locale by email
         """
         pass
 

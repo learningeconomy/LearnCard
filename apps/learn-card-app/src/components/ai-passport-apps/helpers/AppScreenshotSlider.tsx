@@ -31,7 +31,7 @@ const AppScreenshotsSlider: React.FC<{ appScreenshots: string[] }> = ({ appScree
                     <img
                         src={url}
                         alt={`Screenshot ${index + 1}`}
-                        className="w-full h-auto rounded-[20px] mr-2 border-[1px] border-solid"
+                        className="w-full h-auto rounded-[20px] mr-2 border border-solid"
                     />
                 </SwiperSlide>
             ))}

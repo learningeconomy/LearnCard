@@ -2,9 +2,14 @@ import base64url from 'base64url';
 import type { UnsignedVC, VC } from '@learncard/types';
 import { getDidWeb } from '@learncard/helpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { getDefaultCategoryForCredential } from 'learn-card-base';
+import { boostSupportsDynamicEvidence, getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
-import { RecipientMode, Recipient, LinkOptions } from '../../pages/issue/components/recipientTypes';
+import {
+    RecipientMode,
+    Recipient,
+    LinkOptions,
+    recipientKey,
+} from '../../pages/issue/components/recipientTypes';
 
 import {
     OBv3CredentialTemplate,
@@ -19,21 +24,17 @@ import {
 } from '../../pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 
 /**
- * SimpleSend builds standards-pure OBv3 credentials and deliberately bypasses
- * the boost pipeline (`newCredential({ type: 'boost' })` / `createBoost`),
- * which injects the custom `https://ctx.learncard.com/boosts/*` context. Only
- * the client-constructed credential is guaranteed pure — `send()` may still
- * create a boost server-side for delivery, which is accepted for this prototype.
+ * SimpleSend builds OBv3 credentials without the boost template generator
+ * (`newCredential({ type: 'boost' })`), which injects LearnCard-specific fields.
+ * Legacy file evidence opts into the LearnCard evidence context so its metadata
+ * can be signed. Standard OBv3 Evidence keeps standard contexts. `send()` may
+ * still create a boost server-side for delivery.
  */
 
+const EVIDENCE_CONTEXT = 'https://ctx.learncard.com/boosts/1.0.3.json';
+
 export type SimpleCredentialType =
-    | 'badge'
-    | 'certificate'
-    | 'course'
-    | 'skill'
-    | 'license'
-    | 'membership'
-    | 'micro-credential';
+    'badge' | 'certificate' | 'course' | 'skill' | 'license' | 'membership' | 'micro-credential';
 
 const ACHIEVEMENT_TYPE_BY_SIMPLE_TYPE: Record<SimpleCredentialType, string> = {
     badge: 'Badge',
@@ -202,10 +203,11 @@ const deliverBoost = async (
         // templateData (e.g. evidence) is still resolved individually below.
         await Promise.all(
             options.recipients.map(recipient => {
+                const key = recipientKey(recipient);
+                // Row keys identify template data; delivery requires the actual address.
                 const recipientIdentifier =
                     recipient.kind === 'profile' ? recipient.profileId : recipient.email;
-                const recipientData =
-                    options.variableValuesByRecipient?.[recipientIdentifier] ?? templateData;
+                const recipientData = options.variableValuesByRecipient?.[key] ?? templateData;
                 return wallet.invoke.send({
                     type: 'boost',
                     recipient: recipientIdentifier,
@@ -280,7 +282,7 @@ const stripUnresolvedRecipientId = (credential: Record<string, unknown>): void =
  * network fills them per-issuance — substitution + signing happen at send time
  * via `templateData`, keeping the stored boost a genuine reusable template.
  */
-const buildReusableBoostTemplate = (
+export const buildReusableBoostTemplate = (
     template: OBv3CredentialTemplate,
     issuerDid: string,
     recipientDid?: string
@@ -322,6 +324,37 @@ export const issueViaBoost = async (
         options.mode === 'self'
             ? buildReusableBoostTemplate(template, issuerDid, selfRecipientDid)
             : reusableTemplate;
+
+    // Shared variableValues contain strings; evidence is carried only in the
+    // per-recipient payloads. Revisit this check if shared values gain evidence.
+    const hasLegacyRecipientEvidence =
+        options.mode === 'people' &&
+        options.recipients.some(recipient => {
+            const key = recipientKey(recipient);
+            const evidence = options.variableValuesByRecipient?.[key]?.evidence;
+            const entries = Array.isArray(evidence) ? evidence : [evidence];
+            return entries.some(entry => {
+                if (!entry || typeof entry !== 'object') return false;
+                const item = entry as Record<string, unknown>;
+                const types = Array.isArray(item.type) ? item.type : [item.type];
+                return (
+                    types.includes('EvidenceFile') ||
+                    ['fileName', 'fileType', 'fileSize'].some(field => field in item)
+                );
+            });
+        });
+
+    // The network appends per-recipient evidence after the editor's validation.
+    // Legacy file terms need the extension before send-time signing; standard
+    // Evidence needs no extra context. Preserve existing compatible contexts.
+    if (hasLegacyRecipientEvidence && !boostSupportsDynamicEvidence(reusableTemplateForMode)) {
+        const contexts = reusableTemplateForMode['@context'];
+        reusableTemplateForMode['@context'] = [
+            ...(Array.isArray(contexts) ? contexts : contexts != null ? [contexts] : []),
+            EVIDENCE_CONTEXT,
+        ];
+    }
+
     const hasDynamicPlaceholders = /\{\{.*?\}\}/.test(JSON.stringify(reusableTemplateForMode));
     const hasTemplateData =
         (options.variableValues && Object.keys(options.variableValues).length > 0) ||

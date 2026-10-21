@@ -43,7 +43,15 @@ it('invalidates cached terms even when a later contract fails after an earlier u
                     .mockRejectedValueOnce(new Error('offline')),
             },
         },
-        invoke: { getConsentedContracts: get, updateContractTerms: update },
+        invoke: {
+            getConsentedContracts: get,
+            updateContractTerms: update,
+            getContract: vi.fn().mockResolvedValue({
+                uri: 'contract-a',
+                owner: { did: 'owner-a' },
+                audienceVersion: 1,
+            }),
+        },
     } as unknown as BespokeLearnCard;
     const options = consentedContractsQueryOptions(host.wallet);
     await client.fetchQuery(options);
@@ -53,7 +61,7 @@ it('invalidates cached terms even when a later contract fails after an earlier u
     const { result } = renderHook(useSyncConsentContractsMutation, { wrapper });
     const contract = {
         uri: 'terms-a',
-        contract: { owner: { did: 'owner-a' } },
+        contract: { uri: 'contract-a', owner: { did: 'owner-a' } },
         terms: {
             read: { credentials: { categories: { Achievement: { shared: ['deleted-uri'] } } } },
         },

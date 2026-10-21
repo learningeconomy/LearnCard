@@ -1,3 +1,4 @@
+import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
@@ -22,6 +23,10 @@ import {
     ShareLinkOwnerRecoveryOutput,
     ShareLinkPublicState,
     ShareLinkPublicContentView,
+    PutShareLinkAttachmentChunkInput,
+    DeleteShareLinkAttachmentChunksInput,
+    GetShareLinkAttachmentChunkInput,
+    ShareLinkAttachmentChunkOutput,
     AcknowledgeViewOutput,
     Boost,
     BoostQuery,
@@ -113,6 +118,9 @@ import {
     AppStoreListing,
     AppStoreListingCreateType,
     AppStoreListingUpdateType,
+    AppManifest,
+    AppManifestVersion,
+    AppManifestDiff,
     AppListingStatus,
     PromotionLevel,
     PaginatedAppStoreListings,
@@ -309,6 +317,13 @@ export type LearnCardNetworkPluginMethods = {
      * no caller-supplied owner/namespace/object authority is accepted.
      */
     createShareLink: (input: CreateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    putShareLinkAttachmentChunk: (input: PutShareLinkAttachmentChunkInput) => Promise<{ ok: true }>;
+    deleteShareLinkAttachmentChunks: (
+        input: DeleteShareLinkAttachmentChunksInput
+    ) => Promise<{ ok: boolean }>;
+    getShareLinkAttachmentChunk: (
+        input: GetShareLinkAttachmentChunkInput
+    ) => Promise<ShareLinkAttachmentChunkOutput>;
     updateShareLink: (input: UpdateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
     revokeShareLink: (input: {
         id: string;
@@ -639,6 +654,7 @@ export type LearnCardNetworkPluginMethods = {
         image?: string;
         expiresAt?: string;
         writers?: string[];
+        recipients?: string[];
         autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
     addAutoBoostsToContract: (
@@ -646,6 +662,8 @@ export type LearnCardNetworkPluginMethods = {
         autoboosts: AutoBoostConfig[]
     ) => Promise<boolean>;
     removeAutoBoostsFromContract: (contractUri: string, boostUris: string[]) => Promise<boolean>;
+    addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
+    removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
@@ -676,6 +694,9 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
+            /** Bind acceptance to the pending referral the learner reviewed. */
+            expectedRequestId?: string;
         },
         recipientToken?: string
     ) => Promise<{ termsUri: string; redirectUrl?: string }>;
@@ -688,6 +709,7 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
         }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
@@ -708,13 +730,19 @@ export type LearnCardNetworkPluginMethods = {
 
     syncCredentialsToContract: (
         termsUri: string,
-        categories: Record<string, string[]>
+        categories: Record<string, string[]>,
+        audienceVersion?: number
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
         contractsUpdated: number;
         removedSharedUris: number;
     }>;
+
+    /** Sends one attributed request; identical pending retries are idempotent. */
+    sendContractRequest: (request: SendContractRequest) => Promise<boolean>;
+    /** Target-only denial preserves the request and its referral reference. */
+    denyContractRequest: (contractUri: string) => Promise<boolean>;
 
     sendAiInsightsContractRequest: (
         contractUri: string,
@@ -728,31 +756,25 @@ export type LearnCardNetworkPluginMethods = {
         childProfileId?: string
     ) => Promise<boolean>;
 
-    getContractSentRequests: (contractUri: string) => Promise<
-        {
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
-    >;
+    getContractSentRequests: (
+        contractUri: string
+    ) => Promise<ConsentFlowContractRequestForProfile[]>;
 
     getRequestStatusForProfile: (
         targetProfileId: string,
-        contractId?: string | undefined,
-        contractUri?: string | undefined
-    ) => Promise<{
-        profile: LCNProfile;
-        status: 'pending' | 'accepted' | 'denied' | null;
-        readStatus?: 'unseen' | 'seen' | null;
-    } | null>;
+        contractId?: string,
+        contractUri?: string
+    ) => Promise<ConsentFlowContractRequestForProfile | null>;
 
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
-        {
-            contract: ConsentFlowContract & { uri: string };
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
+        (ConsentFlowContractRequestForProfile & {
+            contract: ConsentFlowContract & {
+                uri: string;
+                name?: string;
+                image?: string;
+                description?: string;
+            };
+        })[]
     >;
 
     getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
@@ -993,11 +1015,62 @@ export type LearnCardNetworkPluginMethods = {
     deleteAppStoreListing: (listingId: string) => Promise<boolean>;
     submitAppStoreListingForReview: (listingId: string) => Promise<boolean>;
     unsubmitAppStoreListing: (listingId: string) => Promise<boolean>;
+    /** Sends held changes to a live app for review; the live listing is unchanged until approval. */
+    submitAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    withdrawAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    discardAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
     getListingsForIntegration: (
         integrationId: string,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedAppStoreListings>;
     countListingsForIntegration: (integrationId: string) => Promise<number>;
+
+    submitAppManifest: (
+        integrationId: string,
+        manifest: AppManifest
+    ) => Promise<{
+        version: number;
+        manifestHash: string;
+        diff: AppManifestDiff | null;
+        noop: boolean;
+    }>;
+    getManifestVersions: (
+        integrationId: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<{
+        hasMore: boolean;
+        cursor?: string;
+        records: Pick<
+            AppManifestVersion,
+            'id' | 'version' | 'manifestHash' | 'status' | 'createdAt' | 'activatedAt'
+        >[];
+    }>;
+    getManifestVersion: (
+        integrationId: string,
+        version: number
+    ) => Promise<AppManifestVersion | undefined>;
+    getManifestDiff: (
+        integrationId: string,
+        toVersion: number,
+        fromVersion?: number
+    ) => Promise<AppManifestDiff>;
+    applyManifestVersion: (
+        integrationId: string,
+        version: number,
+        listingId?: string
+    ) => Promise<{
+        applied: boolean;
+        /** True when the listing is live and the new version is waiting for review. */
+        pendingReview?: boolean;
+        version: number;
+        reconciled: {
+            templatesUpserted: number;
+            templatesSkipped: number;
+            contractsUpserted: number;
+            contractsSkipped: number;
+            signingAuthorityEnsured: boolean;
+        };
+    }>;
 
     browseAppStore: (options?: {
         limit?: number;
@@ -1042,7 +1115,9 @@ export type LearnCardNetworkPluginMethods = {
         limit?: number;
         cursor?: string;
         status?: AppListingStatus;
+        pendingUpdatesOnly?: boolean;
     }) => Promise<PaginatedAppStoreListings>;
+    adminReviewListingUpdate: (listingId: string, approve: boolean) => Promise<boolean>;
 
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;

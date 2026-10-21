@@ -1,5 +1,112 @@
 # @welibraryos/lca-api-service
 
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/core@9.4.39
+    - @learncard/helpers@1.6.3
+    - @learncard/init@2.5.4
+    - @learncard/did-web-plugin@1.1.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/didkit-plugin-node@0.3.4
+    - @learncard/sss-key-manager@0.2.2
+
+## 1.5.1
+
+### Patch Changes
+
+- [#1711](https://github.com/learningeconomy/LearnCard/pull/1711) [`63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae`](https://github.com/learningeconomy/LearnCard/commit/63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae) Thanks [@goblincore](https://github.com/goblincore)! - Exclude bundled service configuration from published service dependencies so public packages do not require the private service-config workspace package during installation. Keep runtime workspace dependencies for source-based service deployments.
+
+- Updated dependencies []:
+    - @learncard/init@2.5.3
+
+## 1.5.0
+
+### Minor Changes
+
+- [#1589](https://github.com/learningeconomy/LearnCard/pull/1589) [`599f048b082d2ee64775f7a0ef972e171b8c2a8a`](https://github.com/learningeconomy/LearnCard/commit/599f048b082d2ee64775f7a0ef972e171b8c2a8a) Thanks [@Custard7](https://github.com/Custard7)! - Add Keycloak token verification (`verifyKeycloakToken`) using `jose`: exact issuer allowlist, `aud`/`azp` client allowlist, ID/Bearer token-type check, and required `email_verified` / `phone_number_verified` claims. Configured with `KEYCLOAK_ISSUERS`, `KEYCLOAK_AUDIENCES`, and optional `KEYCLOAK_JWKS_URL_OVERRIDES`. Disabled (rejects all tokens) until issuers are configured.
+
+- [#1429](https://github.com/learningeconomy/LearnCard/pull/1429) [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856) Thanks [@Custard7](https://github.com/Custard7)! - Add a trusted-service `ensureManagedSigningAuthority` route (`POST /signing-authority/managed`) that returns or creates a named signing authority for an owner DID through the standard encrypted-seed path. Brain service now provisions app signing authorities through this route instead of writing plaintext seeds to the LCA API database.
+
+- [#1592](https://github.com/learningeconomy/LearnCard/pull/1592) [`1f1ff54118a5d08c97f57696ca45671f0ee982b8`](https://github.com/learningeconomy/LearnCard/commit/1f1ff54118a5d08c97f57696ca45671f0ee982b8) Thanks [@Custard7](https://github.com/Custard7)! - Add the lca-api OIDC identity provider with RS256 signing, permanent UUID subjects,
+  single-use login tickets, authorization codes and opaque access tokens. The
+  `auth.requestLoginTicket` and `auth.requestSocialLoginTicket` routes verify email
+  codes or native Google/Apple proofs. Keycloak brokers the redirect flow without
+  an additional login form. Includes Docker/Lambda wiring, a development broker
+  fixture and protocol tests. Phone OTP and full live broker round-trip CI remain deferred.
+
+### Patch Changes
+
+- [#1621](https://github.com/learningeconomy/LearnCard/pull/1621) [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5) Thanks [@Custard7](https://github.com/Custard7)! - Add remote enclave backend, hold notifications, cancel links, reminders, and kill switch for escrow recovery.
+
+- [#1679](https://github.com/learningeconomy/LearnCard/pull/1679) [`77e5b0681f5567caa446da57a1746d148ffde27a`](https://github.com/learningeconomy/LearnCard/commit/77e5b0681f5567caa446da57a1746d148ffde27a) Thanks [@Custard7](https://github.com/Custard7)! - Catch module-load index creation failures so a Mongo connect that outlives a frozen Lambda invocation no longer crashes the next request (seen as a 500 on `/oidc/authorize` during Keycloak sign-in).
+
+- [#1670](https://github.com/learningeconomy/LearnCard/pull/1670) [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2) Thanks [@Custard7](https://github.com/Custard7)! - Honor CONFIG_STAGE in serverless-offline without implicitly applying a deployed stage's configuration during local startup.
+
+- [#1662](https://github.com/learningeconomy/LearnCard/pull/1662) [`aef0f8cfdef94170104d2179fb04759c8dae7162`](https://github.com/learningeconomy/LearnCard/commit/aef0f8cfdef94170104d2179fb04759c8dae7162) Thanks [@Custard7](https://github.com/Custard7)! - Load deployed OIDC signing keys from Secrets Manager with retryable per-process caching instead of storing private JWKs in Lambda environment variables.
+
+- [#1670](https://github.com/learningeconomy/LearnCard/pull/1670) [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2) Thanks [@Custard7](https://github.com/Custard7)! - Document the layered backend configuration model: schema defaults, checked-in non-secret per-stage config files, the Lambda runtime AWS secrets bundle, and real environment variables, plus the Infisical → AWS sync and per-stage cutover.
+
+- [#1670](https://github.com/learningeconomy/LearnCard/pull/1670) [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2) Thanks [@Custard7](https://github.com/Custard7)! - Select backend stage files by tenant as well as stage. `CONFIG_TENANT=scouts` loads `config.scouts.<stage>.json` (generated from the live ScoutPass Lambdas), so ScoutPass deployments no longer inherit LearnCard domains, trust settings or seed-encryption flags; a named tenant without a stage file fails closed. `ESCROW_ENCLAVE_MODE` is now forwarded in runtime-secrets bundle mode too.
+
+- [#1664](https://github.com/learningeconomy/LearnCard/pull/1664) [`4a237f41ea4ab0d3bd69f2066039518fdec20984`](https://github.com/learningeconomy/LearnCard/commit/4a237f41ea4ab0d3bd69f2066039518fdec20984) Thanks [@Custard7](https://github.com/Custard7)! - Load optional per-stage runtime secrets before Lambda initialization and scope authentication environment settings by function to avoid Lambda's 4KB limit. Preserve the Firebase environment fallback for stages without a bundle.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012), [`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/types@5.23.0
+    - @learncard/email-templates@1.2.1
+    - @learncard/sss-key-manager@0.2.1
+    - @learncard/service-config@0.1.1
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/core@9.4.38
+    - @learncard/helpers@1.6.2
+    - @learncard/init@2.5.2
+    - @learncard/did-web-plugin@1.1.38
+    - @learncard/didkit-plugin-node@0.3.3
+
+## 1.4.0
+
+### Minor Changes
+
+- [#1565](https://github.com/learningeconomy/LearnCard/pull/1565) [`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd) Thanks [@Custard7](https://github.com/Custard7)! - Escrow PIN fast release: an optional PIN release policy on the existing escrow-recovery substrate.
+
+    - The escrow recovery share now supports a second release policy alongside the 7-day hold: `pin`. A user who sets an optional 6-12 digit PIN can recover immediately by presenting it, instead of waiting for the hold. Custodianship is unchanged — this adds a release policy on the already-sealed blob, not a second custodial share.
+    - PIN verifier lives inside the enclave-sealed envelope (`EscrowBlobPlaintext.pinVerifier`); a leaked DB alone yields nothing to brute force. Client derives the proof with Argon2id and the enclave constant-time compares.
+    - 10 lifetime failed attempts locks the PIN (`EscrowPinLockedError`); the 7-day hold path is always available as a fallback. Setting/changing a PIN rotates the escrow share.
+    - Carry the sealed PIN verifier across share rotations while preserving its salt and attempt counters; explicit removal and unavailable carry still enroll without a PIN.
+    - New app UI: recovery PIN setup overlay after first setup (skippable), a Recovery PIN row in recovery settings (set/change/remove), and a PIN-first step in the recovery flow with fallback to the existing hold.
+
+- [#1529](https://github.com/learningeconomy/LearnCard/pull/1529) [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f) Thanks [@Custard7](https://github.com/Custard7)! - SSS prod hardening: confirmed recovery enrollment, lost-login identity rebind, and an isolated email relay.
+
+    - Recovery methods now carry `confirmedAt` and must be proven before they count (email confirmation code, phrase challenge words, backup re-decrypt, passkey round trip). New SSS accounts are `active` immediately; web3auth migrations stay `provisional` until a method is confirmed.
+    - New recovery-session flow lets a user whose sign-in identity is gone recover via a verified personal email and bind a new sign-in.
+    - Email recovery shares are encrypted on the client to an isolated relay's public key; `lca-api` never sees plaintext. Provider tokens move from query strings to the `X-Auth-Token` header.
+    - Sensitive key routes require a single-use DID challenge; key records are keyed by immutable provider ID.
+    - `recovery-key` email template now requires `confirmationCode`.
+    - Auth-share initialization requires the provider uniqueness index before inserting, preventing competing first writes from creating duplicate accounts. Existing records with missing or BSON-null auth material retain atomic update protection.
+    - Automatic stale-key cleanup preserves unresolved pending shares for delayed commits; explicit device forgetting still removes them. Custom SSS storage adapters now implement `deleteDeviceShare(id?)` to remove only the selected share and its version.
+
+### Patch Changes
+
+- [#1601](https://github.com/learningeconomy/LearnCard/pull/1601) [`3850da277fe17d421bc055cef3cac65616b7626d`](https://github.com/learningeconomy/LearnCard/commit/3850da277fe17d421bc055cef3cac65616b7626d) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2207] Limit wrong code attempts on email login verification
+
+- [#1636](https://github.com/learningeconomy/LearnCard/pull/1636) [`dab95a1313b10f0339a4284cb5dcdc2f459dcdd5`](https://github.com/learningeconomy/LearnCard/commit/dab95a1313b10f0339a4284cb5dcdc2f459dcdd5) Thanks [@Custard7](https://github.com/Custard7)! - Fix lca-api deploys failing on Lambda's 4KB environment limit: escrow variables are now attached only to the trpc/api functions, omitted when unset, and enclave settings are gated on `ESCROW_ENCLAVE_MODE`. SSS client errors now include the HTTP status code (HTTP/2 responses have an empty `statusText`).
+
+- [#1619](https://github.com/learningeconomy/LearnCard/pull/1619) [`5639d80a9d111f8156469e6692c37ffb354d2ec7`](https://github.com/learningeconomy/LearnCard/commit/5639d80a9d111f8156469e6692c37ffb354d2ec7) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2161] - Encrypt hosted signing-authority seeds with AWS KMS
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`f7b54c45cf495e14cc7b2824653c8f0a63b61660`](https://github.com/learningeconomy/LearnCard/commit/f7b54c45cf495e14cc7b2824653c8f0a63b61660), [`dab95a1313b10f0339a4284cb5dcdc2f459dcdd5`](https://github.com/learningeconomy/LearnCard/commit/dab95a1313b10f0339a4284cb5dcdc2f459dcdd5), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f), [`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb)]:
+    - @learncard/sss-key-manager@0.2.0
+    - @learncard/types@5.22.0
+    - @learncard/email-templates@1.2.0
+    - @learncard/helpers@1.6.1
+    - @learncard/core@9.4.37
+    - @learncard/init@2.5.1
+    - @learncard/did-web-plugin@1.1.37
+    - @learncard/didkit-plugin@1.10.2
+    - @learncard/didkit-plugin-node@0.3.2
+
 ## 1.3.2
 
 ### Patch Changes

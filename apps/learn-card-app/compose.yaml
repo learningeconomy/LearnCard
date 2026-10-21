@@ -144,7 +144,7 @@ services:
             GOOGLE_APPLICATION_CREDENTIAL: ${GOOGLE_APPLICATION_CREDENTIAL:-}
 
     neo4j:
-        image: neo4j:latest
+        image: neo4j:2026.09.0-community
         container_name: 'lcn-neo4j'
         ports:
             - '7687:7687'
@@ -165,7 +165,7 @@ services:
             - learn-card
 
     redis:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         container_name: 'lcn-redis'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
@@ -176,7 +176,7 @@ services:
             - learn-card
 
     redis2:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         container_name: 'lcn-redis2'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
@@ -187,7 +187,7 @@ services:
             - learn-card
 
     redis3:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         container_name: 'lcn-redis3'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
@@ -229,7 +229,7 @@ services:
             - learn-card
 
     elasticmq:
-        image: softwaremill/elasticmq-native
+        image: softwaremill/elasticmq-native:1.7.1
         container_name: 'lcn-elasticmq'
         depends_on:
             - api

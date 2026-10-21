@@ -33,6 +33,8 @@ import {
     useContract,
     usePendingContractSync,
     switchedProfileStore,
+    walletStore,
+    networkStore,
     usePrivacyGate,
     useAiFeatureGate,
     useNetworkConsentMutation,
@@ -49,6 +51,9 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
+import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
+import { assertCurrentKeycloakReauth } from './auth/keycloakReauth';
+import MyLearnCardModal from './components/learncard/MyLearnCardModal';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
@@ -62,6 +67,7 @@ import { AI_ROUTES } from './constants/aiRoutes';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
+import { reconcileQualificationCategories } from 'learn-card-base/helpers/qualificationCategoryBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
@@ -156,6 +162,15 @@ const AppRouter: React.FC = () => {
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const activeWallet = walletStore.use.wallet();
+    const cloudUrl = networkStore.use.cloudUrl();
+
+    useEffect(() => {
+        if (!walletReady || !isLoggedIn || isShareViewer || !activeWallet) return;
+        void reconcileQualificationCategories(activeWallet, queryClient, cloudUrl).catch(error =>
+            log.warn('Wallet category reconciliation failed', error)
+        );
+    }, [walletReady, isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
 
     useEffect(() => {
         if (
@@ -219,6 +234,10 @@ const AppRouter: React.FC = () => {
             '/claim/from-dashboard/',
             '/chats',
             '/cli',
+            '/wallet-worker',
+            '/store',
+            '/exchange',
+            '/get',
         ].includes(location.pathname) ||
         (collapsed &&
             AI_ROUTES.includes(location.pathname as (typeof AI_ROUTES)[number]) &&
@@ -226,13 +245,25 @@ const AppRouter: React.FC = () => {
         location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
+    const { refreshAuthSession, openRecoverySetup, authProvider } = useAppAuth();
+    const isKeycloak = useKeycloakRedirect(async intent => {
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        if (!(await refreshAuthSession())) throw new Error('Session could not be restored');
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        history.replace(intent.returnTo);
+        if (intent.action === 'account-recovery') {
+            newModal(<MyLearnCardModal branding={BrandingEnum.learncard} resumeRecovery />);
+        } else {
+            openRecoverySetup({ initialMethod: intent.initialMethod });
+        }
+    }, walletReady);
 
     useEffect(() => {
         if (isInsightsConsent && contract) {
             if (isChild) {
                 newModal(
                     <ShareInsightsWithUserWrapper targetProfileId={teacherProfileId as string} />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
             } else {
@@ -248,7 +279,7 @@ const AppRouter: React.FC = () => {
                     profileId={learnerProfileId as string}
                     redirectToLink={`/passport?shareInsights=${isShareInsightsRequest}&learnerProfileId=${learnerProfileId}`}
                 />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
@@ -260,7 +291,7 @@ const AppRouter: React.FC = () => {
             history.replace({ search: queryString.stringify(allOtherSearchParams) });
             newModal(
                 <NewMyData />,
-                { sectionClassName: '!max-w-[350px]' },
+                { sectionClassName: 'max-w-[350px]!' },
                 { desktop: ModalTypes.Cancel }
             );
         }
@@ -450,7 +481,7 @@ const AppRouter: React.FC = () => {
     }, [saved_email]);
 
     useEffect(() => {
-        if (!saved_email) {
+        if (!saved_email && !isKeycloak) {
             verifyAppleLogin();
         }
     }, []);
@@ -513,7 +544,7 @@ const AppRouter: React.FC = () => {
                                     event.preventDefault();
                                     document.getElementById('main')?.focus();
                                 }}
-                                className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[10000] focus-visible:rounded-[20px] focus-visible:bg-white focus-visible:px-4 focus-visible:py-3 focus-visible:text-sm focus-visible:font-medium focus-visible:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[10000] focus-visible:rounded-[20px] focus-visible:bg-white focus-visible:px-4 focus-visible:py-3 focus-visible:text-sm focus-visible:font-medium focus-visible:text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 Skip to main content
                             </a>

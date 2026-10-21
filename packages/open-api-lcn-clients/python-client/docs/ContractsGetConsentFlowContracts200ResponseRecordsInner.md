@@ -1,25 +1,24 @@
 # ContractsGetConsentFlowContracts200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**contract** | [**ContractsGetConsentFlowContract200ResponseContract**](ContractsGetConsentFlowContract200ResponseContract.md) |  | 
-**name** | **str** |  | 
-**subtitle** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**reason_for_accessing** | **str** |  | [optional] 
-**image** | **str** |  | [optional] 
-**uri** | **str** |  | 
-**needs_guardian_consent** | **bool** |  | [optional] 
-**redirect_url** | **str** |  | [optional] 
-**front_door_boost_uri** | **str** |  | [optional] 
-**created_at** | **str** |  | 
-**updated_at** | **str** |  | 
-**expires_at** | **str** |  | [optional] 
-**auto_boosts** | **List[str]** |  | [optional] 
-**writers** | [**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | [optional] 
+| Name                       | Type                                                                                                            | Description | Notes      |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **contract**               | [**StorageResolve200ResponseAnyOfAnyOf1**](StorageResolve200ResponseAnyOfAnyOf1.md)                             |             |
+| **name**                   | **str**                                                                                                         |             |
+| **subtitle**               | **str**                                                                                                         |             | [optional] |
+| **description**            | **str**                                                                                                         |             | [optional] |
+| **reason_for_accessing**   | **str**                                                                                                         |             | [optional] |
+| **image**                  | **str**                                                                                                         |             | [optional] |
+| **uri**                    | **str**                                                                                                         |             |
+| **needs_guardian_consent** | **bool**                                                                                                        |             | [optional] |
+| **redirect_url**           | **str**                                                                                                         |             | [optional] |
+| **front_door_boost_uri**   | **str**                                                                                                         |             | [optional] |
+| **created_at**             | **str**                                                                                                         |             |
+| **updated_at**             | **str**                                                                                                         |             |
+| **expires_at**             | **str**                                                                                                         |             | [optional] |
+| **auto_boosts**            | **List[str]**                                                                                                   |             | [optional] |
+| **writers**                | [**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |             | [optional] |
 
 ## Example
 
@@ -38,6 +37,5 @@ contracts_get_consent_flow_contracts200_response_records_inner_dict = contracts_
 # create an instance of ContractsGetConsentFlowContracts200ResponseRecordsInner from a dict
 contracts_get_consent_flow_contracts200_response_records_inner_from_dict = ContractsGetConsentFlowContracts200ResponseRecordsInner.from_dict(contracts_get_consent_flow_contracts200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

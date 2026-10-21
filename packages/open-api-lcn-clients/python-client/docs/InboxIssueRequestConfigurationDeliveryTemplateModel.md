@@ -4,11 +4,11 @@ The template model to use for the credential delivery. Injects via template vari
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**issuer** | [**InboxIssueRequestConfigurationDeliveryTemplateModelIssuer**](InboxIssueRequestConfigurationDeliveryTemplateModelIssuer.md) |  | [optional] 
-**credential** | [**InboxIssueRequestConfigurationDeliveryTemplateModelCredential**](InboxIssueRequestConfigurationDeliveryTemplateModelCredential.md) |  | [optional] 
-**recipient** | [**InboxIssueRequestConfigurationDeliveryTemplateModelRecipient**](InboxIssueRequestConfigurationDeliveryTemplateModelRecipient.md) |  | [optional] 
+| Name           | Type                                                                                                                                  | Description | Notes      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **issuer**     | [**InboxIssueRequestConfigurationDeliveryTemplateModelIssuer**](InboxIssueRequestConfigurationDeliveryTemplateModelIssuer.md)         |             | [optional] |
+| **credential** | [**InboxIssueRequestConfigurationDeliveryTemplateModelCredential**](InboxIssueRequestConfigurationDeliveryTemplateModelCredential.md) |             | [optional] |
+| **recipient**  | [**InboxIssueRequestConfigurationDeliveryTemplateModelRecipient**](InboxIssueRequestConfigurationDeliveryTemplateModelRecipient.md)   |             | [optional] |
 
 ## Example
 
@@ -27,6 +27,5 @@ inbox_issue_request_configuration_delivery_template_model_dict = inbox_issue_req
 # create an instance of InboxIssueRequestConfigurationDeliveryTemplateModel from a dict
 inbox_issue_request_configuration_delivery_template_model_from_dict = InboxIssueRequestConfigurationDeliveryTemplateModel.from_dict(inbox_issue_request_configuration_delivery_template_model_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

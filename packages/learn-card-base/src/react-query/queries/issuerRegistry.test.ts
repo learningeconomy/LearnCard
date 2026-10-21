@@ -46,7 +46,8 @@ afterEach(() => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
 });
-const lookup = (did: string) => client.fetchQuery(knownDIDRegistryQueryOptions(client, did));
+const lookup = (did: string) =>
+    client.fetchQuery({ ...knownDIDRegistryQueryOptions(client, did), retry: false });
 const calls = (url: string) => fetchMock.mock.calls.filter(([value]) => value === url).length;
 it('shares documents across concurrent issuers, preserving trust precedence and issuer metadata', async () => {
     const [a, b, c] = await Promise.all(['did:a', 'did:b', 'did:c'].map(lookup));
@@ -62,9 +63,11 @@ it('expires documents and honors explicit document invalidation', async () => {
     vi.useFakeTimers();
     await lookup('did:a');
     vi.setSystemTime(Date.now() + ISSUER_REGISTRY_STALE_TIME + 1);
+    await client.invalidateQueries({ queryKey: ['knownDidRegistry'] });
     await lookup('did:a');
     expect(calls(legacy)).toBe(2);
     await client.invalidateQueries({ queryKey: ['issuerRegistryDocument'] });
+    await client.invalidateQueries({ queryKey: ['knownDidRegistry'] });
     await lookup('did:a');
     expect(calls(legacy)).toBe(3);
 });
@@ -72,6 +75,7 @@ it('retries registry outages without retaining them as fresh negative results', 
     failure = true;
     expect((await lookup('did:a')).source).toBe('unknown');
     failure = false;
+    await client.invalidateQueries({ queryKey: ['knownDidRegistry'] });
     expect((await lookup('did:a')).source).toBe('trusted');
     expect(calls(legacy)).toBe(2);
     expect(calls(anchor)).toBe(1);
@@ -87,4 +91,30 @@ it('disables lookups without an issuer', () => {
     const stop = observer.subscribe(() => {});
     expect(fetchMock).not.toHaveBeenCalled();
     stop();
+});
+
+it('keeps conclusive issuer results fresh for an hour and incomplete results for a minute', async () => {
+    vi.useFakeTimers();
+    const conclusive = new QueryObserver(client, knownDIDRegistryQueryOptions(client, 'did:a'));
+    await conclusive.refetch();
+    expect(conclusive.getCurrentResult().data?.incomplete).toBe(false);
+    vi.setSystemTime(Date.now() + 61_000);
+    await lookup('did:a');
+    expect(calls(legacy)).toBe(1);
+    vi.setSystemTime(Date.now() + 60 * 60_000);
+    await lookup('did:a');
+    expect(calls(legacy)).toBe(2);
+});
+
+it('retains an untrusted warning during a trusted-registry outage and rechecks after one minute', async () => {
+    vi.useFakeTimers();
+    failure = true;
+    const partial = await lookup('did:c');
+    expect(partial).toMatchObject({ source: 'untrusted', incomplete: true });
+    await lookup('did:c');
+    expect(calls(legacy)).toBe(1);
+    failure = false;
+    vi.setSystemTime(Date.now() + 61_000);
+    expect(await lookup('did:c')).toMatchObject({ source: 'untrusted', incomplete: false });
+    expect(calls(legacy)).toBe(2);
 });

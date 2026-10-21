@@ -1,5 +1,4 @@
 PODS:
-  - Alamofire (5.10.2)
   - AppAuth (2.1.0):
     - AppAuth/Core (= 2.1.0)
     - AppAuth/ExternalUserAgent (= 2.1.0)
@@ -12,73 +11,68 @@ PODS:
     - PromisesObjC (~> 2.4)
     - PromisesSwift (~> 2.4)
     - RecaptchaInterop (~> 101.0)
-  - BigInt (5.2.0)
-  - Capacitor (8.4.1):
+  - Capacitor (8.5.2):
     - CapacitorCordova
-  - CapacitorApp (8.1.0):
+  - CapacitorApp (8.1.2):
     - Capacitor
-  - CapacitorBrowser (8.0.3):
+  - CapacitorBrowser (8.0.5):
     - Capacitor
-  - CapacitorCamera (8.2.0):
+  - CapacitorCamera (8.2.5):
     - Capacitor
-    - IONCameraLib (~> 1.0.4)
+    - IONCameraLib (~> 2.0.0)
   - CapacitorClipboard (8.0.1):
     - Capacitor
-  - CapacitorCommunitySqlite (8.1.0):
+  - CapacitorCommunitySqlite (8.1.1):
     - Capacitor
     - SQLCipher
     - ZIPFoundation
-  - CapacitorCordova (8.4.1)
-  - CapacitorFirebaseAnalytics (8.2.0):
+  - CapacitorCordova (8.5.2)
+  - CapacitorFirebaseAnalytics (8.5.2):
     - Capacitor
-    - CapacitorFirebaseAnalytics/Lite (= 8.2.0)
-  - CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport (8.2.0):
+    - CapacitorFirebaseAnalytics/Lite (= 8.5.2)
+  - CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport (8.5.2):
     - Capacitor
-    - FirebaseAnalytics/Core (~> 12.7.0)
-  - CapacitorFirebaseAnalytics/Lite (8.2.0):
+    - FirebaseAnalytics/Core (~> 12.7)
+  - CapacitorFirebaseAnalytics/Lite (8.5.2):
     - Capacitor
-  - CapacitorFirebaseAuthentication (8.3.0):
+  - CapacitorFirebaseAuthentication (8.5.2):
     - Capacitor
-    - CapacitorFirebaseAuthentication/Lite (= 8.3.0)
-    - FirebaseAuth (~> 12.7.0)
-  - CapacitorFirebaseAuthentication/Google (8.3.0):
+    - CapacitorFirebaseAuthentication/Lite (= 8.5.2)
+    - FirebaseAuth (~> 12.7)
+  - CapacitorFirebaseAuthentication/Google (8.5.2):
     - Capacitor
-    - FirebaseAuth (~> 12.7.0)
-    - GoogleSignIn (= 9.0.0)
-  - CapacitorFirebaseAuthentication/Lite (8.3.0):
+    - FirebaseAuth (~> 12.7)
+    - GoogleSignIn (~> 9.0)
+  - CapacitorFirebaseAuthentication/Lite (8.5.2):
     - Capacitor
-    - FirebaseAuth (~> 12.7.0)
+    - FirebaseAuth (~> 12.7)
   - CapacitorHaptics (8.0.2):
     - Capacitor
-  - CapacitorKeyboard (8.0.5):
+  - CapacitorKeyboard (8.0.6):
     - Capacitor
-  - CapacitorLocalNotifications (8.2.0):
+  - CapacitorLocalNotifications (8.3.1):
     - Capacitor
-  - CapacitorMlkitBarcodeScanning (8.1.0):
+  - CapacitorMlkitBarcodeScanning (8.2.1):
     - Capacitor
     - GoogleMLKit/BarcodeScanning (~> 8.0.0)
-  - CapacitorNativeSettings (8.1.0):
+  - CapacitorNativeSettings (8.2.0):
     - Capacitor
   - CapacitorNetwork (8.0.1):
     - Capacitor
-  - CapacitorPluginSafeArea (5.0.0):
+  - CapacitorPluginSafeArea (5.0.1):
     - Capacitor
-  - CapacitorPushNotifications (8.1.1):
+  - CapacitorPushNotifications (8.1.3):
     - Capacitor
-  - CapacitorShare (8.0.1):
+  - CapacitorShare (8.0.3):
     - Capacitor
-  - CapacitorSplashScreen (8.0.1):
+  - CapacitorSplashScreen (8.0.2):
     - Capacitor
-  - CapacitorStatusBar (8.0.2):
+  - CapacitorStatusBar (8.0.4):
     - Capacitor
-  - CapawesomeCapacitorBadge (8.0.2):
+  - CapawesomeCapacitorBadge (8.0.3):
     - Capacitor
-  - CapgoCapacitorUpdater (8.47.7):
-    - Alamofire (= 5.10.2)
-    - BigInt (= 5.2.0)
+  - CapgoCapacitorUpdater (8.52.1):
     - Capacitor
-    - Version (= 0.8.0)
-    - ZIPFoundation (~> 0.9)
   - Firebase/CoreOnly (12.7.0):
     - FirebaseCore (~> 12.7.0)
   - Firebase/Messaging (12.7.0):
@@ -181,7 +175,7 @@ PODS:
     - AppAuth/Core (~> 2.0)
     - GTMSessionFetcher/Core (< 4.0, >= 3.3)
   - GTMSessionFetcher/Core (3.5.0)
-  - IONCameraLib (1.0.5)
+  - IONCameraLib (2.0.0)
   - MLImage (1.0.0-beta7)
   - MLKitBarcodeScanning (7.0.0):
     - MLKitCommon (~> 13.0)
@@ -213,7 +207,6 @@ PODS:
   - SQLCipher/common (4.10.0)
   - SQLCipher/standard (4.10.0):
     - SQLCipher/common
-  - Version (0.8.0)
   - ZIPFoundation (0.9.20)
 
 DEPENDENCIES:
@@ -245,10 +238,8 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - Alamofire
     - AppAuth
     - AppCheckCore
-    - BigInt
     - Firebase
     - FirebaseAnalytics
     - FirebaseAppCheckInterop
@@ -277,7 +268,6 @@ SPEC REPOS:
     - PromisesSwift
     - RecaptchaInterop
     - SQLCipher
-    - Version
     - ZIPFoundation
 
 EXTERNAL SOURCES:
@@ -327,32 +317,30 @@ EXTERNAL SOURCES:
     :path: "../../../../node_modules/@capgo/capacitor-updater"
 
 SPEC CHECKSUMS:
-  Alamofire: 7193b3b92c74a07f85569e1a6c4f4237291e7496
   AppAuth: ef4da5a3fc2e10b90c09a0a94a9baeaedc0341d5
   AppCheckCore: e215d35177a9cf469927863e69c13e220df32a8b
-  BigInt: f668a80089607f521586bbe29513d708491ef2f7
-  Capacitor: 35242afe195b1e53c58ca1b827d1b444c5e6602b
-  CapacitorApp: 449ffe26375e96f8aaaee625ac6e01e5c57c8650
-  CapacitorBrowser: c987c73d09d8bd3b5ec13f06338b1e14d5d2be69
-  CapacitorCamera: 8f6acf83664118321111e76acef86390211ccb08
+  Capacitor: 89067779e14fb7ea56af07b4817f45d1f0c2a269
+  CapacitorApp: 7b7e43debe505bc61beedb83796aa1368c86078b
+  CapacitorBrowser: f94f92654e92a97981bf346b3681af76527dace0
+  CapacitorCamera: 2366a2b6d44417406ab33f8545d5c7b7b233028f
   CapacitorClipboard: c75fdaa6e622111119f35e7914ecfc67b05efecb
-  CapacitorCommunitySqlite: eac6acfb852f46e7988fc59604d7f900498d354e
-  CapacitorCordova: eebe6bcf807b1b06f3f48237650f96bbcd0eef09
-  CapacitorFirebaseAnalytics: bbae7a1f78d18e5571ea2bfdafc3511d075f5ab3
-  CapacitorFirebaseAuthentication: d1f4c78c96f2669351781692071260ac79573876
+  CapacitorCommunitySqlite: 785553c54e52da62d058238d4571db5692c022c4
+  CapacitorCordova: 5bec5648cbd09a176ce34ce5e7b6cdabb2c8a327
+  CapacitorFirebaseAnalytics: ccb5abdae5561f8c7d330a066ea5f5952e9196fa
+  CapacitorFirebaseAuthentication: 826e1dae433819492daff947f3d674d1579a6ee7
   CapacitorHaptics: 296f771ecd89c7a1bd92a7b6826a7d268e2e70f5
-  CapacitorKeyboard: b6b0744890cdb1d9a96e2cafcc9253fdcc55de3b
-  CapacitorLocalNotifications: 2615aa008f608b95d3921a778ee1988abf1e6148
-  CapacitorMlkitBarcodeScanning: 31c6af9f39873ff69e16ed5b39ebe2e1915f16fe
-  CapacitorNativeSettings: d512b84fdcc04948c32f267621079a0d7c0d452f
+  CapacitorKeyboard: f9e85e685082e9f63404de15db4a4291448b0912
+  CapacitorLocalNotifications: e0747a329ddde3074d52dc74a003688af90e42be
+  CapacitorMlkitBarcodeScanning: 1070a9d56dd84c08a7354d12354293daeee28100
+  CapacitorNativeSettings: 3f12e9700e0a10cb5d0e22aec00de29d72589a12
   CapacitorNetwork: 8812ce60d11fb63d8f2e4ba51a49b2e59892ebe2
-  CapacitorPluginSafeArea: 9d0682951c011bf0b36e513a89103c5fbff7ac49
-  CapacitorPushNotifications: ec08d589c226a2c0db7c032ec1bf5b044ec85f8e
-  CapacitorShare: 0c58305114538568059bfc07111f22dcb9cb2a82
-  CapacitorSplashScreen: 4b46c72298db552b3c57ce021ef028b6dc7f1fa7
-  CapacitorStatusBar: 01d5763b4ed720de5ce2edbc938de6a98f4c8f32
-  CapawesomeCapacitorBadge: 0d9dca1ab1e770a4524c5a6c35d3c1ee91b296f8
-  CapgoCapacitorUpdater: c36313cb189e7baff4de449f959e6b53272e5179
+  CapacitorPluginSafeArea: 874619c00586248f1694210e72038123d422c2d9
+  CapacitorPushNotifications: a31b62e18764ab855537dfcdade1e6ecf5aba29f
+  CapacitorShare: 5b5e53347556bee89ae6163ed20b5b3c25fe75f1
+  CapacitorSplashScreen: 7bf61c2001557ff9e195e601c6b87344480d3c65
+  CapacitorStatusBar: ff844df1f126da6c4fbc4028272425fa3a91e7e3
+  CapawesomeCapacitorBadge: b5e0c79efc4c1dc0354ca27064b3e6ef98ab9c0a
+  CapgoCapacitorUpdater: 47d426a357a2632bf3ff1482b57339d255dce805
   Firebase: 2d19a10c9a2e48ac532a4303115d3fc9b2798396
   FirebaseAnalytics: e423129866107aeacf6010a280b9c9829f9ea50d
   FirebaseAppCheckInterop: d58366471f1dadf2ed998b15f85c658458a10142
@@ -371,7 +359,7 @@ SPEC CHECKSUMS:
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
-  IONCameraLib: ecbd8ef0077d481df429cee267bbeb1a7b9bddd0
+  IONCameraLib: 729cae576e1a952602ce750a9790b6dc7d7e2e95
   MLImage: 2ab9c968e75f57911c16f4c9d9e8a8e9604a86a1
   MLKitBarcodeScanning: 72c6437f13a900833b400136be53a8a5d86f42fa
   MLKitCommon: 26b779f072a182c1603d4c88a101c350cac837b1
@@ -381,9 +369,8 @@ SPEC CHECKSUMS:
   PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   SQLCipher: eb79c64049cb002b4e9fcb30edb7979bf4706dfc
-  Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 03456844f05396c22e2dd3f1f267d64dc482a25e
+PODFILE CHECKSUM: cf5c8644a378c29ffe738b5ba4d49f119e6f3798
 
 COCOAPODS: 1.16.2

@@ -454,6 +454,9 @@
         "d7bd4683f1f137a033d3163fd35f4e7837f4e7a8358175a98ee9932356071438": 1,
         "eb316625f95cedad697ee0bd0ef03b2a3eea668f6d87c9e917dc1e9e7f80aba8": 1
     },
+    "examples/credential-viewer/src/components/NewFixturePanel.tsx": {
+        "5aa74082d58e818b62cc05c3262e8098ee94ba229a96c5328d711349e9e19672": 1
+    },
     "examples/embed-example/src/scripts/embed-init.ts": {
         "03f0d913eb81df66cc55cee32a66f23e2577673abc97dbd16193c5c88a61a50f": 1,
         "05130f3bf91169dfa29e36f9d12270fe8840c66f8297a5aa9f5a8f4b85b6f75d": 1,
@@ -5133,28 +5136,24 @@
         "f288a964cdc6d1b82e9b62e078f1781c228cbef977853fabd4e9481d8aada2b5": 1
     },
     "services/learn-card-network/brain-service/src/accesslayer/inbox-credential/relationships/create.ts": {
-        "08229d4e8465815524481e25043b51c5e6711b7bec9a9cd4320564b4d132da2d": 1,
+        "0a0c28bb7da9c0d3a799a54962bf877e6f3fc591a43a3128c52bf55ef5f78b81": 1,
         "1248173e5f1882422f3d959d755745f143f061abfc58ff37f4406b358c835f9c": 1,
         "2b2d9aec73d2b65276a79d89fe26eb7e8f03b78de84f4f08c67be3aedf2ae51e": 1,
         "2cc140888df7e3d4e83024cf332f85a303352f137cf933107a7bd1f32aa39109": 1,
+        "38f579ccbad006b450b47d729e2dbd4ff2ca42c26b679b5e4e97cf8d7bb39b57": 1,
         "3efe66c7cb50fe32443a56fb15eaeb2d8ce79342caabba4c470c0fd7e78bb2a1": 1,
         "54057a1a9d42d9469c7d147bf18ae4055d5620142e106f346acaf480f7c2efe1": 1,
-        "5944d041225d2111ad66ce0f4d14b7c191d68f26fa7cc6b8e83761b168d6144d": 1,
+        "5944d041225d2111ad66ce0f4d14b7c191d68f26fa7cc6b8e83761b168d6144d": 2,
         "752247958019ece03bfceca86e1e7de40d809b8217bc2ef42f0a9ed7c8fcfec1": 1,
-        "791b1c7d8195231cefb433d270205d0d6d396ef8468fa0fa238bf615178a3942": 1,
-        "7d14a22bbae5237e2a3252b1788e540c02f21216bbc6211698dfd38b0fabbfa1": 1,
         "82a8576189d59023ec8853500b675e034d9b46d45b4fc05e270e35816eb3dad4": 1,
-        "85eaa401119f0ee43b4f59aeffabb0f03bc5a5c7d8343777ea5b47e9416d8f8e": 2,
+        "85eaa401119f0ee43b4f59aeffabb0f03bc5a5c7d8343777ea5b47e9416d8f8e": 1,
         "98334a05f8d46a13227a66229eaf55aaf288ac35a8b559552f0bd5d329f4a6cd": 1,
         "9f52d4f3f7b62211da8e7944153e190163fa362827e034d0e5f3992cc1fe7be2": 1,
         "b37c515cfa9ebca56935edfe20a34aec5241c42a3a9e6378648630f8fe35ea9f": 1,
-        "b86a7764d6d71be0bad9d2a38a23f6e1ef5c0397e276038d8356d5b5bd952d32": 1,
         "c8963769565a01282375707deecb85d029c401d3fa83d41c85feca7b6e33ad92": 1,
-        "d5f95780db80dc715ec86885d6cb2e8b54b6f3f7a4d93a6ea43afaa0444f1665": 1,
         "de17a24e5d9a4e7f122c60757c4fc0cd535fabd8fe73c60d3783a74e13a70f82": 1,
-        "df75ee1fcbeb6111b409d1acf1981b84ba95e4f0caf3300d7013006cc82f03e9": 1,
         "ef4d7ec3e2f2c07cbe81fefb233c07d1742fc3f6174172282697b8d990aa8370": 5,
-        "fd63c8f642b9bf81c8a7e98921bfa6d6c052784820154f508dbb70bcc46d66ea": 1,
+        "f46b66530900995168d101e686d5ad809c1203c95d5c17cd4bc483121a4c9651": 1,
         "fd90b873e67acb0ce897a3b68c51d3dba06a5fdb1dc7f8739a80e3a5e46aec46": 1
     },
     "services/learn-card-network/brain-service/src/accesslayer/inbox-credential/relationships/read.ts": {

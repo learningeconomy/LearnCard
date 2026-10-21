@@ -16,12 +16,14 @@
  *   environments/<tenant>/assets/config/capacitor.config.json
  */
 import type { CapacitorConfig } from '@capacitor/cli';
+import { nativeBrowserCompatibility } from '../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
 
 const config: CapacitorConfig = {
     appId: 'com.learncard.app',
     appName: 'LearnCard',
     webDir: 'build',
     bundledWebRuntime: false,
+    ...nativeBrowserCompatibility(),
     plugins: {
         SystemBars: {
             // Capacitor injects --safe-area-inset-* and keeps them synchronized
@@ -64,7 +66,7 @@ const config: CapacitorConfig = {
             // Bump this value whenever you bump native binaries; do NOT add a parallel
             // tenant-level override — that's how channels drift and OTA updates land in
             // an empty channel (see PR #1063 incident).
-            defaultChannel: '1.0.11', // bumped here https://github.com/learningeconomy/LearnCard/pull/1495
+            defaultChannel: '1.0.13', // LC-2006: Tailwind 4 requires an iOS 16.4+ native build.
         },
     },
 };

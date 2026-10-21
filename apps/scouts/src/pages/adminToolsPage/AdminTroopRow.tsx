@@ -34,7 +34,7 @@ const AdminTroopRow: React.FC<AdminTroopRowProps> = ({ credential }) => {
                 credential={cred.boostCredential ?? cred}
                 uri={credential.boostId}
             />,
-            { sectionClassName: '!bg-transparent !shadow-none !max-w-[355px]' },
+            { sectionClassName: 'bg-transparent! shadow-none! max-w-[355px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

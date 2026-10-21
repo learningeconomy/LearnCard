@@ -234,6 +234,12 @@ Before shipping any new modal, overlay, or form:
 9. **Contrast**: Text readable on its background (test on white AND colored backgrounds)
 10. **Animation**: Use `animate-fade-in-up` for overlay entrance, `transition-colors` / `transition-opacity` for interactions
 
+## Verifying Your Work
+
+Use focused unit/mock tests and small scripts or a reusable browser in the edit loop. Near PR readiness, prove cross-surface or network-touching changes with the matching `lc verify` journey; run the full catalog before marking that work ready. This is a Linux-only owned-stack gate, not a requirement to rebuild the world after every edit. macOS/Windows developers can use the secret-free hosted Linux workflow `.github/workflows/verification.yml` or a disposable Linux sandbox. Read `.agents/skills/verify-learncard/SKILL.md` for setup, per-directory ports/dev coexistence, safe worker coordination, and honest coverage gaps. Never claim verification you did not run.
+
+Finish agent tasks with the draft-PR proof contract in [ship-with-proof](.agents/skills/ship-with-proof/SKILL.md).
+
 ## Monorepo Structure
 
 The project uses Bun workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory
@@ -348,9 +354,13 @@ the DIDKit plugin, and return from `pkg` with `cd ..` (compatible with fish):
 
 ```bash
 cd lib/didkit/lib/web
-wasm-pack build --target=web && cd pkg && wasm-opt -Oz -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
+wasm-pack build --target=web && cd pkg && wasm-opt -Oz --enable-mutable-globals --enable-nontrapping-float-to-int --enable-bulk-memory --enable-sign-ext --enable-reference-types --enable-multivalue -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
 bun --cwd ../../../../packages/plugins/didkit run build
 ```
+
+Pass the explicit `--enable-*` feature flags to `wasm-opt`, matching
+`packages/plugins/didkit/scripts/build-wasm-from-submodules.sh`. Stripped DIDKit release builds
+have no `target_features` section, so a plain `wasm-opt -Oz` fails validation.
 
 The bridge and LearnCard CLI load
 `@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm`, so the final plugin build is

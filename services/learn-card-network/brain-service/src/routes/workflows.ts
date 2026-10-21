@@ -37,7 +37,12 @@ import { createClaimedRelationship } from '@accesslayer/inbox-credential/relatio
 import { getContactMethodById, getProfileByContactMethod } from '@accesslayer/contact-method/read';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 
-import { getBoostUri, isBoostViewableByClaimLink, isDraftBoost } from '@helpers/boost.helpers';
+import {
+    getBoostUri,
+    isBoostViewableByClaimLink,
+    isDraftBoost,
+    stampIssuanceDate,
+} from '@helpers/boost.helpers';
 import { getBoostOwnerProfile } from 'types/boost';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
@@ -392,6 +397,8 @@ async function handlePresentationForClaim(
 
         boostCredential.issuer = signingAuthorityForUser.relationship.did;
 
+        stampIssuanceDate(boostCredential);
+
         if (Array.isArray(boostCredential.credentialSubject)) {
             boostCredential.credentialSubject = boostCredential.credentialSubject.map(subject => ({
                 ...subject,
@@ -409,6 +416,7 @@ async function handlePresentationForClaim(
         // Inject OBv3 skill alignments based on boost's framework/skills
         await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
+        // encrypt=false on purpose: interoperable claim wallets may not decrypt LearnCard JWEs. See LC-2201.
         const vc = (
             await issueCredentialWithSigningAuthority(
                 { type: 'profile', profile: saOwnerProfile },
@@ -679,14 +687,14 @@ async function handleInboxClaimPresentation(
                 // Set issuer from signing authority
                 unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
-                // Sign the credential
+                // encrypt=false on purpose: interoperable inbox claim wallets may not decrypt LearnCard JWEs. See LC-2201.
                 finalCredential = (
                     await issueCredentialWithSigningAuthority(
                         { type: 'profile', profile: issuerProfile },
                         unsignedCredential,
                         signingAuthorityForUser,
                         ctx.domain,
-                        false // don't encrypt
+                        false
                     )
                 ).credential as VC;
             }

@@ -1,14 +1,14 @@
 # BoostGetBoostRecipients200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**to** | [**BoostGetBoostRecipients200ResponseInnerTo**](BoostGetBoostRecipients200ResponseInnerTo.md) |  | 
-**var_from** | **str** |  | 
-**received** | **str** |  | [optional] 
-**uri** | **str** |  | [optional] 
+| Name         | Type                                                                                          | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **to**       | [**BoostGetBoostRecipients200ResponseInnerTo**](BoostGetBoostRecipients200ResponseInnerTo.md) |             |
+| **var_from** | **str**                                                                                       |             |
+| **received** | **str**                                                                                       |             | [optional] |
+| **uri**      | **str**                                                                                       |             | [optional] |
+| **status**   | **str**                                                                                       |             | [optional] |
 
 ## Example
 
@@ -27,6 +27,5 @@ boost_get_boost_recipients200_response_inner_dict = boost_get_boost_recipients20
 # create an instance of BoostGetBoostRecipients200ResponseInner from a dict
 boost_get_boost_recipients200_response_inner_from_dict = BoostGetBoostRecipients200ResponseInner.from_dict(boost_get_boost_recipients200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
