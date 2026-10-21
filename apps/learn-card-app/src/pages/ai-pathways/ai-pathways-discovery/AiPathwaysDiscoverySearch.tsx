@@ -33,7 +33,9 @@ const AiPathwaysDiscoverySearch: React.FC<{
                     </IonLabel>
                     <IonInput
                         value={keywordInput}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onIonInput={(e: any) => setKeywordInput(e.detail.value)}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onKeyDown={(e: any) => e.key === 'Enter' && handleSearch()}
                         autocapitalize="on"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-sm`}
@@ -62,6 +64,7 @@ const AiPathwaysDiscoverySearch: React.FC<{
                         <TransP
                             m={m['aiPathways.discovery.searchingFor']}
                             values={{ keyword: searchKeyword }}
+                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                             components={[<strong className="text-indigo-700" />]}
                         />
                     </div>

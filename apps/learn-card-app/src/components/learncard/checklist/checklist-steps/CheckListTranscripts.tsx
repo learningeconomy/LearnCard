@@ -219,6 +219,7 @@ export const CheckListTranscripts: React.FC = () => {
 
     const triggerFileInput = () => fileInputRef.current?.click();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleReviewConfirm = async (selectedVcs: any[]) => {
         setIsSavingSelected(true);
         const pending = checklistStore.get.pendingReview().transcript;
@@ -240,6 +241,7 @@ export const CheckListTranscripts: React.FC = () => {
         setShowReview(false);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleEditCredential = (index: number, editedVc: any) => {
         setParsedCredentials(prev => {
             const updated = prev.map((cred, i) => {

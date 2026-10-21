@@ -8,6 +8,7 @@ import AiPathwayCourseDetails from './AiPathwayCourseDetails';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { getOccupationTags } from './ai-pathway-courses.helpers';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const AiPathwayCourseItem: React.FC<{ course: any }> = ({ course }) => {
     const { newModal } = useModal();
 

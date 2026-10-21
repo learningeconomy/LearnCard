@@ -58,6 +58,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
     const { userAge, isChildProfile } = useGuardianGate();
 
     // Separate min_age (hard block) from age_rating (soft block with guardian approval)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const listingAny = listing as any;
     const minAge: number | undefined = listingAny.min_age;
     const ageRating: string | undefined = listingAny.age_rating;
@@ -213,6 +214,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     })) as any as string;
 
                     urlObj.searchParams.set('vp', vp);
@@ -242,6 +244,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
             newModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     appId={(listing as any).slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}

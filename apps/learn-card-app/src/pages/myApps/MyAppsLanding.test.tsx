@@ -8,6 +8,7 @@ const replace = vi.fn();
 let mockLocation = { search: '' };
 
 vi.mock('react-router-dom', async orig => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const actual = (await orig()) as any;
     return { ...actual, useHistory: () => ({ push, replace }), useLocation: () => mockLocation };
 });

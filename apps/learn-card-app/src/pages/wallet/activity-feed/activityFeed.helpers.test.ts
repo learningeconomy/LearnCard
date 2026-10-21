@@ -18,6 +18,7 @@ const isoDaysAgo = (days: number): string => {
     return d.toISOString();
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const record = (over: Partial<any> = {}) => ({
     id: 'a1',
     activityId: 'x1',

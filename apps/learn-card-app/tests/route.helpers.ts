@@ -50,6 +50,7 @@ export const mockDidKitWasmForContext = async (context: BrowserContext) => {
 
 export const mockLaunchDarkly = async (
     page: Page,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     testFlags: { [key: string]: { value: any } }
 ) => {
     await page.route(/.*\.launchdarkly\..*/, route => {

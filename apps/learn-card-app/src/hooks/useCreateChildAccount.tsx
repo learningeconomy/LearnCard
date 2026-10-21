@@ -26,6 +26,7 @@ export const useCreateChildAccount = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         mutationFn: async ({ childAccount, boostUri }: { childAccount: any; boostUri: string }) => {
             const wallet = await initWallet();
 
@@ -89,11 +90,13 @@ export const useCreateChildAccount = () => {
                     category: BoostCategoryOptionsEnum.family,
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain -- removing the assertion widens the type and needs a real null check
                 await wallet.invoke.removeBoostAdmin(boostUri, childAccount?.profileId!);
 
                 return { success: true, childDid, childLc, managerLc };
             } catch (e) {
                 log.error('handleCreateChildAccount', e);
+                // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
                 throw new Error('Failed to create child account');
             }
         },

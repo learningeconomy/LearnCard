@@ -116,6 +116,7 @@ export const FamilyBoostPreviewFrontFace: React.FC<{
     const getDependents = async () => {
         const wallet = await initWallet();
         const _dependents =
+            // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
             (await wallet?.invoke?.getBoostChildrenProfileManagers(credential?.boostId)).records ??
             [];
 

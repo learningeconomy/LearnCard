@@ -23,7 +23,9 @@ const SkillsInsightCard: React.FC = () => {
                         <TransP
                             m={m['skills.insightCard.blurb']}
                             components={[
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 <span className="font-normal text-grayscale-200" />,
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 <span className="font-normal text-grayscale-200" />,
                             ]}
                         />

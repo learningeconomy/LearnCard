@@ -146,16 +146,19 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     // state for single file upload
     const [file, setFile] = useState<{ type: string; size: string; name: string } | null>(null);
     const [base64Data, setBase64Data] = useState<string>('');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [rawArtifactCredential, setRawArtifactCredential] = useState<any>(null);
 
     // state for multiple file uploads
     const [files, setFiles] = useState<{ type: string; size: string; name: string }[]>([]);
     const [base64Datas, setBase64Datas] = useState<string[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [rawArtifactCredentials, setRawArtifactCredentials] = useState<any[]>([]);
 
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [parsedCredentials, setParsedCredentials] = useState<
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         Array<{ vc: any; metadata?: { name?: string; category?: string } }>
     >([]);
 
@@ -278,6 +281,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
     const getJsonFiles = async (
         event: React.ChangeEvent<HTMLInputElement>,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         onFail?: (error: any) => void
     ) => {
         try {
@@ -304,7 +308,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         const aggregate = (await uploadVcFromText(file, {
                             fileInfo,
                             uploadType,
-                        }))!!;
+                        }))!;
 
                         addedTotal += aggregate.addedCount;
                         failedTotal += aggregate.failedCount;
@@ -408,6 +412,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             let message = `Something went wrong uploading your ${uploadType}.`;
             if (typeof error === 'object' && error !== null && 'message' in error) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 message = (error as any).message ?? message;
             }
 
@@ -424,6 +429,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const saveFile = async (rawArtifactCredential: any, uploadType: UploadTypesEnum) => {
         try {
             setIsSaving(true);
@@ -466,6 +472,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
      */
     const fetchParsedCredentials = async (
         fileType: UploadTypesEnum
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     ): Promise<Array<{ vc: any; metadata?: any }>> => {
         try {
             checklistStore.set.updateIsParsing(fileType, true);
@@ -493,6 +500,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
      */
     const fetchParsedCredentialsFromFiles = async (
         fileType: UploadTypesEnum
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     ): Promise<Array<{ vc: any; metadata?: any }>> => {
         try {
             checklistStore.set.updateIsParsing(fileType, true);
@@ -500,6 +508,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const did = wallet?.id?.did();
             if (!did) throw new Error('Could not get wallet DID');
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const allVcs: Array<{ vc: any; metadata?: any }> = [];
             for (const rawVC of rawArtifactCredentials) {
                 const vcs = await uploadFile({
@@ -526,9 +535,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
      * If rawArtifactVc is null/undefined, this will throw — ensure getFile() was called first.
      */
     const storeSelectedCredentials = async (
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         selectedVcs: any[],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         rawArtifactVc: any,
         fileType: UploadTypesEnum,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         additionalRawArtifacts?: any[]
     ) => {
         try {
@@ -550,12 +562,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                             vc,
                             rawArtifactVc
                         );
-                        const issuedVc = await wallet.invoke.issueCredential(
-                            credentialWithAttachment
-                        );
-                        const { credentialUri: uri, category } = await storeAndAddVCToWallet(
-                            issuedVc
-                        );
+                        const issuedVc =
+                            await wallet.invoke.issueCredential(credentialWithAttachment);
+                        const { credentialUri: uri, category } =
+                            await storeAndAddVCToWallet(issuedVc);
                         return { uri, category };
                     })
                 );
@@ -582,6 +592,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const totalCredentials = selectedVcs.length;
             const categories = Object.keys(recordsByCategory);
             const filenames = [rawArtifactVc, ...(additionalRawArtifacts ?? [])].map(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 (r: any) => r?.rawArtifact?.fileName
             );
             const fileCount = filenames.filter(Boolean).length;
@@ -643,12 +654,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                             vc,
                             rawArtifactCredential
                         );
-                        const issuedVc = await wallet.invoke.issueCredential(
-                            credentialWithAttachment
-                        );
-                        const { credentialUri: uri, category } = await storeAndAddVCToWallet(
-                            issuedVc
-                        );
+                        const issuedVc =
+                            await wallet.invoke.issueCredential(credentialWithAttachment);
+                        const { credentialUri: uri, category } =
+                            await storeAndAddVCToWallet(issuedVc);
                         return { uri, category };
                     })
                 );
@@ -762,9 +771,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                                     vc,
                                     rawVC
                                 );
-                                const issuedVc = await wallet.invoke.issueCredential(
-                                    credentialWithAttachment
-                                );
+                                const issuedVc =
+                                    await wallet.invoke.issueCredential(credentialWithAttachment);
                                 const { credentialUri: uri, category } =
                                     await storeAndAddVCToWallet(issuedVc);
                                 return { uri, category };

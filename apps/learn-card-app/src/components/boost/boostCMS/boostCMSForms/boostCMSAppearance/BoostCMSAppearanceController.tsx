@@ -33,7 +33,9 @@ type BoostCMSAppearanceControllerProps = {
     state: BoostCMSState;
     setState?: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     boostUserType?: BoostUserTypeEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     customTypes?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     setCustomTypes?: React.Dispatch<any>;
     disabled?: boolean;
     handleCategoryAndTypeChange?: (
@@ -72,6 +74,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
 
     const defaultThumbnail = boostCategoryMetadata[categoryType]?.CategoryImage;
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let badgeCircleText = '';
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {

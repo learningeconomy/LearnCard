@@ -73,9 +73,7 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ resolved, snapshot }) => 
     // docstring for the rationale. `hasPriorSessions` is the signal
     // we actually render against; `hasExistingTopic` is kept in
     // scope for future copy variants (claimed-but-never-used, etc.).
-    const { hasExistingTopic, hasPriorSessions, topic } = useTopicAvailability(
-        resolved.topicUri,
-    );
+    const { hasExistingTopic, hasPriorSessions, topic } = useTopicAvailability(resolved.topicUri);
 
     const { launch } = useAiSessionLaunch(resolved, {
         topicTitle: snapshot?.topicTitle,
@@ -87,14 +85,16 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ resolved, snapshot }) => 
     // renders — we just show placeholder copy and let the launch CTA
     // speak for itself.
     const topicTitle =
-        snapshot?.topicTitle
-        ?? (topic?.topicVc as any)?.boostCredential?.topicInfo?.title
-        ?? 'AI Tutor Session';
+        snapshot?.topicTitle ??
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
+        (topic?.topicVc as any)?.boostCredential?.topicInfo?.title ??
+        'AI Tutor Session';
 
     const topicDescription =
-        snapshot?.topicDescription
-        ?? (topic?.topicVc as any)?.boostCredential?.topicInfo?.description
-        ?? null;
+        snapshot?.topicDescription ??
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
+        (topic?.topicVc as any)?.boostCredential?.topicInfo?.description ??
+        null;
 
     const skills = snapshot?.skills ?? [];
     const iconUrl = snapshot?.iconUrl;
@@ -126,14 +126,18 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ resolved, snapshot }) => 
 
                 {hasPriorSessions && (
                     <>
-                        <span aria-hidden className="text-grayscale-300">·</span>
+                        <span aria-hidden className="text-grayscale-300">
+                            ·
+                        </span>
                         <span className="text-emerald-600">Resumable</span>
                     </>
                 )}
 
                 {hasExistingTopic && !hasPriorSessions && (
                     <>
-                        <span aria-hidden className="text-grayscale-300">·</span>
+                        <span aria-hidden className="text-grayscale-300">
+                            ·
+                        </span>
                         <span className="text-grayscale-600">In your wallet</span>
                     </>
                 )}
@@ -267,9 +271,7 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ resolved, snapshot }) => 
                             className="text-base"
                             aria-hidden
                         />
-                        <span>
-                            {hasPriorSessions ? 'Continue session' : 'Start session'}
-                        </span>
+                        <span>{hasPriorSessions ? 'Continue session' : 'Start session'}</span>
                     </button>
                 </div>
             </div>

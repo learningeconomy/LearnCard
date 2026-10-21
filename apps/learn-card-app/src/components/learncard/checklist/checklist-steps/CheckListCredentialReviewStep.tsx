@@ -5,14 +5,17 @@ import CredentialEditView from './CredentialEditView';
 import { getWalletCategory, getCategoryDisplayLabel } from './AchievementTypeSelectorModal';
 import * as m from '../../../../paraglide/messages.js';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export type ParsedCredential = { vc: any; metadata?: { name?: string; category?: string } };
 
 type Props = {
     credentials: ParsedCredential[];
     fileType: UploadTypesEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     onConfirm: (selectedVcs: any[]) => void;
     onBack: () => void;
     isLoading?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     onEditCredential?: (index: number, editedVc: any) => void;
 };
 
@@ -74,6 +77,7 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
 
     const allSelected = selected.size === credentials.length;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleEditSave = (editedVc: any) => {
         if (editingIndex !== null && onEditCredential) {
             onEditCredential(editingIndex, editedVc);
@@ -210,8 +214,8 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
                     {isLoading
                         ? m['passport.buildMyLearnCard.misc.saving']()
                         : selected.size > 0
-                        ? m['passport.buildMyLearnCard.review.save']({ count: selected.size })
-                        : m['passport.buildMyLearnCard.misc.save']()}
+                          ? m['passport.buildMyLearnCard.review.save']({ count: selected.size })
+                          : m['passport.buildMyLearnCard.misc.save']()}
                 </button>
             </div>
         </div>

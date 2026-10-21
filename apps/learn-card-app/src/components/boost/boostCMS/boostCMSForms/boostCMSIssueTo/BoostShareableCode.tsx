@@ -280,6 +280,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
             setIsPermissionsLoading(true);
             try {
                 const wallet = await initWallet();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 const boost = (await wallet?.invoke?.getBoost(boostUri)) as any;
                 const defaultPermissions = boost?.defaultPermissions ?? {};
                 setTemplateDefaultPermissions(defaultPermissions);

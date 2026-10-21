@@ -30,6 +30,7 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
     const location = useLocation();
     const history = useHistory();
     const { dataSource, ...otherParams } = queryString.parse(location.search);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const { token, login }: IAuthContext = useContext(AuthContext as any);
 
     useEffect(() => {

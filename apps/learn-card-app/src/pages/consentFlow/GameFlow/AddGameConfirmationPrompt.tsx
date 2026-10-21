@@ -46,7 +46,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
 
     const history = useHistory();
     const { newModal, closeAllModals } = useModal();
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { handleSwitchAccount } = useSwitchProfile();
