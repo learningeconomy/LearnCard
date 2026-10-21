@@ -87,6 +87,32 @@ flowchart TD
 - **D4 (KMS Recipient Flow):** The enclave generates a boot-time RSA-2048 recipient keypair. First boot calls `GenerateDataKey(KeySpec=AES_256, Recipient=NSM attestation)` with `{purpose:escrow-enclave-key,keyId}` context; subsequent boots call `Decrypt` with the same context and Recipient. Both reject any Plaintext field (including empty), require nonempty recipient ciphertext, and accept exactly 32 seed bytes after CMS opening. Generation additionally requires a nonempty CiphertextBlob for persistence. Domain-separated HKDF-SHA256 binds keyId and rejection-samples the escrow P-256 scalar; the seed/scalar buffers zeroize. No `Encrypt` operation exists in the enclave. No sealed-format migration is supported: Nitro never ran in production and the prior `nitro,kms` build did not compile. Deploy with a fresh restricted CMK, or prove it has never allowed attacker-known ciphertext generation: newly denying Encrypt does not invalidate pre-existing host-known 32-byte-seed ciphertexts.
 - **D7 (KMS Key Policy):** The KMS key policy uses one statement per released measurement tuple. It requires an exact match on PCR0, PCR1, and PCR2 simultaneously to prevent cross-combination of measurements.
 - **D10 (Key Admin Residual Risk):** An MFA-authenticated key admin can theoretically rewrite the KMS key policy to remove attestation gates. This residual risk is mitigated by mandatory two-person PR review and CloudTrail alarms, rather than an immutable key policy.
+- **R-AUTHORITY-ROLLBACK (security acceptance required):** Until the
+  [authority archiver](AUTHORITY-ARCHIVER.md) ships, a coherent authority-table
+  rollback/purge by an attacker who already broke the admin boundary is detected
+  through CloudTrail data-event write alarms and governance/trail-tamper alarms,
+  **not independent archived authority history**. Table-only sweeps cannot detect
+  coherent loss of all historical rows. These are best-effort signals, not a
+  guaranteed detection deadline: a stolen writer identity can evade the nonwriter
+  filter, and a trusted organization/MFA admin can weaken policies or detection.
+  COMPLIANCE locks delivered log versions, not future logging or KMS availability.
+  Explicit security acceptance is required before launch without the archiver;
+  implement it before the 50% rollout stage, or sooner if security rejects this
+  risk. Same-generation rollback remains forbidden.
+
+**Fixed monitoring gap (deployment and drills still required):** operator
+read-only verification on **2026-10-20** found no escrow staging CloudTrail trail,
+including shadow trails, and no organization trail. The organization's only trail
+was single-account in management. CloudTrail event history showed **36
+PutKeyPolicy events in 90 days** during image rolls, while EventBridge
+`TriggeredRules = 0` over **60 days** for kms-governance and all six authority-*
+rules. Those governance alarms had never fired: without an enabled trail,
+EventBridge did not receive the required `AWS API Call via CloudTrail` events.
+Bootstrap now defines the missing multi-region management/data trail with locked
+log storage; core adds authority-write and trail-tamper rules. Nothing is applied
+by this PR. Do not treat this code fix as deployed mitigation until the
+[staging drills](STAGING.md#cloudtrail-trail-and-alarm-drills--operator-only) pass.
+
 - **D11 (RSA/Marvin Rationale):** The `rsa` crate has a known timing side-channel (Marvin). This is accepted because the CMS blob only arrives inside the enclave's own TLS session to KMS, meaning the host cannot submit chosen ciphertexts.
 - **D12 (Software Mode Blocked in Production):** The client guard (`getEscrowStrategyConfig` in `packages/learn-card-base/src/config/authConfig.ts`) downgrades `software` mode to `off` for production tenants (`learncard`, `vetpass`, `scoutpass`) whenever the resolved tenant config's deploy `stage` is `production` — which is also the fail-closed default for a missing or unrecognized stage. The guard keys on this deploy `stage`, not the Vite build mode (`IS_PRODUCTION`, i.e. `mode === 'production'`): staging deployments are Vite production-mode builds too (`apps/learn-card-app`'s `build` script runs `vite build` under `STAGE=staging`), so `IS_PRODUCTION` alone can't tell a staging deploy from production. Staging deliberately runs the software enclave (host-trusted, dev/test only) per #1565, with `stage: 'staging'` baked into the tenant config by `prepare-native-config.ts --stage staging` (learn-card-app) or the equivalent `VITE_NODE_ENV`-driven overlay (scouts). Independently, the enclave binary enforces this server-side: `--emulate` (software mode) is feature-gated behind `fake-nsm`/`fake-kms`/`fake-time`/`fake-ledger`, which a production `--features nitro,kms` build excludes, so that compiled binary refuses `--emulate` before binding.
 - **D13 (Audit design):** Legacy mode retains its bounded per-blob ledger and `Carried` genesis. Configured mode instead stores per-DID authority state, bounded per-hold/operation rows and immutable execution receipts with signed proposals. No legacy history is imported. Proposed events and post-commit signatures have different domain tags; a proposal is never commit proof. The independent monitor verifies authenticated table evidence and continuity, not parent readback. Time intervals remain processing evidence, not authenticated upper bounds on receipt time.

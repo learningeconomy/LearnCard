@@ -163,7 +163,7 @@ resource "aws_lambda_function_event_invoke_config" "monitor" {
   maximum_retry_attempts       = 2
 }
 
-# Requires an independently managed, enabled CloudTrail management-event trail.
+# Requires the enabled management-event trail owned by escrow-enclave-bootstrap.
 # Alarm even on denied attempts. Match both accepted key-ID representations.
 resource "aws_cloudwatch_event_rule" "escrow_kms_changes" {
   name = "${local.name_prefix}-kms-governance"
@@ -181,7 +181,7 @@ resource "aws_cloudwatch_event_rule" "escrow_kms_changes" {
 resource "aws_cloudwatch_event_target" "escrow_kms_changes" {
   rule  = aws_cloudwatch_event_rule.escrow_kms_changes.name
   arn   = aws_sns_topic.monitor.arn
-  input = jsonencode({ alarm = "EscrowKmsGovernanceChange", response = "Review CloudTrail in the security account immediately." })
+  input = jsonencode({ alarm = "EscrowKmsGovernanceChange", response = "Review the bootstrap-owned escrow-account CloudTrail logs immediately." })
   dead_letter_config {
     arn = aws_sqs_queue.monitor_dlq.arn
   }
@@ -194,7 +194,7 @@ resource "aws_sqs_queue_policy" "monitor_dlq" {
     Statement = [{
       Effect    = "Allow", Principal = { Service = "events.amazonaws.com" }, Action = "sqs:SendMessage",
       Resource  = aws_sqs_queue.monitor_dlq.arn,
-      Condition = { ArnEquals = { "aws:SourceArn" = concat([aws_cloudwatch_event_rule.monitor_sweep.arn, aws_cloudwatch_event_rule.escrow_kms_changes.arn], [for rule in aws_cloudwatch_event_rule.authority_governance : rule.arn]) } }
+      Condition = { ArnEquals = { "aws:SourceArn" = concat([aws_cloudwatch_event_rule.monitor_sweep.arn, aws_cloudwatch_event_rule.escrow_kms_changes.arn, aws_cloudwatch_event_rule.trail_tamper.arn], [for rule in aws_cloudwatch_event_rule.authority_governance : rule.arn]) } }
     }]
   })
 }
