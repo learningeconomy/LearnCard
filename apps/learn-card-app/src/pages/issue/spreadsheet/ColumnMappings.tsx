@@ -54,7 +54,7 @@ export interface ColumnMappingsProps {
 }
 const candidateColumns = ({ source, template, mappings }: ColumnMappingsProps) => {
     const active = template ? extractVariablesByType(template).dynamic : [];
-    const exportedNames = rosterCsvFieldNames({ mappings }, active);
+    const exportedNames = rosterCsvFieldNames({ mappings, source }, active);
     return source.columns.filter(
         column =>
             mappings.some(

@@ -52,6 +52,7 @@ const parsedSource = z.object({
     emailColumn: z.number().int().nonnegative().optional(),
     emailCandidates: z.array(z.number().int().nonnegative()),
     rowEvidenceColumn: z.string().optional(),
+    exportHeaders: z.record(z.string(), z.string()).optional(),
     headerRow: z.number().int().min(-1).optional(),
     skipped: z.number().int().nonnegative(),
 });

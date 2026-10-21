@@ -323,7 +323,8 @@ export const removeSpreadsheetMapping = (
 export const replaceSpreadsheetTemplate = (
     template: OBv3CredentialTemplate,
     draft: RosterDraft,
-    preserveMappings: boolean
+    preserveMappings: boolean,
+    sourceVariables: string[] = []
 ): { template: OBv3CredentialTemplate; draft: RosterDraft } => {
     let next = {
         template,
@@ -332,8 +333,15 @@ export const replaceSpreadsheetTemplate = (
     if (!preserveMappings || (template.schemaType && template.schemaType !== 'obv3')) return next;
     const exportedNames = rosterCsvFieldNames(
         draft,
-        (draft.mappings ?? []).map(mapping => mapping.variable)
+        sourceVariables.length ? sourceVariables : Object.keys(draft.source?.exportHeaders ?? {})
     );
+    if (draft.source?.rowEvidenceColumn !== undefined) {
+        next.draft.source = {
+            ...draft.source,
+            exportHeaders: { ...draft.source.exportHeaders, ...exportedNames },
+        };
+    }
+    const rebuiltHeaders: Record<string, string> = {};
     for (const mapping of draft.mappings ?? []) {
         // Resolve by identity too for saved drafts written before source IDs were rebound.
         const label =
@@ -356,6 +364,8 @@ export const replaceSpreadsheetTemplate = (
             mapping.target,
             mapping
         );
+        if (exportedNames[mapping.variable])
+            rebuiltHeaders[mapped.variable] = exportedNames[mapping.variable]!;
         for (const row of draft.recipients) {
             const key = recipientKey(row);
             const value = draft.values[key]?.[mapping.variable];
@@ -372,6 +382,20 @@ export const replaceSpreadsheetTemplate = (
                 };
         }
         next = mapped;
+    }
+    if (next.draft.source?.exportHeaders) {
+        const mappedVariables = new Set((draft.mappings ?? []).map(mapping => mapping.variable));
+        next.draft.source = {
+            ...next.draft.source,
+            exportHeaders: {
+                ...Object.fromEntries(
+                    Object.entries(next.draft.source.exportHeaders).filter(
+                        ([name]) => !mappedVariables.has(name)
+                    )
+                ),
+                ...rebuiltHeaders,
+            },
+        };
     }
     return next;
 };

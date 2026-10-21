@@ -140,7 +140,7 @@ export const mergeSpreadsheet = (
     if (sheet.emailColumn === undefined) throw new SpreadsheetError('emailColumn');
     // Only verified same-run exports restore the table's standalone Evidence cell.
     // Source Evidence/Portfolio columns remain independent, explicit mappings.
-    const canonical = sheet.rows.some(row => row.exportedRunId === draft.id && row.exportedRowId);
+    const canonical = sheet.rows.some(row => row.exportedRunId === draft.id);
     const evidenceColumn = canonical
         ? sheet.columns.find(column => normalizeColumn(column.label) === 'evidence')
         : undefined;
@@ -306,7 +306,22 @@ export const mergeSpreadsheet = (
             values,
             evidence,
             formulaCells,
-            source: { ...sheet, rows: sourceRows, rowEvidenceColumn: evidenceColumn?.id },
+            source: {
+                ...sheet,
+                rows: sourceRows,
+                rowEvidenceColumn: evidenceColumn?.id,
+                exportHeaders:
+                    canonical || draft.source?.exportHeaders
+                        ? {
+                              ...draft.source?.exportHeaders,
+                              ...(canonical
+                                  ? Object.fromEntries(
+                                        mapped.map(name => [name, matches[name]!.label])
+                                    )
+                                  : {}),
+                          }
+                        : undefined,
+            },
         },
         mapped,
     };

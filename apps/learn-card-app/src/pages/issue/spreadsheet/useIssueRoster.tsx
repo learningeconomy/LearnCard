@@ -38,6 +38,7 @@ import {
     getRowProblems,
     mergeSpreadsheet,
     downloadRosterCsv,
+    rosterCsvFieldNames,
     type ColumnScopes,
 } from './roster';
 import { exportIssuanceCsv, issuanceRowValues } from './exportIssuance';
@@ -404,7 +405,27 @@ export const useIssueRoster = (options: RosterOptions) => {
 
     const download = async (failuresOnly = false): Promise<void> => {
         const saved = capture();
+        const sourceAtExport = saved.draft.source;
+        if (sourceAtExport)
+            saved.draft = {
+                ...saved.draft,
+                source: {
+                    ...sourceAtExport,
+                    exportHeaders: {
+                        ...sourceAtExport.exportHeaders,
+                        ...rosterCsvFieldNames(saved.draft, options.variables),
+                    },
+                },
+            };
         if (saved.draft.recipients.length) await saveDraft(saved);
+        if (
+            sourceAtExport &&
+            mounted.current &&
+            activeDraftId.current === saved.id &&
+            issuanceScopeKey(saved.scope) === issuanceScopeKey(currentScope())
+        ) {
+            setSource(previous => (previous === sourceAtExport ? saved.draft.source : previous));
+        }
         downloadRosterCsv(
             exportIssuanceCsv(saved, options.variables, failuresOnly),
             failuresOnly ? 'people-to-retry.csv' : 'credential-recipients.csv'
@@ -791,7 +812,13 @@ export const useIssueRoster = (options: RosterOptions) => {
     };
     const replaceTemplate = (template: OBv3CredentialTemplate, preserveMappings: boolean): void => {
         if (busy || runRef.current?.templateUri) throw new IssuanceRecoveryError('locked');
-        const next = replaceSpreadsheetTemplate(template, draft, preserveMappings);
+        const next = replaceSpreadsheetTemplate(
+            template,
+            draft,
+            preserveMappings,
+            options.variables
+        );
+        setSource(next.draft.source);
         options.setShared({});
         options.setValues(next.draft.values);
         setFormulaCells(next.draft.formulaCells ?? {});

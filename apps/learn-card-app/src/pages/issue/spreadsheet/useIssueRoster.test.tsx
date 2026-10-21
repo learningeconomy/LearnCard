@@ -8,7 +8,8 @@ import type { IssuanceRun } from './issuanceTypes';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { dynamicField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
-import { exportRosterCsv } from './roster';
+import { mapSpreadsheetColumn } from './columnMapping';
+import { exportRosterCsv, mergeSpreadsheet } from './roster';
 import { exportIssuanceCsv } from './exportIssuance';
 import { addSubmissionAttempts } from './issuance';
 import { validateCredentialJsonLd } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/validateJsonLd';
@@ -573,6 +574,78 @@ describe('roster autosave and sending', () => {
         act(() => result.current.correct());
         expect(result.current.hasProblems).toBe(false);
     });
+    it('restores a saved run from a new-recipient-only export without swapping evidence', async () => {
+        const run = makeRun(0);
+        const draft = mergeSpreadsheet(
+            run.draft,
+            parseSpreadsheet(
+                readSpreadsheetText('Email,Evidence\na@test.com,https://proof.test/a')
+            ),
+            []
+        ).draft;
+        const mapped = mapSpreadsheetColumn(
+            run.template,
+            draft,
+            draft.source!.columns[1],
+            'evidence',
+            { dateFormat: 'iso', numericFormat: 'dot' }
+        );
+        run.template = mapped.template;
+        run.draft = mapped.draft;
+        run.scopes = { [mapped.variable]: 'perRecipient' };
+        run.draft.evidence[run.draft.recipients[0].rowId!] = 'https://proof.test/extra';
+        const variables = [mapped.variable];
+        const csv = exportRosterCsv(run.draft, variables, run.scopes, {});
+        const rows = Papa.parse<Record<string, string>>(csv, { header: true }).data;
+        rows[0]['Recipient Email'] = 'new@test.com';
+        rows[0].__lc_row_id = '';
+        store.list.mockResolvedValue([]);
+        store.read.mockResolvedValue(run);
+        store.save.mockResolvedValue(undefined);
+        Object.defineProperty(navigator, 'locks', {
+            configurable: true,
+            value: {
+                request: async (
+                    _name: string,
+                    _options: unknown,
+                    callback: (lock: object) => unknown
+                ) => callback({}),
+            },
+        });
+        const options = emptyOptions(run);
+        const { result } = renderHook(() => {
+            const [recipients, setRecipients] = useState(options.recipients);
+            const [values, setValues] = useState(options.values);
+            const [shared, setShared] = useState(options.shared);
+            return useIssueRoster({
+                ...options,
+                recipients,
+                setRecipients,
+                values,
+                setValues,
+                shared,
+                setShared,
+                template: run.template,
+                variables,
+            });
+        });
+        await act(async () => {
+            await result.current.importSheet(
+                parseSpreadsheet(readSpreadsheetText(Papa.unparse(rows)))
+            );
+        });
+        const imported = result.current.run!.draft;
+        const recipient = imported.recipients.find(
+            row => row.kind === 'email' && row.email === 'new@test.com'
+        )!;
+        expect(imported.values[recipient.rowId!][mapped.variable]).toBe('https://proof.test/a');
+        expect(imported.evidence[recipient.rowId!]).toBe('https://proof.test/extra');
+        expect(result.current.valuesForRow(recipient)[mapped.variable]).toBe(
+            'https://proof.test/a'
+        );
+        expect(result.current.hasProblems).toBe(false);
+    });
+
     it.each([false, true])('blocks formula errors after import (saved run: %s)', async saved => {
         const original = makeRun();
         original.template.credentialSubject.achievement.description = dynamicField('score');

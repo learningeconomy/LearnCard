@@ -1,3 +1,4 @@
+import Papa from 'papaparse';
 import { describe, expect, it, vi } from 'vitest';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import { mergeSpreadsheet, exportRosterCsv } from './roster';
@@ -16,7 +17,9 @@ import { applyVariableValues } from '../components/variableSubstitution';
 import {
     templateToJson,
     jsonToTemplate,
+    extractVariablesByType,
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
+import { dynamicField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { ColumnMapping } from './types';
 
 const options = { dateFormat: 'iso', numericFormat: 'dot' } as const;
@@ -458,6 +461,192 @@ describe('source identity across reimports', () => {
         state.draft.mappings![0].columnId = 'column-8'; // Student Code, never Credits.
         const replaced = replaceSpreadsheetTemplate(makeRun(0).template, state.draft, true);
         expect(replaced.draft.mappings![0].columnId).toBe('column-4');
+    });
+});
+
+describe('canonical export identity collisions', () => {
+    it.each(['reserved header', 'unmapped variable'] as const)(
+        'retains the full alias namespace across a type change: %s',
+        kind => {
+            const run = makeRun(0);
+            let state = {
+                template: run.template,
+                draft: mergeSpreadsheet(
+                    run.draft,
+                    parseSpreadsheet(
+                        readSpreadsheetText(
+                            'Email,Evidence [2],Evidence,Description\na@test.com,0012,https://proof.test/a,0042'
+                        )
+                    ),
+                    []
+                ).draft,
+            };
+            if (kind === 'reserved header') {
+                // Inclusion order differs from the template's variable traversal order.
+                state = mapSpreadsheetColumn(
+                    state.template,
+                    state.draft,
+                    state.draft.source!.columns[1],
+                    'description',
+                    options
+                );
+                state = mapSpreadsheetColumn(
+                    state.template,
+                    state.draft,
+                    state.draft.source!.columns[2],
+                    'evidence',
+                    options
+                );
+            } else {
+                state.template.credentialSubject.achievement.description =
+                    dynamicField('Description');
+                state = mapSpreadsheetColumn(
+                    state.template,
+                    state.draft,
+                    state.draft.source!.columns[3],
+                    'description',
+                    options
+                );
+                state.draft.values[state.draft.recipients[0].rowId!].Description =
+                    'Unrelated intro';
+            }
+            const variables = extractVariablesByType(state.template).dynamic;
+            const csv = exportRosterCsv(
+                state.draft,
+                variables,
+                Object.fromEntries(variables.map(name => [name, 'perRecipient' as const])),
+                {}
+            );
+            const restored = mergeSpreadsheet(
+                state.draft,
+                parseSpreadsheet(readSpreadsheetText(csv)),
+                variables
+            ).draft;
+            const replaced = replaceSpreadsheetTemplate(
+                makeRun(0).template,
+                restored,
+                true,
+                variables
+            );
+            const active = extractVariablesByType(replaced.template).dynamic;
+            // Old exports must stay bound even when the old nonmapped variable has gone away.
+            const again = mergeSpreadsheet(
+                replaced.draft,
+                parseSpreadsheet(readSpreadsheetText(csv)),
+                active
+            ).draft;
+            const row = again.recipients[0].rowId!;
+            const json = materializePreview(
+                applyVariableValues(templateToJson(replaced.template), again.values[row])
+            );
+            expect(json.credentialSubject).toMatchObject({
+                achievement: {
+                    description: expect.stringContaining(
+                        kind === 'reserved header' ? '0012' : '0042'
+                    ),
+                },
+            });
+            if (kind === 'reserved header')
+                expect(json.evidence).toEqual([
+                    expect.objectContaining({ id: 'https://proof.test/a' }),
+                ]);
+            // Legacy saved sources have no recorded aliases: the full previous namespace repairs them.
+            const fromOriginal = mergeSpreadsheet(
+                replaced.draft,
+                parseSpreadsheet(state.draft.source!.source),
+                active
+            ).draft;
+            const replayed = mergeSpreadsheet(
+                fromOriginal,
+                parseSpreadsheet(readSpreadsheetText(csv)),
+                active
+            ).draft;
+            expect(replayed.values[row]).toEqual(again.values[row]);
+            const legacy = structuredClone(restored);
+            delete (legacy.source as { exportHeaders?: unknown }).exportHeaders;
+            expect(() =>
+                replaceSpreadsheetTemplate(makeRun(0).template, legacy, true, variables)
+            ).not.toThrow();
+        }
+    );
+    it('rekeys colliding variable names together without overwriting another header binding', () => {
+        const run = makeRun(0);
+        let state = {
+            template: run.template,
+            draft: mergeSpreadsheet(
+                run.draft,
+                parseSpreadsheet(readSpreadsheetText('Email,X-Y,X Y\na@test.com,0012,0042')),
+                []
+            ).draft,
+        };
+        for (const index of [1, 2])
+            state = mapSpreadsheetColumn(
+                state.template,
+                state.draft,
+                state.draft.source!.columns[index],
+                'description',
+                options
+            );
+        const variables = extractVariablesByType(state.template).dynamic;
+        const csv = exportRosterCsv(
+            state.draft,
+            variables,
+            Object.fromEntries(variables.map(name => [name, 'perRecipient' as const])),
+            {}
+        );
+        const restored = mergeSpreadsheet(
+            state.draft,
+            parseSpreadsheet(readSpreadsheetText(csv)),
+            variables
+        ).draft;
+        const template = makeRun(0).template;
+        template.credentialSubject.achievement.description = dynamicField(variables[0]);
+        const replaced = replaceSpreadsheetTemplate(template, restored, true, variables);
+        const headers = replaced.draft.source!.exportHeaders!;
+        expect(replaced.draft.mappings!.map(mapping => headers[mapping.variable])).toEqual([
+            'X-Y',
+            'X Y',
+        ]);
+    });
+    it('keeps mapped and additional evidence separate when the export contains only new recipients', () => {
+        const run = makeRun(0);
+        const draft = mergeSpreadsheet(
+            run.draft,
+            parseSpreadsheet(
+                readSpreadsheetText('Email,Evidence\na@test.com,https://proof.test/a')
+            ),
+            []
+        ).draft;
+        const mapped = mapSpreadsheetColumn(
+            run.template,
+            draft,
+            draft.source!.columns[1],
+            'evidence',
+            options
+        );
+        mapped.draft.evidence[mapped.draft.recipients[0].rowId!] = 'https://proof.test/extra';
+        const variables = [mapped.variable];
+        const csv = exportRosterCsv(
+            mapped.draft,
+            variables,
+            { [mapped.variable]: 'perRecipient' },
+            {}
+        );
+        const rows = Papa.parse<Record<string, string>>(csv, { header: true }).data;
+        rows[0]['Recipient Email'] = 'new@test.com';
+        rows[0].__lc_row_id = '';
+        const restored = mergeSpreadsheet(
+            mapped.draft,
+            parseSpreadsheet(readSpreadsheetText(Papa.unparse(rows))),
+            variables
+        ).draft;
+        const recipient = restored.recipients.find(
+            row => row.kind === 'email' && row.email === 'new@test.com'
+        )!;
+        const values = restored.values[recipient.rowId!];
+        expect(values[mapped.variable]).toBe('https://proof.test/a');
+        expect(restored.evidence[recipient.rowId!]).toBe('https://proof.test/extra');
+        expect(credentialRowProblems(mapped.template, values)).toEqual([]);
     });
 });
 

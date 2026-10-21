@@ -40,6 +40,8 @@ export interface ParsedSpreadsheet {
     emailCandidates: number[];
     /** Column reserved for the editable evidence link in a verified app CSV export. */
     rowEvidenceColumn?: string;
+    /** Stable variable/header bindings from the most recent same-run export. */
+    exportHeaders?: Record<string, string>;
     headerRow?: number;
     skipped: number;
 }

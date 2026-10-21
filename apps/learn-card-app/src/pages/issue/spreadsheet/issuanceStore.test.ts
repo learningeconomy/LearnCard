@@ -95,6 +95,23 @@ describe('IndexedDB issuance recovery', () => {
         expect(restored!.draft.evidence).toEqual(run.draft.evidence);
     });
 
+    it('retains the export header namespace in IndexedDB recovery', async () => {
+        const run = makeRun(0);
+        run.draft = mergeSpreadsheet(
+            run.draft,
+            parseSpreadsheet(readSpreadsheetText('Email,Score\na@test.com,95')),
+            ['Score']
+        ).draft;
+        run.scopes = { Score: 'perRecipient' };
+        const csv = exportRosterCsv(run.draft, ['Score'], run.scopes, {});
+        run.draft = mergeSpreadsheet(run.draft, parseSpreadsheet(readSpreadsheetText(csv)), [
+            'Score',
+        ]).draft;
+        await saveIssuanceRun(run);
+        const restored = await readIssuanceRun(run.id, run.scope);
+        expect(restored!.draft.source!.exportHeaders).toEqual({ Score: 'Score' });
+    });
+
     it.each([null, 123456, undefined])(
         'preserves admission marker %s, including unknown legacy records',
         async marker => {
