@@ -76,7 +76,10 @@ afterEach(() => {
 describe('skill icon batches over the real lca-api transport', () => {
     it('keeps every generateSkillIcons request under the URL bound and maps all 200 names', async () => {
         const sent = stubLcaApiFetch();
-        const client = await getClient(URL_BASE, async challenge => `jwt:${challenge ?? 'none'}`);
+        const client = await getClient(
+            URL_BASE,
+            async (challenge?: string) => `jwt:${challenge ?? 'none'}`
+        );
 
         const names = Array.from(
             { length: 200 },
