@@ -404,123 +404,157 @@ export const useIssueRoster = (options: RosterOptions) => {
     ]);
 
     const download = async (failuresOnly = false): Promise<void> => {
-        const saved = capture();
-        const sourceAtExport = saved.draft.source;
-        if (sourceAtExport)
-            saved.draft = {
-                ...saved.draft,
-                source: {
-                    ...sourceAtExport,
-                    exportHeaders: {
-                        ...sourceAtExport.exportHeaders,
-                        ...rosterCsvFieldNames(saved.draft, options.variables),
+        if (busy || executing.current) throw new IssuanceRecoveryError('busy');
+        executing.current = true;
+        clearTimeout(draftSaveTimer.current);
+        setBusy(true);
+        try {
+            await Promise.all([...pendingDraftSaves.current]);
+            if (issuanceScopeKey(scope) !== issuanceScopeKey(currentScope()))
+                throw new IssuanceRecoveryError('context');
+            const saved = capture();
+            const sourceAtExport = saved.draft.source;
+            if (sourceAtExport)
+                saved.draft = {
+                    ...saved.draft,
+                    source: {
+                        ...sourceAtExport,
+                        exportHeaders: {
+                            ...sourceAtExport.exportHeaders,
+                            ...rosterCsvFieldNames(saved.draft, options.variables),
+                        },
                     },
-                },
-            };
-        if (saved.draft.recipients.length) await saveDraft(saved);
-        if (
-            sourceAtExport &&
-            mounted.current &&
-            activeDraftId.current === saved.id &&
-            issuanceScopeKey(saved.scope) === issuanceScopeKey(currentScope())
-        ) {
-            setSource(previous => (previous === sourceAtExport ? saved.draft.source : previous));
+                };
+            if (saved.draft.recipients.length) await saveDraft(saved);
+            if (
+                sourceAtExport &&
+                mounted.current &&
+                activeDraftId.current === saved.id &&
+                issuanceScopeKey(saved.scope) === issuanceScopeKey(currentScope())
+            ) {
+                setSource(previous =>
+                    previous === sourceAtExport ? saved.draft.source : previous
+                );
+            }
+            downloadRosterCsv(
+                exportIssuanceCsv(saved, options.variables, failuresOnly),
+                failuresOnly ? 'people-to-retry.csv' : 'credential-recipients.csv'
+            );
+        } finally {
+            executing.current = false;
+            if (mounted.current) setBusy(false);
         }
-        downloadRosterCsv(
-            exportIssuanceCsv(saved, options.variables, failuresOnly),
-            failuresOnly ? 'people-to-retry.csv' : 'credential-recipients.csv'
-        );
     };
     const importSheet = async (sheet: ParsedSpreadsheet): Promise<void> => {
         if (issuanceScopeKey(scope) !== issuanceScopeKey(currentScope()))
             throw new IssuanceRecoveryError('context');
-        if (busy) throw new IssuanceRecoveryError('busy');
-        const ids = new Set(sheet.rows.map(row => row.exportedRunId).filter(Boolean));
-        if (ids.size > 1) throw new SpreadsheetError('run');
-        const importedId = [...ids][0];
-        let saved = runRef.current;
-        let baseDraft = draft;
-        let baseScopes = effectiveScopes;
-        let shared = options.shared;
-        if (importedId && importedId !== id) {
-            saved = (await readIssuanceRun(importedId, scope)) ?? null;
-            if (!saved) throw new SpreadsheetError('run');
-            baseDraft = saved.draft;
-            baseScopes = saved.scopes;
-            shared = saved.shared;
-        }
-        const variables = saved
-            ? extractVariablesByType(saved.template).dynamic
-            : options.variables;
-        // Seed every existing row before switching a shared column to per-person.
-        baseDraft = {
-            ...baseDraft,
-            values: Object.fromEntries(
-                baseDraft.recipients.map(row => [
-                    recipientKey(row),
-                    {
-                        ...baseDraft.values[recipientKey(row)],
-                        ...(saved &&
-                        !['ready', 'failed'].includes(
-                            saved.outcomes[recipientKey(row)]?.state ?? 'ready'
-                        )
-                            ? issuanceRowValues(saved, row, variables)
-                            : effectiveRowValues(
-                                  row,
-                                  variables,
-                                  baseScopes,
-                                  shared,
-                                  baseDraft.values
-                              )),
-                    },
-                ])
-            ),
-        };
-        const merged = mergeSpreadsheet(baseDraft, sheet, variables);
-        if (saved?.templateUri) {
-            for (const existing of saved.draft.recipients) {
-                const key = recipientKey(existing);
-                if (['ready', 'failed'].includes(saved.outcomes[key]?.state ?? 'ready')) continue;
-                const incoming = sheet.rows.find(
-                    row =>
-                        row.exportedRowId === key ||
-                        (existing.kind === 'email' && normalizeEmail(existing.email) === row.email)
-                );
-                if (!incoming) continue;
-                const before = issuanceRowValues(saved, existing, variables);
-                const canonical = merged.draft.recipients.find(row => recipientKey(row) === key);
-                const after = merged.draft.values[key] ?? {};
-                if (
-                    (existing.kind === 'email' &&
-                        (canonical?.kind !== 'email' ||
-                            normalizeEmail(canonical.email) !== normalizeEmail(existing.email))) ||
-                    merged.mapped.some(name => after[name] !== before[name]) ||
-                    (merged.draft.evidence[key]?.trim() ?? '') !==
-                        (saved.draft.evidence[key]?.trim() ?? '')
-                )
-                    throw new IssuanceRecoveryError('locked');
-                merged.draft.recipients = merged.draft.recipients.map(row =>
-                    recipientKey(row) === key ? existing : row
-                );
+        if (busy || executing.current) throw new IssuanceRecoveryError('busy');
+        const draftIdAtStart = activeDraftId.current;
+        executing.current = true;
+        clearTimeout(draftSaveTimer.current);
+        setBusy(true);
+        try {
+            await Promise.all([...pendingDraftSaves.current]);
+            if (
+                activeDraftId.current !== draftIdAtStart ||
+                issuanceScopeKey(scope) !== issuanceScopeKey(currentScope())
+            )
+                throw new IssuanceRecoveryError('context');
+            const ids = new Set(sheet.rows.map(row => row.exportedRunId).filter(Boolean));
+            if (ids.size > 1) throw new SpreadsheetError('run');
+            const importedId = [...ids][0];
+            let saved = runRef.current;
+            let baseDraft = draft;
+            let baseScopes = effectiveScopes;
+            let shared = options.shared;
+            if (importedId && importedId !== id) {
+                saved = (await readIssuanceRun(importedId, scope)) ?? null;
+                if (!saved) throw new SpreadsheetError('run');
+                baseDraft = saved.draft;
+                baseScopes = saved.scopes;
+                shared = saved.shared;
             }
-        }
-        const nextScopes = {
-            ...baseScopes,
-            ...Object.fromEntries(merged.mapped.map(name => [name, 'perRecipient' as const])),
-        };
-        if (saved) {
-            const next = { ...saved, draft: merged.draft, scopes: nextScopes, shared };
-            await saveDraft(next);
-            apply(next);
-        } else {
-            setSource(merged.draft.source);
-            options.setRecipients(merged.draft.recipients);
-            options.setValues(merged.draft.values);
-            setEvidence(merged.draft.evidence);
-            setFormulaCells(merged.draft.formulaCells ?? {});
-            setMappings(merged.draft.mappings ?? []);
-            setScopes(nextScopes);
-            options.onPeople();
+            const variables = saved
+                ? extractVariablesByType(saved.template).dynamic
+                : options.variables;
+            // Seed every existing row before switching a shared column to per-person.
+            baseDraft = {
+                ...baseDraft,
+                values: Object.fromEntries(
+                    baseDraft.recipients.map(row => [
+                        recipientKey(row),
+                        {
+                            ...baseDraft.values[recipientKey(row)],
+                            ...(saved &&
+                            !['ready', 'failed'].includes(
+                                saved.outcomes[recipientKey(row)]?.state ?? 'ready'
+                            )
+                                ? issuanceRowValues(saved, row, variables)
+                                : effectiveRowValues(
+                                      row,
+                                      variables,
+                                      baseScopes,
+                                      shared,
+                                      baseDraft.values
+                                  )),
+                        },
+                    ])
+                ),
+            };
+            const merged = mergeSpreadsheet(baseDraft, sheet, variables);
+            if (saved?.templateUri) {
+                for (const existing of saved.draft.recipients) {
+                    const key = recipientKey(existing);
+                    if (['ready', 'failed'].includes(saved.outcomes[key]?.state ?? 'ready'))
+                        continue;
+                    const incoming = sheet.rows.find(
+                        row =>
+                            row.exportedRowId === key ||
+                            (existing.kind === 'email' &&
+                                normalizeEmail(existing.email) === row.email)
+                    );
+                    if (!incoming) continue;
+                    const before = issuanceRowValues(saved, existing, variables);
+                    const canonical = merged.draft.recipients.find(
+                        row => recipientKey(row) === key
+                    );
+                    const after = merged.draft.values[key] ?? {};
+                    if (
+                        (existing.kind === 'email' &&
+                            (canonical?.kind !== 'email' ||
+                                normalizeEmail(canonical.email) !==
+                                    normalizeEmail(existing.email))) ||
+                        merged.mapped.some(name => after[name] !== before[name]) ||
+                        (merged.draft.evidence[key]?.trim() ?? '') !==
+                            (saved.draft.evidence[key]?.trim() ?? '')
+                    )
+                        throw new IssuanceRecoveryError('locked');
+                    merged.draft.recipients = merged.draft.recipients.map(row =>
+                        recipientKey(row) === key ? existing : row
+                    );
+                }
+            }
+            const nextScopes = {
+                ...baseScopes,
+                ...Object.fromEntries(merged.mapped.map(name => [name, 'perRecipient' as const])),
+            };
+            if (saved) {
+                const next = { ...saved, draft: merged.draft, scopes: nextScopes, shared };
+                await saveDraft(next);
+                apply(next);
+            } else {
+                setSource(merged.draft.source);
+                options.setRecipients(merged.draft.recipients);
+                options.setValues(merged.draft.values);
+                setEvidence(merged.draft.evidence);
+                setFormulaCells(merged.draft.formulaCells ?? {});
+                setMappings(merged.draft.mappings ?? []);
+                setScopes(nextScopes);
+                options.onPeople();
+            }
+        } finally {
+            executing.current = false;
+            if (mounted.current) setBusy(false);
         }
     };
     const execute = async (

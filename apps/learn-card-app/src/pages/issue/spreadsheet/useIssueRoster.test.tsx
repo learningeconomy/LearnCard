@@ -574,6 +574,87 @@ describe('roster autosave and sending', () => {
         act(() => result.current.correct());
         expect(result.current.hasProblems).toBe(false);
     });
+    it('waits for this tab autosave before importing instead of racing its storage lock', async () => {
+        vi.useFakeTimers();
+        const run = makeRun();
+        run.template.credentialSubject.achievement.description = dynamicField('score');
+        run.scopes = { score: 'perRecipient' };
+        run.draft.values = { 'row-0': { score: '95' } };
+        let stored = structuredClone(run);
+        let releaseSave!: () => void;
+        const firstSave = new Promise<void>(resolve => {
+            releaseSave = resolve;
+        });
+        let saves = 0;
+        store.list.mockResolvedValue([]);
+        store.read.mockImplementation(async () => stored);
+        store.save.mockImplementation(async saved => {
+            if (++saves === 1) await firstSave;
+            stored = structuredClone(saved);
+        });
+        let held = false;
+        Object.defineProperty(navigator, 'locks', {
+            configurable: true,
+            value: {
+                request: async (
+                    _name: string,
+                    _options: unknown,
+                    callback: (lock: object | null) => unknown
+                ) => {
+                    if (held) return callback(null);
+                    held = true;
+                    try {
+                        return await callback({});
+                    } finally {
+                        held = false;
+                    }
+                },
+            },
+        });
+        const options = emptyOptions(run);
+        const variables = ['score'];
+        const { result } = renderHook(() => {
+            const [recipients, setRecipients] = useState(run.draft.recipients);
+            const [values, setValues] = useState(run.draft.values);
+            const [shared, setShared] = useState(options.shared);
+            return useIssueRoster({
+                ...options,
+                recipients,
+                setRecipients,
+                values,
+                setValues,
+                shared,
+                setShared,
+                template: run.template,
+                variables,
+            });
+        });
+        act(() => result.current.restore(run));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        expect(saves).toBe(1);
+        const csv = exportRosterCsv(run.draft, ['score'], run.scopes, {});
+        let finished = false;
+        let importing!: Promise<void>;
+        act(() => {
+            importing = result.current
+                .importSheet(parseSpreadsheet(readSpreadsheetText(csv)))
+                .then(() => {
+                    finished = true;
+                });
+        });
+        expect(finished).toBe(false);
+        expect(saves).toBe(1);
+        await act(async () => {
+            releaseSave();
+            await importing;
+        });
+        expect(saves).toBe(2);
+        expect(result.current.hasProblems).toBe(false);
+        expect(result.current.run!.draft.values['row-0'].score).toBe('95');
+    });
+
     it('restores a saved run from a new-recipient-only export without swapping evidence', async () => {
         const run = makeRun(0);
         const draft = mergeSpreadsheet(
