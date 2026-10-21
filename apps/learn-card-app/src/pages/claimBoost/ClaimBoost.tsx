@@ -112,9 +112,9 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
                 <div className="vc-issue-details mt-[10px] flex flex-col gap-[13px] items-center font-montserrat text-[14px] leading-[20px]">
                     <div className="vc-issue-details mt-[10px] flex flex-col justify-center items-center text-center font-montserrat text-[14px] leading-[20px]">
                         <span className="created-at text-grayscale-700">{issueDate}</span>
-                        <span className="issued-by text-grayscale-900 font-[500]">
+                        <span className="issued-by text-grayscale-900 font-medium">
                             {m['claim.by']()}{' '}
-                            <strong className="font-[700] capitalize">{issuerName}</strong>
+                            <strong className="font-bold capitalize">{issuerName}</strong>
                         </span>
                     </div>
                     <CredentialVerificationDisplay
@@ -136,9 +136,8 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
             </div>
             <div className="vc-issue-details mt-[10px] flex flex-col justify-center items-center text-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
-                <span className="issued-by text-grayscale-900 font-[500]">
-                    {m['claim.by']()}{' '}
-                    <strong className="font-[700] capitalize">{issuerName}</strong>
+                <span className="issued-by text-grayscale-900 font-medium">
+                    {m['claim.by']()} <strong className="font-bold capitalize">{issuerName}</strong>
                 </span>
             </div>
         </>
@@ -641,7 +640,7 @@ const ClaimBoost: React.FC<{
                 renderMethodCredential={renderMethodSource as VC}
             />,
             {
-                className: '!bg-transparent',
+                className: 'bg-transparent!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }

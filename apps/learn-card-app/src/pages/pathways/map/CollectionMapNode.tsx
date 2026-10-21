@@ -191,7 +191,7 @@ const StackedAvatar: React.FC<{
                 return (
                     <span
                         key={member.id}
-                        className="absolute top-0 rounded-full ring-2 ring-white bg-white shadow-sm overflow-hidden flex items-center justify-center"
+                        className="absolute top-0 rounded-full ring-2 ring-white bg-white shadow-xs overflow-hidden flex items-center justify-center"
                         style={{
                             left: i * OVERLAP_PX,
                             width: AVATAR_PX,
@@ -220,7 +220,7 @@ const StackedAvatar: React.FC<{
 
             {overflow > 0 && (
                 <span
-                    className="absolute top-0 rounded-full ring-2 ring-white bg-grayscale-100 text-grayscale-600 text-[10px] font-semibold flex items-center justify-center shadow-sm"
+                    className="absolute top-0 rounded-full ring-2 ring-white bg-grayscale-100 text-grayscale-600 text-[10px] font-semibold flex items-center justify-center shadow-xs"
                     style={{
                         left: visible.length * OVERLAP_PX,
                         height: AVATAR_PX,
@@ -266,7 +266,7 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
             <Handle
                 type="target"
                 position={Position.Bottom}
-                className="!bg-grayscale-300 !border-0 !w-1.5 !h-1.5 !opacity-60"
+                className="bg-grayscale-300! border-0! w-1.5! h-1.5! opacity-60!"
             />
 
             {/*
@@ -291,9 +291,9 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
                     relative p-3 rounded-2xl border backdrop-blur-[1px]
                     transition-all duration-300 ease-out
                     hover:-translate-y-0.5 hover:shadow-lg
-                    focus:outline-none focus:ring-2 focus:ring-emerald-400/70 focus:ring-offset-2 focus:ring-offset-grayscale-10
+                    focus:outline-hidden focus:ring-2 focus:ring-emerald-400/70 focus:ring-offset-2 focus:ring-offset-grayscale-10
                     ${cardTint}
-                    ${inFocus ? 'shadow-sm' : ''}
+                    ${inFocus ? 'shadow-xs' : ''}
                 `}
                 aria-label={`${title}, ${progress.completed} of ${progress.total} complete. Expand to see members.`}
             >
@@ -310,7 +310,7 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
                                inline-flex items-center gap-1
                                rounded-full border
                                bg-white border-emerald-200 text-emerald-700
-                               text-[10px] font-medium shadow-sm"
+                               text-[10px] font-medium shadow-xs"
                 >
                     <IonIcon icon={layersOutline} className="text-[11px]" />
                     <span>
@@ -321,7 +321,7 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
                 {allDone && (
                     <span
                         aria-hidden
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] leading-[20px] text-center font-bold shadow-sm"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] leading-[20px] text-center font-bold shadow-xs"
                     >
                         ✓
                     </span>
@@ -388,7 +388,7 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
             <Handle
                 type="source"
                 position={Position.Top}
-                className="!bg-grayscale-300 !border-0 !w-1.5 !h-1.5 !opacity-60"
+                className="bg-grayscale-300! border-0! w-1.5! h-1.5! opacity-60!"
             />
         </motion.div>
     );

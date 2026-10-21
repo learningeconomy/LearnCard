@@ -47,7 +47,7 @@ export const AiSessionsPopOverButton: React.FC<{
                     filteringType={filteringType}
                 />,
                 {
-                    sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                    sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
                 },
                 {}
             );
@@ -63,7 +63,7 @@ export const AiSessionsPopOverButton: React.FC<{
                 onClick={handleSortMenu}
                 type="button"
                 ref={isMobile ? null : buttonRef}
-                className={`bg-white flex items-center justify-center p-2 rounded-[15px] shadow-sm border-solid border-[1px] ${
+                className={`bg-white flex items-center justify-center p-2 rounded-[15px] shadow-xs border-solid border ${
                     showSortPopover ? 'border-indigo-500' : 'border-grayscale-200'
                 }`}
             >

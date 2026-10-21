@@ -255,9 +255,15 @@ jobs:
               if: steps.published.outputs.exists != 'true'
               run: bunx nx run didkit-plugin-node:build
 
+            - name: Test publish dependency preparation
+              if: steps.published.outputs.exists != 'true'
+              run: node --test scripts/prepare-publish-workspace-deps.test.mjs
+
+            # This job builds only the native addon. Preparing every public
+            # package would require unrelated backend bundle/declaration evidence.
             - name: Prepare publish dependency versions
               if: steps.published.outputs.exists != 'true'
-              run: node scripts/prepare-publish-workspace-deps.mjs
+              run: node scripts/prepare-publish-workspace-deps.mjs --package=@learncard/didkit-plugin-node
 
             - name: Publish platform packages
               if: steps.published.outputs.exists != 'true'

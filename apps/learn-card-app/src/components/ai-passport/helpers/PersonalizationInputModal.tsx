@@ -25,7 +25,7 @@ export const PersonalizationInputModal: React.FC<{
                 <PersonalizationQuestionTitle questionType={question.type} />
             </p>
             <IonInput
-                className="bg-grayscale-100 text-grayscale-900 font-poppins w-full !pb-[20px] rounded-[15px] text-[15px] !px-[15px]"
+                className="bg-grayscale-100 text-grayscale-900 font-poppins w-full pb-[20px]! rounded-[15px] text-[15px] px-[15px]!"
                 placeholder={placeholderText}
                 id="textInput"
                 value={answer}

@@ -7,6 +7,8 @@ interface RecoveryPinInputProps {
     disabled?: boolean;
     error?: boolean;
     length?: number;
+    /** `code` = an emailed one-time code: visible digits and OS code autofill, no password-manager prompts. */
+    variant?: 'pin' | 'code';
 }
 
 export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
@@ -16,7 +18,9 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
     disabled = false,
     error = false,
     length = 6,
+    variant = 'pin',
 }) => {
+    const isCode = variant === 'code';
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [digits, setDigits] = useState(() => Array.from({ length }, (_, i) => value[i] ?? ''));
     const digitsRef = useRef(digits);
@@ -91,17 +95,22 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
     };
 
     return (
-        <div className="flex items-center justify-center gap-2 sm:gap-3">
+        // Boxes shrink to share the row, so an 8-digit code fits a narrow card.
+        <div className="flex w-full max-w-md items-center justify-center gap-1.5 sm:gap-2">
             {Array.from({ length }).map((_, index) => (
                 <input
                     key={index}
                     ref={el => {
                         inputRefs.current[index] = el;
                     }}
-                    type="password"
+                    type={isCode ? 'text' : 'password'}
                     inputMode="numeric"
                     pattern="\d*"
                     maxLength={1}
+                    autoComplete={isCode && index === 0 ? 'one-time-code' : 'off'}
+                    data-1p-ignore
+                    data-lpignore="true"
+                    data-form-type="other"
                     value={digits[index] || ''}
                     onFocus={() => {
                         const firstEmpty = digitsRef.current.findIndex(digit => !digit);
@@ -113,8 +122,8 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
                     onKeyDown={e => handleKeyDown(index, e)}
                     onPaste={handlePaste}
                     disabled={disabled}
-                    aria-label={`PIN digit ${index + 1}`}
-                    className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-semibold rounded-xl border bg-white focus:outline-none focus:ring-2 transition-colors ${
+                    aria-label={`${isCode ? 'Code' : 'PIN'} digit ${index + 1}`}
+                    className={`flex-1 min-w-0 max-w-12 h-12 sm:h-14 px-0 text-center text-xl font-semibold rounded-xl border bg-white focus:outline-hidden focus:ring-2 transition-colors ${
                         error
                             ? 'border-red-300 focus:ring-red-500 focus:border-transparent text-red-900'
                             : 'border-grayscale-300 focus:ring-emerald-500 focus:border-transparent text-grayscale-900'

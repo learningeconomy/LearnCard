@@ -179,7 +179,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         onDiscard={handleDiscard}
                         discardButtonText="Start Fresh"
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
             }, 300);
@@ -533,7 +533,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                     useCloseAllModals
                 />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+                    sectionClassName: 'bg-transparent! shadow-none! overflow-visible!',
                     onClose: () => {
                         // close modals if they exist success modal via clicking on background space
                         // closeAllModals();
@@ -581,7 +581,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                     }
                 }}
             />,
-            { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+            { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
@@ -597,7 +597,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
     return (
         <div className="h-full relative bg-grayscale-100 flex flex-col">
             {isSaving && (
-                <div className="absolute top-0 left-0 w-full h-full bg-white bg-opacity-30 backdrop-blur-[2px] z-50 flex items-center justify-center">
+                <div className="absolute top-0 left-0 w-full h-full bg-white/30  backdrop-blur-[2px] z-50 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-[15px]">
                         <IonSpinner name="crescent" color="dark" className="h-[60px] w-[60px]" />
                         <span className="text-grayscale-900 font-poppins font-[600] text-[16px]">
@@ -640,7 +640,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                 />,
                                 {
                                     sectionClassName:
-                                        '!bg-transparent !shadow-none !overflow-visible',
+                                        'bg-transparent! shadow-none! overflow-visible!',
                                 },
                                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                             );
@@ -705,7 +705,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] p-[20px] absolute bottom-0 left-0 bg-white"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] p-[20px] absolute bottom-0 left-0 bg-white/60"
             >
                 <div className="w-full flex flex-col items-center gap-[10px] max-w-[600px]">
                     {fileInfo && (
@@ -757,7 +757,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                         />,
                                         {
                                             sectionClassName:
-                                                '!bg-transparent !shadow-none !overflow-visible',
+                                                'bg-transparent! shadow-none! overflow-visible!',
                                         },
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );

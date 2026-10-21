@@ -113,8 +113,8 @@ export const UserEmailContacts: React.FC = () => {
                             <input
                                 id="contact-email"
                                 autoCapitalize="on"
-                                className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
-                                    errors.email ? 'border-rose-500 border-[1px] border-solid' : ''
+                                className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
+                                    errors.email ? 'border-rose-500 border border-solid' : ''
                                 }`}
                                 onChange={event => {
                                     setEmail(event.target.value);

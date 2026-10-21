@@ -68,7 +68,7 @@ export const ConnectionPromptModal: React.FC<ConnectionPromptModalProps> = ({
     ]);
 
     return (
-        <div className="font-poppins p-6 text-center space-y-5 bg-white rounded-[20px]">
+        <div className="font-poppins p-6 text-center space-y-v3-5 bg-white rounded-[20px]">
             <div className="flex justify-center">
                 <UserProfilePicture
                     user={prompt.counterpart}

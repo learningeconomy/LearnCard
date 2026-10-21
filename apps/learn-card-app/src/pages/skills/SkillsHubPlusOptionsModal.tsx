@@ -18,7 +18,7 @@ const SkillsHubPlusOptionsModal: React.FC<SkillsHubPlusOptionsModalProps> = ({})
         newModal(
             <CreateFrameworkModal />,
             {
-                sectionClassName: '!bg-transparent !shadow-none',
+                sectionClassName: 'bg-transparent! shadow-none!',
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
         );

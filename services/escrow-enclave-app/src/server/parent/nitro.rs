@@ -3,10 +3,16 @@
 use super::super::*;
 use super::{append, boot, boot_failed, get_chain, persist_key};
 use crate::{
+    authority::{
+        aws::{CredentialPurpose, DynamoAuthorityClient},
+        config::{AuthorityConfig, EmailConfig},
+        credentials::CredentialUnsealer,
+        email::SesEmailSender,
+    },
     kms::{unseal_or_generate_escrow_key, AwsKmsClient, Credentials, RecipientKey},
     ledger::{AppendError, HeadStore, LedgerRecord, StoreFuture},
     nsm::RealNsm,
-    policy::{EnrollmentFuture, EnrollmentSource},
+    policy::{authority::AuthorityEnrollment, EnrollmentFuture, EnrollmentSource},
     time::{RoughtimeTimeSource, VsockRoughtimeTransport},
 };
 use std::sync::OnceLock;
@@ -54,10 +60,19 @@ fn configured(name: &str) -> io::Result<String> {
         .ok_or_else(unavailable)
 }
 pub(crate) async fn run(port: u32) -> io::Result<()> {
+    let authority = step("policy_init", AuthorityConfig::from_measured_env())?;
+    let email = step("policy_init", EmailConfig::from_measured_env())?;
     // Supervision: any forwarder exit also terminates serving.
     let result = tokio::select! {
         result = crate::kms::vsock_forward::run() => step("kms_forwarder", result),
-        result = boot_and_serve(port) => result,
+        result = async {
+            if let Some(config) = &authority {
+                tokio::select! {
+                    result = crate::kms::vsock_forward::run_data_plane(config, data_plane_email(&email)) => step("policy_init", result),
+                    result = boot_and_serve(port, authority.as_ref(), email.as_ref()) => result,
+                }
+            } else { boot_and_serve(port, None, None).await }
+        } => result,
     };
     if let Some(name) = FAILED_STEP.get() {
         let _ = timeout(Duration::from_secs(2), async {
@@ -66,6 +81,17 @@ pub(crate) async fn run(port: u32) -> io::Result<()> {
         .await;
     }
     result
+}
+
+/// P1: decides what `EmailConfig` the data-plane forwarder receives — port
+/// 8002 (the SES relay) must start whenever email is configured; previously
+/// hardcoded to `None` regardless of boot config, so it never started even
+/// when `ESCROW_EMAIL_*` was fully configured. The selection logic itself is
+/// `select_configured` (`server.rs`), which compiles and is unit-tested
+/// under default features since `EmailConfig` requires `kms` and this whole
+/// module requires Linux + nitro + kms; this is wiring only.
+fn data_plane_email(email: &Option<EmailConfig>) -> Option<&EmailConfig> {
+    select_configured(email)
 }
 
 static FAILED_STEP: OnceLock<&'static str> = OnceLock::new();
@@ -82,13 +108,17 @@ fn step<T, E>(name: &'static str, result: Result<T, E>) -> io::Result<T> {
     })
 }
 
-async fn boot_and_serve(port: u32) -> io::Result<()> {
+async fn boot_and_serve(
+    port: u32,
+    authority_config: Option<&AuthorityConfig>,
+    email_config: Option<&EmailConfig>,
+) -> io::Result<()> {
     let nsm = step("nsm_open", RealNsm::new())?;
     let measurement = step("nsm_measurement", measurement(&nsm))?;
-    let time = step(
+    let time = Arc::new(step(
         "roughtime_config",
         RoughtimeTimeSource::production(Arc::new(VsockRoughtimeTransport)),
-    )?;
+    )?);
     let key_id = step("config_key_id", configured("ESCROW_KEY_ID"))?;
     // Comma-separated, bounded (P9.1): read-only decrypt keys accepted alongside
     // the current key, for deliberate rotation or a lost-sealed-key recovery.
@@ -111,11 +141,26 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
     let tenant = step("config_tenant", configured("ESCROW_TENANT"))?;
     let region = step("config_kms_region", configured("ESCROW_KMS_REGION"))?;
     step("install_kms_hosts", install_kms_hosts(&region))?;
+    step(
+        "install_service_hosts",
+        install_service_hosts(authority_config, email_config),
+    )?;
     let arn = step("config_kms_key_arn", configured("ESCROW_KMS_KEY_ARN"))?;
     let keys = timeout(Duration::from_secs(60), async {
         let mut boot_material = step(
             "parent_boot",
             boot(&mut step("parent_connect", connect().await)?, &key_id).await,
+        )?;
+        let unsealer = step(
+            "policy_init",
+            CredentialUnsealer::from_measured_env(
+                Credentials {
+                    access_key_id: boot_material.access_key_id.clone(),
+                    secret_access_key: boot_material.secret_access_key.clone(),
+                    session_token: boot_material.session_token.clone(),
+                },
+                time.clone(),
+            ),
         )?;
         let sealed = match &boot_material.sealed {
             Some(blob) if blob.len() <= 24_000 => {
@@ -135,6 +180,7 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
                 },
                 &region,
                 arn,
+                time.clone(),
             ),
         )?;
         let recipient = step("recipient_key", RecipientKey::generate())?;
@@ -182,13 +228,77 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
             }
             previous_keys.push((previous_id.clone(), previous));
         }
-        Ok::<_, io::Error>((keys, previous_keys))
+        let (authority, email_sender) = match (authority_config, unsealer) {
+            (Some(config), Some(unsealer)) => {
+                let ciphertext = step(
+                    "policy_init",
+                    boot_material
+                        .authority_credential_ciphertext
+                        .as_ref()
+                        .ok_or(()),
+                )?;
+                let ciphertext = step("policy_init", STANDARD.decode(ciphertext))?;
+                let credentials = step(
+                    "policy_init",
+                    unsealer
+                        .unseal(CredentialPurpose::AuthorityWriter, &ciphertext, &nsm)
+                        .await,
+                )?;
+                let client = step(
+                    "policy_init",
+                    DynamoAuthorityClient::new(config.clone(), credentials, time.clone()),
+                )?;
+                let store = step("policy_init", client.into_store())?;
+                let authority = step(
+                    "policy_init",
+                    AuthorityEnrollment::new(
+                        tenant.clone(),
+                        config.generation().into(),
+                        Arc::new(store),
+                    ),
+                )?;
+                // P9.1 (attack C): email stays optional at the Rust type level
+                // even in authority mode, but `authority_create_hold` fails
+                // closed without it — an authority deployment that never
+                // configures ESCROW_EMAIL_*/provisions its sealed sender
+                // simply cannot start holds, not a silent unconfirmed downgrade.
+                let email_sender = match email_config {
+                    Some(email_config) => {
+                        let ciphertext = step(
+                            "policy_init",
+                            boot_material.email_credential_ciphertext.as_ref().ok_or(()),
+                        )?;
+                        let ciphertext = step("policy_init", STANDARD.decode(ciphertext))?;
+                        let credentials = step(
+                            "policy_init",
+                            unsealer
+                                .unseal(CredentialPurpose::EmailSender, &ciphertext, &nsm)
+                                .await,
+                        )?;
+                        Some(step(
+                            "policy_init",
+                            SesEmailSender::new(
+                                email_config.clone(),
+                                credentials,
+                                time.clone(),
+                                tenant.clone(),
+                            ),
+                        )?)
+                    }
+                    None => None,
+                };
+                (Some(authority), email_sender)
+            }
+            (None, None) => (None, None),
+            _ => return step("policy_init", Err(())),
+        };
+        Ok::<_, io::Error>((keys, previous_keys, authority, email_sender))
     })
     .await;
-    let (keys, previous_keys) = step("boot_timeout", keys)??;
+    let (keys, previous_keys, authority, email_sender) = step("boot_timeout", keys)??;
     let public_key = keys.public_key.clone();
     let store = ParentStore;
-    let authority = UnavailableEnrollment;
+    let unavailable_enrollment = UnavailableEnrollment;
     let policy = step(
         "policy_init",
         Policy::new(
@@ -198,10 +308,18 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
             tenant,
             measurement,
             &store,
-            &time,
-            &authority,
+            time.as_ref(),
+            &unavailable_enrollment,
         ),
     )?;
+    let policy = match &email_sender {
+        Some(email_sender) => policy.with_email(email_sender),
+        None => policy,
+    };
+    let policy = match &authority {
+        Some(authority) => step("policy_init", policy.with_authority(authority))?,
+        None => policy,
+    };
     let listener = step(
         "vsock_bind",
         VsockListener::bind(VsockAddr::new(u32::MAX, port)),
@@ -233,9 +351,76 @@ fn install_kms_hosts(region: &str) -> io::Result<()> {
     }
     // Docker's build-time hosts file does not survive EIF construction.
     // This process owns the enclave network namespace; no parent DNS is trusted.
-    std::fs::write(
-        "/etc/hosts",
-        format!("127.0.0.1 localhost kms.{region}.amazonaws.com\n"),
-    )
-    .map_err(|_| unavailable())
+    use std::io::Write;
+    // Preserve data-plane host entries regardless of supervised future ordering.
+    std::fs::OpenOptions::new()
+        .append(true)
+        .open("/etc/hosts")
+        .and_then(|mut hosts| {
+            hosts
+                .write_all(format!("\n127.0.0.1 localhost kms.{region}.amazonaws.com\n").as_bytes())
+        })
+        .map_err(|_| unavailable())
+}
+
+/// P9.1 (attack C) / P2 (authority): the authority/email vsock-proxy relays
+/// (terraform's `proxies` map, ports 8001/8002) are exactly as unreachable
+/// without a loopback mapping as KMS is without its own — `AuthorityConfig`/
+/// `EmailConfig`'s HTTPS client performs ordinary OS hostname resolution, and
+/// the enclave has no real DNS. Written only when that config is present, so
+/// a measured image with neither feature enabled gains no extra hosts entries.
+/// Region is already validated by `AuthorityConfig`/`EmailConfig::load()`
+/// (`region_account()`), so no further validation is needed here.
+fn install_service_hosts(
+    authority: Option<&AuthorityConfig>,
+    email: Option<&EmailConfig>,
+) -> io::Result<()> {
+    let mut entries = String::new();
+    if let Some(authority) = authority {
+        entries.push_str(&format!(
+            "\n127.0.0.1 dynamodb.{}.amazonaws.com",
+            authority.region
+        ));
+    }
+    if let Some(email) = email {
+        entries.push_str(&format!("\n127.0.0.1 email.{}.amazonaws.com", email.region));
+    }
+    if entries.is_empty() {
+        return Ok(());
+    }
+    use std::io::Write;
+    entries.push('\n');
+    std::fs::OpenOptions::new()
+        .append(true)
+        .open("/etc/hosts")
+        .and_then(|mut hosts| hosts.write_all(entries.as_bytes()))
+        .map_err(|_| unavailable())
+}
+
+// P1: boot-wiring tests for `data_plane_email`. `run()`/`boot_and_serve`
+// themselves require a real vsock environment (Linux Nitro boot), so this
+// targets exactly the dispatch decision that regressed: whether the
+// supervised data-plane forwarder (port 8002, SES relay) receives the
+// measured `EmailConfig` it was booted with, proven independent of vsock.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn email_config() -> EmailConfig {
+        EmailConfig {
+            region: "us-east-1".into(),
+            account: "123456789012".into(),
+            sender: "sender".into(),
+            from: "recovery@staging.notify.learncard.com".into(),
+            identity: "staging.notify.learncard.com".into(),
+            configuration_set: "recovery".into(),
+        }
+    }
+
+    #[test]
+    fn data_plane_forwards_email_config_only_when_boot_configured_it() {
+        let configured = Some(email_config());
+        assert!(data_plane_email(&configured).is_some());
+        assert!(data_plane_email(&None).is_none());
+    }
 }

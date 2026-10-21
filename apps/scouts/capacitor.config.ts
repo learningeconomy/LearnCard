@@ -1,13 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { nativeBrowserCompatibility } from '../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
 
 const config: CapacitorConfig = {
     appId: 'org.scoutpass.app',
     appName: 'ScoutPass',
     webDir: 'build',
     bundledWebRuntime: false,
-    android: {
-        adjustMarginsForEdgeToEdge: 'force',
-    },
+    ...nativeBrowserCompatibility({ android: { adjustMarginsForEdgeToEdge: 'force' } }),
     plugins: {
         SplashScreen: {
             launchShowDuration: 6000,
@@ -36,7 +35,7 @@ const config: CapacitorConfig = {
         CapacitorUpdater: {
             appId: 'org.scoutpass.app',
             autoUpdate: true,
-            defaultChannel: '1.0.7', // https://github.com/learningeconomy/LearnCard/pull/1648
+            defaultChannel: '1.0.8', // LC-2006: Tailwind 4 requires an iOS 16.4+ native build.
         },
     },
 };

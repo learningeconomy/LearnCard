@@ -1,7 +1,10 @@
 //! Single-owner policy actor: concurrent socket IO, serialized policy operations.
 use crate::{
     nsm::{parse_attestation_document, AttestationRequest, NsmDriver},
-    policy::{CreateHoldRequest, Policy, ReleaseRequest},
+    policy::{
+        ConfirmHoldRequest, CreateHoldRequest, Policy, ReleaseRequest, ResendCodeRequest,
+        SendReleaseWarningRequest,
+    },
     wire::{
         v1::{Request, Response},
         AttestationMode, ErrorCode, Measurements,
@@ -39,7 +42,7 @@ mod tests;
 
 pub const MAX_FRAME: usize = 256 * 1024;
 const CONNECTIONS: usize = 32;
-const IO_TIMEOUT: Duration = Duration::from_secs(10);
+pub(crate) const IO_TIMEOUT: Duration = Duration::from_secs(10);
 fn unavailable() -> io::Error {
     io::Error::other("Enclave service unavailable")
 }
@@ -51,6 +54,21 @@ fn refusal(code: ErrorCode) -> Response {
         code,
         message: "Request refused.".into(),
     }
+}
+
+/// Pure boot-wiring selection: generic (not tied to `EmailConfig`, which
+/// requires the `kms` feature, same as every other authority/email type) so
+/// this exact selection logic — the dispatch decision regressed in P1
+/// (`parent::nitro::data_plane_email`, which delegates to this) — compiles
+/// and is tested under default features, independent of the Linux + nitro +
+/// kms gating the real wiring call itself needs.
+// Its only call site (`parent::nitro::data_plane_email`) compiles solely
+// under Linux + nitro + kms, so other feature/platform combinations
+// correctly see this as dead code; suppressed rather than feature-gating the
+// function itself, which would defeat the point of testing it independently.
+#[allow(dead_code)]
+pub(crate) fn select_configured<T>(value: &Option<T>) -> Option<&T> {
+    value.as_ref()
 }
 
 pub async fn run(transport: Transport) -> io::Result<()> {
@@ -119,6 +137,96 @@ impl Service<'_> {
     }
     async fn handle(&mut self, request: Request) -> Result<Response, ErrorCode> {
         match request {
+            Request::HoldState {
+                expected_did,
+                hold,
+                nonce,
+            } => {
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                {
+                    Ok(Response::HoldState {
+                        proof: self
+                            .policy
+                            .authority_read_hold(&expected_did, &hold, &nonce)
+                            .await?,
+                    })
+                }
+                #[cfg(not(any(test, feature = "kms", feature = "fake-authority")))]
+                {
+                    let _ = (expected_did, hold, nonce);
+                    Err(ErrorCode::Unavailable)
+                }
+            }
+            Request::EnrollmentState {
+                expected_did,
+                nonce,
+            } => {
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                {
+                    let (state, proof) = self.policy.authority_state(&expected_did, &nonce).await?;
+                    Ok(Response::EnrollmentState { state, proof })
+                }
+                #[cfg(not(any(test, feature = "kms", feature = "fake-authority")))]
+                {
+                    let _ = (expected_did, nonce);
+                    Err(ErrorCode::Unavailable)
+                }
+            }
+            Request::ApplyEnrollment {
+                signed_intent,
+                source_envelope,
+                target_envelope,
+            } => {
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                {
+                    Ok(Response::ApplyEnrollment {
+                        result: self
+                            .policy
+                            .apply_enrollment_intent(
+                                &signed_intent,
+                                source_envelope.as_ref(),
+                                target_envelope.as_ref(),
+                            )
+                            .await?,
+                    })
+                }
+                #[cfg(not(any(test, feature = "kms", feature = "fake-authority")))]
+                {
+                    let _ = (signed_intent, source_envelope, target_envelope);
+                    Err(ErrorCode::Unavailable)
+                }
+            }
+            Request::AuthorityRewrap {
+                envelope,
+                expected_did,
+                expected_share_version,
+                source_enrollment_epoch,
+            } => {
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                {
+                    Ok(Response::AuthorityRewrap {
+                        result: self
+                            .policy
+                            .authority_rewrap(
+                                &envelope,
+                                &expected_did,
+                                expected_share_version,
+                                source_enrollment_epoch,
+                            )
+                            .await?,
+                    })
+                }
+                #[cfg(not(any(test, feature = "kms", feature = "fake-authority")))]
+                {
+                    let _ = (
+                        envelope,
+                        expected_did,
+                        expected_share_version,
+                        source_enrollment_epoch,
+                    );
+                    Err(ErrorCode::Unavailable)
+                }
+            }
             Request::Health => Ok(Response::Health { ok: true }),
             Request::Attest { nonce } => {
                 let spki = STANDARD
@@ -234,9 +342,9 @@ impl Service<'_> {
                 release_policy,
                 client_ephemeral_public_key,
             } => {
-                let hold = self
+                let (hold, delivery) = self
                     .policy
-                    .create_hold(CreateHoldRequest {
+                    .create_hold_with_delivery(CreateHoldRequest {
                         envelope: &envelope,
                         hold_id: &hold_id,
                         request_id: &request_id,
@@ -247,7 +355,7 @@ impl Service<'_> {
                         client_ephemeral_public_key: &client_ephemeral_public_key,
                     })
                     .await?;
-                Ok(Response::CreateHold { hold })
+                Ok(Response::CreateHold { hold, delivery })
             }
             Request::Release {
                 envelope,
@@ -258,18 +366,30 @@ impl Service<'_> {
                 pin_proof,
             } => {
                 let proof = pin_proof.map(Zeroizing::new);
-                let sealed = self
-                    .policy
-                    .release(ReleaseRequest {
-                        envelope: &envelope,
-                        hold: &hold,
-                        request_id: &request_id,
-                        client_ephemeral_public_key: &client_ephemeral_public_key,
-                        expected_did: &expected_did,
-                        pin_proof: proof.as_ref().map(|p| p.as_str()),
-                    })
-                    .await?;
-                Ok(Response::Release { sealed })
+                let req = ReleaseRequest {
+                    envelope: &envelope,
+                    hold: &hold,
+                    request_id: &request_id,
+                    client_ephemeral_public_key: &client_ephemeral_public_key,
+                    expected_did: &expected_did,
+                    pin_proof: proof.as_ref().map(|p| p.as_str()),
+                };
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                if self.policy.authority_enabled() {
+                    let (sealed, receipt) = self
+                        .policy
+                        .authority_release_with_receipt(req, hold.hold.release_policy)
+                        .await?;
+                    return Ok(Response::Release {
+                        sealed,
+                        receipt: Some(receipt),
+                    });
+                }
+                let sealed = self.policy.release(req).await?;
+                Ok(Response::Release {
+                    sealed,
+                    receipt: None,
+                })
             }
             Request::Cancel {
                 envelope,
@@ -278,17 +398,93 @@ impl Service<'_> {
                 client_ephemeral_public_key,
                 expected_did,
             } => {
-                self.policy
-                    .cancel_hold(ReleaseRequest {
+                let req = ReleaseRequest {
+                    envelope: &envelope,
+                    hold: &hold,
+                    request_id: &request_id,
+                    client_ephemeral_public_key: &client_ephemeral_public_key,
+                    expected_did: &expected_did,
+                    pin_proof: None,
+                };
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                if self.policy.authority_enabled() {
+                    let receipt = self.policy.authority_cancel(req).await?;
+                    return Ok(Response::Cancel {
+                        cancelled: true,
+                        receipt: Some(receipt),
+                    });
+                }
+                self.policy.cancel_hold(req).await?;
+                Ok(Response::Cancel {
+                    cancelled: true,
+                    receipt: None,
+                })
+            }
+            Request::ConfirmHold {
+                envelope,
+                hold,
+                request_id,
+                client_ephemeral_public_key,
+                expected_did,
+                code,
+            } => {
+                let (receipt, confirmed_hi_ms) = self
+                    .policy
+                    .confirm_hold(ConfirmHoldRequest {
                         envelope: &envelope,
                         hold: &hold,
                         request_id: &request_id,
-                        client_ephemeral_public_key: &client_ephemeral_public_key,
                         expected_did: &expected_did,
-                        pin_proof: None,
+                        client_ephemeral_public_key: &client_ephemeral_public_key,
+                        code: &code,
                     })
                     .await?;
-                Ok(Response::Cancel { cancelled: true })
+                Ok(Response::ConfirmHold {
+                    confirmed: true,
+                    receipt,
+                    confirmed_hi_ms,
+                })
+            }
+            Request::ResendCode {
+                envelope,
+                hold,
+                request_id,
+                client_ephemeral_public_key,
+                expected_did,
+            } => {
+                let receipt = self
+                    .policy
+                    .resend_code(ResendCodeRequest {
+                        envelope: &envelope,
+                        hold: &hold,
+                        request_id: &request_id,
+                        expected_did: &expected_did,
+                        client_ephemeral_public_key: &client_ephemeral_public_key,
+                    })
+                    .await?;
+                Ok(Response::ResendCode {
+                    sent: true,
+                    receipt,
+                })
+            }
+            Request::SendReleaseWarning {
+                hold_id,
+                request_id,
+                expected_did,
+            } => {
+                let (receipt, release_warning_sent_hi_ms) = self
+                    .policy
+                    .send_release_warning(SendReleaseWarningRequest {
+                        hold_id: &hold_id,
+                        request_id: &request_id,
+                        expected_did: &expected_did,
+                    })
+                    .await?;
+                Ok(Response::SendReleaseWarning {
+                    sent: true,
+                    receipt,
+                    release_warning_sent_hi_ms,
+                })
             }
         }
     }
@@ -506,4 +702,19 @@ fn spawn_reader(
             _ => Completed::Done,
         }
     });
+}
+
+// Kept last in the file (not alongside `select_configured` above, which it
+// tests): clippy's `items_after_test_module` lint (new in 1.93.0) flags any
+// item defined after an inline `#[cfg(test)] mod` in the same file.
+#[cfg(test)]
+mod default_feature_tests {
+    use super::select_configured;
+
+    #[test]
+    fn selects_only_when_configured() {
+        let configured = Some(42);
+        assert_eq!(select_configured(&configured), Some(&42));
+        assert_eq!(select_configured(&None::<i32>), None);
+    }
 }

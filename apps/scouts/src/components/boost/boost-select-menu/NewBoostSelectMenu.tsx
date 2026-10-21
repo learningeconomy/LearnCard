@@ -234,7 +234,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
             </IonHeader>
 
             <IonContent color="grayscale-100" fullscreen>
-                <IonCol className="badge-list-container !pt-[0px]">
+                <IonCol className="badge-list-container pt-0!">
                     <IonGrid className="max-w-[600px]">
                         {filteredBoostPack.length === 0 && search && <NoResultsMessage />}
 
@@ -320,7 +320,7 @@ const HeaderSection: React.FC<{
             type="button"
             onClick={handleCloseModal}
             aria-label={m['boost.closeModal']()}
-            className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full"
+            className="focus:outline-hidden focus:ring-2 focus:ring-primary-500 rounded-full"
         >
             <X className="text-grayscale-900 h-auto w-[30px]" />
         </button>

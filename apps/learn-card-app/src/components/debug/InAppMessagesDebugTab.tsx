@@ -86,7 +86,9 @@ const TraceNode: React.FC<{ trace: PredicateTrace; depth?: number }> = ({ trace,
                 }`}
             />
 
-            <span className="text-[9px] text-gray-400 font-mono break-words">{trace.label}</span>
+            <span className="text-[9px] text-gray-400 font-mono wrap-break-word">
+                {trace.label}
+            </span>
         </div>
 
         {trace.children?.map((child, i) => (
@@ -122,7 +124,7 @@ const MessageRow: React.FC<{
     const [expanded, setExpanded] = useState(false);
 
     return (
-        <div className="bg-gray-900/60 rounded overflow-hidden">
+        <div className="bg-gray-900/60 rounded-sm overflow-hidden">
             <button
                 type="button"
                 onClick={() => setExpanded(e => !e)}
@@ -146,7 +148,7 @@ const MessageRow: React.FC<{
             </button>
 
             {expanded && (
-                <div className="px-2 pb-2 space-y-1.5">
+                <div className="px-2 pb-2 space-y-v3-1.5">
                     <div className="grid grid-cols-2 gap-x-2 text-[9px] text-gray-500">
                         <span>
                             presentation:{' '}
@@ -189,7 +191,7 @@ const MessageRow: React.FC<{
                                 Targeting trace
                             </p>
 
-                            <div className="bg-gray-950 rounded p-1.5 mt-0.5">
+                            <div className="bg-gray-950 rounded-sm p-1.5 mt-0.5">
                                 <TraceNode trace={diagnostic.trace} />
                             </div>
                         </div>
@@ -204,7 +206,7 @@ const MessageRow: React.FC<{
                             <button
                                 type="button"
                                 onClick={() => onForceShow(message)}
-                                className="flex items-center gap-1 text-[10px] bg-sky-700 hover:bg-sky-600 text-white px-2 py-0.5 rounded transition-colors"
+                                className="flex items-center gap-1 text-[10px] bg-sky-700 hover:bg-sky-600 text-white px-2 py-0.5 rounded-sm transition-colors"
                             >
                                 <Eye className="w-2.5 h-2.5" />
                                 Force show
@@ -306,10 +308,10 @@ const TargetingDryRun: React.FC<{
     }, [selectedId, draft, flagMessages]);
 
     const fieldSelectClass =
-        'text-[10px] !bg-gray-950 border !border-gray-600 rounded px-1 py-1 !text-gray-100 focus:outline-none focus:!border-sky-500';
+        'text-[10px] bg-gray-950! border border-gray-600! rounded-sm px-1 py-1 text-gray-100! focus:outline-hidden focus:border-sky-500!';
 
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <div className="flex items-center gap-1.5">
                 <select
                     value={selectedId}
@@ -334,7 +336,7 @@ const TargetingDryRun: React.FC<{
                     value={role}
                     onChange={e => setRole(e.target.value)}
                     style={debugFieldInputStyle}
-                    className="w-16 text-[10px] font-mono rounded px-1.5 py-1 placeholder:!text-gray-500 caret-sky-400 focus:outline-none focus:!border-sky-500 focus:ring-1 focus:ring-sky-500/40"
+                    className="w-16 text-[10px] font-mono rounded-sm px-1.5 py-1 placeholder:text-gray-500! caret-sky-400 focus:outline-hidden focus:border-sky-500! focus:ring-1 focus:ring-sky-500/40"
                 />
             </div>
 
@@ -346,7 +348,7 @@ const TargetingDryRun: React.FC<{
             )}
 
             {selected && (
-                <div className="space-y-0.5">
+                <div className="space-y-v3-0.5">
                     {currentContext && (
                         <DryRunRow
                             label="This device"
@@ -447,7 +449,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
     }, [jsonInput]);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <Section
                 title="Status"
                 icon={<Radio className="w-3 h-3 text-gray-500" />}
@@ -464,7 +466,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                     </span>
                 }
             >
-                <div className="space-y-0.5">
+                <div className="space-y-v3-0.5">
                     <KVRow
                         label="Gate"
                         value={`${gate.canPresent ? 'open' : 'closed'} (${gate.reason})`}
@@ -543,7 +545,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                     <button
                         type="button"
                         onClick={handleReset}
-                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded transition-colors"
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded-sm transition-colors"
                     >
                         {resetFeedback ? 'Cleared!' : 'Reset seen state'}
                     </button>
@@ -552,7 +554,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setInAppMessageOverride(null)}
-                            className="text-[10px] bg-yellow-800/70 hover:bg-yellow-700/70 text-yellow-200 px-2 py-0.5 rounded transition-colors"
+                            className="text-[10px] bg-yellow-800/70 hover:bg-yellow-700/70 text-yellow-200 px-2 py-0.5 rounded-sm transition-colors"
                         >
                             Clear override
                         </button>
@@ -563,7 +565,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         onClick={() =>
                             copyToClipboard('full-report', JSON.stringify(report, null, 2))
                         }
-                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded transition-colors"
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded-sm transition-colors"
                     >
                         {copied === 'full-report' ? 'Copied!' : 'Copy report'}
                     </button>
@@ -589,7 +591,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         {' LaunchDarkly flag (or context not ready yet).'}
                     </p>
                 ) : (
-                    <div className="space-y-0.5">
+                    <div className="space-y-v3-0.5">
                         {report.diagnostics.map(d => (
                             <MessageRow
                                 key={d.id}
@@ -606,8 +608,8 @@ export const InAppMessagesDebugTab: React.FC = () => {
             </Section>
 
             <Section title="Preview" icon={<Eye className="w-3 h-3 text-gray-500" />}>
-                <div className="space-y-2">
-                    <div className="space-y-1.5">
+                <div className="space-y-v3-2">
+                    <div className="space-y-v3-1.5">
                         {IN_APP_MESSAGE_TEMPLATE_CATEGORIES.map(category => (
                             <div key={category}>
                                 <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5">
@@ -623,7 +625,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                                             type="button"
                                             onClick={() => handlePreviewTemplate(t.json)}
                                             title={t.description}
-                                            className="flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded transition-colors text-left"
+                                            className="flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded-sm transition-colors text-left"
                                         >
                                             <MessageSquare className="w-3 h-3 shrink-0 text-gray-500" />
                                             {t.label}
@@ -634,20 +636,20 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         ))}
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-v3-1">
                         <textarea
                             value={jsonInput}
                             onChange={e => setJsonInput(e.target.value)}
                             placeholder='{ "title": "Test", "actions": [{ "label": "OK", "style": "primary", "action": { "type": "dismiss" } }] }'
                             rows={3}
                             style={debugFieldInputStyle}
-                            className="w-full text-[10px] font-mono rounded px-1.5 py-1 placeholder:!text-gray-500 caret-sky-400 focus:outline-none focus:!border-sky-500 focus:ring-1 focus:ring-sky-500/40 resize-y"
+                            className="w-full text-[10px] font-mono rounded-sm px-1.5 py-1 placeholder:text-gray-500! caret-sky-400 focus:outline-hidden focus:border-sky-500! focus:ring-1 focus:ring-sky-500/40 resize-y"
                         />
 
                         {jsonError && (
                             <p className="text-[9px] text-red-400 flex items-start gap-1">
                                 <AlertTriangle className="w-2.5 h-2.5 shrink-0 mt-0.5" />
-                                <span className="break-words">{jsonError}</span>
+                                <span className="wrap-break-word">{jsonError}</span>
                             </p>
                         )}
 
@@ -655,7 +657,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                             type="button"
                             onClick={handlePreviewJson}
                             disabled={!jsonInput.trim()}
-                            className="text-[10px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white px-2 py-0.5 rounded transition-colors"
+                            className="text-[10px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white px-2 py-0.5 rounded-sm transition-colors"
                         >
                             Preview JSON
                         </button>

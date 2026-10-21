@@ -69,7 +69,7 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
 
     return (
         <Overlay>
-            <div className="p-8 text-center space-y-5">
+            <div className="p-8 text-center space-y-v3-5">
                 {step === 'enter' && (
                     <>
                         {afterRecovery && (

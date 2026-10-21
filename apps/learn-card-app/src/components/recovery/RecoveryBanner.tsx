@@ -390,7 +390,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                                 onClick={handleSetup}
                                 disabled={setupRequested}
                                 aria-label={m['recovery.prompt.openAria']()}
-                                className={`group flex-1 min-w-0 flex items-center gap-3 p-4 text-start rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait ${
+                                className={`group flex-1 min-w-0 flex items-center gap-3 p-4 text-start rounded-[20px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait ${
                                     activeTier === 'pin-first' ? 'pb-1' : ''
                                 }`}
                             >
@@ -447,7 +447,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                                     type="button"
                                     onClick={handleSetupSecondary}
                                     disabled={setupRequested}
-                                    className="self-start ms-[4rem] mb-3 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
+                                    className="self-start ms-16 mb-3 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 hover:underline transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-sm"
                                 >
                                     {m['recovery.prompt.pinFirst.secondary']()}
                                 </button>
@@ -459,7 +459,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                                 type="button"
                                 onClick={handleSnooze}
                                 aria-label={m['recovery.prompt.snoozeAria']()}
-                                className="self-center me-3 p-2 rounded-full text-grayscale-500 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0"
+                                className="self-center me-3 p-2 rounded-full text-grayscale-500 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0"
                             >
                                 <IonIcon icon={closeOutline} className="text-lg" />
                             </button>

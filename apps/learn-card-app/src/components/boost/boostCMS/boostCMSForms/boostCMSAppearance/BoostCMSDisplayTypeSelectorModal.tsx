@@ -76,7 +76,7 @@ export const BoostCMSDisplayTypeSelectorModal: React.FC<BoostCMSDisplayTypeSelec
                 return (
                     <div
                         key={index}
-                        className="w-[90%] flex items-center justify-center mb-2 last:mb-0 border-b-[2px] border-b-grayscale-100 border-solid last:border-b-0"
+                        className="w-[90%] flex items-center justify-center mb-2 last:mb-0 border-b-2 border-b-grayscale-100 border-solid last:border-b-0"
                     >
                         <button
                             onClick={onClick}

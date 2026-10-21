@@ -41,12 +41,18 @@ const bytes = (value: unknown, reason: NitroAttestationReason): Uint8Array =>
     value instanceof Uint8Array && value.length > 0 ? value : fail(reason);
 const map = (value: unknown, reason: NitroAttestationReason): Map<unknown, unknown> =>
     value instanceof Map ? value : fail(reason);
-const decodeCbor = (value: Uint8Array): unknown => {
+/**
+ * `allowIndefinite` is only for the signed NSM payload: real AWS Nitro documents
+ * encode it as an indefinite-length map (0xbf). That is safe because the COSE
+ * signature below is verified over the original payload bytes, not a re-encoding.
+ * Everything else (COSE envelope, protected header, user_data) stays definite-only.
+ */
+const decodeCbor = (value: Uint8Array, { allowIndefinite = false } = {}): unknown => {
     try {
         return decode(value, {
             useMaps: true,
             rejectDuplicateMapKeys: true,
-            allowIndefinite: false,
+            allowIndefinite,
             allowUndefined: false,
             allowNaN: false,
             allowInfinity: false,
@@ -131,6 +137,8 @@ export const verifyNitroAttestationDocument = async (
     pcrs: Record<number, string>;
     timestamp: number;
     moduleId: string;
+    ledgerPublicKey?: string;
+    measurementHash?: string;
 }> => {
     let document: Uint8Array;
     try {
@@ -155,7 +163,7 @@ export const verifyNitroAttestationDocument = async (
     const payloadBytes = bytes(payloadValue, 'cose');
     const signature = bytes(signatureValue, 'signature');
     if (signature.length !== 96) fail('signature');
-    const payload = map(decodeCbor(payloadBytes), 'cbor');
+    const payload = map(decodeCbor(payloadBytes, { allowIndefinite: true }), 'cbor');
     const moduleId = payload.get('module_id');
     const timestamp = payload.get('timestamp');
     if (typeof moduleId !== 'string' || !moduleId || payload.get('digest') !== 'SHA384')
@@ -275,6 +283,28 @@ export const verifyNitroAttestationDocument = async (
     } catch {
         return fail('user-data');
     }
+    const rawLedgerKey = payload.get('public_key');
+    let ledgerPublicKey: string | undefined;
+    let measurementHash: string | undefined;
+    if (rawLedgerKey !== undefined && rawLedgerKey !== null) {
+        const ledger = new Uint8Array(bytes(rawLedgerKey, 'user-data'));
+        if (ledger.length !== 65 || ledger[0] !== 4) fail('user-data');
+        try {
+            await crypto.subtle.importKey(
+                'raw',
+                ledger,
+                { name: 'ECDSA', namedCurve: 'P-256' },
+                false,
+                ['verify']
+            );
+        } catch {
+            return fail('user-data');
+        }
+        const tuple = new Uint8Array(144);
+        for (let i = 0; i < 3; i++) tuple.set(bytes(rawPcrs.get(i), 'pcr'), i * 48);
+        measurementHash = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', tuple)));
+        ledgerPublicKey = bufferToBase64(ledger.buffer);
+    }
     return {
         escrowPublicKeySpkiB64: bufferToBase64(new Uint8Array(spki).buffer),
         keyId: newFormat?.keyId,
@@ -282,5 +312,6 @@ export const verifyNitroAttestationDocument = async (
         pcrs,
         timestamp,
         moduleId,
+        ...(ledgerPublicKey ? { ledgerPublicKey, measurementHash } : {}),
     };
 };

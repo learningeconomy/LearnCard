@@ -2,13 +2,9 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         "outDir": "../../dist/out-tsc",
-        "types": ["node"],
+        "types": ["node", "vite/client"],
         "skipLibCheck": true
     },
-    "files": [
-        "../../node_modules/@nrwl/react/typings/cssmodule.d.ts",
-        "../../node_modules/@nrwl/react/typings/image.d.ts"
-    ],
     "exclude": [
         "vitest.config.ts",
         "**/*.spec.ts",

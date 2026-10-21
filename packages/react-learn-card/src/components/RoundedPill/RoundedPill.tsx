@@ -87,7 +87,7 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
 }) => {
     const backgroundColor = `bg-${TYPE_TO_BG_COLOR_CLASS[type]}`;
     const iconBgColor = `bg-${TYPE_TO_FOREGROUND_COLOR[type]}`;
-    const circleClass = `flex w-full items-center justify-center icon-display h-[40px] w-[40px] rounded-full ${iconBgColor}  absolute flex-shrink-0 `;
+    const circleClass = `flex w-full items-center justify-center icon-display h-[40px] w-[40px] rounded-full ${iconBgColor}  absolute shrink-0 `;
 
     const handleClick = () => {
         onClick?.();
@@ -108,7 +108,7 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
             {!locked && (
                 <div className={circleClass}>
                     <img
-                        className="h-full w-full object-cover max-h-[24px] max-w-[24px] flex-shrink-0 "
+                        className="h-full w-full object-cover max-h-[24px] max-w-[24px] shrink-0 "
                         src={iconSrc ?? ''}
                         alt="Icon image"
                     />

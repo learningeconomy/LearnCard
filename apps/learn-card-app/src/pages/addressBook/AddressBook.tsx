@@ -173,7 +173,7 @@ const AddressBook: React.FC = () => {
     return (
         <IonPage className="bg-grayscale-100">
             <MainHeader
-                customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-grayscale-100 md:border-none md:bg-none md:backdrop-blur-none"
+                customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-grayscale-100 md:border-none md:bg-none md:backdrop-blur-none"
                 branding={BrandingEnum.learncard}
                 customHeaderClass="px-0"
             />

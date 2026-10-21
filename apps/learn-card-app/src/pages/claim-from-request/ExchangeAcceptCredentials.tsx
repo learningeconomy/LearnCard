@@ -418,7 +418,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 renderMethodCredential={credential}
             />,
             {
-                className: '!bg-transparent',
+                className: 'bg-transparent!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -454,7 +454,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             <div className="max-w-4xl mx-auto px-4 py-6 animate-fade-in-up">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm border border-grayscale-200">
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-xs border border-grayscale-200">
                         <Gift className="w-8 h-8 text-emerald-600" />
                     </div>
 
@@ -492,7 +492,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 </div>
 
                 {/* Summary footer */}
-                <div className="mt-6 p-5 bg-white rounded-[20px] border border-grayscale-200 shadow-sm">
+                <div className="mt-6 p-5 bg-white rounded-[20px] border border-grayscale-200 shadow-xs">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div
@@ -577,12 +577,12 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
                             {/* Content */}
                             <div className="p-6">
-                                <div className="space-y-5 mb-6">
+                                <div className="space-y-v3-5 mb-6">
                                     <p className="text-grayscale-600 text-center text-sm leading-relaxed">
                                         {m['claim.accept.noneDesc']()}
                                     </p>
 
-                                    <ul className="text-sm text-grayscale-600 space-y-2 pl-4">
+                                    <ul className="text-sm text-grayscale-600 space-y-v3-2 pl-4">
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-0.5">•</span>
                                             {m['claim.accept.reason1']()}
@@ -610,7 +610,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 </div>
 
                                 {/* Action buttons */}
-                                <div className="space-y-3">
+                                <div className="space-y-v3-3">
                                     <button
                                         type="button"
                                         onClick={() => history.push('/')}

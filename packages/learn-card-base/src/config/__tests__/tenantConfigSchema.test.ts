@@ -141,7 +141,40 @@ describe('tenantConfigSchema', () => {
         expect(result.features.escrowRolloutAllowlist).toEqual([]);
         expect(result.observability.analyticsProvider).toBe('noop');
         expect(result.storage.provider).toBe('filestack');
+        expect(result.registries).toEqual({ badgePackUrls: [], badgePackAssets: [] });
     });
+
+    it.each([
+        {
+            registries: undefined,
+            expected: { badgePackUrls: [], badgePackAssets: [] },
+        },
+        {
+            registries: {},
+            expected: { badgePackUrls: [], badgePackAssets: [] },
+        },
+        {
+            registries: { badgePackUrls: ['https://example.org/badges.json'] },
+            expected: {
+                badgePackUrls: ['https://example.org/badges.json'],
+                badgePackAssets: [],
+            },
+        },
+        {
+            registries: { badgePackAssets: ['example'], future: true },
+            expected: { badgePackUrls: [], badgePackAssets: ['example'], future: true },
+        },
+    ])(
+        'fills missing registry arrays without replacing configured sources: $registries',
+        ({ registries, expected }) => {
+            const result = tenantConfigSchema.parse({
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+                registries,
+            });
+
+            expect(result.registries).toEqual(expected);
+        }
+    );
 
     it('accepts an explicit escrow rollout percent and allowlist', () => {
         const allowlistHash = 'a'.repeat(64);

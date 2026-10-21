@@ -34,7 +34,7 @@ const AdminToolsSigningAuthorityItem: React.FC<{
     if (!defaultSigningAuthority) isDefault = false;
 
     return (
-        <div className="w-full p-4 border-b-grayscale-100 border-b-solid border-b-[2px]">
+        <div className="w-full p-4 border-b-grayscale-100 border-b-solid border-b-2">
             <div className="w-full flex flex-col items-start justify-between px-4">
                 <div className="w-full flex items-center justify-between pb-4">
                     <p className="text-grayscale-900 truncate pr-4">

@@ -154,7 +154,7 @@ impl KmsClient for FakeKmsClient {
     }
 }
 
-pub(super) fn wrap(plaintext: &[u8], spki: &[u8]) -> Result<Vec<u8>, KmsError> {
+pub(crate) fn wrap(plaintext: &[u8], spki: &[u8]) -> Result<Vec<u8>, KmsError> {
     let encode = || -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let public = RsaPublicKey::from_public_key_der(spki)?;
         let mut cek = Zeroizing::new([0; 32]);
