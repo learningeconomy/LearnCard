@@ -57,6 +57,8 @@ export const spreadsheetErrorMessage = (error: unknown): string => {
             return m['issueFlow.sheet.chooseEmail']();
         case 'format':
             return m['issueFlow.sheet.numberFormatConflict']();
+        case 'mappedColumnMissing':
+            return m['issueFlow.sheet.mappedColumnMissing']();
         case 'mapping':
             return m['issueFlow.sheet.mapping']();
         case 'run':

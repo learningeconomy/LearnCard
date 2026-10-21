@@ -18,6 +18,7 @@ import {
     type ColumnMapping,
     type MappingTarget,
     type ParsedSpreadsheet,
+    type SpreadsheetColumn,
 } from './types';
 import { suggestMapping } from './columnMapping';
 import { rosterCsvFieldNames } from './roster';
@@ -56,28 +57,32 @@ const candidateColumns = ({ source, template, mappings }: ColumnMappingsProps) =
     const exportedNames = rosterCsvFieldNames({ mappings }, active);
     return source.columns.filter(
         column =>
-            column.index !== source.emailColumn &&
-            column.id !== source.rowEvidenceColumn &&
-            ![...RESERVED_COLUMNS].some(
-                value => normalizeColumn(value) === normalizeColumn(column.label)
-            ) &&
-            !/^(name|recipientname|fullname|displayname|studentname|firstname|lastname|first|last)$/.test(
-                normalizeColumn(column.label)
-            ) &&
-            !active.some(
-                name =>
-                    normalizeColumn(name) === normalizeColumn(column.label) ||
-                    (source.rowEvidenceColumn !== undefined &&
-                        normalizeColumn(exportedNames[name]!) === normalizeColumn(column.label))
-            )
+            mappings.some(
+                mapping => active.includes(mapping.variable) && mapping.columnId === column.id
+            ) ||
+            (column.index !== source.emailColumn &&
+                column.id !== source.rowEvidenceColumn &&
+                ![...RESERVED_COLUMNS].some(
+                    value => normalizeColumn(value) === normalizeColumn(column.label)
+                ) &&
+                !/^(name|recipientname|fullname|displayname|studentname|firstname|lastname|first|last)$/.test(
+                    normalizeColumn(column.label)
+                ) &&
+                !active.some(
+                    name =>
+                        normalizeColumn(name) === normalizeColumn(column.label) ||
+                        (source.rowEvidenceColumn !== undefined &&
+                            normalizeColumn(exportedNames[name]!) === normalizeColumn(column.label))
+                ))
     );
 };
-const activeMapping = (props: ColumnMappingsProps, label: string): ColumnMapping | undefined => {
+const activeMapping = (
+    props: ColumnMappingsProps,
+    column: SpreadsheetColumn
+): ColumnMapping | undefined => {
     const active = props.template ? extractVariablesByType(props.template).dynamic : [];
     return props.mappings.find(
-        mapping =>
-            normalizeColumn(mapping.label) === normalizeColumn(label) &&
-            active.includes(mapping.variable)
+        mapping => mapping.columnId === column.id && active.includes(mapping.variable)
     );
 };
 const fieldStyle = (target: MappingTarget): { icon: string; color: string } => {
@@ -92,7 +97,7 @@ const fieldStyle = (target: MappingTarget): { icon: string; color: string } => {
 
 export const ColumnMappings: React.FC<ColumnMappingsProps> = props => {
     const columns = candidateColumns(props);
-    const included = columns.filter(column => activeMapping(props, column.label)).length;
+    const included = columns.filter(column => activeMapping(props, column)).length;
     const open = useSpreadsheetDialog(close => <ColumnMappingsEditor {...props} onClose={close} />);
     if (!columns.length) return null;
     return (
@@ -122,7 +127,7 @@ export const ColumnMappings: React.FC<ColumnMappingsProps> = props => {
                     })}
                 </span>
                 {columns
-                    .filter(column => activeMapping(props, column.label))
+                    .filter(column => activeMapping(props, column))
                     .slice(0, 4)
                     .map(column => (
                         <span
@@ -157,7 +162,7 @@ export const ColumnMappingsEditor: React.FC<
     const [choices, setChoices] = useState<Record<string, Partial<ColumnMapping>>>({});
     const [error, setError] = useState('');
     const columns = candidateColumns(props);
-    const included = columns.filter(column => activeMapping(props, column.label)).length;
+    const included = columns.filter(column => activeMapping(props, column)).length;
     const editable =
         !disabled && Boolean(template) && (!template?.schemaType || template.schemaType === 'obv3');
     const choose = (columnId: string, patch: Partial<ColumnMapping>): void =>
@@ -211,7 +216,7 @@ export const ColumnMappingsEditor: React.FC<
                 ) : null}
                 <div className="space-y-v3-3">
                     {columns.map(column => {
-                        const selected = activeMapping(props, column.label);
+                        const selected = activeMapping(props, column);
                         const target =
                             selected?.target ??
                             choices[column.id]?.target ??

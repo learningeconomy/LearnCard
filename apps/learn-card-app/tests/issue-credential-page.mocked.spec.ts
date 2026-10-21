@@ -641,6 +641,89 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             ).toBeVisible();
         });
 
+        test(`preserves mappings through CSV reimport and shared media edits at ${viewport.width}px`, async ({
+            page,
+        }, testInfo) => {
+            await page.setViewportSize(viewport);
+            test.setTimeout(180000);
+            await selectBadgeType(page);
+            await page
+                .getByRole('button', {
+                    name: viewport.width <= 991 ? /^People$/ : /specific people/i,
+                })
+                .click();
+            await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+                name: 'mapping-reimport.csv',
+                mimeType: 'text/csv',
+                buffer: Buffer.from(
+                    'Email,Name,Code,Portfolio,Credits\nada@example.test,Ada,0012,https://proof.test/ada,3\nbob@example.test,Bob,0009,https://proof.test/bob,'
+                ),
+            });
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            for (const label of ['Portfolio', 'Credits'])
+                await page.getByRole('button', { name: `Include ${label}`, exact: true }).click();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            const downloadPromise = page.waitForEvent('download');
+            await page.getByRole('button', { name: 'Download table', exact: true }).click();
+            const downloaded = await downloadPromise;
+            const exportedPath = testInfo.outputPath('exported-roster.csv');
+            await downloaded.saveAs(exportedPath);
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByTestId('issue-spreadsheet-file').setInputFiles(exportedPath);
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.getByRole('button', { name: 'Certificate', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            await expect(page.getByLabel('Ada Credits', { exact: true })).toHaveValue('3');
+            await expect(page.getByLabel('Bob Credits', { exact: true })).toHaveAttribute(
+                'aria-invalid',
+                'true'
+            );
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            await expect(
+                page.getByRole('button', { name: 'Remove Portfolio', exact: true })
+            ).toBeVisible();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('reimport-mappings.png'),
+            });
+            await page.getByRole('button', { name: 'Remove Credits', exact: true }).click();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await expect(issueButton(page)).toBeEnabled();
+            await page
+                .getByPlaceholder('https://example.com/proof', { exact: true })
+                .fill('https://proof.test/shared');
+            await page
+                .getByPlaceholder('Link title (optional)', { exact: true })
+                .fill('Shared course evidence');
+            await page.getByRole('button', { name: 'Link', exact: true }).click();
+            await page.getByRole('button', { name: 'JSON', exact: true }).click();
+            const jsonText = page.locator('textarea.font-mono');
+            let credential = JSON.parse(await jsonText.inputValue());
+            expect(credential.evidence).toHaveLength(2);
+            expect(
+                credential.evidence.some((item: { id: string }) =>
+                    item.id.includes('sheet_portfolio')
+                )
+            ).toBe(true);
+            expect(
+                credential.evidence.some(
+                    (item: { id: string }) => item.id === 'https://proof.test/shared'
+                )
+            ).toBe(true);
+            await page.getByRole('button', { name: 'Remove attachment', exact: true }).click();
+            credential = JSON.parse(await jsonText.inputValue());
+            expect(credential.evidence).toHaveLength(1);
+            expect(credential.evidence[0].id).toContain('sheet_portfolio');
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('mapped-evidence-preserved.png'),
+                fullPage: true,
+            });
+        });
+
         test(`maps imported columns through the workspace at ${viewport.width}px`, async ({
             page,
         }, testInfo) => {

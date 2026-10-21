@@ -9368,6 +9368,7 @@
             "expired": "Cette demande est trop ancienne pour être renvoyée sans risque. Contactez l’assistance pour vérifier ces envois. Vous pouvez continuer à délivrer des justificatifs aux autres personnes.",
             "busy": "Cet envoi est actif ou a changé. Actualisez pour voir ses derniers résultats.",
             "chooseEmail": "Choisissez la colonne des adresses e-mail des destinataires.",
+            "mappedColumnMissing": "Une colonne incluse est manquante. Rétablissez-la dans le tableau ou retirez-la dans Associer les colonnes avant de réimporter.",
             "mapping": "Vérifiez les noms des colonnes et corrigez les lignes signalées.",
             "wrongRun": "Ce fichier appartient à un autre envoi. Ouvrez-le sur le compte et l’appareil d’origine.",
             "fileType": "Choisissez un fichier CSV, TSV ou XLSX.",

@@ -9368,6 +9368,7 @@
             "expired": "Esta solicitud es demasiado antigua para reenviarla con seguridad. Contacta con soporte para revisar estas entregas. Puedes seguir emitiendo credenciales a otras personas.",
             "busy": "Este envío está activo o ha cambiado. Recarga para ver sus últimos resultados.",
             "chooseEmail": "Elige la columna de correos de los destinatarios.",
+            "mappedColumnMissing": "Falta una columna incluida. Restáurala en la hoja de cálculo o elimínala de Asignar columnas antes de volver a importar.",
             "mapping": "Revisa los nombres de las columnas y corrige las filas marcadas.",
             "wrongRun": "Este archivo pertenece a otro envío. Ábrelo en la cuenta y el dispositivo originales.",
             "fileType": "Elige un archivo CSV, TSV o XLSX.",

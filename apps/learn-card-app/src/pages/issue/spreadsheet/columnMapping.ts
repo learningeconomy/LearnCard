@@ -1,3 +1,4 @@
+import { rosterCsvFieldNames } from './csvFields';
 import {
     normalizeCredentialAwardDate,
     parseCredentialNumber,
@@ -329,19 +330,41 @@ export const replaceSpreadsheetTemplate = (
         draft: { ...draft, mappings: [], values: {}, formulaCells: {} } as RosterDraft,
     };
     if (!preserveMappings || (template.schemaType && template.schemaType !== 'obv3')) return next;
+    const exportedNames = rosterCsvFieldNames(
+        draft,
+        (draft.mappings ?? []).map(mapping => mapping.variable)
+    );
     for (const mapping of draft.mappings ?? []) {
-        const column = draft.source?.columns.find(item => item.id === mapping.columnId);
-        if (!column) continue;
+        // Resolve by identity too for saved drafts written before source IDs were rebound.
+        const label =
+            draft.source?.rowEvidenceColumn !== undefined
+                ? exportedNames[mapping.variable]!
+                : mapping.label;
+        const columns =
+            draft.source?.columns.filter(
+                item =>
+                    item.id !== draft.source?.rowEvidenceColumn &&
+                    normalizeColumn(item.label) === normalizeColumn(label)
+            ) ?? [];
+        const column = columns[0];
+        if (columns.length > 1) throw new SpreadsheetError('mapping');
+        if (!column) throw new SpreadsheetError('mappedColumnMissing');
         const mapped = mapSpreadsheetColumn(
             next.template,
             next.draft,
-            column,
+            { ...column, label: mapping.label },
             mapping.target,
             mapping
         );
         for (const row of draft.recipients) {
             const key = recipientKey(row);
             const value = draft.values[key]?.[mapping.variable];
+            const formula = draft.formulaCells?.[key]?.[mapping.variable];
+            if (formula !== undefined)
+                mapped.draft.formulaCells = {
+                    ...mapped.draft.formulaCells,
+                    [key]: { ...mapped.draft.formulaCells?.[key], [mapped.variable]: formula },
+                };
             if (value !== undefined)
                 mapped.draft.values[key] = {
                     ...mapped.draft.values[key],

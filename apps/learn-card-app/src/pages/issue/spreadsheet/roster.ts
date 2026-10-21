@@ -1,9 +1,10 @@
 import { normalizeMappedCell, assertMappingFormat } from './columnMapping';
 import Papa from 'papaparse';
+import { rosterCsvFieldNames } from './csvFields';
+export { rosterCsvFieldNames } from './csvFields';
 import { recipientKey, recipientDisplayName, type Recipient } from '../components/recipientTypes';
 import { isValidRosterEmail, SpreadsheetError } from './parseSpreadsheet';
 import {
-    RESERVED_COLUMNS,
     EXPORT_RUN_COLUMN,
     EXPORT_ROW_COLUMN,
     EXPORT_EXAMPLE_COLUMN,
@@ -130,26 +131,6 @@ export const getRowProblems = (
     );
 };
 
-/** Keep mapped headers distinct from the recipient/evidence/recovery CSV columns. */
-export const rosterCsvFieldNames = (
-    draft: Pick<RosterDraft, 'mappings'>,
-    variables: string[]
-): Record<string, string> => {
-    const used = new Set(
-        ['Recipient Email', 'Recipient Name', 'Evidence', ...RESERVED_COLUMNS].map(normalizeColumn)
-    );
-    return Object.fromEntries(
-        variables.map(name => {
-            const base = draft.mappings?.find(mapping => mapping.variable === name)?.label ?? name;
-            let label = base;
-            for (let suffix = 2; used.has(normalizeColumn(label)); suffix++)
-                label = `${base} [${suffix}]`;
-            used.add(normalizeColumn(label));
-            return [name, label];
-        })
-    );
-};
-
 /** Exported identities are accepted only within the saved run; email is a fallback. */
 export const mergeSpreadsheet = (
     draft: RosterDraft,
@@ -181,6 +162,17 @@ export const mergeSpreadsheet = (
             return [name, columns[0]];
         })
     );
+    // Positional IDs belong to this sheet only. Rebind selected fields by their
+    // source/export header before replacing the source; never reinterpret a missing one.
+    const mappings = draft.mappings?.map(mapping => {
+        const column = matches[mapping.variable];
+        if (!column) throw new SpreadsheetError('mappedColumnMissing');
+        return {
+            ...mapping,
+            columnId: column.id,
+            ...(canonical ? { numericFormat: 'dot' as const, dateFormat: 'iso' as const } : {}),
+        };
+    });
     const mapped = variables.filter(name => matches[name]);
     const values = { ...draft.values };
     const evidence = { ...draft.evidence };
@@ -306,6 +298,7 @@ export const mergeSpreadsheet = (
     return {
         draft: {
             ...draft,
+            mappings,
             sourceName: sheet.source.name,
             recipients,
             values,

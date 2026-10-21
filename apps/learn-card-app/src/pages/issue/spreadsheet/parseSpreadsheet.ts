@@ -30,6 +30,7 @@ export type SpreadsheetErrorCode =
     | 'malformed'
     | 'emailColumn'
     | 'mapping'
+    | 'mappedColumnMissing'
     | 'run'
     | 'format';
 

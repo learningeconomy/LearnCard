@@ -297,6 +297,148 @@ describe('opt-in standard credential column mappings', () => {
     });
 });
 
+describe('source identity across reimports', () => {
+    const credits = () => {
+        const state = sample();
+        return mapSpreadsheetColumn(
+            state.template,
+            state.draft,
+            state.draft.source!.columns[4],
+            'credits',
+            options
+        );
+    };
+    it('retains credits through export, reimport, and a credential type change', () => {
+        const state = credits();
+        const csv = exportRosterCsv(
+            state.draft,
+            [state.variable],
+            { [state.variable]: 'perRecipient' },
+            {}
+        );
+        const draft = mergeSpreadsheet(state.draft, parseSpreadsheet(readSpreadsheetText(csv)), [
+            state.variable,
+        ]).draft;
+        const replaced = replaceSpreadsheetTemplate(makeRun(0).template, draft, true);
+        expect(replaced.draft.mappings).toHaveLength(1);
+        const row = replaced.draft.recipients[1].rowId!;
+        const json = materializePreview(
+            applyVariableValues(templateToJson(replaced.template), replaced.draft.values[row])
+        );
+        expect(json.credentialSubject).toMatchObject({ creditsEarned: 3 });
+        expect(draft.mappings![0].columnId).toBe('column-2');
+    });
+    it('uses Credits identity rather than Code at its former position after a reorder', () => {
+        const state = credits();
+        const sheet = parseSpreadsheet(
+            readSpreadsheetText(
+                'Email,Credits,Name,Other,Code\na@test.com,3,Ada,x,0012\nb@test.com,4,Bob,x,0009'
+            )
+        );
+        const draft = mergeSpreadsheet(state.draft, sheet, [state.variable]).draft;
+        const replaced = replaceSpreadsheetTemplate(makeRun(0).template, draft, true);
+        const variable = replaced.draft.mappings![0].variable;
+        // Import once more after switching types: no accidental Code binding.
+        const again = mergeSpreadsheet(replaced.draft, sheet, [variable]).draft;
+        expect(again.values[again.recipients[0].rowId!][variable]).toBe('3');
+        expect(replaced.draft.mappings![0]).toMatchObject({
+            label: 'Credits',
+            columnId: 'column-1',
+        });
+    });
+    it('preserves canonical Evidence aliases and their original credential labels on a type change', () => {
+        const original = sample();
+        const sheet = parseSpreadsheet(
+            readSpreadsheetText('Email,Evidence\na@test.com,https://proof.test/ada')
+        );
+        const draft = mergeSpreadsheet(makeRun(0).draft, sheet, []).draft;
+        const state = mapSpreadsheetColumn(
+            original.template,
+            draft,
+            sheet.columns[1],
+            'evidence',
+            options
+        );
+        const csv = exportRosterCsv(
+            state.draft,
+            [state.variable],
+            { [state.variable]: 'perRecipient' },
+            {}
+        );
+        const imported = mergeSpreadsheet(state.draft, parseSpreadsheet(readSpreadsheetText(csv)), [
+            state.variable,
+        ]).draft;
+        const replaced = replaceSpreadsheetTemplate(makeRun(0).template, imported, true);
+        const json = materializePreview(
+            applyVariableValues(
+                templateToJson(replaced.template),
+                replaced.draft.values[replaced.draft.recipients[0].rowId!]
+            )
+        );
+        expect(json.evidence).toEqual([
+            expect.objectContaining({ id: 'https://proof.test/ada', name: 'Evidence' }),
+        ]);
+    });
+    it('uses normalized formats after canonical export instead of reinterpreting comma decimals', () => {
+        const sheet = parseSpreadsheet(
+            readSpreadsheetText('Email,Credits,Completed Date\na@test.com,"1,5",04/03/2024')
+        );
+        const run = makeRun(0);
+        let state = { template: run.template, draft: mergeSpreadsheet(run.draft, sheet, []).draft };
+        for (const [index, target] of [
+            [1, 'credits'],
+            [2, 'awardedDate'],
+        ] as const)
+            state = mapSpreadsheetColumn(
+                state.template,
+                state.draft,
+                sheet.columns[index],
+                target,
+                { numericFormat: 'comma', dateFormat: 'dmy' }
+            );
+        const variables = state.draft.mappings!.map(mapping => mapping.variable);
+        const csv = exportRosterCsv(
+            state.draft,
+            variables,
+            Object.fromEntries(variables.map(name => [name, 'perRecipient' as const])),
+            {}
+        );
+        const imported = mergeSpreadsheet(
+            state.draft,
+            parseSpreadsheet(readSpreadsheetText(csv)),
+            variables
+        ).draft;
+        const replaced = replaceSpreadsheetTemplate(makeRun(0).template, imported, true);
+        const json = materializePreview(
+            applyVariableValues(
+                templateToJson(replaced.template),
+                replaced.draft.values[replaced.draft.recipients[0].rowId!]
+            )
+        );
+        expect(json.credentialSubject).toMatchObject({ creditsEarned: 1.5 });
+        expect(json.awardedDate).toBe('2024-03-04T00:00:00.000Z');
+    });
+    it('rejects a missing selected source column instead of silently dropping the mapping', () => {
+        const state = credits();
+        expect(() =>
+            mergeSpreadsheet(
+                state.draft,
+                parseSpreadsheet(readSpreadsheetText('Email,Code\na@test.com,0012')),
+                [state.variable]
+            )
+        ).toThrow();
+        expect(state.draft.mappings![0].label).toBe('Credits');
+        const missing = { ...state.draft, source: { ...state.draft.source!, columns: [] } };
+        expect(() => replaceSpreadsheetTemplate(makeRun(0).template, missing, true)).toThrow();
+    });
+    it('repairs positional IDs from older saved drafts by column identity', () => {
+        const state = credits();
+        state.draft.mappings![0].columnId = 'column-8'; // Student Code, never Credits.
+        const replaced = replaceSpreadsheetTemplate(makeRun(0).template, state.draft, true);
+        expect(replaced.draft.mappings![0].columnId).toBe('column-4');
+    });
+});
+
 describe('template replacement boundaries', () => {
     it('reapplies mappings to a new type, retaining corrected cells but dropping unrelated values', () => {
         const original = sample();

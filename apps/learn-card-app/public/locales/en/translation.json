@@ -9419,6 +9419,7 @@
             "expired": "This request is too old to resend safely. Contact support to reconcile these deliveries. Other people can still be issued credentials.",
             "busy": "This run is already active or has changed. Reload to see its latest results.",
             "chooseEmail": "Choose the column containing recipient email addresses.",
+            "mappedColumnMissing": "An included column is missing. Restore it in the spreadsheet or remove it from Map columns before importing again.",
             "mapping": "Check the column names and fix the highlighted rows.",
             "wrongRun": "This file belongs to another saved run. Open it on the original account and device.",
             "fileType": "Choose a CSV, TSV, or XLSX file.",

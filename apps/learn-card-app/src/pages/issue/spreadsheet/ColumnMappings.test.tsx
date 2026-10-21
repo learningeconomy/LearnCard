@@ -7,7 +7,7 @@ import {
     removeSpreadsheetMapping,
     materializePreview,
 } from './columnMapping';
-import { mergeSpreadsheet, exportRosterCsv } from './roster';
+import { mergeSpreadsheet, exportRosterCsv, getRowProblems } from './roster';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import { makeRun } from './fixtures.test-support';
 import {
@@ -183,5 +183,85 @@ describe('spreadsheet mapping workspace', () => {
         );
         expect(screen.queryByRole('button', { name: /^Evidence/ })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Include Portfolio' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Remove Evidence [2]' })).toBeVisible();
+        expect(screen.getByRole('button', { name: 'Remove Portfolio' })).toBeVisible();
+    });
+    it('keeps Remove Credits available after CSV reimport so a blank credit can be unblocked', () => {
+        const run = makeRun(0);
+        const imported = mergeSpreadsheet(
+            run.draft,
+            parseSpreadsheet(
+                readSpreadsheetText('Email,Name,Credits\na@test.com,Ada,3\nb@test.com,Bob,')
+            ),
+            []
+        ).draft;
+        const mapped = mapSpreadsheetColumn(
+            run.template,
+            imported,
+            imported.source!.columns[2],
+            'credits',
+            options
+        );
+        const variables = [mapped.variable];
+        const scopes = { [mapped.variable]: 'perRecipient' as const };
+        const restored = mergeSpreadsheet(
+            mapped.draft,
+            parseSpreadsheet(
+                readSpreadsheetText(exportRosterCsv(mapped.draft, variables, scopes, {}))
+            ),
+            variables
+        ).draft;
+        const bob = restored.recipients[1].rowId!;
+        expect(
+            getRowProblems(restored.recipients, variables, scopes, {}, restored.values, {})[bob]
+        ).toContain('required');
+        const Harness = () => {
+            const [state, setState] = useState({ template: mapped.template, draft: restored });
+            return (
+                <>
+                    <ColumnMappings
+                        source={state.draft.source!}
+                        template={state.template}
+                        mappings={state.draft.mappings!}
+                        disabled={false}
+                        onAdd={vi.fn()}
+                        onRemove={vi.fn()}
+                    />
+                    <ColumnMappingsEditor
+                        source={state.draft.source!}
+                        template={state.template}
+                        mappings={state.draft.mappings!}
+                        disabled={false}
+                        onAdd={vi.fn()}
+                        onClose={vi.fn()}
+                        onRemove={variable =>
+                            setState(previous =>
+                                removeSpreadsheetMapping(
+                                    previous.template,
+                                    previous.draft,
+                                    variable
+                                )
+                            )
+                        }
+                    />
+                    <output>
+                        {JSON.stringify(
+                            getRowProblems(
+                                state.draft.recipients,
+                                extractVariablesByType(state.template).dynamic,
+                                scopes,
+                                {},
+                                state.draft.values,
+                                {}
+                            )
+                        )}
+                    </output>
+                </>
+            );
+        };
+        render(<Harness />);
+        expect(screen.getByRole('button', { name: 'Map columns' })).toBeVisible();
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Credits' }));
+        expect(JSON.parse(screen.getByRole('status').textContent!)[bob]).toEqual([]);
     });
 });
