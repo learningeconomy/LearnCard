@@ -553,7 +553,11 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page.setViewportSize(viewport);
             test.setTimeout(180000);
             await selectBadgeType(page);
-            await page.getByRole('button', { name: /specific people/i }).click();
+            await page
+                .getByRole('button', {
+                    name: viewport.width <= 991 ? /^People$/ : /specific people/i,
+                })
+                .click();
             await page.getByTestId('issue-spreadsheet-file').setInputFiles({
                 name: 'field-errors.csv',
                 mimeType: 'text/csv',
