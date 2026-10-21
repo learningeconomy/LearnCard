@@ -164,15 +164,17 @@ export const mergeSpreadsheet = (
     );
     // Positional IDs belong to this sheet only. Rebind selected fields by their
     // source/export header before replacing the source; never reinterpret a missing one.
-    const mappings = draft.mappings?.map(mapping => {
-        const column = matches[mapping.variable];
-        if (!column) throw new SpreadsheetError('mappedColumnMissing');
-        return {
-            ...mapping,
-            columnId: column.id,
-            ...(canonical ? { numericFormat: 'dot' as const, dateFormat: 'iso' as const } : {}),
-        };
-    });
+    const mappings = draft.mappings
+        ?.filter(mapping => variables.includes(mapping.variable))
+        .map(mapping => {
+            const column = matches[mapping.variable];
+            if (!column) throw new SpreadsheetError('mappedColumnMissing');
+            return {
+                ...mapping,
+                columnId: column.id,
+                ...(canonical ? { numericFormat: 'dot' as const, dateFormat: 'iso' as const } : {}),
+            };
+        });
     const mapped = variables.filter(name => matches[name]);
     const values = { ...draft.values };
     const evidence = { ...draft.evidence };

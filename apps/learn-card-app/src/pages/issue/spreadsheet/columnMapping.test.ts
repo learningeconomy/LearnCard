@@ -442,6 +442,17 @@ describe('source identity across reimports', () => {
         const missing = { ...state.draft, source: { ...state.draft.source!, columns: [] } };
         expect(() => replaceSpreadsheetTemplate(makeRun(0).template, missing, true)).toThrow();
     });
+    it('does not block import on stale metadata after a mapped field was explicitly removed', () => {
+        const state = credits();
+        // The JSON editor can remove the dynamic field, leaving no active variable.
+        const draft = mergeSpreadsheet(
+            state.draft,
+            parseSpreadsheet(readSpreadsheetText('Email,Code\na@test.com,0012')),
+            []
+        ).draft;
+        expect(draft.mappings).toEqual([]);
+        expect(draft.source!.columns[1].label).toBe('Code');
+    });
     it('repairs positional IDs from older saved drafts by column identity', () => {
         const state = credits();
         state.draft.mappings![0].columnId = 'column-8'; // Student Code, never Credits.
