@@ -5,7 +5,7 @@ import type { TrpcMock, BrainOutputs } from './mocks/trpc';
 import { installNetwork } from './mocks/network';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
-import { resolve } from 'node:path';
+import { resolve } from 'path';
 import { zipSync } from 'fflate';
 
 const NAME_PLACEHOLDER = 'e.g. Web Development Fundamentals';
@@ -610,6 +610,35 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 animations: 'disabled',
                 path: testInfo.outputPath('field-errors-corrected.png'),
             });
+            await page.getByText('Credential fields · 3', { exact: true }).click();
+            await page
+                .getByRole('combobox', { name: 'Credits', exact: true })
+                .selectOption('shared');
+            const sharedCredits = page.getByRole('textbox', { name: 'Credits', exact: true });
+            await sharedCredits.fill('not-a-number');
+            await expect(sharedCredits).toHaveAttribute('aria-invalid', 'true');
+            await expect(sharedCredits).toHaveAccessibleDescription(
+                'Use a number with a decimal point, without units.'
+            );
+            await expect(credits).toBeDisabled();
+            await expect(credits).toHaveAttribute('aria-invalid', 'false');
+            await expect(credits).not.toHaveAttribute('aria-describedby');
+            await expect(
+                page.getByText('Use a number with a decimal point, without units.', { exact: true })
+            ).toHaveCount(1);
+            await expect(
+                page.getByRole('button', { name: 'Needs attention · 3', exact: true })
+            ).toBeVisible();
+            await sharedCredits.scrollIntoViewIfNeeded();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('shared-error.png'),
+            });
+            await sharedCredits.fill('1.5');
+            await expect(sharedCredits).toHaveAttribute('aria-invalid', 'false');
+            await expect(
+                page.getByRole('button', { name: 'Needs attention · 0', exact: true })
+            ).toBeVisible();
         });
 
         test(`maps imported columns through the workspace at ${viewport.width}px`, async ({

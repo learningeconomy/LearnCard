@@ -43,6 +43,47 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 describe('roster review workspace', () => {
+    it.each([1440, 390])('shows shared errors only on editable shared controls at %spx', width => {
+        vi.stubGlobal('innerWidth', width);
+        const data: RosterDetailsProps = {
+            ...props(30),
+            variables: ['credits', 'completed', 'score'],
+            dateVariables: ['completed'],
+            scopes: { credits: 'shared', completed: 'shared', score: 'shared' },
+            shared: { credits: 'not-a-number', completed: 'not-a-date', score: '' },
+            fieldProblems: {},
+        };
+        for (const row of data.recipients) {
+            data.problems[row.rowId!] = ['number', 'date', 'required'];
+            data.fieldProblems![row.rowId!] = {
+                recipient: [],
+                evidence: [],
+                variables: { credits: ['number'], completed: ['date'], score: ['required'] },
+            };
+        }
+        render(<RosterEditor {...data} onClose={vi.fn()} />);
+        fireEvent.click(screen.getByText('Credential fields · 3'));
+        for (const label of ['Credits', 'Completed', 'Score']) {
+            const shared = screen.getByRole('textbox', { name: label });
+            expect(shared).toBeEnabled();
+            expect(shared).toHaveAttribute('aria-invalid', 'true');
+            expect(shared).toHaveAttribute('aria-describedby');
+            const row = screen.getByLabelText(`Person0 ${label}`);
+            expect(row).toBeDisabled();
+            expect(row).toHaveAttribute('aria-invalid', 'false');
+            expect(row).not.toHaveAttribute('aria-describedby');
+        }
+        expect(
+            screen.getAllByText('Use a number with a decimal point, without units.')
+        ).toHaveLength(1);
+        expect(screen.getAllByText('Use YYYY-MM-DD or a timestamp with a timezone.')).toHaveLength(
+            1
+        );
+        expect(screen.queryByText('Original value: not-a-date')).toBeNull();
+        expect(screen.getByRole('textbox', { name: 'Completed' })).toHaveValue('not-a-date');
+        expect(document.querySelectorAll('[aria-invalid="true"]')).toHaveLength(3);
+        expect(screen.getByRole('button', { name: 'Needs attention · 30' })).toBeVisible();
+    });
     it.each([1440, 390])(
         'associates errors with their own fields and clears them on correction at %spx',
         width => {

@@ -177,7 +177,10 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
     }
     const input = (recipient: Recipient, name: string): React.ReactNode => {
         const rowId = recipientKey(recipient);
-        const errors = props.fieldProblems?.[rowId]?.variables[name] ?? [];
+        const showValidation = props.locked(rowId) || scopes[name] === 'perRecipient';
+        // A shared value is corrected in the shared control, not in its disabled
+        // copies on every recipient. Keep the row's aggregate send blockers.
+        const errors = showValidation ? (props.fieldProblems?.[rowId]?.variables[name] ?? []) : [];
         const value =
             props.locked(rowId) || scopes[name] === 'perRecipient'
                 ? (values[rowId]?.[name] ?? '')
@@ -194,6 +197,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                 {props.dateVariables?.includes(name) ? (
                     <RosterDateInput
                         {...fieldProps}
+                        showValidation={showValidation}
                         onChange={next => props.onChange(rowId, name, next)}
                     />
                 ) : (

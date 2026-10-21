@@ -29,11 +29,12 @@ export const RosterDateInput: React.FC<{
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
+    showValidation?: boolean;
     className: string;
     'aria-label': string;
     'aria-invalid'?: boolean;
     'aria-describedby'?: string;
-}> = ({ value, onChange, ...inputProps }) => {
+}> = ({ value, onChange, showValidation = true, ...inputProps }) => {
     const locale = useLocale();
     const date = parseRosterDate(value);
     const timestamp = Boolean(date && value.length > 10);
@@ -51,7 +52,9 @@ export const RosterDateInput: React.FC<{
                 {...inputProps}
                 type="date"
                 value={date?.toISOString().slice(0, 10) ?? ''}
-                aria-invalid={inputProps['aria-invalid'] || Boolean(value && !date)}
+                aria-invalid={
+                    showValidation && (inputProps['aria-invalid'] || Boolean(value && !date))
+                }
                 onChange={event => {
                     const next = changeRosterDate(value, event.target.value);
                     if (next !== value) onChange(next);
@@ -63,7 +66,7 @@ export const RosterDateInput: React.FC<{
                     {m['issueFlow.sheet.design.dateUtc']()}
                 </p>
             )}
-            {value && !date && (
+            {showValidation && value && !date && (
                 <p className="break-words text-xs text-red-700">
                     {m['issueFlow.sheet.design.originalDate']({ value })}
                 </p>
