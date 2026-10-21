@@ -215,6 +215,8 @@ describe('spreadsheet parsing and editable roster', () => {
         { t: 'n', f: '1/0', expected: '', problems: ['required', 'formula'] },
         { t: 'e', f: '1/0', v: 7, expected: '#DIV/0!', problems: ['formula'] },
         { t: 'e', f: 'A99', v: 23, expected: '#REF!', problems: ['formula'] },
+        { t: 'e', f: undefined, v: 7, expected: '#DIV/0!', problems: ['formula'] },
+        { t: 'e', f: undefined, v: 23, expected: '#REF!', problems: ['formula'] },
         { t: 'n', f: 'SUM(90,5)', v: 95, expected: '95', problems: [] },
     ] as const)('validates imported XLSX formula results: $expected', cell => {
         const workbook = utils.book_new();

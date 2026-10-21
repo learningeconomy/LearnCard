@@ -1,7 +1,9 @@
 import Papa from 'papaparse';
+import { utils, write } from 'xlsx';
 import { describe, expect, it, vi } from 'vitest';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
-import { mergeSpreadsheet, exportRosterCsv, rosterCsvFieldNames } from './roster';
+import { mergeSpreadsheet, exportRosterCsv, rosterCsvFieldNames, getRowProblems } from './roster';
+import { readXlsx } from './readXlsx';
 import {
     credentialRowProblems,
     mapSpreadsheetColumn,
@@ -33,6 +35,54 @@ const sample = () => {
     return { template: run.template, draft: mergeSpreadsheet(run.draft, source, []).draft };
 };
 describe('opt-in standard credential column mappings', () => {
+    it.each(['credits', 'Percent', 'RawScore', 'GradePointAverage'] as const)(
+        'never converts an XLSX error code into a valid %s value',
+        target => {
+            for (const f of ['1/0', undefined]) {
+                const workbook = utils.book_new();
+                const sheet = utils.aoa_to_sheet([
+                    ['Email', 'Score'],
+                    ['ada@test.com', ''],
+                ]);
+                sheet.B2 = { t: 'e', v: 7, f };
+                utils.book_append_sheet(workbook, sheet, 'People');
+                const source = parseSpreadsheet(
+                    readXlsx(write(workbook, { type: 'array', bookType: 'xlsx' }), 'errors.xlsx')
+                );
+                const run = makeRun(0);
+                const draft = mergeSpreadsheet(run.draft, source, []).draft;
+                const mapped = mapSpreadsheetColumn(
+                    run.template,
+                    draft,
+                    source.columns[1],
+                    target,
+                    options
+                );
+                const key = mapped.draft.recipients[0].rowId!;
+                const variables = [mapped.variable];
+                const scopes = { [mapped.variable]: 'perRecipient' as const };
+                const problems = (next: typeof draft) =>
+                    getRowProblems(
+                        next.recipients,
+                        variables,
+                        scopes,
+                        {},
+                        next.values,
+                        next.evidence,
+                        next.formulaCells
+                    );
+                expect(mapped.draft.values[key][mapped.variable]).toBe('#DIV/0!');
+                expect(problems(mapped.draft)[key]).toContain('formula');
+                const csv = exportRosterCsv(mapped.draft, variables, scopes, {});
+                const restored = mergeSpreadsheet(
+                    mapped.draft,
+                    parseSpreadsheet(readSpreadsheetText(csv)),
+                    variables
+                ).draft;
+                expect(problems(restored)[key]).toContain('formula');
+            }
+        }
+    );
     it('adds independent linked results without replacing earlier grades', () => {
         let state = sample();
         state = mapSpreadsheetColumn(

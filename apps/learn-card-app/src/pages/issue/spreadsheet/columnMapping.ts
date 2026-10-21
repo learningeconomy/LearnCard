@@ -77,6 +77,9 @@ export const assertMappingFormat = (
 
 /** Preserve invalid text for inline correction rather than dropping its row. */
 export const normalizeMappedCell = (cell: SpreadsheetCell, mapping: ColumnMapping): string => {
+    // XLSX error cells store a numeric error code in value (e.g. 7 for
+    // #DIV/0!). It is never a score/credit value, even if it passes range checks.
+    if (cell.problem) return cell.text;
     try {
         if (mapping.target === 'evidence') return cell.text.trim();
         if (mapping.target === 'awardedDate')

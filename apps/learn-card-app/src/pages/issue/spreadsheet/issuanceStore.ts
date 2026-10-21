@@ -259,13 +259,24 @@ export const listIssuanceRuns = async (scope: IssuanceScope): Promise<IssuanceRu
 
 /** Keep uncertain attempts as tombstones; removing them could enable accidental reissuance. */
 export const pruneIssuanceRuns = async (scope: IssuanceScope, now = Date.now()): Promise<void> => {
-    for (const run of await listIssuanceRuns(scope)) {
-        const uncertain =
-            run.attempts.some(attempt => !attempt.done) ||
-            Object.values(run.outcomes).some(
-                value => value.state === 'confirming' || value.state === 'queued'
-            );
-        if (!uncertain && run.updatedAt < now - 30 * 86_400_000)
-            await withStore('readwrite', store => store.delete(run.id));
-    }
+    // Read eligibility and delete within one transaction: a stale list from
+    // another tab must never authorize removing a newly updated recovery ledger.
+    await withStore('readwrite', store => {
+        const request = store.index('scope').getAll(issuanceScopeKey(scope));
+        request.onsuccess = () => {
+            for (const raw of request.result) {
+                const parsed = runValidator.safeParse(raw);
+                if (!parsed.success) continue; // Never discard unreadable recovery data.
+                const run = parsed.data;
+                if (issuanceScopeKey(run.scope) !== issuanceScopeKey(scope)) continue;
+                const uncertain =
+                    run.attempts.some(attempt => !attempt.done) ||
+                    Object.values(run.outcomes).some(
+                        value => value.state === 'confirming' || value.state === 'queued'
+                    );
+                if (!uncertain && run.updatedAt < now - 30 * 86_400_000) store.delete(run.id);
+            }
+        };
+        return request;
+    });
 };

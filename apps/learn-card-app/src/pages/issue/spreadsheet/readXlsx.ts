@@ -52,10 +52,10 @@ export const readXlsx = (bytes: ArrayBuffer, name: string): SpreadsheetSource =>
                         typeof cell.v === 'boolean'
                             ? cell.v
                             : undefined,
-                    ...(cell.f &&
-                    (cell.v === undefined ||
-                        cell.t === 'e' ||
-                        (typeof cell.v === 'number' && !Number.isFinite(cell.v)))
+                    ...(cell.t === 'e' ||
+                    (cell.f &&
+                        (cell.v === undefined ||
+                            (typeof cell.v === 'number' && !Number.isFinite(cell.v))))
                         ? { problem: 'formula' }
                         : {}),
                     ...(cell.z?.includes('%') ? { percent: true } : {}),

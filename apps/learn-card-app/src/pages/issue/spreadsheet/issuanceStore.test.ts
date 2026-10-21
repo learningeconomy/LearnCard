@@ -2,7 +2,7 @@ import { addSubmissionAttempts, canReplaceIssuanceRecipients } from './issuance'
 import { mergeSpreadsheet, exportRosterCsv } from './roster';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import 'fake-indexeddb/auto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
     saveIssuanceRun,
     readIssuanceRun,
@@ -10,6 +10,7 @@ import {
     pruneIssuanceRuns,
 } from './issuanceStore';
 import { makeRun } from './fixtures.test-support';
+import { issuanceScopeKey } from './issuanceTypes';
 
 describe('IndexedDB issuance recovery', () => {
     it('retains an explicit unselected template state for spreadsheet-first recovery', async () => {
@@ -148,5 +149,46 @@ describe('IndexedDB issuance recovery', () => {
         expect((await readIssuanceRun(uncertain.id, uncertain.scope))?.dismissedAt).toBe(
             uncertain.dismissedAt
         );
+    });
+    it('does not delete a run updated by another tab during pruning', async () => {
+        const old = makeRun();
+        old.scope.tenant = 'pruning-race';
+        old.updatedAt = Date.now() - 31 * 86400000;
+        old.outcomes = { 'row-0': { state: 'failed' } };
+        await saveIssuanceRun(old);
+        const fresh = {
+            ...old,
+            updatedAt: Date.now(),
+            outcomes: { 'row-0': { state: 'confirming' as const } },
+        };
+        const getAll = IDBIndex.prototype.getAll;
+        // Queue a real write transaction after the pruning read starts. The old
+        // read snapshot must never authorize deleting this newer recovery record.
+        const spy = vi.spyOn(IDBIndex.prototype, 'getAll').mockImplementation(function (
+            this: IDBIndex,
+            ...args
+        ) {
+            const request = getAll.apply(this, args);
+            request.addEventListener(
+                'success',
+                () => {
+                    this.objectStore.transaction.db
+                        .transaction('runs', 'readwrite')
+                        .objectStore('runs')
+                        .put({
+                            ...fresh,
+                            scopeKey: issuanceScopeKey(fresh.scope),
+                        });
+                },
+                { once: true }
+            );
+            return request;
+        });
+        try {
+            await pruneIssuanceRuns(old.scope);
+        } finally {
+            spy.mockRestore();
+        }
+        expect(await readIssuanceRun(old.id, old.scope)).toEqual(fresh);
     });
 });
