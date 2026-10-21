@@ -9,6 +9,8 @@ import { createEcosystem } from '@accesslayer/ecosystem/create';
 import { grantEcosystemMembership } from '@accesslayer/ecosystem/membership';
 import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
 import { readInstallIntentById } from '@accesslayer/install-intent/intent-read';
+import { createBinding } from '@accesslayer/binding/write';
+import { readBindingById } from '@accesslayer/binding/read';
 import { writeInstallIntentStatus } from '@accesslayer/install-intent/intent-status';
 import {
     deleteInstallTargetInternal,
@@ -280,6 +282,39 @@ describe('Install intent reconciler', () => {
 
         expect(revoked.status?.phase).toBe('REMOVED');
         expect(targets).toHaveLength(0);
+    });
+
+    it('removes targets that still have revoked bindings attached', async () => {
+        const ecosystem = await createOperatorEcosystem();
+        const approved = await createApprovedIntent(ecosystem.id, 'WALLET');
+        const applied = await ownerClient.installIntent.applyInstallIntent({
+            intentId: approved.intentId,
+            expectedStatusRevision: approved.statusRevision,
+        });
+        const [target] = await listInstallTargetsByIntentId(approved.intentId);
+        if (!target) throw new Error('expected a wallet target');
+        const endpoint = {
+            resourceType: target.targetType,
+            resourceId: target.id,
+            ecosystemId: ecosystem.id,
+        };
+        const binding = await createBinding({
+            apiVersion: 'lc.binding/v1',
+            ecosystemId: ecosystem.id,
+            capability: 'wallet-claim',
+            provider: endpoint,
+            consumer: endpoint,
+            status: 'PROPOSED',
+        });
+
+        const revoked = await ownerClient.installIntent.revokeInstallIntent({
+            intentId: approved.intentId,
+            expectedStatusRevision: applied.statusRevision,
+        });
+
+        expect(revoked.status?.phase).toBe('REMOVED');
+        expect(await listInstallTargetsByIntentId(approved.intentId)).toHaveLength(0);
+        expect((await readBindingById(binding.bindingId))?.status).toBe('REVOKED');
     });
 
     it('halts reconciliation when kill switch is enabled', async () => {

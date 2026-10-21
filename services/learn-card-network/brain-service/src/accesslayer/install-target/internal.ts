@@ -136,10 +136,10 @@ export const deleteInstallTargetInternal = async (
             await IntegrationInstall.delete({ detach: true, where: { id: input.id } });
             return;
         case 'APP_AVAILABILITY':
-            await AppAvailability.delete({ where: { id: input.id } });
+            await AppAvailability.delete({ detach: true, where: { id: input.id } });
             return;
         case 'WALLET_ENABLEMENT':
-            await WalletEnablement.delete({ where: { id: input.id } });
+            await WalletEnablement.delete({ detach: true, where: { id: input.id } });
             return;
         case 'WORKLOAD_DEPLOYMENT':
             throw new TRPCError({
@@ -147,7 +147,7 @@ export const deleteInstallTargetInternal = async (
                 message: 'Workloads must be retired; retained obligations cannot be deleted.',
             });
         case 'REGISTRY_SUBSCRIPTION':
-            await RegistrySubscription.delete({ where: { id: input.id } });
+            await RegistrySubscription.delete({ detach: true, where: { id: input.id } });
             return;
         default:
             throw new TRPCError({
