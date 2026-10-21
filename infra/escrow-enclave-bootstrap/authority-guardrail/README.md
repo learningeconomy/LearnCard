@@ -17,6 +17,14 @@ attached before the primary policy admits the observer exception. Each document
 is checked against the 5120-byte limit; verify account attachment quotas as well.
 The combined guardrails protect:
 
+- The bootstrap-owned escrow trail against StopLogging/DeleteTrail/UpdateTrail/
+  PutEventSelectors/PutInsightSelectors, and its log bucket against policy,
+  lifecycle, Object Lock, versioning, encryption and replication reconfiguration.
+  These denies live in the existing second SCP (no new attachment) and use the
+  exact same MFA-admin exception as monitor takeover protection. The trail is
+  created in member-account bootstrap; apply these management-account policies
+  before enabling core recovery, and verify the updated contents, not just IDs.
+
 - The boundary itself: member-account `LeaveOrganization` is unconditionally
   denied. Offboarding requires a reviewed management-account removal.
 

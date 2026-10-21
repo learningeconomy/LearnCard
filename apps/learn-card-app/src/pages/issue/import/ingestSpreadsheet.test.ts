@@ -26,13 +26,25 @@ describe('spreadsheet and credential import routing', () => {
         expect(detectSource('https://proof.test/a\nnot-a-url').kind).not.toBe('url');
     });
     it('returns a spreadsheet result for TSV files without inventing credential JSON', async () => {
-        const text = 'Email\tName\nada@test.com\tAda';
+        const text = 'Email\tName\nada@test.com\tÁda';
+        const bytes = new TextEncoder().encode(text);
         const result = await ingestFile({
             name: 'people.tsv',
-            size: text.length,
-            text: async () => text,
+            size: bytes.byteLength,
+            arrayBuffer: async () => bytes.buffer,
         } as File);
-        expect(result).toMatchObject({ kind: 'spreadsheet', source: { name: 'people.tsv' } });
+        expect(result).toMatchObject({
+            kind: 'spreadsheet',
+            source: {
+                name: 'people.tsv',
+                sheets: {
+                    Sheet1: [
+                        [{ text: 'Email' }, { text: 'Name' }],
+                        [{ text: 'ada@test.com' }, { text: 'Áda' }],
+                    ],
+                },
+            },
+        });
         expect(result).not.toHaveProperty('value');
     });
 });
