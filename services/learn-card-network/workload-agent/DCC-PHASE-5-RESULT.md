@@ -1,5 +1,56 @@
 # DCC phase 5 result — BLOCKED, not READY
 
+## 5A proof — operator harness added, execution incomplete (2026-10-20)
+
+**NOT READY. No installation or issuance acceptance is claimed by this attempt.**
+
+Added Brain `bun run prove:dcc-workload`, using the console's existing dev login
+state/callback and session cookie, then the real BFF operator routes. The harness
+enables the bundle/member listings, reviews the signed core workload plan, approves
+and applies it, and polls intent + install targets every five seconds (12-minute
+limit). It includes failure-container log redaction, loopback-only issuance, and
+an optional `--restart` comparison of deployment ID, container names/IDs and
+eight-character secret hashes. Secret filenames are the manifest logical names
+`tenant-token-edu` / `tenant-seed-edu`, not the consuming environment variable names.
+This harness has **not yet been runtime-qualified**.
+
+Commands started in the background, with logs outside the repository:
+
+- Types: `bun run build`, PID 33853, `/tmp/dcc-types-build.log`; log showed
+  `✔ Build successful` (the wrapper also runs declaration generation afterward;
+  no captured overall exit status).
+- Requested Compose rebuild/up, PID 33908, `/tmp/dcc-stack-build.log`.
+  Confirmed service name `brain`. At the last observation the Brain image was
+  still being unpacked after exporting layers (132.9 seconds). Existing agent
+  and Brain containers still showed **Up 3 hours**: these are **not** evidence
+  that the rebuilt images had been activated.
+- Prettier, script ESLint, then Brain `bun run typecheck`, PID 34388,
+  `/tmp/dcc-verify.log`. Prettier completed and ESLint returned successfully
+  (the chained typecheck started). The last observation showed both tsc commands
+  starting, but no `VERIFY_EXIT=0` marker yet. Typecheck completion is unconfirmed.
+- New script LSP error diagnostics were clean before formatting.
+
+Redacted agent excerpt from the **old running container**:
+
+```text
+AUTHENTICATED_POLL_EMPTY
+AUTHENTICATED_POLL_EMPTY
+AUTHENTICATED_POLL_EMPTY
+```
+
+Execution stopped at the executor's two-status-check limit while the rebuild was
+still underway. This is an execution-budget limitation, not a diagnosed DCC
+runtime failure. Background rebuild/verification processes were not killed.
+The proof command was not started, and independent five-agent review was not
+completed. No package or bundle version was changed; no commit was made.
+
+**Outstanding:** confirm rebuild completion and authentication from the new agent;
+run the proof in the background; diagnose real failures if any; run again and
+compare snapshots; run `--restart` and verify fresh agent observations rather than
+only persisted READY; capture lifecycle timestamps, deployment-filtered `docker ps`,
+endpoint observations, issuer DID/proof type, and restart comparisons here. There
+is no deployment ID, smoke result, or idempotency evidence from this attempt.
+
 ## 5A proof — partial contract implementation, no deployment proof
 
 This follow-up adds optional endpoint `readiness.path` and `readiness.expectStatus`.
@@ -388,3 +439,56 @@ acceptance is impossible. Do not mark the existing Release / pinning gate comple
 digests are resolved here but not yet published in a signed package, and LEF sign-off
 remains open. Named support contacts, production status publication and retention,
 and the managed did:web / ISSUES_AS custody seam remain open as well.
+
+## 5A proof — READY (2026-10-21)
+
+The DCC issuer signing core installed through the real operator path and reached READY,
+then issued a signed credential. Command: `bun run prove:dcc-workload [-- --reset|--restart]`
+from `services/learn-card-network/brain-service`.
+
+**Lifecycle** (intent `int_235369b3…`): APPROVED → APPLIED 02:11:39.5Z → workload APPLYING →
+workload READY + intent READY 02:11:49.7Z (~10 s after apply).
+
+**Containers** (`docker ps --filter label=org.learncard.workload.deployment=…`):
+`issuer-coordinator  Up  127.0.0.1:24982->4005/tcp` and `signing-service  Up  4006/tcp`
+(internal only).
+
+**Endpoints observed:** `issuer` → `http://127.0.0.1:24982/instance` healthy;
+`signing-service` → `http://signing-service-e234db522da6:4006/` healthy.
+
+**Smoke:** POST `/instance/edu/credentials/issue` (tenant token read from the 0600 secret
+file, never printed) → signed VC, issuer `did:key:z6MkgZb74HR2LJK2FejwseDgg5xXNXFadmmxj2Swdj1vyU9L`,
+proof `Ed25519Signature2020`.
+
+**Idempotency:** re-run reused the approved intent; `docker restart lcn-workload-agent
+lcn-brain-service` → READY again with identical deployment id, container IDs and secret-file
+SHA-256 prefixes; the issuer DID is unchanged (seed not regenerated). **Retire:** `--reset`
+drove RETIRING → RETIRED, retaining volumes and secrets.
+
+### Defects found and fixed during the proof
+
+1. **Planner rejected the package: curator allowlist not passed to brain.** `compose-workloads.yaml`
+   now sets `WORKLOAD_CURATOR_DIDS` (dev signer) for brain.
+2. **Upstream crash when probed out of order.** issuer-coordinator's `GET /` calls the signer and
+   double-responds on error (`ERR_HTTP_HEADERS_SENT`), killing the process. The agent now probes in
+   dependency order (dependents only after dependencies are healthy) and renders
+   `restart: on-failure:5`.
+3. **Endpoint hostnames exceeded the 63-char DNS label limit.** Internal endpoint values used the
+   83-char `container_name`; Node's resolver returned `ENOTFOUND`. They now use the Compose service
+   name (unique within each deployment's private network).
+4. **Published ports were inert on an `internal: true` network.** Components with
+   ecosystem/public endpoints now also join a non-internal per-deployment `edge` network (ports
+   still bound to 127.0.0.1). Dev trade-off: those components gain outbound network access.
+5. **Intent removal failed when bindings referenced a target** (`Cannot delete node … still has
+relationships`; latent since DCC Tools v1.1 default bindings). Bindings are already revoked
+   first; App/Wallet/Registry targets are now detach-deleted (revoked bindings keep provider/consumer
+   ids as properties). Regression test added and shown to fail without the fix.
+6. **Smoke payload**: DCC issuer-coordinator takes the unsigned VC as the whole body (not a VC-API
+   `{ credential }` envelope) and the signer requires an `issuer` property.
+
+### Still OPEN
+
+Status list / revocation (status-service-db needs a Mongo replica set — phase 5B contract work);
+`lcw-exchange` (transaction-service unpackaged); live status publication after retirement;
+institution `ISSUES_AS` / managed did:web custody (the issuer is the signing-service tenant
+did:key); LEF pin sign-off and named support owners.

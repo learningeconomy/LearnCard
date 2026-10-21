@@ -27,7 +27,8 @@ describe('restricted renderer', (): void => {
         ).services[safeName('web')];
         expect(service.user).toBe('999:999');
         expect(service.tmpfs).toEqual(['/tmp:rw,noexec,nosuid,size=64m']);
-        expect(service.environment.SERVICE).toBe(`${componentName('id', 'web')}:5678`);
+        expect(service.environment.SERVICE).toBe(`${safeName('web')}:5678`);
+        expect(service.environment.SERVICE.split(':')[0]!.length).toBeLessThanOrEqual(63);
     });
     it.each(['0', '00:999', 'root', '999:root', '-1', '12345678901'])(
         'rejects unsafe user %s',
@@ -72,11 +73,13 @@ describe('restricted renderer', (): void => {
         expect(service.cap_drop).toEqual(['ALL']);
         expect(service.security_opt).toEqual(['no-new-privileges:true']);
         expect(service.read_only).toBe(true);
+        expect(service.restart).toBe('on-failure:5');
         expect(service.ports).toEqual([
             { target: 5678, published: '21001', host_ip: '127.0.0.1', protocol: 'tcp' },
         ]);
-        expect(service.networks).toEqual(['private']);
+        expect(service.networks).toEqual(['private', 'edge']);
         expect(document.networks.private.internal).toBe(true);
+        expect(document.networks.edge.internal).toBeUndefined();
         for (const forbidden of ['privileged', 'network_mode', 'pid', 'build'])
             expect(service).not.toHaveProperty(forbidden);
         expect(rendered.yaml).not.toContain('docker.sock');
@@ -87,9 +90,10 @@ describe('restricted renderer', (): void => {
     it('internal endpoints are never published', (): void => {
         const spec = parseSpec(JSON.stringify(plan()), config());
         spec.endpoints[0]!.visibility = 'internal';
-        expect(
-            parse(render(spec, 'id', 1, config(), {}).yaml).services[safeName('web')].ports
-        ).toEqual([]);
+        const document = parse(render(spec, 'id', 1, config(), {}).yaml);
+        expect(document.services[safeName('web')].ports).toEqual([]);
+        expect(document.services[safeName('web')].networks).toEqual(['private']);
+        expect(document.networks).not.toHaveProperty('edge');
     });
     it('names are deterministic and normalization is collision resistant', (): void => {
         expect(projectName('A/b')).toBe(projectName('A/b'));

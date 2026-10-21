@@ -106,3 +106,13 @@ it('recovers an existing probe attachment after a failed disconnect', async (): 
     expect(calls.some((argv): boolean => argv[1] === 'connect')).toBe(false);
     expect(calls.filter((argv): boolean => argv[1] === 'disconnect')).toHaveLength(2);
 });
+
+it('orders components so dependencies are probed before dependents', async () => {
+    const { dependencyOrder } = await import('../src/health');
+    const ordered = dependencyOrder([
+        { id: 'issuer', dependsOn: ['signer'] },
+        { id: 'signer', dependsOn: [] },
+        { id: 'dashboard', dependsOn: ['issuer'] },
+    ]);
+    expect(ordered.map(component => component.id)).toEqual(['signer', 'issuer', 'dashboard']);
+});

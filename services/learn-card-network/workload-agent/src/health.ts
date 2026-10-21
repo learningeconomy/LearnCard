@@ -5,6 +5,25 @@ import type { Observation, Runner } from './types';
 import { componentName, endpointUrl, projectName } from './render';
 import { AgentError } from './redact';
 
+export const dependencyOrder = <T extends { id: string; dependsOn: string[] }>(
+    components: readonly T[]
+): T[] => {
+    const byId = new Map(components.map((component): [string, T] => [component.id, component]));
+    const ordered: T[] = [];
+    const visited = new Set<string>();
+    const visit = (component: T): void => {
+        if (visited.has(component.id)) return;
+        visited.add(component.id);
+        for (const id of component.dependsOn) {
+            const dependency = byId.get(id);
+            if (dependency) visit(dependency);
+        }
+        ordered.push(component);
+    };
+    components.forEach(visit);
+    return ordered;
+};
+
 export const tcpProbe = (host: string, port: number, timeout: number): Promise<boolean> =>
     new Promise((resolve): void => {
         const socket = connect({ host, port });
@@ -55,11 +74,20 @@ export const createHealthProbe = (run: Runner, agentContainer: string): HealthPr
                     ['network', 'connect', network, agentContainer],
                     Math.min(5000, budget())
                 );
-            for (const component of spec.components) {
+            const healthyById = new Map<string, boolean>();
+            for (const component of dependencyOrder(spec.components)) {
+                // Probing a dependent before its dependencies are healthy can crash upstream
+                // services (DCC issuer-coordinator's GET / fails hard while the signer is down).
+                if (component.dependsOn.some((id): boolean => healthyById.get(id) !== true)) {
+                    healthyById.set(component.id, false);
+                    components.push({ id: component.id, healthy: false });
+                    continue;
+                }
                 const key = `${operation.deploymentId}:${operation.specRevision}:${component.id}`;
                 const cached = cache.get(key);
                 if (cached && Date.now() - cached.at < component.healthcheck.intervalMs) {
                     if (cached.ip) ips.set(component.id, cached.ip);
+                    healthyById.set(component.id, cached.healthy);
                     components.push({ id: component.id, healthy: cached.healthy });
                     continue;
                 }
@@ -107,6 +135,7 @@ export const createHealthProbe = (run: Runner, agentContainer: string): HealthPr
                     if (error instanceof AgentError && error.code === 'LEASE_BUDGET_EXCEEDED')
                         throw error;
                 }
+                healthyById.set(component.id, healthy);
                 components.push({ id: component.id, healthy });
                 cache.set(key, { at: Date.now(), healthy, ip: ips.get(component.id) });
             }

@@ -5,6 +5,8 @@ services:
         environment:
             WORKLOAD_LOCAL_COMPOSE_ENABLED: 'true'
             WORKLOAD_AGENT_TOKEN: ${WORKLOAD_AGENT_TOKEN:-disposable-local-workload-agent-token}
+            # Dev curator = getLearnCard('a'.repeat(64)).id.did(), the seed-dcc-workload signer.
+            WORKLOAD_CURATOR_DIDS: ${WORKLOAD_CURATOR_DIDS:-did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH}
 
     lcn-workload-agent:
         image: lcn-workload-agent-local

@@ -137,7 +137,9 @@ export const endpointUrl = (
     const component = spec.components.find((c): boolean => c.id === endpoint.component)!;
     const port = component.ports.find((p): boolean => p.name === endpoint.port)!;
     const published = endpoint.visibility !== 'internal' && ports;
-    return `${endpoint.protocol}://${published ? '127.0.0.1' : componentName(deployment, component.id)}:${published ? ports[portKey(component.id, port.name)] : port.containerPort}${endpoint.path}`;
+    // The Compose service name, not container_name: container names embed the deployment id
+    // and exceed the 63-char DNS label limit, so in-container resolvers reject them.
+    return `${endpoint.protocol}://${published ? '127.0.0.1' : safeName(component.id)}:${published ? ports[portKey(component.id, port.name)] : port.containerPort}${endpoint.path}`;
 };
 
 export interface Rendered {
@@ -156,6 +158,7 @@ export const render = (
     const project = projectName(deployment);
     const services: Record<string, unknown> = {};
     const volumes: Record<string, unknown> = {};
+    let needsEdge = false;
     for (const component of spec.components) {
         const environment: Record<string, string> = {};
         for (const entry of component.env) {
@@ -210,6 +213,7 @@ export const render = (
             host_ip: '127.0.0.1',
             protocol: 'tcp',
         }));
+        if (published.length) needsEdge = true;
         services[safeName(component.id)] = {
             image: component.image,
             platform: component.platform,
@@ -220,8 +224,11 @@ export const render = (
                 'org.learncard.workload.revision': String(revision),
                 'org.learncard.workload.component': component.id,
             },
-            networks: ['private'],
+            // Docker cannot publish ports from an internal network, so only components with
+            // ecosystem/public endpoints also join a non-internal `edge` network (loopback-bound).
+            networks: published.length ? ['private', 'edge'] : ['private'],
             depends_on: component.dependsOn.map(safeName),
+            restart: 'on-failure:5',
             ports: published,
             volumes: mounts,
             ...(tmpfs.length ? { tmpfs } : {}),
@@ -256,7 +263,10 @@ export const render = (
         yaml: stringify({
             name: project,
             services,
-            networks: { private: { name: `${project}-private`, internal: true } },
+            networks: {
+                private: { name: `${project}-private`, internal: true },
+                ...(needsEdge ? { edge: { name: `${project}-edge` } } : {}),
+            },
             volumes,
         }).replace(/\$/g, '$$$$'),
     };
