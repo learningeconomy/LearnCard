@@ -201,6 +201,7 @@
         "userflow.js": "^2.12.1",
         "uuid": "^14.0.0",
         "web-vitals": "^0.2.4",
+        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
         "zod": "4.4.3",
         "zustand": "^3.7.2",
       },
@@ -241,6 +242,7 @@
         "concurrently": "7.6.0",
         "esbuild": "^0.27.1",
         "eslint-plugin-i18next": "^6.1.4",
+        "fake-indexeddb": "^6.2.5",
         "http-server": "14.1.1",
         "jeep-sqlite": "2.5.8",
         "jsdom": "^24.0.0",
@@ -9824,6 +9826,8 @@
     "xdg-portable": ["xdg-portable@10.6.0", "", { "dependencies": { "os-paths": "^7.4.0" }, "optionalDependencies": { "fsevents": "*" } }, "sha512-xrcqhWDvtZ7WLmt8G4f3hHy37iK7D2idtosRgkeiSPZEPmBShp0VfmRBLWAPC6zLF48APJ21yfea+RfQMF4/Aw=="],
 
     "xhr": ["xhr@2.6.0", "", { "dependencies": { "global": "~4.4.0", "is-function": "^1.0.1", "parse-headers": "^2.0.0", "xtend": "^4.0.0" } }, "sha512-/eCGLb5rxjx5e3mF1A7s+pLlR6CGyqWN91fv1JgER5mVWg1MZmlhBvy9kjcsOdRk8RrIujotWyJamfyrp+WIcA=="],
+
+    "xlsx": ["xlsx@https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz", { "bin": { "xlsx": "./bin/xlsx.njs" } }, "sha512-oLDq3jw7AcLqKWH2AhCpVTZl8mf6X2YReP+Neh0SJUzV/BdZYjth94tG5toiMB1PPrYtxOCfaoUCkvtuH+3AJA=="],
 
     "xml": ["xml@1.0.1", "", {}, "sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw=="],
 

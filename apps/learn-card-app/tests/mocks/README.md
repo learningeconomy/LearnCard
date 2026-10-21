@@ -55,7 +55,7 @@ test.describe('My feature @mocked', () => {
 });
 ```
 
-Run it: `pnpm test-mock` (or `pnpm exec nx run learn-card-app:test-mock`). Stop docker
+Run it: `bun run test-mock` (or `bunx nx run learn-card-app:test-mock`). Stop docker
 first to prove it's truly offline.
 
 ## Adding coverage for NEW backend calls
@@ -66,9 +66,12 @@ failure's `error-context.md` / network log names the procedure. Two options:
 ### Reads / boot (input-specific) → re-record the HAR
 
 ```bash
-pnpm test:e2e:mock:record     # runs @mocked specs against real docker, PWHAR=update
+bun run test:e2e:mock:record  # runs @mocked specs against real docker, PWHAR=update
+bun tests/mocks/normalize-har-cors.ts # allow replay on any PW_MOCK_PORT
 git add tests/mocks/har/issue.har.zip
 ```
+
+Normalize recorded response origins after recording: real-backend captures use port 3000, while replay defaults to 3010. These test fixtures use bearer headers rather than browser cookies, so replay responses use `Access-Control-Allow-Origin: *`. Wait for app readiness assertions with `waitUntil: 'domcontentloaded'` when external assets are irrelevant.
 
 Records to a single `.zip` (never a loose `.har` — that scatters ~hundreds of body files;
 the `har/.gitignore` blocks those).

@@ -6,14 +6,18 @@ two-person evidence for every trust change. Commands below are **operator-only**
 no AWS operation is performed by preparing these files. Run from the repository
 root unless stated otherwise; replace every `<PLACEHOLDER>` first.
 
-**BLOCKER: the authority Object Lock archiver/outbox is not built.** The legacy
-ledger audit bucket and an authority sweep do not provide that missing durable
-authority audit path. Do not enable production recovery until it is implemented,
-tested, independently monitored, and security-approved. Also close the live
+**Pre-50% gate: the authority Object Lock archiver/outbox is deferred, not a launch
+blocker.** It must be implemented, tested, independently monitored and
+security-approved before stage 4 (50%), or sooner if security rejects
+R-AUTHORITY-ROLLBACK. Earlier stages require explicit acceptance of that residual
+risk and verified CloudTrail data-write/governance alarms; the legacy ledger audit
+bucket and authority sweep are not independent archived authority history. Close the live
 authority/email, Roughtime operations, seven-day soak and residual administrator
 risk gates in [SECURITY.md](./SECURITY.md) and [ROLLOUT.md](./ROLLOUT.md).
 Keep automatic rollout at zero and `ESCROW_RELEASE_KILL_SWITCH=true` throughout.
 This does not disable manual enrollment: keep client mode `off` until approved.
+
+Proposed design and closure evidence: [AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md).
 
 ## Sending domain decision
 
@@ -49,8 +53,8 @@ retain product/security sign-off and sample messages before enabling either tena
 
 Use the **existing production member account** in the organization; the existing
 staging escrow account is not production. Confirm it is in the security-reviewed escrow
-OU, review effective/inherited SCPs and policy attachment quotas, enable an
-independently owned CloudTrail trail, and establish break-glass ownership.
+OU, review effective/inherited SCPs and policy attachment quotas, prepare the
+bootstrap-owned escrow-account CloudTrail trail, and establish break-glass ownership.
 Prepare the [authority guardrail root](../../infra/escrow-enclave-bootstrap/authority-guardrail/README.md)
 with explicit `environment=production`, the new member account and the exact
 bootstrap MFA human-user ARNs. Its default environment is staging: override it.
@@ -78,7 +82,11 @@ the bucket on init instead of checking real account IDs into these examples.
 
 The bootstrap root **creates its own state bucket**. For this first deployment,
 use a trusted disposable copy of that root with its empty `backend "s3" {}` block
-temporarily omitted, initialize local state and review/apply the bootstrap there.
+temporarily omitted, initialize local state and first create the state bucket and
+MFA role/users using a reviewed resource-only target set. Enroll MFA, assume
+`escrow-kms-admin`, then review/apply the full bootstrap (including CloudTrail)
+there. The dedicated log key intentionally grants no key administration to the
+initial organization-admin session; do not bypass KMS's lockout safety check.
 Protect that state. Restore the backend block in the same copy, then migrate its
 state to the newly created bucket; do not initialize an empty remote state and
 recreate resources. The core root can then initialize directly against S3.
@@ -98,6 +106,37 @@ native S3 lockfile permissions. Use Terraform >= 1.10. Preserve the bootstrap
 and core's distinct state keys. Enroll both operators' MFA, confirm SNS
 subscriptions, apply both prepared SCPs and independently inspect their contents
 and attachments (`aws organizations describe-policy --policy-id '<SCP_ID>'`).
+
+Set bootstrap `authority_generations` to every live/retained core
+`authority_generation` before applying; table ARNs are computed without reading
+core state. Add future generations to bootstrap **before** creating their tables.
+The multi-region trail logs all management reads/writes (including KMS) and all
+authority-table write data events, including batch, transaction and PartiQL writes.
+Its dedicated same-account bucket uses versioning, COMPLIANCE Object Lock and a
+dedicated KMS key. Default retention is **365 days** in both environments; staging
+may explicitly choose a shorter `cloudtrail_retention_days` before delivery, never
+shorten existing locked versions. There is no automatic log expiry.
+
+**Fixed gap, pending deployment:** operator read-only findings on 2026-10-20 showed
+no escrow staging account or organization trail (only a management-account-only
+trail). CloudTrail history had **36 PutKeyPolicy events in 90 days**, but
+`TriggeredRules = 0` over 60 days for kms-governance and all six authority-* rules.
+The governance alarms were inert without an enabled trail. This change supplies
+the missing trail; merge/offline tests do not prove the gap is fixed in AWS.
+
+Before core provisioning, verify from the escrow MFA session:
+
+```sh
+aws cloudtrail get-trail-status --name escrow-enclave-production-audit --region '<REGION>'
+aws cloudtrail get-event-selectors --trail-name escrow-enclave-production-audit --region '<REGION>'
+```
+
+Require `IsLogging=true`, recent successful delivery, no delivery/digest errors,
+and exact intended table ARNs. After core installs the monitor rules/subscription,
+run [the staging alarm drills](STAGING.md#cloudtrail-trail-and-alarm-drills--operator-only)
+in production with approved disposable data: an SSO authority write must be denied
+and page; the next reviewed image-roll `PutKeyPolicy` must trigger
+`EscrowKmsGovernanceChange`. Keep recovery paused until delivery is demonstrated.
 
 ### 3. [terraform] Network, authority table and CMKs before compute
 

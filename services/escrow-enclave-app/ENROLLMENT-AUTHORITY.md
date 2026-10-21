@@ -565,14 +565,18 @@ deletion protection, point-in-time recovery, SCP-guarded lifecycle/restore/impor
 actions and a read-only monitor that verifies execution rows. There is **no**
 authority-to-Object-Lock archiver or persistent audit outbox yet. Long-term
 immutable retention of authority rows therefore remains **in scope as a
-production-enablement gate**, not a delivered control: before production,
+pre-50%-rollout gate**, not a launch blocker or delivered control: before stage 4,
 copy exact signed execution bytes to the existing COMPLIANCE Object Lock bucket
 idempotently (synchronous gating optional; durable outbox + reconciliation
-acceptable), and have the monitor check coverage. Staging may run without it. No cross-service atomicity
+acceptable), and have the monitor check coverage. Earlier rollout requires verified
+CloudTrail write/governance alarms and security acceptance of R-AUTHORITY-ROLLBACK;
+security rejection requires the archiver sooner. Staging may run without it. No cross-service atomicity
 with S3 or Mongo is claimed. Stored receipts permit metadata reconciliation, never
 replay of a PIN comparison or release. Enclave high-water marks still never reset
 on failure; losing concurrent signers may require exact-history reconciliation.
 Must separate speculative proposals from committed high-water marks.
+
+Proposed archiver/outbox design and retention boundary: [AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md).
 
 Cancellation intent may remain caller-authenticated for denial-only operations,
 as in `app/src/policy.rs::cancel_hold`: a compromised host can already deny service.
@@ -633,7 +637,7 @@ change as independently committed; an API `{success:true}` is insufficient.
   The escrow CMK policy is NOT touched (it denies Encrypt).
   The new KMS key policy allows Decrypt only with an attested Recipient matching pinned PCRs.
   Add single-region tables, fixed TLS endpoint, alarms and backup policy. The audit
-  outbox/Object Lock archiver is a production gate (see section 5), not in this stack.
+  outbox/Object Lock archiver is a pre-50%-rollout gate (see section 5), not in this stack.
   Host/API get no table writes, signing grants or cross-account administrator role.
   Update `infra/escrow-enclave/{iam,ledger,kms,storage,monitor}.tf` integration and
   measured endpoint/pin configuration. Preserve existing PCR tuple/KMS denies.
