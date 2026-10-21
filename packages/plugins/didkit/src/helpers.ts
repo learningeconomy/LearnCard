@@ -21,9 +21,11 @@ export const getContextURIs = (jsonld: Record<string, any>) => {
     return contexts;
 };
 
-export const getCredentialIssuerDocumentURIs = (credential: Record<string, any>): string[] => {
+export const getCredentialIssuerDocumentURIs = (credential: Record<string, unknown>): string[] => {
     const issuer =
-        typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
+        typeof credential.issuer === 'string'
+            ? credential.issuer
+            : (credential.issuer as { id?: unknown } | null | undefined)?.id;
 
     return typeof issuer === 'string' &&
         (issuer.startsWith('https://') || issuer.startsWith('http://'))
@@ -51,15 +53,23 @@ const getVerificationMethodDocumentURI = (verificationMethod: unknown): string[]
     }
 };
 
-export const getVerificationMethodDocumentURIs = (credential: Record<string, any>): string[] => {
-    const proofs = Array.isArray(credential.proof) ? credential.proof : [credential.proof];
+export const getVerificationMethodDocumentURIs = (
+    credential: Record<string, unknown>
+): string[] => {
+    const proofs: unknown[] = Array.isArray(credential.proof)
+        ? credential.proof
+        : [credential.proof];
 
-    return proofs.flatMap(proof => getVerificationMethodDocumentURI(proof?.verificationMethod));
+    return proofs.flatMap(proof =>
+        getVerificationMethodDocumentURI(
+            (proof as { verificationMethod?: unknown } | null | undefined)?.verificationMethod
+        )
+    );
 };
 
 /** An unsigned credential has no proof yet, so the requested verification method is the key. */
 export const getIssuanceDocumentURIs = (
-    credential: Record<string, any>,
+    credential: Record<string, unknown>,
     options: { verificationMethod?: string } = {}
 ): string[] => [
     ...new Set([
@@ -70,7 +80,7 @@ export const getIssuanceDocumentURIs = (
 ];
 
 export const getIssuerAuthorizationDocumentURIs = (
-    credential: Record<string, any>,
+    credential: Record<string, unknown>,
     checks: readonly string[] = []
 ): string[] =>
     checks.includes('issuerAuthorization') ? getCredentialIssuerDocumentURIs(credential) : [];
