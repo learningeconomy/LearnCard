@@ -26,12 +26,25 @@ run "monitoring_contract" {
     error_message = "Use Node22 arm64 and serialize each tier."
   }
   assert {
-    condition     = aws_cloudwatch_metric_alarm.success["1"].evaluation_periods == 3 && aws_cloudwatch_metric_alarm.success["1"].datapoints_to_alarm == 2 && aws_cloudwatch_metric_alarm.success["2"].period == 1800 && aws_cloudwatch_metric_alarm.success["2"].evaluation_periods == 2 && alltrue([for alarm in aws_cloudwatch_metric_alarm.success : alarm.treat_missing_data == "breaching"])
+    condition     = aws_cloudwatch_metric_alarm.success["1"].evaluation_periods == 3 && aws_cloudwatch_metric_alarm.success["1"].datapoints_to_alarm == 2 && alltrue([for alarm in aws_cloudwatch_metric_alarm.success : alarm.treat_missing_data == "breaching" && alarm.statistic == "Minimum"])
     error_message = "Tier failure and silence must page on the specified windows."
   }
   assert {
-    condition     = alltrue([for alarm in aws_cloudwatch_metric_alarm.auth : alarm.treat_missing_data == "breaching" && alarm.metric_name == "Runner.AuthFailure"]) && aws_cloudwatch_metric_alarm.silent.evaluation_periods == 5
+    condition     = alltrue([for alarm in aws_cloudwatch_metric_alarm.auth : alarm.treat_missing_data == "notBreaching" && alarm.metric_name == "Runner.AuthFailure" && alarm.statistic == "Maximum"]) && aws_cloudwatch_metric_alarm.silent.evaluation_periods == 5
     error_message = "Runner auth and silence require independent alarms."
+  }
+  assert {
+    condition = alltrue([for account in ["pin-a", "pin-b"] :
+      aws_cloudwatch_metric_alarm.success["2-${account}"].period == 3600 &&
+      aws_cloudwatch_metric_alarm.success["2-${account}"].evaluation_periods == 2 &&
+      aws_cloudwatch_metric_alarm.success["2-${account}"].datapoints_to_alarm == 2 &&
+      aws_cloudwatch_metric_alarm.success["2-${account}"].dimensions == tomap({ Tier = "2", Environment = "staging", Account = account }) &&
+      aws_cloudwatch_metric_alarm.auth["2-${account}"].period == 3600 &&
+      aws_cloudwatch_metric_alarm.auth["2-${account}"].dimensions == aws_cloudwatch_metric_alarm.success["2-${account}"].dimensions &&
+      aws_cloudwatch_metric_alarm.auth["2-${account}"].evaluation_periods == 2 &&
+      aws_cloudwatch_metric_alarm.auth["2-${account}"].datapoints_to_alarm == 2
+    ])
+    error_message = "Each alternating account must independently page on two hourly failures, never the other account's success."
   }
   assert {
     condition     = alltrue([for rule in aws_cloudwatch_event_rule.schedule : rule.state == "DISABLED"]) && aws_cloudwatch_event_rule.schedule["1"].schedule_expression == "rate(1 minute)" && aws_cloudwatch_event_rule.schedule["2"].schedule_expression == "rate(30 minutes)"

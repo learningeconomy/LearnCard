@@ -3,7 +3,10 @@ import { createSdk } from './sdk';
 import { verifyEnclaveAttestation, verifyEscrowAuthorityState } from '@learncard/sss-key-manager';
 import type { Config } from './config';
 import type { AccountSecret } from './secrets';
+import { readFile } from 'node:fs/promises';
+import { initLearnCard } from '@learncard/init';
 
+vi.mock('node:fs/promises', () => ({ readFile: vi.fn(async () => Buffer.from('wasm')) }));
 vi.mock('@learncard/init', () => ({ initLearnCard: vi.fn() }));
 vi.mock('@learncard/sss-key-manager', async importOriginal => ({
     ...(await importOriginal<typeof import('@learncard/sss-key-manager')>()),
@@ -35,6 +38,30 @@ const identity = {
 afterEach(() => vi.clearAllMocks());
 
 describe('SDK HTTP adapter', () => {
+    it('lazily shares one WASM read across concurrent calls and SDK instances without caching identities', async () => {
+        const did = vi.fn(() => 'did:key:test');
+        const getDidAuthVp = vi.fn(async () => 'signed-proof');
+        vi.mocked(initLearnCard).mockResolvedValue({
+            id: { did },
+            invoke: { getDidAuthVp },
+        } as unknown as Awaited<ReturnType<typeof initLearnCard>>);
+        const sdk = createSdk(config);
+        expect(readFile).not.toHaveBeenCalled();
+        expect(
+            await Promise.all([
+                sdk.did('seed-a'),
+                sdk.sign('seed-b', 'challenge'),
+                createSdk(config).did('seed-c'),
+            ])
+        ).toEqual(['did:key:test', 'signed-proof', 'did:key:test']);
+        expect(readFile).toHaveBeenCalledOnce();
+        expect(vi.mocked(initLearnCard).mock.calls).toEqual([
+            [{ seed: 'seed-a', didkit: Buffer.from('wasm') }],
+            [{ seed: 'seed-b', didkit: Buffer.from('wasm') }],
+            [{ seed: 'seed-c', didkit: Buffer.from('wasm') }],
+        ]);
+        expect(getDidAuthVp).toHaveBeenCalledWith({ proofFormat: 'jwt', challenge: 'challenge' });
+    });
     it('passes a fresh nonce, whole PCR tuples and the AWS-default policy to the real SDK boundary', async () => {
         vi.mocked(verifyEnclaveAttestation).mockResolvedValue(identity);
         const transport = vi.fn<typeof fetch>(async () =>

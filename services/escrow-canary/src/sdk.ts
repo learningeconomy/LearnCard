@@ -24,6 +24,10 @@ export interface Sdk {
     sign(privateKey: string, challenge?: string): Promise<string>;
 }
 
+// Lazy and shared across SDK instances in a warm Lambda; no unhandled startup rejection.
+let wasmBuffer: Promise<Buffer> | undefined;
+const loadWasm = () => (wasmBuffer ??= readFile(new URL('./didkit.wasm', import.meta.url)));
+
 export const createSdk = (config: Config, transport: typeof fetch = fetch): Sdk => {
     const policy = { mode: 'nitro' as const, pinnedMeasurements: config.measurements };
     const headers = { 'Content-Type': 'application/json', 'X-Tenant-Id': config.tenantId };
@@ -37,8 +41,7 @@ export const createSdk = (config: Config, transport: typeof fetch = fetch): Sdk 
         return response.json();
     };
     // WASM is packaged locally; no CDN or architecture-specific native addon.
-    const wallet = async (seed: string) =>
-        initLearnCard({ seed, didkit: await readFile(new URL('./didkit.wasm', import.meta.url)) });
+    const wallet = async (seed: string) => initLearnCard({ seed, didkit: await loadWasm() });
     const sign: Sdk['sign'] = async (key, challenge) => {
         const vp = await (await wallet(key)).invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
         if (typeof vp !== 'string') throw new Error('DID proof signing failed');

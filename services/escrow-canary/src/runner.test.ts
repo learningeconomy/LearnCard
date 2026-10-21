@@ -5,7 +5,7 @@ import {
     type EscrowAuthorityState,
 } from '@learncard/sss-key-manager';
 import { runCanary } from './runner';
-import { RunnerAuthError } from './auth';
+import { RunnerAuthError, RunnerExchangeError } from './auth';
 import { createMetrics } from './metrics';
 import type { Config } from './config';
 import type { AccountSecret } from './secrets';
@@ -187,13 +187,100 @@ describe('scheduled canary orchestration', () => {
             /secret-refresh|secret-share|secret-id-token|did:key|example.invalid|738195/
         );
     });
-    it('suppresses duplicate slots and never reports their success', async () => {
+    it.each([false, true, undefined])(
+        'reports duplicate completion without hiding an interrupted claim (%s)',
+        async needsPinReset => {
+            const f = fixture();
+            f.secret.lastSlot = Math.floor(Date.parse(f.event.time) / 1_800_000);
+            f.secret.needsPinReset = needsPinReset;
+            await runCanary(f.event, config, f.deps);
+            expect(f.deps.refresh).not.toHaveBeenCalled();
+            expect(f.recovery).not.toHaveBeenCalled();
+            const result = f.lines
+                .map(line => JSON.parse(line))
+                .find(metric => 'Tier2.Success' in metric);
+            expect(result['Tier2.Success']).toBe(needsPinReset === false ? 1 : 0);
+            expect(result.Outcome).toBe('duplicate');
+            expect(result._aws.Timestamp).toBe(Date.parse(f.event.time));
+            expect(result._aws.CloudWatchMetrics[0].Dimensions).toContainEqual([
+                'Environment',
+                'Tier',
+                'Account',
+            ]);
+            expect(f.lines.join()).not.toContain('Runner.AuthFailure');
+        }
+    );
+    it.each([1, 2] as const)(
+        'emits tier %s failure on secret-read and stale-event errors',
+        async tier => {
+            const f = fixture(tier);
+            f.deps.secrets.read.mockRejectedValue(new Error('private secret'));
+            await runCanary(f.event, config, f.deps);
+            expect(f.lines.join()).toContain(`"Tier${tier}.Success":0`);
+            expect(f.lines.join()).toContain('"Reason":"secret_read"');
+            expect(f.lines.join()).not.toContain('Runner.AuthFailure');
+            f.lines.length = 0;
+            await runCanary({ ...f.event, time: new Date(0).toISOString() }, config, f.deps);
+            expect(f.lines.join()).toContain(`"Tier${tier}.Success":0`);
+            expect(f.lines.join()).toContain('"Reason":"stale_event"');
+        }
+    );
+    it('a failed claim followed by a duplicate remains a failure', async () => {
         const f = fixture();
-        f.secret.lastSlot = Math.floor(Date.parse(f.event.time) / 1_800_000);
+        f.recovery.mockRejectedValue(new Error('private failure'));
         await runCanary(f.event, config, f.deps);
-        expect(f.deps.refresh).not.toHaveBeenCalled();
-        expect(f.recovery).not.toHaveBeenCalled();
-        expect(f.lines.join()).not.toContain('Tier2.Success');
+        await runCanary(f.event, config, f.deps);
+        const results = f.lines
+            .map(line => JSON.parse(line))
+            .filter(metric => 'Tier2.Success' in metric);
+        expect(results.map(metric => metric['Tier2.Success'])).toEqual([0, 0]);
+        expect(f.recovery).toHaveBeenCalledOnce();
+    });
+    it('a completed slot followed by a duplicate stays green without repeating recovery', async () => {
+        const f = fixture();
+        await runCanary(f.event, config, f.deps);
+        await runCanary(f.event, config, f.deps);
+        const results = f.lines
+            .map(line => JSON.parse(line))
+            .filter(metric => 'Tier2.Success' in metric);
+        expect(results.map(metric => metric['Tier2.Success'])).toEqual([1, 1]);
+        expect(f.recovery).toHaveBeenCalledOnce();
+        expect(f.deps.refresh).toHaveBeenCalledOnce();
+    });
+    it('rejects the wrong account secret without labeling it auth', async () => {
+        const f = fixture();
+        f.secret.accountId = 'wrong';
+        await runCanary(f.event, config, f.deps);
+        expect(f.lines.join()).toContain('"Tier2.Success":0');
+        expect(f.lines.join()).toContain('"Reason":"config"');
+        expect(f.lines.join()).not.toContain('Runner.AuthFailure');
+    });
+    it('token transport errors fail the tier but do not emit credential failure', async () => {
+        const f = fixture();
+        f.deps.refresh.mockRejectedValue(new RunnerExchangeError('transport'));
+        await runCanary(f.event, config, f.deps);
+        expect(f.lines.join()).toContain('"Tier2.Success":0');
+        expect(f.lines.join()).toContain('"Reason":"transport"');
+        expect(f.lines.join()).not.toContain('Runner.AuthFailure');
+    });
+    it('isolates an always-failing account from the alternating healthy account', async () => {
+        vi.useFakeTimers();
+        try {
+            const results: Record<string, number[]> = {};
+            for (let slot = 0; slot < 4; slot++) {
+                vi.setSystemTime(Date.UTC(2026, 9, 21, 12) + slot * 1_800_000);
+                const f = fixture();
+                if (slot % 2 === 0) f.deps.refresh.mockRejectedValue(new RunnerAuthError());
+                await runCanary(f.event, config, f.deps);
+                const result = f.lines
+                    .map(line => JSON.parse(line))
+                    .find(metric => 'Tier2.Success' in metric);
+                (results[result.Account] ??= []).push(result['Tier2.Success']);
+            }
+            expect(results).toEqual({ 'pin-a': [0, 0], 'pin-b': [1, 1] });
+        } finally {
+            vi.useRealTimers();
+        }
     });
     it('secret write failure stops before recovery', async () => {
         const f = fixture();

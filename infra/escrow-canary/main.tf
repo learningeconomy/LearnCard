@@ -67,6 +67,7 @@ resource "aws_lambda_function" "runner" {
   environment {
     variables = {
       CANARY_ENVIRONMENT       = var.environment
+      CANARY_TIER              = each.key
       LCA_API_URL              = var.lca_api_url
       TENANT_ID                = var.tenant_id
       FIREBASE_API_KEY         = var.firebase_api_key

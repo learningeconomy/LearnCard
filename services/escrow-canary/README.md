@@ -37,7 +37,11 @@ Each tier has its own Lambda and reserved concurrency **1**. EventBridge and Lam
 automatic retries are disabled. The event's `time` is required, must be within five
 minutes of execution, and chooses the account deterministically. Tier 2 stores a
 slot claim and `needsPinReset=true` before mutations. Duplicate/older claimed slots
-are ignored without emitting a false success. Only these functions may write their
+skip mutations and replay a terminal metric: only an exactly matching slot with
+`needsPinReset=false` is successful; an interrupted/unknown claim remains failed.
+The metric has `Outcome=duplicate` and the original event timestamp, so it cannot
+fill a later period. Minimum aggregation preserves any real failure in the same
+period. No auth result is invented for a skipped exchange. Only these functions may write their
 secrets; **do not manually invoke while schedules are enabled** or run another
 deployment against the same accounts. Secrets Manager is not a compare-and-swap lock.
 
@@ -76,6 +80,7 @@ Environment variables (all non-secret deployment configuration):
 | Variable                   | Value                                                                                                         |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `CANARY_ENVIRONMENT`       | `staging` initially; `production` only after separate approval                                                |
+| `CANARY_TIER`              | `1` or `2`, set by Terraform per Lambda; authoritative even if an event is malformed                          |
 | `LCA_API_URL`              | Staging **REST base**, including `/api` when applicable; not `/trpc`                                          |
 | `TENANT_ID`                | Registered staging tenant; sent as `X-Tenant-Id`, just like the app                                           |
 | `FIREBASE_API_KEY`         | That tenant's Firebase web API key (public identifier, not Admin credentials)                                 |
@@ -180,20 +185,36 @@ not be manually reset to force retries.
 
 ### Alarm drills and incident handling
 
-- Namespace `LearnCard/EscrowCanary`; exact dimensions `Tier="1"|"2"` and
-  `Environment="staging"`. `Step.Latency` adds `Step`; `Step.Failure` adds `Step`
+- Namespace `LearnCard/EscrowCanary`; base dimensions `Tier="1"|"2"` and
+  `Environment="staging"`. Tier 2 adds `Account="pin-a"|"pin-b"`: fixed positional
+  labels, never actual account identifiers. Success/auth metrics explicitly roll
+  up to the account alarm series and tier dashboard series; `Reason`/`Outcome`
+  diagnostics never fragment those alarm series. `Step.Latency` adds `Step`; `Step.Failure` adds `Step`
   and allowlisted `Reason`. Logging projects only those fields: no error bodies,
   IDs, email addresses, tokens, private keys, PINs or device shares.
-- Tier 1: Minimum Success < 1, 2 of 3 × 60s. Tier 2: 2 of 2 × 1800s.
-  `Runner.AuthFailure` emits zero after each successful exchange, one on exchange
-  failure, with independent alarms. All these alarms use missing=breaching.
+- Tier 1: Minimum Success < 1, 2 of 3 × 60s. Tier 2: **per-account** 2 of 2 ×
+  3600s, matching each account's hourly cadence. Success alarms retain
+  missing=breaching; a healthy alternating account cannot clear a broken account.
+  Every handled failure emits Success=0, including configuration/initialization,
+  secret reads/validation, stale events and auth (allowlisted `Reason` values
+  `config`, `secret_read`, `stale_event`, `auth`). Hard process termination/timeouts
+  cannot execute finally blocks and remain covered by missing-data alarms.
+  `Runner.AuthFailure` emits zero after successful exchange, one for credential
+  rejection (HTTP 400/401/403), with independent per-account alarms at the same
+  cadence using Maximum and **missing=notBreaching**. Network/timeout, malformed
+  JSON/schema, rate limiting and upstream 5xx failures fail the tier, not auth.
   A separate SampleCount alarm detects five missing tier-1 periods. The 30-day
-  dashboard shows observed success ratios; silence is **not** counted as uptime.
+  dashboard shows observed result ratios (including replayed duplicate outcomes);
+  silence is **not** counted as uptime.
 - In staging, temporarily replace a PCR with a syntactically valid incorrect pin
   and verify failure + notification, then restore. Disable the tier-1 schedule
   and confirm missing-data alarms, then restore. Revoke only one canary Firebase
-  refresh token and confirm `Runner.AuthFailure` distinguishes it from enclave
-  errors. After the drill sign in normally again and replace its refresh token.
+  refresh token and observe two hourly runs of that account: its success/auth
+  alarms must fire while the other PIN account stays healthy. Simulate a secret
+  read/config failure and confirm only success alarms fire, not auth. Replay a
+  completed current slot with schedules disabled and confirm a duplicate datapoint
+  without another recovery; replay an interrupted claim and confirm it stays red.
+  After the drill sign in normally again and replace its refresh token.
   Do not publish fake green metrics to clear alarms; require real successful runs.
 - To rotate credentials, disable schedules and wait for executions to finish,
   sign in the affected account normally, update **only** that account's refresh

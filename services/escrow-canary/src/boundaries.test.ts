@@ -4,7 +4,7 @@ import {
     GetSecretValueCommand,
     PutSecretValueCommand,
 } from '@aws-sdk/client-secrets-manager';
-import { refreshIdentity, RunnerAuthError } from './auth';
+import { refreshIdentity, RunnerAuthError, RunnerExchangeError } from './auth';
 import { createSecretStore } from './secrets';
 import { createMetrics } from './metrics';
 import { memoryStorage } from './storage';
@@ -33,6 +33,27 @@ describe('runner boundaries', () => {
             )
         ).rejects.toEqual(new RunnerAuthError());
     });
+    it.each([429, 500, 503])('does not classify HTTP %s as a credential failure', async status => {
+        await expect(
+            refreshIdentity('key', 'refresh', async () => new Response('private', { status }))
+        ).rejects.toEqual(new RunnerExchangeError('unavailable'));
+    });
+    it.each(['network', 'timeout', 'json', 'schema'])(
+        'keeps %s errors separate from auth and scrubs payloads',
+        async kind => {
+            const transport = vi.fn<typeof fetch>(async () => {
+                if (kind === 'network' || kind === 'timeout') throw new Error('private token');
+                return kind === 'json'
+                    ? new Response('private malformed json')
+                    : Response.json({ private: 'token' });
+            });
+            await expect(refreshIdentity('key', 'refresh', transport)).rejects.toEqual(
+                new RunnerExchangeError(
+                    kind === 'network' || kind === 'timeout' ? 'transport' : 'invalid_response'
+                )
+            );
+        }
+    );
     it('uses scoped Secrets Manager commands and validates before use', async () => {
         const client = new SecretsManagerClient({ region: 'us-east-1' });
         const response = {
@@ -58,6 +79,11 @@ describe('runner boundaries', () => {
             SecretId: 'test-arn',
             SecretString: JSON.stringify(secret),
         });
+    });
+    it.each(['not json', '{}'])('rejects malformed secret %s before use', async SecretString => {
+        const client = new SecretsManagerClient({ region: 'us-east-1' });
+        vi.spyOn(client, 'send').mockImplementation(async () => ({ SecretString }));
+        await expect(createSecretStore(client).read('test-arn')).rejects.toThrow();
     });
     it('scrubs all non-allowlisted values, including a forged reason', () => {
         const lines: string[] = [];

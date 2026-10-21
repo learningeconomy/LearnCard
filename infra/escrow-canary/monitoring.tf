@@ -6,14 +6,21 @@ resource "aws_sns_topic_subscription" "email" {
   protocol  = "email"
   endpoint  = var.alarm_email
 }
+locals {
+  alarm_streams = {
+    "1"       = { tier = "1", period = 60, dimensions = { Tier = "1", Environment = var.environment } }
+    "2-pin-a" = { tier = "2", period = 3600, dimensions = { Tier = "2", Environment = var.environment, Account = "pin-a" } }
+    "2-pin-b" = { tier = "2", period = 3600, dimensions = { Tier = "2", Environment = var.environment, Account = "pin-b" } }
+  }
+}
 resource "aws_cloudwatch_metric_alarm" "success" {
-  for_each            = local.tiers
+  for_each            = local.alarm_streams
   alarm_name          = "${local.name}-tier${each.key}-failure"
   namespace           = local.namespace
-  metric_name         = "Tier${each.key}.Success"
-  dimensions          = { Tier = each.key, Environment = var.environment }
+  metric_name         = "Tier${each.value.tier}.Success"
+  dimensions          = each.value.dimensions
   statistic           = "Minimum"
-  period              = each.value
+  period              = each.value.period
   evaluation_periods  = each.key == "1" ? 3 : 2
   datapoints_to_alarm = 2
   comparison_operator = "LessThanThreshold"
@@ -24,18 +31,18 @@ resource "aws_cloudwatch_metric_alarm" "success" {
   ok_actions          = [aws_sns_topic.alarms.arn]
 }
 resource "aws_cloudwatch_metric_alarm" "auth" {
-  for_each            = local.tiers
+  for_each            = local.alarm_streams
   alarm_name          = "${local.name}-tier${each.key}-runner-auth"
   namespace           = local.namespace
   metric_name         = "Runner.AuthFailure"
-  dimensions          = { Tier = each.key, Environment = var.environment }
+  dimensions          = each.value.dimensions
   statistic           = "Maximum"
-  period              = each.value
+  period              = each.value.period
   evaluation_periods  = each.key == "1" ? 3 : 2
   datapoints_to_alarm = 2
   comparison_operator = "GreaterThanThreshold"
   threshold           = 0
-  treat_missing_data  = "breaching"
+  treat_missing_data  = "notBreaching"
   actions_enabled     = var.alarm_actions_enabled
   alarm_actions       = [aws_sns_topic.alarms.arn]
   ok_actions          = [aws_sns_topic.alarms.arn]

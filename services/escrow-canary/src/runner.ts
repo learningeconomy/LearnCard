@@ -1,7 +1,7 @@
 import { EscrowPinMismatchError } from '@learncard/sss-key-manager';
 import type { Config } from './config';
 import { refreshIdentity, RunnerAuthError } from './auth';
-import type { Emit, Step } from './metrics';
+import { accountForEvent, safeReason, type Emit, type Step, type MetricContext } from './metrics';
 import type { SecretStore } from './secrets';
 import type { Sdk } from './sdk';
 import { memoryStorage } from './storage';
@@ -17,14 +17,28 @@ export interface Dependencies {
     refresh?: typeof refreshIdentity;
 }
 
+const failureReason = (step: Step, error: unknown): string => {
+    if (error instanceof RunnerAuthError) return 'auth';
+    if (step === 'secret') return 'secret_read';
+    if (step === 'config' || step === 'stale_event') return step;
+    return safeReason(error);
+};
+
 /** One serialized Lambda per tier. Slot claims suppress at-least-once EventBridge deliveries. */
 export const runCanary = async (
     event: RunEvent,
     config: Config,
     deps: Dependencies
 ): Promise<void> => {
-    const { emit, sdk, secrets } = deps;
-    let step: Step = 'secret';
+    const { sdk, secrets } = deps;
+    const time = Date.parse(event.time);
+    const context: MetricContext = {
+        account: accountForEvent(event.tier, Number.isFinite(time) ? time : Date.now()),
+    };
+    const emit: Emit = (name, value, step, error) => deps.emit(name, value, step, error, context);
+    let step: Step = 'stale_event';
+    let success = 0;
+    let failure: unknown;
     const timed = async <T>(name: Step, operation: () => Promise<T>): Promise<T> => {
         step = name;
         const start = performance.now();
@@ -35,14 +49,21 @@ export const runCanary = async (
         }
     };
     try {
-        const time = Date.parse(event.time);
         if (!Number.isFinite(time) || Math.abs(Date.now() - time) > 5 * 60_000)
             throw new Error('Invalid scheduled time');
         const slot = Math.floor(time / 1_800_000);
         const selected = config.accounts[event.tier === 1 ? 0 : 1 + (slot % 2)];
         const secret = await timed('secret', () => secrets.read(selected.secretArn));
+        step = 'config';
         if (secret.accountId !== selected.id) throw new Error('Wrong account secret');
-        if (event.tier === 2 && secret.lastSlot !== undefined && secret.lastSlot >= slot) return;
+        if (event.tier === 2 && secret.lastSlot !== undefined && secret.lastSlot >= slot) {
+            // A claim is NOT completion. Never synthesize green for an interrupted run.
+            success = secret.lastSlot === slot && secret.needsPinReset === false ? 1 : 0;
+            context.outcome = 'duplicate';
+            // Replays must not fill a later alarm period with an old result.
+            context.timestamp = time;
+            return;
+        }
         const auth = await timed('auth', () =>
             (deps.refresh ?? refreshIdentity)(config.firebaseApiKey, secret.refreshToken)
         );
@@ -132,11 +153,13 @@ export const runCanary = async (
             secret.needsPinReset = false;
             await timed('persist', () => secrets.write(selected.secretArn, secret));
         }
-        emit(event.tier === 1 ? 'Tier1.Success' : 'Tier2.Success', 1);
+        success = 1;
     } catch (error) {
         if (error instanceof RunnerAuthError) emit('Runner.AuthFailure', 1);
         emit('Step.Failure', 1, step, error);
-        emit(event.tier === 1 ? 'Tier1.Success' : 'Tier2.Success', 0);
+        failure = { reason: failureReason(step, error) };
         // Do not throw raw SDK/AWS errors into Lambda's automatic error logger or retry mutations.
+    } finally {
+        emit(event.tier === 1 ? 'Tier1.Success' : 'Tier2.Success', success, undefined, failure);
     }
 };
