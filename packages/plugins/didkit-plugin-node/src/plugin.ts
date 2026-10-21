@@ -169,9 +169,8 @@ export const getDidKitPlugin = async (
 
             issueCredential: async (_learnCard, credential, options, keypair) => {
                 // Keep the WASM-backed package lazy so loading the native plugin does not initialize WASM.
-                const { getDocumentMap, getIssuanceDocumentURIs } = await import(
-                    '@learncard/didkit-plugin'
-                );
+                const { getDocumentMap, getIssuanceDocumentURIs } =
+                    await import('@learncard/didkit-plugin');
                 const contextMap = await getDocumentMap(
                     _learnCard,
                     credential,
