@@ -28,6 +28,7 @@ import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import {
+    AiPassportReauthenticationRequired,
     getConsentFlowContractRedirect,
     getConsentFlowDidAuthRedirect,
 } from './issueConsentFlowDidAuth';
@@ -55,6 +56,8 @@ type FullScreenConsentFlowProps = {
         hideCloseButton?: boolean;
     };
     disableRedirect?: boolean;
+    /** Close only this consent screen on success, e.g. inside the new-session chatbot. */
+    keepParentModalsOpen?: boolean;
     beforeSubmit?: () => Promise<void>;
     /** Revalidate an accepted invitation when finishing its saved publication. */
     beforePublicationRetry?: () => Promise<void>;
@@ -75,6 +78,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     aiInsightsRequestOptions,
     childInsightsProfile,
     disableRedirect = false,
+    keepParentModalsOpen = false,
     beforeSubmit,
     beforePublicationRetry,
     expectedRequestId,
@@ -114,6 +118,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
     const shouldDisableRedirect =
         disableRedirect || Boolean(insightsProfile) || Boolean(childInsightsProfile);
+    const shouldCloseAllModals =
+        !successCallback || (shouldDisableRedirect && !keepParentModalsOpen);
 
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
     const profileType = switchedProfileStore.use.profileType();
@@ -164,54 +170,67 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             await guardedAction(async () => {
                 setStep(ConsentFlowStep.connecting);
 
+                if (!shouldDisableRedirect) {
+                    getConsentFlowContractRedirect({
+                        challenge,
+                        domain,
+                        registeredRedirectUrl: contractDetails?.redirectUrl,
+                        returnTo,
+                        contractUri: contractDetails?.uri,
+                    });
+                }
+
                 const { redirectUrl } = await submit(async () => {
                     await guardedAction(() => {});
                     await validateRequest?.();
                 });
 
-                // Sync any auto-boost credentials (if any). No need to wait.
+                let externalDestination: string | undefined;
+                if (!shouldDisableRedirect) {
+                    externalDestination = getConsentFlowContractRedirect({
+                        challenge,
+                        contractRedirectUrl: redirectUrl,
+                        contractUri: contractDetails?.uri,
+                        domain,
+                        registeredRedirectUrl: contractDetails?.redirectUrl,
+                        returnTo,
+                    });
+                    if (
+                        !externalDestination &&
+                        typeof returnTo === 'string' &&
+                        (returnTo.startsWith('http://') || returnTo.startsWith('https://'))
+                    ) {
+                        const wallet = await initWallet();
+                        const ownerDid = contractDetails?.owner?.did;
+                        if (!ownerDid || !contractDetails?.uri)
+                            throw new Error('Invalid consent request');
+                        externalDestination = await getConsentFlowDidAuthRedirect({
+                            challenge,
+                            contractUri: contractDetails.uri,
+                            domain,
+                            ownerDid,
+                            registeredRedirectUrl: contractDetails.redirectUrl,
+                            returnTo,
+                            wallet,
+                        });
+                    }
+                }
+
+                // Signal completion only once returned destinations and proofs are validated.
                 fetchNewContractCredentials();
-
                 successCallback?.();
-
                 if (isInlineInsightsRequest) {
                     setIsPostConsentLocal(true);
                     setStep(ConsentFlowStep.confirmation);
-                } else if (!successCallback || shouldDisableRedirect) {
+                } else if (shouldCloseAllModals) {
                     closeAllModals();
                 }
-
                 if (!shouldDisableRedirect) {
-                    const contractRedirectUrl = getConsentFlowContractRedirect({
-                        challenge,
-                        contractRedirectUrl: redirectUrl,
-                        domain,
-                    });
-
-                    if (contractRedirectUrl) {
-                        window.location.href = contractRedirectUrl;
+                    if (externalDestination) {
+                        window.location.href = externalDestination;
                         return;
                     }
-
-                    if (returnTo && !Array.isArray(returnTo)) {
-                        if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                            const wallet = await initWallet();
-                            const ownerDid = contractDetails?.owner?.did;
-
-                            if (!ownerDid || !contractDetails?.uri) {
-                                throw new Error('Invalid consent request');
-                            }
-
-                            window.location.href = await getConsentFlowDidAuthRedirect({
-                                challenge,
-                                contractUri: contractDetails.uri,
-                                domain,
-                                ownerDid,
-                                returnTo,
-                                wallet,
-                            });
-                        } else history.push(returnTo);
-                    }
+                    if (typeof returnTo === 'string' && returnTo) history.push(returnTo);
                 }
 
                 if (childInsightsProfile && isSwitchedProfile) {
@@ -244,7 +263,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 if (isInlineInsightsRequest) {
                     setIsPostConsentLocal(true);
                     setStep(ConsentFlowStep.confirmation);
-                } else if (!successCallback || shouldDisableRedirect) {
+                } else if (shouldCloseAllModals) {
                     closeAllModals();
                 }
 
@@ -278,9 +297,11 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 data.code === 'FORBIDDEN' &&
                 /guardian|manager/i.test(message);
             presentToast(
-                isGuardianApprovalRequired
-                    ? m['consentFlow.guardianApprovalRequired']()
-                    : m['error.generic'](),
+                e instanceof AiPassportReauthenticationRequired
+                    ? m['consentFlow.aiPassportReauthenticationRequired']()
+                    : isGuardianApprovalRequired
+                      ? m['consentFlow.guardianApprovalRequired']()
+                      : m['error.generic'](),
                 {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
