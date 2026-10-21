@@ -41,7 +41,7 @@ describe('XLSX worker lifecycle', () => {
         expect(worker.options).toEqual({ type: 'module' });
         expect(worker.postMessage).toHaveBeenCalledWith({ bytes, name: 'people.xlsx' }, [bytes]);
         const source = { name: 'people.xlsx', sheets: { People: [[{ text: 'Email' }]] } };
-        worker.onmessage!({ data: { source } } as MessageEvent<XlsxWorkerResult>);
+        worker.onmessage!(new MessageEvent<XlsxWorkerResult>('message', { data: { source } }));
         await expect(result).resolves.toEqual(source);
         expect(worker.terminate).toHaveBeenCalledTimes(1);
         expect(vi.getTimerCount()).toBe(0);
@@ -54,9 +54,11 @@ describe('XLSX worker lifecycle', () => {
             cell: 'People!XFD1048576',
         });
         const worker = TestWorker.instances[0];
-        worker.onmessage!({
-            data: { error: { code: 'bounds', cell: 'People!XFD1048576' } },
-        } as MessageEvent<XlsxWorkerResult>);
+        worker.onmessage!(
+            new MessageEvent<XlsxWorkerResult>('message', {
+                data: { error: { code: 'bounds', cell: 'People!XFD1048576' } },
+            })
+        );
         await assertion;
         expect(worker.terminate).toHaveBeenCalledTimes(1);
         expect(vi.getTimerCount()).toBe(0);
@@ -75,8 +77,7 @@ describe('XLSX worker lifecycle', () => {
         const result = readXlsxInWorker(new ArrayBuffer(0), 'broken.xlsx');
         const assertion = expect(result).rejects.toBeDefined();
         const worker = TestWorker.instances[0];
-        if (failure === 'crash')
-            worker.onerror!({ preventDefault: vi.fn() } as unknown as ErrorEvent);
+        if (failure === 'crash') worker.onerror!(new ErrorEvent('error', { cancelable: true }));
         else worker.onmessageerror!();
         await assertion;
         expect(worker.terminate).toHaveBeenCalledTimes(1);
