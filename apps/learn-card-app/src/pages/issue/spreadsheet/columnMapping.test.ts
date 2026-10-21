@@ -405,7 +405,9 @@ describe('source identity across reimports', () => {
         );
         const imported = mergeSpreadsheet(
             state.draft,
-            parseSpreadsheet(readSpreadsheetText(csv)),
+            parseSpreadsheet(
+                readSpreadsheetText(csv + '\r\nb@test.com,Bob,2.5,2024-03-05T00:00:00.000Z,,,,,')
+            ),
             variables
         ).draft;
         const replaced = replaceSpreadsheetTemplate(makeRun(0).template, imported, true);
@@ -417,6 +419,15 @@ describe('source identity across reimports', () => {
         );
         expect(json.credentialSubject).toMatchObject({ creditsEarned: 1.5 });
         expect(json.awardedDate).toBe('2024-03-04T00:00:00.000Z');
+        // A newly added export row has no saved identity, but uses the export's normalized format.
+        const added = materializePreview(
+            applyVariableValues(
+                templateToJson(replaced.template),
+                replaced.draft.values[replaced.draft.recipients[1].rowId!]
+            )
+        );
+        expect(added.credentialSubject).toMatchObject({ creditsEarned: 2.5 });
+        expect(added.awardedDate).toBe('2024-03-05T00:00:00.000Z');
     });
     it('rejects a missing selected source column instead of silently dropping the mapping', () => {
         const state = credits();

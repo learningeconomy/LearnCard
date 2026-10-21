@@ -266,7 +266,7 @@ export const mergeSpreadsheet = (
         const imported = Object.fromEntries(
             mapped.map(name => {
                 const cell = row.cells[matches[name]!.id] ?? { text: '' };
-                const binding = draft.mappings?.find(mapping => mapping.variable === name);
+                const binding = mappings?.find(mapping => mapping.variable === name);
                 const canonical = row.exportedRunId === draft.id;
                 if (binding && !canonical) assertMappingFormat(cell, binding);
                 let value = binding

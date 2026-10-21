@@ -699,7 +699,13 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await page
                 .getByPlaceholder('Link title (optional)', { exact: true })
                 .fill('Shared course evidence');
-            await page.getByRole('button', { name: 'Link', exact: true }).click();
+            await page
+                .locator('section')
+                .filter({
+                    has: page.getByRole('heading', { name: 'Evidence & media', exact: true }),
+                })
+                .getByRole('button', { name: 'Link', exact: true })
+                .click();
             await page.getByRole('button', { name: 'JSON', exact: true }).click();
             const jsonText = page.locator('textarea.font-mono');
             let credential = JSON.parse(await jsonText.inputValue());
@@ -714,7 +720,9 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                     (item: { id: string }) => item.id === 'https://proof.test/shared'
                 )
             ).toBe(true);
+            await page.getByRole('button', { name: 'JSON', exact: true }).click();
             await page.getByRole('button', { name: 'Remove attachment', exact: true }).click();
+            await page.getByRole('button', { name: 'JSON', exact: true }).click();
             credential = JSON.parse(await jsonText.inputValue());
             expect(credential.evidence).toHaveLength(1);
             expect(credential.evidence[0].id).toContain('sheet_portfolio');
