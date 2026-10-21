@@ -1,10 +1,69 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { config, plan, secret } from './fixtures';
-import { parseSpec, projectName, render, safeName } from '../src/render';
+import { componentName, parseSpec, projectName, render, safeName } from '../src/render';
 import { loadConfig } from '../src/config';
 
 describe('restricted renderer', (): void => {
+    it('renders only declared users and tmpfs and resolves private hostport', (): void => {
+        const p = plan();
+        const original = parse(
+            render(parseSpec(JSON.stringify(p), config()), 'id', 1, config(), {}).yaml
+        );
+        expect(original.services[safeName('web')]).not.toHaveProperty('user');
+        expect(original.services[safeName('web')]).not.toHaveProperty('tmpfs');
+        Object.assign(p.execution!.components[0]!, {
+            user: '999:999',
+            tmpfs: [{ path: '/tmp', sizeMiB: 64 }],
+            env: [
+                {
+                    name: 'SERVICE',
+                    source: { kind: 'endpoint', endpointId: 'web', part: 'hostport' },
+                },
+            ],
+        });
+        const service = parse(
+            render(parseSpec(JSON.stringify(p), config()), 'id', 1, config(), {}).yaml
+        ).services[safeName('web')];
+        expect(service.user).toBe('999:999');
+        expect(service.tmpfs).toEqual(['/tmp:rw,noexec,nosuid,size=64m']);
+        expect(service.environment.SERVICE).toBe(`${componentName('id', 'web')}:5678`);
+    });
+    it.each(['0', '00:999', 'root', '999:root', '-1', '12345678901'])(
+        'rejects unsafe user %s',
+        (user): void => {
+            const p = plan();
+            p.execution!.components[0]!.user = user;
+            expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow('SPEC_INVALID');
+        }
+    );
+    it.each([
+        { tmpfs: [{ path: '/tmp', sizeMiB: 0 }] },
+        { tmpfs: [{ path: '/tmp', sizeMiB: 1025 }] },
+        { tmpfs: [{ path: 'tmp', sizeMiB: 64 }] },
+        { tmpfs: [{ path: '/tmp:exec', sizeMiB: 64 }] },
+        { tmpfs: [{ path: '/tmp,size=999g', sizeMiB: 64 }] },
+        {
+            tmpfs: Array.from({ length: 17 }, (_, i): { path: string; sizeMiB: number } => ({
+                path: `/tmp/${i}`,
+                sizeMiB: 1,
+            })),
+        },
+    ])('rejects invalid tmpfs bounds', ({ tmpfs }): void => {
+        const p = plan();
+        p.execution!.components[0]!.tmpfs = tmpfs;
+        expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow('SPEC_INVALID');
+    });
+    it.each(['/', '/proc', '/etc/shadow', '/tmp/../etc'])(
+        'rejects forbidden tmpfs %s',
+        (path): void => {
+            const p = plan();
+            p.execution!.components[0]!.tmpfs = [{ path, sizeMiB: 64 }];
+            expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow(
+                'MOUNT_FORBIDDEN'
+            );
+        }
+    );
     it('only emits restricted compose, private network and loopback publication', (): void => {
         const spec = parseSpec(JSON.stringify(plan()), config());
         const rendered = render(spec, 'D/1', 2, config(), { 'web:http': 21001 });

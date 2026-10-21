@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import type { WorkloadSecretDeclaration } from '../../../../packages/learn-card-types/src/workload';
 import { AgentError, type Redactor } from './redact';
 import { projectName, safeName, type Spec } from './render';
+import { encodeEd25519SeedMultibase } from './seed-encoding';
 
 export const privateDirectory = async (path: string): Promise<void> => {
     await mkdir(path, { recursive: true, mode: 0o700 });
@@ -52,9 +53,11 @@ export const provisionSecret = async (
     const value =
         format === 'ed25519-seed'
             ? randomBytes(32).toString('hex')
-            : format === 'password'
-              ? randomBytes(18).toString('base64url')
-              : randomBytes(32).toString('base64url');
+            : format === 'ed25519-seed-multibase'
+              ? encodeEd25519SeedMultibase(randomBytes(32))
+              : format === 'password'
+                ? randomBytes(18).toString('base64url')
+                : randomBytes(32).toString('base64url');
     redactor.add(value);
     try {
         const file = await open(

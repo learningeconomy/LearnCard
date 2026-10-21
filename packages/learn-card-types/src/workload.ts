@@ -65,7 +65,7 @@ export const WorkloadEnvSourceValidator = z.discriminatedUnion('kind', [
         .object({
             kind: z.literal('endpoint'),
             endpointId: id,
-            part: z.enum(['url', 'host', 'port']),
+            part: z.enum(['url', 'host', 'port', 'hostport']),
         })
         .strict(),
     z.object({ kind: z.literal('literal'), value: literal }).strict(),
@@ -83,6 +83,22 @@ export const WorkloadComponentValidator = z
                 'Images must use a fully qualified registry/repository@sha256 digest.'
             ),
         platform,
+        user: z
+            .string()
+            .regex(/^\d{1,10}(:\d{1,10})?$/)
+            .refine((value): boolean => Number(value.split(':')[0]) > 0, 'Root user is forbidden.')
+            .optional(),
+        tmpfs: z
+            .array(
+                z
+                    .object({
+                        path: relativePath.refine((value): boolean => !/[:,\0]/.test(value)),
+                        sizeMiB: z.number().int().min(1).max(1024),
+                    })
+                    .strict()
+            )
+            .max(16)
+            .optional(),
         ports: z
             .array(
                 z
@@ -360,7 +376,7 @@ export const WorkloadSecretDeclarationValidator = z
             z
                 .object({
                     kind: z.literal('generate'),
-                    format: z.enum(['token', 'ed25519-seed', 'password']),
+                    format: z.enum(['token', 'ed25519-seed', 'ed25519-seed-multibase', 'password']),
                     bytes: z.number().int().min(16).max(256).optional(),
                 })
                 .strict(),

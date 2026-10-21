@@ -40,6 +40,7 @@ import { buildDccIssuerWorkloadPackage } from './fixtures/workload/dcc-issuer';
 import { makeListingInput } from './helpers/app-store.helpers';
 import { getClient } from './helpers/getClient';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
+import { buildPlanFromMaterialization } from '@helpers/install-intent.helpers';
 
 let id: string;
 let plan: WorkloadPlan;
@@ -188,6 +189,61 @@ const approvedIntent = async (
 };
 
 describe('observation-driven workload lifecycle', (): void => {
+    it('binds user, tmpfs, endpoint parts and seed formats into the approval plan hash', (): void => {
+        const manifest = buildDccIssuerWorkloadPackage('did:example:curator');
+        plan.execution = {
+            components: manifest.components,
+            secretRefs: manifest.secretRefs,
+            config: {},
+        };
+        const hash = (workload: WorkloadPlan): string =>
+            buildPlanFromMaterialization({
+                scopeSummary: 'DCC',
+                planRevision: 1,
+                bindings: [],
+                infrastructureEffects: [],
+                targets: [
+                    {
+                        targetType: 'WORKLOAD_DEPLOYMENT',
+                        listingId: '',
+                        versionId: '',
+                        scopes: [],
+                        consentTiers: [],
+                        config: {},
+                        entitlementRequirements: [],
+                        workload,
+                    },
+                ],
+            }).planHash;
+        const original = hash(plan);
+        const mutations: Array<(candidate: WorkloadPlan) => void> = [
+            (candidate): void => {
+                candidate.execution!.components[0]!.user = '999:999';
+            },
+            (candidate): void => {
+                candidate.execution!.components[0]!.tmpfs = [{ path: '/tmp', sizeMiB: 64 }];
+            },
+            (candidate): void => {
+                candidate.execution!.components[0]!.env = [
+                    {
+                        name: 'SERVICE',
+                        source: { kind: 'endpoint', endpointId: 'status', part: 'hostport' },
+                    },
+                ];
+            },
+            (candidate): void => {
+                candidate.execution!.secretRefs[0]!.provisioning = {
+                    kind: 'generate',
+                    format: 'ed25519-seed-multibase',
+                };
+            },
+        ];
+        for (const mutate of mutations) {
+            const candidate = structuredClone(plan);
+            mutate(candidate);
+            expect(hash(candidate)).not.toBe(original);
+        }
+    });
     it('does not make the intent READY until a healthy observation', async (): Promise<void> => {
         const intent = await approvedIntent(false);
         const applying = await reconcileInstallIntent(intent.intentId);

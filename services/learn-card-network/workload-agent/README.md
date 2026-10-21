@@ -96,9 +96,10 @@ These local URLs are **not public Internet status publication**.
 
 All services have `cap_drop: [ALL]`, `no-new-privileges`, read-only root filesystems,
 resource limits, declared dependency order, explicit volumes/tmpfs and disabled
-image Docker HEALTHCHECKs. `/tmp` is a bounded writable tmpfs. Schema v1 currently
-has **no user, writable-root opt-out or secret-file-support field**. The agent does
-not invent them: an image's declared default USER remains effective, and images
+image Docker HEALTHCHECKs. Writable tmpfs mounts are emitted only when declared:
+`tmpfs: [{ path: '/tmp', sizeMiB: 64 }]` (at most 16, each 1–1024 MiB).
+Optional `user` accepts numeric non-root uid[:gid] only. Without it the image's
+default USER remains effective. There is no writable-root opt-out or secret-file-support field. Images
 such as Mongo must declare every required writable volume (often both `/data/db`
 and `/data/configdb`). Some images requiring root/chown will be incompatible with
 all capabilities dropped. Those failures must not be worked around with privilege.
@@ -111,6 +112,7 @@ Desktop. Directories are 0700 and files 0600. Logical values live under
 recovery state and component `.env` files to prevent filename collisions.
 
 Generate: token = 32 random bytes base64url; ed25519 seed = 32 random bytes hex;
+`ed25519-seed-multibase` = base58btc multibase of `[0, 32, ...32 random bytes]`;
 password = 24 random base64url characters. Generation is exclusive and idempotent;
 existing files are never regenerated. Missing existing-reference files fail
 `SECRET_MISSING`. Values must be nonempty single-line text. Symlink secret files,

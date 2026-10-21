@@ -75,11 +75,17 @@ export const parseSpec = (json: string, config: AgentConfig): Spec => {
                 throw new AgentError('RESOURCE_CEILING_EXCEEDED');
             if (component.dependsOn.some((id): boolean => !ids.has(id)))
                 throw new AgentError('SPEC_INVALID');
-            for (const volume of component.volumes) {
+            const mountPaths = [
+                ...component.volumes.map((volume): string => volume.mountPath),
+                ...(component.tmpfs ?? []).map((mount): string => mount.path),
+            ];
+            if (new Set(mountPaths).size !== mountPaths.length)
+                throw new AgentError('MOUNT_FORBIDDEN');
+            for (const mountPath of mountPaths) {
                 if (
-                    volume.mountPath === '/' ||
-                    /(^|\/)\.\.?($|\/)/.test(volume.mountPath) ||
-                    /^\/(proc|sys|dev|etc|run)(\/|$)/.test(volume.mountPath)
+                    mountPath === '/' ||
+                    /(^|\/)\.\.?($|\/)/.test(mountPath) ||
+                    /^\/(proc|sys|dev|etc|run)(\/|$)/.test(mountPath)
                 )
                     throw new AgentError('MOUNT_FORBIDDEN');
             }
@@ -163,7 +169,9 @@ export const render = (
                         ? url.href
                         : source.part === 'host'
                           ? url.hostname
-                          : url.port;
+                          : source.part === 'hostport'
+                            ? url.host
+                            : url.port;
             }
             if (source.kind === 'config') {
                 let value: unknown = spec.config;
@@ -178,7 +186,9 @@ export const render = (
             }
         }
         const mounts: Record<string, unknown>[] = [];
-        const tmpfs: string[] = ['/tmp:rw,noexec,nosuid,size=64m'];
+        const tmpfs: string[] = (component.tmpfs ?? []).map(
+            (mount): string => `${mount.path}:rw,noexec,nosuid,size=${mount.sizeMiB}m`
+        );
         for (const volume of component.volumes) {
             if (volume.persistent) {
                 const key = safeName(volume.name);
@@ -203,6 +213,7 @@ export const render = (
         services[safeName(component.id)] = {
             image: component.image,
             platform: component.platform,
+            ...(component.user === undefined ? {} : { user: component.user }),
             container_name: componentName(deployment, component.id),
             labels: {
                 'org.learncard.workload.deployment': deployment,
@@ -213,7 +224,7 @@ export const render = (
             depends_on: component.dependsOn.map(safeName),
             ports: published,
             volumes: mounts,
-            tmpfs,
+            ...(tmpfs.length ? { tmpfs } : {}),
             security_opt: ['no-new-privileges:true'],
             cap_drop: ['ALL'],
             read_only: true,
