@@ -4,6 +4,7 @@ import numeral from 'numeral';
 import * as m from '../../paraglide/messages.js';
 
 import DotIcon from 'learn-card-base/svgs/DotIcon';
+import { QualificationsIconSolidColor } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { IonSkeletonText, IonSpinner } from '@ionic/react';
@@ -25,6 +26,7 @@ const CATEGORY_TITLE: Partial<Record<CredentialCategoryEnum, () => string>> = {
     [CredentialCategoryEnum.skill]: m['wallet.categories.skills'],
     [CredentialCategoryEnum.socialBadge]: m['wallet.categories.socialBadges'],
     [CredentialCategoryEnum.achievement]: m['wallet.categories.achievements'],
+    [CredentialCategoryEnum.qualifications]: m['wallet.categories.qualifications'],
     [CredentialCategoryEnum.learningHistory]: m['wallet.categories.studies'],
     [CredentialCategoryEnum.accomplishment]: m['wallet.categories.portfolio'],
     [CredentialCategoryEnum.accommodation]: m['wallet.categories.assistance'],
@@ -51,17 +53,26 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
     loading,
 }) => {
     const { categoryId: categoryType } = walletPageItem;
-    const { getThemedCategory, getStyleSet, colors: themeColors } = useTheme();
+    const { theme, getThemedCategory, getStyleSet, colors: themeColors } = useTheme();
     const { icons, colors } = getThemedCategory(categoryType);
 
-    const { IconWithShape, Icon } = icons;
+    const { IconWithShape: themedIconWithShape, Icon } = icons;
+    const IconWithShape =
+        theme.id === 'formal' && categoryType === CredentialCategoryEnum.qualifications
+            ? QualificationsIconSolidColor
+            : themedIconWithShape;
     const { primaryColor, secondaryColor, indicatorColor, borderColor } = colors;
 
     const passportCardBgColor = themeColors?.defaults?.passportCardBgColor;
     const passportCardTextColor = themeColors?.defaults?.passportCardTextColor;
+    // The section-standard orange-500 badge needs dark text for readable contrast.
+    const countTextColor =
+        theme.id === 'colorful' && categoryType === CredentialCategoryEnum.qualifications
+            ? 'text-grayscale-900'
+            : 'text-white';
 
     let metaData: React.ReactNode | null = (
-        <p className="text-white font-poppins font-semibold text-base">
+        <p className={`${countTextColor} font-poppins font-semibold text-base`}>
             {numeral(count).format('0a')}
         </p>
     );
@@ -90,12 +101,14 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
     }
 
     const styles = getStyleSet(StyleSetEnum.wallet);
+    const categoryTitle = CATEGORY_TITLE[categoryType]?.() ?? walletPageItem.labels.plural;
 
     return (
-        <div
+        <button
+            type="button"
             key={walletPageItem.categoryId}
-            className="w-full flex items-center justify-center flex-1"
-            role="button"
+            aria-label={categoryTitle}
+            className="w-full flex items-center justify-center flex-1 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-[25px]"
             onClick={() => handleClickSquare(categoryType)}
         >
             <div
@@ -114,11 +127,11 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
 
                 <div className="w-full flex items-center justify-center flex-col relative">
                     <p
-                        className={`font-poppins text-[18px] font-[600] xs:text-[14px] text-center ${
+                        className={`font-poppins text-[18px] font-semibold xs:text-[14px] text-center ${
                             passportCardTextColor ?? 'text-grayscale-900'
                         }`}
                     >
-                        {CATEGORY_TITLE[categoryType]?.() ?? walletPageItem.labels.plural}
+                        {categoryTitle}
                     </p>
                     {/* TODO: ADD SKELETON LOADER HERE ... i want the skeleton loader to retain the same width and height as the div + color but with a skeleton loader */}
                     <div
@@ -135,7 +148,12 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                             <div className="relative w-full h-full rounded-full overflow-hidden">
                                 <IonSkeletonText className="h-full m-0" animated />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <IonSpinner name="crescent" className="text-white h-5 w-5" />
+                                    <IonSpinner
+                                        name="crescent"
+                                        role="status"
+                                        aria-label={m['common.loading']()}
+                                        className={`${countTextColor} h-5 w-5`}
+                                    />
                                 </div>
                             </div>
                         ) : (
@@ -144,7 +162,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                     </div>
                 </div>
             </div>
-        </div>
+        </button>
     );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getField, setField } from './credentialEditFields';
 import { ModalTypes, useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import DatePickerInput from '../../../date-picker/DatePickerInput';
@@ -11,41 +12,14 @@ import * as m from '../../../../paraglide/messages.js';
 
 type Props = {
     credential: ParsedCredential;
-    onSave: (editedVc: any) => void;
+    onSave: (editedVc: Record<string, unknown>) => void;
     onBack: () => void;
 };
 
-/** Read a nested VC path, returning '' for missing values. Handles array values (e.g. achievementType: ["Certificate"]) */
-const getField = (vc: any, path: string): string => {
-    const value = path.split('.').reduce((obj, key) => obj?.[key], vc);
-    if (typeof value === 'string') return value;
-    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') return value[0];
-    return '';
-};
-
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-
-/** Set a nested path on a deep-cloned VC. Empty string removes the key. */
-const setField = (vc: any, path: string, value: string): any => {
-    const clone = JSON.parse(JSON.stringify(vc));
-    const keys = path.split('.');
-    if (keys.some(k => UNSAFE_KEYS.has(k))) return clone;
-    let obj = clone;
-    for (let i = 0; i < keys.length - 1; i++) {
-        if (!obj[keys[i]]) obj[keys[i]] = {};
-        obj = obj[keys[i]];
-    }
-    const lastKey = keys[keys.length - 1];
-    if (value === '') {
-        delete obj[lastKey];
-    } else {
-        obj[lastKey] = value;
-    }
-    return clone;
-};
-
 export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack }) => {
-    const [vc, setVc] = useState<any>(() => JSON.parse(JSON.stringify(credential.vc)));
+    const [vc, setVc] = useState<Record<string, unknown>>(() =>
+        JSON.parse(JSON.stringify(credential.vc))
+    );
     const { colors } = useTheme();
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
@@ -54,7 +28,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
     const name = getField(vc, 'credentialSubject.achievement.name');
 
     const updateField = (path: string, value: string) => {
-        setVc((prev: any) => {
+        setVc((prev: Record<string, unknown>) => {
             let updated = setField(prev, path, value);
             // Sync top-level name from achievement name (card display reads vc.name)
             if (path === 'credentialSubject.achievement.name') {
@@ -97,7 +71,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
             </div>
 
             {/* Form */}
-            <div className="w-full bg-white shadow-button-bottom px-6 pt-4 pb-6 rounded-[15px] space-y-4">
+            <div className="w-full bg-white shadow-button-bottom px-6 pt-4 pb-6 rounded-[15px] space-y-v3-4">
                 {/* Credential Name */}
                 <div>
                     <label className="block text-sm font-semibold text-grayscale-700 mb-1">
@@ -111,7 +85,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                             updateField('credentialSubject.achievement.name', e.target.value)
                         }
                         placeholder={m['passport.buildMyLearnCard.editView.namePlaceholder']()}
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400"
+                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:border-grayscale-400"
                     />
                 </div>
 
@@ -135,7 +109,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                         placeholder={m[
                             'passport.buildMyLearnCard.editView.descriptionPlaceholder'
                         ]()}
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400 resize-y"
+                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:border-grayscale-400 resize-y"
                     />
                 </div>
 
@@ -168,7 +142,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                                             />,
                                             {
                                                 sectionClassName:
-                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
+                                                    'bg-transparent! border-none! shadow-none! rounded-none!',
                                             },
                                             {
                                                 desktop: ModalTypes.Center,
@@ -239,7 +213,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                             )
                         }
                         placeholder={m['passport.buildMyLearnCard.editView.criteriaPlaceholder']()}
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400 resize-y"
+                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:border-grayscale-400 resize-y"
                     />
                 </div>
 

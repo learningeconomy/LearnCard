@@ -66,6 +66,7 @@ export const buildTeacherStudentContract = ({
                         Accommodation: { required: false, defaultEnabled: true },
                         Accomplishment: { required: false, defaultEnabled: true },
                         'Learning History': { required: false, defaultEnabled: true },
+                        Qualifications: { required: false, defaultEnabled: false },
                         Achievement: { required: false, defaultEnabled: true },
                         'Social Badge': { required: false, defaultEnabled: true },
                         'learning-pathway': { required: false, defaultEnabled: true },

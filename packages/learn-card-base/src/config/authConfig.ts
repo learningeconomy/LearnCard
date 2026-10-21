@@ -1,34 +1,23 @@
-import { getLogger } from '../logging/logger';
-const log = getLogger('auth-config');
 /**
- * Auth Configuration
+ * Auth configuration is resolved from validated TenantConfig during application bootstrap.
  *
- * Environment-driven configuration for the auth coordinator.
- * Uses a **split-precedence model** based on the category of setting:
- *
- * Provider / strategy selection (what auth system to use):
- *   tenant config → ENV var → default
- *   Config wins so tenant identity can't be accidentally overridden by a stale .env.
- *
- * Operational values (infrastructure URLs, keys, feature flags):
- *   ENV var → tenant config → default
- *   ENV wins so deployments can customize infra (local dev, staging, prod) without
- *   touching config files. Self-hosters get standard 12-factor compliance.
- *
- * Environment Variables:
- *   VITE_AUTH_PROVIDER / REACT_APP_AUTH_PROVIDER                             — 'firebase' (default) [config wins]
- *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER                  — 'sss' (default)      [config wins]
- *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                           — providerConfig.sss.serverUrl               [ENV wins]
- *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE     — providerConfig.sss.enableEmailBackupShare   [ENV wins]
- *   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS / REACT_APP_REQUIRE_EMAIL_FOR_PHONE_USERS — providerConfig.sss.requireEmailForPhoneUsers [ENV wins]
- *   VITE_WEB3AUTH_CLIENT_ID / VITE_WEB3AUTH_NETWORK / VITE_WEB3AUTH_VERIFIER_ID / VITE_WEB3AUTH_RPC_TARGET
- *     — providerConfig.web3Auth.*  [ENV wins]
- *
- * For self-hosting, set these in your .env file or deployment environment.
+ * One exception: the escrow enclave trust policy (`VITE_ESCROW_ENCLAVE_MODE`,
+ * `VITE_ESCROW_ENCLAVE_PUBLIC_KEYS`) may be supplied through `import.meta.env`
+ * so local / preview builds can pin a software enclave without editing tenant
+ * JSON. Explicit tenant values always take precedence over these fallbacks, and
+ * this is the only place in `learn-card-base` that reads `import.meta.env`, so
+ * the package stays buildable outside Vite as long as the reference is optional.
  */
 
 import type { AuthProviderType } from '../auth-coordinator/types';
 import type { TenantConfig } from './tenantConfig';
+import { tenantKeycloakConfigSchema, type TenantKeycloakConfig } from './tenantConfigSchema';
+import type { SSSStrategyConfig, EscrowAttestationPolicy } from '@learncard/sss-key-manager';
+import { getLogger } from '../logging/logger';
+
+const log = getLogger('auth-config');
+
+export type DeploymentStage = TenantConfig['stage'];
 
 export interface AuthConfig {
     /** Which auth provider to use (open string matching providerRegistry factories) */
@@ -48,7 +37,31 @@ export interface AuthConfig {
      * Use the typed helpers (`getSSSConfig()`, etc.) for ergonomic access.
      */
     providerConfig: Record<string, Record<string, unknown>>;
+
+    /** The active tenant's id, used by the escrow production guard (see `isProductionTenant`). */
+    tenantId?: string;
+
+    /**
+     * The deploy stage ('local' | 'staging' | 'production'), bridged from `TenantConfig.stage`.
+     * Used by the escrow production guard (see `getEscrowStrategyConfig`) to tell a staging
+     * deploy apart from production — both build in Vite "production" mode, so `stage` (not
+     * `isProductionEnvironment()`) is the signal that distinguishes them. Defaults to
+     * 'production' so an isolated consumer that never called `setAuthConfigFromTenant` fails
+     * closed.
+     */
+    stage?: DeploymentStage;
+
+    /** Staged rollout percentage (0-100) for automatic escrow enrollment. See `escrowRollout.ts`. */
+    escrowRolloutPercent?: number;
+
+    /** SHA-256 hex hashes of allowlisted stable user identifiers. See `escrowRollout.ts`. */
+    escrowRolloutAllowlist?: string[];
 }
+
+type NitroEscrowPolicy = Extract<EscrowAttestationPolicy, { mode: 'nitro' }>;
+
+/** A single nitro measurement pin — either a full PCR0/1/2 tuple or a legacy image-only pin. */
+export type EscrowMeasurementPin = NitroEscrowPolicy['pinnedMeasurements'][number];
 
 /**
  * Typed SSS key-derivation strategy config.
@@ -56,9 +69,38 @@ export interface AuthConfig {
  */
 export interface SSSConfig {
     serverUrl: string;
+    escrowRelayPublicKey: string;
+    escrowRelayKeyId: string;
+    escrowEnclaveMode: 'off' | 'software' | 'nitro';
+    escrowEnclavePublicKeys: string[];
+    escrowEnclaveMeasurements: EscrowMeasurementPin[];
+    escrowEnclaveRootSha256?: string;
+    escrowEnclaveMaxAgeMs?: number;
     enableEmailBackupShare: boolean;
     requireEmailForPhoneUsers: boolean;
 }
+
+// -----------------------------------------------------------------
+// Escrow production guard
+// -----------------------------------------------------------------
+
+/**
+ * Tenants deployed to production. Kept as an explicit allowlist (rather than derived from
+ * `environments/*` at runtime, which isn't available to a browser package) — add a tenant here
+ * when it ships a production `environments/<tenant>/config.json` that isn't a local-only stage.
+ */
+export const PRODUCTION_TENANT_IDS: ReadonlySet<string> = new Set([
+    'learncard',
+    'vetpass',
+    'scoutpass',
+]);
+
+export const isProductionTenant = (tenantId: string | undefined): boolean =>
+    !!tenantId && PRODUCTION_TENANT_IDS.has(tenantId);
+
+/** True only for a pin that can ever match an attestation (see `escrow-nitro-attestation.ts`). */
+export const isPcrPinnedMeasurement = (pin: EscrowMeasurementPin): boolean =>
+    typeof pin.pcr0 === 'string' && typeof pin.pcr1 === 'string' && typeof pin.pcr2 === 'string';
 
 // -----------------------------------------------------------------
 // TenantConfig override bridge
@@ -71,10 +113,7 @@ let _authConfigOverrides: Partial<AuthConfig> | null = null;
  *
  * Call this once at app boot, before the auth coordinator initializes.
  *
- * Provider/strategy selection from the tenant config takes priority over
- * environment variables. Operational values (URLs, keys) are overridable
- * by environment variables — see the split-precedence model in the module
- * header for details.
+ * The validated tenant config is the sole deployment-specific auth source.
  */
 export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
     // Build providerConfig from the tenant's provider- and strategy-specific blocks.
@@ -107,12 +146,15 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
         authProvider: tenant.auth.provider as AuthProviderType,
         keyDerivation: tenant.auth.keyDerivation,
         providerConfig,
+        tenantId: tenant.tenantId,
+        stage: tenant.stage,
+        escrowRolloutPercent: tenant.features.escrowRolloutPercent,
+        escrowRolloutAllowlist: tenant.features.escrowRolloutAllowlist,
     };
 };
 
 /**
- * Set arbitrary partial overrides on the auth config.
- * Values set here take priority over environment variables.
+ * Set arbitrary partial overrides for tests or embedding hosts that provide validated config.
  */
 export const setAuthConfigOverrides = (overrides: Partial<AuthConfig>): void => {
     _authConfigOverrides = { ...(_authConfigOverrides ?? {}), ...overrides };
@@ -125,149 +167,50 @@ export const clearAuthConfigOverrides = (): void => {
     _authConfigOverrides = null;
 };
 
-// -----------------------------------------------------------------
-// Environment variable helpers
-// -----------------------------------------------------------------
-
-const getEnvVar = (key: string): string | undefined => {
-    // Vite exposes VITE_* env vars from .env files via import.meta.env
-    try {
-        const metaEnv = (import.meta as unknown as { env?: Record<string, string> }).env;
-
-        if (metaEnv) {
-            const val = metaEnv[key];
-            if (val !== undefined) return val;
-        }
-    } catch {
-        // import.meta may not be available in all environments
-    }
-
-    // CRA / Node-style
-    if (typeof process !== 'undefined' && process.env) {
-        const val = process.env[key];
-        if (val !== undefined) return val;
-    }
-
-    // Runtime injection (e.g. Docker / Vite runtime config)
-    if (typeof window !== 'undefined' && (window as Record<string, unknown>).__ENV__) {
-        const val = (window as Record<string, unknown> & { __ENV__: Record<string, string> })
-            .__ENV__[key];
-        if (val !== undefined) return val;
-    }
-
-    return undefined;
-};
-
 /**
- * Read an env var with Vite and CRA prefix fallback.
- * e.g. readEnv('AUTH_PROVIDER') checks VITE_AUTH_PROVIDER then REACT_APP_AUTH_PROVIDER.
- */
-const readEnv = (suffix: string, legacySuffix?: string): string | undefined => {
-    return (
-        getEnvVar(`VITE_${suffix}`) ?? getEnvVar(`REACT_APP_${legacySuffix ?? suffix}`) ?? undefined
-    );
-};
-
-/**
- * Get the auth configuration from environment variables and tenant overrides.
+ * Get the current auth configuration.
  *
- * @example
- * ```ts
- * const config = getAuthConfig();
- * log.debug(config.authProvider);   // 'firebase'
- * log.debug(config.keyDerivation);  // 'sss'
- *
- * const sss = getSSSConfig();
- * log.debug(sss.serverUrl);         // 'http://localhost:5100/api'
- * ```
+ * TenantConfig overrides are installed before application auth starts. The defaults below
+ * keep isolated package consumers and tests deterministic without introducing another
+ * configuration source.
  */
 export const getAuthConfig = (): AuthConfig => {
-    const authProvider: AuthProviderType =
-        _authConfigOverrides?.authProvider ??
-        readEnv('AUTH_PROVIDER', 'AUTH_PROVIDER') ??
-        'firebase';
+    const providerConfig = _authConfigOverrides?.providerConfig
+        ? { ..._authConfigOverrides.providerConfig }
+        : {};
+    const sss = providerConfig.sss ?? {};
+    const env = import.meta.env;
+    const enclaveMode = env?.VITE_ESCROW_ENCLAVE_MODE;
 
-    const keyDerivation: string =
-        _authConfigOverrides?.keyDerivation ??
-        readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') ??
-        'sss';
-
-    // Build providerConfig — start with tenant config, then overlay ENV vars.
-    //
-    // Split-precedence: ENV vars override operational values (URLs, keys,
-    // booleans) within each provider block so that deployments can customise
-    // infra without touching config files. Provider/strategy *selection*
-    // (authProvider, keyDerivation) is handled above and still config-wins.
-    const providerConfig: Record<
-        string,
-        Record<string, unknown>
-    > = _authConfigOverrides?.providerConfig ? { ..._authConfigOverrides.providerConfig } : {};
-
-    // SSS — ENV wins over tenant config for each operational value
-    {
-        const tenantSss = (providerConfig.sss ?? {}) as Record<string, unknown>;
-
-        const serverUrl =
-            readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') ??
-            (tenantSss.serverUrl as string | undefined) ??
-            'http://localhost:5100/api';
-
-        const enableEmailBackupShareEnv = readEnv(
-            'ENABLE_EMAIL_BACKUP_SHARE',
-            'ENABLE_EMAIL_BACKUP_SHARE'
-        );
-        const enableEmailBackupShare =
-            enableEmailBackupShareEnv !== undefined
-                ? enableEmailBackupShareEnv !== 'false'
-                : (tenantSss.enableEmailBackupShare as boolean | undefined) ?? true;
-
-        const requireEmailEnv = readEnv(
-            'REQUIRE_EMAIL_FOR_PHONE_USERS',
-            'REQUIRE_EMAIL_FOR_PHONE_USERS'
-        );
-        const requireEmailForPhoneUsers =
-            requireEmailEnv !== undefined
-                ? requireEmailEnv !== 'false'
-                : (tenantSss.requireEmailForPhoneUsers as boolean | undefined) ?? true;
-
-        providerConfig.sss = {
-            ...tenantSss,
-            serverUrl,
-            enableEmailBackupShare,
-            requireEmailForPhoneUsers,
-        };
-    }
-
-    // Web3Auth — ENV wins over tenant config for each operational value
-    {
-        const tenantW3A = (providerConfig.web3Auth ?? {}) as Record<string, unknown>;
-
-        const clientId =
-            readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') ??
-            (tenantW3A.clientId as string | undefined) ??
-            '';
-        const network =
-            readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') ??
-            (tenantW3A.network as string | undefined) ??
-            '';
-        const verifierId =
-            readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') ??
-            (tenantW3A.verifierId as string | undefined) ??
-            '';
-        const rpcTarget =
-            readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') ??
-            (tenantW3A.rpcTarget as string | undefined) ??
-            'https://cloudflare-eth.com';
-
-        if (clientId || network || verifierId || Object.keys(tenantW3A).length > 0) {
-            providerConfig.web3Auth = { ...tenantW3A, clientId, network, verifierId, rpcTarget };
-        }
-    }
+    providerConfig.sss = {
+        ...sss,
+        serverUrl: (sss.serverUrl as string | undefined) ?? 'http://localhost:5100/api',
+        escrowRelayPublicKey: (sss.escrowRelayPublicKey as string | undefined) ?? '',
+        escrowRelayKeyId: (sss.escrowRelayKeyId as string | undefined) ?? '',
+        escrowEnclaveMode:
+            sss.escrowEnclaveMode ??
+            (enclaveMode === 'software' || enclaveMode === 'nitro' ? enclaveMode : 'off'),
+        escrowEnclavePublicKeys:
+            sss.escrowEnclavePublicKeys ??
+            env?.VITE_ESCROW_ENCLAVE_PUBLIC_KEYS?.split(',')
+                .map((key: string) => key.trim())
+                .filter(Boolean) ??
+            [],
+        escrowEnclaveMeasurements: sss.escrowEnclaveMeasurements ?? [],
+        escrowEnclaveRootSha256: sss.escrowEnclaveRootSha256 as string | undefined,
+        escrowEnclaveMaxAgeMs: sss.escrowEnclaveMaxAgeMs as number | undefined,
+        enableEmailBackupShare: (sss.enableEmailBackupShare as boolean | undefined) ?? true,
+        requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean | undefined) ?? true,
+    };
 
     return {
-        authProvider,
-        keyDerivation,
+        authProvider: _authConfigOverrides?.authProvider ?? 'firebase',
+        keyDerivation: _authConfigOverrides?.keyDerivation ?? 'sss',
         providerConfig,
+        tenantId: _authConfigOverrides?.tenantId,
+        stage: _authConfigOverrides?.stage ?? 'production',
+        escrowRolloutPercent: _authConfigOverrides?.escrowRolloutPercent ?? 0,
+        escrowRolloutAllowlist: _authConfigOverrides?.escrowRolloutAllowlist ?? [],
     };
 };
 
@@ -283,9 +226,23 @@ export const getSSSConfig = (): SSSConfig => {
 
     return {
         serverUrl: (sss.serverUrl as string) ?? 'http://localhost:5100/api',
+        escrowRelayPublicKey: (sss.escrowRelayPublicKey as string) ?? '',
+        escrowRelayKeyId: (sss.escrowRelayKeyId as string) ?? '',
+        escrowEnclaveMode: (sss.escrowEnclaveMode as SSSConfig['escrowEnclaveMode']) ?? 'off',
+        escrowEnclavePublicKeys: (sss.escrowEnclavePublicKeys as string[]) ?? [],
+        escrowEnclaveMeasurements:
+            (sss.escrowEnclaveMeasurements as SSSConfig['escrowEnclaveMeasurements']) ?? [],
+        escrowEnclaveRootSha256: sss.escrowEnclaveRootSha256 as string | undefined,
+        escrowEnclaveMaxAgeMs: sss.escrowEnclaveMaxAgeMs as number | undefined,
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };
+};
+
+/** Read the validated Keycloak block supplied by the tenant, when configured. */
+export const getKeycloakConfig = (): TenantKeycloakConfig | undefined => {
+    const { keycloak } = getAuthConfig().providerConfig;
+    return keycloak ? tenantKeycloakConfigSchema.parse(keycloak) : undefined;
 };
 
 /**
@@ -293,6 +250,70 @@ export const getSSSConfig = (): SSSConfig => {
  */
 export const shouldUseSSS = (): boolean => {
     return getAuthConfig().keyDerivation === 'sss';
+};
+
+/** Overrides for `getEscrowStrategyConfig`'s production guard — for tests only. */
+export interface EscrowProdGuardOptions {
+    /** Defaults to `getAuthConfig().tenantId`. */
+    tenantId?: string;
+    /**
+     * Defaults to `getAuthConfig().stage`. Anything other than exactly 'staging' or 'local'
+     * (including an unrecognized string or omission) is treated as 'production' — fail-closed.
+     */
+    stage?: DeploymentStage;
+}
+
+/**
+ * Map the tenant's explicit trust policy to the escrow strategy configuration.
+ *
+ * Two fail-closed guards apply before a policy is returned:
+ *  - `nitro` with zero PCR-tuple pins (empty, or only legacy `{ imageSha384 }` pins) disables
+ *    escrow entirely, since no attestation could ever match.
+ *  - `software` is never allowed for a production tenant on a production deploy — the
+ *    host-trusted software enclave must not run in production; it is downgraded to `off`
+ *    instead. Staging deliberately runs it (see D12 in `services/escrow-enclave-app/SECURITY.md`),
+ *    so the guard keys on the deploy *stage*, not the Vite build mode (staging is also built in
+ *    Vite "production" mode).
+ * Both guards log via `log.error` so a misconfigured tenant is loud, not silent.
+ */
+export const getEscrowStrategyConfig = (
+    sss: SSSConfig,
+    options: EscrowProdGuardOptions = {}
+): SSSStrategyConfig['escrow'] => {
+    if (sss.escrowEnclaveMode === 'off') return undefined;
+
+    const tenantId = options.tenantId ?? getAuthConfig().tenantId;
+    const stage = options.stage ?? getAuthConfig().stage;
+    const isProductionDeploy = stage !== 'staging' && stage !== 'local';
+
+    if (sss.escrowEnclaveMode === 'software') {
+        if (isProductionDeploy && isProductionTenant(tenantId)) {
+            log.error('escrow.software-mode.blocked-in-production', { tenantId, stage });
+            return undefined;
+        }
+
+        return {
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: sss.escrowEnclavePublicKeys },
+        };
+    }
+
+    const pcrPins = sss.escrowEnclaveMeasurements.filter(isPcrPinnedMeasurement);
+
+    if (pcrPins.length === 0) {
+        log.error('escrow.nitro-mode.no-pcr-pins', { tenantId });
+        return undefined;
+    }
+
+    return {
+        enabled: true,
+        attestation: {
+            mode: 'nitro',
+            pinnedMeasurements: sss.escrowEnclaveMeasurements,
+            rootCertificateSha256: sss.escrowEnclaveRootSha256,
+            maxAgeMs: sss.escrowEnclaveMaxAgeMs,
+        },
+    };
 };
 
 /**
@@ -343,3 +364,11 @@ export const isEmailBackupShareEnabled = (): boolean => {
 };
 
 export default getAuthConfig;
+
+/**
+ * Whether emailed recovery keys can be sent: the client must encrypt them to the
+ * relay's pinned public key, so without one the Email method cannot work.
+ */
+export const isEmailRelayConfigured = (sss: SSSConfig = getSSSConfig()): boolean =>
+    sss.escrowRelayPublicKey.trim().length > 0 &&
+    /^[A-Za-z0-9._-]{1,128}$/.test(sss.escrowRelayKeyId.trim());

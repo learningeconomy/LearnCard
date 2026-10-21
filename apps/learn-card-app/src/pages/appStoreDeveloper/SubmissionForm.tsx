@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { IonPage, IonContent, IonSpinner } from '@ionic/react';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
@@ -18,7 +18,11 @@ import { AppStoreHeader } from './components/AppStoreHeader';
 import { ExitConfirmDialog } from './components/ExitConfirmDialog';
 import { PreviewConfirmDialog } from './components/PreviewConfirmDialog';
 import { AppPreviewModal } from './components/AppPreviewModal';
-import type { AppStoreListingCreate, ExtendedAppStoreListing } from './types';
+import type { AppStoreListingCreate, ExtendedAppStoreListing, LaunchType } from './types';
+import { LaunchTypeValidator } from '@learncard/types';
+import { getAppStatusPath } from './apps/myApps';
+import type { CapturedAppManifest } from '@learncard/partner-connect-core';
+import { EmbedIframeModal } from '../launchPad/EmbedIframeModal';
 
 const STEPS = [
     {
@@ -45,18 +49,32 @@ const STEPS = [
 
 interface LocationState {
     listing?: ExtendedAppStoreListing;
+    capturedManifest?: CapturedAppManifest;
 }
 
 /**
  * SubmissionForm - Create or edit an app listing
  * Routes:
  *   - /app-store/developer/integrations/:integrationId/apps/new (create)
+ *   - /app-store/developer/apps/new?type=DIRECT_LINK (create; project made on first save)
  *   - /app-store/developer/integrations/:integrationId/apps/:listingId (edit)
  */
 const SubmissionForm: React.FC = () => {
     const history = useHistory();
     const location = useLocation<LocationState>();
-    const { integrationId, listingId } = useParams<{ integrationId: string; listingId?: string }>();
+    const { integrationId: routeIntegrationId, listingId } = useParams<{
+        integrationId?: string;
+        listingId?: string;
+    }>();
+    const [createdIntegrationId, setCreatedIntegrationId] = useState<string | null>(null);
+    const creatingIntegrationRef = useRef<Promise<string> | null>(null);
+    const integrationId = routeIntegrationId ?? createdIntegrationId ?? undefined;
+    const presetLaunchType = useMemo((): LaunchType | undefined => {
+        const parsed = LaunchTypeValidator.safeParse(
+            new URLSearchParams(location.search).get('type')
+        );
+        return parsed.success ? parsed.data : undefined;
+    }, [location.search]);
 
     const isEditMode = !!listingId;
 
@@ -72,8 +90,14 @@ const SubmissionForm: React.FC = () => {
         description: mDynamic(s.descriptionKey),
     }));
 
-    const { useListing, useCreateListing, useUpdateListing, useSubmitForReview } =
-        useDeveloperPortal();
+    const {
+        useListing,
+        useCreateListing,
+        useUpdateListing,
+        useSubmitForReview,
+        useCreateIntegration,
+    } = useDeveloperPortal();
+    const createIntegrationMutation = useCreateIntegration();
     const { data: fetchedListing, isLoading: isLoadingListing } = useListing(
         listingFromState ? null : listingId || null // Only fetch if not passed via state
     );
@@ -88,7 +112,7 @@ const SubmissionForm: React.FC = () => {
     const isPendingReview = existingListing?.app_listing_status === 'PENDING_REVIEW';
 
     const initialFormData = useMemo<Partial<AppStoreListingCreate>>(() => {
-        if (!existingListing) return {};
+        if (!existingListing) return presetLaunchType ? { launch_type: presetLaunchType } : {};
         const listing = existingListing as ExtendedAppStoreListing;
         return {
             display_name: listing.display_name,
@@ -110,7 +134,7 @@ const SubmissionForm: React.FC = () => {
             age_rating: listing.age_rating,
             contact_email: listing.contact_email,
         };
-    }, [existingListing]);
+    }, [existingListing, presetLaunchType]);
 
     const { newModal } = useModal();
     const [currentStep, setCurrentStep] = useState(1);
@@ -133,8 +157,18 @@ const SubmissionForm: React.FC = () => {
         setSubmitError(null);
     }, [initialFormData]);
 
-    const handleFormChange = (newData: Partial<AppStoreListingCreate>) =>
+    const handleFormChange = (newData: Partial<AppStoreListingCreate>) => {
         setFormData(prev => ({ ...prev, ...newData }));
+        // Errors belong to individual fields. Clear a field's old error as soon
+        // as it becomes non-empty rather than leaving stale validation behind.
+        setErrors(prev => {
+            const next = { ...prev };
+            for (const [key, value] of Object.entries(newData)) {
+                if (typeof value === 'string' && value.trim()) delete next[key];
+            }
+            return next;
+        });
+    };
 
     const hasMinimumDataForDraft = useCallback(
         () => !!formData.display_name?.trim(),
@@ -144,16 +178,27 @@ const SubmissionForm: React.FC = () => {
     const validateStep = (step: number): boolean => {
         const newErrors: Record<string, string> = {};
         if (step === 1) {
-            if (!formData.display_name?.trim()) newErrors.display_name = 'Display name is required';
-            if (!formData.tagline?.trim()) newErrors.tagline = 'Tagline is required';
+            if (!formData.display_name?.trim())
+                newErrors.display_name = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.appDetailsStep.displayName'](),
+                });
+            if (!formData.tagline?.trim())
+                newErrors.tagline = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.appDetailsStep.tagline'](),
+                });
             if (!formData.full_description?.trim())
-                newErrors.full_description = 'Description is required';
-            if (!formData.icon_url?.trim()) newErrors.icon_url = 'Icon URL is required';
+                newErrors.full_description = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.appDetailsStep.fullDescription'](),
+                });
+            if (!formData.icon_url?.trim())
+                newErrors.icon_url = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.appDetailsStep.appIcon'](),
+                });
             // Validate email format if provided (optional field)
             if (formData.contact_email?.trim()) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(formData.contact_email.trim())) {
-                    newErrors.contact_email = 'Please enter a valid email address';
+                    newErrors.contact_email = m['arabicFixes.validEmailRequired']();
                 }
             }
         }
@@ -161,22 +206,38 @@ const SubmissionForm: React.FC = () => {
             let config: Record<string, unknown> = {};
             try {
                 config = formData.launch_config_json ? JSON.parse(formData.launch_config_json) : {};
-            } catch {}
+            } catch {
+                // Invalid JSON is reported by the launch config field's own validation.
+            }
             if (
                 ['EMBEDDED_IFRAME', 'SECOND_SCREEN', 'DIRECT_LINK'].includes(
                     formData.launch_type || ''
                 ) &&
                 !config.url
             )
-                newErrors.url = 'URL is required';
+                newErrors.url = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.launchConfigStep.appUrl'](),
+                });
             if (formData.launch_type === 'CONSENT_REDIRECT') {
-                if (!config.contractUri) newErrors.contractUri = 'Contract URI is required';
-                if (!config.redirectUri) newErrors.redirectUri = 'Redirect URI is required';
+                if (!config.contractUri)
+                    newErrors.contractUri = m['arabicFixes.fieldRequired']({
+                        field: m[
+                            'developerPortal.components.consentFlowContractSelector.contractUri'
+                        ](),
+                    });
+                if (!config.redirectUri)
+                    newErrors.redirectUri = m['arabicFixes.fieldRequired']({
+                        field: m['developerPortal.components.launchConfigStep.redirectUri'](),
+                    });
             }
             if (formData.launch_type === 'SERVER_HEADLESS' && !config.webhookUrl)
-                newErrors.webhookUrl = 'Webhook URL is required';
+                newErrors.webhookUrl = m['arabicFixes.fieldRequired']({
+                    field: m['arabicFixes.webhookUrl'](),
+                });
             if (formData.launch_type === 'AI_TUTOR' && !config.aiTutorUrl)
-                newErrors.aiTutorUrl = 'AI Tutor URL is required';
+                newErrors.aiTutorUrl = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.launchConfigStep.aiTutorUrl'](),
+                });
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -187,7 +248,30 @@ const SubmissionForm: React.FC = () => {
     };
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 1));
     const navigateToDashboard = () =>
-        history.push(`/app-store/developer/integrations/${integrationId}/apps`);
+        history.push(
+            routeIntegrationId
+                ? `/app-store/developer/integrations/${routeIntegrationId}`
+                : '/app-store/developer'
+        );
+
+    // Listings started from Your Apps have no project yet; make one, named after
+    // the app, the first time something is saved (never just by opening the form).
+    const ensureIntegrationId = async (): Promise<string> => {
+        if (integrationId) return integrationId;
+        if (!creatingIntegrationRef.current) {
+            creatingIntegrationRef.current = createIntegrationMutation
+                .mutateAsync(formData.display_name?.trim() || 'My App')
+                .then(id => {
+                    setCreatedIntegrationId(id);
+                    return id;
+                })
+                .catch(error => {
+                    creatingIntegrationRef.current = null;
+                    throw error;
+                });
+        }
+        return creatingIntegrationRef.current;
+    };
 
     // Check if form has any changes from initial state
     const hasUnsavedChanges = useCallback(() => {
@@ -258,7 +342,7 @@ const SubmissionForm: React.FC = () => {
             highlights: formData.highlights,
             screenshots: formData.screenshots,
             hero_background_color: formData.hero_background_color,
-        } as ExtendedAppStoreListing);
+        }) as ExtendedAppStoreListing;
 
     const openPreviewModal = () => {
         const mockListing = createMockListingForPreview();
@@ -282,14 +366,10 @@ const SubmissionForm: React.FC = () => {
         openPreviewModal();
     };
 
-    const saveDraft = async (): Promise<boolean> => {
-        if (!integrationId && !isEditMode) {
-            setSubmitError('Please select an integration first');
-            return false;
-        }
+    const saveDraft = async (showSuccessScreen = true): Promise<string | null> => {
         if (!hasMinimumDataForDraft()) {
-            setSubmitError('Please enter at least a display name');
-            return false;
+            setSubmitError(m['arabicFixes.enterDisplayName']());
+            return null;
         }
         setIsSavingDraft(true);
         setSubmitError(null);
@@ -323,18 +403,18 @@ const SubmissionForm: React.FC = () => {
                     updates: listingData,
                 });
                 savedListingId = listingId;
-            } else if (integrationId) {
+            } else {
                 savedListingId = await createMutation.mutateAsync({
-                    integrationId,
+                    integrationId: await ensureIntegrationId(),
                     listing: listingData,
                 });
-            } else {
-                throw new Error('No integration selected');
             }
 
             setIsSavingDraft(false);
-            setIsDraftSaved(true);
-            return true;
+            if (showSuccessScreen) {
+                setIsDraftSaved(true);
+            }
+            return savedListingId;
         } catch (error) {
             setSubmitError(
                 error instanceof Error
@@ -342,20 +422,58 @@ const SubmissionForm: React.FC = () => {
                     : m['developerPortal.submissionForm.failedToSaveDraft']()
             );
             setIsSavingDraft(false);
-            return false;
+            return null;
         }
     };
 
     const handleSaveDraft = async () => {
-        const success = await saveDraft();
-        if (success) setTimeout(() => handleBackToDashboard(), 1500);
+        const savedId = await saveDraft(true);
+        if (savedId) setTimeout(() => handleBackToDashboard(), 1500);
+    };
+
+    const handleTestLive = async () => {
+        let currentListingId = listingId;
+        if (!currentListingId) {
+            const savedId = await saveDraft(false);
+            if (!savedId) return;
+            currentListingId = savedId;
+            history.replace(
+                `/app-store/developer/integrations/${await ensureIntegrationId()}/apps/${savedId}`,
+                location.state
+            );
+        }
+
+        let parsedConfig: { url?: string; [key: string]: unknown } = {};
+        try {
+            parsedConfig = formData.launch_config_json
+                ? JSON.parse(formData.launch_config_json)
+                : {};
+        } catch {
+            // Fall through to the non-embedded preview when the config is not valid JSON.
+        }
+
+        if (formData.launch_type === 'EMBEDDED_IFRAME' && parsedConfig.url) {
+            // ModalTypes.Right + hideButton, matching useAppListingLaunch: the default
+            // Center type collapses EmbedIframeModal's IonPage via `.ion-page-invisible`.
+            newModal(
+                <EmbedIframeModal
+                    embedUrl={parsedConfig.url}
+                    appId={formData.slug || currentListingId}
+                    appName={formData.display_name}
+                    launchConfig={parsedConfig}
+                    isInstalled={true}
+                />,
+                { hideButton: true },
+                { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+            );
+        } else {
+            setSubmitError(
+                'Test Live is only supported for Embedded Iframe apps with a valid URL.'
+            );
+        }
     };
 
     const handleSubmit = async () => {
-        if (!integrationId && !isEditMode) {
-            setSubmitError('Please select an integration first');
-            return;
-        }
         setIsSubmitting(true);
         setSubmitError(null);
         try {
@@ -387,15 +505,22 @@ const SubmissionForm: React.FC = () => {
                     updates: listingData,
                 });
                 newListingId = listingId;
-            } else if (integrationId) {
+            } else {
                 newListingId = await createMutation.mutateAsync({
-                    integrationId,
+                    integrationId: await ensureIntegrationId(),
                     listing: listingData,
                 });
-            } else throw new Error('No integration selected');
+            }
 
             await submitMutation.mutateAsync(newListingId);
             setIsSubmitting(false);
+            if (!routeIntegrationId) {
+                history.push({
+                    pathname: getAppStatusPath(newListingId),
+                    state: { celebrate: true },
+                });
+                return;
+            }
             setIsSubmitted(true);
         } catch (error) {
             setSubmitError(
@@ -422,7 +547,9 @@ const SubmissionForm: React.FC = () => {
     if (isDraftSaved)
         return (
             <IonPage>
-                <AppStoreHeader title={isEditMode ? 'Edit App' : 'Create App'} />
+                <AppStoreHeader
+                    title={isEditMode ? m['arabicFixes.editApp']() : m['arabicFixes.createApp']()}
+                />
                 <IonContent className="ion-padding">
                     <div className="max-w-lg mx-auto text-center py-12">
                         <div
@@ -440,8 +567,8 @@ const SubmissionForm: React.FC = () => {
                             {isPendingReview
                                 ? m['developerPortal.submissionForm.changesSaved']()
                                 : isEditMode
-                                ? m['developerPortal.submissionForm.draftUpdated']()
-                                : m['developerPortal.submissionForm.draftSaved']()}
+                                  ? m['developerPortal.submissionForm.draftUpdated']()
+                                  : m['developerPortal.submissionForm.draftSaved']()}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
                             {isEditMode
@@ -505,7 +632,9 @@ const SubmissionForm: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title={isEditMode ? 'Edit App' : 'Create New App'} />
+            <AppStoreHeader
+                title={isEditMode ? m['arabicFixes.editApp']() : m['arabicFixes.createNewApp']()}
+            />
             <IonContent className="ion-padding">
                 <div className="max-w-2xl mx-auto pb-8">
                     <button
@@ -520,7 +649,7 @@ const SubmissionForm: React.FC = () => {
                     </div>
                     {submitError && (
                         <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                             <div>
                                 <p className="text-sm font-medium text-red-800">
                                     {m['developerPortal.submissionForm.error']()}
@@ -531,11 +660,29 @@ const SubmissionForm: React.FC = () => {
                     )}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 min-h-[450px]">
                         {currentStep === 1 && (
-                            <AppDetailsStep
-                                data={formData}
-                                onChange={handleFormChange}
-                                errors={errors}
-                            />
+                            <>
+                                {location.state?.capturedManifest && (
+                                    <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
+                                        <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-emerald-800">
+                                                Pre-filled from your app
+                                            </p>
+                                            <p className="text-sm text-emerald-700 mt-0.5">
+                                                We've populated these fields based on what we
+                                                captured. You can edit them before submitting.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                                <AppDetailsStep
+                                    data={formData}
+                                    onChange={handleFormChange}
+                                    errors={errors}
+                                />
+                            </>
                         )}
                         {currentStep === 2 && (
                             <LaunchTypeStep data={formData} onChange={handleFormChange} />
@@ -548,7 +695,12 @@ const SubmissionForm: React.FC = () => {
                                 onPreview={handlePreviewClick}
                             />
                         )}
-                        {currentStep === 4 && <ReviewStep data={formData} />}
+                        {currentStep === 4 && (
+                            <ReviewStep
+                                data={formData}
+                                capturedManifest={location.state?.capturedManifest}
+                            />
+                        )}
                     </div>
                     <div className="flex justify-between mt-6">
                         <button
@@ -583,8 +735,10 @@ const SubmissionForm: React.FC = () => {
                                             {isPendingReview
                                                 ? m['developerPortal.submissionForm.saveChanges']()
                                                 : isEditMode
-                                                ? m['developerPortal.submissionForm.updateDraft']()
-                                                : m['developerPortal.submissionForm.saveDraft']()}
+                                                  ? m[
+                                                        'developerPortal.submissionForm.updateDraft'
+                                                    ]()
+                                                  : m['developerPortal.submissionForm.saveDraft']()}
                                         </>
                                     )}
                                 </button>
@@ -600,25 +754,36 @@ const SubmissionForm: React.FC = () => {
                                 </button>
                             ) : (
                                 !isPendingReview && (
-                                    <button
-                                        onClick={handleSubmit}
-                                        disabled={isSubmitting || isSavingDraft}
-                                        className="flex items-center gap-2 px-5 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 min-w-[160px] justify-center"
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                {m['developerPortal.submissionForm.submitting']()}
-                                            </>
-                                        ) : (
-                                            <>
-                                                {m[
-                                                    'developerPortal.components.partnerDashboard.submitForReview'
-                                                ]()}
-                                                <Send className="w-4 h-4" />
-                                            </>
-                                        )}
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={handleTestLive}
+                                            disabled={isSubmitting || isSavingDraft}
+                                            className="flex items-center gap-2 px-5 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                        >
+                                            Test Live
+                                        </button>
+                                        <button
+                                            onClick={handleSubmit}
+                                            disabled={isSubmitting || isSavingDraft}
+                                            className="flex items-center gap-2 px-5 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 min-w-[160px] justify-center"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    {m[
+                                                        'developerPortal.submissionForm.submitting'
+                                                    ]()}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {m[
+                                                        'developerPortal.components.partnerDashboard.submitForReview'
+                                                    ]()}
+                                                    <Send className="w-4 h-4" />
+                                                </>
+                                            )}
+                                        </button>
+                                    </>
                                 )
                             )}
                         </div>

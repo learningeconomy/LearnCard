@@ -1,11 +1,18 @@
 import { LCNIntegration } from '@learncard/types';
+import type { ConsentRequest } from '@learncard/partner-connect-core';
+import { getLogger } from 'learn-card-base/logging/logger';
+
+const log = getLogger('post-message-handlers');
 import {
     ActionHandler,
     ActionHandlers,
     VerifiablePresentationRequest,
     AppEvent,
 } from './useLearnCardPostMessage';
-import type { LearnerContextRequestOptions } from './learnerContextCache.helpers';
+import {
+    getLearnerContextPermissionCode,
+    type LearnerContextRequestOptions,
+} from './learnerContext.helpers';
 
 type LearnerContextResponseData = {
     prompt: string;
@@ -16,23 +23,24 @@ type LearnerContextResponseData = {
     did: string;
     displayName?: string;
     metadata?: {
-        cacheStatus?:
-            | 'browser-hit'
-            | 'browser-miss'
-            | 'backend-hit'
-            | 'backend-miss'
-            | 'structured';
+        consentRevision?: string;
+        cacheStatus?: 'backend-hit' | 'backend-miss' | 'structured';
         timings?: {
             totalMs: number;
             sdkRoundTripMs?: number;
             appEventMs?: number;
             credentialReadMs?: number;
             promptizerMs?: number;
-            cacheLookupMs?: number;
-            prewarmAgeMs?: number;
         };
         backendMetadata?: Record<string, unknown>;
     };
+};
+
+export type IntegrationHint = {
+    type: 'consent-not-configured';
+    title: string;
+    description: string;
+    snippet: string;
 };
 
 // Re-export types for convenience
@@ -49,7 +57,7 @@ export type { ActionHandler, ActionHandlers };
 export const createRequestIdentityHandler = (dependencies: {
     isUserAuthenticated: () => boolean;
     mintDelegatedToken: (challenge?: string) => Promise<string>;
-    getUserInfo: () => Promise<{ did: string; profile: any }>;
+    getUserInfo: () => Promise<{ did: string; profile: unknown }>;
     showLoginConsentModal: (origin: string, appName?: string) => Promise<boolean>;
 }): ActionHandler<'REQUEST_IDENTITY'> => {
     return async ({ payload, origin }) => {
@@ -69,7 +77,7 @@ export const createRequestIdentityHandler = (dependencies: {
 
         try {
             // Check if user has consented to share identity with this origin
-            const consented = await showLoginConsentModal(origin, payload.appName);
+            const consented = await showLoginConsentModal(origin, payload?.appName);
 
             if (!consented) {
                 return {
@@ -82,7 +90,7 @@ export const createRequestIdentityHandler = (dependencies: {
             }
 
             // Mint a short-lived JWT token
-            const token = await mintDelegatedToken(payload.challenge);
+            const token = await mintDelegatedToken(payload?.challenge);
             const user = await getUserInfo();
 
             return {
@@ -94,12 +102,20 @@ export const createRequestIdentityHandler = (dependencies: {
                 },
             };
         } catch (error) {
+            // didkit/wasm rejections are often plain strings — surface them
+            // instead of a generic message so failures are self-diagnosing.
+            log.error('REQUEST_IDENTITY failed', error, { origin });
+
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : typeof error === 'string' && error.length > 0
+                      ? `Failed to mint token: ${error}`
+                      : 'Failed to mint token';
+
             return {
                 success: false,
-                error: {
-                    code: 'UNKNOWN_ERROR',
-                    message: error instanceof Error ? error.message : 'Failed to mint token',
-                },
+                error: { code: 'UNKNOWN_ERROR', message },
             };
         }
     };
@@ -121,29 +137,51 @@ export const createRequestConsentHandler = (dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    upsertScopedContract?: (scopes: ConsentRequest) => Promise<string | undefined>;
     getContractUri?: () => string | undefined;
     getIntegrationContractUri?: () => Promise<string | undefined>;
     prewarmLearnerContext?: (options: LearnerContextRequestOptions) => void | Promise<void>;
+    onIntegrationHint?: (hint: IntegrationHint) => void;
 }): ActionHandler<'REQUEST_CONSENT'> => {
     return async ({ payload }) => {
         const {
             showConsentModal,
+            upsertScopedContract,
             getContractUri,
             getIntegrationContractUri,
             prewarmLearnerContext,
+            onIntegrationHint,
         } = dependencies;
 
-        // Use payload contractUri first, then launch config, then guideState fallback
+        // Use payload contractUri first, then declarative scopes, then launch config,
+        // then guideState fallback.
         const contractUri =
-            payload.contractUri || getContractUri?.() || (await getIntegrationContractUri?.());
+            payload.contractUri ||
+            (payload.scopes ? await upsertScopedContract?.(payload.scopes) : undefined) ||
+            getContractUri?.() ||
+            (await getIntegrationContractUri?.());
 
         if (!contractUri) {
+            onIntegrationHint?.({
+                type: 'consent-not-configured',
+                title: 'Make consent work',
+                description:
+                    'Pass scopes to requestConsent and LearnCard will create a contract automatically.',
+                snippet: `const { granted } = await learnCard.requestConsent({
+    read: {
+        credentialCategories: ['Achievement'],
+        personalFields: ['name'],
+    },
+    reason: 'Personalize your experience',
+});`,
+            });
+
             return {
                 success: false,
                 error: {
-                    code: 'INVALID_PAYLOAD',
+                    code: 'CONSENT_NOT_CONFIGURED',
                     message:
-                        'No contract URI provided and no contract configured for this app listing',
+                        "This app hasn't configured a consent flow. Easiest fix: pass scopes and LearnCard creates one automatically — learnCard.requestConsent({ read: { credentialCategories: ['Achievement'], personalFields: ['name'] }, reason: 'Personalize your experience' }). Alternatively set a contract in your App Store listing.",
                 },
             };
         }
@@ -190,7 +228,7 @@ export const createRequestConsentHandler = (dependencies: {
  * Partner wants to send a credential to the user.
  */
 export const createSendCredentialHandler = (dependencies: {
-    showCredentialAcceptanceModal: (credential: any) => Promise<string | boolean>;
+    showCredentialAcceptanceModal: (credential: unknown) => Promise<string | boolean>;
 }): ActionHandler<'SEND_CREDENTIAL'> => {
     return async ({ payload }) => {
         const { showCredentialAcceptanceModal } = dependencies;
@@ -247,9 +285,9 @@ export const createSendCredentialHandler = (dependencies: {
  * Partner needs a specific credential by ID.
  */
 export const createAskCredentialSpecificHandler = (dependencies: {
-    getCredentialById: (id: string) => Promise<any | null>;
-    showShareCredentialModal: (credential: any) => Promise<boolean>;
-    signPresentation: (presentation: any) => Promise<any>;
+    getCredentialById: (id: string) => Promise<unknown | null>;
+    showShareCredentialModal: (credential: unknown) => Promise<boolean>;
+    signPresentation: (presentation: unknown) => Promise<unknown>;
 }): ActionHandler<'ASK_CREDENTIAL_SPECIFIC'> => {
     return async ({ payload }) => {
         const { getCredentialById, showShareCredentialModal, signPresentation } = dependencies;
@@ -318,7 +356,9 @@ export const createAskCredentialSpecificHandler = (dependencies: {
  * Partner needs credentials matching certain criteria via a VPR.
  */
 export const createAskCredentialSearchHandler = (dependencies: {
-    showVprModal: (verifiablePresentationRequest: VerifiablePresentationRequest) => Promise<any>;
+    showVprModal: (
+        verifiablePresentationRequest: VerifiablePresentationRequest
+    ) => Promise<unknown>;
 }): ActionHandler<'ASK_CREDENTIAL_SEARCH'> => {
     return async ({ payload }) => {
         const { showVprModal } = dependencies;
@@ -524,8 +564,26 @@ export const createAppEventHandler = (dependencies: {
             };
         }
 
+        // The SDK posts the event object AS the payload; older senders wrapped
+        // it as { event }. Accept both so neither side can produce a TypeError.
+        const rawEvent = (payload as { event?: unknown } | undefined)?.event ?? payload;
+
+        if (
+            !rawEvent ||
+            typeof rawEvent !== 'object' ||
+            typeof (rawEvent as { type?: unknown }).type !== 'string'
+        ) {
+            return {
+                success: false,
+                error: {
+                    code: 'INVALID_PAYLOAD',
+                    message: 'APP_EVENT payload must be an event object with a string "type"',
+                },
+            };
+        }
+
         try {
-            const result = await sendAppEvent(listingId, payload.event);
+            const result = await sendAppEvent(listingId, rawEvent as AppEvent);
             return { success: true, data: result };
         } catch (error) {
             return {
@@ -566,9 +624,12 @@ export const createRequestLearnerContextHandler = (dependencies: {
             return {
                 success: false,
                 error: {
-                    code: 'UNKNOWN_ERROR',
-                    message:
-                        error instanceof Error ? error.message : 'Failed to get learner context',
+                    code: getLearnerContextPermissionCode(error) ?? 'UNKNOWN_ERROR',
+                    message: getLearnerContextPermissionCode(error)
+                        ? 'Current learner context permission is required'
+                        : error instanceof Error
+                          ? error.message
+                          : 'Failed to get learner context',
                 },
             };
         }
@@ -619,6 +680,7 @@ export function createActionHandlers(dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    upsertScopedContract?: (scopes: ConsentRequest) => Promise<string | undefined>;
     getContractUri?: () => string | undefined;
     getIntegrationContractUri?: () => Promise<string | undefined>;
     getIntegrationForListing?: (listingId: string) => Promise<LCNIntegration | undefined>;
@@ -661,6 +723,7 @@ export function createActionHandlers(dependencies: {
         eta?: number;
         lastError?: string;
     }>;
+    onIntegrationHint?: (hint: IntegrationHint) => void;
 }): ActionHandlers {
     const handlers: ActionHandlers = {
         REQUEST_IDENTITY: createRequestIdentityHandler(dependencies),

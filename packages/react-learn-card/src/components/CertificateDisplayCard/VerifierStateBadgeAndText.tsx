@@ -3,6 +3,7 @@ import UnknownVerifierBadge from '../svgs/UnknownVerifierBadge';
 import VerifiedBadge from '../svgs/VerifiedBadge';
 import PersonBadge from '../svgs/PersonBadge';
 import RedFlag from '../svgs/RedFlag';
+import { useT } from '../../i18n';
 
 export const VERIFIER_STATES = {
     selfVerified: 'Self Issued',
@@ -22,6 +23,7 @@ export type VerifierStateBadgeAndTextProps = {
 
 const VerifierStateBadgeAndText = forwardRef<HTMLButtonElement, VerifierStateBadgeAndTextProps>(
     ({ verifierState, className = '', unknownVerifierTitle, onClick }, ref) => {
+        const t = useT();
         // For Scouts: if we have a role-based title, show it with trusted styling
         // BUT don't overwrite self-issued or untrusted status
         const effectiveState =
@@ -37,35 +39,37 @@ const VerifierStateBadgeAndText = forwardRef<HTMLButtonElement, VerifierStateBad
                 {effectiveState === VERIFIER_STATES.selfVerified && (
                     <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-green-dark">
                         <PersonBadge />
-                        <span className="whitespace-nowrap">Self Issued</span>
+                        <span className="whitespace-nowrap">{t('verification.selfIssued')}</span>
                     </div>
                 )}
                 {effectiveState === VERIFIER_STATES.trustedVerifier && (
                     <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-green-600">
                         <VerifiedBadge />
                         <span className="whitespace-nowrap">
-                            {unknownVerifierTitle ?? 'Trusted Issuer'}
+                            {unknownVerifierTitle ?? t('verification.trustedIssuer')}
                         </span>
                     </div>
                 )}
                 {effectiveState === VERIFIER_STATES.unknownVerifier && (
-                    <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-orange-500">
+                    <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-orange-800">
                         <UnknownVerifierBadge />
                         <span className="whitespace-nowrap">
-                            {unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}
+                            {unknownVerifierTitle ?? t('verification.unknownIssuer')}
                         </span>
                     </div>
                 )}
                 {effectiveState === VERIFIER_STATES.appIssuer && (
                     <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-cyan-600">
                         <VerifiedBadge />
-                        <span className="whitespace-nowrap">App Issuer</span>
+                        <span className="whitespace-nowrap">{t('verification.appIssuer')}</span>
                     </div>
                 )}
                 {effectiveState === VERIFIER_STATES.untrustedVerifier && (
                     <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-red-mastercard">
                         <RedFlag />
-                        <span className="whitespace-nowrap">Untrusted Issuer</span>
+                        <span className="whitespace-nowrap">
+                            {t('verification.untrustedIssuer')}
+                        </span>
                     </div>
                 )}
             </>

@@ -1,6 +1,6 @@
 import type { UnsignedVC } from '@learncard/types';
 
-import type { CredentialFixture } from './types';
+import { isSdJwtVcFixture, type LibraryFixture } from './types';
 import { getFixture } from './registry';
 
 // ---------------------------------------------------------------------------
@@ -41,8 +41,11 @@ const generateUuid = (): string => {
 
 const patchIds = (
     obj: Record<string, unknown>,
-    idMap: Map<string, string>
+    idMap: Map<string, string>,
+    preserveSignedCredential = false
 ): Record<string, unknown> => {
+    if (preserveSignedCredential && obj.proof !== undefined) return obj;
+
     const result: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(obj)) {
@@ -57,11 +60,11 @@ const patchIds = (
         } else if (Array.isArray(value)) {
             result[key] = value.map(item =>
                 item && typeof item === 'object' && !Array.isArray(item)
-                    ? patchIds(item as Record<string, unknown>, idMap)
+                    ? patchIds(item as Record<string, unknown>, idMap, true)
                     : item
             );
         } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-            result[key] = patchIds(value as Record<string, unknown>, idMap);
+            result[key] = patchIds(value as Record<string, unknown>, idMap, true);
         } else {
             result[key] = value;
         }
@@ -70,21 +73,28 @@ const patchIds = (
     return result;
 };
 
-const remapUuidReferences = (value: unknown, idMap: Map<string, string>): unknown => {
+const remapUuidReferences = (
+    value: unknown,
+    idMap: Map<string, string>,
+    preserveSignedCredential = false
+): unknown => {
     if (typeof value === 'string') {
         // Rewrite explicit references that still point at the original ids.
         return idMap.get(value) ?? value;
     }
 
     if (Array.isArray(value)) {
-        return value.map(item => remapUuidReferences(item, idMap));
+        return value.map(item => remapUuidReferences(item, idMap, true));
     }
 
     if (value && typeof value === 'object') {
+        const record = value as Record<string, unknown>;
+        if (preserveSignedCredential && record.proof !== undefined) return record;
+
         return Object.fromEntries(
-            Object.entries(value as Record<string, unknown>).map(([key, nestedValue]) => [
+            Object.entries(record).map(([key, nestedValue]) => [
                 key,
-                remapUuidReferences(nestedValue, idMap),
+                remapUuidReferences(nestedValue, idMap, true),
             ])
         );
     }
@@ -104,16 +114,50 @@ const patchIssuer = (issuer: unknown, issuerDid: string): string | Record<string
     return issuerDid;
 };
 
+const patchCredentialSubject = (credential: unknown, subjectDid: string): unknown => {
+    if (!credential || typeof credential !== 'object' || Array.isArray(credential)) {
+        return credential;
+    }
+
+    const patchedCredential = { ...(credential as Record<string, unknown>) };
+
+    if (patchedCredential.proof !== undefined) return patchedCredential;
+
+    if (patchedCredential.credentialSubject) {
+        patchedCredential.credentialSubject = patchSubject(
+            patchedCredential.credentialSubject,
+            subjectDid
+        );
+    }
+
+    return patchedCredential;
+};
+
 const patchSubject = (subject: unknown, subjectDid: string): unknown => {
     if (Array.isArray(subject)) {
-        return subject.map(s => patchSubject(s, subjectDid));
+        return subject.map(nestedSubject => patchSubject(nestedSubject, subjectDid));
     }
 
-    if (subject && typeof subject === 'object') {
-        return { ...(subject as Record<string, unknown>), id: subjectDid };
+    if (!subject || typeof subject !== 'object') return subject;
+
+    const patchedSubject: Record<string, unknown> = {
+        ...(subject as Record<string, unknown>),
+        id: subjectDid,
+    };
+    const embeddedCredentials = patchedSubject.verifiableCredential;
+
+    if (Array.isArray(embeddedCredentials)) {
+        patchedSubject.verifiableCredential = embeddedCredentials.map(credential =>
+            patchCredentialSubject(credential, subjectDid)
+        );
+    } else if (embeddedCredentials) {
+        patchedSubject.verifiableCredential = patchCredentialSubject(
+            embeddedCredentials,
+            subjectDid
+        );
     }
 
-    return subject;
+    return patchedSubject;
 };
 
 // ---------------------------------------------------------------------------
@@ -138,7 +182,16 @@ const patchSubject = (subject: unknown, subjectDid: string): unknown => {
  * await wallet.store.LearnCloud.uploadEncrypted(signed);
  * ```
  */
-export const prepareFixture = (fixture: CredentialFixture, options: PrepareOptions): UnsignedVC => {
+const FIXTURE_VALIDITY_MS = 180 * 24 * 60 * 60 * 1000;
+
+export const prepareFixture = (fixture: LibraryFixture, options: PrepareOptions): UnsignedVC => {
+    if (isSdJwtVcFixture(fixture)) {
+        throw new Error(
+            `Fixture "${fixture.id}" is an SD-JWT VC template. ` +
+                'Use materializeSdJwtVcFixture() instead of prepareFixture().'
+        );
+    }
+
     const { issuerDid, subjectDid, validFrom, validUntil, freshIds = true } = options;
 
     // Deep clone
@@ -184,6 +237,19 @@ export const prepareFixture = (fixture: CredentialFixture, options: PrepareOptio
             credential.expirationDate = validUntil;
         } else {
             credential.validUntil = validUntil;
+        }
+    } else {
+        // A fixture's hard-coded expiry goes stale; keep provisional records valid
+        // relative to when they are prepared so verification does not fail on age.
+        const from = new Date(
+            (credential.validFrom ?? credential.issuanceDate) as string
+        ).getTime();
+        const baseline = Math.max(from, Date.now());
+        for (const field of ['validUntil', 'expirationDate']) {
+            const expiry = credential[field];
+            if (typeof expiry === 'string' && new Date(expiry).getTime() <= baseline) {
+                credential[field] = new Date(baseline + FIXTURE_VALIDITY_MS).toISOString();
+            }
         }
     }
 

@@ -12,11 +12,12 @@ import CredentialVerificationDisplay from 'learn-card-base/components/Credential
 import { getRoleFromCred } from '../../helpers/troop.helpers';
 import {
     useCountBoostChildren,
-    conditionalPluralize,
     BoostCategoryOptionsEnum,
     useGetCredentialWithEdits,
 } from 'learn-card-base';
+import { formatLocaleCount } from '../../i18n/formatters';
 
+import * as m from '../../paraglide/messages.js';
 import { VC } from '@learncard/types';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
@@ -111,7 +112,7 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
     return (
         <div className="h-full flex items-center justify-center">
             <div className="rounded-[20px] shadow-box-bottom overflow-hidden flex flex-col max-w-[335px]">
-                <div className="flex flex-col bg-white bg-opacity-70 backdrop-blur-[10px]">
+                <div className="flex flex-col bg-white/70  backdrop-blur-[10px]">
                     <div className="p-[15px]">
                         <TroopID
                             credential={credential}
@@ -146,9 +147,11 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                     <div className="flex flex-col items-center gap-[7px]">
                         <div className="flex flex-col items-center text-grayscale-900">
                             <span className="font-notoSans text-[17px] text-center">
-                                Issued to {idMainText ?? 'Unknown'}
+                                {m['troops.template.issuedTo']({
+                                    name: idMainText ?? m['common.unknown'](),
+                                })}
                                 <br />
-                                by {credential?.name}
+                                {m['troops.template.by']({ issuer: credential?.name })}
                             </span>
                             {!isGlobal && networkName && (
                                 <span className="font-notoSans text-grayscale-800 font-[600] line-clamp-1 text-[14px]">
@@ -161,12 +164,18 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                             <div className="flex flex-col items-center">
                                 <span className="text-grayscale-700 font-notoSans text-[12px] font-[600]">
                                     {!isNetwork &&
-                                        `${conditionalPluralize(
-                                            scoutCount,
-                                            'Scout'
-                                        )}, ${conditionalPluralize(leaderCount, 'Leader')}`}
+                                        `${formatLocaleCount(scoutCount, {
+                                            one: m['troops.scoutOne'](),
+                                            other: m['troops.scoutOther'](),
+                                        })}, ${formatLocaleCount(leaderCount, {
+                                            one: m['troops.leaderOne'](),
+                                            other: m['troops.leaderOther'](),
+                                        })}`}
                                     {isNetwork &&
-                                        `${conditionalPluralize(currentBoostCount, 'Admin')}`}
+                                        formatLocaleCount(currentBoostCount, {
+                                            one: m['troops.adminOne'](),
+                                            other: m['troops.adminOther'](),
+                                        })}
                                 </span>
                             </div>
                         )}
@@ -178,30 +187,33 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                                     className={`text-white font-notoSans text-[17px] font-[600] leadeing-[24px] tracking-[0.25px] w-full rounded-[30px] p-[7px] disabled:opacity-60 ${claimButtonColor}`}
                                     disabled={isClaiming || isAlreadyClaimed}
                                 >
-                                    {isAlreadyClaimed && 'Joined'}
+                                    {isAlreadyClaimed && m['troops.template.joined']()}
                                     {!isAlreadyClaimed && (
                                         <>
-                                            {isClaiming ? 'Joining ' : 'Join '}
-                                            {!isGlobal && !isNational && 'Troop'}
+                                            {isClaiming
+                                                ? m['troops.template.joining']() + ' '
+                                                : m['troops.template.joinBtn']() + ' '}
+                                            {!isGlobal &&
+                                                !isNational &&
+                                                m['troops.template.joinTroop']()}
                                         </>
                                     )}
                                 </button>
                                 {!isGlobal && !isNational && (
                                     <p className="text-grayscale-700 font-notoSans text-[12px] font-normal text-center">
-                                        Joining this troop will automatically add all its members to
-                                        your contacts.
+                                        {m['troops.template.joinAuto']()}
                                     </p>
                                 )}
                             </>
                         )}
                     </div>
 
-                    {/* <div className="pt-[10px] border-t-[1px] border-solid border-grayscale-200 flex justify-center">
+                    {/* <div className="pt-[10px] border-t border-solid border-grayscale-200 flex justify-center">
                         <CredentialVerificationDisplay
                             credential={credential}
                             showText
-                            className="!text-[12px] font-poppins font-[500]"
-                            iconClassName="!h-[18px] !w-[18px]"
+                            className="text-[12px]! font-poppins font-[500]"
+                            iconClassName="h-[18px]! w-[18px]!"
                         />
                     </div> */}
                 </div>

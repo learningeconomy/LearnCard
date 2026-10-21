@@ -7,6 +7,7 @@ import Medical from '../../../../../assets/images/medical.png';
 import Social from '../../../../../assets/images/social.png';
 import Stem from '../../../../../assets/images/stem.png';
 import Trade from '../../../../../assets/images/trade.png';
+import * as m from '../../../../../paraglide/messages.js';
 
 export enum BoostCMSSKillsCategoryEnum {
     Durable = 'durable',
@@ -30,7 +31,9 @@ export const boostCMSSKillCategories: {
 }[] = [
     {
         id: 1,
-        title: 'Durable',
+        get title() {
+            return m['boostContent.skillCategories.durable.title']();
+        },
         IconComponent: Durable,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -38,7 +41,9 @@ export const boostCMSSKillCategories: {
     },
     {
         id: 2,
-        title: 'Stem',
+        get title() {
+            return m['boostContent.skillCategories.stem.title']();
+        },
         IconComponent: Stem,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -46,7 +51,9 @@ export const boostCMSSKillCategories: {
     },
     {
         id: 3,
-        title: 'Athletic',
+        get title() {
+            return m['boostContent.skillCategories.athletic.title']();
+        },
         IconComponent: Athletics,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -54,7 +61,9 @@ export const boostCMSSKillCategories: {
     },
     {
         id: 4,
-        title: 'Creative',
+        get title() {
+            return m['boostContent.skillCategories.creative.title']();
+        },
         IconComponent: Creative,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -62,7 +71,9 @@ export const boostCMSSKillCategories: {
     },
     {
         id: 5,
-        title: 'Business',
+        get title() {
+            return m['boostContent.skillCategories.business.title']();
+        },
         IconComponent: Business,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -70,7 +81,9 @@ export const boostCMSSKillCategories: {
     },
     {
         id: 6,
-        title: 'Trade',
+        get title() {
+            return m['boostContent.skillCategories.trade.title']();
+        },
         IconComponent: Trade,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -78,7 +91,9 @@ export const boostCMSSKillCategories: {
     },
     {
         id: 7,
-        title: 'Social',
+        get title() {
+            return m['boostContent.skillCategories.social.title']();
+        },
         IconComponent: Social,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -86,7 +101,9 @@ export const boostCMSSKillCategories: {
     },
     {
         id: 8,
-        title: 'Digital',
+        get title() {
+            return m['boostContent.skillCategories.digital.title']();
+        },
         IconComponent: Digital,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -94,7 +111,9 @@ export const boostCMSSKillCategories: {
     },
     {
         id: 9,
-        title: 'Medical',
+        get title() {
+            return m['boostContent.skillCategories.medical.title']();
+        },
         IconComponent: Medical,
         iconClassName: 'text-white',
         iconCircleClass: 'bg-cyan-700',
@@ -171,7 +190,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Durable]: [
         {
             id: 1,
-            title: 'Adaptability',
+            get title() {
+                return m['boostContent.categorySkills.adaptability.title']();
+            },
             IconComponent: Durable,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -180,7 +201,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Perseverance',
+            get title() {
+                return m['boostContent.categorySkills.perseverance.title']();
+            },
             IconComponent: Durable,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -189,7 +212,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Mental Toughness',
+            get title() {
+                return m['boostContent.categorySkills.mentalToughness.title']();
+            },
             IconComponent: Durable,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -198,7 +223,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Physical Endurance',
+            get title() {
+                return m['boostContent.categorySkills.physicalEndurance.title']();
+            },
             IconComponent: Durable,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -207,7 +234,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Lifelong Learning',
+            get title() {
+                return m['boostContent.categorySkills.lifelongLearning.title']();
+            },
             IconComponent: Durable,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -218,7 +247,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Stem]: [
         {
             id: 1,
-            title: 'Mathematics',
+            get title() {
+                return m['boostContent.categorySkills.mathematics.title']();
+            },
             IconComponent: Stem,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -227,7 +258,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Science',
+            get title() {
+                return m['boostContent.categorySkills.science.title']();
+            },
             IconComponent: Stem,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -236,7 +269,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Technology',
+            get title() {
+                return m['boostContent.categorySkills.technology.title']();
+            },
             IconComponent: Stem,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -245,7 +280,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Engineering',
+            get title() {
+                return m['boostContent.categorySkills.engineering.title']();
+            },
             IconComponent: Stem,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -254,7 +291,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Research',
+            get title() {
+                return m['boostContent.categorySkills.research.title']();
+            },
             IconComponent: Stem,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -265,7 +304,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Athletic]: [
         {
             id: 1,
-            title: 'Sport specific skills',
+            get title() {
+                return m['boostContent.categorySkills.sportSpecificSkills.title']();
+            },
             IconComponent: Athletics,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -274,7 +315,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Strength and Conditioning',
+            get title() {
+                return m['boostContent.categorySkills.strengthAndConditioning.title']();
+            },
             IconComponent: Athletics,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -283,7 +326,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Coordination',
+            get title() {
+                return m['boostContent.categorySkills.coordination.title']();
+            },
             IconComponent: Athletics,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -292,7 +337,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Mental Focus',
+            get title() {
+                return m['boostContent.categorySkills.mentalFocus.title']();
+            },
             IconComponent: Athletics,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -301,7 +348,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Team work',
+            get title() {
+                return m['boostContent.categorySkills.teamwork.title']();
+            },
             IconComponent: Athletics,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -312,7 +361,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Creative]: [
         {
             id: 1,
-            title: 'Visual Arts',
+            get title() {
+                return m['boostContent.categorySkills.visualArts.title']();
+            },
             IconComponent: Creative,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -321,7 +372,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Performing Arts',
+            get title() {
+                return m['boostContent.categorySkills.performingArts.title']();
+            },
             IconComponent: Creative,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -330,7 +383,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Writing',
+            get title() {
+                return m['boostContent.categorySkills.writing.title']();
+            },
             IconComponent: Creative,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -339,7 +394,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Design',
+            get title() {
+                return m['boostContent.categorySkills.design.title']();
+            },
             IconComponent: Creative,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -348,7 +405,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Ideation',
+            get title() {
+                return m['boostContent.categorySkills.ideation.title']();
+            },
             IconComponent: Creative,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -359,7 +418,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Business]: [
         {
             id: 1,
-            title: 'Management',
+            get title() {
+                return m['boostContent.categorySkills.management.title']();
+            },
             IconComponent: Business,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -368,7 +429,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Finance',
+            get title() {
+                return m['boostContent.categorySkills.finance.title']();
+            },
             IconComponent: Business,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -377,7 +440,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Marketing',
+            get title() {
+                return m['boostContent.categorySkills.marketing.title']();
+            },
             IconComponent: Business,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -386,7 +451,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Operations',
+            get title() {
+                return m['boostContent.categorySkills.operations.title']();
+            },
             IconComponent: Business,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -395,7 +462,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Entrepreneurship',
+            get title() {
+                return m['boostContent.categorySkills.entrepreneurship.title']();
+            },
             IconComponent: Business,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -406,7 +475,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Trade]: [
         {
             id: 1,
-            title: 'Construction',
+            get title() {
+                return m['boostContent.categorySkills.construction.title']();
+            },
             IconComponent: Trade,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -415,7 +486,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Mechanics',
+            get title() {
+                return m['boostContent.categorySkills.mechanics.title']();
+            },
             IconComponent: Trade,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -424,7 +497,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Manufacturing',
+            get title() {
+                return m['boostContent.categorySkills.manufacturing.title']();
+            },
             IconComponent: Trade,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -433,7 +508,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Cosmetology',
+            get title() {
+                return m['boostContent.categorySkills.cosmetology.title']();
+            },
             IconComponent: Trade,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -442,7 +519,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Culinary Arts',
+            get title() {
+                return m['boostContent.categorySkills.culinaryArts.title']();
+            },
             IconComponent: Trade,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -453,7 +532,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Social]: [
         {
             id: 1,
-            title: 'History',
+            get title() {
+                return m['boostContent.categorySkills.history.title']();
+            },
             IconComponent: Social,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -462,7 +543,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Psychology',
+            get title() {
+                return m['boostContent.categorySkills.psychology.title']();
+            },
             IconComponent: Social,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -471,7 +554,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Sociology',
+            get title() {
+                return m['boostContent.categorySkills.sociology.title']();
+            },
             IconComponent: Social,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -480,7 +565,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Economics',
+            get title() {
+                return m['boostContent.categorySkills.economics.title']();
+            },
             IconComponent: Social,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -489,7 +576,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Political Science',
+            get title() {
+                return m['boostContent.categorySkills.politicalScience.title']();
+            },
             IconComponent: Social,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -500,7 +589,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Digital]: [
         {
             id: 1,
-            title: 'Basic Computer Skills',
+            get title() {
+                return m['boostContent.categorySkills.basicComputerSkills.title']();
+            },
             IconComponent: Digital,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -509,7 +600,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Information Literacy',
+            get title() {
+                return m['boostContent.categorySkills.informationLiteracy.title']();
+            },
             IconComponent: Digital,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -518,7 +611,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Software Proficiency',
+            get title() {
+                return m['boostContent.categorySkills.softwareProficiency.title']();
+            },
             IconComponent: Digital,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -527,7 +622,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Online Communication',
+            get title() {
+                return m['boostContent.categorySkills.onlineCommunication.title']();
+            },
             IconComponent: Digital,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -536,7 +633,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Cybersecurity',
+            get title() {
+                return m['boostContent.categorySkills.cybersecurity.title']();
+            },
             IconComponent: Digital,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -547,7 +646,9 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Medical]: [
         {
             id: 1,
-            title: 'Clinical Skills',
+            get title() {
+                return m['boostContent.categorySkills.clinicalSkills.title']();
+            },
             IconComponent: Medical,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -556,7 +657,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 2,
-            title: 'Anatomy and Physiology',
+            get title() {
+                return m['boostContent.categorySkills.anatomyAndPhysiology.title']();
+            },
             IconComponent: Medical,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -565,7 +668,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 3,
-            title: 'Patient Care',
+            get title() {
+                return m['boostContent.categorySkills.patientCare.title']();
+            },
             IconComponent: Medical,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -574,7 +679,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 4,
-            title: 'Medical Specialties',
+            get title() {
+                return m['boostContent.categorySkills.medicalSpecialties.title']();
+            },
             IconComponent: Medical,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -583,7 +690,9 @@ export const CATEGORY_TO_SKILLS = {
         },
         {
             id: 5,
-            title: 'Healthcare Administration',
+            get title() {
+                return m['boostContent.categorySkills.healthcareAdministration.title']();
+            },
             IconComponent: Medical,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-cyan-700',
@@ -929,135 +1038,189 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.Adaptability]: [
         {
             id: 1,
-            title: 'Flexibility',
+            get title() {
+                return m['boostContent.skillSubskills.adaptability.flexibility.title']();
+            },
             type: BoostCMSSubSkillEnum.flexibility,
         },
         {
             id: 2,
-            title: 'Resilience',
+            get title() {
+                return m['boostContent.skillSubskills.adaptability.resilience.title']();
+            },
             type: BoostCMSSubSkillEnum.resilience,
         },
         {
             id: 3,
-            title: 'Problem Solving',
+            get title() {
+                return m['boostContent.skillSubskills.adaptability.problemSolving.title']();
+            },
             type: BoostCMSSubSkillEnum.problemSolving,
         },
         {
             id: 4,
-            title: 'Resourcefulness',
+            get title() {
+                return m['boostContent.skillSubskills.adaptability.resourcefulness.title']();
+            },
             type: BoostCMSSubSkillEnum.resourcefulness,
         },
         {
             id: 5,
-            title: 'Stress management',
+            get title() {
+                return m['boostContent.skillSubskills.adaptability.stressManagement.title']();
+            },
             type: BoostCMSSubSkillEnum.stressManagement,
         },
     ],
     [BoostCMSCategorySkillEnum.Perseverance]: [
         {
             id: 1,
-            title: 'Discipline',
+            get title() {
+                return m['boostContent.skillSubskills.perseverance.discipline.title']();
+            },
             type: BoostCMSSubSkillEnum.discipline,
         },
         {
             id: 2,
-            title: 'Focus',
+            get title() {
+                return m['boostContent.skillSubskills.perseverance.focus.title']();
+            },
             type: BoostCMSSubSkillEnum.focus,
         },
         {
             id: 3,
-            title: 'Commitment',
+            get title() {
+                return m['boostContent.skillSubskills.perseverance.commitment.title']();
+            },
             type: BoostCMSSubSkillEnum.commitment,
         },
         {
             id: 4,
-            title: 'Grit',
+            get title() {
+                return m['boostContent.skillSubskills.perseverance.grit.title']();
+            },
             type: BoostCMSSubSkillEnum.grit,
         },
         {
             id: 5,
-            title: 'Tenacity',
+            get title() {
+                return m['boostContent.skillSubskills.perseverance.tenacity.title']();
+            },
             type: BoostCMSSubSkillEnum.tenacity,
         },
     ],
     [BoostCMSCategorySkillEnum.MentalToughness]: [
         {
             id: 1,
-            title: 'Optimism',
+            get title() {
+                return m['boostContent.skillSubskills.mentalToughness.optimism.title']();
+            },
             type: BoostCMSSubSkillEnum.optimism,
         },
         {
             id: 2,
-            title: 'Self Confidence',
+            get title() {
+                return m['boostContent.skillSubskills.mentalToughness.selfConfidence.title']();
+            },
             type: BoostCMSSubSkillEnum.selfConfidence,
         },
         {
             id: 3,
-            title: 'Emotional Regulation',
+            get title() {
+                return m['boostContent.skillSubskills.mentalToughness.emotionalRegulation.title']();
+            },
             type: BoostCMSSubSkillEnum.emotionalRegulation,
         },
         {
             id: 4,
-            title: 'Growth Mindset',
+            get title() {
+                return m['boostContent.skillSubskills.mentalToughness.growthMindset.title']();
+            },
             type: BoostCMSSubSkillEnum.growthMindset,
         },
         {
             id: 5,
-            title: 'Positive Self-Talk',
+            get title() {
+                return m['boostContent.skillSubskills.mentalToughness.positiveSelfTalk.title']();
+            },
             type: BoostCMSSubSkillEnum.positiveSelfTalk,
         },
     ],
     [BoostCMSCategorySkillEnum.PhysicalEndurance]: [
         {
             id: 1,
-            title: 'Strength',
+            get title() {
+                return m['boostContent.skillSubskills.physicalEndurance.strength.title']();
+            },
             type: BoostCMSSubSkillEnum.strength,
         },
         {
             id: 2,
-            title: 'Stamina',
+            get title() {
+                return m['boostContent.skillSubskills.physicalEndurance.stamina.title']();
+            },
             type: BoostCMSSubSkillEnum.stamina,
         },
         {
             id: 3,
-            title: 'Cardiovascular Fitness',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.physicalEndurance.cardiovascularFitness.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.cardiovascularFitness,
         },
         {
             id: 4,
-            title: 'Pain Tolerance',
+            get title() {
+                return m['boostContent.skillSubskills.physicalEndurance.painTolerance.title']();
+            },
             type: BoostCMSSubSkillEnum.painTolerance,
         },
         {
             id: 5,
-            title: 'Injury Prevention',
+            get title() {
+                return m['boostContent.skillSubskills.physicalEndurance.injuryPrevention.title']();
+            },
             type: BoostCMSSubSkillEnum.injuryPrevention,
         },
     ],
     [BoostCMSCategorySkillEnum.LifelongLearning]: [
         {
             id: 1,
-            title: 'Curiosity',
+            get title() {
+                return m['boostContent.skillSubskills.lifelongLearning.curiosity.title']();
+            },
             type: BoostCMSSubSkillEnum.curiosity,
         },
         {
             id: 2,
-            title: 'Open Mindedness',
+            get title() {
+                return m['boostContent.skillSubskills.lifelongLearning.openMindedness.title']();
+            },
             type: BoostCMSSubSkillEnum.openMindedness,
         },
         {
             id: 3,
-            title: 'Critical Thinking',
+            get title() {
+                return m['boostContent.skillSubskills.lifelongLearning.criticalThinking.title']();
+            },
             type: BoostCMSSubSkillEnum.criticalThinking,
         },
         {
             id: 4,
-            title: 'Self-directed Learning',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.lifelongLearning.selfDirectedLearning.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.selfDirectedLearning,
         },
         {
             id: 5,
-            title: 'Knowledge Retention',
+            get title() {
+                return m['boostContent.skillSubskills.lifelongLearning.knowledgeRetention.title']();
+            },
             type: BoostCMSSubSkillEnum.knowledgeRetention,
         },
     ],
@@ -1066,135 +1229,185 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.Mathematics]: [
         {
             id: 1,
-            title: 'Algebra',
+            get title() {
+                return m['boostContent.skillSubskills.mathematics.algebra.title']();
+            },
             type: BoostCMSSubSkillEnum.algebra,
         },
         {
             id: 2,
-            title: 'Geometry',
+            get title() {
+                return m['boostContent.skillSubskills.mathematics.geometry.title']();
+            },
             type: BoostCMSSubSkillEnum.geometry,
         },
         {
             id: 3,
-            title: 'Trigonometry',
+            get title() {
+                return m['boostContent.skillSubskills.mathematics.trigonometry.title']();
+            },
             type: BoostCMSSubSkillEnum.trigonometry,
         },
         {
             id: 4,
-            title: 'Calculus',
+            get title() {
+                return m['boostContent.skillSubskills.mathematics.calculus.title']();
+            },
             type: BoostCMSSubSkillEnum.calculus,
         },
         {
             id: 5,
-            title: 'Statistics',
+            get title() {
+                return m['boostContent.skillSubskills.mathematics.statistics.title']();
+            },
             type: BoostCMSSubSkillEnum.statistics,
         },
     ],
     [BoostCMSCategorySkillEnum.Science]: [
         {
             id: 1,
-            title: 'Physics',
+            get title() {
+                return m['boostContent.skillSubskills.science.physics.title']();
+            },
             type: BoostCMSSubSkillEnum.physics,
         },
         {
             id: 2,
-            title: 'Chemistry',
+            get title() {
+                return m['boostContent.skillSubskills.science.chemistry.title']();
+            },
             type: BoostCMSSubSkillEnum.chemistry,
         },
         {
             id: 3,
-            title: 'Biology',
+            get title() {
+                return m['boostContent.skillSubskills.science.biology.title']();
+            },
             type: BoostCMSSubSkillEnum.biology,
         },
         {
             id: 4,
-            title: 'Earth science',
+            get title() {
+                return m['boostContent.skillSubskills.science.earthScience.title']();
+            },
             type: BoostCMSSubSkillEnum.earthScience,
         },
         {
             id: 5,
-            title: 'Environmental science',
+            get title() {
+                return m['boostContent.skillSubskills.science.environmentalScience.title']();
+            },
             type: BoostCMSSubSkillEnum.environmentalScience,
         },
     ],
     [BoostCMSCategorySkillEnum.Technology]: [
         {
             id: 1,
-            title: 'Coding',
+            get title() {
+                return m['boostContent.skillSubskills.technology.coding.title']();
+            },
             type: BoostCMSSubSkillEnum.coding,
         },
         {
             id: 2,
-            title: 'Software Development',
+            get title() {
+                return m['boostContent.skillSubskills.technology.softwareDevelopment.title']();
+            },
             type: BoostCMSSubSkillEnum.softwareDevelopment,
         },
         {
             id: 3,
-            title: 'Data Analysis',
+            get title() {
+                return m['boostContent.skillSubskills.technology.dataAnalysis.title']();
+            },
             type: BoostCMSSubSkillEnum.dataAnalysis,
         },
         {
             id: 4,
-            title: 'Robotics',
+            get title() {
+                return m['boostContent.skillSubskills.technology.robotics.title']();
+            },
             type: BoostCMSSubSkillEnum.robotics,
         },
         {
             id: 5,
-            title: 'Cybersecurity',
+            get title() {
+                return m['boostContent.skillSubskills.technology.cybersecurity.title']();
+            },
             type: BoostCMSSubSkillEnum.cybersecurity,
         },
     ],
     [BoostCMSCategorySkillEnum.Engineering]: [
         {
             id: 1,
-            title: 'Mechanical Engineering',
+            get title() {
+                return m['boostContent.skillSubskills.engineering.mechanicalEngineering.title']();
+            },
             type: BoostCMSSubSkillEnum.mechanicalEngineering,
         },
         {
             id: 2,
-            title: 'Electrical Engineering',
+            get title() {
+                return m['boostContent.skillSubskills.engineering.electricalEngineering.title']();
+            },
             type: BoostCMSSubSkillEnum.electricalEngineering,
         },
         {
             id: 3,
-            title: 'Civil Engineering',
+            get title() {
+                return m['boostContent.skillSubskills.engineering.civilEngineering.title']();
+            },
             type: BoostCMSSubSkillEnum.civilEngineering,
         },
         {
             id: 4,
-            title: 'Chemical Engineering',
+            get title() {
+                return m['boostContent.skillSubskills.engineering.chemicalEngineering.title']();
+            },
             type: BoostCMSSubSkillEnum.chemicalEngineering,
         },
         {
             id: 5,
-            title: 'Computer Engineering',
+            get title() {
+                return m['boostContent.skillSubskills.engineering.computerEngineering.title']();
+            },
             type: BoostCMSSubSkillEnum.computerEngineering,
         },
     ],
     [BoostCMSCategorySkillEnum.Research]: [
         {
             id: 1,
-            title: 'Hypothesis Development',
+            get title() {
+                return m['boostContent.skillSubskills.research.hypothesisDevelopment.title']();
+            },
             type: BoostCMSSubSkillEnum.hypothesisDevelopment,
         },
         {
             id: 2,
-            title: 'Experimental Design',
+            get title() {
+                return m['boostContent.skillSubskills.research.experimentalDesign.title']();
+            },
             type: BoostCMSSubSkillEnum.experimentalDesign,
         },
         {
             id: 3,
-            title: 'Data Collection',
+            get title() {
+                return m['boostContent.skillSubskills.research.dataCollection.title']();
+            },
             type: BoostCMSSubSkillEnum.dataCollection,
         },
         {
             id: 4,
-            title: 'Analysis',
+            get title() {
+                return m['boostContent.skillSubskills.research.analysis.title']();
+            },
             type: BoostCMSSubSkillEnum.analysis,
         },
         {
             id: 5,
-            title: 'Presentation',
+            get title() {
+                return m['boostContent.skillSubskills.research.presentation.title']();
+            },
             type: BoostCMSSubSkillEnum.presentation,
         },
     ],
@@ -1203,135 +1416,193 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.SportSpecificSkills]: [
         {
             id: 1,
-            title: 'Ball Handling',
+            get title() {
+                return m['boostContent.skillSubskills.sportSpecificSkills.ballHandling.title']();
+            },
             type: BoostCMSSubSkillEnum.ballHandling,
         },
         {
             id: 2,
-            title: 'Running Technique',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.sportSpecificSkills.runningTechnique.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.runningTechnique,
         },
         {
             id: 3,
-            title: 'Swing Mechanics',
+            get title() {
+                return m['boostContent.skillSubskills.sportSpecificSkills.swingMechanics.title']();
+            },
             type: BoostCMSSubSkillEnum.swingMechanics,
         },
         {
             id: 4,
-            title: 'Tackling',
+            get title() {
+                return m['boostContent.skillSubskills.sportSpecificSkills.tackling.title']();
+            },
             type: BoostCMSSubSkillEnum.tackling,
         },
         {
             id: 5,
-            title: 'Swimming Strokes',
+            get title() {
+                return m['boostContent.skillSubskills.sportSpecificSkills.swimmingStrokes.title']();
+            },
             type: BoostCMSSubSkillEnum.swimmingStrokes,
         },
     ],
     [BoostCMSCategorySkillEnum.StrengthAndConditioning]: [
         {
             id: 1,
-            title: 'Weight Lifting',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.strengthAndConditioning.weightLifting.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.weightLifting,
         },
         {
             id: 2,
-            title: 'Speed Training',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.strengthAndConditioning.speedTraining.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.speedTraining,
         },
         {
             id: 3,
-            title: 'Agility',
+            get title() {
+                return m['boostContent.skillSubskills.strengthAndConditioning.agility.title']();
+            },
             type: BoostCMSSubSkillEnum.agility,
         },
         {
             id: 4,
-            title: 'Flexibility',
+            get title() {
+                return m['boostContent.skillSubskills.strengthAndConditioning.flexibility.title']();
+            },
             type: BoostCMSSubSkillEnum.flexibility,
         },
         {
             id: 5,
-            title: 'Injury Prevention',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.strengthAndConditioning.injuryPrevention.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.injuryPrevention,
         },
     ],
     [BoostCMSCategorySkillEnum.Coordination]: [
         {
             id: 1,
-            title: 'Hand Eye Coordination',
+            get title() {
+                return m['boostContent.skillSubskills.coordination.handEyeCoordination.title']();
+            },
             type: BoostCMSSubSkillEnum.handEyeCoordination,
         },
         {
             id: 2,
-            title: 'Footwork',
+            get title() {
+                return m['boostContent.skillSubskills.coordination.footwork.title']();
+            },
             type: BoostCMSSubSkillEnum.footwork,
         },
         {
             id: 3,
-            title: 'Balance',
+            get title() {
+                return m['boostContent.skillSubskills.coordination.balance.title']();
+            },
             type: BoostCMSSubSkillEnum.balance,
         },
         {
             id: 4,
-            title: 'Reaction Time',
+            get title() {
+                return m['boostContent.skillSubskills.coordination.reactionTime.title']();
+            },
             type: BoostCMSSubSkillEnum.reactionTime,
         },
         {
             id: 5,
-            title: 'Spatial Awareness',
+            get title() {
+                return m['boostContent.skillSubskills.coordination.spatialAwareness.title']();
+            },
             type: BoostCMSSubSkillEnum.spatialAwareness,
         },
     ],
     [BoostCMSCategorySkillEnum.MentalFocus]: [
         {
             id: 1,
-            title: 'Visualization',
+            get title() {
+                return m['boostContent.skillSubskills.mentalFocus.visualization.title']();
+            },
             type: BoostCMSSubSkillEnum.visualization,
         },
         {
             id: 2,
-            title: 'Goal Setting',
+            get title() {
+                return m['boostContent.skillSubskills.mentalFocus.goalSetting.title']();
+            },
             type: BoostCMSSubSkillEnum.goalSetting,
         },
         {
             id: 3,
-            title: 'Competitiveness',
+            get title() {
+                return m['boostContent.skillSubskills.mentalFocus.competitiveness.title']();
+            },
             type: BoostCMSSubSkillEnum.competitiveness,
         },
         {
             id: 4,
-            title: 'Resilience',
+            get title() {
+                return m['boostContent.skillSubskills.mentalFocus.resilience.title']();
+            },
             type: BoostCMSSubSkillEnum.resilience,
         },
         {
             id: 5,
-            title: 'Handling pressure',
+            get title() {
+                return m['boostContent.skillSubskills.mentalFocus.handlingPressure.title']();
+            },
             type: BoostCMSSubSkillEnum.handlingPressure,
         },
     ],
     [BoostCMSCategorySkillEnum.Teamwork]: [
         {
             id: 1,
-            title: 'Communication',
+            get title() {
+                return m['boostContent.skillSubskills.teamwork.communication.title']();
+            },
             type: BoostCMSSubSkillEnum.communication,
         },
         {
             id: 2,
-            title: 'Cooperation',
+            get title() {
+                return m['boostContent.skillSubskills.teamwork.cooperation.title']();
+            },
             type: BoostCMSSubSkillEnum.cooperation,
         },
         {
             id: 3,
-            title: 'Role Understanding',
+            get title() {
+                return m['boostContent.skillSubskills.teamwork.roleUnderstanding.title']();
+            },
             type: BoostCMSSubSkillEnum.roleUnderstanding,
         },
         {
             id: 4,
-            title: 'Strategy',
+            get title() {
+                return m['boostContent.skillSubskills.teamwork.strategy.title']();
+            },
             type: BoostCMSSubSkillEnum.strategy,
         },
         {
             id: 5,
-            title: 'Sportsmanship',
+            get title() {
+                return m['boostContent.skillSubskills.teamwork.sportsmanship.title']();
+            },
             type: BoostCMSSubSkillEnum.sportsmanship,
         },
     ],
@@ -1340,150 +1611,206 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.VisualArts]: [
         {
             id: 1,
-            title: 'Drawing',
+            get title() {
+                return m['boostContent.skillSubskills.visualArts.drawing.title']();
+            },
             type: BoostCMSSubSkillEnum.drawing,
         },
         {
             id: 2,
-            title: 'Painting',
+            get title() {
+                return m['boostContent.skillSubskills.visualArts.painting.title']();
+            },
             type: BoostCMSSubSkillEnum.painting,
         },
         {
             id: 3,
-            title: 'Sculpture',
+            get title() {
+                return m['boostContent.skillSubskills.visualArts.sculpture.title']();
+            },
             type: BoostCMSSubSkillEnum.sculpture,
         },
         {
             id: 4,
-            title: 'Graphic design',
+            get title() {
+                return m['boostContent.skillSubskills.visualArts.graphicDesign.title']();
+            },
             type: BoostCMSSubSkillEnum.graphicDesign,
         },
         {
             id: 5,
-            title: 'Photography',
+            get title() {
+                return m['boostContent.skillSubskills.visualArts.photography.title']();
+            },
             type: BoostCMSSubSkillEnum.photography,
         },
     ],
     [BoostCMSCategorySkillEnum.PerformingArts]: [
         {
             id: 1,
-            title: 'Acting',
+            get title() {
+                return m['boostContent.skillSubskills.performingArts.acting.title']();
+            },
             type: BoostCMSSubSkillEnum.acting,
         },
         {
             id: 2,
-            title: 'Dance',
+            get title() {
+                return m['boostContent.skillSubskills.performingArts.dance.title']();
+            },
             type: BoostCMSSubSkillEnum.dance,
         },
         {
             id: 3,
-            title: 'Singing',
+            get title() {
+                return m['boostContent.skillSubskills.performingArts.singing.title']();
+            },
             type: BoostCMSSubSkillEnum.singing,
         },
         {
             id: 4,
-            title: 'Instrumental',
+            get title() {
+                return m['boostContent.skillSubskills.performingArts.instrumental.title']();
+            },
             type: BoostCMSSubSkillEnum.instrumental,
         },
         {
             id: 5,
-            title: 'Theatre Production',
+            get title() {
+                return m['boostContent.skillSubskills.performingArts.theaterProduction.title']();
+            },
             type: BoostCMSSubSkillEnum.theaterProduction,
         },
         {
             id: 6,
-            title: 'Costume Design',
+            get title() {
+                return m['boostContent.skillSubskills.performingArts.costumeDesign.title']();
+            },
             type: BoostCMSSubSkillEnum.costumeDesign,
         },
         {
             id: 7,
-            title: 'Directing',
+            get title() {
+                return m['boostContent.skillSubskills.performingArts.directing.title']();
+            },
             type: BoostCMSSubSkillEnum.directing,
         },
     ],
     [BoostCMSCategorySkillEnum.Writing]: [
         {
             id: 1,
-            title: 'Poetry',
+            get title() {
+                return m['boostContent.skillSubskills.writing.poetry.title']();
+            },
             type: BoostCMSSubSkillEnum.poetry,
         },
         {
             id: 2,
-            title: 'Fiction',
+            get title() {
+                return m['boostContent.skillSubskills.writing.fiction.title']();
+            },
             type: BoostCMSSubSkillEnum.fiction,
         },
         {
             id: 3,
-            title: 'Non fiction',
+            get title() {
+                return m['boostContent.skillSubskills.writing.nonfiction.title']();
+            },
             type: BoostCMSSubSkillEnum.nonfiction,
         },
         {
             id: 4,
-            title: 'Script Writing',
+            get title() {
+                return m['boostContent.skillSubskills.writing.scriptWriting.title']();
+            },
             type: BoostCMSSubSkillEnum.scriptWriting,
         },
         {
             id: 5,
-            title: 'Copy Writing',
+            get title() {
+                return m['boostContent.skillSubskills.writing.copyWriting.title']();
+            },
             type: BoostCMSSubSkillEnum.copyWriting,
         },
         {
             id: 6,
-            title: 'Journalism',
+            get title() {
+                return m['boostContent.skillSubskills.writing.journalism.title']();
+            },
             type: BoostCMSSubSkillEnum.journalism,
         },
     ],
     [BoostCMSCategorySkillEnum.Design]: [
         {
             id: 1,
-            title: 'Fashion Design',
+            get title() {
+                return m['boostContent.skillSubskills.design.fashionDesign.title']();
+            },
             type: BoostCMSSubSkillEnum.fashionDesign,
         },
         {
             id: 2,
-            title: 'Interior Design',
+            get title() {
+                return m['boostContent.skillSubskills.design.interiorDesign.title']();
+            },
             type: BoostCMSSubSkillEnum.interiorDesign,
         },
         {
             id: 3,
-            title: 'Web Design',
+            get title() {
+                return m['boostContent.skillSubskills.design.webDesign.title']();
+            },
             type: BoostCMSSubSkillEnum.webDesign,
         },
         {
             id: 4,
-            title: 'Product Design',
+            get title() {
+                return m['boostContent.skillSubskills.design.productDesign.title']();
+            },
             type: BoostCMSSubSkillEnum.productDesign,
         },
         {
             id: 5,
-            title: 'Game Design',
+            get title() {
+                return m['boostContent.skillSubskills.design.gameDesign.title']();
+            },
             type: BoostCMSSubSkillEnum.gameDesign,
         },
     ],
     [BoostCMSCategorySkillEnum.Ideation]: [
         {
             id: 1,
-            title: 'Brainstorming',
+            get title() {
+                return m['boostContent.skillSubskills.ideation.brainstorming.title']();
+            },
             type: BoostCMSSubSkillEnum.brainstorming,
         },
         {
             id: 2,
-            title: 'Concept Development',
+            get title() {
+                return m['boostContent.skillSubskills.ideation.conceptDevelopment.title']();
+            },
             type: BoostCMSSubSkillEnum.conceptDevelopment,
         },
         {
             id: 3,
-            title: 'Innovation',
+            get title() {
+                return m['boostContent.skillSubskills.ideation.innovation.title']();
+            },
             type: BoostCMSSubSkillEnum.innovation,
         },
         {
             id: 4,
-            title: 'Problem Solving',
+            get title() {
+                return m['boostContent.skillSubskills.ideation.problemSolving.title']();
+            },
             type: BoostCMSSubSkillEnum.problemSolving,
         },
         {
             id: 5,
-            title: 'Out of the box thinking',
+            get title() {
+                return m['boostContent.skillSubskills.ideation.outOfTheBoxThinking.title']();
+            },
             type: BoostCMSSubSkillEnum.outOfTheBoxThinking,
         },
     ],
@@ -1492,135 +1819,189 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.Management]: [
         {
             id: 1,
-            title: 'Leadership',
+            get title() {
+                return m['boostContent.skillSubskills.management.leadership.title']();
+            },
             type: BoostCMSSubSkillEnum.leadership,
         },
         {
             id: 2,
-            title: 'Strategic Planning',
+            get title() {
+                return m['boostContent.skillSubskills.management.strategicPlanning.title']();
+            },
             type: BoostCMSSubSkillEnum.strategicPlanning,
         },
         {
             id: 3,
-            title: 'Team Building',
+            get title() {
+                return m['boostContent.skillSubskills.management.teamBuilding.title']();
+            },
             type: BoostCMSSubSkillEnum.teamBuilding,
         },
         {
             id: 4,
-            title: 'Delegation',
+            get title() {
+                return m['boostContent.skillSubskills.management.delegation.title']();
+            },
             type: BoostCMSSubSkillEnum.delegation,
         },
         {
             id: 5,
-            title: 'Conflict Resolution',
+            get title() {
+                return m['boostContent.skillSubskills.management.conflictResolution.title']();
+            },
             type: BoostCMSSubSkillEnum.conflictResolution,
         },
     ],
     [BoostCMSCategorySkillEnum.Finance]: [
         {
             id: 1,
-            title: 'Accounting',
+            get title() {
+                return m['boostContent.skillSubskills.finance.accounting.title']();
+            },
             type: BoostCMSSubSkillEnum.accounting,
         },
         {
             id: 2,
-            title: 'Budgeting',
+            get title() {
+                return m['boostContent.skillSubskills.finance.budgeting.title']();
+            },
             type: BoostCMSSubSkillEnum.budgeting,
         },
         {
             id: 3,
-            title: 'Financial Analysis',
+            get title() {
+                return m['boostContent.skillSubskills.finance.financialAnalysis.title']();
+            },
             type: BoostCMSSubSkillEnum.financialAnalysis,
         },
         {
             id: 4,
-            title: 'Investment',
+            get title() {
+                return m['boostContent.skillSubskills.finance.investment.title']();
+            },
             type: BoostCMSSubSkillEnum.investment,
         },
         {
             id: 5,
-            title: 'Risk Management',
+            get title() {
+                return m['boostContent.skillSubskills.finance.riskManagement.title']();
+            },
             type: BoostCMSSubSkillEnum.riskManagement,
         },
     ],
     [BoostCMSCategorySkillEnum.Marketing]: [
         {
             id: 1,
-            title: 'Market Research',
+            get title() {
+                return m['boostContent.skillSubskills.marketing.marketResearch.title']();
+            },
             type: BoostCMSSubSkillEnum.marketResearch,
         },
         {
             id: 2,
-            title: 'Branding',
+            get title() {
+                return m['boostContent.skillSubskills.marketing.branding.title']();
+            },
             type: BoostCMSSubSkillEnum.branding,
         },
         {
             id: 3,
-            title: 'Advertising',
+            get title() {
+                return m['boostContent.skillSubskills.marketing.advertising.title']();
+            },
             type: BoostCMSSubSkillEnum.advertising,
         },
         {
             id: 4,
-            title: 'Sales',
+            get title() {
+                return m['boostContent.skillSubskills.marketing.sales.title']();
+            },
             type: BoostCMSSubSkillEnum.sales,
         },
         {
             id: 5,
-            title: 'Customer Relationship Management',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.marketing.customerRelationshipManagement.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.customerRelationshipManagement,
         },
     ],
     [BoostCMSCategorySkillEnum.Operations]: [
         {
             id: 1,
-            title: 'Logistics',
+            get title() {
+                return m['boostContent.skillSubskills.operations.logistics.title']();
+            },
             type: BoostCMSSubSkillEnum.logistics,
         },
         {
             id: 2,
-            title: 'Supply Chain Management',
+            get title() {
+                return m['boostContent.skillSubskills.operations.supplyChainManagement.title']();
+            },
             type: BoostCMSSubSkillEnum.supplyChainManagement,
         },
         {
             id: 3,
-            title: 'Process Improvement',
+            get title() {
+                return m['boostContent.skillSubskills.operations.processImprovement.title']();
+            },
             type: BoostCMSSubSkillEnum.processImprovement,
         },
         {
             id: 4,
-            title: 'Project Management',
+            get title() {
+                return m['boostContent.skillSubskills.operations.projectManagement.title']();
+            },
             type: BoostCMSSubSkillEnum.projectManagement,
         },
         {
             id: 5,
-            title: 'Quality Control',
+            get title() {
+                return m['boostContent.skillSubskills.operations.qualityControl.title']();
+            },
             type: BoostCMSSubSkillEnum.qualityControl,
         },
     ],
     [BoostCMSCategorySkillEnum.Entrepreneurship]: [
         {
             id: 1,
-            title: 'Opportunity Recognition',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.entrepreneurship.opportunityRecognition.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.opportunityRecognition,
         },
         {
             id: 2,
-            title: 'Business Planning',
+            get title() {
+                return m['boostContent.skillSubskills.entrepreneurship.businessPlanning.title']();
+            },
             type: BoostCMSSubSkillEnum.businessPlanning,
         },
         {
             id: 3,
-            title: 'Fundraising',
+            get title() {
+                return m['boostContent.skillSubskills.entrepreneurship.fundraising.title']();
+            },
             type: BoostCMSSubSkillEnum.fundraising,
         },
         {
             id: 4,
-            title: 'Networking',
+            get title() {
+                return m['boostContent.skillSubskills.entrepreneurship.networking.title']();
+            },
             type: BoostCMSSubSkillEnum.networking,
         },
         {
             id: 5,
-            title: 'Decision-making',
+            get title() {
+                return m['boostContent.skillSubskills.entrepreneurship.decisionMaking.title']();
+            },
             type: BoostCMSSubSkillEnum.decisionMaking,
         },
     ],
@@ -1629,135 +2010,185 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.Construction]: [
         {
             id: 1,
-            title: 'Carpentry',
+            get title() {
+                return m['boostContent.skillSubskills.construction.carpentry.title']();
+            },
             type: BoostCMSSubSkillEnum.carpentry,
         },
         {
             id: 2,
-            title: 'Electrical Work',
+            get title() {
+                return m['boostContent.skillSubskills.construction.electricalWork.title']();
+            },
             type: BoostCMSSubSkillEnum.electricalWork,
         },
         {
             id: 3,
-            title: 'Plumbing',
+            get title() {
+                return m['boostContent.skillSubskills.construction.plumbing.title']();
+            },
             type: BoostCMSSubSkillEnum.plumbing,
         },
         {
             id: 4,
-            title: 'Masonry',
+            get title() {
+                return m['boostContent.skillSubskills.construction.masonry.title']();
+            },
             type: BoostCMSSubSkillEnum.masonry,
         },
         {
             id: 5,
-            title: 'HVAC',
+            get title() {
+                return m['boostContent.skillSubskills.construction.hVAC.title']();
+            },
             type: BoostCMSSubSkillEnum.HVAC,
         },
     ],
     [BoostCMSCategorySkillEnum.Mechanics]: [
         {
             id: 1,
-            title: 'Automotive Repair',
+            get title() {
+                return m['boostContent.skillSubskills.mechanics.automotiveRepair.title']();
+            },
             type: BoostCMSSubSkillEnum.automotiveRepair,
         },
         {
             id: 2,
-            title: 'Diesel Engine Repair',
+            get title() {
+                return m['boostContent.skillSubskills.mechanics.dieselEngineRepair.title']();
+            },
             type: BoostCMSSubSkillEnum.dieselEngineRepair,
         },
         {
             id: 3,
-            title: 'Small Engine Repair',
+            get title() {
+                return m['boostContent.skillSubskills.mechanics.smallEngineRepair.title']();
+            },
             type: BoostCMSSubSkillEnum.smallEngineRepair,
         },
         {
             id: 4,
-            title: 'Aircraft Maintenance',
+            get title() {
+                return m['boostContent.skillSubskills.mechanics.aircraftMaintenance.title']();
+            },
             type: BoostCMSSubSkillEnum.aircraftMaintenance,
         },
         {
             id: 5,
-            title: 'Heavy Equipment Operation',
+            get title() {
+                return m['boostContent.skillSubskills.mechanics.heavyEquipmentOperation.title']();
+            },
             type: BoostCMSSubSkillEnum.heavyEquipmentOperation,
         },
     ],
     [BoostCMSCategorySkillEnum.Manufacturing]: [
         {
             id: 1,
-            title: 'Welding',
+            get title() {
+                return m['boostContent.skillSubskills.manufacturing.welding.title']();
+            },
             type: BoostCMSSubSkillEnum.welding,
         },
         {
             id: 2,
-            title: 'Machining',
+            get title() {
+                return m['boostContent.skillSubskills.manufacturing.machining.title']();
+            },
             type: BoostCMSSubSkillEnum.machining,
         },
         {
             id: 3,
-            title: 'Assembly',
+            get title() {
+                return m['boostContent.skillSubskills.manufacturing.assembly.title']();
+            },
             type: BoostCMSSubSkillEnum.assembly,
         },
         {
             id: 4,
-            title: 'Fabrication',
+            get title() {
+                return m['boostContent.skillSubskills.manufacturing.fabrication.title']();
+            },
             type: BoostCMSSubSkillEnum.fabrication,
         },
         {
             id: 5,
-            title: 'Quality Assurance',
+            get title() {
+                return m['boostContent.skillSubskills.manufacturing.qualityAssurance.title']();
+            },
             type: BoostCMSSubSkillEnum.qualityAssurance,
         },
     ],
     [BoostCMSCategorySkillEnum.Cosmetology]: [
         {
             id: 1,
-            title: 'Hairstyling',
+            get title() {
+                return m['boostContent.skillSubskills.cosmetology.hairstyling.title']();
+            },
             type: BoostCMSSubSkillEnum.hairstyling,
         },
         {
             id: 2,
-            title: 'Barbering',
+            get title() {
+                return m['boostContent.skillSubskills.cosmetology.barbering.title']();
+            },
             type: BoostCMSSubSkillEnum.barbering,
         },
         {
             id: 3,
-            title: 'Nail Technology',
+            get title() {
+                return m['boostContent.skillSubskills.cosmetology.nailTechnology.title']();
+            },
             type: BoostCMSSubSkillEnum.nailTechnology,
         },
         {
             id: 4,
-            title: 'Makeup Artistry',
+            get title() {
+                return m['boostContent.skillSubskills.cosmetology.makeupArtistry.title']();
+            },
             type: BoostCMSSubSkillEnum.makeupArtistry,
         },
         {
             id: 5,
-            title: 'Esthetics',
+            get title() {
+                return m['boostContent.skillSubskills.cosmetology.esthetics.title']();
+            },
             type: BoostCMSSubSkillEnum.esthetics,
         },
     ],
     [BoostCMSCategorySkillEnum.CulinaryArts]: [
         {
             id: 1,
-            title: 'Cooking Techniques',
+            get title() {
+                return m['boostContent.skillSubskills.culinaryArts.cookingTechniques.title']();
+            },
             type: BoostCMSSubSkillEnum.cookingTechniques,
         },
         {
             id: 2,
-            title: 'Baking',
+            get title() {
+                return m['boostContent.skillSubskills.culinaryArts.baking.title']();
+            },
             type: BoostCMSSubSkillEnum.baking,
         },
         {
             id: 3,
-            title: 'Food Safety',
+            get title() {
+                return m['boostContent.skillSubskills.culinaryArts.foodSafety.title']();
+            },
             type: BoostCMSSubSkillEnum.foodSafety,
         },
         {
             id: 4,
-            title: 'Menu Planning',
+            get title() {
+                return m['boostContent.skillSubskills.culinaryArts.menuPlanning.title']();
+            },
             type: BoostCMSSubSkillEnum.menuPlanning,
         },
         {
             id: 5,
-            title: 'Restaurant Management',
+            get title() {
+                return m['boostContent.skillSubskills.culinaryArts.restaurantManagement.title']();
+            },
             type: BoostCMSSubSkillEnum.restaurantManagement,
         },
     ],
@@ -1766,135 +2197,189 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.History]: [
         {
             id: 1,
-            title: 'Research Methods',
+            get title() {
+                return m['boostContent.skillSubskills.history.researchMethods.title']();
+            },
             type: BoostCMSSubSkillEnum.researchMethods,
         },
         {
             id: 2,
-            title: 'Analysis of Primary Sources',
+            get title() {
+                return m['boostContent.skillSubskills.history.analysisOfPrimarySources.title']();
+            },
             type: BoostCMSSubSkillEnum.analysisOfPrimarySources,
         },
         {
             id: 3,
-            title: 'Chronological Reasoning',
+            get title() {
+                return m['boostContent.skillSubskills.history.chronologicalReasoning.title']();
+            },
             type: BoostCMSSubSkillEnum.chronologicalReasoning,
         },
         {
             id: 4,
-            title: 'Comparative History',
+            get title() {
+                return m['boostContent.skillSubskills.history.comparativeHistory.title']();
+            },
             type: BoostCMSSubSkillEnum.comparativeHistory,
         },
         {
             id: 5,
-            title: 'Historiography',
+            get title() {
+                return m['boostContent.skillSubskills.history.historiography.title']();
+            },
             type: BoostCMSSubSkillEnum.historiography,
         },
     ],
     [BoostCMSCategorySkillEnum.Psychology]: [
         {
             id: 1,
-            title: 'Cognitive Psychology',
+            get title() {
+                return m['boostContent.skillSubskills.psychology.cognitivePsychology.title']();
+            },
             type: BoostCMSSubSkillEnum.cognitivePsychology,
         },
         {
             id: 2,
-            title: 'Developmental Psychology',
+            get title() {
+                return m['boostContent.skillSubskills.psychology.developmentalPsychology.title']();
+            },
             type: BoostCMSSubSkillEnum.developmentalPsychology,
         },
         {
             id: 3,
-            title: 'Social Psychology',
+            get title() {
+                return m['boostContent.skillSubskills.psychology.socialPsychology.title']();
+            },
             type: BoostCMSSubSkillEnum.socialPsychology,
         },
         {
             id: 4,
-            title: 'Experimental Methods',
+            get title() {
+                return m['boostContent.skillSubskills.psychology.experimentalMethods.title']();
+            },
             type: BoostCMSSubSkillEnum.experimentalMethods,
         },
         {
             id: 5,
-            title: 'Clinical Psychology',
+            get title() {
+                return m['boostContent.skillSubskills.psychology.clinicalPsychology.title']();
+            },
             type: BoostCMSSubSkillEnum.clinicalPsychology,
         },
     ],
     [BoostCMSCategorySkillEnum.Sociology]: [
         {
             id: 1,
-            title: 'Social Inequality',
+            get title() {
+                return m['boostContent.skillSubskills.sociology.socialInequality.title']();
+            },
             type: BoostCMSSubSkillEnum.socialInequality,
         },
         {
             id: 2,
-            title: 'Social Institutions',
+            get title() {
+                return m['boostContent.skillSubskills.sociology.socialInstitutions.title']();
+            },
             type: BoostCMSSubSkillEnum.socialInstitutions,
         },
         {
             id: 3,
-            title: 'Research Methods',
+            get title() {
+                return m['boostContent.skillSubskills.sociology.researchMethods.title']();
+            },
             type: BoostCMSSubSkillEnum.researchMethods,
         },
         {
             id: 4,
-            title: 'Social Change',
+            get title() {
+                return m['boostContent.skillSubskills.sociology.socialChange.title']();
+            },
             type: BoostCMSSubSkillEnum.socialChange,
         },
         {
             id: 5,
-            title: 'Social Movements',
+            get title() {
+                return m['boostContent.skillSubskills.sociology.socialMovements.title']();
+            },
             type: BoostCMSSubSkillEnum.socialMovements,
         },
     ],
     [BoostCMSCategorySkillEnum.Economics]: [
         {
             id: 1,
-            title: 'Microeconomics',
+            get title() {
+                return m['boostContent.skillSubskills.economics.microeconomics.title']();
+            },
             type: BoostCMSSubSkillEnum.microeconomics,
         },
         {
             id: 2,
-            title: 'Macroeconomics',
+            get title() {
+                return m['boostContent.skillSubskills.economics.macroeconomics.title']();
+            },
             type: BoostCMSSubSkillEnum.macroeconomics,
         },
         {
             id: 3,
-            title: 'Econometrics',
+            get title() {
+                return m['boostContent.skillSubskills.economics.econometrics.title']();
+            },
             type: BoostCMSSubSkillEnum.econometrics,
         },
         {
             id: 4,
-            title: 'Economic Policy',
+            get title() {
+                return m['boostContent.skillSubskills.economics.economicPolicy.title']();
+            },
             type: BoostCMSSubSkillEnum.economicPolicy,
         },
         {
             id: 5,
-            title: 'International Economics',
+            get title() {
+                return m['boostContent.skillSubskills.economics.internationalEconomics.title']();
+            },
             type: BoostCMSSubSkillEnum.internationalEconomics,
         },
     ],
     [BoostCMSCategorySkillEnum.PoliticalScience]: [
         {
             id: 1,
-            title: 'Government Systems',
+            get title() {
+                return m['boostContent.skillSubskills.politicalScience.governmentSystems.title']();
+            },
             type: BoostCMSSubSkillEnum.governmentSystems,
         },
         {
             id: 2,
-            title: 'Political Theory',
+            get title() {
+                return m['boostContent.skillSubskills.politicalScience.politicalTheory.title']();
+            },
             type: BoostCMSSubSkillEnum.politicalTheory,
         },
         {
             id: 3,
-            title: 'International Relations',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.politicalScience.internationalRelations.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.internationalRelations,
         },
         {
             id: 4,
-            title: 'Comparative Politics',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.politicalScience.comparativePolitics.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.comparativePolitics,
         },
         {
             id: 5,
-            title: 'Public Policy',
+            get title() {
+                return m['boostContent.skillSubskills.politicalScience.publicPolicy.title']();
+            },
             type: BoostCMSSubSkillEnum.publicPolicy,
         },
     ],
@@ -1903,135 +2388,211 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.BasicComputerSkills]: [
         {
             id: 1,
-            title: 'Typing',
+            get title() {
+                return m['boostContent.skillSubskills.basicComputerSkills.typing.title']();
+            },
             type: BoostCMSSubSkillEnum.typing,
         },
         {
             id: 2,
-            title: 'File Management',
+            get title() {
+                return m['boostContent.skillSubskills.basicComputerSkills.fileManagement.title']();
+            },
             type: BoostCMSSubSkillEnum.fileManagement,
         },
         {
             id: 3,
-            title: 'Internet Navigation',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.basicComputerSkills.internetNavigation.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.internetNavigation,
         },
         {
             id: 4,
-            title: 'Email',
+            get title() {
+                return m['boostContent.skillSubskills.basicComputerSkills.email.title']();
+            },
             type: BoostCMSSubSkillEnum.email,
         },
         {
             id: 5,
-            title: 'Word Processing',
+            get title() {
+                return m['boostContent.skillSubskills.basicComputerSkills.wordProcessing.title']();
+            },
             type: BoostCMSSubSkillEnum.wordProcessing,
         },
     ],
     [BoostCMSCategorySkillEnum.InformationLiteracy]: [
         {
             id: 1,
-            title: 'Search Engine Proficiency',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.informationLiteracy.searchEngineProficiency.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.searchEngineProficiency,
         },
         {
             id: 2,
-            title: 'Evaluating sources',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.informationLiteracy.evaluatingSources.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.evaluatingSources,
         },
         {
             id: 3,
-            title: 'Fact Checking',
+            get title() {
+                return m['boostContent.skillSubskills.informationLiteracy.factChecking.title']();
+            },
             type: BoostCMSSubSkillEnum.factChecking,
         },
         {
             id: 4,
-            title: 'Critical Media Analysis',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.informationLiteracy.criticalMediaAnalysis.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.criticalMediaAnalysis,
         },
         {
             id: 5,
-            title: 'Understanding Bias',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.informationLiteracy.understandingBias.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.understandingBias,
         },
     ],
     [BoostCMSCategorySkillEnum.SoftwareProficiency]: [
         {
             id: 1,
-            title: 'Productivity Suites',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.softwareProficiency.productivitySuites.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.productivitySuites,
         },
         {
             id: 2,
-            title: 'Specialized Software',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.softwareProficiency.specializedSoftware.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.specializedSoftware,
         },
         {
             id: 3,
-            title: 'Design Software',
+            get title() {
+                return m['boostContent.skillSubskills.softwareProficiency.designSoftware.title']();
+            },
             type: BoostCMSSubSkillEnum.designSoftware,
         },
         {
             id: 4,
-            title: 'Programming Basics',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.softwareProficiency.programmingBasics.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.programmingBasics,
         },
         {
             id: 5,
-            title: 'Data Visualization Tools',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.softwareProficiency.dataVisualizationTools.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.dataVisualizationTools,
         },
     ],
     [BoostCMSCategorySkillEnum.OnlineCommunication]: [
         {
             id: 1,
-            title: 'Netiquette',
+            get title() {
+                return m['boostContent.skillSubskills.onlineCommunication.netiquette.title']();
+            },
             type: BoostCMSSubSkillEnum.netiquette,
         },
         {
             id: 2,
-            title: 'Effective Email and Messaging',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.onlineCommunication.effectiveEmailAndMessaging.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.effectiveEmailAndMessaging,
         },
         {
             id: 3,
-            title: 'Social Media Platforms',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.onlineCommunication.socialMediaPlatforms.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.socialMediaPlatforms,
         },
         {
             id: 4,
-            title: 'Video Conferencing',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.onlineCommunication.videoConferencing.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.videoConferencing,
         },
         {
             id: 5,
-            title: 'Collaboration Tools',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.onlineCommunication.collaborationTools.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.collaborationTools,
         },
     ],
     [BoostCMSCategorySkillEnum.Cybersecurity]: [
         {
             id: 1,
-            title: 'Password Management',
+            get title() {
+                return m['boostContent.skillSubskills.cybersecurity.passwordManagement.title']();
+            },
             type: BoostCMSSubSkillEnum.passwordManagement,
         },
         {
             id: 2,
-            title: 'Phishing Awareness',
+            get title() {
+                return m['boostContent.skillSubskills.cybersecurity.phishingAwareness.title']();
+            },
             type: BoostCMSSubSkillEnum.phishingAwareness,
         },
         {
             id: 3,
-            title: 'Data Privacy',
+            get title() {
+                return m['boostContent.skillSubskills.cybersecurity.dataPrivacy.title']();
+            },
             type: BoostCMSSubSkillEnum.dataPrivacy,
         },
         {
             id: 4,
-            title: 'Safe Online Practices',
+            get title() {
+                return m['boostContent.skillSubskills.cybersecurity.safeOnlinePractices.title']();
+            },
             type: BoostCMSSubSkillEnum.safeOnlinePractices,
         },
         {
             id: 5,
-            title: 'Protecting Devices',
+            get title() {
+                return m['boostContent.skillSubskills.cybersecurity.protectingDevices.title']();
+            },
             type: BoostCMSSubSkillEnum.protectingDevices,
         },
     ],
@@ -2040,145 +2601,225 @@ export const SKILLS_TO_SUBSKILLS = {
     [BoostCMSCategorySkillEnum.ClinicalSkills]: [
         {
             id: 1,
-            title: 'Patient Assessment',
+            get title() {
+                return m['boostContent.skillSubskills.clinicalSkills.patientAssessment.title']();
+            },
             type: BoostCMSSubSkillEnum.patientAssessment,
         },
         {
             id: 2,
-            title: 'Diagnostic Procedures',
+            get title() {
+                return m['boostContent.skillSubskills.clinicalSkills.diagnosticProcedures.title']();
+            },
             type: BoostCMSSubSkillEnum.diagnosticProcedures,
         },
         {
             id: 3,
-            title: 'Medication Administration',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.clinicalSkills.medicationAdministration.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.medicationAdministration,
         },
         {
             id: 4,
-            title: 'Wound Care',
+            get title() {
+                return m['boostContent.skillSubskills.clinicalSkills.woundCare.title']();
+            },
             type: BoostCMSSubSkillEnum.woundCare,
         },
         {
             id: 5,
-            title: 'Basic Life Support',
+            get title() {
+                return m['boostContent.skillSubskills.clinicalSkills.basicLifeSupport.title']();
+            },
             type: BoostCMSSubSkillEnum.basicLifeSupport,
         },
     ],
     [BoostCMSCategorySkillEnum.AnatomyAndPhysiology]: [
         {
             id: 1,
-            title: 'Body Systems',
+            get title() {
+                return m['boostContent.skillSubskills.anatomyAndPhysiology.bodySystems.title']();
+            },
             type: BoostCMSSubSkillEnum.bodySystems,
         },
         {
             id: 2,
-            title: 'Medical Terminology',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.anatomyAndPhysiology.medicalTerminology.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.medicalTerminology,
         },
         {
             id: 3,
-            title: 'Disease Processes',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.anatomyAndPhysiology.diseaseProcesses.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.diseaseProcesses,
         },
         {
             id: 4,
-            title: 'Pharmacology',
+            get title() {
+                return m['boostContent.skillSubskills.anatomyAndPhysiology.pharmacology.title']();
+            },
             type: BoostCMSSubSkillEnum.pharmacology,
         },
         {
             id: 5,
-            title: 'Pathophysiology',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.anatomyAndPhysiology.pathophysiology.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.pathophysiology,
         },
     ],
     [BoostCMSCategorySkillEnum.PatientCare]: [
         {
             id: 1,
-            title: 'Bedside Manner',
+            get title() {
+                return m['boostContent.skillSubskills.patientCare.bedsideManner.title']();
+            },
             type: BoostCMSSubSkillEnum.bedsideManner,
         },
         {
             id: 2,
-            title: 'Empathy',
+            get title() {
+                return m['boostContent.skillSubskills.patientCare.empathy.title']();
+            },
             type: BoostCMSSubSkillEnum.empathy,
         },
         {
             id: 3,
-            title: 'Communication',
+            get title() {
+                return m['boostContent.skillSubskills.patientCare.communication.title']();
+            },
             type: BoostCMSSubSkillEnum.communication,
         },
         {
             id: 4,
-            title: 'Cultural Sensitivity',
+            get title() {
+                return m['boostContent.skillSubskills.patientCare.culturalSensitivity.title']();
+            },
             type: BoostCMSSubSkillEnum.culturalSensitivity,
         },
         {
             id: 5,
-            title: 'Ethics',
+            get title() {
+                return m['boostContent.skillSubskills.patientCare.ethics.title']();
+            },
             type: BoostCMSSubSkillEnum.ethics,
         },
     ],
     [BoostCMSCategorySkillEnum.MedicalSpecialties]: [
         {
             id: 1,
-            title: 'Surgery',
+            get title() {
+                return m['boostContent.skillSubskills.medicalSpecialties.surgery.title']();
+            },
             type: BoostCMSSubSkillEnum.surgery,
         },
         {
             id: 2,
-            title: 'Emergency Medicine',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.medicalSpecialties.emergencyMedicine.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.emergencyMedicine,
         },
         {
             id: 3,
-            title: 'Pediatrics',
+            get title() {
+                return m['boostContent.skillSubskills.medicalSpecialties.pediatrics.title']();
+            },
             type: BoostCMSSubSkillEnum.pediatrics,
         },
         {
             id: 4,
-            title: 'Radiology',
+            get title() {
+                return m['boostContent.skillSubskills.medicalSpecialties.radiology.title']();
+            },
             type: BoostCMSSubSkillEnum.radiology,
         },
         {
             id: 5,
-            title: 'Diagnostic Reasoning',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.medicalSpecialties.diagnosticReasoning.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.diagnosticReasoning,
         },
         {
             id: 6,
-            title: 'Treatment Planning',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.medicalSpecialties.treatmentPlanning.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.treatmentPlanning,
         },
         {
             id: 7,
-            title: 'Interdisciplinary Collaboration',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.medicalSpecialties.interdisciplinaryCollaboration.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.interdisciplinaryCollaboration,
         },
     ],
     [BoostCMSCategorySkillEnum.HealthcareAdministration]: [
         {
             id: 1,
-            title: 'Insurance and Billing',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.healthcareAdministration.insuranceAndBilling.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.insuranceAndBilling,
         },
         {
             id: 2,
-            title: 'Medical Records',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.healthcareAdministration.medicalRecords.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.medicalRecords,
         },
         {
             id: 3,
-            title: 'Patient Scheduling',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.healthcareAdministration.patientScheduling.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.patientScheduling,
         },
         {
             id: 4,
-            title: 'Regulatory Compliance',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.healthcareAdministration.regulatoryCompliance.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.regulatoryCompliance,
         },
         {
             id: 5,
-            title: 'Facility Management',
+            get title() {
+                return m[
+                    'boostContent.skillSubskills.healthcareAdministration.facilityManagement.title'
+                ]();
+            },
             type: BoostCMSSubSkillEnum.facilityManagement,
         },
     ],
@@ -2196,282 +2837,460 @@ export const SKILLS: {
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         type: BoostCMSCategorySkillEnum.Adaptability,
-        title: 'Adaptability',
-        description: 'Ability to adjust to new conditions and environments.',
+        get title() {
+            return m['boostContent.skills.adaptability.title']();
+        },
+        get description() {
+            return m['boostContent.skills.adaptability.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         type: BoostCMSCategorySkillEnum.Perseverance,
-        title: 'Perseverance',
-        description: 'Persistent effort in spite of obstacles or discouragement.',
+        get title() {
+            return m['boostContent.skills.perseverance.title']();
+        },
+        get description() {
+            return m['boostContent.skills.perseverance.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         type: BoostCMSCategorySkillEnum.MentalToughness,
-        title: 'Mental Toughness',
-        description: 'Strength of mind to endure challenges and pressure.',
+        get title() {
+            return m['boostContent.skills.mentalToughness.title']();
+        },
+        get description() {
+            return m['boostContent.skills.mentalToughness.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         type: BoostCMSCategorySkillEnum.PhysicalEndurance,
-        title: 'Physical Endurance',
-        description: 'Capacity to sustain prolonged physical effort.',
+        get title() {
+            return m['boostContent.skills.physicalEndurance.title']();
+        },
+        get description() {
+            return m['boostContent.skills.physicalEndurance.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         type: BoostCMSCategorySkillEnum.LifelongLearning,
-        title: 'Lifelong Learning',
-        description: 'Ongoing pursuit and improvement of knowledge and skills.',
+        get title() {
+            return m['boostContent.skills.lifelongLearning.title']();
+        },
+        get description() {
+            return m['boostContent.skills.lifelongLearning.description']();
+        },
     },
 
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         type: BoostCMSCategorySkillEnum.Mathematics,
-        title: 'Mathematics',
-        description: 'Understanding and working with numbers, equations, and formulas.',
+        get title() {
+            return m['boostContent.skills.mathematics.title']();
+        },
+        get description() {
+            return m['boostContent.skills.mathematics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         type: BoostCMSCategorySkillEnum.Science,
-        title: 'Science',
-        description: 'Exploration and understanding of the natural and physical world.',
+        get title() {
+            return m['boostContent.skills.science.title']();
+        },
+        get description() {
+            return m['boostContent.skills.science.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         type: BoostCMSCategorySkillEnum.Technology,
-        title: 'Technology',
-        description: 'Use of tools, machines, and systems to solve problems.',
+        get title() {
+            return m['boostContent.skills.technology.title']();
+        },
+        get description() {
+            return m['boostContent.skills.technology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         type: BoostCMSCategorySkillEnum.Engineering,
-        title: 'Engineering',
-        description:
-            'Application of science and math to design and build structures, systems, and devices.',
+        get title() {
+            return m['boostContent.skills.engineering.title']();
+        },
+        get description() {
+            return m['boostContent.skills.engineering.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         type: BoostCMSCategorySkillEnum.Research,
-        title: 'Research',
-        description: 'Systematic investigation to establish facts and reach new conclusions.',
+        get title() {
+            return m['boostContent.skills.research.title']();
+        },
+        get description() {
+            return m['boostContent.skills.research.description']();
+        },
     },
 
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         type: BoostCMSCategorySkillEnum.SportSpecificSkills,
-        title: 'Sport Specific Skills',
-        description: 'Techniques and abilities unique to a particular sport.',
+        get title() {
+            return m['boostContent.skills.sportSpecificSkills.title']();
+        },
+        get description() {
+            return m['boostContent.skills.sportSpecificSkills.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         type: BoostCMSCategorySkillEnum.StrengthAndConditioning,
-        title: 'Strength and Conditioning',
-        description: 'Training to improve muscular strength and physical fitness.',
+        get title() {
+            return m['boostContent.skills.strengthAndConditioning.title']();
+        },
+        get description() {
+            return m['boostContent.skills.strengthAndConditioning.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         type: BoostCMSCategorySkillEnum.Coordination,
-        title: 'Coordination',
-        description: 'Ability to use different parts of the body smoothly and efficiently.',
+        get title() {
+            return m['boostContent.skills.coordination.title']();
+        },
+        get description() {
+            return m['boostContent.skills.coordination.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         type: BoostCMSCategorySkillEnum.MentalFocus,
-        title: 'Mental Focus',
-        description: 'Concentration and mental clarity during performance.',
+        get title() {
+            return m['boostContent.skills.mentalFocus.title']();
+        },
+        get description() {
+            return m['boostContent.skills.mentalFocus.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         type: BoostCMSCategorySkillEnum.Teamwork,
-        title: 'Teamwork',
-        description: 'Collaborative effort to achieve common goals.',
+        get title() {
+            return m['boostContent.skills.teamwork.title']();
+        },
+        get description() {
+            return m['boostContent.skills.teamwork.description']();
+        },
     },
 
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         type: BoostCMSCategorySkillEnum.VisualArts,
-        title: 'Visual Arts',
-        description:
-            'Creative expression through visual media like drawing, painting, and sculpture.',
+        get title() {
+            return m['boostContent.skills.visualArts.title']();
+        },
+        get description() {
+            return m['boostContent.skills.visualArts.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         type: BoostCMSCategorySkillEnum.PerformingArts,
-        title: 'Performing Arts',
-        description: 'Art forms such as music, dance, and theater performed live.',
+        get title() {
+            return m['boostContent.skills.performingArts.title']();
+        },
+        get description() {
+            return m['boostContent.skills.performingArts.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         type: BoostCMSCategorySkillEnum.Writing,
-        title: 'Writing',
-        description: 'Creative and technical composition of text.',
+        get title() {
+            return m['boostContent.skills.writing.title']();
+        },
+        get description() {
+            return m['boostContent.skills.writing.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         type: BoostCMSCategorySkillEnum.Design,
-        title: 'Design',
-        description: 'Planning and creating visual and functional solutions.',
+        get title() {
+            return m['boostContent.skills.design.title']();
+        },
+        get description() {
+            return m['boostContent.skills.design.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         type: BoostCMSCategorySkillEnum.Ideation,
-        title: 'Ideation',
-        description: 'Generation and development of new ideas.',
+        get title() {
+            return m['boostContent.skills.ideation.title']();
+        },
+        get description() {
+            return m['boostContent.skills.ideation.description']();
+        },
     },
 
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         type: BoostCMSCategorySkillEnum.Management,
-        title: 'Management',
-        description: 'Planning, organizing, and supervising resources to achieve objectives.',
+        get title() {
+            return m['boostContent.skills.management.title']();
+        },
+        get description() {
+            return m['boostContent.skills.management.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         type: BoostCMSCategorySkillEnum.Finance,
-        title: 'Finance',
-        description: 'Management of money, investments, and financial planning.',
+        get title() {
+            return m['boostContent.skills.finance.title']();
+        },
+        get description() {
+            return m['boostContent.skills.finance.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         type: BoostCMSCategorySkillEnum.Marketing,
-        title: 'Marketing',
-        description: 'Promotion and selling of products or services.',
+        get title() {
+            return m['boostContent.skills.marketing.title']();
+        },
+        get description() {
+            return m['boostContent.skills.marketing.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         type: BoostCMSCategorySkillEnum.Operations,
-        title: 'Operations',
-        description: 'Efficient execution of business processes and workflows.',
+        get title() {
+            return m['boostContent.skills.operations.title']();
+        },
+        get description() {
+            return m['boostContent.skills.operations.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         type: BoostCMSCategorySkillEnum.Entrepreneurship,
-        title: 'Entrepreneurship',
-        description: 'Initiating and growing new business ventures.',
+        get title() {
+            return m['boostContent.skills.entrepreneurship.title']();
+        },
+        get description() {
+            return m['boostContent.skills.entrepreneurship.description']();
+        },
     },
 
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         type: BoostCMSCategorySkillEnum.Construction,
-        title: 'Construction',
-        description: 'Building structures and infrastructure.',
+        get title() {
+            return m['boostContent.skills.construction.title']();
+        },
+        get description() {
+            return m['boostContent.skills.construction.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         type: BoostCMSCategorySkillEnum.Mechanics,
-        title: 'Mechanics',
-        description: 'Maintenance and repair of machines and vehicles.',
+        get title() {
+            return m['boostContent.skills.mechanics.title']();
+        },
+        get description() {
+            return m['boostContent.skills.mechanics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         type: BoostCMSCategorySkillEnum.Manufacturing,
-        title: 'Manufacturing',
-        description: 'Production of goods using machinery and labor.',
+        get title() {
+            return m['boostContent.skills.manufacturing.title']();
+        },
+        get description() {
+            return m['boostContent.skills.manufacturing.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         type: BoostCMSCategorySkillEnum.Cosmetology,
-        title: 'Cosmetology',
-        description: 'Art and science of beauty treatments.',
+        get title() {
+            return m['boostContent.skills.cosmetology.title']();
+        },
+        get description() {
+            return m['boostContent.skills.cosmetology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         type: BoostCMSCategorySkillEnum.CulinaryArts,
-        title: 'Culinary Arts',
-        description: 'Preparation and presentation of food.',
+        get title() {
+            return m['boostContent.skills.culinaryArts.title']();
+        },
+        get description() {
+            return m['boostContent.skills.culinaryArts.description']();
+        },
     },
 
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         type: BoostCMSCategorySkillEnum.History,
-        title: 'History',
-        description: 'Study of past events and societies.',
+        get title() {
+            return m['boostContent.skills.history.title']();
+        },
+        get description() {
+            return m['boostContent.skills.history.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         type: BoostCMSCategorySkillEnum.Psychology,
-        title: 'Psychology',
-        description: 'Science of mind and behavior.',
+        get title() {
+            return m['boostContent.skills.psychology.title']();
+        },
+        get description() {
+            return m['boostContent.skills.psychology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         type: BoostCMSCategorySkillEnum.Sociology,
-        title: 'Sociology',
-        description: 'Study of social behavior and institutions.',
+        get title() {
+            return m['boostContent.skills.sociology.title']();
+        },
+        get description() {
+            return m['boostContent.skills.sociology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         type: BoostCMSCategorySkillEnum.Economics,
-        title: 'Economics',
-        description: 'Study of production, consumption, and distribution of goods.',
+        get title() {
+            return m['boostContent.skills.economics.title']();
+        },
+        get description() {
+            return m['boostContent.skills.economics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         type: BoostCMSCategorySkillEnum.PoliticalScience,
-        title: 'Political Science',
-        description: 'Study of governments, policies, and political behavior.',
+        get title() {
+            return m['boostContent.skills.politicalScience.title']();
+        },
+        get description() {
+            return m['boostContent.skills.politicalScience.description']();
+        },
     },
 
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         type: BoostCMSCategorySkillEnum.BasicComputerSkills,
-        title: 'Basic Computer Skills',
-        description: 'Fundamental use of computers and software applications.',
+        get title() {
+            return m['boostContent.skills.basicComputerSkills.title']();
+        },
+        get description() {
+            return m['boostContent.skills.basicComputerSkills.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         type: BoostCMSCategorySkillEnum.InformationLiteracy,
-        title: 'Information Literacy',
-        description: 'Ability to locate, evaluate, and use information effectively.',
+        get title() {
+            return m['boostContent.skills.informationLiteracy.title']();
+        },
+        get description() {
+            return m['boostContent.skills.informationLiteracy.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         type: BoostCMSCategorySkillEnum.SoftwareProficiency,
-        title: 'Software Proficiency',
-        description: 'Skillful use of specialized software tools.',
+        get title() {
+            return m['boostContent.skills.softwareProficiency.title']();
+        },
+        get description() {
+            return m['boostContent.skills.softwareProficiency.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         type: BoostCMSCategorySkillEnum.OnlineCommunication,
-        title: 'Online Communication',
-        description: 'Effective digital interaction and collaboration.',
+        get title() {
+            return m['boostContent.skills.onlineCommunication.title']();
+        },
+        get description() {
+            return m['boostContent.skills.onlineCommunication.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         type: BoostCMSCategorySkillEnum.Cybersecurity,
-        title: 'Cybersecurity',
-        description: 'Protection of systems and data from digital threats.',
+        get title() {
+            return m['boostContent.skills.cybersecurity.title']();
+        },
+        get description() {
+            return m['boostContent.skills.cybersecurity.description']();
+        },
     },
 
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         type: BoostCMSCategorySkillEnum.ClinicalSkills,
-        title: 'Clinical Skills',
-        description: 'Practical skills for patient assessment and care.',
+        get title() {
+            return m['boostContent.skills.clinicalSkills.title']();
+        },
+        get description() {
+            return m['boostContent.skills.clinicalSkills.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         type: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
-        title: 'Anatomy and Physiology',
-        description: 'Study of body structures and functions.',
+        get title() {
+            return m['boostContent.skills.anatomyAndPhysiology.title']();
+        },
+        get description() {
+            return m['boostContent.skills.anatomyAndPhysiology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         type: BoostCMSCategorySkillEnum.PatientCare,
-        title: 'Patient Care',
-        description: 'Compassionate and ethical support for patients.',
+        get title() {
+            return m['boostContent.skills.patientCare.title']();
+        },
+        get description() {
+            return m['boostContent.skills.patientCare.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         type: BoostCMSCategorySkillEnum.MedicalSpecialties,
-        title: 'Medical Specialties',
-        description: 'Expertise in specific areas of medicine.',
+        get title() {
+            return m['boostContent.skills.medicalSpecialties.title']();
+        },
+        get description() {
+            return m['boostContent.skills.medicalSpecialties.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         type: BoostCMSCategorySkillEnum.HealthcareAdministration,
-        title: 'Healthcare Administration',
-        description: 'Management of healthcare facilities and systems.',
+        get title() {
+            return m['boostContent.skills.healthcareAdministration.title']();
+        },
+        get description() {
+            return m['boostContent.skills.healthcareAdministration.description']();
+        },
     },
 ];
 
@@ -2490,39 +3309,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Adaptability,
         type: BoostCMSSubSkillEnum.flexibility,
-        title: 'Flexibility',
-        description:
-            'The ability to adjust to new conditions and environments with ease and grace.',
+        get title() {
+            return m['boostContent.subskills.adaptability.flexibility.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.adaptability.flexibility.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Adaptability,
         type: BoostCMSSubSkillEnum.resilience,
-        title: 'Resilience',
-        description: 'The capacity to recover quickly from difficulties and bounce back stronger.',
+        get title() {
+            return m['boostContent.subskills.adaptability.resilience.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.adaptability.resilience.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Adaptability,
         type: BoostCMSSubSkillEnum.problemSolving,
-        title: 'Problem Solving',
-        description: 'Identifying, analyzing, and resolving issues efficiently and effectively.',
+        get title() {
+            return m['boostContent.subskills.adaptability.problemSolving.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.adaptability.problemSolving.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Adaptability,
         type: BoostCMSSubSkillEnum.resourcefulness,
-        title: 'Resourcefulness',
-        description:
-            'Finding quick and clever ways to overcome challenges using available resources.',
+        get title() {
+            return m['boostContent.subskills.adaptability.resourcefulness.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.adaptability.resourcefulness.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Adaptability,
         type: BoostCMSSubSkillEnum.stressManagement,
-        title: 'Stress Management',
-        description:
-            'Maintaining composure and effectiveness under pressure or challenging situations.',
+        get title() {
+            return m['boostContent.subskills.adaptability.stressManagement.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.adaptability.stressManagement.description']();
+        },
     },
 
     // Durable > Perseverance
@@ -2530,37 +3366,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Perseverance,
         type: BoostCMSSubSkillEnum.discipline,
-        title: 'Discipline',
-        description: 'Consistently applying effort and focus toward goals over time.',
+        get title() {
+            return m['boostContent.subskills.perseverance.discipline.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.perseverance.discipline.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Perseverance,
         type: BoostCMSSubSkillEnum.focus,
-        title: 'Focus',
-        description: 'The ability to concentrate on tasks without getting distracted.',
+        get title() {
+            return m['boostContent.subskills.perseverance.focus.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.perseverance.focus.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Perseverance,
         type: BoostCMSSubSkillEnum.commitment,
-        title: 'Commitment',
-        description: 'Staying dedicated to goals or responsibilities despite difficulties.',
+        get title() {
+            return m['boostContent.subskills.perseverance.commitment.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.perseverance.commitment.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Perseverance,
         type: BoostCMSSubSkillEnum.grit,
-        title: 'Grit',
-        description:
-            'Sustained effort and passion for long-term goals, especially in the face of adversity.',
+        get title() {
+            return m['boostContent.subskills.perseverance.grit.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.perseverance.grit.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.Perseverance,
         type: BoostCMSSubSkillEnum.tenacity,
-        title: 'Tenacity',
-        description: 'Persistent determination in achieving objectives, no matter the obstacles.',
+        get title() {
+            return m['boostContent.subskills.perseverance.tenacity.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.perseverance.tenacity.description']();
+        },
     },
 
     // Durable > Mental Toughness
@@ -2568,38 +3423,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.MentalToughness,
         type: BoostCMSSubSkillEnum.optimism,
-        title: 'Optimism',
-        description: 'Maintaining a positive outlook and expecting good outcomes.',
+        get title() {
+            return m['boostContent.subskills.mentalToughness.optimism.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalToughness.optimism.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.MentalToughness,
         type: BoostCMSSubSkillEnum.selfConfidence,
-        title: 'Self Confidence',
-        description: 'Trust in one’s abilities and judgment, even under stress or criticism.',
+        get title() {
+            return m['boostContent.subskills.mentalToughness.selfConfidence.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalToughness.selfConfidence.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.MentalToughness,
         type: BoostCMSSubSkillEnum.emotionalRegulation,
-        title: 'Emotional Regulation',
-        description: 'Managing emotions to stay calm and effective in various situations.',
+        get title() {
+            return m['boostContent.subskills.mentalToughness.emotionalRegulation.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalToughness.emotionalRegulation.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.MentalToughness,
         type: BoostCMSSubSkillEnum.growthMindset,
-        title: 'Growth Mindset',
-        description:
-            'Belief in the ability to develop skills and intelligence through effort and learning.',
+        get title() {
+            return m['boostContent.subskills.mentalToughness.growthMindset.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalToughness.growthMindset.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.MentalToughness,
         type: BoostCMSSubSkillEnum.positiveSelfTalk,
-        title: 'Positive Self-Talk',
-        description:
-            'Encouraging and constructive internal dialogue that boosts confidence and motivation.',
+        get title() {
+            return m['boostContent.subskills.mentalToughness.positiveSelfTalk.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalToughness.positiveSelfTalk.description']();
+        },
     },
 
     // Durable > Physical Endurance
@@ -2607,36 +3480,58 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
         type: BoostCMSSubSkillEnum.strength,
-        title: 'Strength',
-        description: 'Physical power and capability to perform demanding tasks or movements.',
+        get title() {
+            return m['boostContent.subskills.physicalEndurance.strength.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.physicalEndurance.strength.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
         type: BoostCMSSubSkillEnum.stamina,
-        title: 'Stamina',
-        description: 'The ability to sustain prolonged physical or mental effort.',
+        get title() {
+            return m['boostContent.subskills.physicalEndurance.stamina.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.physicalEndurance.stamina.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
         type: BoostCMSSubSkillEnum.cardiovascularFitness,
-        title: 'Cardiovascular Fitness',
-        description: 'Efficiency of the heart and lungs in delivering oxygen during activity.',
+        get title() {
+            return m['boostContent.subskills.physicalEndurance.cardiovascularFitness.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.physicalEndurance.cardiovascularFitness.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
         type: BoostCMSSubSkillEnum.painTolerance,
-        title: 'Pain Tolerance',
-        description: 'The ability to endure discomfort or pain while continuing to function.',
+        get title() {
+            return m['boostContent.subskills.physicalEndurance.painTolerance.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.physicalEndurance.painTolerance.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
         type: BoostCMSSubSkillEnum.injuryPrevention,
-        title: 'Injury Prevention',
-        description: 'Practices that reduce the risk of harm during physical activity or effort.',
+        get title() {
+            return m['boostContent.subskills.physicalEndurance.injuryPrevention.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.physicalEndurance.injuryPrevention.description']();
+        },
     },
 
     // Durable > Lifelong Learning
@@ -2644,73 +3539,112 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.LifelongLearning,
         type: BoostCMSSubSkillEnum.curiosity,
-        title: 'Curiosity',
-        description: 'A strong desire to explore, learn, and understand new things.',
+        get title() {
+            return m['boostContent.subskills.lifelongLearning.curiosity.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.lifelongLearning.curiosity.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.LifelongLearning,
         type: BoostCMSSubSkillEnum.openMindedness,
-        title: 'Open Mindedness',
-        description: 'Willingness to consider different ideas, perspectives, and experiences.',
+        get title() {
+            return m['boostContent.subskills.lifelongLearning.openMindedness.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.lifelongLearning.openMindedness.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.LifelongLearning,
         type: BoostCMSSubSkillEnum.criticalThinking,
-        title: 'Critical Thinking',
-        description: 'Analyzing facts and forming reasoned judgments with clarity and logic.',
+        get title() {
+            return m['boostContent.subskills.lifelongLearning.criticalThinking.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.lifelongLearning.criticalThinking.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.LifelongLearning,
         type: BoostCMSSubSkillEnum.selfDirectedLearning,
-        title: 'Self-Directed Learning',
-        description: 'Taking initiative in identifying and pursuing learning opportunities.',
+        get title() {
+            return m['boostContent.subskills.lifelongLearning.selfDirectedLearning.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.lifelongLearning.selfDirectedLearning.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Durable,
         skill: BoostCMSCategorySkillEnum.LifelongLearning,
         type: BoostCMSSubSkillEnum.knowledgeRetention,
-        title: 'Knowledge Retention',
-        description: 'Effectively storing and recalling information over time.',
+        get title() {
+            return m['boostContent.subskills.lifelongLearning.knowledgeRetention.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.lifelongLearning.knowledgeRetention.description']();
+        },
     },
     // STEM > Mathematics
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Mathematics,
         type: BoostCMSSubSkillEnum.algebra,
-        title: 'Algebra',
-        description:
-            'Manipulating symbols and solving equations involving variables and constants.',
+        get title() {
+            return m['boostContent.subskills.mathematics.algebra.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mathematics.algebra.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Mathematics,
         type: BoostCMSSubSkillEnum.geometry,
-        title: 'Geometry',
-        description: 'Studying shapes, sizes, and the properties of space and position.',
+        get title() {
+            return m['boostContent.subskills.mathematics.geometry.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mathematics.geometry.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Mathematics,
         type: BoostCMSSubSkillEnum.trigonometry,
-        title: 'Trigonometry',
-        description: 'Exploring the relationships between the angles and sides of triangles.',
+        get title() {
+            return m['boostContent.subskills.mathematics.trigonometry.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mathematics.trigonometry.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Mathematics,
         type: BoostCMSSubSkillEnum.calculus,
-        title: 'Calculus',
-        description: 'Analyzing change through derivatives and integrals of functions.',
+        get title() {
+            return m['boostContent.subskills.mathematics.calculus.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mathematics.calculus.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Mathematics,
         type: BoostCMSSubSkillEnum.statistics,
-        title: 'Statistics',
-        description: 'Collecting, analyzing, and interpreting data to draw conclusions.',
+        get title() {
+            return m['boostContent.subskills.mathematics.statistics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mathematics.statistics.description']();
+        },
     },
 
     // STEM > Science
@@ -2718,36 +3652,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Science,
         type: BoostCMSSubSkillEnum.physics,
-        title: 'Physics',
-        description: 'Understanding the fundamental principles of matter, energy, and motion.',
+        get title() {
+            return m['boostContent.subskills.science.physics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.science.physics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Science,
         type: BoostCMSSubSkillEnum.chemistry,
-        title: 'Chemistry',
-        description: 'Investigating the properties, composition, and reactions of substances.',
+        get title() {
+            return m['boostContent.subskills.science.chemistry.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.science.chemistry.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Science,
         type: BoostCMSSubSkillEnum.biology,
-        title: 'Biology',
-        description: 'Studying living organisms, their structure, function, and interactions.',
+        get title() {
+            return m['boostContent.subskills.science.biology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.science.biology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Science,
         type: BoostCMSSubSkillEnum.earthScience,
-        title: 'Earth Science',
-        description: 'Exploring Earth’s physical structure, processes, and systems.',
+        get title() {
+            return m['boostContent.subskills.science.earthScience.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.science.earthScience.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Science,
         type: BoostCMSSubSkillEnum.environmentalScience,
-        title: 'Environmental Science',
-        description: 'Examining human impact on ecosystems and ways to protect natural resources.',
+        get title() {
+            return m['boostContent.subskills.science.environmentalScience.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.science.environmentalScience.description']();
+        },
     },
 
     // STEM > Technology
@@ -2755,39 +3709,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Technology,
         type: BoostCMSSubSkillEnum.coding,
-        title: 'Coding',
-        description: 'Writing and understanding instructions that computers can execute.',
+        get title() {
+            return m['boostContent.subskills.technology.coding.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.technology.coding.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Technology,
         type: BoostCMSSubSkillEnum.softwareDevelopment,
-        title: 'Software Development',
-        description: 'Designing, building, and maintaining applications and systems.',
+        get title() {
+            return m['boostContent.subskills.technology.softwareDevelopment.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.technology.softwareDevelopment.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Technology,
         type: BoostCMSSubSkillEnum.dataAnalysis,
-        title: 'Data Analysis',
-        description:
-            'Extracting insights and patterns from datasets using statistical and computational tools.',
+        get title() {
+            return m['boostContent.subskills.technology.dataAnalysis.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.technology.dataAnalysis.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Technology,
         type: BoostCMSSubSkillEnum.robotics,
-        title: 'Robotics',
-        description:
-            'Designing, building, and programming machines that perform tasks autonomously.',
+        get title() {
+            return m['boostContent.subskills.technology.robotics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.technology.robotics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Technology,
         type: BoostCMSSubSkillEnum.cybersecurity,
-        title: 'Cybersecurity',
-        description:
-            'Protecting systems and networks from digital attacks and unauthorized access.',
+        get title() {
+            return m['boostContent.subskills.technology.cybersecurity.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.technology.cybersecurity.description']();
+        },
     },
 
     // STEM > Engineering
@@ -2795,38 +3766,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Engineering,
         type: BoostCMSSubSkillEnum.mechanicalEngineering,
-        title: 'Mechanical Engineering',
-        description: 'Applying physics and materials science to design mechanical systems.',
+        get title() {
+            return m['boostContent.subskills.engineering.mechanicalEngineering.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.engineering.mechanicalEngineering.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Engineering,
         type: BoostCMSSubSkillEnum.electricalEngineering,
-        title: 'Electrical Engineering',
-        description: 'Designing and working with electrical systems, circuits, and devices.',
+        get title() {
+            return m['boostContent.subskills.engineering.electricalEngineering.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.engineering.electricalEngineering.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Engineering,
         type: BoostCMSSubSkillEnum.civilEngineering,
-        title: 'Civil Engineering',
-        description:
-            'Planning, designing, and constructing infrastructure such as roads and bridges.',
+        get title() {
+            return m['boostContent.subskills.engineering.civilEngineering.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.engineering.civilEngineering.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Engineering,
         type: BoostCMSSubSkillEnum.chemicalEngineering,
-        title: 'Chemical Engineering',
-        description:
-            'Combining chemistry and engineering to develop processes for producing materials.',
+        get title() {
+            return m['boostContent.subskills.engineering.chemicalEngineering.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.engineering.chemicalEngineering.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Engineering,
         type: BoostCMSSubSkillEnum.computerEngineering,
-        title: 'Computer Engineering',
-        description: 'Developing computer hardware and integrating it with software systems.',
+        get title() {
+            return m['boostContent.subskills.engineering.computerEngineering.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.engineering.computerEngineering.description']();
+        },
     },
 
     // STEM > Research
@@ -2834,36 +3823,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Research,
         type: BoostCMSSubSkillEnum.hypothesisDevelopment,
-        title: 'Hypothesis Development',
-        description: 'Formulating testable explanations based on observations and prior knowledge.',
+        get title() {
+            return m['boostContent.subskills.research.hypothesisDevelopment.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.research.hypothesisDevelopment.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Research,
         type: BoostCMSSubSkillEnum.experimentalDesign,
-        title: 'Experimental Design',
-        description: 'Creating structured methods to investigate scientific questions.',
+        get title() {
+            return m['boostContent.subskills.research.experimentalDesign.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.research.experimentalDesign.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Research,
         type: BoostCMSSubSkillEnum.dataCollection,
-        title: 'Data Collection',
-        description: 'Gathering accurate information for analysis through various methods.',
+        get title() {
+            return m['boostContent.subskills.research.dataCollection.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.research.dataCollection.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Research,
         type: BoostCMSSubSkillEnum.analysis,
-        title: 'Analysis',
-        description: 'Interpreting collected data to find meaning, trends, or results.',
+        get title() {
+            return m['boostContent.subskills.research.analysis.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.research.analysis.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Stem,
         skill: BoostCMSCategorySkillEnum.Research,
         type: BoostCMSSubSkillEnum.presentation,
-        title: 'Presentation',
-        description: 'Communicating research findings clearly and effectively to others.',
+        get title() {
+            return m['boostContent.subskills.research.presentation.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.research.presentation.description']();
+        },
     },
 
     // Athletic > Sport Specific Skills
@@ -2871,38 +3880,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
         type: BoostCMSSubSkillEnum.ballHandling,
-        title: 'Ball Handling',
-        description: 'Controlling, dribbling, and maneuvering a ball effectively during gameplay.',
+        get title() {
+            return m['boostContent.subskills.sportSpecificSkills.ballHandling.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sportSpecificSkills.ballHandling.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
         type: BoostCMSSubSkillEnum.runningTechnique,
-        title: 'Running Technique',
-        description: 'Using efficient form and movement patterns to improve speed and endurance.',
+        get title() {
+            return m['boostContent.subskills.sportSpecificSkills.runningTechnique.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sportSpecificSkills.runningTechnique.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
         type: BoostCMSSubSkillEnum.swingMechanics,
-        title: 'Swing Mechanics',
-        description:
-            'Optimizing movement for powerful and accurate swings in sports like baseball, golf, or tennis.',
+        get title() {
+            return m['boostContent.subskills.sportSpecificSkills.swingMechanics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sportSpecificSkills.swingMechanics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
         type: BoostCMSSubSkillEnum.tackling,
-        title: 'Tackling',
-        description: 'Safely and effectively stopping an opponent’s progress in contact sports.',
+        get title() {
+            return m['boostContent.subskills.sportSpecificSkills.tackling.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sportSpecificSkills.tackling.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
         type: BoostCMSSubSkillEnum.swimmingStrokes,
-        title: 'Swimming Strokes',
-        description:
-            'Executing different stroke techniques such as freestyle, backstroke, breaststroke, and butterfly.',
+        get title() {
+            return m['boostContent.subskills.sportSpecificSkills.swimmingStrokes.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sportSpecificSkills.swimmingStrokes.description']();
+        },
     },
 
     // Athletic > Strength and Conditioning
@@ -2910,39 +3937,58 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
         type: BoostCMSSubSkillEnum.weightLifting,
-        title: 'Weight Lifting',
-        description: 'Building muscle strength and endurance through resistance training.',
+        get title() {
+            return m['boostContent.subskills.strengthAndConditioning.weightLifting.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.strengthAndConditioning.weightLifting.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
         type: BoostCMSSubSkillEnum.speedTraining,
-        title: 'Speed Training',
-        description:
-            'Improving acceleration, stride length, and stride frequency for faster performance.',
+        get title() {
+            return m['boostContent.subskills.strengthAndConditioning.speedTraining.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.strengthAndConditioning.speedTraining.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
         type: BoostCMSSubSkillEnum.agility,
-        title: 'Agility',
-        description: 'Moving quickly and easily while maintaining balance and control.',
+        get title() {
+            return m['boostContent.subskills.strengthAndConditioning.agility.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.strengthAndConditioning.agility.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
         type: BoostCMSSubSkillEnum.lexibility,
-        title: 'Flexibility',
-        description:
-            'Enhancing range of motion in muscles and joints to improve performance and prevent injury.',
+        get title() {
+            return m['boostContent.subskills.strengthAndConditioning.lexibility.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.strengthAndConditioning.lexibility.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
         type: BoostCMSSubSkillEnum.injuryPrevention,
-        title: 'Injury Prevention',
-        description:
-            'Developing safe training habits and strengthening key areas to reduce risk of injury.',
+        get title() {
+            return m['boostContent.subskills.strengthAndConditioning.injuryPrevention.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.strengthAndConditioning.injuryPrevention.description'
+            ]();
+        },
     },
 
     // Athletic > Coordination
@@ -2950,38 +3996,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Coordination,
         type: BoostCMSSubSkillEnum.handEyeCoordination,
-        title: 'Hand-Eye Coordination',
-        description: 'Synchronizing hand movement with visual input to perform tasks effectively.',
+        get title() {
+            return m['boostContent.subskills.coordination.handEyeCoordination.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.coordination.handEyeCoordination.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Coordination,
         type: BoostCMSSubSkillEnum.footwork,
-        title: 'Footwork',
-        description:
-            'Executing precise and efficient foot movements to enhance positioning and performance.',
+        get title() {
+            return m['boostContent.subskills.coordination.footwork.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.coordination.footwork.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Coordination,
         type: BoostCMSSubSkillEnum.balance,
-        title: 'Balance',
-        description: 'Maintaining body control and stability in dynamic or static positions.',
+        get title() {
+            return m['boostContent.subskills.coordination.balance.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.coordination.balance.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Coordination,
         type: BoostCMSSubSkillEnum.reactionTime,
-        title: 'Reaction Time',
-        description: 'Responding quickly and appropriately to external stimuli during play.',
+        get title() {
+            return m['boostContent.subskills.coordination.reactionTime.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.coordination.reactionTime.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Coordination,
         type: BoostCMSSubSkillEnum.spatialAwareness,
-        title: 'Spatial Awareness',
-        description:
-            'Understanding and navigating the space around oneself relative to others and objects.',
+        get title() {
+            return m['boostContent.subskills.coordination.spatialAwareness.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.coordination.spatialAwareness.description']();
+        },
     },
 
     // Athletic > Mental Focus
@@ -2989,40 +4053,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.MentalFocus,
         type: BoostCMSSubSkillEnum.visualization,
-        title: 'Visualization',
-        description:
-            'Mentally rehearsing movements and outcomes to improve confidence and execution.',
+        get title() {
+            return m['boostContent.subskills.mentalFocus.visualization.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalFocus.visualization.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.MentalFocus,
         type: BoostCMSSubSkillEnum.goalSetting,
-        title: 'Goal Setting',
-        description:
-            'Creating specific and measurable targets to drive motivation and improvement.',
+        get title() {
+            return m['boostContent.subskills.mentalFocus.goalSetting.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalFocus.goalSetting.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.MentalFocus,
         type: BoostCMSSubSkillEnum.competitiveness,
-        title: 'Competitiveness',
-        description:
-            'Channeling the desire to excel and outperform others in a healthy and focused way.',
+        get title() {
+            return m['boostContent.subskills.mentalFocus.competitiveness.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalFocus.competitiveness.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.MentalFocus,
         type: BoostCMSSubSkillEnum.resilience,
-        title: 'Resilience',
-        description:
-            'Maintaining mental toughness and bouncing back from setbacks in training or competition.',
+        get title() {
+            return m['boostContent.subskills.mentalFocus.resilience.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalFocus.resilience.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.MentalFocus,
         type: BoostCMSSubSkillEnum.handlingPressure,
-        title: 'Handling Pressure',
-        description: 'Performing effectively under high-stress, high-stakes scenarios.',
+        get title() {
+            return m['boostContent.subskills.mentalFocus.handlingPressure.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mentalFocus.handlingPressure.description']();
+        },
     },
 
     // Athletic > Teamwork
@@ -3030,75 +4110,112 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Teamwork,
         type: BoostCMSSubSkillEnum.communication,
-        title: 'Communication',
-        description: 'Clearly sharing ideas, strategies, and feedback with teammates.',
+        get title() {
+            return m['boostContent.subskills.teamwork.communication.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.teamwork.communication.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Teamwork,
         type: BoostCMSSubSkillEnum.cooperation,
-        title: 'Cooperation',
-        description: 'Working collaboratively with others to achieve team objectives.',
+        get title() {
+            return m['boostContent.subskills.teamwork.cooperation.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.teamwork.cooperation.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Teamwork,
         type: BoostCMSSubSkillEnum.roleUnderstanding,
-        title: 'Role Understanding',
-        description: 'Knowing and fulfilling one’s responsibilities within a team structure.',
+        get title() {
+            return m['boostContent.subskills.teamwork.roleUnderstanding.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.teamwork.roleUnderstanding.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Teamwork,
         type: BoostCMSSubSkillEnum.strategy,
-        title: 'Strategy',
-        description: 'Planning and executing coordinated tactics to achieve victory or success.',
+        get title() {
+            return m['boostContent.subskills.teamwork.strategy.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.teamwork.strategy.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Athletic,
         skill: BoostCMSCategorySkillEnum.Teamwork,
         type: BoostCMSSubSkillEnum.sportsmanship,
-        title: 'Sportsmanship',
-        description: 'Demonstrating fairness, respect, and gracious behavior in competition.',
+        get title() {
+            return m['boostContent.subskills.teamwork.sportsmanship.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.teamwork.sportsmanship.description']();
+        },
     },
     // Creative > Visual Arts
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.VisualArts,
         type: BoostCMSSubSkillEnum.drawing,
-        title: 'Drawing',
-        description:
-            'The art or skill of making marks on a surface to represent objects, actions, or ideas.',
+        get title() {
+            return m['boostContent.subskills.visualArts.drawing.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.visualArts.drawing.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.VisualArts,
         type: BoostCMSSubSkillEnum.painting,
-        title: 'Painting',
-        description:
-            'Applying pigment to a surface to create an expressive or representational image.',
+        get title() {
+            return m['boostContent.subskills.visualArts.painting.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.visualArts.painting.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.VisualArts,
         type: BoostCMSSubSkillEnum.sculpture,
-        title: 'Sculpture',
-        description: 'Creating three-dimensional forms by shaping or combining materials.',
+        get title() {
+            return m['boostContent.subskills.visualArts.sculpture.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.visualArts.sculpture.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.VisualArts,
         type: BoostCMSSubSkillEnum.graphicDesign,
-        title: 'Graphic Design',
-        description:
-            'Visual communication using typography, imagery, and layout to convey messages.',
+        get title() {
+            return m['boostContent.subskills.visualArts.graphicDesign.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.visualArts.graphicDesign.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.VisualArts,
         type: BoostCMSSubSkillEnum.photography,
-        title: 'Photography',
-        description: 'Capturing images through cameras to express ideas or document moments.',
+        get title() {
+            return m['boostContent.subskills.visualArts.photography.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.visualArts.photography.description']();
+        },
     },
 
     // Creative > Performing Arts
@@ -3106,54 +4223,78 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.PerformingArts,
         type: BoostCMSSubSkillEnum.acting,
-        title: 'Acting',
-        description:
-            'Performing roles in plays, films, or other productions to portray characters.',
+        get title() {
+            return m['boostContent.subskills.performingArts.acting.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.performingArts.acting.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.PerformingArts,
         type: BoostCMSSubSkillEnum.dance,
-        title: 'Dance',
-        description:
-            'Artistic movement of the body, often set to music, to express emotions or tell stories.',
+        get title() {
+            return m['boostContent.subskills.performingArts.dance.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.performingArts.dance.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.PerformingArts,
         type: BoostCMSSubSkillEnum.singing,
-        title: 'Singing',
-        description:
-            'Producing musical tones with the voice to perform songs or vocal compositions.',
+        get title() {
+            return m['boostContent.subskills.performingArts.singing.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.performingArts.singing.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.PerformingArts,
         type: BoostCMSSubSkillEnum.instrumental,
-        title: 'Instrumental',
-        description: 'Performing music using instruments, either solo or in ensembles.',
+        get title() {
+            return m['boostContent.subskills.performingArts.instrumental.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.performingArts.instrumental.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.PerformingArts,
         type: BoostCMSSubSkillEnum.theaterProduction,
-        title: 'Theater Production',
-        description:
-            'Coordinating and managing stage performances, including sets, lighting, and direction.',
+        get title() {
+            return m['boostContent.subskills.performingArts.theaterProduction.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.performingArts.theaterProduction.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.PerformingArts,
         type: BoostCMSSubSkillEnum.costumeDesign,
-        title: 'Costume Design',
-        description: 'Creating clothing and outfits for characters in performances.',
+        get title() {
+            return m['boostContent.subskills.performingArts.costumeDesign.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.performingArts.costumeDesign.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.PerformingArts,
         type: BoostCMSSubSkillEnum.directing,
-        title: 'Directing',
-        description: 'Overseeing the creative vision and execution of a performance or production.',
+        get title() {
+            return m['boostContent.subskills.performingArts.directing.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.performingArts.directing.description']();
+        },
     },
 
     // Creative > Writing
@@ -3161,44 +4302,67 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Writing,
         type: BoostCMSSubSkillEnum.poetry,
-        title: 'Poetry',
-        description: 'Writing that emphasizes the aesthetic and rhythmic qualities of language.',
+        get title() {
+            return m['boostContent.subskills.writing.poetry.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.writing.poetry.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Writing,
         type: BoostCMSSubSkillEnum.fiction,
-        title: 'Fiction',
-        description: 'Creating imaginative stories that are not based on real events.',
+        get title() {
+            return m['boostContent.subskills.writing.fiction.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.writing.fiction.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Writing,
         type: BoostCMSSubSkillEnum.nonfiction,
-        title: 'Nonfiction',
-        description: 'Writing based on factual information and real events.',
+        get title() {
+            return m['boostContent.subskills.writing.nonfiction.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.writing.nonfiction.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Writing,
         type: BoostCMSSubSkillEnum.scriptWriting,
-        title: 'Script Writing',
-        description:
-            'Creating scripts for plays, films, or broadcasts including dialogue and directions.',
+        get title() {
+            return m['boostContent.subskills.writing.scriptWriting.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.writing.scriptWriting.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Writing,
         type: BoostCMSSubSkillEnum.copyWriting,
-        title: 'Copy Writing',
-        description: 'Crafting persuasive and engaging content for marketing or advertising.',
+        get title() {
+            return m['boostContent.subskills.writing.copyWriting.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.writing.copyWriting.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Writing,
         type: BoostCMSSubSkillEnum.journalism,
-        title: 'Journalism',
-        description: 'Reporting and writing news stories for media outlets.',
+        get title() {
+            return m['boostContent.subskills.writing.journalism.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.writing.journalism.description']();
+        },
     },
 
     // Creative > Design
@@ -3206,37 +4370,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Design,
         type: BoostCMSSubSkillEnum.fashionDesign,
-        title: 'Fashion Design',
-        description:
-            'Creating clothing and accessories with attention to style, color, and trends.',
+        get title() {
+            return m['boostContent.subskills.design.fashionDesign.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.design.fashionDesign.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Design,
         type: BoostCMSSubSkillEnum.interiorDesign,
-        title: 'Interior Design',
-        description: 'Planning and designing functional and aesthetic indoor spaces.',
+        get title() {
+            return m['boostContent.subskills.design.interiorDesign.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.design.interiorDesign.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Design,
         type: BoostCMSSubSkillEnum.webDesign,
-        title: 'Web Design',
-        description: 'Creating user-friendly and visually appealing websites.',
+        get title() {
+            return m['boostContent.subskills.design.webDesign.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.design.webDesign.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Design,
         type: BoostCMSSubSkillEnum.productDesign,
-        title: 'Product Design',
-        description: 'Designing functional and marketable physical or digital products.',
+        get title() {
+            return m['boostContent.subskills.design.productDesign.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.design.productDesign.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Design,
         type: BoostCMSSubSkillEnum.gameDesign,
-        title: 'Game Design',
-        description: 'Creating rules, structure, and content for video or physical games.',
+        get title() {
+            return m['boostContent.subskills.design.gameDesign.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.design.gameDesign.description']();
+        },
     },
 
     // Creative > Ideation
@@ -3244,30 +4427,45 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Ideation,
         type: BoostCMSSubSkillEnum.brainstorming,
-        title: 'Brainstorming',
-        description:
-            'Generating a large number of ideas to solve a problem or explore opportunities.',
+        get title() {
+            return m['boostContent.subskills.ideation.brainstorming.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.ideation.brainstorming.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Ideation,
         type: BoostCMSSubSkillEnum.conceptDevelopment,
-        title: 'Concept Development',
-        description: 'Refining and building out ideas into viable projects or products.',
+        get title() {
+            return m['boostContent.subskills.ideation.conceptDevelopment.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.ideation.conceptDevelopment.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Ideation,
         type: BoostCMSSubSkillEnum.innovation,
-        title: 'Innovation',
-        description: 'Creating and implementing new and effective solutions.',
+        get title() {
+            return m['boostContent.subskills.ideation.innovation.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.ideation.innovation.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Creative,
         skill: BoostCMSCategorySkillEnum.Ideation,
         type: BoostCMSSubSkillEnum.outOfTheBoxThinking,
-        title: 'Out-of-the-Box Thinking',
-        description: 'Approaching problems in unconventional and creative ways.',
+        get title() {
+            return m['boostContent.subskills.ideation.outOfTheBoxThinking.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.ideation.outOfTheBoxThinking.description']();
+        },
     },
 
     // Business > Management
@@ -3275,38 +4473,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Management,
         type: BoostCMSSubSkillEnum.leadership,
-        title: 'Leadership',
-        description: 'Inspiring and guiding individuals or teams toward a shared goal or vision.',
+        get title() {
+            return m['boostContent.subskills.management.leadership.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.management.leadership.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Management,
         type: BoostCMSSubSkillEnum.strategicPlanning,
-        title: 'Strategic Planning',
-        description: 'Developing long-term objectives and actionable steps for business growth.',
+        get title() {
+            return m['boostContent.subskills.management.strategicPlanning.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.management.strategicPlanning.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Management,
         type: BoostCMSSubSkillEnum.teamBuilding,
-        title: 'Team Building',
-        description: 'Creating a cohesive, collaborative team through trust and shared goals.',
+        get title() {
+            return m['boostContent.subskills.management.teamBuilding.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.management.teamBuilding.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Management,
         type: BoostCMSSubSkillEnum.delegation,
-        title: 'Delegation',
-        description:
-            'Assigning responsibilities effectively based on individual strengths and roles.',
+        get title() {
+            return m['boostContent.subskills.management.delegation.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.management.delegation.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Management,
         type: BoostCMSSubSkillEnum.conflictResolution,
-        title: 'Conflict Resolution',
-        description:
-            'Addressing and resolving disagreements to maintain a productive work environment.',
+        get title() {
+            return m['boostContent.subskills.management.conflictResolution.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.management.conflictResolution.description']();
+        },
     },
 
     // Business > Finance
@@ -3314,37 +4530,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Finance,
         type: BoostCMSSubSkillEnum.accounting,
-        title: 'Accounting',
-        description: 'Tracking and reporting financial transactions for budgeting and compliance.',
+        get title() {
+            return m['boostContent.subskills.finance.accounting.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.finance.accounting.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Finance,
         type: BoostCMSSubSkillEnum.budgeting,
-        title: 'Budgeting',
-        description: 'Planning and managing financial resources to meet organizational goals.',
+        get title() {
+            return m['boostContent.subskills.finance.budgeting.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.finance.budgeting.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Finance,
         type: BoostCMSSubSkillEnum.financialAnalysis,
-        title: 'Financial Analysis',
-        description:
-            'Interpreting financial data to assess performance and inform decision-making.',
+        get title() {
+            return m['boostContent.subskills.finance.financialAnalysis.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.finance.financialAnalysis.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Finance,
         type: BoostCMSSubSkillEnum.investment,
-        title: 'Investment',
-        description: 'Allocating resources to assets or ventures for potential returns.',
+        get title() {
+            return m['boostContent.subskills.finance.investment.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.finance.investment.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Finance,
         type: BoostCMSSubSkillEnum.riskManagement,
-        title: 'Risk Management',
-        description: 'Identifying and mitigating potential financial or operational risks.',
+        get title() {
+            return m['boostContent.subskills.finance.riskManagement.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.finance.riskManagement.description']();
+        },
     },
 
     // Business > Marketing
@@ -3352,36 +4587,58 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Marketing,
         type: BoostCMSSubSkillEnum.marketResearch,
-        title: 'Market Research',
-        description: 'Gathering insights on customer needs, trends, and competitors.',
+        get title() {
+            return m['boostContent.subskills.marketing.marketResearch.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.marketing.marketResearch.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Marketing,
         type: BoostCMSSubSkillEnum.branding,
-        title: 'Branding',
-        description: 'Shaping the identity and perception of a business or product.',
+        get title() {
+            return m['boostContent.subskills.marketing.branding.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.marketing.branding.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Marketing,
         type: BoostCMSSubSkillEnum.advertising,
-        title: 'Advertising',
-        description: 'Promoting products or services through various media channels.',
+        get title() {
+            return m['boostContent.subskills.marketing.advertising.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.marketing.advertising.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Marketing,
         type: BoostCMSSubSkillEnum.sales,
-        title: 'Sales',
-        description: 'Converting leads into customers by understanding and meeting their needs.',
+        get title() {
+            return m['boostContent.subskills.marketing.sales.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.marketing.sales.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Marketing,
         type: BoostCMSSubSkillEnum.customerRelationshipManagement,
-        title: 'Customer Relationship Management',
-        description: 'Building and maintaining strong relationships with clients or customers.',
+        get title() {
+            return m['boostContent.subskills.marketing.customerRelationshipManagement.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.marketing.customerRelationshipManagement.description'
+            ]();
+        },
     },
 
     // Business > Operations
@@ -3389,36 +4646,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Operations,
         type: BoostCMSSubSkillEnum.logistics,
-        title: 'Logistics',
-        description: 'Coordinating the movement of goods, services, and information efficiently.',
+        get title() {
+            return m['boostContent.subskills.operations.logistics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.operations.logistics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Operations,
         type: BoostCMSSubSkillEnum.supplyChainManagement,
-        title: 'Supply Chain Management',
-        description: 'Overseeing all steps in sourcing, production, and delivery processes.',
+        get title() {
+            return m['boostContent.subskills.operations.supplyChainManagement.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.operations.supplyChainManagement.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Operations,
         type: BoostCMSSubSkillEnum.processImprovement,
-        title: 'Process Improvement',
-        description: 'Streamlining operations to boost productivity and reduce waste.',
+        get title() {
+            return m['boostContent.subskills.operations.processImprovement.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.operations.processImprovement.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Operations,
         type: BoostCMSSubSkillEnum.projectManagement,
-        title: 'Project Management',
-        description: 'Planning, executing, and closing projects to meet defined goals.',
+        get title() {
+            return m['boostContent.subskills.operations.projectManagement.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.operations.projectManagement.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Operations,
         type: BoostCMSSubSkillEnum.qualityControl,
-        title: 'Quality Control',
-        description: 'Ensuring products and services meet standards and specifications.',
+        get title() {
+            return m['boostContent.subskills.operations.qualityControl.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.operations.qualityControl.description']();
+        },
     },
 
     // Business > Entrepreneurship
@@ -3426,38 +4703,58 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Entrepreneurship,
         type: BoostCMSSubSkillEnum.opportunityRecognition,
-        title: 'Opportunity Recognition',
-        description: 'Identifying unmet needs or gaps in the market for innovation.',
+        get title() {
+            return m['boostContent.subskills.entrepreneurship.opportunityRecognition.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.entrepreneurship.opportunityRecognition.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Entrepreneurship,
         type: BoostCMSSubSkillEnum.businessPlanning,
-        title: 'Business Planning',
-        description:
-            'Outlining strategies, goals, and resources for starting or growing a business.',
+        get title() {
+            return m['boostContent.subskills.entrepreneurship.businessPlanning.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.entrepreneurship.businessPlanning.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Entrepreneurship,
         type: BoostCMSSubSkillEnum.fundraising,
-        title: 'Fundraising',
-        description: 'Securing capital or investments to finance business operations or expansion.',
+        get title() {
+            return m['boostContent.subskills.entrepreneurship.fundraising.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.entrepreneurship.fundraising.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Entrepreneurship,
         type: BoostCMSSubSkillEnum.networking,
-        title: 'Networking',
-        description:
-            'Building professional relationships to support business growth and opportunities.',
+        get title() {
+            return m['boostContent.subskills.entrepreneurship.networking.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.entrepreneurship.networking.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Business,
         skill: BoostCMSCategorySkillEnum.Entrepreneurship,
         type: BoostCMSSubSkillEnum.decisionMaking,
-        title: 'Decision Making',
-        description: 'Evaluating options and making informed choices under uncertainty.',
+        get title() {
+            return m['boostContent.subskills.entrepreneurship.decisionMaking.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.entrepreneurship.decisionMaking.description']();
+        },
     },
 
     // Trade > Construction
@@ -3465,37 +4762,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Construction,
         type: BoostCMSSubSkillEnum.carpentry,
-        title: 'Carpentry',
-        description:
-            'Building and repairing structures and frameworks using wood and other materials.',
+        get title() {
+            return m['boostContent.subskills.construction.carpentry.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.construction.carpentry.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Construction,
         type: BoostCMSSubSkillEnum.electricalWork,
-        title: 'Electrical Work',
-        description: 'Installing, maintaining, and repairing electrical systems and wiring.',
+        get title() {
+            return m['boostContent.subskills.construction.electricalWork.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.construction.electricalWork.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Construction,
         type: BoostCMSSubSkillEnum.plumbing,
-        title: 'Plumbing',
-        description: 'Installing and repairing water supply, drainage, and piping systems.',
+        get title() {
+            return m['boostContent.subskills.construction.plumbing.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.construction.plumbing.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Construction,
         type: BoostCMSSubSkillEnum.masonry,
-        title: 'Masonry',
-        description: 'Constructing structures using brick, stone, or concrete blocks.',
+        get title() {
+            return m['boostContent.subskills.construction.masonry.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.construction.masonry.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Construction,
         type: BoostCMSSubSkillEnum.HVAC,
-        title: 'HVAC',
-        description: 'Installing and servicing heating, ventilation, and air conditioning systems.',
+        get title() {
+            return m['boostContent.subskills.construction.hVAC.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.construction.hVAC.description']();
+        },
     },
 
     // Trade > Mechanics
@@ -3503,38 +4819,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Mechanics,
         type: BoostCMSSubSkillEnum.automotiveRepair,
-        title: 'Automotive Repair',
-        description: 'Diagnosing and fixing issues in cars and other vehicles.',
+        get title() {
+            return m['boostContent.subskills.mechanics.automotiveRepair.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mechanics.automotiveRepair.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Mechanics,
         type: BoostCMSSubSkillEnum.dieselEngineRepair,
-        title: 'Diesel Engine Repair',
-        description:
-            'Servicing and maintaining diesel engines used in trucks, buses, and equipment.',
+        get title() {
+            return m['boostContent.subskills.mechanics.dieselEngineRepair.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mechanics.dieselEngineRepair.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Mechanics,
         type: BoostCMSSubSkillEnum.smallEngineRepair,
-        title: 'Small Engine Repair',
-        description: 'Repairing engines found in lawnmowers, generators, and similar equipment.',
+        get title() {
+            return m['boostContent.subskills.mechanics.smallEngineRepair.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mechanics.smallEngineRepair.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Mechanics,
         type: BoostCMSSubSkillEnum.aircraftMaintenance,
-        title: 'Aircraft Maintenance',
-        description: 'Inspecting and repairing airplane mechanical and electronic systems.',
+        get title() {
+            return m['boostContent.subskills.mechanics.aircraftMaintenance.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mechanics.aircraftMaintenance.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Mechanics,
         type: BoostCMSSubSkillEnum.heavyEquipmentOperation,
-        title: 'Heavy Equipment Operation',
-        description:
-            'Operating large machinery like bulldozers and excavators safely and efficiently.',
+        get title() {
+            return m['boostContent.subskills.mechanics.heavyEquipmentOperation.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.mechanics.heavyEquipmentOperation.description']();
+        },
     },
 
     // Trade > Manufacturing
@@ -3542,37 +4876,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Manufacturing,
         type: BoostCMSSubSkillEnum.welding,
-        title: 'Welding',
-        description: 'Joining metal parts together using heat and pressure.',
+        get title() {
+            return m['boostContent.subskills.manufacturing.welding.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.manufacturing.welding.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Manufacturing,
         type: BoostCMSSubSkillEnum.machining,
-        title: 'Machining',
-        description: 'Shaping parts using lathes, mills, and other cutting tools.',
+        get title() {
+            return m['boostContent.subskills.manufacturing.machining.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.manufacturing.machining.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Manufacturing,
         type: BoostCMSSubSkillEnum.assembly,
-        title: 'Assembly',
-        description: 'Putting together components to create finished products or systems.',
+        get title() {
+            return m['boostContent.subskills.manufacturing.assembly.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.manufacturing.assembly.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Manufacturing,
         type: BoostCMSSubSkillEnum.fabrication,
-        title: 'Fabrication',
-        description:
-            'Constructing metal structures through cutting, bending, and assembling processes.',
+        get title() {
+            return m['boostContent.subskills.manufacturing.fabrication.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.manufacturing.fabrication.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Manufacturing,
         type: BoostCMSSubSkillEnum.qualityAssurance,
-        title: 'Quality Assurance',
-        description: 'Ensuring manufactured goods meet required standards and specifications.',
+        get title() {
+            return m['boostContent.subskills.manufacturing.qualityAssurance.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.manufacturing.qualityAssurance.description']();
+        },
     },
 
     // Trade > Cosmetology
@@ -3580,75 +4933,112 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Cosmetology,
         type: BoostCMSSubSkillEnum.hairstyling,
-        title: 'Hairstyling',
-        description: 'Cutting, coloring, and styling hair to enhance appearance.',
+        get title() {
+            return m['boostContent.subskills.cosmetology.hairstyling.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cosmetology.hairstyling.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Cosmetology,
         type: BoostCMSSubSkillEnum.barbering,
-        title: 'Barbering',
-        description: 'Providing grooming services including haircuts, shaving, and beard care.',
+        get title() {
+            return m['boostContent.subskills.cosmetology.barbering.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cosmetology.barbering.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Cosmetology,
         type: BoostCMSSubSkillEnum.nailTechnology,
-        title: 'Nail Technology',
-        description: 'Performing manicures, pedicures, and nail art treatments.',
+        get title() {
+            return m['boostContent.subskills.cosmetology.nailTechnology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cosmetology.nailTechnology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Cosmetology,
         type: BoostCMSSubSkillEnum.makeupArtistry,
-        title: 'Makeup Artistry',
-        description: 'Applying makeup to enhance or transform appearance for various occasions.',
+        get title() {
+            return m['boostContent.subskills.cosmetology.makeupArtistry.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cosmetology.makeupArtistry.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Trade,
         skill: BoostCMSCategorySkillEnum.Cosmetology,
         type: BoostCMSSubSkillEnum.esthetics,
-        title: 'Esthetics',
-        description:
-            'Caring for the skin through treatments like facials, waxing, and exfoliation.',
+        get title() {
+            return m['boostContent.subskills.cosmetology.esthetics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cosmetology.esthetics.description']();
+        },
     },
     // Social > History
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.History,
         type: BoostCMSSubSkillEnum.researchMethods,
-        title: 'Research Methods',
-        description: 'Using scholarly techniques to gather and evaluate historical information.',
+        get title() {
+            return m['boostContent.subskills.history.researchMethods.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.history.researchMethods.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.History,
         type: BoostCMSSubSkillEnum.analysisOfPrimarySources,
-        title: 'Analysis of Primary Sources',
-        description:
-            'Interpreting original historical documents and artifacts to understand the past.',
+        get title() {
+            return m['boostContent.subskills.history.analysisOfPrimarySources.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.history.analysisOfPrimarySources.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.History,
         type: BoostCMSSubSkillEnum.chronologicalReasoning,
-        title: 'Chronological Reasoning',
-        description: 'Understanding cause and effect through the sequence of historical events.',
+        get title() {
+            return m['boostContent.subskills.history.chronologicalReasoning.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.history.chronologicalReasoning.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.History,
         type: BoostCMSSubSkillEnum.comparativeHistory,
-        title: 'Comparative History',
-        description:
-            'Analyzing similarities and differences across historical contexts or cultures.',
+        get title() {
+            return m['boostContent.subskills.history.comparativeHistory.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.history.comparativeHistory.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.History,
         type: BoostCMSSubSkillEnum.historiography,
-        title: 'Historiography',
-        description: 'Studying how history is written and interpreted over time.',
+        get title() {
+            return m['boostContent.subskills.history.historiography.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.history.historiography.description']();
+        },
     },
 
     // Social > Psychology
@@ -3656,36 +5046,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Psychology,
         type: BoostCMSSubSkillEnum.cognitivePsychology,
-        title: 'Cognitive Psychology',
-        description: 'Exploring mental processes such as memory, perception, and decision-making.',
+        get title() {
+            return m['boostContent.subskills.psychology.cognitivePsychology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.psychology.cognitivePsychology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Psychology,
         type: BoostCMSSubSkillEnum.developmentalPsychology,
-        title: 'Developmental Psychology',
-        description: 'Studying psychological growth and changes across the lifespan.',
+        get title() {
+            return m['boostContent.subskills.psychology.developmentalPsychology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.psychology.developmentalPsychology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Psychology,
         type: BoostCMSSubSkillEnum.socialPsychology,
-        title: 'Social Psychology',
-        description: 'Examining how individuals think, feel, and behave in social contexts.',
+        get title() {
+            return m['boostContent.subskills.psychology.socialPsychology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.psychology.socialPsychology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Psychology,
         type: BoostCMSSubSkillEnum.experimentalMethods,
-        title: 'Experimental Methods',
-        description: 'Designing and conducting psychological experiments to test hypotheses.',
+        get title() {
+            return m['boostContent.subskills.psychology.experimentalMethods.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.psychology.experimentalMethods.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Psychology,
         type: BoostCMSSubSkillEnum.clinicalPsychology,
-        title: 'Clinical Psychology',
-        description: 'Assessing and treating mental, emotional, and behavioral disorders.',
+        get title() {
+            return m['boostContent.subskills.psychology.clinicalPsychology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.psychology.clinicalPsychology.description']();
+        },
     },
 
     // Social > Sociology
@@ -3693,29 +5103,45 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Sociology,
         type: BoostCMSSubSkillEnum.socialInequality,
-        title: 'Social Inequality',
-        description: 'Understanding disparities in wealth, status, and power across social groups.',
+        get title() {
+            return m['boostContent.subskills.sociology.socialInequality.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sociology.socialInequality.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Sociology,
         type: BoostCMSSubSkillEnum.socialInstitutions,
-        title: 'Social Institutions',
-        description: 'Studying structures like family, religion, and education that shape society.',
+        get title() {
+            return m['boostContent.subskills.sociology.socialInstitutions.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sociology.socialInstitutions.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Sociology,
         type: BoostCMSSubSkillEnum.socialChange,
-        title: 'Social Change',
-        description: 'Analyzing shifts in societal norms, values, and behaviors over time.',
+        get title() {
+            return m['boostContent.subskills.sociology.socialChange.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sociology.socialChange.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Sociology,
         type: BoostCMSSubSkillEnum.socialMovements,
-        title: 'Social Movements',
-        description: 'Exploring collective efforts to promote or resist social change.',
+        get title() {
+            return m['boostContent.subskills.sociology.socialMovements.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.sociology.socialMovements.description']();
+        },
     },
 
     // Social > Economics
@@ -3723,36 +5149,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Economics,
         type: BoostCMSSubSkillEnum.microeconomics,
-        title: 'Microeconomics',
-        description: 'Studying individual economic units like consumers and businesses.',
+        get title() {
+            return m['boostContent.subskills.economics.microeconomics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.economics.microeconomics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Economics,
         type: BoostCMSSubSkillEnum.macroeconomics,
-        title: 'Macroeconomics',
-        description: 'Analyzing economy-wide phenomena like inflation, GDP, and unemployment.',
+        get title() {
+            return m['boostContent.subskills.economics.macroeconomics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.economics.macroeconomics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Economics,
         type: BoostCMSSubSkillEnum.econometrics,
-        title: 'Econometrics',
-        description: 'Applying statistical methods to test economic theories and forecasts.',
+        get title() {
+            return m['boostContent.subskills.economics.econometrics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.economics.econometrics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Economics,
         type: BoostCMSSubSkillEnum.economicPolicy,
-        title: 'Economic Policy',
-        description: 'Formulating and analyzing decisions that influence a nation’s economy.',
+        get title() {
+            return m['boostContent.subskills.economics.economicPolicy.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.economics.economicPolicy.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.Economics,
         type: BoostCMSSubSkillEnum.internationalEconomics,
-        title: 'International Economics',
-        description: 'Examining trade, finance, and economic interactions between countries.',
+        get title() {
+            return m['boostContent.subskills.economics.internationalEconomics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.economics.internationalEconomics.description']();
+        },
     },
 
     // Social > Political Science
@@ -3760,36 +5206,58 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.PoliticalScience,
         type: BoostCMSSubSkillEnum.governmentSystems,
-        title: 'Government Systems',
-        description: 'Understanding how different forms of government function and operate.',
+        get title() {
+            return m['boostContent.subskills.politicalScience.governmentSystems.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.politicalScience.governmentSystems.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.PoliticalScience,
         type: BoostCMSSubSkillEnum.politicalTheory,
-        title: 'Political Theory',
-        description: 'Exploring ideas about power, governance, justice, and rights.',
+        get title() {
+            return m['boostContent.subskills.politicalScience.politicalTheory.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.politicalScience.politicalTheory.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.PoliticalScience,
         type: BoostCMSSubSkillEnum.internationalRelations,
-        title: 'International Relations',
-        description: 'Analyzing political relationships and diplomacy between nations.',
+        get title() {
+            return m['boostContent.subskills.politicalScience.internationalRelations.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.politicalScience.internationalRelations.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.PoliticalScience,
         type: BoostCMSSubSkillEnum.comparativePolitics,
-        title: 'Comparative Politics',
-        description: 'Comparing political systems and institutions across different countries.',
+        get title() {
+            return m['boostContent.subskills.politicalScience.comparativePolitics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.politicalScience.comparativePolitics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Social,
         skill: BoostCMSCategorySkillEnum.PoliticalScience,
         type: BoostCMSSubSkillEnum.publicPolicy,
-        title: 'Public Policy',
-        description: 'Developing and evaluating laws and regulations to address public issues.',
+        get title() {
+            return m['boostContent.subskills.politicalScience.publicPolicy.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.politicalScience.publicPolicy.description']();
+        },
     },
 
     // Digital > Basic Computer Skills
@@ -3797,36 +5265,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
         type: BoostCMSSubSkillEnum.typing,
-        title: 'Typing',
-        description: 'Entering text efficiently using a keyboard with speed and accuracy.',
+        get title() {
+            return m['boostContent.subskills.basicComputerSkills.typing.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.basicComputerSkills.typing.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
         type: BoostCMSSubSkillEnum.fileManagement,
-        title: 'File Management',
-        description: 'Organizing, storing, and retrieving digital files and folders effectively.',
+        get title() {
+            return m['boostContent.subskills.basicComputerSkills.fileManagement.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.basicComputerSkills.fileManagement.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
         type: BoostCMSSubSkillEnum.internetNavigation,
-        title: 'Internet Navigation',
-        description: 'Using web browsers and online tools to find and interact with websites.',
+        get title() {
+            return m['boostContent.subskills.basicComputerSkills.internetNavigation.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.basicComputerSkills.internetNavigation.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
         type: BoostCMSSubSkillEnum.email,
-        title: 'Email',
-        description: 'Using email platforms to send, receive, and manage electronic communication.',
+        get title() {
+            return m['boostContent.subskills.basicComputerSkills.email.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.basicComputerSkills.email.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
         type: BoostCMSSubSkillEnum.wordProcessing,
-        title: 'Word Processing',
-        description: 'Creating and editing text documents using word processing software.',
+        get title() {
+            return m['boostContent.subskills.basicComputerSkills.wordProcessing.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.basicComputerSkills.wordProcessing.description']();
+        },
     },
 
     // Digital > Information Literacy
@@ -3834,37 +5322,60 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.InformationLiteracy,
         type: BoostCMSSubSkillEnum.searchEngineProficiency,
-        title: 'Search Engine Proficiency',
-        description:
-            'Using search engines effectively to locate accurate and relevant information.',
+        get title() {
+            return m['boostContent.subskills.informationLiteracy.searchEngineProficiency.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.informationLiteracy.searchEngineProficiency.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.InformationLiteracy,
         type: BoostCMSSubSkillEnum.evaluatingSources,
-        title: 'Evaluating Sources',
-        description: 'Assessing the reliability and credibility of online content and information.',
+        get title() {
+            return m['boostContent.subskills.informationLiteracy.evaluatingSources.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.informationLiteracy.evaluatingSources.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.InformationLiteracy,
         type: BoostCMSSubSkillEnum.factChecking,
-        title: 'Fact Checking',
-        description: 'Verifying the truthfulness and accuracy of information before accepting it.',
+        get title() {
+            return m['boostContent.subskills.informationLiteracy.factChecking.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.informationLiteracy.factChecking.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.InformationLiteracy,
         type: BoostCMSSubSkillEnum.criticalMediaAnalysis,
-        title: 'Critical Media Analysis',
-        description: 'Understanding and analyzing media messages and their impact on society.',
+        get title() {
+            return m['boostContent.subskills.informationLiteracy.criticalMediaAnalysis.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.informationLiteracy.criticalMediaAnalysis.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.InformationLiteracy,
         type: BoostCMSSubSkillEnum.understandingBias,
-        title: 'Understanding Bias',
-        description: 'Recognizing and accounting for bias in media and information sources.',
+        get title() {
+            return m['boostContent.subskills.informationLiteracy.understandingBias.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.informationLiteracy.understandingBias.description']();
+        },
     },
 
     // Digital > Software Proficiency
@@ -3872,38 +5383,60 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
         type: BoostCMSSubSkillEnum.productivitySuites,
-        title: 'Productivity Suites',
-        description: 'Using software like Microsoft Office or Google Workspace to complete tasks.',
+        get title() {
+            return m['boostContent.subskills.softwareProficiency.productivitySuites.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.softwareProficiency.productivitySuites.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
         type: BoostCMSSubSkillEnum.specializedSoftware,
-        title: 'Specialized Software',
-        description:
-            'Using industry-specific programs tailored to particular job functions or fields.',
+        get title() {
+            return m['boostContent.subskills.softwareProficiency.specializedSoftware.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.softwareProficiency.specializedSoftware.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
         type: BoostCMSSubSkillEnum.designSoftware,
-        title: 'Design Software',
-        description: 'Utilizing tools like Adobe Creative Suite or Figma for visual design work.',
+        get title() {
+            return m['boostContent.subskills.softwareProficiency.designSoftware.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.softwareProficiency.designSoftware.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
         type: BoostCMSSubSkillEnum.programmingBasics,
-        title: 'Programming Basics',
-        description: 'Understanding fundamental coding concepts and writing basic code.',
+        get title() {
+            return m['boostContent.subskills.softwareProficiency.programmingBasics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.softwareProficiency.programmingBasics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
         type: BoostCMSSubSkillEnum.dataVisualizationTools,
-        title: 'Data Visualization Tools',
-        description:
-            'Creating visual representations of data using software like Tableau or Excel.',
+        get title() {
+            return m['boostContent.subskills.softwareProficiency.dataVisualizationTools.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.softwareProficiency.dataVisualizationTools.description'
+            ]();
+        },
     },
 
     // Digital > Online Communication
@@ -3911,38 +5444,62 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.OnlineCommunication,
         type: BoostCMSSubSkillEnum.netiquette,
-        title: 'Netiquette',
-        description: 'Demonstrating respectful and appropriate behavior in digital communication.',
+        get title() {
+            return m['boostContent.subskills.onlineCommunication.netiquette.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.onlineCommunication.netiquette.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.OnlineCommunication,
         type: BoostCMSSubSkillEnum.effectiveEmailAndMessaging,
-        title: 'Effective Email and Messaging',
-        description: 'Communicating clearly and professionally through email and chat platforms.',
+        get title() {
+            return m[
+                'boostContent.subskills.onlineCommunication.effectiveEmailAndMessaging.title'
+            ]();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.onlineCommunication.effectiveEmailAndMessaging.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.OnlineCommunication,
         type: BoostCMSSubSkillEnum.socialMediaPlatforms,
-        title: 'Social Media Platforms',
-        description:
-            'Using platforms like Twitter, Instagram, or LinkedIn for communication and networking.',
+        get title() {
+            return m['boostContent.subskills.onlineCommunication.socialMediaPlatforms.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.onlineCommunication.socialMediaPlatforms.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.OnlineCommunication,
         type: BoostCMSSubSkillEnum.videoConferencing,
-        title: 'Video Conferencing',
-        description:
-            'Participating in and hosting virtual meetings using tools like Zoom or Teams.',
+        get title() {
+            return m['boostContent.subskills.onlineCommunication.videoConferencing.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.onlineCommunication.videoConferencing.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.OnlineCommunication,
         type: BoostCMSSubSkillEnum.collaborationTools,
-        title: 'Collaboration Tools',
-        description: 'Using apps like Slack, Trello, or Notion for teamwork and coordination.',
+        get title() {
+            return m['boostContent.subskills.onlineCommunication.collaborationTools.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.onlineCommunication.collaborationTools.description']();
+        },
     },
 
     // Digital > Cyber Security
@@ -3950,36 +5507,56 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.Cybersecurity,
         type: BoostCMSSubSkillEnum.passwordManagement,
-        title: 'Password Management',
-        description: 'Creating and storing strong, secure passwords to protect online accounts.',
+        get title() {
+            return m['boostContent.subskills.cybersecurity.passwordManagement.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cybersecurity.passwordManagement.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.Cybersecurity,
         type: BoostCMSSubSkillEnum.phishingAwareness,
-        title: 'Phishing Awareness',
-        description: 'Recognizing and avoiding scams that try to steal personal information.',
+        get title() {
+            return m['boostContent.subskills.cybersecurity.phishingAwareness.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cybersecurity.phishingAwareness.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.Cybersecurity,
         type: BoostCMSSubSkillEnum.dataPrivacy,
-        title: 'Data Privacy',
-        description: 'Protecting sensitive personal and organizational information online.',
+        get title() {
+            return m['boostContent.subskills.cybersecurity.dataPrivacy.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cybersecurity.dataPrivacy.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.Cybersecurity,
         type: BoostCMSSubSkillEnum.safeOnlinePractices,
-        title: 'Safe Online Practices',
-        description: 'Following behaviors that reduce risk while using the internet.',
+        get title() {
+            return m['boostContent.subskills.cybersecurity.safeOnlinePractices.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cybersecurity.safeOnlinePractices.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Digital,
         skill: BoostCMSCategorySkillEnum.Cybersecurity,
         type: BoostCMSSubSkillEnum.protectingDevices,
-        title: 'Protecting Devices',
-        description: 'Securing computers and mobile devices against threats and malware.',
+        get title() {
+            return m['boostContent.subskills.cybersecurity.protectingDevices.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.cybersecurity.protectingDevices.description']();
+        },
     },
 
     // Medical > Clinical Skills
@@ -3987,37 +5564,58 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.ClinicalSkills,
         type: BoostCMSSubSkillEnum.patientAssessment,
-        title: 'Patient Assessment',
-        description:
-            'Evaluating a patient’s physical and emotional condition to inform care decisions.',
+        get title() {
+            return m['boostContent.subskills.clinicalSkills.patientAssessment.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.clinicalSkills.patientAssessment.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.ClinicalSkills,
         type: BoostCMSSubSkillEnum.diagnosticProcedures,
-        title: 'Diagnostic Procedures',
-        description: 'Conducting tests to identify diseases or medical conditions.',
+        get title() {
+            return m['boostContent.subskills.clinicalSkills.diagnosticProcedures.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.clinicalSkills.diagnosticProcedures.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.ClinicalSkills,
         type: BoostCMSSubSkillEnum.medicationAdministration,
-        title: 'Medication Administration',
-        description: 'Safely delivering prescribed medications to patients via appropriate routes.',
+        get title() {
+            return m['boostContent.subskills.clinicalSkills.medicationAdministration.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.clinicalSkills.medicationAdministration.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.ClinicalSkills,
         type: BoostCMSSubSkillEnum.woundCare,
-        title: 'Wound Care',
-        description: 'Treating and managing open wounds to promote healing and prevent infection.',
+        get title() {
+            return m['boostContent.subskills.clinicalSkills.woundCare.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.clinicalSkills.woundCare.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.ClinicalSkills,
         type: BoostCMSSubSkillEnum.basicLifeSupport,
-        title: 'Basic Life Support',
-        description: 'Providing immediate care in life-threatening emergencies, including CPR.',
+        get title() {
+            return m['boostContent.subskills.clinicalSkills.basicLifeSupport.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.clinicalSkills.basicLifeSupport.description']();
+        },
     },
 
     // Medical > Anatomy and Physiology
@@ -4025,36 +5623,58 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
         type: BoostCMSSubSkillEnum.bodySystems,
-        title: 'Body Systems',
-        description: 'Understanding the structure and function of the human body systems.',
+        get title() {
+            return m['boostContent.subskills.anatomyAndPhysiology.bodySystems.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.anatomyAndPhysiology.bodySystems.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
         type: BoostCMSSubSkillEnum.medicalTerminology,
-        title: 'Medical Terminology',
-        description: 'Using the language of medicine to accurately describe patient conditions.',
+        get title() {
+            return m['boostContent.subskills.anatomyAndPhysiology.medicalTerminology.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.anatomyAndPhysiology.medicalTerminology.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
         type: BoostCMSSubSkillEnum.diseaseProcesses,
-        title: 'Disease Processes',
-        description: 'Studying how diseases develop and affect the body.',
+        get title() {
+            return m['boostContent.subskills.anatomyAndPhysiology.diseaseProcesses.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.anatomyAndPhysiology.diseaseProcesses.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
         type: BoostCMSSubSkillEnum.pharmacology,
-        title: 'Pharmacology',
-        description: 'Learning how drugs affect biological systems to treat conditions.',
+        get title() {
+            return m['boostContent.subskills.anatomyAndPhysiology.pharmacology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.anatomyAndPhysiology.pharmacology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
         type: BoostCMSSubSkillEnum.pathophysiology,
-        title: 'Pathophysiology',
-        description: 'Understanding the altered physiological processes associated with disease.',
+        get title() {
+            return m['boostContent.subskills.anatomyAndPhysiology.pathophysiology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.anatomyAndPhysiology.pathophysiology.description']();
+        },
     },
 
     // Medical > Patient Care
@@ -4062,30 +5682,45 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.PatientCare,
         type: BoostCMSSubSkillEnum.bedsideManner,
-        title: 'Bedside Manner',
-        description: 'Demonstrating empathy and professionalism in patient interactions.',
+        get title() {
+            return m['boostContent.subskills.patientCare.bedsideManner.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.patientCare.bedsideManner.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.PatientCare,
         type: BoostCMSSubSkillEnum.empathy,
-        title: 'Empathy',
-        description:
-            'Understanding and sharing the feelings of patients to provide compassionate care.',
+        get title() {
+            return m['boostContent.subskills.patientCare.empathy.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.patientCare.empathy.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.PatientCare,
         type: BoostCMSSubSkillEnum.culturalSensitivity,
-        title: 'Cultural Sensitivity',
-        description: 'Respecting diverse cultural backgrounds and practices in medical care.',
+        get title() {
+            return m['boostContent.subskills.patientCare.culturalSensitivity.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.patientCare.culturalSensitivity.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.PatientCare,
         type: BoostCMSSubSkillEnum.ethics,
-        title: 'Ethics',
-        description: 'Applying moral principles to medical decision-making and patient treatment.',
+        get title() {
+            return m['boostContent.subskills.patientCare.ethics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.patientCare.ethics.description']();
+        },
     },
 
     // Medical > Medical Specialties
@@ -4093,50 +5728,82 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
         type: BoostCMSSubSkillEnum.surgery,
-        title: 'Surgery',
-        description: 'Performing operative procedures to treat injuries, diseases, or deformities.',
+        get title() {
+            return m['boostContent.subskills.medicalSpecialties.surgery.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.medicalSpecialties.surgery.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
         type: BoostCMSSubSkillEnum.emergencyMedicine,
-        title: 'Emergency Medicine',
-        description: 'Providing immediate medical care for acute illnesses and injuries.',
+        get title() {
+            return m['boostContent.subskills.medicalSpecialties.emergencyMedicine.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.medicalSpecialties.emergencyMedicine.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
         type: BoostCMSSubSkillEnum.pediatrics,
-        title: 'Pediatrics',
-        description: 'Specializing in medical care for infants, children, and adolescents.',
+        get title() {
+            return m['boostContent.subskills.medicalSpecialties.pediatrics.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.medicalSpecialties.pediatrics.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
         type: BoostCMSSubSkillEnum.radiology,
-        title: 'Radiology',
-        description: 'Using imaging technologies to diagnose and monitor medical conditions.',
+        get title() {
+            return m['boostContent.subskills.medicalSpecialties.radiology.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.medicalSpecialties.radiology.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
         type: BoostCMSSubSkillEnum.diagnosticReasoning,
-        title: 'Diagnostic Reasoning',
-        description: 'Synthesizing clinical data to identify the most likely medical diagnosis.',
+        get title() {
+            return m['boostContent.subskills.medicalSpecialties.diagnosticReasoning.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.medicalSpecialties.diagnosticReasoning.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
         type: BoostCMSSubSkillEnum.treatmentPlanning,
-        title: 'Treatment Planning',
-        description: 'Developing personalized care strategies to address patient needs.',
+        get title() {
+            return m['boostContent.subskills.medicalSpecialties.treatmentPlanning.title']();
+        },
+        get description() {
+            return m['boostContent.subskills.medicalSpecialties.treatmentPlanning.description']();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
         type: BoostCMSSubSkillEnum.interdisciplinaryCollaboration,
-        title: 'Interdisciplinary Collaboration',
-        description: 'Working with professionals across specialties to provide comprehensive care.',
+        get title() {
+            return m[
+                'boostContent.subskills.medicalSpecialties.interdisciplinaryCollaboration.title'
+            ]();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.medicalSpecialties.interdisciplinaryCollaboration.description'
+            ]();
+        },
     },
 
     // Medical > Healthcare Administration
@@ -4144,36 +5811,67 @@ export const SUBSKILLS: {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
         type: BoostCMSSubSkillEnum.insuranceAndBilling,
-        title: 'Insurance and Billing',
-        description:
-            'Managing financial processes related to patient insurance and medical services.',
+        get title() {
+            return m['boostContent.subskills.healthcareAdministration.insuranceAndBilling.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.healthcareAdministration.insuranceAndBilling.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
         type: BoostCMSSubSkillEnum.medicalRecords,
-        title: 'Medical Records',
-        description: 'Documenting and maintaining accurate and confidential patient information.',
+        get title() {
+            return m['boostContent.subskills.healthcareAdministration.medicalRecords.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.healthcareAdministration.medicalRecords.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
         type: BoostCMSSubSkillEnum.patientScheduling,
-        title: 'Patient Scheduling',
-        description: 'Coordinating appointments and procedures to ensure timely care.',
+        get title() {
+            return m['boostContent.subskills.healthcareAdministration.patientScheduling.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.healthcareAdministration.patientScheduling.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
         type: BoostCMSSubSkillEnum.regulatoryCompliance,
-        title: 'Regulatory Compliance',
-        description: 'Following healthcare laws, policies, and ethical standards.',
+        get title() {
+            return m[
+                'boostContent.subskills.healthcareAdministration.regulatoryCompliance.title'
+            ]();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.healthcareAdministration.regulatoryCompliance.description'
+            ]();
+        },
     },
     {
         category: BoostCMSSKillsCategoryEnum.Medical,
         skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
         type: BoostCMSSubSkillEnum.facilityManagement,
-        title: 'Facility Management',
-        description: 'Overseeing the operations and maintenance of medical facilities.',
+        get title() {
+            return m['boostContent.subskills.healthcareAdministration.facilityManagement.title']();
+        },
+        get description() {
+            return m[
+                'boostContent.subskills.healthcareAdministration.facilityManagement.description'
+            ]();
+        },
     },
 ];

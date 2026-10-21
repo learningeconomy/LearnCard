@@ -1,12 +1,11 @@
 # ContractsMarkContractRequestAsSeenRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**contract_uri** | **str** |  | 
-**target_profile_id** | **str** |  | 
+| Name                  | Type    | Description | Notes |
+| --------------------- | ------- | ----------- | ----- |
+| **contract_uri**      | **str** |             |
+| **target_profile_id** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_mark_contract_request_as_seen_request_dict = contracts_mark_contract_r
 # create an instance of ContractsMarkContractRequestAsSeenRequest from a dict
 contracts_mark_contract_request_as_seen_request_from_dict = ContractsMarkContractRequestAsSeenRequest.from_dict(contracts_mark_contract_request_as_seen_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

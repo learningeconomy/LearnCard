@@ -4,6 +4,7 @@ import { VC } from '@learncard/types';
 import { DASHBOARD_TYPE } from 'packages/plugins/lca-api-plugin/src/types';
 import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('troop-analytics-embed');
 
 export interface AnalyticsPayload {
@@ -94,7 +95,7 @@ const TroopAnalyticsEmbed: React.FC<TroopAnalyticsEmbedProps> = ({
             } catch (err) {
                 log.error(err);
 
-                setError('Failed to load analytics');
+                setError(m['troops.analytics.failedMsg']());
             }
         })();
     }, [buildPayload, initWallet]);
@@ -114,14 +115,13 @@ const TroopAnalyticsEmbed: React.FC<TroopAnalyticsEmbedProps> = ({
             <section className="flex flex-col w-full h-full bg-white">
                 <button
                     type="button"
-                    className="self-end m-4 px-4 py-2 rounded bg-grayscale-300 hover:bg-grayscale-400"
+                    className="self-end m-4 px-4 py-2 rounded-sm bg-grayscale-300 hover:bg-grayscale-400"
                     onClick={handleClose}
                 >
-                    Close Analytics
+                    {m['troops.analytics.close']()}
                 </button>
-                <p className="text-center text-red-500 flex-grow flex items-center justify-center">
-                    Analytics is only supported on desktop devices. Please view this from a desktop
-                    browser.
+                <p className="text-center text-red-500 grow flex items-center justify-center">
+                    {m['troops.analytics.desktop']()}
                 </p>
             </section>
         );
@@ -131,27 +131,29 @@ const TroopAnalyticsEmbed: React.FC<TroopAnalyticsEmbedProps> = ({
         <section className="flex flex-col w-full h-full bg-white">
             <button
                 type="button"
-                className="self-end m-4 px-4 py-2 rounded bg-grayscale-300 hover:bg-grayscale-400"
+                className="self-end m-4 px-4 py-2 rounded-sm bg-grayscale-300 hover:bg-grayscale-400"
                 onClick={handleClose}
             >
-                Close Analytics
+                {m['troops.analytics.close']()}
             </button>
 
             {error && (
-                <p className="text-center text-red-500 flex-grow flex items-center justify-center">
+                <p className="text-center text-red-500 grow flex items-center justify-center">
                     {error}
                 </p>
             )}
 
             {!error && !iframeUrl && (
-                <p className="text-center flex-grow flex items-center justify-center">Loading…</p>
+                <p className="text-center grow flex items-center justify-center">
+                    {m['common.loading']()}
+                </p>
             )}
 
             {!error && iframeUrl && (
                 <iframe
                     key={iframeUrl} // reloads iframe when token updates
                     src={iframeUrl}
-                    title="Analytics Dashboard"
+                    title={m['troops.analytics.title']()}
                     frameBorder={0}
                     width="100%"
                     height="100%"

@@ -1,13 +1,12 @@
 # ContractsUpdateConsentedContractTermsRequestTermsReadCredentials
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**share_all** | **bool** |  | [optional] 
-**sharing** | **bool** |  | [optional] 
-**categories** | [**Dict[str, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue]**](ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.md) |  | [optional] 
+| Name           | Type                                                                                                                                                                   | Description | Notes      |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **share_all**  | **bool**                                                                                                                                                               |             | [optional] |
+| **sharing**    | **bool**                                                                                                                                                               |             | [optional] |
+| **categories** | [**Dict[str, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue]**](ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_update_consented_contract_terms_request_terms_read_credentials_dict = 
 # create an instance of ContractsUpdateConsentedContractTermsRequestTermsReadCredentials from a dict
 contracts_update_consented_contract_terms_request_terms_read_credentials_from_dict = ContractsUpdateConsentedContractTermsRequestTermsReadCredentials.from_dict(contracts_update_consented_contract_terms_request_terms_read_credentials_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

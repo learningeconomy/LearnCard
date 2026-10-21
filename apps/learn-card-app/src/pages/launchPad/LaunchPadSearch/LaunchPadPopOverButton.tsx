@@ -13,7 +13,6 @@ import {
     LaunchPadSortOptionsEnum,
 } from './launchpad-search.helpers';
 import LaunchPadFilterSortingOptionsModal from './LaunchPadFilterSortingOptionsModal';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
@@ -35,13 +34,10 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
     const colorSet = getColorSet(ColorSetEnum.defaults);
     const primaryColor = colorSet.primaryColor;
 
-    const flags = useFlags();
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
-
-    const enableLaunchPadUpdates = flags?.enableLaunchPadUpdates;
 
     const [showSortPopover, setShowSortPopover] = useState<boolean>(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -58,7 +54,7 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                     setSortBy={setSortBy}
                 />,
                 {
-                    sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                    sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
                 },
                 {}
             );
@@ -74,7 +70,7 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                 onClick={handleSortMenu}
                 type="button"
                 ref={isMobile ? null : buttonRef}
-                className={`bg-white flex items-center justify-center p-2 rounded-[10px] shadow-sm border-solid border-[1px] ${
+                className={`bg-white flex items-center justify-center p-2 rounded-[10px] shadow-xs border-solid border ${
                     showSortPopover ? `border-${primaryColor}` : 'border-grayscale-200'
                 }`}
             >
@@ -95,14 +91,6 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                 >
                     <IonList>
                         {LAUNCHPAD_SORT_OPTIONS.map(option => {
-                            if (
-                                !enableLaunchPadUpdates &&
-                                (option.type === LaunchPadSortOptionsEnum.mostUsed ||
-                                    option.type === LaunchPadSortOptionsEnum.recentlyAdded)
-                            ) {
-                                return null;
-                            }
-
                             return (
                                 <IonItem
                                     className="font-notoSans text-sm flex items-center justify-start text-left"

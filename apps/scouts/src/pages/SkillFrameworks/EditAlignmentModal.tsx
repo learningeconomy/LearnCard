@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
+import TransP from '../../i18n/TransP';
 
 import X from '../../components/svgs/X';
 import data from '@emoji-mart/data';
@@ -137,7 +140,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                 countAdjustment={countAdjustment}
             />,
             {
-                sectionClassName: '!bg-transparent !shadow-none !max-w-[450px]',
+                sectionClassName: 'bg-transparent! shadow-none! max-w-[450px]!',
                 cancelButtonTextOverride: 'Cancel',
             },
             {
@@ -157,7 +160,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
             <div className="p-2">
                 <Picker
                     data={data}
-                    onEmojiSelect={(emoji: any) => {
+                    onEmojiSelect={(emoji: { native: string }) => {
                         setNode(prev => ({
                             ...prev,
                             icon: emoji.native,
@@ -172,7 +175,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                     perLine={8}
                 />
             </div>,
-            { sectionClassName: '!bg-transparent !shadow-none !w-fit' },
+            { sectionClassName: 'bg-transparent! shadow-none! w-fit!' },
             {
                 desktop: ModalTypes.Center,
                 mobile: ModalTypes.Center,
@@ -201,7 +204,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                     <SkillBreadcrumbText path={selectedPath} />
                 </div>
 
-                <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-t-[1px] border-b-[1px] border-grayscale-200 border-solid">
+                <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-t border-b border-grayscale-200 border-solid">
                     <button
                         onClick={presentEmojiPicker}
                         className={`p-[5px] rounded-[10px] flex gap-[10px] items-center ${
@@ -219,7 +222,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                     {!isTier && (
                         <div className="flex flex-col gap-[5px] w-full">
                             <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                                Code
+                                {m['skillFrameworks.codeLabel']()}
                             </label>
                             <IonInput
                                 onIonInput={e => {
@@ -228,8 +231,8 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                         targetCode: e.detail.value ?? '',
                                     }));
                                 }}
-                                className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[5px] !px-[10px]"
-                                placeholder="Code"
+                                className="bg-grayscale-100 text-grayscale-800 rounded-[10px] py-[5px]! px-[10px]!"
+                                placeholder={m['skillFrameworks.codeLabel']()}
                                 value={node.targetCode}
                             />
                         </div>
@@ -237,7 +240,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
 
                     <div className="flex flex-col gap-[5px] w-full">
                         <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                            Title*
+                            {m['skillFrameworks.titleLabel']()}
                         </label>
                         <IonInput
                             onIonInput={e => {
@@ -246,8 +249,8 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                     targetName: e.detail.value ?? '',
                                 }));
                             }}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[5px] !px-[10px]"
-                            placeholder="Title"
+                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] py-[5px]! px-[10px]!"
+                            placeholder={m['skillFrameworks.titlePlh']()}
                             value={node.targetName}
                         />
                     </div>
@@ -265,7 +268,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                     version="outlined"
                                 />
                                 <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                    Framework Tier
+                                    {m['skillFrameworks.fwTier']()}
                                 </p>
                             </>
                         ) : (
@@ -275,7 +278,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                     version="filled"
                                 />
                                 <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                    Competency
+                                    {m['skillFrameworks.compLabel']()}
                                 </p>
                             </>
                         )}
@@ -288,13 +291,17 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
 
                     {isTier ? (
                         <p className="text-center font-poppins text-[14px] text-grayscale-700 tracking-[-0.25px]">
-                            A <span className="font-[600]">framework tier</span> serves as a
-                            structural container for competencies.
+                            <TransP
+                                m={m['skillFrameworks.tierDesc']}
+                                components={[<span key="b" className="font-[600]" />]}
+                            />
                         </p>
                     ) : (
                         <p className="text-center font-poppins text-[14px] text-grayscale-700 tracking-[-0.25px]">
-                            A <span className="font-[600]">competency</span> is a verified
-                            credential that can be awarded and earned.
+                            <TransP
+                                m={m['skillFrameworks.compDesc']}
+                                components={[<span key="b" className="font-[600]" />]}
+                            />
                         </p>
                     )}
                 </div>
@@ -302,7 +309,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                 <div className="flex flex-col gap-[15px] p-[20px]">
                     <div className="flex flex-col gap-[5px] w-full">
                         <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                            Statement
+                            {m['skillFrameworks.statementLabel']()}
                         </label>
                         <IonTextarea
                             onIonInput={e => {
@@ -311,8 +318,8 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                     targetDescription: e.detail.value ?? '',
                                 }));
                             }}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[5px] !px-[10px]"
-                            placeholder="Statement"
+                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] py-[5px]! px-[10px]!"
+                            placeholder={m['skillFrameworks.statementLabel']()}
                             value={node.targetDescription}
                             rows={4}
                         />
@@ -326,14 +333,14 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         onClick={closeModal}
                         className="bg-white text-grayscale-900 py-[10px] pl-[20px] pr-[15px] rounded-[30px] flex gap-[10px] items-center justify-center shadow-bottom-3-4 font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                     <button
                         onClick={handleDeleteButtonClick}
                         className="bg-rose-600 py-[10px] pl-[20px] pr-[15px] rounded-[30px] flex gap-[10px] items-center justify-center shadow-bottom-3-4 font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white"
                     >
                         <TrashBin className="w-[24px] h-[24px]" version="thin" />
-                        Delete
+                        {m['common.delete']()}
                     </button>
                 </>
             )}
@@ -344,7 +351,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                     className="py-[10px] pl-[20px] pr-[15px] bg-emerald-500 font-[600] rounded-[30px] text-white shadow-button-bottom font-poppins text-[17px] disabled:bg-grayscale-300"
                     disabled={!node.targetName}
                 >
-                    Create
+                    {m['common.create']()}
                 </button>
             )}
         </div>
@@ -371,14 +378,14 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
             <div className="h-full overflow-y-auto pb-[150px] pt-[60px] px-[20px] ">{content}</div>
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     <button
                         onClick={closeModal}
                         className="py-[7px] px-[20px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                     >
-                        {isCreate ? 'Cancel' : 'Back'}
+                        {isCreate ? m['common.cancel']() : m['common.back']()}
                     </button>
                     {isCreate && (
                         <button
@@ -386,7 +393,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                             className="py-[7px] px-[20px] bg-emerald-500 font-[600] rounded-full text-white shadow-button-bottom flex-1 font-poppins text-[17px] disabled:bg-grayscale-300"
                             disabled={!node.targetName}
                         >
-                            Create
+                            {m['common.create']()}
                         </button>
                     )}
                 </div>
@@ -395,4 +402,4 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
     );
 };
 
-export default EditAlignmentModal;
+export default withCompetencyAdmin(EditAlignmentModal);

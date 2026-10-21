@@ -1,10 +1,7 @@
-import { defineConfig } from 'vitest/config';
+import { createVitestConfig, serviceIntegrationPreset } from '../../vitest.shared';
 
-export default defineConfig({
+export default createVitestConfig(serviceIntegrationPreset, {
     test: {
-        environment: 'node',
-        globals: true,
-        fileParallelism: false,
         globalSetup: ['./setup/global-setup.ts'],
         setupFiles: ['./setup/test-setup.ts'],
         teardownTimeout: 120_000,

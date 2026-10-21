@@ -37,92 +37,39 @@ export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
     }
 };
 
-/**
- * Opens the Boost template picker (BoostTemplateSelector) — the entry point for
- * issuing a credential — leaving it ready to pick a template.
- *
- * The Nav/App/Passport redesign (LC-1921) routed the old side-menu "Add to
- * LearnCard" boost entry through a nested LaunchPadActionModal → AddToLearnCardMenu
- * modal stack that is unreliable to drive (the inner modal opens on top of the
- * still-open launcher and the stack intermittently collapses). The "Boost a
- * Friend" shortcut tile on the /launchpad (MyAppsLanding) landing opens the *same*
- * BoostTemplateSelector modal directly, with no nesting — see
- * useOpenBoostTemplateSelector — so drive that instead.
- *
- * Note: this navigates to /launchpad, so after the boost flow's history.goBack()
- * the app returns to /launchpad (not the wallet). Callers that verify the issued
- * credential on the wallet should navigate there explicitly afterwards.
- */
-export const openBoostTemplateSelector = async (page: Page) => {
+const TEST_BADGE_PRESET = 'Vibe Curator';
+
+/** Opens the peer-badge picker from the Launchpad. */
+export const openBoostAFriendBadgePicker = async (page: Page) => {
     await page.goto('/launchpad');
     await page.getByRole('button', { name: 'Boost a Friend' }).click({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Pick a Badge' })).toBeVisible({
+        timeout: 30_000,
+    });
 };
 
-/**
- * After clicking "Next" in the boost flow, clicks "Publish & Issue" when it is
- * shown.
- *
- * When the `skipPublishStep` flag is enabled (current E2E config), "Next" lands
- * directly on the "Issue To" screen and the publish step is absent — see
- * BoostCMS.tsx. We wait for whichever screen renders first (the publish button
- * or the "Issue To" Plus button) and only click publish when it is present.
- * Racing the two screens avoids a fixed dead-wait when the step is skipped and
- * avoids silently skipping a required click if the button renders slowly.
- */
-export const clickPublishAndIssueIfPresent = async (page: Page) => {
-    const publishButton = page.getByRole('button', { name: /publish & issue/i });
-    const issueToPlusButton = page.getByRole('button', { name: 'Plus' });
-
-    await expect(publishButton.or(issueToPlusButton).first()).toBeVisible({ timeout: 30_000 });
-
-    if (await publishButton.isVisible()) {
-        await publishButton.click({ timeout: 30_000 });
-    }
+/** Selects and personalizes the test peer badge, then advances to recipient selection. */
+export const personalizeTestBadge = async (page: Page) => {
+    await page.getByPlaceholder('Search badges...').fill(TEST_BADGE_PRESET);
+    await page.getByRole('button', { name: new RegExp(TEST_BADGE_PRESET) }).click();
+    await page.getByPlaceholder('e.g. Trailblazer').fill(TEST_CREDENTIAL_TITLE);
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Send To' })).toBeVisible({
+        timeout: 30_000,
+    });
 };
 
-/**
- * Issues a credential to the current user via the UI.
- *
- * Flow: Boost a Friend → pick template → fill form →
- *       Next → Publish & Issue → Plus → Boost Myself → Save
- */
-export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
-    await openBoostTemplateSelector(page);
-
-    // Select the first available template. The subtitle is branding-derived
-    // ("{brandingConfig.name} Template") since the multi-tenant refactor
-    // (LC-1558), so match the branding-agnostic suffix instead of a literal.
-    await page
-        .getByText(/Template$/)
-        .first()
-        .click({ timeout: 30_000 });
-
-    // Fill in credential title and description
-    await page.getByRole('textbox', { name: /0\// }).fill(TEST_CREDENTIAL_TITLE);
-    await page
-        .locator('textarea[placeholder="What is this boost for?"]')
-        .fill('Test credential description');
-
-    // Click Next to proceed to publish
-    await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
-
-    // Click Publish & Issue (skipped when the skipPublishStep flag is enabled)
-    await clickPublishAndIssueIfPresent(page);
-
-    // Click Plus to open recipient selection
-    await page.getByRole('button', { name: 'Plus' }).click({ timeout: 30_000 });
-
-    // Click Boost Myself
-    await page
-        .getByRole('button', { name: /boost myself/i })
-        .first()
-        .click({ timeout });
-
-    // Click Save to issue the boost
-    await page.getByRole('button', { name: 'Save' }).click({ timeout: 30_000 });
-
-    // Wait for navigation away from /boost
-    await page.waitForURL(/(?!.*\/boost)/, { timeout });
+/** Issues the personalized peer badge to the current user and opens the Badges list. */
+export const issueBadgeToSelf = async (page: Page, timeout = 60_000) => {
+    await openBoostAFriendBadgePicker(page);
+    await personalizeTestBadge(page);
+    await page.getByRole('button', { name: 'Just me', exact: true }).click();
+    await page.getByRole('button', { name: 'Boost Myself', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Added to your Passport!' })).toBeVisible({
+        timeout,
+    });
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await page.waitForURL(/\/socialBadges/, { timeout });
 };
 
 /**
@@ -132,7 +79,7 @@ export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
  * a privateKey that is stored separately from localStorage for security. When
  * localStorage is restored without the privateKey, the app logs out the user.
  *
- * This helper uses the /hidden/seed route which creates a proper user with a
+ * This helper uses the /developer/sign-in route which creates a proper user with a
  * private key derived from the seed.
  *
  * @param page - Playwright page object
@@ -141,7 +88,14 @@ export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
  */
 export const waitForAuthenticatedState = async (
     page: Page,
-    pathOrOptions: string | { path?: string; seed?: string; profileId?: string } = '/',
+    pathOrOptions:
+        | string
+        | {
+              path?: string;
+              seed?: string;
+              profileId?: string;
+              waitUntil?: 'load' | 'domcontentloaded';
+          } = '/',
     timeout = 30000
 ) => {
     // Parse options
@@ -151,11 +105,13 @@ export const waitForAuthenticatedState = async (
                   path: pathOrOptions,
                   seed: TEST_USER_SEED,
                   profileId: undefined as string | undefined,
+                  waitUntil: 'load' as const,
               }
             : {
                   path: pathOrOptions.path ?? '/',
                   seed: pathOrOptions.seed ?? TEST_USER_SEED,
                   profileId: pathOrOptions.profileId,
+                  waitUntil: pathOrOptions.waitUntil ?? 'load',
               };
 
     // Wait for the LCN gate's underlying profile lookup so `Add to LearnCard`
@@ -168,24 +124,32 @@ export const waitForAuthenticatedState = async (
         )
         .catch(() => undefined);
 
-    // Login via seed - this creates a proper user with privateKey
-    // If profileId is provided, the seed route will also create a network profile
+    // Login via seed - this creates a proper user with privateKey.
+    // ?profileId= makes the page create the network profile during sign-in
+    // (deterministic), instead of relying on the Setup Profile modal appearing.
     const seedUrl = options.profileId
-        ? `/hidden/seed?profileId=${encodeURIComponent(options.profileId)}`
-        : '/hidden/seed';
-    await page.goto(seedUrl);
+        ? `/developer/sign-in?profileId=${encodeURIComponent(options.profileId)}`
+        : '/developer/sign-in';
+    await page.goto(seedUrl, { waitUntil: options.waitUntil });
 
-    // Fill in the seed and submit
+    // Fill in the seed and submit. The page is state-aware: the primary button reads
+    // "Sign in" when logged out, or "Sign out and switch" when a session already
+    // exists (e.g. the demo user in tests/states/demoState.json). Either path
+    // ends on /wallet — the switch variant logs out, reloads, and auto-signs in
+    // with the seed it stashed.
     await page.getByRole('textbox').fill(options.seed);
-    await page.getByRole('button', { name: /sign in with seed/i }).click();
+    await page.getByRole('button', { name: /^(Sign in|Sign out and switch)$/ }).click();
 
-    // Wait for redirect to wallet (indicates successful login + profile creation)
-    await page.waitForURL(/\/wallet/, { timeout });
+    await page.waitForURL(/\/wallet/, { timeout, waitUntil: options.waitUntil });
+
+    if (options.profileId) {
+        await joinNetworkIfNeeded(page, options.profileId);
+    }
 
     await profileFetchPromise;
 
     // If a different path was requested, navigate there
     if (options.path !== '/' && options.path !== '/wallet') {
-        await page.goto(options.path);
+        await page.goto(options.path, { waitUntil: options.waitUntil });
     }
 };

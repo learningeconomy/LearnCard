@@ -1,26 +1,20 @@
 import { createStore } from '@udecode/zustood';
 
-import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig } from '../../config/tenantConfigState';
 import type { TenantConfig } from 'learn-card-base';
 import { emitConfigDebugEvent, emitConfigWarning } from '../../components/debug/configDebugEvents';
 import { isRegisteredThemeId, resolveThemeId } from '../helpers/loadTheme';
 
 const DEFAULT_THEME = 'colorful';
 
-const getAppFallbackTheme = (): string => {
-    return typeof APP_THEME !== 'undefined' && APP_THEME ? APP_THEME : DEFAULT_THEME;
-};
-
-// Get default theme from TenantConfig branding, with env var fallback.
-// Returns a string ID; loadThemeSchema() handles fallback if the ID is unknown.
+// Returns a string ID; loadThemeSchema() handles fallback if the configured ID is unknown.
 export const getDefaultTheme = (config?: TenantConfig): string => {
     try {
         const cfg = config ?? getResolvedTenantConfig();
 
-        return resolveThemeId(cfg.branding.defaultTheme, getAppFallbackTheme());
+        return resolveThemeId(cfg.branding.defaultTheme, DEFAULT_THEME);
     } catch {
-        // TenantConfig not yet resolved — fall back to Vite global
-        return resolveThemeId(getAppFallbackTheme(), DEFAULT_THEME);
+        return DEFAULT_THEME;
     }
 };
 

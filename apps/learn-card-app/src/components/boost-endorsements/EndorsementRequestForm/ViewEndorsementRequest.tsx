@@ -30,7 +30,6 @@ const ViewEndorsementRequest: React.FC<{
 }> = ({ sharedLink, notification, endorsementVC, handleSaveEndorsement, isClaimed, isLoading }) => {
     const location = useLocation();
     const [vc, setVC] = useState<VP>();
-    const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const [tryRefetch, setTryRefetch] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
@@ -45,8 +44,8 @@ const ViewEndorsementRequest: React.FC<{
     const [boost, setBoost] = useState<VC[] | undefined>();
     const [category, setCategory] = useState<string>('');
 
-    const { credentialWithEdits } = useGetCredentialWithEdits(boost, uri);
-    let _boost = credentialWithEdits ?? boost;
+    const { credentialWithEdits } = useGetCredentialWithEdits(boost);
+    const _boost = credentialWithEdits ?? boost;
 
     // Get credential from ceramic
     const fetchCredential = async (uri: string) => {
@@ -83,14 +82,14 @@ const ViewEndorsementRequest: React.FC<{
             }
             setLoading(false);
             return vc;
-        } catch (e) {
+        } catch (error) {
             setLoading(false);
-            setErrMsg(`Error: wrong PIN: ${e}`);
+            log.warn('Unable to open endorsement credential', error);
 
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: m['endorsement.viewRequest.errorFetching']({ error: String(e) }),
+                header: m['endorsement.viewRequest.errorOpening'](),
                 buttons: [
                     {
                         text: m['endorsement.viewRequest.ok'](),
@@ -109,18 +108,20 @@ const ViewEndorsementRequest: React.FC<{
                 ],
             });
 
-            throw new Error(`Error fetching credential: ${e}`);
+            return undefined;
         }
     };
 
     useEffect(() => {
-        if (pin && uri) {
-            fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
+        if (pin && seed && uri) {
+            setBoost(undefined);
+            setVC(undefined);
+            void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
-    }, [pin, tryRefetch]);
+    }, [pin, seed, uri, tryRefetch]);
 
     return (
-        <section className="h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
+        <section className="relative h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
             {!isClaimed && (
                 <EndorsementFormHeader
                     credential={_boost}

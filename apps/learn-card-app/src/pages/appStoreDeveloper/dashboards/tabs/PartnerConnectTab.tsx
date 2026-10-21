@@ -48,7 +48,7 @@ import { Clipboard } from '@capacitor/clipboard';
 
 import { CodeBlock } from '../../components/CodeBlock';
 import { TemplateListManager } from '../../components/TemplateListManager';
-import { openExternalLink } from 'src/helpers/externalLinkHelpers';
+import { openExternalLink } from '../../../../helpers/externalLinkHelpers';
 
 interface ApiMethod {
     id: string;
@@ -1251,7 +1251,7 @@ const identity = await learnCard.requestIdentity();
 log.info('User:', identity.profile.displayName);`;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {/* Header with App Selector */}
             <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
@@ -1275,7 +1275,7 @@ log.info('User:', identity.profile.displayName);`;
                                 );
                                 setLocalSelectedListing(listing || null);
                             }}
-                            className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         >
                             {appListings.map(listing => (
                                 <option key={listing.listing_id} value={listing.listing_id}>
@@ -1361,14 +1361,14 @@ log.info('User:', identity.profile.displayName);`;
                     {/* TEMPLATES TAB */}
                     {/* ============================================================ */}
                     {activeTab === 'templates' && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {/* Template Type Toggle */}
                             <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg w-fit">
                                 <button
                                     onClick={() => setTemplateType('issue-credentials')}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                                         templateType === 'issue-credentials'
-                                            ? 'bg-white text-gray-800 shadow-sm'
+                                            ? 'bg-white text-gray-800 shadow-xs'
                                             : 'text-gray-600 hover:text-gray-800'
                                     }`}
                                 >
@@ -1382,7 +1382,7 @@ log.info('User:', identity.profile.displayName);`;
                                     onClick={() => setTemplateType('peer-badges')}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                                         templateType === 'peer-badges'
-                                            ? 'bg-white text-gray-800 shadow-sm'
+                                            ? 'bg-white text-gray-800 shadow-xs'
                                             : 'text-gray-600 hover:text-gray-800'
                                     }`}
                                 >
@@ -1425,7 +1425,7 @@ log.info('User:', identity.profile.displayName);`;
                     {/* CODE TAB */}
                     {/* ============================================================ */}
                     {activeTab === 'code' && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             <div className="border border-gray-200 rounded-xl overflow-hidden">
                                 <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -1493,7 +1493,7 @@ log.info('User:', identity.profile.displayName);`;
                     {/* SETUP TAB */}
                     {/* ============================================================ */}
                     {activeTab === 'setup' && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {/* Installation */}
                             <div className="border border-gray-200 rounded-xl overflow-hidden">
                                 <div className="p-4 bg-gray-50 border-b border-gray-200">
@@ -1514,7 +1514,7 @@ log.info('User:', identity.profile.displayName);`;
                                     </div>
                                 </div>
 
-                                <div className="p-4 space-y-4">
+                                <div className="p-4 space-y-v3-4">
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium text-gray-700">
@@ -1609,7 +1609,7 @@ log.info('User:', identity.profile.displayName);`;
                                 <div className="p-4">
                                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                                         {/* Method Navigation */}
-                                        <div className="lg:col-span-4 space-y-3">
+                                        <div className="lg:col-span-4 space-y-v3-3">
                                             {CATEGORIES.map(category => {
                                                 const categoryMethods = METHODS.filter(
                                                     m => m.category === category.id
@@ -1622,7 +1622,7 @@ log.info('User:', identity.profile.displayName);`;
                                                             {getCategoryName(category.id)}
                                                         </div>
 
-                                                        <div className="space-y-1">
+                                                        <div className="space-y-v3-1">
                                                             {categoryMethods.map(method => (
                                                                 <button
                                                                     key={method.id}
@@ -1662,7 +1662,7 @@ log.info('User:', identity.profile.displayName);`;
 
                                                                     {selectedMethodId ===
                                                                         method.id && (
-                                                                        <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0" />
+                                                                        <ChevronRight className="w-4 h-4 text-cyan-500 shrink-0" />
                                                                     )}
                                                                 </button>
                                                             ))}
@@ -1673,9 +1673,9 @@ log.info('User:', identity.profile.displayName);`;
                                         </div>
 
                                         {/* Method Details */}
-                                        <div className="lg:col-span-8 space-y-4">
+                                        <div className="lg:col-span-8 space-y-v3-4">
                                             {/* Method Header */}
-                                            <div className="p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl">
+                                            <div className="p-4 bg-linear-to-br/srgb from-gray-50 to-white border border-gray-200 rounded-xl">
                                                 <div className="flex items-start gap-4">
                                                     <div
                                                         className={`p-3 rounded-xl ${getCategoryColor(
@@ -1722,14 +1722,14 @@ log.info('User:', identity.profile.displayName);`;
                                                                     }`}
                                                                 >
                                                                     <div className="flex items-start gap-2 flex-wrap">
-                                                                        <code className="px-2 py-0.5 bg-gray-100 rounded text-sm font-mono text-gray-800">
+                                                                        <code className="px-2 py-0.5 bg-gray-100 rounded-sm text-sm font-mono text-gray-800">
                                                                             {param.name}
                                                                         </code>
-                                                                        <code className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                                                                        <code className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-sm text-xs">
                                                                             {param.type}
                                                                         </code>
                                                                         {param.required && (
-                                                                            <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
+                                                                            <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded-sm text-xs font-medium">
                                                                                 {m[
                                                                                     'developerPortal.dashboards.tabs.partnerConnect.apiReference.required'
                                                                                 ]()}
@@ -1760,7 +1760,7 @@ log.info('User:', identity.profile.displayName);`;
                                                 </h5>
 
                                                 <div className="p-3 border border-gray-200 rounded-xl">
-                                                    <code className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-sm">
+                                                    <code className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-sm text-sm">
                                                         {selectedMethod.returns.type}
                                                     </code>
                                                     <p className="mt-1 text-sm text-gray-600">
@@ -1829,13 +1829,13 @@ log.info('User:', identity.profile.displayName);`;
                                                                 'developerPortal.dashboards.tabs.partnerConnect.apiReference.proTips'
                                                             ]()}
                                                         </h5>
-                                                        <ul className="space-y-1">
+                                                        <ul className="space-y-v3-1">
                                                             {selectedMethod.tips.map((tip, idx) => (
                                                                 <li
                                                                     key={idx}
                                                                     className="flex items-start gap-2 text-sm text-amber-700"
                                                                 >
-                                                                    <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                                    <ChevronRight className="w-4 h-4 shrink-0 mt-0.5" />
                                                                     {tip}
                                                                 </li>
                                                             ))}

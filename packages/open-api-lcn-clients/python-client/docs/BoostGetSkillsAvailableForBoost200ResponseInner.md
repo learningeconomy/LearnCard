@@ -1,12 +1,11 @@
 # BoostGetSkillsAvailableForBoost200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**framework** | [**BoostGetSkillsAvailableForBoost200ResponseInnerFramework**](BoostGetSkillsAvailableForBoost200ResponseInnerFramework.md) |  | 
-**skills** | [**List[BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner]**](BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner.md) |  | 
+| Name          | Type                                                                                                                                  | Description | Notes |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **framework** | [**BoostGetSkillsAvailableForBoost200ResponseInnerFramework**](BoostGetSkillsAvailableForBoost200ResponseInnerFramework.md)           |             |
+| **skills**    | [**List[BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner]**](BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_get_skills_available_for_boost200_response_inner_dict = boost_get_skills_a
 # create an instance of BoostGetSkillsAvailableForBoost200ResponseInner from a dict
 boost_get_skills_available_for_boost200_response_inner_from_dict = BoostGetSkillsAvailableForBoost200ResponseInner.from_dict(boost_get_skills_available_for_boost200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

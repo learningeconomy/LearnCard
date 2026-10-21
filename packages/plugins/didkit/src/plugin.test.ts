@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+
 import { getDidKitPlugin } from './plugin';
 
 // Uses the checked-in DIDKit WASM so the document map is proven against the real resolver.
@@ -14,7 +16,7 @@ describe('DIDKit plugin issuance with a separate key document', () => {
     const originalFetch = globalThis.fetch;
 
     beforeAll(() => {
-        globalThis.fetch = jest.fn(async (input: unknown) => {
+        globalThis.fetch = vi.fn(async (input: unknown) => {
             throw new Error(`Unexpected network request: ${String(input)}`);
         }) as typeof fetch;
     });
@@ -25,7 +27,10 @@ describe('DIDKit plugin issuance with a separate key document', () => {
 
     it('resolves options.verificationMethod when the credential has no proof yet', async () => {
         const plugin = await getDidKitPlugin(wasm);
-        const learnCard = {} as any;
+        // The plugin only reads `context.resolveDocument` from LearnCard here.
+        const learnCard = { context: {} } as unknown as Parameters<
+            typeof plugin.methods.issueCredential
+        >[0];
         const key = plugin.methods.generateEd25519KeyFromBytes(
             learnCard,
             new Uint8Array(32).fill(9)
@@ -51,8 +56,8 @@ describe('DIDKit plugin issuance with a separate key document', () => {
                 ],
             },
         };
-        const resolveDocument = jest.fn(async (uri: string) => documents[uri]);
-        learnCard.context = { resolveDocument };
+        const resolveDocument = vi.fn(async (uri: string) => documents[uri]);
+        Object.assign(learnCard.context, { resolveDocument });
 
         const issued = await plugin.methods.issueCredential(
             learnCard,

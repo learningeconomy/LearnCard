@@ -3,19 +3,18 @@ import { IonIcon } from '@ionic/react';
 import { checkmarkCircle, ellipseOutline } from 'ionicons/icons';
 
 import { VC, UnsignedVC } from '@learncard/types';
-import { BoostPreviewDisplayViewEnum, boostPreviewStore } from 'learn-card-base/stores/boostPreviewStore';
+import {
+    BoostPreviewDisplayViewEnum,
+    boostPreviewStore,
+} from 'learn-card-base/stores/boostPreviewStore';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 
 type BoostDisplayStyleSelectorProps = {
     credential: VC | UnsignedVC;
-    enableRenderMethod: boolean;
 };
 
-const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({
-    credential,
-    enableRenderMethod,
-}) => {
-    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
+const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({ credential }) => {
+    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     if (!renderMethod) return null;
@@ -36,7 +35,7 @@ const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({
     ] as const;
 
     return (
-        <section className="rounded-[20px] border border-grayscale-200 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-[20px] border border-grayscale-200 bg-white shadow-xs overflow-hidden">
             <div className="px-5 pt-5 pb-4">
                 <h3 className="text-[17px] text-grayscale-900">Display Style</h3>
             </div>

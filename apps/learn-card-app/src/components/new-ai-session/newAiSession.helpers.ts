@@ -1,3 +1,5 @@
+import { m } from '../../paraglide/messages.js';
+
 import { VC } from '@learncard/types';
 
 export enum AiSessionMode {
@@ -17,51 +19,72 @@ export const getAiTopicTitle = (topic: VC | undefined) => {
     return topic?.boostCredential?.topicInfo?.title ?? '';
 };
 
-export const sessionLoadingText: string[] = [
-    'Spinning up your AI tutor — give us a sec...',
-    'Crafting a smart session just for you...',
-    'Loading insights, minus the boring stuff...',
-    'Warming up the thinking engine...',
-    'Curating content tailored to your curiosity...',
-    'Pulling the good stuff from the knowledge vault...',
-    'Designing a session that actually makes sense...',
-    'Getting everything ready for a productive convo...',
-    'Building your learning path — hold tight...',
-    'Almost there... just adding the magic touch...',
+/**
+ * Rotating session-startup loader copy.
+ *
+ * A function, not a module-scope array: Paraglide resolves the active locale at
+ * call time, so a hoisted `const` would freeze these to whatever language was
+ * active when the chunk first loaded (see the `no-module-scope-i18n` rule).
+ */
+export const getSessionLoadingText = (): string[] => [
+    m['aiSession.loading.session1'](),
+    m['aiSession.loading.session2'](),
+    m['aiSession.loading.session3'](),
+    m['aiSession.loading.session4'](),
+    m['aiSession.loading.session5'](),
+    m['aiSession.loading.session6'](),
+    m['aiSession.loading.session7'](),
+    m['aiSession.loading.session8'](),
+    m['aiSession.loading.session9'](),
+    m['aiSession.loading.session10'](),
 ];
 
-export const aiThinkingText: string[] = [
-    'Alright, let me gather my thoughts on that...',
-    'Let’s take a thoughtful approach to this topic...',
-    'One moment — planning the best way to explain this...',
-    'I’m organizing some key ideas to get us started...',
-    'Let me break this down in a way that makes sense...',
-    'Thinking through how to guide you on this...',
-    'Okay, here’s how I’d begin unpacking this...',
-    'Let’s explore this step by step — just a sec...',
-    'Working on a clear, helpful way to approach this...',
-    'Preparing a solid explanation for us to dive into...',
-    'Curating the most important ideas around your topic...',
-    'Let me shape this into something engaging and useful...',
-    'I want this to click — give me a sec to line it up...',
-    'Crafting a response that builds real understanding...',
-    'Getting ready to walk you through this clearly...',
+/**
+ * Rotating AI "thinking" loader copy.
+ *
+ * A function, not a module-scope array: Paraglide resolves the active locale at
+ * call time, so a hoisted `const` would freeze these to whatever language was
+ * active when the chunk first loaded (see the `no-module-scope-i18n` rule).
+ */
+export const getAiThinkingText = (): string[] => [
+    m['aiSession.loading.thinking1'](),
+    m['aiSession.loading.thinking2'](),
+    m['aiSession.loading.thinking3'](),
+    m['aiSession.loading.thinking4'](),
+    m['aiSession.loading.thinking5'](),
+    m['aiSession.loading.thinking6'](),
+    m['aiSession.loading.thinking7'](),
+    m['aiSession.loading.thinking8'](),
+    m['aiSession.loading.thinking9'](),
+    m['aiSession.loading.thinking10'](),
+    m['aiSession.loading.thinking11'](),
+    m['aiSession.loading.thinking12'](),
+    m['aiSession.loading.thinking13'](),
+    m['aiSession.loading.thinking14'](),
+    m['aiSession.loading.thinking15'](),
 ];
 
-export const sessionWrapUpText: string[] = [
-    'Wrapping things up — let’s see what we covered...',
-    'One sec — pulling together your session summary...',
-    'Finishing up with a quick recap of what we explored...',
-    'Organizing the key takeaways from today...',
-    'Let me summarize your learning journey real quick...',
-    'Putting a bow on this session — almost done...',
-    'Compiling highlights to help it all stick...',
-    'Let’s reflect on what we just tackled...',
-    'Just a moment — saving your progress and insights...',
-    'Reviewing the session so you don’t have to...',
-    'Finalizing your session summary — hang tight...',
-    'Tidying up the lesson so it’s easy to revisit later...',
-    'Great work — now let’s wrap it up properly...',
-    'Almost there — packaging this session for review...',
-    'Closing things out with a smart recap...',
+/**
+ * Rotating session wrap-up loader copy.
+ *
+ * A function, not a module-scope array: Paraglide resolves the active locale at
+ * call time, so a hoisted `const` would freeze these to whatever language was
+ * active when the chunk first loaded (see the `no-module-scope-i18n` rule).
+ */
+export const getSessionWrapUpText = (): string[] => [
+    m['aiSession.loading.wrapUp1'](),
+    m['aiSession.loading.wrapUp2'](),
+    m['aiSession.loading.wrapUp3'](),
+    m['aiSession.loading.wrapUp4'](),
+    m['aiSession.loading.wrapUp5'](),
+    m['aiSession.loading.wrapUp6'](),
+    m['aiSession.loading.wrapUp7'](),
+    m['aiSession.loading.wrapUp8'](),
+    m['aiSession.loading.wrapUp9'](),
+    m['aiSession.loading.wrapUp10'](),
+    m['aiSession.loading.wrapUp11'](),
+    m['aiSession.loading.wrapUp12'](),
+    m['aiSession.loading.wrapUp13'](),
+    m['aiSession.loading.wrapUp14'](),
+    m['aiSession.loading.wrapUp15'](),
 ];

@@ -1,0 +1,21 @@
+name: ❓ Question
+description: You're building on LearnCard and something isn't clear.
+labels: ['question']
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Quick checks first: [What Do You Want to Build?](https://docs.learncard.com/start-here/what-do-you-want-to-build) · [Quickstart](https://docs.learncard.com/start-here/your-first-integration) · [Glossary](https://docs.learncard.com/start-here/glossary).
+              If the answer *should* be in the docs and isn't, say so — that's a docs bug we want to fix.
+    - type: textarea
+      id: question
+      attributes:
+          label: What are you trying to do, and where are you stuck?
+          description: Include what you've tried and any relevant code. Link the docs page you were following, if any.
+      validations:
+          required: true
+    - type: input
+      id: docs-page
+      attributes:
+          label: Docs page you were following (if any)
+          placeholder: 'https://docs.learncard.com/...'

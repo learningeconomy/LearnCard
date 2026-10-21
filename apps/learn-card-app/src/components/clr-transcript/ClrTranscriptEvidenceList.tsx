@@ -1,12 +1,13 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import MediaAttachmentsBox from '../../pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 
-import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { EvidenceDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 export type ClrEvidenceSourceSummary = {
-    kind: 'transcript' | 'course' | 'program';
+    kind: 'transcript' | 'course' | 'program' | 'assessment';
     title: string;
     humanCode?: string;
     dateLabel?: string;
@@ -19,7 +20,9 @@ const getEvidenceUrl = (item: EvidenceDisplayModel): string => item.id?.value ??
 const getEvidenceTypeText = (item: EvidenceDisplayModel): string => {
     const rawType = item.type?.value;
 
-    return Array.isArray(rawType) ? rawType.join(' ').toLowerCase() : rawType?.toLowerCase() ?? '';
+    return Array.isArray(rawType)
+        ? rawType.join(' ').toLowerCase()
+        : (rawType?.toLowerCase() ?? '');
 };
 
 const inferEvidenceKind = (item: EvidenceDisplayModel): EvidenceKind => {
@@ -147,15 +150,43 @@ const ClrTranscriptEvidenceList: React.FC<{
     if (compact) {
         return (
             <p className="text-xs text-grayscale-600">
-                Original artifact available ({evidence.length})
+                {m['clrRenderer.evidenceCount']({ count: evidence.length })}
             </p>
         );
     }
 
     return (
-        <MediaAttachmentsBox
-            evidence={evidence.map(item => toEvidenceAttachmentWithSource(item, sourceSummaries))}
-        />
+        <div className="space-y-v3-3">
+            {evidence.some(item => item.id?.value) && (
+                <MediaAttachmentsBox
+                    evidence={evidence
+                        .filter(item => item.id?.value)
+                        .map(item => toEvidenceAttachmentWithSource(item, sourceSummaries))}
+                />
+            )}
+            {evidence
+                .filter(item => !item.id?.value)
+                .map((item, index) => (
+                    <section
+                        key={`${item.sourceCredentialId}-${index}`}
+                        className="space-y-v3-2 rounded-[20px] border border-grayscale-200 bg-white p-4"
+                    >
+                        <h4 className="wrap-break-word text-sm font-medium text-grayscale-900">
+                            {item.name?.value ?? m['clrRenderer.evidence']()}
+                        </h4>
+                        {item.description && (
+                            <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-grayscale-600">
+                                {item.description.value}
+                            </p>
+                        )}
+                        {item.narrative && (
+                            <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-grayscale-600">
+                                {item.narrative.value}
+                            </p>
+                        )}
+                    </section>
+                ))}
+        </div>
     );
 };
 

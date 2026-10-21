@@ -55,15 +55,16 @@ type ChildInviteModalProps = {
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
-const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
-    dob: z
-        .string()
-        .min(1, 'Date of birth is required!')
-        .refine(dob => !Number.isNaN(calculateAge(dob)), {
-            message: 'Invalid date of birth.',
-        }),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z.string().min(1, m['arabicFixes.nameRequired']()),
+        dob: z
+            .string()
+            .min(1, 'Date of birth is required!')
+            .refine(dob => !Number.isNaN(calculateAge(dob)), {
+                message: 'Invalid date of birth.',
+            }),
+    });
 
 export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     viewMode = ChildInviteModalViewModeEnum.create,
@@ -94,7 +95,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
             ? existingChild?.learnCardID
             : getLearnCardIDStyleDefaults(LearnCardIDCMSTabsEnum.dark)
     );
-    const [dob, setDob] = useState<string>(isInEditMode ? existingChild?.dob ?? '' : '');
+    const [dob, setDob] = useState<string>(isInEditMode ? (existingChild?.dob ?? '') : '');
     const [country, setCountry] = useState<string | undefined>(
         isInEditMode ? existingChild?.country : undefined
     );
@@ -114,7 +115,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     });
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: name,
             dob: dob,
         });
@@ -150,7 +151,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
             <CountrySelectorModal selected={country} onSelect={handleCountrySelect} />,
             {
                 disableCloseHandlers: true,
-                sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -221,8 +222,8 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     return (
         <IonPage>
             <IonContent fullscreen color="grayscale-200">
-                <div className="w-full flex flex-col items-center justify-center ion-padding mt-8 safe-area-top-margin">
-                    <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-sm rounded-[15px] bg-white px-4 pt-6 pb-10">
+                <div className="w-full flex flex-col items-center justify-center ion-padding mt-[var(--ion-safe-area-top,0px)]">
+                    <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-xs rounded-[15px] bg-white px-4 pt-6 pb-10">
                         <div>
                             <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl">
                                 {m['family.childInvite.title']()}
@@ -275,7 +276,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                     setName(_name);
                                     setErrors?.({});
                                 }}
-                                className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 !pr-8 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
+                                className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] px-4! pb-2! pr-8! font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                     errors?.name ? 'border-red-300 border-2' : ''
                                 }`}
                                 label={m['family.childInvite.nameLabel']()}
@@ -309,7 +310,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                     setShortBio(_shortBio);
                                     setErrors?.({});
                                 }}
-                                className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
+                                className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] px-4! pb-2! font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                     errors?.shortBio ? 'border-red-300 border-2' : ''
                                 }`}
                                 label={m['family.childInvite.taglineLabel']()}
@@ -396,7 +397,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
             <IonFooter
                 ref={bottomBarRef}
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-[15px] absolute bottom-0 bg-white !max-h-[85px]"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-[15px] absolute bottom-0 bg-white/60 max-h-[85px]!"
             >
                 <IonToolbar mode="ios">
                     <div className="w-full flex items-center justify-center">

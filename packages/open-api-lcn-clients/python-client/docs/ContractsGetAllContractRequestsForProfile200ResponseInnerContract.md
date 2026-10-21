@@ -1,13 +1,12 @@
 # ContractsGetAllContractRequestsForProfile200ResponseInnerContract
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**ContractsGetConsentFlowContract200ResponseContractRead**](ContractsGetConsentFlowContract200ResponseContractRead.md) |  | 
-**write** | [**StorageResolve200ResponseAnyOfAnyOf1Write**](StorageResolve200ResponseAnyOfAnyOf1Write.md) |  | 
-**uri** | **str** |  | 
+| Name      | Type                                                                                                                                                                                | Description | Notes |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **read**  | [**StorageResolve200ResponseAnyOfAnyOf1Read**](StorageResolve200ResponseAnyOfAnyOf1Read.md)                                                                                         |             |
+| **write** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md) |             |
+| **uri**   | **str**                                                                                                                                                                             |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_all_contract_requests_for_profile200_response_inner_contract_dict 
 # create an instance of ContractsGetAllContractRequestsForProfile200ResponseInnerContract from a dict
 contracts_get_all_contract_requests_for_profile200_response_inner_contract_from_dict = ContractsGetAllContractRequestsForProfile200ResponseInnerContract.from_dict(contracts_get_all_contract_requests_for_profile200_response_inner_contract_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

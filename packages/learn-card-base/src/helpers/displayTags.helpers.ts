@@ -28,6 +28,9 @@ import { CREDENTIAL_CATEGORIES } from '../types/credentials';
  *   - `lc:displayType:<enum>`     One of the DisplayTypeEnum values.
  *   - `lc:bgColor:<hex>`          Background color, with or without leading `#`.
  *   - `lc:bgImage:<https url>`    Background image url.
+ *   - `lc:idBackgroundImage:<https url>` ID card artwork/background.
+ *   - `lc:idIssuerThumbnail:<https url>` ID card issuer mark.
+ *   - `lc:idDimBackgroundImage:<boolean>` Whether to dim ID card artwork for contrast.
  *   - `lc:accentColor:<hex>`      Accent color, with or without leading `#`.
  */
 
@@ -40,6 +43,9 @@ export enum LcTagKey {
     BgColor = 'bgcolor',
     BgImage = 'bgimage',
     AccentColor = 'accentcolor',
+    IdBackgroundImage = 'idbackgroundimage',
+    IdIssuerThumbnail = 'idissuerthumbnail',
+    IdDimBackgroundImage = 'iddimbackgroundimage',
 }
 
 const LC_TAG_CANONICAL_KEY: Record<LcTagKey, string> = {
@@ -49,6 +55,9 @@ const LC_TAG_CANONICAL_KEY: Record<LcTagKey, string> = {
     [LcTagKey.BgColor]: 'bgColor',
     [LcTagKey.BgImage]: 'bgImage',
     [LcTagKey.AccentColor]: 'accentColor',
+    [LcTagKey.IdBackgroundImage]: 'idBackgroundImage',
+    [LcTagKey.IdIssuerThumbnail]: 'idIssuerThumbnail',
+    [LcTagKey.IdDimBackgroundImage]: 'idDimBackgroundImage',
 };
 
 export type LcDisplayHints = {
@@ -58,6 +67,9 @@ export type LcDisplayHints = {
     backgroundColor?: string;
     backgroundImage?: string;
     accentColor?: string;
+    idBackgroundImage?: string;
+    idIssuerThumbnail?: string;
+    idDimBackgroundImage?: boolean;
 };
 
 const isValidCategory = (value: string): boolean =>
@@ -132,6 +144,20 @@ export const parseLcTags = (tags?: string[]): LcDisplayHints => {
                 if (isHttpsUrl(value)) hints.backgroundImage = value.trim();
                 break;
             }
+            case LcTagKey.IdBackgroundImage: {
+                if (isHttpsUrl(value)) hints.idBackgroundImage = value.trim();
+                break;
+            }
+            case LcTagKey.IdIssuerThumbnail: {
+                if (isHttpsUrl(value)) hints.idIssuerThumbnail = value.trim();
+                break;
+            }
+            case LcTagKey.IdDimBackgroundImage: {
+                const candidate = value.trim().toLowerCase();
+                if (candidate === 'true') hints.idDimBackgroundImage = true;
+                if (candidate === 'false') hints.idDimBackgroundImage = false;
+                break;
+            }
             case LcTagKey.AccentColor: {
                 const color = normalizeHexColor(value);
                 if (color) hints.accentColor = color;
@@ -174,6 +200,18 @@ export const buildLcTags = (hints: LcDisplayHints): string[] => {
 
     if (hints.backgroundImage && isHttpsUrl(hints.backgroundImage)) {
         push(LcTagKey.BgImage, hints.backgroundImage.trim());
+    }
+
+    if (hints.idBackgroundImage && isHttpsUrl(hints.idBackgroundImage)) {
+        push(LcTagKey.IdBackgroundImage, hints.idBackgroundImage.trim());
+    }
+
+    if (hints.idIssuerThumbnail && isHttpsUrl(hints.idIssuerThumbnail)) {
+        push(LcTagKey.IdIssuerThumbnail, hints.idIssuerThumbnail.trim());
+    }
+
+    if (typeof hints.idDimBackgroundImage === 'boolean') {
+        push(LcTagKey.IdDimBackgroundImage, String(hints.idDimBackgroundImage));
     }
 
     if (hints.accentColor) {

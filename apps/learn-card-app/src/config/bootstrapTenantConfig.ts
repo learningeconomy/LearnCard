@@ -6,6 +6,7 @@
  */
 
 import * as Sentry from '@sentry/browser';
+import { Capacitor } from '@capacitor/core';
 
 import type { TenantConfig } from 'learn-card-base';
 import {
@@ -13,11 +14,14 @@ import {
     setAuthConfigFromTenant,
     setImageUploadConfigFromTenant,
     getTenantBaseUrl,
+    getAuthConfig,
+    initializeAuthProvider,
 } from 'learn-card-base';
 import { initNetworkStoreFromTenant } from 'learn-card-base';
 import { setOnFetchFailure } from 'learn-card-base/config/resolveTenantConfig';
+import { configureLocalDevelopmentNetwork } from 'learn-card-base/config/localDevelopmentNetwork';
+import { environment } from './environment';
 
-import { initializeFirebaseFromTenant } from '../firebase/firebase';
 import { initSentryFromTenant } from '../constants/sentry';
 import { initUserflowFromTenant } from '../constants/userflow';
 import { enforceDefaultTheme } from '../theme/store/themeStore';
@@ -26,52 +30,40 @@ import {
     emitConfigDebugEvent,
     emitConfigSuccess,
 } from '../components/debug/configDebugEvents';
+import {
+    getTenantBootstrapState,
+    setResolvedTenantConfig,
+    getResolvedTenantConfig,
+    getTenantHeaders,
+} from './tenantConfigState';
 
-type TenantBootstrapState = {
-    resolvedConfig: TenantConfig | null;
-    bootstrapPromise: Promise<TenantConfig> | null;
-};
+// Re-exported from the dependency-free state module so modules that only read
+// the resolved config can import them without pulling in this heavy graph.
+export { getResolvedTenantConfig, getTenantHeaders };
 
-const TENANT_BOOTSTRAP_STATE_KEY = '__learncardTenantBootstrapState__';
-
-const getTenantBootstrapState = (): TenantBootstrapState => {
-    const globalScope = globalThis as typeof globalThis & {
-        [TENANT_BOOTSTRAP_STATE_KEY]?: TenantBootstrapState;
-    };
-
-    if (!globalScope[TENANT_BOOTSTRAP_STATE_KEY]) {
-        globalScope[TENANT_BOOTSTRAP_STATE_KEY] = {
-            resolvedConfig: null,
-            bootstrapPromise: null,
-        };
-    }
-
-    return globalScope[TENANT_BOOTSTRAP_STATE_KEY];
-};
-
-// Module-level cache backed by global state so HMR does not clear the resolved config.
-let _resolvedConfig: TenantConfig | null = getTenantBootstrapState().resolvedConfig;
-
-const setResolvedTenantConfig = (config: TenantConfig): void => {
-    _resolvedConfig = config;
-    getTenantBootstrapState().resolvedConfig = config;
-};
-
-const initializeTenantSubsystems = (config: TenantConfig): void => {
-    // 1. Initialize Firebase with tenant-specific project config
-    initializeFirebaseFromTenant(config.auth.firebase);
-    emitConfigDebugEvent(
-        'bootstrap:firebase_init',
-        `Firebase initialized (project: ${config.auth.firebase?.projectId ?? 'default'})`,
-        { data: { projectId: config.auth.firebase?.projectId } }
-    );
-
-    // 2. Bridge auth config so getAuthConfig() returns tenant-aware values
+const initializeTenantSubsystems = async (config: TenantConfig): Promise<void> => {
+    // 1. Bridge auth config so getAuthConfig() returns tenant-aware values.
+    // Must run before initializeAuthProvider() so it resolves the tenant's
+    // actual provider instead of the default.
     setAuthConfigFromTenant(config);
     emitConfigDebugEvent(
         'bootstrap:auth_config_set',
         `Auth config bridged (provider: ${config.auth.provider})`,
         { data: { provider: config.auth.provider, keyDerivation: config.auth.keyDerivation } }
+    );
+
+    // 2. Run the provider-specific SDK bootstrap (e.g. Firebase's initializeApp
+    // + analytics). Only the initializer registered for config.auth.provider
+    // runs, so a non-Firebase tenant never touches the Firebase SDK.
+    await initializeAuthProvider(getAuthConfig());
+    emitConfigDebugEvent(
+        'bootstrap:auth_provider_init',
+        `Auth provider initialized (provider: ${config.auth.provider}${
+            config.auth.provider === 'firebase'
+                ? `, project: ${config.auth.firebase?.projectId ?? 'default'}`
+                : ''
+        })`,
+        { data: { provider: config.auth.provider, projectId: config.auth.firebase?.projectId } }
     );
 
     setImageUploadConfigFromTenant(config);
@@ -83,6 +75,12 @@ const initializeTenantSubsystems = (config: TenantConfig): void => {
 
     // 3. Populate network store with tenant API endpoints + tenant ID
     initNetworkStoreFromTenant(config.apis, config.tenantId);
+    configureLocalDevelopmentNetwork(
+        environment.DEV,
+        environment.VITE_CREDENTIAL_REFRESH_LOCAL_QA,
+        typeof window === 'undefined' ? '' : window.location.origin,
+        config.apis.brainService
+    );
     emitConfigDebugEvent(
         'bootstrap:network_store_init',
         'Network store populated with tenant API endpoints'
@@ -116,34 +114,6 @@ const initializeTenantSubsystems = (config: TenantConfig): void => {
             },
         }
     );
-};
-
-/**
- * Get the resolved TenantConfig synchronously.
- * Only available after `bootstrapTenantConfig()` has been called.
- */
-export const getResolvedTenantConfig = (): TenantConfig => {
-    const config = _resolvedConfig ?? getTenantBootstrapState().resolvedConfig;
-
-    if (!config) {
-        throw new Error('TenantConfig not yet resolved. Call bootstrapTenantConfig() first.');
-    }
-
-    _resolvedConfig = config;
-
-    return config;
-};
-
-/**
- * Get headers that identify the current tenant to backend services.
- * Merges with any existing headers object so callers can spread or pass directly.
- */
-export const getTenantHeaders = (): Record<string, string> => {
-    const tenantId = _resolvedConfig?.tenantId;
-
-    if (!tenantId) return {};
-
-    return { 'X-Tenant-Id': tenantId };
 };
 
 /**
@@ -218,8 +188,9 @@ export const getLCNApiUrl = (): string => {
  * Call this once before ReactDOM.createRoot().render().
  *
  * Initializes:
- *   1. Firebase (from tenant auth.firebase config)
- *   2. Auth config overrides (from tenant auth config)
+ *   1. Auth config overrides (from tenant auth config)
+ *   2. The configured auth provider's SDK (e.g. Firebase, from tenant
+ *      auth.firebase config) — gated by initializeAuthProvider()
  *   3. Network store (from tenant APIs config)
  *   4. Sentry error tracking
  *   5. Userflow product tours
@@ -248,10 +219,17 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
     bootstrapState.bootstrapPromise = (async () => {
         const t0 = Date.now();
 
-        const config = bootstrapState.resolvedConfig ?? (await resolveTenantConfig({ onEvent }));
+        // The `/__tenant-config` overlay is a Netlify edge function that only exists on
+        // web origins. Native webviews (capacitor://localhost) have no such route and
+        // SPA-fallback it to index.html, so native boots from the baked config only.
+        const isNative = Capacitor.isNativePlatform();
+
+        const config =
+            bootstrapState.resolvedConfig ??
+            (await resolveTenantConfig({ onEvent, offlineOnly: isNative }));
 
         setResolvedTenantConfig(config);
-        initializeTenantSubsystems(config);
+        await initializeTenantSubsystems(config);
 
         const totalMs = Date.now() - t0;
 

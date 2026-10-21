@@ -322,6 +322,7 @@ export const initialCustomBoostTypesState = {
     [BoostCategoryOptionsEnum.socialBadge]: [],
     [BoostCategoryOptionsEnum.achievement]: [],
     [BoostCategoryOptionsEnum.learningHistory]: [],
+    [BoostCategoryOptionsEnum.qualifications]: [],
     [BoostCategoryOptionsEnum.id]: [],
     [BoostCategoryOptionsEnum.workHistory]: [],
     [BoostCategoryOptionsEnum.skill]: [],

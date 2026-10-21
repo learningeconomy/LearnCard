@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
@@ -11,9 +12,17 @@ import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
+
+// The polyfill package ships against a different esbuild type instance than Vite.
+const globalPolyfillPlugin = GlobalPolyfill({
+    process: true,
+    buffer: true,
+}) as unknown as EsbuildPlugin;
 
 /**
  * Fail the build/dev start if any file imports paraglide/messages.js twice
@@ -44,6 +53,20 @@ const { readDefaultChannel } = requireFromHere('../../tools/capgo/readDefaultCha
 };
 
 /**
+ * App version read directly from this app's package.json.
+ *
+ * Deliberately NOT `process.env.npm_package_version` — that env var reflects
+ * the package.json of the directory the build command was invoked from, so
+ * CI builds run from the monorepo root (`bunx nx build learn-card-app`) would
+ * bake in the root package's version (e.g. 1.0.1) instead of the app's.
+ */
+const packageVersion = (
+    JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8')) as {
+        version: string;
+    }
+).version;
+
+/**
  * Resolve a short build commit SHA at config-eval time.
  *
  * Source preference:
@@ -56,14 +79,14 @@ const { readDefaultChannel } = requireFromHere('../../tools/capgo/readDefaultCha
  * VersionInfoModal so support / engineering can identify the exact commit
  * a binary or OTA bundle was built from.
  */
-const resolveBuildSha = (): string => {
-    const fromEnv =
-        process.env.GITHUB_SHA ??
-        process.env.HEROKU_SLUG_COMMIT ??
-        process.env.VERCEL_GIT_COMMIT_SHA ??
-        process.env.BUILD_SHA;
+const resolveBuildSha = (environment: ReturnType<typeof parseLearnCardAppEnvironment>): string => {
+    const fromEnvironment =
+        environment.GITHUB_SHA ??
+        environment.HEROKU_SLUG_COMMIT ??
+        environment.VERCEL_GIT_COMMIT_SHA ??
+        environment.BUILD_SHA;
 
-    if (fromEnv) return fromEnv.slice(0, 7);
+    if (fromEnvironment) return fromEnvironment.slice(0, 7);
 
     try {
         return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
@@ -117,23 +140,27 @@ const collectWorkspacePackages = (): string[] => {
 const workspacePackages = collectWorkspacePackages();
 
 export default defineConfig(async ({ mode, command }) => {
-    const env = loadEnv(mode, process.cwd(), '');
+    const loadedEnvironment = loadEnv(mode, __dirname, '');
+    const environment = parseLearnCardAppEnvironment(
+        { ...loadedEnvironment, ...process.env, MODE: mode },
+        `Vite ${command} (${mode})`,
+        command
+    );
     const { default: tsconfigPaths } = await import('vite-tsconfig-paths');
 
-    // Keyed off VITE_DOCKER_SOURCE alone (not `mode`) because the self-host build
-    // legitimately runs `vite build` in production mode, so `mode` can't distinguish it
-    // from a Netlify/dist build. We instead emit a loud build-log notice so an accidental
-    // production build with this flag set — which would ship uncompiled TS — is obvious.
-    const useDockerSourceMode = process.env.VITE_DOCKER_SOURCE === 'true';
+    // VITE_DOCKER_SOURCE is an explicit opt-in source/debug mode, keyed off the flag
+    // rather than `mode`. Production and self-host docker-builds both run `vite build`
+    // in production mode and intentionally resolve the prebuilt workspace dist.
+    // Emit a loud build-log notice so accidental source-mode production builds are obvious.
+    const useDockerSourceMode = environment.VITE_DOCKER_SOURCE;
     if (useDockerSourceMode) {
         console.warn(
             [
                 '',
                 '════════════════════════════════════════════════════════════════════════',
                 '⚠️  VITE_DOCKER_SOURCE=true — resolving @learncard/* to TypeScript SOURCE.',
-                '    Intended ONLY for self-host container builds (docker-build).',
-                '    A production/Netlify/npm-dist build MUST leave this UNSET, otherwise',
-                '    the app ships uncompiled workspace sources instead of optimized dist.',
+                '    Opt-in source/debug mode only; self-host docker-builds leave this UNSET.',
+                '    Production/Netlify/npm-dist builds resolve optimized prebuilt workspace dist.',
                 '════════════════════════════════════════════════════════════════════════',
                 '',
             ].join('\n')
@@ -141,12 +168,13 @@ export default defineConfig(async ({ mode, command }) => {
     }
 
     // Resolve @learncard/* to TypeScript source when serving the dev server (HMR / Fast
-    // Refresh) or in the self-host container build. Production dist builds leave this off
-    // so consumers get the optimized prebuilt bundles.
+    // Refresh) or when source/debug mode is explicitly enabled. Production and self-host
+    // docker-builds leave it off so consumers get the optimized prebuilt workspace dist.
     const useSourceConditions = useDockerSourceMode || command === 'serve';
 
     return {
         plugins: [
+            tailwindcss(),
             i18nImportGuard(),
             react(),
             svgr(),
@@ -154,8 +182,9 @@ export default defineConfig(async ({ mode, command }) => {
             paraglideVitePlugin({
                 project: './project.inlang',
                 outdir: './src/paraglide',
+                outputStructure: 'locale-modules',
             }),
-            ...(process.env.ANALYZE
+            ...(environment.ANALYZE
                 ? [
                       visualizer({
                           open: true,
@@ -168,6 +197,7 @@ export default defineConfig(async ({ mode, command }) => {
         ],
         build: {
             target: 'esnext',
+            cssTarget: ['chrome111', 'safari16.4', 'firefox128'],
             outDir: path.join(__dirname, 'build'),
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,
@@ -188,54 +218,73 @@ export default defineConfig(async ({ mode, command }) => {
             },
         },
         optimizeDeps: {
-            // disabled: false,
-            include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
+            // Workspace source is excluded below, so its external imports are invisible to
+            // the initial dependency scan. Pre-bundle them before serving the first page:
+            // discovering them during sign-in replaces chunks and reloads active navigation.
+            include: [
+                // Lazy XLSX workers must not discover dependencies and reload an active import.
+                'xlsx',
+                'fflate',
+                'buffer',
+                'process',
+                'react-router',
+                'react-router-dom',
+                'crypto-browserify',
+                '@learncard/helpers > @noble/hashes/sha2',
+                '@learncard/helpers > @sd-jwt/decode',
+                '@learncard/helpers > @trpc/server/observable',
+                'zod/v4',
+                '@learncard/sss-key-manager > shamir-secret-sharing',
+                '@learncard/sss-key-manager > hash-wasm',
+                // Escrow Nitro attestation (recovery) imports these at runtime.
+                '@learncard/sss-key-manager > reflect-metadata',
+                '@learncard/sss-key-manager > cborg',
+                '@learncard/sss-key-manager > @peculiar/x509',
+                '@learncard/sss-key-manager > @scure/bip39/wordlists/english',
+                '@learncard/react > react-barcode',
+                '@learncard/react > react-flip-toolkit',
+                '@learncard/lca-api-plugin > pbkdf2-hmac',
+                '@learncard/lca-api-plugin > hex-lite',
+                '@learncard/vpqr-plugin > @digitalbazaar/vpqr',
+                '@learncard/ethereum-plugin > ethers',
+                '@learncard/network-brain-client > @trpc/client',
+                '@learncard/lca-api-plugin > @learncard/lca-api-client > @trpc/client',
+                '@learncard/core > core-js/actual/promise',
+                '@learncard/core > abort-controller/dist/abort-controller.js',
+                '@learncard/core > isomorphic-webcrypto',
+                '@learncard/chapi-plugin > credential-handler-polyfill',
+                '@learncard/chapi-plugin > web-credential-handler',
+                '@learncard/sd-jwt-vc-plugin > @sd-jwt/sd-jwt-vc',
+                '@learncard/openid4vc-plugin > jose',
+                '@learncard/openid4vc-plugin > safe-regex',
+                '@learncard/openid4vc-plugin > @peculiar/x509',
+                '@learncard/openid4vc-plugin > dcql',
+                '@learncard/vc-plugin > multiformats/bases/base58',
+                '@learncard/vc-plugin > multiformats/bases/base64',
+            ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
             esbuildOptions: {
                 target: 'esnext',
                 define: { global: 'globalThis' },
-                plugins: [GlobalPolyfill({ process: true, buffer: true }) as any],
+                plugins: [globalPolyfillPlugin],
             },
         },
         define: {
-            __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
-            __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
-            __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
+            __PACKAGE_VERSION__: JSON.stringify(packageVersion),
+            __APP_VERSION__: JSON.stringify(packageVersion),
+            __BUILD_SHA__: JSON.stringify(resolveBuildSha(environment)),
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
             __CAPGO_DEFAULT_CHANNEL__: JSON.stringify(
                 readDefaultChannel(path.join(__dirname, 'capacitor.config.ts')) ?? ''
             ),
-            IS_PRODUCTION: process.env.NODE_ENV === 'production',
-            // DEPRECATED — these are now in TenantConfig (config.json → auth.*)
-            // Kept as fallbacks for backward compat; will be removed in a future PR.
-            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': process.env
-                .REACT_APP_KEY_DERIVATION_PROVIDER
-                ? JSON.stringify(process.env.REACT_APP_KEY_DERIVATION_PROVIDER)
-                : 'undefined',
-            'process.env.REACT_APP_SSS_SERVER_URL': process.env.REACT_APP_SSS_SERVER_URL
-                ? JSON.stringify(process.env.REACT_APP_SSS_SERVER_URL)
-                : 'undefined',
-            // DEPRECATED — now in config.json → observability.sentryEnv / sentryDsn
-            SENTRY_ENV: process.env.SENTRY_ENV ? `"${process.env.SENTRY_ENV}"` : '"development"',
-            SENTRY_DSN: process.env.SENTRY_DSN
-                ? `"${process.env.SENTRY_DSN}"`
-                : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
-            // Not yet in TenantConfig — keep as-is
-            GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY
-                ? `"${process.env.GOOGLE_MAPS_API_KEY}"`
-                : 'undefined',
-            // DEPRECATED — now in config.json → branding.defaultTheme
-            APP_THEME: env.APP_THEME ? JSON.stringify(env.APP_THEME) : '"colorful"',
-            // Not yet in TenantConfig — keep as-is
-            CORS_PROXY_API_KEY: env.CORS_PROXY_API_KEY
-                ? JSON.stringify(env.CORS_PROXY_API_KEY)
-                : 'undefined',
+            __APP_BUILD_ENV__: JSON.stringify(environment),
+            IS_PRODUCTION: mode === 'production',
         },
         resolve: {
             // See useSourceConditions above: the `development` condition resolves @learncard/*
-            // to source for the dev server and self-host container builds; Netlify/dist builds
-            // leave it off and use the published dist bundles.
+            // to source only when serving locally or when VITE_DOCKER_SOURCE=true is explicit.
+            // Production and self-host Docker builds use the prebuilt dist bundles.
             ...(useSourceConditions
                 ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
                 : {}),
@@ -271,8 +320,8 @@ export default defineConfig(async ({ mode, command }) => {
             port: 3000,
             watch: {
                 // Enable polling for Docker volume mounts
-                usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
-                interval: parseInt(process.env.CHOKIDAR_INTERVAL || '1000', 10),
+                usePolling: environment.CHOKIDAR_USEPOLLING,
+                interval: environment.CHOKIDAR_INTERVAL,
             },
         },
     };

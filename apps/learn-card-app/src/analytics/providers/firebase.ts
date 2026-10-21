@@ -3,7 +3,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('firebase');
 
 import type { AnalyticsProvider } from '../types';
-import type { AnalyticsEventName, EventPayload } from '../events';
+import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from '../events';
 
 /**
  * Firebase Analytics provider implementation.
@@ -41,6 +41,10 @@ export class FirebaseProvider implements AnalyticsProvider {
         } catch (error) {
             log.error('[Analytics:Firebase] track error', error);
         }
+    }
+
+    async submitFeedbackIdea(_properties: FeedbackIdeaPayload): Promise<void> {
+        throw new Error('Anonymous analytics is unavailable');
     }
 
     async page(name: string, _properties?: Record<string, unknown>): Promise<void> {

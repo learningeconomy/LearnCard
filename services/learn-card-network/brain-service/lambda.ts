@@ -1,131 +1,57 @@
-import http from 'node:http';
+import { bootstrapLambda } from '@learncard/service-config';
 
-import serverlessHttp from 'serverless-http';
-import type {
-    Context,
-    APIGatewayProxyResultV2,
-    APIGatewayProxyEventV2,
-    SQSHandler,
-} from 'aws-lambda';
-import { LCNNotificationValidator } from '@learncard/types';
-import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import * as Sentry from '@sentry/serverless';
+import { base, stages } from './src/config/stageConfig';
 
-import app from './src/openapi';
-import skillsViewerApp from './src/skills-viewer';
-import statusListsApp from './src/status-lists';
-import { appRouter, createContext } from './src/app';
-import { sendNotification } from './src/helpers/notifications.helpers';
-import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
-import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
-import {
-    handleTrpcError,
-    sentryBeforeSend,
-    getTracesSampleRate,
-} from './src/helpers/sentry.helpers';
+type LambdaApp = typeof import('./lambdaApp');
 
-Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
-    tracesSampleRate: getTracesSampleRate(),
-    beforeSend: sentryBeforeSend,
-    integrations: [
-        new Sentry.Integrations.Console(),
-        new Sentry.Integrations.Http({ tracing: true }),
-        new Sentry.Integrations.ContextLines(),
-    ],
+const getApplication = bootstrapLambda<LambdaApp>({
+    base,
+    stages,
+    stage: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? process.env.LAMBDA_STAGE
+        : process.env.CONFIG_STAGE,
+    importApp: () => import('./lambdaApp'),
 });
 
-startSkillEmbeddingBackfill().catch(err =>
-    console.error('Skill embedding backfill startup error:', err)
-);
+export const trpcHandler = async (...args: Parameters<LambdaApp['trpcHandler']>) =>
+    (await getApplication()).trpcHandler(...args);
 
-export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
+export const openApiHandler = async (...args: Parameters<LambdaApp['openApiHandler']>) =>
+    (await getApplication()).openApiHandler(...args);
 
-export const skillsViewerHandler = serverlessHttp(skillsViewerApp);
+export const _trpcHandler = async (...args: Parameters<LambdaApp['_trpcHandler']>) =>
+    (await getApplication())._trpcHandler(...args);
 
-export const statusListsHandler = serverlessHttp(statusListsApp);
+export const _openApiHandler = async (...args: Parameters<LambdaApp['_openApiHandler']>) =>
+    (await getApplication())._openApiHandler(...args);
 
-export const _openApiHandler = createOpenApiAwsLambdaHandler({
-    router: appRouter,
-    responseMeta: () => {
-        return {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-            },
-        };
-    },
-    createContext,
-    onError: handleTrpcError,
-});
+export const swaggerUiHandler = async (...args: Parameters<LambdaApp['swaggerUiHandler']>) =>
+    (await getApplication()).swaggerUiHandler(...args);
 
-export const _trpcHandler = awsLambdaRequestHandler({
-    allowMethodOverride: true,
-    router: appRouter,
-    createContext,
-    onError: handleTrpcError,
-    responseMeta: () => {
-        return {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': '*',
-                'Access-Control-Allow-Headers': 'authorization',
-            },
-        };
-    },
-});
+export const skillsViewerHandler = async (...args: Parameters<LambdaApp['skillsViewerHandler']>) =>
+    (await getApplication()).skillsViewerHandler(...args);
 
-export const openApiHandler = Sentry.AWSLambda.wrapHandler(
-    async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        if (event.requestContext.http.method === 'OPTIONS') {
-            return {
-                statusCode: 204,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                },
-            };
-        }
+export const statusListsHandler = async (...args: Parameters<LambdaApp['statusListsHandler']>) =>
+    (await getApplication()).statusListsHandler(...args);
 
-        return _openApiHandler(event, context);
-    }
-);
+export const credentialRefreshHandler = async (
+    ...args: Parameters<LambdaApp['credentialRefreshHandler']>
+) => (await getApplication()).credentialRefreshHandler(...args);
 
-export const trpcHandler = Sentry.AWSLambda.wrapHandler(
-    async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        if (event.requestContext.http.method === 'OPTIONS') {
-            return {
-                statusCode: 200,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Methods': '*',
-                },
-            };
-        }
+export const inboxQueueWorker = async (...args: Parameters<LambdaApp['inboxQueueWorker']>) =>
+    (await getApplication()).inboxQueueWorker(...args);
 
-        return _trpcHandler(event, context);
-    }
-);
+export const inboxQueueDispatcher = async (
+    ...args: Parameters<LambdaApp['inboxQueueDispatcher']>
+) => (await getApplication()).inboxQueueDispatcher(...args);
 
-export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(
-    async (event, context) => {
-        await Promise.all(
-            event.Records.map(async record => {
-                try {
-                    const _notification = JSON.parse(record.body);
+export const inboxDeadLetterWorker = async (
+    ...args: Parameters<LambdaApp['inboxDeadLetterWorker']>
+) => (await getApplication()).inboxDeadLetterWorker(...args);
 
-                    const notification = await LCNNotificationValidator.parseAsync(_notification);
+export const notificationsWorker = async (...args: Parameters<LambdaApp['notificationsWorker']>) =>
+    (await getApplication()).notificationsWorker(...args);
 
-                    await sendNotification(notification);
-                } catch (error) {
-                    console.error('Invalid Notification Object', record.body);
-                }
-            })
-        );
-    }
-);
+export const inboxMaintenanceHandler = async (
+    ...args: Parameters<LambdaApp['inboxMaintenanceHandler']>
+) => (await getApplication()).inboxMaintenanceHandler(...args);

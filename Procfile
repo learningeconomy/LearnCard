@@ -1,1 +1,0 @@
-worker: bun --cwd services/learn-card-discord-bot run start

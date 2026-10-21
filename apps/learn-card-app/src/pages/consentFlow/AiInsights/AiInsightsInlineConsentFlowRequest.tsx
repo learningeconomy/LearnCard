@@ -71,13 +71,13 @@ export const AiInsightsInlineConsentFlowRequest: React.FC<{
                         onClick={handleDeny}
                         className={`text-grayscale-900 flex-1 text-sm font-semibold bg-white px-4 py-2 rounded-full border border-grayscale-200 border-solid ${buttonStyle}`}
                     >
-                        Deny
+                        {m['arabicFixes.deny']()}
                     </button>
                     <button
                         onClick={handleAccept}
                         className="text-white flex-1 text-sm font-semibold px-4 py-2 rounded-full bg-indigo-500"
                     >
-                        Approve
+                        {m['arabicFixes.approve']()}
                     </button>
                     {!hideCloseButton && (
                         <button
@@ -108,7 +108,7 @@ export const AiInsightsInlineConsentFlowRequest: React.FC<{
                                 toastStore.set.setOptions({ zIndex: 99999 });
                                 handleOpenPrivacyAndData();
                             }}
-                            className={`mt-2 flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] px-2 border-[1px] border-solid rounded-[15px] ${borderColor}`}
+                            className={`mt-2 flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] px-2 border border-solid rounded-[15px] ${borderColor}`}
                         >
                             <LockBroken />
                             {m['consentFlow.privacyAndData']()}

@@ -1,4 +1,5 @@
 import { SkillFramework, FrameworkNodeRole, SkillFrameworkNode } from '../components/boost/boost';
+import * as m from '../paraglide/messages.js';
 // import { SkillTreeNode } from '@learncard/types';
 
 // shoulud be identical to @learncard/types -> SkillTreeNode (but not seeing that available right now 🤷‍♂️)
@@ -101,7 +102,7 @@ export const handleDownloadTemplate = () => {
     const template: SkillFramework = {
         id: 'example-framework-1',
         name: 'Example Skills Framework',
-        description: 'A template with 1 tier and 2 competencies',
+        description: m['skillFrameworks.templateDesc'](),
         skills: [
             {
                 type: 'Alignment',

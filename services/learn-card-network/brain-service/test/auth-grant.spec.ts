@@ -200,7 +200,7 @@ describe('Auth Grants', () => {
 
             const authGrants = await userA.clients.fullAuth.authGrants.getAuthGrants();
             expect(authGrants).toHaveLength(1);
-            expect((authGrants[0] as any).id).toEqual(authGrantId);
+            expect(authGrants[0]?.id).toEqual(authGrantId);
 
             await userA.clients.fullAuth.authGrants.addAuthGrant({
                 name: 'test2',
@@ -209,8 +209,8 @@ describe('Auth Grants', () => {
             const authGrants2 = await userA.clients.fullAuth.authGrants.getAuthGrants();
 
             expect(authGrants2).toHaveLength(2);
-            expect(authGrants2[0] as any).toBeDefined();
-            expect(authGrants2[1] as any).toBeDefined();
+            expect(authGrants2[0]).toBeDefined();
+            expect(authGrants2[1]).toBeDefined();
         });
 
         it('should accept a limit', async () => {
@@ -247,7 +247,7 @@ describe('Auth Grants', () => {
             });
 
             expect(authGrants).toHaveLength(1);
-            expect((authGrants[0] as any).id).toEqual(authGrantId);
+            expect(authGrants[0]?.id).toEqual(authGrantId);
         });
     });
 
@@ -278,17 +278,18 @@ describe('Auth Grants', () => {
                 id: authGrantId,
             });
 
-            expect((updatedAuthGrant as any).name).toEqual('test2');
+            expect(updatedAuthGrant?.name).toEqual('test2');
         });
 
-        it('should not allow you to update the scopes, challenge, id, createdAt, expiresAt, status of an auth grant', async () => {
+        it('should reject updates to the scopes, actAs, challenge, id, createdAt, expiresAt, status of an auth grant', async () => {
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             const authGrantId = await userA.clients.fullAuth.authGrants.addAuthGrant({
                 name: 'test',
             });
 
-            const invalidUpdates: any = {
+            const invalidUpdates: Record<string, string> = {
                 scope: '*:*',
+                actAs: '*',
                 challenge: 'test',
                 id: 'test',
                 createdAt: 'test',
@@ -296,27 +297,26 @@ describe('Auth Grants', () => {
                 status: 'revoked',
             };
 
-            for (const key in invalidUpdates) {
+            for (const [key, value] of Object.entries(invalidUpdates)) {
                 await expect(
                     userA.clients.fullAuth.authGrants.updateAuthGrant({
                         id: authGrantId,
-                        updates: {
-                            [key]: invalidUpdates[key],
-                        },
+                        updates: { [key]: value } as never,
                     })
-                ).resolves.toBe(false);
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
             }
 
             const updatedAuthGrant = await userA.clients.fullAuth.authGrants.getAuthGrant({
                 id: authGrantId,
             });
 
-            expect((updatedAuthGrant as any).scope).toEqual(AUTH_GRANT_READ_ONLY_SCOPE);
-            expect((updatedAuthGrant as any).challenge).not.toEqual('test');
-            expect((updatedAuthGrant as any).id).not.toEqual('test');
-            expect((updatedAuthGrant as any).createdAt).not.toEqual('test');
-            expect((updatedAuthGrant as any).expiresAt).not.toEqual('test');
-            expect((updatedAuthGrant as any).status).not.toEqual('revoked');
+            expect(updatedAuthGrant).toMatchObject({ scope: AUTH_GRANT_READ_ONLY_SCOPE });
+            expect(updatedAuthGrant?.challenge).not.toEqual('test');
+            expect(updatedAuthGrant?.id).not.toEqual('test');
+            expect(updatedAuthGrant?.createdAt).not.toEqual('test');
+            expect(updatedAuthGrant?.expiresAt).not.toEqual('test');
+            expect(updatedAuthGrant?.status).not.toEqual('revoked');
+            expect(updatedAuthGrant?.actAs).toBeUndefined();
         });
 
         // it('should not allow you to update an auth grant for a scoped user profile', async () => {
@@ -366,7 +366,7 @@ describe('Auth Grants', () => {
                 id: authGrantId,
             });
 
-            expect((updatedAuthGrant as any).name).toEqual('test2');
+            expect(updatedAuthGrant?.name).toEqual('test2');
         });
 
         it("should not allow you to update someone else's auth grant", async () => {
@@ -511,7 +511,7 @@ describe('Auth Grants', () => {
                 id: authGrantId,
             });
 
-            expect((authGrant as any).status).toEqual(AuthGrantStatusValidator.enum.revoked);
+            expect(authGrant?.status).toEqual(AuthGrantStatusValidator.enum.revoked);
         });
 
         // it('should not allow you to revoke an auth grant for a scoped user profile', async () => {
@@ -552,7 +552,7 @@ describe('Auth Grants', () => {
                 id: authGrantId,
             });
 
-            expect((authGrant as any).status).toEqual(AuthGrantStatusValidator.enum.revoked);
+            expect(authGrant?.status).toEqual(AuthGrantStatusValidator.enum.revoked);
         });
 
         it("should not allow you to revoke someone else's auth grant", async () => {

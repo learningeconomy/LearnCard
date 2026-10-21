@@ -14,7 +14,17 @@ export const expirationPlugin = (
     displayName: 'Expiration Extension',
     description: "Adds a check to make sure credentials aren't expired when verifying them",
     methods: {
-        verifyCredential: async (_learnCard, credential, options) => {
+        verifyCredential: async (_learnCard, credential, _options) => {
+            // Default the DIDKit checks here too, not only in the VC plugin: verify-only
+            // LearnCards (`initLearnCard()` with no seed) have no VC plugin, and without
+            // this a revoked credential's status list is never consulted.
+            const options = { ..._options };
+            if (!options.checks) {
+                options.checks = ['proof'];
+                if (credential.credentialStatus) options.checks.push('credentialStatus');
+                if (credential.credentialSchema) options.checks.push('credentialSchema');
+            }
+
             const verificationCheck = await learnCard.invoke.verifyCredential(credential, options);
 
             if (credential.expirationDate && new Date() > new Date(credential.expirationDate)) {

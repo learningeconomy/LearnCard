@@ -19,6 +19,7 @@ import { Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('share-boosts-bundle');
 
 type ShareCredentialsProps = {
@@ -92,10 +93,10 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
         } catch (e) {
             log.debug('///handleSubmit create credential bundle Error', e);
             presentAlert({
-                header: 'Error',
-                subHeader: 'Create Boost Bundle error',
+                header: m['credsBundle.errorHeader'](),
+                subHeader: m['credsBundle.createBoostBundleError'](),
                 message: e?.toString(),
-                buttons: ['OK'],
+                buttons: [m['common.ok']()],
             });
             throw new Error('There was an error. Please try again later.');
         } finally {
@@ -109,8 +110,8 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                 <IonGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
-                            <h1 className="text-[17px] font-[500] leading-[21px]">
-                                Select Earned Boosts To Share
+                            <h1 className="text-[17px] font-medium leading-[21px]">
+                                {m['credsBundle.selectBoostsToShare']()}
                             </h1>
                         </div>
 
@@ -121,33 +122,31 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                 <>
                                     <div className="flex flex-col items-center justify-center bg-white gap-[10px] text-[14px] leading-[18px] py-[20px] px-[40px] mt-[7px] mx-[7px] shadow-[0_0_7px_0px_rgba(0,0,0,0.2)] rounded-[10px]">
                                         <ProfilePicture
-                                            customContainerClass="flex mr-[10px] flex-shrink-0 border-gray-300 border-[2px] w-[55px] h-[55px] items-center justify-center rounded-full overflow-hidden object-cover text-white font-medium text-4xl"
-                                            customImageClass="w-full h-full object-cover flex-shrink-0"
+                                            customContainerClass="flex mr-[10px] shrink-0 border-gray-300 border-2 w-[55px] h-[55px] items-center justify-center rounded-full overflow-hidden object-cover text-white font-medium text-4xl"
+                                            customImageClass="w-full h-full object-cover shrink-0"
                                             customSize={500}
                                         />
-                                        <p className="font-[700] text-grayscale-900">
+                                        <p className="font-bold text-grayscale-900">
                                             {currentUser?.name || currentUser?.email}
                                         </p>
 
-                                        <p className="font-[500] text-grayscale-700 text-center">
-                                            This will create a shared boost bundle that can shared
-                                            and viewed.
+                                        <p className="font-medium text-grayscale-700 text-center">
+                                            {m['credsBundle.createBundleDesc']()}
                                         </p>
-                                        <p className="font-[500] text-grayscale-700 text-center">
-                                            You have selected{' '}
-                                            <span className="font-[700] text-grayscale-900">
-                                                {totalSelectedCount}
-                                            </span>{' '}
-                                            {name}s to share
+                                        <p className="font-medium text-grayscale-700 text-center">
+                                            {m['credsBundle.selectedCount']({
+                                                count: totalSelectedCount,
+                                                type: name,
+                                            })}
                                         </p>
                                     </div>
 
                                     <div className="mt-[15px] text--[14px]">
                                         {credentialsLoading && (
-                                            <div className="w-full h-full flex flex-col opacity-[50%] items-center justify-center mt-[40px]">
+                                            <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
                                                 <IonSpinner />
                                                 <p className="mt-[20px]">
-                                                    Fetching your earned boosts...
+                                                    {m['credsBundle.fetchingBoosts']()}
                                                 </p>
                                             </div>
                                         )}
@@ -155,8 +154,10 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                         {errorMessage && !credentialsLoading && (
                                             <div className="mt-[50px]">
                                                 <p className="text-red-500 font-bold">
-                                                    Sorry! There was an error fetching your {name}s:{' '}
-                                                    {errorMessage}
+                                                    {m['credsBundle.errorFetching']({
+                                                        type: name,
+                                                        error: errorMessage,
+                                                    })}
                                                 </p>
                                             </div>
                                         )}
@@ -165,17 +166,15 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                             <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
                                                 <img
                                                     src={MiniGhost}
-                                                    alt="ghost"
+                                                    alt=""
                                                     className="max-w-[250px] m-auto mb-[20px]"
                                                 />
-                                                <div className="flex flex-col gap-[20px] text-grayscale-900 font-[700] font-montserrat">
+                                                <div className="flex flex-col gap-[20px] text-grayscale-900 font-bold font-montserrat">
                                                     <span className="text-[30px]">
-                                                        No Credentials
+                                                        {m['credsBundle.noCredentials']()}
                                                     </span>
                                                     <span className="text-[17px]">
-                                                        "Love doesn't just sit there, like a stone,
-                                                        it has to be made, like bread; remade all
-                                                        the time, made new."
+                                                        {m['credsBundle.emptyQuote']()}
                                                     </span>
                                                 </div>
                                             </section>
@@ -185,7 +184,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                     {!credentialsLoading && totalCredentialsCount > 0 && (
                                         <div className="flex items-center justify-center text-[13px] mt-[25px]">
                                             <span className="mr-[10px] text-[14px] font-semibold">
-                                                Share all {name}s
+                                                {m['credsBundle.shareAll']({ type: name })}
                                             </span>
                                             <IonToggle
                                                 slot="end"
@@ -212,7 +211,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
 
                                                     {!readOnly && (
                                                         <span className="flex justify-center items-center font-medium">
-                                                            All
+                                                            {m['boostCMS.all']()}
                                                             <IonToggle
                                                                 onClick={() =>
                                                                     handleToggleSelectAllType(
@@ -280,8 +279,8 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                             }`}
                             disabled={totalSelectedCount === 0}
                         >
-                            {!isSharing && 'Share Boosts'}
-                            {isSharing && 'Sharing...'}
+                            {!isSharing && m['credsBundle.shareBoosts']()}
+                            {isSharing && m['credsBundle.sharing']()}
                         </button>
                     </section>
                 )}

@@ -1,13 +1,12 @@
 # AppStoreGetInstalledApps200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**has_more** | **bool** |  | 
-**cursor** | **str** |  | [optional] 
-**records** | [**List[AppStoreGetInstalledApps200ResponseRecordsInner]**](AppStoreGetInstalledApps200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                            | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **has_more** | **bool**                                                                                                        |             |
+| **cursor**   | **str**                                                                                                         |             | [optional] |
+| **records**  | [**List[AppStoreGetInstalledApps200ResponseRecordsInner]**](AppStoreGetInstalledApps200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ app_store_get_installed_apps200_response_dict = app_store_get_installed_apps200_
 # create an instance of AppStoreGetInstalledApps200Response from a dict
 app_store_get_installed_apps200_response_from_dict = AppStoreGetInstalledApps200Response.from_dict(app_store_get_installed_apps200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

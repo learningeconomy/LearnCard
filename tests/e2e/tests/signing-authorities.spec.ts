@@ -1,15 +1,9 @@
-import { describe, test, expect, beforeEach } from 'vitest';
+import { describe, test, expect } from 'vitest';
 import crypto from 'crypto';
 
-import { getLearnCardForUser, getLearnCard, LearnCard, USERS } from './helpers/learncard.helpers';
-
-let a: LearnCard;
+import { getLearnCard } from './helpers/learncard.helpers';
 
 describe('Signing Authorities', () => {
-    beforeEach(async () => {
-        a = await getLearnCardForUser('a');
-    });
-
     describe('Name Validation', () => {
         test('Should reject signing authority names longer than 15 characters via SDK', async () => {
             const learnCard = await getLearnCard(crypto.randomBytes(32).toString('hex'));
@@ -22,6 +16,7 @@ describe('Signing Authorities', () => {
 
             const sa = await learnCard.invoke.createSigningAuthority('test-sa');
             expect(sa).toBeDefined();
+            if (!sa) throw new Error('Could not create signing authority.');
 
             await expect(
                 learnCard.invoke.registerSigningAuthority(
@@ -43,6 +38,7 @@ describe('Signing Authorities', () => {
 
             const sa = await learnCard.invoke.createSigningAuthority('test-sa-2');
             expect(sa).toBeDefined();
+            if (!sa) throw new Error('Could not create signing authority.');
 
             await expect(
                 learnCard.invoke.registerSigningAuthority(sa.endpoint, 'MySignAuth', sa.did)
@@ -60,6 +56,7 @@ describe('Signing Authorities', () => {
 
             const sa = await learnCard.invoke.createSigningAuthority('test-sa-3');
             expect(sa).toBeDefined();
+            if (!sa) throw new Error('Could not create signing authority.');
 
             // Test underscore
             await expect(
@@ -88,6 +85,7 @@ describe('Signing Authorities', () => {
 
             const sa = await learnCard.invoke.createSigningAuthority('test-sa-4');
             expect(sa).toBeDefined();
+            if (!sa) throw new Error('Could not create signing authority.');
 
             // Test valid names
             await expect(
@@ -96,15 +94,41 @@ describe('Signing Authorities', () => {
 
             // Create another SA for the next test
             const sa2 = await learnCard.invoke.createSigningAuthority('test-sa-5');
+            if (!sa2) throw new Error('Could not create signing authority.');
             await expect(
                 learnCard.invoke.registerSigningAuthority(sa2.endpoint, 'short', sa2.did)
             ).resolves.not.toThrow();
 
             // Test exactly 15 characters
             const sa3 = await learnCard.invoke.createSigningAuthority('test-sa-6');
+            if (!sa3) throw new Error('Could not create signing authority.');
             await expect(
                 learnCard.invoke.registerSigningAuthority(sa3.endpoint, 'exactly15chars1', sa3.did)
             ).resolves.not.toThrow();
+        });
+
+        test('Should keep the primary signing authority primary when it is re-registered via SDK', async () => {
+            const learnCard = await getLearnCard(crypto.randomBytes(32).toString('hex'));
+            await learnCard.invoke.createServiceProfile({
+                profileId: `primary-reregister-${crypto.randomBytes(4).toString('hex')}`,
+                displayName: 'Primary Re-register Test User',
+                bio: '',
+                shortBio: '',
+            });
+
+            const sa = await learnCard.invoke.createSigningAuthority('test-sa-primary');
+            expect(sa).toBeDefined();
+            if (!sa) throw new Error('Could not create signing authority.');
+
+            await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+            await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+
+            await expect(
+                learnCard.invoke.getPrimaryRegisteredSigningAuthority()
+            ).resolves.toMatchObject({
+                signingAuthority: { endpoint: sa.endpoint },
+                relationship: { name: sa.name, did: sa.did },
+            });
         });
 
         test('Should reject invalid signing authority names via HTTP route', async () => {

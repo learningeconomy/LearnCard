@@ -29,6 +29,7 @@ import {
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
 import { KnownDIDRegistryType } from '../../types';
+import { useT } from '../../i18n';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -169,6 +170,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     hideFrontFaceDetails,
     onVerifierClick,
 }) => {
+    const t = useT();
     const {
         title = '',
         createdAt,
@@ -349,7 +351,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     // these are constants so that the real header and the hidden-for-spacing header are identical
     const headerClassName =
-        'vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] text-center bg-white border-y-[5px] border-[#EEF2FF] w-[calc(100%_+_16px)] rounded-t-[8px] z-50';
+        'vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] text-center bg-white border-y-[5px] border-[#EEF2FF] w-[calc(100%+16px)] rounded-t-[8px] z-50';
     const headerFitTextClassName =
         'vc-card-header-main-title text-[#18224E] pt-[3px] leading-[80%] text-[32px]';
 
@@ -537,12 +539,18 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                         />
                                     )}
                                     <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px] select-none">
-                                        <span className="text-[#4F4F4F]">Verified Credential</span>
+                                        <span className="text-[#4F4F4F]">
+                                            {t('credential.verified')}
+                                        </span>
                                         <span
                                             className="vc-footer-status uppercase"
                                             style={{ color: statusColor }}
                                         >
-                                            {worstVerificationStatus}
+                                            {t(
+                                                `verification.status.${String(
+                                                    worstVerificationStatus
+                                                ).toLowerCase()}`
+                                            )}
                                         </span>
                                     </div>
                                     <div

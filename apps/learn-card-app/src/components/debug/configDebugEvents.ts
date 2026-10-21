@@ -1,4 +1,5 @@
 import { getLogger } from 'learn-card-base';
+import { isDebugEnvironmentEnabled } from '../../config/environment';
 const log = getLogger('config-debug-events');
 /**
  * Config & Theme Debug Event Logger
@@ -33,7 +34,7 @@ export type ConfigDebugEventType =
     | 'config:resolved'
     // ── Bootstrap subsystems ──
     | 'bootstrap:start'
-    | 'bootstrap:firebase_init'
+    | 'bootstrap:auth_provider_init'
     | 'bootstrap:auth_config_set'
     | 'bootstrap:image_upload_config_set'
     | 'bootstrap:network_store_init'
@@ -72,18 +73,10 @@ type EventListener = (event: ConfigDebugEvent) => void;
 const MAX_EVENTS = 200;
 
 let events: ConfigDebugEvent[] = [];
-let listeners: Set<EventListener> = new Set();
+const listeners: Set<EventListener> = new Set();
 let eventIdCounter = 0;
 
-const isDebugEnabled = (): boolean => {
-    if (typeof window === 'undefined') return false;
-
-    try {
-        return import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
-    } catch {
-        return false;
-    }
-};
+const isDebugEnabled = isDebugEnvironmentEnabled;
 
 // ---------------------------------------------------------------------------
 // Public API

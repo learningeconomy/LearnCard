@@ -75,6 +75,7 @@ export interface NativeSSSStorageFunctions {
     getDeviceShare: (id?: string) => Promise<string | null>;
     hasDeviceShare: (id?: string) => Promise<boolean>;
     clearAllShares: (id?: string) => Promise<void>;
+    deleteDeviceShare: (id?: string) => Promise<void>;
     storeShareVersion: (version: number, id?: string) => Promise<void>;
     getShareVersion: (id?: string) => Promise<number | null>;
     listAllShares: () => Promise<NativeShareEntry[]>;
@@ -301,6 +302,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         getDeviceShare,
         hasDeviceShare,
         clearAllShares,
+        deleteDeviceShare: (id?: string) => deleteShare(id ?? DEFAULT_SHARE_ID),
         storeShareVersion,
         getShareVersion,
         listAllShares,

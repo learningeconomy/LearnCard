@@ -1,5 +1,4 @@
 import React from 'react';
-import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
@@ -15,6 +14,7 @@ import {
     ImageTrackingInfo,
 } from '../AdminToolsBulkBoostImportOption';
 import BlueCheckMark from '../../../../components/svgs/BlueCheckMark';
+import { formatLocaleDate } from '../../../../i18n/formatters';
 
 const BulkBoostPreviewItem: React.FC<{
     index: number;
@@ -92,12 +92,12 @@ const BulkBoostPreviewItem: React.FC<{
             role="button"
             onClick={() => handlePreview(row)}
             className={`flex items-center gap-[10px] w-full px-2 py-3 rounded-[15px] bg-white shadow-bottom-2- ${
-                hasMissingImages ? 'border-[1px] border-solid border-orange-200' : ''
+                hasMissingImages ? 'border border-solid border-orange-200' : ''
             }`}
         >
             {mainImageInfo.status === ImageStatus.missing ||
                 (mainImageInfo.status === ImageStatus.needsUpload && (
-                    <div className="rounded-full h-[40px] w-[40px] min-h-[40px] min-w-[40px] flex items-center justify-center border-[1px] border-solid border-orange-500">
+                    <div className="rounded-full h-[40px] w-[40px] min-h-[40px] min-w-[40px] flex items-center justify-center border border-solid border-orange-500">
                         {getImageStatusIcon(mainImageInfo.status)}
                     </div>
                 ))}
@@ -116,7 +116,8 @@ const BulkBoostPreviewItem: React.FC<{
                     {title}
                 </h3>
                 <p className="text-sm text-grayscale-700 line-clamp-1 flex items-center gap-[5px]">
-                    <BlueCheckMark /> {currentLCNUser?.displayName} • {moment().format('MM/DD/YY')}
+                    <BlueCheckMark /> {currentLCNUser?.displayName} •{' '}
+                    {formatLocaleDate(new Date(), { dateStyle: 'short' })}
                 </p>
                 {mainImageInfo.status === ImageStatus.missing ||
                     (mainImageInfo.status === ImageStatus.needsUpload && (

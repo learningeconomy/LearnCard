@@ -68,6 +68,13 @@ class TestSkillsApi(unittest.TestCase):
         """
         pass
 
+    def test_skill_frameworks_get_all_available_frameworks(self) -> None:
+        """Test case for skill_frameworks_get_all_available_frameworks
+
+        List all available frameworks
+        """
+        pass
+
     def test_skill_frameworks_get_boosts_that_use_framework(self) -> None:
         """Test case for skill_frameworks_get_boosts_that_use_framework
 
@@ -205,6 +212,13 @@ class TestSkillsApi(unittest.TestCase):
         """Test case for skills_search_framework_skills
 
         Search skills in a framework
+        """
+        pass
+
+    def test_skills_semantic_search_skills(self) -> None:
+        """Test case for skills_semantic_search_skills
+
+        Semantic search skills
         """
         pass
 

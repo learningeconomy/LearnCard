@@ -10,6 +10,7 @@ import { handlePushNotificationActionPerformed } from 'learn-card-base/helpers/p
 
 import authStore from 'learn-card-base/stores/authStore';
 import { getLogger } from '../logging/logger';
+import { isProductionEnvironment } from '../config/isProduction';
 const log = getLogger('push-utilities');
 
 const pushNotificationsSupported = () => Capacitor.isNativePlatform();
@@ -53,8 +54,7 @@ export const pushUtilities = {
                     }
                 }
             } else {
-                if (process.env.NODE_ENV !== 'production')
-                    log.debug(`Push notifications are NOT supported`);
+                if (!isProductionEnvironment()) log.debug(`Push notifications are NOT supported`);
             }
         } catch (err) {
             log.error(
@@ -126,8 +126,8 @@ export const pushUtilities = {
                     error instanceof Error
                         ? error.message
                         : typeof error === 'string'
-                        ? error
-                        : 'Unknown error';
+                          ? error
+                          : 'Unknown error';
                 if (!errMsg.includes('Error, no valid private key found')) {
                     handleNotificationRegistrationError?.(`Registration failed: ${errMsg}`);
                 }

@@ -3,17 +3,21 @@ import { fileURLToPath } from 'url';
 
 import { defineConfig } from 'astro/config';
 import netlify from '@astrojs/netlify';
-import tailwind from '@astrojs/tailwind';
+import tailwindcss from '@tailwindcss/vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.resolve(__dirname, '../../..');
 
 export default defineConfig({
     output: 'server',
-    adapter: netlify(),
+    // No edge functions here; local edge emulation breaks on Deno 2.9+.
+    adapter: netlify({
+        devFeatures: { environmentVariables: false, images: true, edgeFunctions: false },
+    }),
     outDir: 'dist',
-    integrations: [tailwind()],
+    integrations: [],
     vite: {
+        plugins: [tailwindcss()],
         resolve: {
             alias: {
                 '@learncard/init': path.join(

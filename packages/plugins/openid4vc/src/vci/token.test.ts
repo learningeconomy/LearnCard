@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { exchangePreAuthorizedCode } from './token';
 import { PRE_AUTHORIZED_CODE_GRANT } from '../offer/types';
 
@@ -10,7 +11,7 @@ const mockResponse = (body: unknown, init: { ok?: boolean; status?: number } = {
 
 describe('exchangePreAuthorizedCode', () => {
     it('POSTs the correct form body and returns the parsed token response', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(
+        const fetchMock = vi.fn().mockResolvedValue(
             mockResponse({
                 access_token: 'eyJ...',
                 token_type: 'Bearer',
@@ -42,7 +43,7 @@ describe('exchangePreAuthorizedCode', () => {
     });
 
     it('includes tx_code when provided', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(mockResponse({ access_token: 'eyJ...', token_type: 'Bearer' }));
 
@@ -58,7 +59,7 @@ describe('exchangePreAuthorizedCode', () => {
     });
 
     it('includes client_id when provided', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(mockResponse({ access_token: 'eyJ...', token_type: 'Bearer' }));
 
@@ -74,7 +75,7 @@ describe('exchangePreAuthorizedCode', () => {
     });
 
     it('surfaces OAuth error body as token_request_failed', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(
+        const fetchMock = vi.fn().mockResolvedValue(
             mockResponse(
                 {
                     error: 'invalid_grant',
@@ -98,9 +99,7 @@ describe('exchangePreAuthorizedCode', () => {
     });
 
     it('throws token_response_invalid when access_token is missing', async () => {
-        const fetchMock = jest
-            .fn()
-            .mockResolvedValue(mockResponse({ token_type: 'Bearer' }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ token_type: 'Bearer' }));
 
         await expect(
             exchangePreAuthorizedCode({
@@ -112,7 +111,7 @@ describe('exchangePreAuthorizedCode', () => {
     });
 
     it('throws token_response_invalid when body is not JSON', async () => {
-        const fetchMock = jest.fn().mockResolvedValue({
+        const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
             json: async () => {
@@ -130,7 +129,7 @@ describe('exchangePreAuthorizedCode', () => {
     });
 
     it('throws token_request_failed on network error', async () => {
-        const fetchMock = jest.fn().mockRejectedValue(new Error('connection refused'));
+        const fetchMock = vi.fn().mockRejectedValue(new Error('connection refused'));
 
         await expect(
             exchangePreAuthorizedCode({

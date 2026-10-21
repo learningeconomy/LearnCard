@@ -56,7 +56,8 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<BoostCMSTypeSelectorButton
             )?.title ?? '';
     }
 
-    const { color: _color, IconComponent: Icon } = boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
+    const { color: _color, IconComponent: Icon } =
+        boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
 
     const { newModal: newCenterModal, closeModal: closeCenterModal } = useModal({
         desktop: ModalTypes.Center,
@@ -116,7 +117,7 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<BoostCMSTypeSelectorButton
                     <Icon className={`w-[30px] h-[30px] text-${_color} mr-1`} />{' '}
                     {achievementTypeSelected}
                 </div>
-                <CaretLeft className="rotate-180 text-grayscale-900" />
+                <CaretLeft className="rtl-mirror rotate-180 text-grayscale-900" />
             </button>
         </IonRow>
     );

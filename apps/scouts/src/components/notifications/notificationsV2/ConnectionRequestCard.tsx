@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import X from 'learn-card-base/svgs/X';
+import * as m from '../../../paraglide/messages.js';
 import { UserProfilePicture } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import NotificationSkeleton from './NotificationSkeleton';
@@ -65,9 +66,9 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     let buttonText: string = '';
 
     if (isAccepted) {
-        buttonText = 'Accepted';
+        buttonText = m['notifications.accepted']();
     } else if (!isAccepted) {
-        buttonText = 'Accept';
+        buttonText = m['common.accept']();
     }
 
     const handleAcceptConnection = async () => {
@@ -129,7 +130,8 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                                 className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
                                 data-testid="notification-cred-issue-date"
                             >
-                                • {issueDate}
+                                {'• '}
+                                {issueDate}
                             </span>
                         )}
                     </p>
@@ -140,13 +142,13 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                             onClick={handleAcceptConnection}
                             name="notification-claim-button"
                         >
-                            {isLoading ? 'Loading...' : buttonText}
+                            {isLoading ? m['common.loading']() : buttonText}
                             {isAccepted && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         </button>
 
                         <button
                             onClick={handleCancelClick}
-                            className={`rounded-[24px] flex items-center justify-center border-[1px] border-grayscale-200 border-solid h-[42px] w-[42px] bg-white font-semibold mr-2 p-[0px] tracking-wide `}
+                            className={`rounded-[24px] flex items-center justify-center border border-grayscale-200 border-solid h-[42px] w-[42px] bg-white font-semibold mr-2 p-0 tracking-wide `}
                             name="notification-view-button"
                         >
                             {!isArchived && (
@@ -155,8 +157,8 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                             {isArchived && (
                                 <img
                                     src={ArrowArcLeft ?? ''}
-                                    alt="Cancel"
-                                    className="notification-card-x"
+                                    alt={m['common.cancel']()}
+                                    className="rtl-mirror notification-card-x"
                                 />
                             )}
                         </button>

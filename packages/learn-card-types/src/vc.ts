@@ -188,7 +188,7 @@ export type UnsignedVC = z.infer<typeof UnsignedVCValidator>;
 export const ProofValidator = z
     .object({
         type: z.string(),
-        created: z.string(),
+        created: z.string().optional(),
         challenge: z.string().optional(),
         domain: z.string().optional(),
         nonce: z.string().optional(),
@@ -196,7 +196,31 @@ export const ProofValidator = z
         verificationMethod: z.string(),
         jws: z.string().optional(),
     })
-    .catchall(z.any());
+    .catchall(z.any())
+    .superRefine((proof, ctx) => {
+        if (
+            proof.created === undefined &&
+            // These standardized Data Integrity suites make created optional.
+            // Keep the prior requirement for legacy and unknown proof suites.
+            // https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
+            // https://www.w3.org/TR/vc-di-bbs/#proof-configuration
+            (proof.type !== 'DataIntegrityProof' ||
+                ![
+                    'ecdsa-rdfc-2019',
+                    'ecdsa-jcs-2019',
+                    'ecdsa-sd-2023',
+                    'eddsa-rdfc-2022',
+                    'eddsa-jcs-2022',
+                    'bbs-2023',
+                ].includes(proof.cryptosuite as string))
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['created'],
+                message: 'created is required for this proof suite',
+            });
+        }
+    });
 export type Proof = z.infer<typeof ProofValidator>;
 
 export const VCValidator = UnsignedVCValidator.extend({

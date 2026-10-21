@@ -25,15 +25,6 @@
             "executor": "nx:run-script",
             "inputs": ["source"],
             "outputs": ["{projectRoot}/dist"],
-            "dependsOn": [],
-            "options": {
-                "script": "docker-build"
-            }
-        },
-        "build:docker": {
-            "executor": "nx:run-script",
-            "inputs": ["source"],
-            "outputs": ["{projectRoot}/dist"],
             "dependsOn": ["^build"],
             "options": {
                 "script": "docker-build"
@@ -57,8 +48,32 @@
         "test-mock": {
             "executor": "nx:run-script",
             "inputs": ["source", "tests"],
+            "dependsOn": [
+                {
+                    "projects": ["helpers", "init", "credential-library"],
+                    "target": "build"
+                }
+            ],
             "options": {
-                "script": "test:e2e:mock"
+                "script": "test-mock"
+            }
+        },
+        "test-visual": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source",
+                "tests",
+                "{projectRoot}/playwright.visual.config.ts",
+                "{projectRoot}/tests/visual/tailwind-regression.html"
+            ],
+            "dependsOn": [
+                {
+                    "projects": ["helpers"],
+                    "target": "build"
+                }
+            ],
+            "options": {
+                "script": "test:visual"
             }
         }
     }

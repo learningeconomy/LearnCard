@@ -14,7 +14,14 @@
     "targets": {
         "build": {
             "executor": "nx:run-script",
-            "inputs": ["source"],
+            "inputs": [
+                "source",
+                "{projectRoot}/bundle.mjs",
+                "{projectRoot}/esbuildPlugins.cjs",
+                "{projectRoot}/package.json",
+                "{projectRoot}/tsconfig*.json",
+                "{workspaceRoot}/packages/service-config/src/**/*"
+            ],
             "options": {
                 "script": "build"
             }
@@ -57,11 +64,24 @@
                 "script": "test"
             }
         },
-        "test:watch": {
-            "executor": "./tools/executors/workspace:run-command",
+        "typecheck": {
+            "executor": "nx:run-script",
+            "dependsOn": ["^build"],
             "options": {
-                "command": "bun run test:watch",
-                "cwd": "{root}/services/learn-card-network/lca-api"
+                "script": "typecheck"
+            }
+        },
+        "test:watch": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "test:watch"
+            }
+        },
+        "test:integration": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "options": {
+                "script": "test:integration"
             }
         }
     }

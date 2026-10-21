@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import ExistingAiSessionChatBotContainer from './NewAiSessionChatBot/ExistingAiSessionChatBotContainer';
 import NewAiAppSessionChatBotContainer from './NewAiSessionChatBot/NewAiAppSessionChatBotContainer';
@@ -34,13 +34,8 @@ export const NewAiSessionContainer: React.FC<{
     const activeStep = chatBotStore.useTracked.activeStep();
     const setActiveStep = chatBotStore.set.setActiveStep;
 
-    // const [activeStep, setActiveStep] = useState<NewAiSessionStepEnum>(
-    //     NewAiSessionStepEnum.topicSelector
-    // );
-
     const startInternalAiChatBot = chatBotStore.useTracked.startInternalAiChatBot();
     const setStartInternalAiChatBot = chatBotStore.set.setStartInternalAiChatBot;
-    // const [startInternalAiChatBot, setStartInternalAiChatBot] = useState<boolean>(false);
 
     useEffect(() => {
         if (shortCircuitStep) {

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import AlignmentRow from './AlignmentRow';
 import InfoIcon from '../svgs/InfoIcon';
 import InfoBox from './InfoBox';
+import { useT } from '../../i18n';
 
 type Alignment = {
     targetUrl: string;
@@ -22,11 +23,8 @@ const isCredentialEngine = (a: Alignment): boolean =>
     a.targetType === 'ceterms:Credential' || a.targetFramework === 'Credential Engine Registry';
 
 const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
+    const t = useT();
     const [showInfo, setShowInfo] = useState(false);
-    const alignmentText = `
-    Alignments in your Open Badge credential link your achievement to established frameworks, standards, or competencies. 
-    Each alignment shows how your boost directly relates to skills, knowledge areas, and professional standards that are recognized in your field.
-    `;
 
     const list = Array.isArray(alignment) ? alignment : [alignment];
     if (list.length === 0) return null;
@@ -53,10 +51,10 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
                     className={
                         style === 'Certificate'
                             ? 'text-[17px] text-grayscale-900 font-poppins'
-                            : 'text-[22px] font-mouse'
+                            : 'text-[20px] leading-[20px] text-grayscale-900'
                     }
                 >
-                    Alignments
+                    {t('credential.alignments')}
                 </h3>
                 <button
                     className="ml-auto"
@@ -68,12 +66,17 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
                     <InfoIcon color={showInfo ? '#00BA88' : undefined} />
                 </button>
             </div>
-            {showInfo && <InfoBox text={alignmentText} handleClose={() => setShowInfo(false)} />}
+            {showInfo && (
+                <InfoBox
+                    text={t('credential.alignmentInfo')}
+                    handleClose={() => setShowInfo(false)}
+                />
+            )}
 
             {verified.length > 0 && (
                 <div className="flex flex-col gap-[8px] w-full">
                     <span className="text-[11px] font-medium text-grayscale-500 font-poppins">
-                        Verified source
+                        {t('credential.verifiedSource')}
                     </span>
                     {verified.map((object, index) => renderRow(object, index, true))}
                 </div>
@@ -83,7 +86,7 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
                 <div className="flex flex-col gap-[8px] w-full">
                     {verified.length > 0 && (
                         <span className="text-[11px] font-medium text-grayscale-500 font-poppins">
-                            Occupations &amp; programs
+                            {t('credential.occupationsPrograms')}
                         </span>
                     )}
                     {other.map((object, index) => renderRow(object, index, false))}

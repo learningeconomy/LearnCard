@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import * as Sentry from '@sentry/react';
 
 import { useModal, useGetPreferencesForDid, getLogger } from 'learn-card-base';
 
@@ -9,6 +8,7 @@ import {
     type FeedbackSentiment,
     type FeedbackSurface,
 } from '@analytics';
+import { useFeedback } from './reporting/FeedbackContext';
 import * as m from '../paraglide/messages.js';
 
 const log = getLogger('feedback-followup');
@@ -41,11 +41,13 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
     const { closeModal } = useModal();
     const { track } = useAnalytics();
     const { data: preferences } = useGetPreferencesForDid();
+    const { reportProblem } = useFeedback();
 
     const bugReportsEnabled = preferences?.bugReportsEnabled ?? true;
 
     const [selected, setSelected] = useState<FeedbackReason[]>([]);
     const [note, setNote] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const resolvedRef = useRef(false);
 
     const toggleReason = (reason: FeedbackReason) => {
@@ -54,9 +56,10 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
         );
     };
 
-    const handleSubmit = useCallback(() => {
+    const handleSubmit = useCallback(async () => {
         if (resolvedRef.current) return;
         resolvedRef.current = true;
+        setIsSubmitting(true);
 
         const trimmedNote = bugReportsEnabled ? note.trim() : '';
 
@@ -65,29 +68,30 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
             sentiment,
             reasons: selected,
             hasFreeText: trimmedNote.length > 0,
-            ...(trimmedNote ? { userNote: trimmedNote } : {}),
         });
 
         if (bugReportsEnabled && (selected.includes('broken') || trimmedNote)) {
             try {
-                Sentry.withScope(scope => {
-                    scope.setTag('feature', 'micro-feedback');
-                    scope.setTag('surface', surface);
-                    scope.setTag('sentiment', sentiment);
-
-                    Sentry.captureFeedback({
-                        message:
-                            trimmedNote ||
-                            `User reported a problem (${selected.join(', ') || 'unspecified'})`,
-                    });
+                // The prefilled report goes through the shared controller so
+                // eligibility, privacy-safe context, and the transport are all
+                // consistent with every other feedback entry point.
+                await reportProblem({
+                    source: 'micro-feedback',
+                    initialMessage:
+                        trimmedNote ||
+                        `User reported a problem (${selected.join(', ') || 'unspecified'})`,
+                    submitImmediately: true,
                 });
             } catch (e) {
-                log.error('feedback.sentry_capture_failed', e);
+                // Sanitized warning only — a provider failure never surfaces
+                // a raw error here; the sheet closes like it always did.
+                log.warn('feedback.followup.report_failed', e);
             }
         }
 
+        setIsSubmitting(false);
         closeModal();
-    }, [bugReportsEnabled, note, selected, surface, sentiment, track, closeModal]);
+    }, [bugReportsEnabled, note, selected, surface, sentiment, track, reportProblem, closeModal]);
 
     const handleSkip = useCallback(() => {
         if (resolvedRef.current) return;
@@ -128,7 +132,7 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
     const canSubmit = selected.length > 0 || note.trim().length > 0;
 
     return (
-        <div className="font-poppins p-6 space-y-5 bg-white rounded-[20px]">
+        <div className="font-poppins p-6 space-y-v3-5 bg-white rounded-[20px]">
             <div>
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                     {m['feedback.followup.title']()}
@@ -168,20 +172,27 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
                     placeholder={m['feedback.followup.placeholder']()}
                     rows={3}
                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900
-                               placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500
+                               placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500
                                focus:border-transparent bg-white resize-none"
                 />
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={!canSubmit}
+                    disabled={!canSubmit || isSubmitting}
                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                     data-testid="feedback-followup-send"
                 >
-                    {m['feedback.followup.send']()}
+                    {isSubmitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            {m['feedback.reporting.sendingReport']()}
+                        </span>
+                    ) : (
+                        m['feedback.followup.send']()
+                    )}
                 </button>
 
                 <button

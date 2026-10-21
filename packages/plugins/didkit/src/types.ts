@@ -37,6 +37,7 @@ export type DataIntegrityCryptosuite =
     | 'eddsa-2022'
     | 'json-eddsa-2022'
     | 'ecdsa-2019'
+    | 'ecdsa-rdfc-2019'
     | 'jcs-ecdsa-2019';
 
 /** @group DIDKit Plugin */

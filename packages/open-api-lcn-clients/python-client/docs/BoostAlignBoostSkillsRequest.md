@@ -1,12 +1,11 @@
 # BoostAlignBoostSkillsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**skills** | [**List[BoostAlignBoostSkillsRequestSkillsInner]**](BoostAlignBoostSkillsRequestSkillsInner.md) |  | 
+| Name          | Type                                                                                            | Description | Notes |
+| ------------- | ----------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **boost_uri** | **str**                                                                                         |             |
+| **skills**    | [**List[BoostAlignBoostSkillsRequestSkillsInner]**](BoostAlignBoostSkillsRequestSkillsInner.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_align_boost_skills_request_dict = boost_align_boost_skills_request_instanc
 # create an instance of BoostAlignBoostSkillsRequest from a dict
 boost_align_boost_skills_request_from_dict = BoostAlignBoostSkillsRequest.from_dict(boost_align_boost_skills_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

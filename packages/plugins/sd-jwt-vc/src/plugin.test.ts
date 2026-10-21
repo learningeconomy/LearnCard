@@ -1,16 +1,19 @@
-jest.mock('./verify', () => ({
-    verifySdJwtVc: jest.fn(),
+import { vi } from 'vitest';
+import type { Mock } from 'vitest';
+
+vi.mock('./verify', () => ({
+    verifySdJwtVc: vi.fn(),
 }));
 
 import { verifySdJwtVc } from './verify';
 import { getSdJwtVcPlugin } from './plugin';
 
-const mockVerify = verifySdJwtVc as unknown as jest.Mock;
+const mockVerify = verifySdJwtVc as unknown as Mock;
 
 type LearnCardMock = any;
 
 const buildLearnCard = (
-    chainedVerifyCredential: jest.Mock = jest.fn(async () => ({
+    chainedVerifyCredential: Mock = vi.fn(async () => ({
         checks: ['proof'],
         warnings: [],
         errors: [],
@@ -18,7 +21,7 @@ const buildLearnCard = (
 ): LearnCardMock => ({
     invoke: {
         verifyCredential: chainedVerifyCredential,
-        resolveDid: jest.fn(async () => ({})),
+        resolveDid: vi.fn(async () => ({})),
     },
 });
 
@@ -58,7 +61,7 @@ beforeEach(() => {
 
 describe('SdJwtVcPlugin.verifyCredential', () => {
     it('routes SdJwtCompactProof credentials to verifySdJwtVc, bypassing the chained verifier', async () => {
-        const chained = jest.fn();
+        const chained = vi.fn();
         const lc = buildLearnCard(chained);
         const plugin = getSdJwtVcPlugin(lc);
 
@@ -72,7 +75,7 @@ describe('SdJwtVcPlugin.verifyCredential', () => {
     });
 
     it('routes to verifySdJwtVc when an LDP proof precedes SdJwtCompactProof in a proof array', async () => {
-        const chained = jest.fn();
+        const chained = vi.fn();
         const lc = buildLearnCard(chained);
         const plugin = getSdJwtVcPlugin(lc);
 
@@ -102,7 +105,7 @@ describe('SdJwtVcPlugin.verifyCredential', () => {
     });
 
     it('delegates non-SD-JWT credentials to the chained verifyCredential', async () => {
-        const chained = jest.fn(async () => ({
+        const chained = vi.fn(async () => ({
             checks: ['proof'],
             warnings: [],
             errors: [],
@@ -119,7 +122,7 @@ describe('SdJwtVcPlugin.verifyCredential', () => {
     });
 
     it('passes options through to the chained verifier for non-SD-JWT credentials', async () => {
-        const chained = jest.fn(async () => ({
+        const chained = vi.fn(async () => ({
             checks: ['proof'],
             warnings: [],
             errors: [],
@@ -140,7 +143,7 @@ describe('SdJwtVcPlugin.verifyCredential', () => {
     });
 
     it('does NOT route to verifySdJwtVc when proof.jwt is missing (defensive)', async () => {
-        const chained = jest.fn(async () => ({ checks: [], warnings: [], errors: [] }));
+        const chained = vi.fn(async () => ({ checks: [], warnings: [], errors: [] }));
         const lc = buildLearnCard(chained);
         const plugin = getSdJwtVcPlugin(lc);
         const malformed = { ...sdJwtVc, proof: { type: 'SdJwtCompactProof' } };
@@ -152,7 +155,7 @@ describe('SdJwtVcPlugin.verifyCredential', () => {
     });
 
     it('handles credentials with array-valued proof (multi-proof VC)', async () => {
-        const chained = jest.fn();
+        const chained = vi.fn();
         const lc = buildLearnCard(chained);
         const plugin = getSdJwtVcPlugin(lc);
         const arrayProofVc = { ...sdJwtVc, proof: [sdJwtVc.proof] };
@@ -164,7 +167,7 @@ describe('SdJwtVcPlugin.verifyCredential', () => {
     });
 
     it('does NOT route SD-JWT-specific path when proof.type is JwtProof2020 (existing path stays untouched)', async () => {
-        const chained = jest.fn(async () => ({
+        const chained = vi.fn(async () => ({
             checks: ['proof'],
             warnings: [],
             errors: [],

@@ -1,4 +1,5 @@
 import { createStore } from '@udecode/zustood';
+import { isProductionEnvironment } from '../config/isProduction';
 
 /**
  * Dev-only network fault injection for testing offline/boot-resilience.
@@ -25,10 +26,8 @@ export const networkFaultStore = createStore('networkFaultStore')<{
     { persist: { name: 'networkFaultStore', enabled: true } }
 );
 
-const isProd = process.env.NODE_ENV === 'production';
-
 export const injectNetworkFault = async (label: string): Promise<void> => {
-    if (isProd) return;
+    if (isProductionEnvironment()) return;
 
     const mode = networkFaultStore.get.mode();
 

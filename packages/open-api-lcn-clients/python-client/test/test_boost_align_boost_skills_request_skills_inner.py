@@ -36,7 +36,8 @@ class TestBoostAlignBoostSkillsRequestSkillsInner(unittest.TestCase):
         if include_optional:
             return BoostAlignBoostSkillsRequestSkillsInner(
                 framework_id = '',
-                id = ''
+                id = '',
+                proficiency_level = 1.337
             )
         else:
             return BoostAlignBoostSkillsRequestSkillsInner(

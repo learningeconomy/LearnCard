@@ -9,7 +9,6 @@ const log = getLogger('network-consent');
 
 const NETWORK_CONTRACT_URI =
     'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891';
-const CONTRACT_OWNER_DID = 'did:web:network.learncard.com:users:learn-cloud';
 
 type ContractFieldConfig = {
     required: boolean;
@@ -34,6 +33,9 @@ const getPersonalValue = (key: string, value: ContractFieldConfig): string => {
 
 const buildNetworkContractTerms = async (wallet: any, queryClient: QueryClient): Promise<any> => {
     const contractDetails = await wallet.invoke.getContract(NETWORK_CONTRACT_URI);
+    if ((contractDetails.audienceVersion ?? 0) > 0 || contractDetails.recipients?.length) {
+        throw new Error('This contract requires an interactive audience review.');
+    }
     const contract = contractDetails?.contract;
 
     if (!contract) {
@@ -64,7 +66,7 @@ const buildNetworkContractTerms = async (wallet: any, queryClient: QueryClient):
                 try {
                     const sharedUri = await getOrCreateSharedUriForWallet(
                         wallet,
-                        CONTRACT_OWNER_DID,
+                        [contractDetails.owner.did],
                         queryClient,
                         credential.uri,
                         category

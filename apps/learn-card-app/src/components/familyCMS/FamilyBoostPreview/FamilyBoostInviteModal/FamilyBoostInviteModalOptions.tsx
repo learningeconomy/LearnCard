@@ -12,6 +12,7 @@ import { FamilyChildAccount } from '../../familyCMSState';
 import { ModalTypes, useGetBoostChildrenProfileManagers, useModal } from 'learn-card-base';
 import { useCreateChildAccount } from 'apps/learn-card-app/src/hooks/useCreateChildAccount';
 import { m } from '../../../../paraglide/messages.js';
+import { getFamilyTitleLabel } from '../../FamilyCMSMemberTitlesForm/FamilyCMSMemberTitlesToggle/familyTitles.helpers';
 
 const FamilyBoostInviteModalOptions: React.FC<{
     credential?: VC;
@@ -69,12 +70,14 @@ const FamilyBoostInviteModalOptions: React.FC<{
                         handleCloseModal();
                         openGuardianInviteModal();
                     }}
-                    className="w-full flex items-center justify-between px-2 border-b-grayscale-200 py-4 border-solid border-b-[1px]"
+                    className="w-full flex items-center justify-between px-2 border-b-grayscale-200 py-4 border-solid border-b"
                 >
                     <div className="flex flex-col items-start justify-center">
                         <p className="m-0 p-0 text-lg font-poppins text-grayscale-900">
                             {m['family.invite.inviteMember']({
-                                title: guardianTitle?.singular || m['family.members.guardian'](),
+                                title: getFamilyTitleLabel(
+                                    guardianTitle?.singular || m['family.members.guardian']()
+                                ),
                             })}
                         </p>
                     </div>
@@ -94,7 +97,9 @@ const FamilyBoostInviteModalOptions: React.FC<{
                     <div className="flex flex-col items-start justify-center">
                         <p className="m-0 p-0 text-lg font-poppins text-grayscale-900">
                             {m['family.invite.addMember']({
-                                title: dependentTitle?.singular || m['family.members.child'](),
+                                title: getFamilyTitleLabel(
+                                    dependentTitle?.singular || m['family.members.child']()
+                                ),
                             })}
                         </p>
                     </div>

@@ -115,7 +115,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
     const openEditGoalsModal = () => {
         newModal(
             <EditGoalsModal />,
-            { sectionClassName: '!bg-transparent' },
+            { sectionClassName: 'bg-transparent!' },
             {
                 desktop: ModalTypes.Right,
                 mobile: ModalTypes.Right,
@@ -125,7 +125,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
 
     return (
         <div className="h-full bg-grayscale-100 overflow-hidden text-grayscale-900 flex flex-col">
-            <header className="px-4 py-5 bg-white safe-area-top-margin flex flex-col gap-4 z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
+            <header className="px-4 py-5 bg-white flex flex-col gap-4 z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-start gap-2.5">
                     <div className="flex items-center gap-2.5 flex-1 min-w-0">
                         <RolesIcon className="w-[50px] h-[50px] shrink-0" />
@@ -189,7 +189,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                         value={inlineFilter}
                         onChange={e => setInlineFilter(e.target.value)}
                         placeholder={m['aiPathways.filterResults']()}
-                        className="w-full py-3 px-4 pl-10 border border-grayscale-200 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-600 focus:outline-none focus:border-transparent bg-white"
+                        className="w-full py-3 px-4 pl-10 border border-grayscale-200 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-600 focus:outline-hidden focus:border-transparent bg-white"
                     />
                 </div>
 

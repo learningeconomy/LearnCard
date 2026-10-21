@@ -33,6 +33,18 @@ import { initLearnCard } from '@learncard/core';
 const wallet = await initLearnCard({ seed: 'a'.repeat(64) });
 ```
 
+### Acting as a Managed Profile
+
+Pass `actAs` (a managed profile ID or `did:web`) to `getLearnCardNetworkPlugin`/`initLearnCard` to
+send every network request on behalf of a profile you manage, via the `X-LearnCard-Act-As` header.
+Token scope is unchanged, and the server returns `403` if you don't manage that profile.
+
+```js
+const wallet = await initLearnCard({ seed: 'a'.repeat(64), network: true, actAs: childProfileId });
+// or, from an existing wallet:
+const asChild = await wallet.invoke.actAs(childProfileId);
+```
+
 ### Issuing/Verifying Credentials and Presentations
 
 #### Issue a credential

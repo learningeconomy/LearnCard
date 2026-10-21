@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Unit tests for `vp/encrypt.ts` — the JARM (`direct_post.jwt`)
  * response-encryption layer.
@@ -418,7 +419,7 @@ describe('encryptResponseObject — nested signed-then-encrypted (JWS-in-JWE)', 
 
     it('does NOT call the signer when nested signing is disabled', async () => {
         const verifier = await makeEcVerifierKey();
-        const signFn = jest.fn();
+        const signFn = vi.fn();
         const lazySigner: ProofJwtSigner = {
             alg: 'EdDSA',
             kid: 'did:jwk:wallet#0',
@@ -443,7 +444,7 @@ describe('encryptResponseObject — nested signed-then-encrypted (JWS-in-JWE)', 
 describe('encryptResponseObject — JWKS resolution', () => {
     it('prefers inline `jwks` over `jwks_uri` (no fetch when both present)', async () => {
         const verifier = await makeEcVerifierKey();
-        const fetchImpl = jest.fn();
+        const fetchImpl = vi.fn();
 
         await encryptResponseObject({
             payload: PAYLOAD,
@@ -460,7 +461,7 @@ describe('encryptResponseObject — JWKS resolution', () => {
 
     it('fetches `jwks_uri` and uses the returned keys when no inline jwks', async () => {
         const verifier = await makeEcVerifierKey();
-        const fetchImpl = jest.fn(async () => ({
+        const fetchImpl = vi.fn(async () => ({
             ok: true,
             status: 200,
             json: async () => ({ keys: [verifier.publicJwk] }),
@@ -486,7 +487,7 @@ describe('encryptResponseObject — JWKS resolution', () => {
     });
 
     it('throws jwks_fetch_failed when the URI returns a non-2xx status', async () => {
-        const fetchImpl = jest.fn(async () => ({
+        const fetchImpl = vi.fn(async () => ({
             ok: false,
             status: 503,
             json: async () => ({}),
@@ -505,7 +506,7 @@ describe('encryptResponseObject — JWKS resolution', () => {
     });
 
     it('throws jwks_fetch_failed when fetch itself throws (network error)', async () => {
-        const fetchImpl = jest.fn(async () => {
+        const fetchImpl = vi.fn(async () => {
             throw new Error('ECONNREFUSED');
         }) as unknown as typeof fetch;
 
@@ -522,7 +523,7 @@ describe('encryptResponseObject — JWKS resolution', () => {
     });
 
     it('throws invalid_jwks when fetched body is not a JWKS object', async () => {
-        const fetchImpl = jest.fn(async () => ({
+        const fetchImpl = vi.fn(async () => ({
             ok: true,
             status: 200,
             json: async () => ({ not_a_keys_array: true }),

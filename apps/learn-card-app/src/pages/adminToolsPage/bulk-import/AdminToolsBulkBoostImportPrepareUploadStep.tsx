@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 export const AdminToolsBulkBoostImportPrepareUploadStep: React.FC = () => {
     const { colors } = useTheme();
@@ -10,34 +11,33 @@ export const AdminToolsBulkBoostImportPrepareUploadStep: React.FC = () => {
                 <h4
                     className={`text-${primaryColor} font-notoSans text-left mb-2 text-sm font-semibold`}
                 >
-                    Step 1
+                    {m['bulkImport.step']({ number: 1 })}
                 </h4>
                 <p className="text-xl text-grayscale-900 text-left mb-4">
-                    Prepare & Export Your File
+                    {m['bulkImport.prepareTitle']()}
                 </p>
 
                 <ol className="w-full flex flex-col mx-auto text-grayscale-700 text-sm">
                     <li>
-                        1. Fill out this{' '}
+                        1. {m['bulkImport.fillSheetPrefix']()}{' '}
                         <a
                             className={`text-${primaryColor} underline`}
                             target="_blank"
+                            rel="noreferrer"
                             href="https://docs.google.com/spreadsheets/d/13dI93yhClz95FKz4UDGEkteKLvqGHjxivPnKohFkkEM/copy"
                         >
-                            Google Sheet
+                            {m['bulkImport.googleSheet']()}
                         </a>{' '}
-                        using:
+                        {m['bulkImport.fillSheetSuffix']()}
                         <ul className="ml-8 mt-2 list-disc">
-                            <li>Full image URLs (https://...) for direct use</li>
-                            <li>
-                                OR simple filenames (image.png) for images you'll upload in a ZIP
-                            </li>
+                            <li>{m['bulkImport.fullImageUrls']()}</li>
+                            <li>{m['bulkImport.simpleFilenames']()}</li>
                         </ul>
                     </li>
                     <li className="mt-2">
-                        <span className="font-semibold">Export to CSV:</span>
+                        <span className="font-semibold">{m['bulkImport.exportCsv']()}</span>
                         <br />
-                        File → Download → Comma Separated Values (.csv)
+                        {m['bulkImport.downloadCsvPath']()}
                     </li>
                 </ol>
             </div>

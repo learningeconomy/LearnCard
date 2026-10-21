@@ -1,18 +1,8 @@
-import {
-    exportJWK,
-    generateKeyPair,
-    importJWK,
-    jwtVerify,
-    SignJWT,
-} from 'jose';
+import { vi } from 'vitest';
+import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
 import type { JWK } from 'jose';
 
-import {
-    signIdToken,
-    SiopSignError,
-    responseTypeSet,
-    requiresIdToken,
-} from './sign';
+import { signIdToken, SiopSignError, responseTypeSet, requiresIdToken } from './sign';
 import { ProofJwtSigner } from '../vci/types';
 
 /* ---------------------------------- fixtures --------------------------------- */
@@ -34,7 +24,7 @@ const makeJwtSigner = (
         signCount: 0,
         lastHeader: undefined as Record<string, unknown> | undefined,
         lastPayload: undefined as Record<string, unknown> | undefined,
-        sign: jest.fn(
+        sign: vi.fn(
             async (
                 header: Record<string, unknown>,
                 payload: Record<string, unknown>
@@ -135,10 +125,7 @@ describe('signIdToken — happy paths', () => {
     it('sets alg/kid/typ in the protected header', async () => {
         const signer = makeJwtSigner({ alg: 'ES256', kid: 'did:web:holder#k1' });
 
-        await signIdToken(
-            { holder: HOLDER, audience: AUDIENCE, nonce: NONCE },
-            { signer }
-        );
+        await signIdToken({ holder: HOLDER, audience: AUDIENCE, nonce: NONCE }, { signer });
 
         expect(signer.lastHeader).toEqual({
             alg: 'ES256',
@@ -160,10 +147,7 @@ describe('signIdToken — happy paths', () => {
         const signer = makeJwtSigner();
         const before = Math.floor(Date.now() / 1000);
 
-        await signIdToken(
-            { holder: HOLDER, audience: AUDIENCE, nonce: NONCE },
-            { signer }
-        );
+        await signIdToken({ holder: HOLDER, audience: AUDIENCE, nonce: NONCE }, { signer });
 
         const after = Math.floor(Date.now() / 1000);
         const iat = signer.lastPayload?.iat as number;
@@ -184,10 +168,7 @@ describe('signIdToken — input validation', () => {
 
     it('rejects an empty audience', async () => {
         await expect(
-            signIdToken(
-                { holder: HOLDER, audience: '', nonce: NONCE },
-                { signer: makeJwtSigner() }
-            )
+            signIdToken({ holder: HOLDER, audience: '', nonce: NONCE }, { signer: makeJwtSigner() })
         ).rejects.toMatchObject({ code: 'invalid_input' });
     });
 
@@ -213,21 +194,15 @@ describe('signIdToken — input validation', () => {
 describe('signIdToken — error wrapping', () => {
     it('wraps signer exceptions as id_token_sign_failed', async () => {
         const signer = makeJwtSigner({
-            sign: jest.fn().mockRejectedValue(new Error('HSM unavailable')),
+            sign: vi.fn().mockRejectedValue(new Error('HSM unavailable')),
         });
 
         await expect(
-            signIdToken(
-                { holder: HOLDER, audience: AUDIENCE, nonce: NONCE },
-                { signer }
-            )
+            signIdToken({ holder: HOLDER, audience: AUDIENCE, nonce: NONCE }, { signer })
         ).rejects.toBeInstanceOf(SiopSignError);
 
         try {
-            await signIdToken(
-                { holder: HOLDER, audience: AUDIENCE, nonce: NONCE },
-                { signer }
-            );
+            await signIdToken({ holder: HOLDER, audience: AUDIENCE, nonce: NONCE }, { signer });
         } catch (e) {
             const err = e as SiopSignError;
             expect(err.code).toBe('id_token_sign_failed');
@@ -238,9 +213,7 @@ describe('signIdToken — error wrapping', () => {
 
 describe('responseTypeSet / requiresIdToken', () => {
     it('parses space-separated response_type values', () => {
-        expect(responseTypeSet('vp_token id_token')).toEqual(
-            new Set(['vp_token', 'id_token'])
-        );
+        expect(responseTypeSet('vp_token id_token')).toEqual(new Set(['vp_token', 'id_token']));
         expect(responseTypeSet('vp_token')).toEqual(new Set(['vp_token']));
         expect(responseTypeSet(undefined)).toEqual(new Set());
         expect(responseTypeSet('')).toEqual(new Set());

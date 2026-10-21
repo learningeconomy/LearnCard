@@ -11,6 +11,7 @@ import { getNotificationMessage, NotificationMessageKey } from '@helpers/notific
 const SUPPORTED_KEYS = [
     'boostReceived',
     'boostAccepted',
+    'boostAcceptedConnect',
     'credentialReceived',
     'endorsementReceived',
     'connectionAccepted',
@@ -44,6 +45,7 @@ const SUPPORTED_KEYS = [
     'credentialSuspendedUnnamed',
     'credentialRestoredNamed',
     'credentialRestoredUnnamed',
+    'shareViewed',
 ] as NotificationMessageKey[];
 
 const LOCALES = ['en', 'es', 'fr', 'ar'];
@@ -71,6 +73,29 @@ describe('notificationMessages catalog', () => {
 });
 
 describe('getNotificationMessage — interpolation', () => {
+    it('localizes private-share view alerts in every supported locale', () => {
+        const titles = ['Share viewed', 'Enlace visto', 'Partage consulté', 'تمت مشاهدة المشاركة'];
+        for (const [index, locale] of LOCALES.entries()) {
+            const message = getNotificationMessage('shareViewed', locale, {
+                title: 'Career highlights',
+                count: '3',
+            });
+            expect(message.title).toBe(titles[index]);
+            expect(message.body).toContain('Career highlights');
+            expect(message.body).toContain('3');
+        }
+    });
+    it.each([
+        ['en', 'Ada claimed your credential — connect?'],
+        ['es', 'Ada reclamó tu credencial. ¿Conectar?'],
+        ['fr', 'Ada a réclamé votre justificatif — vous connecter ?'],
+        ['ar', 'استلم Ada اعتمادك — هل تريد التواصل؟'],
+    ])('renders the actionable boost-accepted message in %s', (locale, expectedBody) => {
+        const msg = getNotificationMessage('boostAcceptedConnect', locale, { name: 'Ada' });
+
+        expect(msg.body).toBe(expectedBody);
+    });
+
     it('interpolates {var} placeholders from params', () => {
         const msg = getNotificationMessage('boostReceived', 'en', { issuer: 'ACME' });
         expect(msg.title).toBe('Boost Received');

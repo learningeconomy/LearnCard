@@ -18,14 +18,14 @@ import * as m from '../../paraglide/messages.js';
 type PanelTab = 'credentials' | 'notifications';
 
 const LoadingSkeletons: React.FC = () => (
-    <div className="space-y-4">
+    <div className="space-y-v3-4">
         {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-xl p-4 shadow-sm animate-pulse">
+            <div key={i} className="bg-white rounded-xl p-4 shadow-xs animate-pulse">
                 <div className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-gray-200 rounded-lg" />
-                    <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-3/4" />
-                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div className="flex-1 space-y-v3-2">
+                        <div className="h-4 bg-gray-200 rounded-sm w-3/4" />
+                        <div className="h-3 bg-gray-200 rounded-sm w-1/2" />
                     </div>
                 </div>
             </div>
@@ -102,7 +102,7 @@ const NotificationPanelCard: React.FC<NotificationPanelCardProps> = ({
 
             {/* Bell icon */}
             <div
-                className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${iconBgColor}`}
+                className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${iconBgColor}`}
             >
                 <Bell className="w-7 h-7" />
             </div>
@@ -142,7 +142,7 @@ const NotificationPanelCard: React.FC<NotificationPanelCardProps> = ({
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
                 {hasAction && (
                     <button
                         onClick={e => {
@@ -151,7 +151,7 @@ const NotificationPanelCard: React.FC<NotificationPanelCardProps> = ({
                         }}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/80 hover:bg-white text-gray-700 font-semibold text-[13px] border border-gray-200 transition-colors"
                     >
-                        Open
+                        {m['common.open']()}
                         <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                 )}
@@ -339,9 +339,9 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
     const showTabs = listingId !== undefined;
 
     return (
-        <div className="flex flex-col h-full bg-white safe-area-top-margin">
+        <div className="flex flex-col h-full bg-white">
             {/* Panel Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-500 to-purple-600">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-linear-to-r/srgb from-indigo-500 to-purple-600">
                 <div>
                     <h2 className="text-lg font-semibold text-white">Activity from {appName}</h2>
                     <p className="text-sm text-white/80">
@@ -417,7 +417,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                                 })}
                             />
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-v3-4">
                                 {earnedCredentials.map((record, index) => {
                                     if (isAiSessionSummaryRecord(record)) {
                                         return (
@@ -466,7 +466,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                                 description={`Notifications from ${appName} will appear here.`}
                             />
                         ) : (
-                            <div className="space-y-[15px]">
+                            <div className="space-y-v3-[15px]">
                                 {notifications.map(notification => (
                                     <NotificationPanelCard
                                         key={notification._id}

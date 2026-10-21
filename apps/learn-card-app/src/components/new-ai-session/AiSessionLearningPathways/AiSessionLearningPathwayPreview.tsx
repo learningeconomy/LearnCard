@@ -12,13 +12,13 @@ import {
     getAiAppBackgroundStylesForApp,
     getAiPassportAppByContractUri,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { LaunchPadAppListItem, useGetCurrentLCNUser, useModal } from 'learn-card-base';
+import { LaunchPadAppListItem, useModal } from 'learn-card-base';
 import { LearnCardAiChatBot } from '../LearnCardAiChatBot/LearnCardAiChatBot';
 import { VC } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { LearningPathway } from '../../ai-sessions/AiSessionTopics/aiSession-topics.helpers';
 import { Boost } from '@learncard/types';
-import { sessionLoadingText } from '../newAiSession.helpers';
+import { getSessionLoadingText } from '../newAiSession.helpers';
 
 export const AiSessionLearningPathwayPreview: React.FC<{
     topicRecord?: LCR;
@@ -28,7 +28,6 @@ export const AiSessionLearningPathwayPreview: React.FC<{
     pathwayBoost?: Boost;
 }> = ({ topicRecord, topicBoost, topicVc, learningPathway, pathwayBoost }) => {
     const { closeAllModals } = useModal();
-    const { currentLCNUser } = useGetCurrentLCNUser();
 
     const [showLoader, setShowLoader] = useState<boolean>(false);
     const [showInModalChat, setShowInModalChat] = useState<boolean>(false);
@@ -50,9 +49,7 @@ export const AiSessionLearningPathwayPreview: React.FC<{
         setShowLoader(true);
         closeAllModals();
         const url = app?.url;
-        window.location.href = `${url}/chats?topicUri=${encodeURIComponent(
-            topicBoost?.uri || ''
-        )}&did=${encodeURIComponent(currentLCNUser?.did || '')}${
+        window.location.href = `${url}/chats?topicUri=${encodeURIComponent(topicBoost?.uri || '')}${
             pathwayBoost ? `&pathwayUri=${encodeURIComponent(pathwayBoost?.uri || '')}` : ''
         }`;
     };
@@ -71,11 +68,11 @@ export const AiSessionLearningPathwayPreview: React.FC<{
 
     return (
         <div
-            className="h-full w-full flex flex-col items-start justify-center safe-area-top-margin"
+            className="h-full w-full flex flex-col items-start justify-center mt-[var(--ion-safe-area-top,0px)]"
             style={{ ...appStyles }}
         >
             {showLoader && (
-                <AiSessionLoader topicRecord={topicRecord} overrideText={sessionLoadingText} />
+                <AiSessionLoader topicRecord={topicRecord} overrideText={getSessionLoadingText()} />
             )}
             <div className="h-full w-full ion-padding max-w-[600px] overflow-y-scroll pb-[200px]">
                 <AiSessionLearningPathwayPreviewHeader

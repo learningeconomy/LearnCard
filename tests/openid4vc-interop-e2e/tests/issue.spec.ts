@@ -44,8 +44,7 @@ const getPlugin = (mock: MockLearnCardHandle) => {
     // `plugin.foo(...)` without threading `learnCard` through.
     const bound: Record<string, (...args: any[]) => any> = {};
     for (const [name, fn] of Object.entries(plugin.methods)) {
-        bound[name] = (...args: any[]) =>
-            (fn as (...a: any[]) => any)(mock.learnCard, ...args);
+        bound[name] = (...args: any[]) => (fn as (...a: any[]) => any)(mock.learnCard, ...args);
     }
     return bound as any;
 };
@@ -84,6 +83,13 @@ describe('interop: OID4VCI issue flow against walt.id', () => {
 
         expect(header.alg).toBe('EdDSA');
         expect(typeof header.kid).toBe('string');
+
+        // Regression guard for walt.id quirk 8: the issuer kid MUST be
+        // the did:jwk verification method (`<did>#0`). PR runs pin a
+        // pre-Crypto2 walt.id that tolerates a mismatched kid, so
+        // without this assertion a regression here would only surface
+        // in the weekly `latest` canary — disguised as upstream drift.
+        expect(issuerKey.jwk.kid).toBe(`${issuerKey.did}#0`);
 
         // Signed by walt.id's issuer DID.
         expect(payload.iss).toBe(issuerKey.did);

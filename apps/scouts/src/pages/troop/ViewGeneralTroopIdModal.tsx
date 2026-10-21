@@ -19,6 +19,7 @@ import BulkyAddUser from 'learn-card-base/svgs/BulkyAddUser';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import X from 'learn-card-base/svgs/X';
 
+import * as m from '../../paraglide/messages.js';
 import {
     getRoleFromCred,
     getScoutDefaultsForRole,
@@ -74,8 +75,13 @@ const ViewGeneralTroopIdModal: React.FC<ViewGeneralTroopIdModalProps> = ({
                     <ViewTroopIdTemplate
                         idThumb={credential?.boostID?.idThumbnail}
                         idMainText={`${roleName}`}
-                        idSubText={`Issued to ${recipientCount} ${recipientCount === 1 ? 'person' : 'people'
-                            }`}
+                        idSubText={m['troops.membersList.issuedSub']({
+                            count: recipientCount ?? 0,
+                            person:
+                                recipientCount === 1
+                                    ? m['boost.personOne']()
+                                    : m['boost.personOther'](),
+                        })}
                         idExtraInfo={
                             <div className="flex">
                                 {recipients.slice(0, 5)?.map((r, index) => (
@@ -118,7 +124,7 @@ const ViewGeneralTroopIdModal: React.FC<ViewGeneralTroopIdModalProps> = ({
                 )}
             </div>
 
-            <footer className="w-full bg-white bg-opacity-70 border-t-[1px] border-solid border-white absolute bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
+            <footer className="w-full bg-white/70  border-t border-solid border-white absolute bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
                 <div className="max-w-[600px] mx-auto flex gap-[10px]">
                     <button
                         onClick={closeModal}
@@ -130,14 +136,14 @@ const ViewGeneralTroopIdModal: React.FC<ViewGeneralTroopIdModalProps> = ({
                         onClick={() => setShowDetails(!showDetails)}
                         className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                     >
-                        {showDetails ? 'Back' : 'Details'}
+                        {showDetails ? m['common.back']() : m['common.details']()}
                     </button>
                     {canEdit && (
                         <button
                             onClick={openEditIdModal}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Edit
+                            {m['common.edit']()}
                         </button>
                     )}
                     <button className="bg-white rounded-full text-grayscale-80 py-[10px] px-[12px] shadow-button-bottom">

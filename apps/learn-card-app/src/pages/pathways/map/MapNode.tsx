@@ -239,7 +239,7 @@ const NodeAvatar: React.FC<{
         return (
             <span
                 aria-hidden
-                className={`shrink-0 w-8 h-8 rounded-[8px] overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-sm ${dimClass}`}
+                className={`shrink-0 w-8 h-8 rounded-[8px] overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-xs ${dimClass}`}
             >
                 <img
                     src={appListingIconUrl}
@@ -263,7 +263,7 @@ const NodeAvatar: React.FC<{
         return (
             <span
                 aria-hidden
-                className={`shrink-0 w-8 h-8 rounded-full overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-sm ${dimClass}`}
+                className={`shrink-0 w-8 h-8 rounded-full overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-xs ${dimClass}`}
             >
                 <img
                     src={badgeImage}
@@ -299,8 +299,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
     // swaps its circular badge frame for a rounded-xl app frame — the
     // one-look visual signal this is an embedded-app step.
     const listingForNode = useListingForNode(node);
-    const appListingIconUrl =
-        listingForNode.listing?.icon_url ?? null;
+    const appListingIconUrl = listingForNode.listing?.icon_url ?? null;
 
     // Composite-node affordance: if this node references another
     // pathway, we show a tiny "chunk" pill in the top-left corner so
@@ -354,11 +353,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                 //     spine carries the eye. Overrides depth fade
                 //     because Navigate mode's hierarchy is "route vs
                 //     not," not "near vs far from focus."
-                opacity: data.isSideBranch
-                    ? 0.35
-                    : inFocus
-                        ? 1
-                        : 0.4,
+                opacity: data.isSideBranch ? 0.35 : inFocus ? 1 : 0.4,
                 y: 0,
                 // Spring the scale when the focus node shifts — feels springy
                 // rather than flipped.
@@ -377,7 +372,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
             <Handle
                 type="target"
                 position={Position.Bottom}
-                className="!bg-grayscale-300 !border-0 !w-1.5 !h-1.5 !opacity-60"
+                className="bg-grayscale-300! border-0! w-1.5! h-1.5! opacity-60!"
             />
 
             <div
@@ -390,8 +385,8 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         isFocusNode
                             ? 'ring-2 ring-emerald-400/70 ring-offset-2 ring-offset-grayscale-10 shadow-[0_0_24px_-4px_rgba(16,185,129,0.45)]'
                             : inFocus
-                                ? 'shadow-sm'
-                                : ''
+                              ? 'shadow-xs'
+                              : ''
                     }
                     ${data.isOnRoute === false ? 'opacity-80' : ''}
                 `}
@@ -425,7 +420,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                 {status === 'completed' && (
                     <span
                         aria-hidden
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] leading-[20px] text-center font-bold shadow-sm"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] leading-[20px] text-center font-bold shadow-xs"
                     >
                         ✓
                     </span>
@@ -448,17 +443,18 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                             childInfo.missing
                                 ? 'Linked pathway (not loaded)'
                                 : childInfo.renderStyle === 'link-out'
-                                    ? `Links to ${childInfo.child.title}`
-                                    : `${childInfo.progress.completed}/${childInfo.progress.total} · ${childInfo.child.title}`
+                                  ? `Links to ${childInfo.child.title}`
+                                  : `${childInfo.progress.completed}/${childInfo.progress.total} · ${childInfo.child.title}`
                         }
                         className={`absolute -top-1.5 -left-1.5 h-5 px-1.5
                                     inline-flex items-center gap-1
                                     rounded-full border
                                     text-[10px] font-medium
-                                    shadow-sm
-                                    ${childInfo.missing
-                                        ? 'bg-grayscale-100 border-grayscale-200 text-grayscale-500'
-                                        : 'bg-white border-emerald-200 text-emerald-700'
+                                    shadow-xs
+                                    ${
+                                        childInfo.missing
+                                            ? 'bg-grayscale-100 border-grayscale-200 text-grayscale-500'
+                                            : 'bg-white border-emerald-200 text-emerald-700'
                                     }
                                   `}
                     >
@@ -515,17 +511,16 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         className="absolute -bottom-2 -right-2 h-5 px-1.5
                                    inline-flex items-center gap-1
                                    rounded-full border border-grayscale-200
-                                   bg-white/90 backdrop-blur-sm
+                                   bg-white/90 backdrop-blur-xs
                                    text-[10px] font-medium text-grayscale-600
-                                   shadow-sm
+                                   shadow-xs
                                    hover:bg-white hover:text-grayscale-900
                                    hover:border-grayscale-300
                                    transition-colors"
                     >
                         <IonIcon icon={gitBranchOutline} className="text-[11px]" />
                         <span>
-                            {data.detourCount}{' '}
-                            {data.detourCount === 1 ? 'detour' : 'detours'}
+                            {data.detourCount} {data.detourCount === 1 ? 'detour' : 'detours'}
                         </span>
                     </button>
                 )}
@@ -542,12 +537,9 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         className="absolute top-2 right-2 w-5 h-5 rounded-full
                                    bg-emerald-600 text-white
                                    flex items-center justify-center
-                                   shadow-sm shadow-emerald-600/40"
+                                   shadow-xs shadow-emerald-600/40"
                     >
-                        <IonIcon
-                            icon={chevronForwardOutline}
-                            className="text-[10px]"
-                        />
+                        <IonIcon icon={chevronForwardOutline} className="text-[10px]" />
                     </span>
                 )}
 
@@ -577,9 +569,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         <p
                             title={node.title}
                             className={`text-sm font-semibold text-grayscale-900 leading-snug line-clamp-2 ${
-                                isFocusNode &&
-                                status !== 'completed' &&
-                                status !== 'skipped'
+                                isFocusNode && status !== 'completed' && status !== 'skipped'
                                     ? 'pr-5'
                                     : ''
                             }`}
@@ -610,14 +600,10 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                             >
                                 <div
                                     className={`h-full rounded-full transition-[width] duration-500 ease-out ${
-                                        data.prereq.gated
-                                            ? 'bg-grayscale-300'
-                                            : 'bg-emerald-500'
+                                        data.prereq.gated ? 'bg-grayscale-300' : 'bg-emerald-500'
                                     }`}
                                     style={{
-                                        width: `${Math.round(
-                                            childInfo.progress.fraction * 100,
-                                        )}%`,
+                                        width: `${Math.round(childInfo.progress.fraction * 100)}%`,
                                     }}
                                 />
                             </div>
@@ -664,8 +650,8 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                             const tailLabel = isGated
                                 ? `Locked · ${data.prereq.met}/${data.prereq.total}`
                                 : isFocusNode && status === 'not-started'
-                                    ? 'Your next step'
-                                    : STATUS_LABEL[status];
+                                  ? 'Your next step'
+                                  : STATUS_LABEL[status];
 
                             return (
                                 <div className="mt-1 flex items-center gap-1.5 min-w-0">
@@ -705,7 +691,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
             <Handle
                 type="source"
                 position={Position.Top}
-                className="!bg-grayscale-300 !border-0 !w-1.5 !h-1.5 !opacity-60"
+                className="bg-grayscale-300! border-0! w-1.5! h-1.5! opacity-60!"
             />
         </motion.div>
     );

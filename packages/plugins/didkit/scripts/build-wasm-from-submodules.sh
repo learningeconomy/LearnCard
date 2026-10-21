@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+DIDKIT_DIR="${ROOT_DIR}/lib/didkit"
+DIDKIT_LOCKFILE="${DIDKIT_DIR}/Cargo.lock"
+DIDKIT_WEB_DIR="${ROOT_DIR}/lib/didkit/lib/web"
+SOURCE_PKG_DIR="${DIDKIT_WEB_DIR}/pkg"
+TARGET_PKG_DIR="${ROOT_DIR}/packages/plugins/didkit/src/didkit/pkg"
+
+if ! command -v wasm-pack >/dev/null 2>&1; then
+    echo "wasm-pack is required to build DIDKit WASM" >&2
+    exit 1
+fi
+if ! command -v wasm-opt >/dev/null 2>&1; then
+    echo "wasm-opt is required to optimize DIDKit WASM" >&2
+    exit 1
+fi
+if ! command -v bun >/dev/null 2>&1; then
+    echo "bun is required to update the bridge DIDKit WASM integrity pin" >&2
+    exit 1
+fi
+
+if [ ! -d "${DIDKIT_WEB_DIR}" ]; then
+    echo "Expected DIDKit web crate at ${DIDKIT_WEB_DIR}" >&2
+    exit 1
+fi
+
+if [ ! -f "${DIDKIT_LOCKFILE}" ]; then
+    echo "Expected committed DIDKit workspace lockfile at ${DIDKIT_LOCKFILE}" >&2
+    exit 1
+fi
+
+(
+    cd "${DIDKIT_WEB_DIR}"
+
+    # Source updates must include DIDKit's committed workspace lock.
+    wasm-pack build --target=web --locked
+    optimized_wasm="$(mktemp "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm.XXXXXX")"
+    trap 'rm -f "${optimized_wasm}"' EXIT
+
+    # Stripped DIDKit release builds (strip = true) have no target_features section, so
+    # Binaryen cannot infer the enabled features and fails validation. Pass the feature set
+    # DIDKit documents for wasm-opt. Avoid --all-features, which can enable proposals that
+    # target browsers do not support.
+    wasm-opt -Oz \
+        --enable-mutable-globals --enable-nontrapping-float-to-int \
+        --enable-bulk-memory --enable-sign-ext \
+        --enable-reference-types --enable-multivalue \
+        -o "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
+    mv "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
+
+    trap - EXIT
+)
+
+mkdir -p "${TARGET_PKG_DIR}"
+
+for file in didkit_wasm.d.ts didkit_wasm.js didkit_wasm_bg.wasm didkit_wasm_bg.wasm.d.ts; do
+    cp "${SOURCE_PKG_DIR}/${file}" "${TARGET_PKG_DIR}/${file}"
+done
+
+# Intentional generation updates the bridge guard alongside the canonical artifact.
+# Ordinary bridge builds use the same script without this flag and remain fail-closed.
+bun "${ROOT_DIR}/packages/learn-card-bridge-http/scripts/sync-didkit.ts" --update-integrity

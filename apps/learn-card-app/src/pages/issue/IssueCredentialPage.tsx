@@ -1,3 +1,7 @@
+import { RecipientPreviewControls } from './spreadsheet/RecipientPreviewControls';
+import { ColumnMappings } from './spreadsheet/ColumnMappings';
+import { materializePreview } from './spreadsheet/columnMapping';
+import type { IssueImportResult } from './import/issueImport';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UnsignedVC } from '@learncard/types';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -11,9 +15,15 @@ import {
 } from '../../components/simple-send/simpleSend.helpers';
 import { getTypeByObv3, type CredentialTypeEntry } from './components/credentialTypeCatalog';
 import { prepareImportedTemplate } from './import/prepareImport';
-import type { NormalizedImport, ImportProvenance } from './import/normalizeToObv3';
+import type { ImportProvenance } from './import/normalizeToObv3';
 import { RecipientMode, Recipient, LinkOptions, recipientKey } from './components/recipientTypes';
-import { getFriendlyIssueError, withTransientRetry, type IssueError } from './issueErrors';
+import { getFriendlyIssueError, type IssueError } from './issueErrors';
+import { useIssueRoster } from './spreadsheet/useIssueRoster';
+import { SpreadsheetUpload } from './spreadsheet/SpreadsheetUpload';
+import { RosterDetails } from './spreadsheet/RosterDetails';
+import { IssuanceResults } from './spreadsheet/IssuanceResults';
+import type { SpreadsheetView } from './spreadsheet/viewTypes';
+import { recipientDisplayName } from './components/recipientTypes';
 import {
     useWallet,
     useToast,
@@ -46,6 +56,7 @@ import { attachmentsToEvidence } from './components/mediaEvidence';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
+import { getResultValidationError } from './components/resultField';
 import type { SelectedSkill } from '../skills/skillTypes';
 import { IssueCredentialView } from './IssueCredentialView';
 import {
@@ -77,6 +88,11 @@ interface IssueSuccessSnapshot {
 }
 
 const SUCCESS_SNAPSHOT_KEY = 'issue-success-snapshot';
+
+type IssueCredentialLocationState = {
+    entryPoint?: string;
+    recipient?: Extract<Recipient, { kind: 'profile' }>;
+};
 
 const readSuccessSnapshot = (): IssueSuccessSnapshot | null => {
     try {
@@ -118,8 +134,8 @@ const hasAchievementImage = (subject: unknown): boolean => {
         typeof imageValue === 'string' ||
         Boolean(
             imageValue &&
-                typeof imageValue === 'object' &&
-                (imageValue as Record<string, unknown>).id
+            typeof imageValue === 'object' &&
+            (imageValue as Record<string, unknown>).id
         )
     );
 };
@@ -136,10 +152,14 @@ const IssueCredentialPage: React.FC = () => {
     const { track } = useAnalytics();
     const { capture: captureProfileSnapshot, snapshotRef: profileSnapshotRef } =
         useProfileSnapshotCapture();
-    const location = useLocation<{ entryPoint?: string } | undefined>();
+    const location = useLocation<IssueCredentialLocationState | undefined>();
     const issueEntryPoint = location.state?.entryPoint;
+    const initialRecipient = location.state?.recipient;
 
-    const initialSnapshot = useMemo(() => readSuccessSnapshot(), []);
+    const initialSnapshot = useMemo(
+        () => (initialRecipient ? null : readSuccessSnapshot()),
+        [initialRecipient]
+    );
 
     const [selectedType, setSelectedType] = useState<CredentialTypeEntry | null>(
         initialSnapshot?.selectedType ?? null
@@ -164,9 +184,14 @@ const IssueCredentialPage: React.FC = () => {
     >(initialSnapshot?.recipientEvidence ?? {});
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>(
-        initialSnapshot?.recipientMode ?? 'self'
+        initialSnapshot?.recipientMode ?? (initialRecipient ? 'people' : 'self')
     );
-    const [recipients, setRecipients] = useState<Recipient[]>(initialSnapshot?.recipients ?? []);
+    const [recipients, setRecipients] = useState<Recipient[]>(() =>
+        (initialSnapshot?.recipients ?? (initialRecipient ? [initialRecipient] : [])).map(row => ({
+            ...row,
+            rowId: row.rowId ?? crypto.randomUUID(),
+        }))
+    );
     const [linkOptions, setLinkOptions] = useState<LinkOptions>(initialSnapshot?.linkOptions ?? {});
 
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
@@ -184,7 +209,6 @@ const IssueCredentialPage: React.FC = () => {
     // gate below rather than a literal value.
     const nameIsDynamic = Boolean(ach?.name?.isDynamic && ach?.name?.variableName);
     const nameValid = nameIsDynamic || Boolean(ach?.name?.value?.trim());
-    const detailsValid = nameValid;
     const recipientValid =
         recipientMode === 'self' ||
         recipientMode === 'link' ||
@@ -200,27 +224,96 @@ const IssueCredentialPage: React.FC = () => {
         [template]
     );
 
+    const roster = useIssueRoster({
+        issuer: currentLCNUser?.profileId ?? '',
+        recipients,
+        setRecipients,
+        shared: variableValues,
+        setShared: setVariableValues,
+        values: recipientValues,
+        setValues: setRecipientValues,
+        attachments: recipientEvidence,
+        setAttachments: setRecipientEvidence,
+        variables: dynamicVars,
+        entryPoint: issueEntryPoint,
+        template,
+        onRestoreTemplate: saved => {
+            setTemplate(saved);
+            setSelectedType(
+                saved
+                    ? (getTypeByObv3(
+                          saved?.credentialSubject.achievement.achievementType?.value ?? 'Badge'
+                      ) ?? null)
+                    : null
+            );
+        },
+        onPeople: () => setRecipientMode('people'),
+        initWallet,
+        ensureSigningAuthority: async wallet => {
+            const existing = await getRegisteredSigningAuthorities(wallet);
+            if (existing?.length) return existing[0];
+            return getRegisteredSigningAuthority(wallet);
+        },
+    });
+
     const usePerRecipient =
         recipientMode === 'people' && recipients.length > 1 && variableScope === 'perRecipient';
 
-    const unfilledCount = usePerRecipient
-        ? recipients.reduce(
-              (acc, r) =>
-                  acc +
-                  dynamicVars.filter(v => !recipientValues[recipientKey(r)]?.[v]?.trim()).length,
-              0
-          )
-        : dynamicVars.filter(v => !variableValues[v]?.trim()).length;
+    const unfilledCount =
+        recipientMode === 'people'
+            ? Object.values(roster.problems).filter(value => value.includes('required')).length
+            : usePerRecipient
+              ? recipients.reduce(
+                    (acc, r) =>
+                        acc +
+                        dynamicVars.filter(v => !recipientValues[recipientKey(r)]?.[v]?.trim())
+                            .length,
+                    0
+                )
+              : dynamicVars.filter(v => !variableValues[v]?.trim()).length;
     const allVariablesFilled = dynamicVars.length === 0 || unfilledCount === 0;
 
     // Validate against a filled copy (the first recipient's values when per-recipient,
     // otherwise the shared values) so required fields are checked against real input,
     // while the editor JSON itself keeps its {{placeholders}}.
     const previewValues = useMemo<Record<string, string>>(() => {
+        if (recipientMode === 'people' && roster.previewRecipient)
+            return roster.valuesForRow(roster.previewRecipient);
         if (usePerRecipient && recipients[0])
             return recipientValues[recipientKey(recipients[0])] ?? {};
         return variableValues;
-    }, [usePerRecipient, recipients, recipientValues, variableValues]);
+    }, [
+        recipientMode,
+        usePerRecipient,
+        recipients,
+        recipientValues,
+        variableValues,
+        roster.previewIndex,
+        roster.scopes,
+        roster.run,
+    ]);
+    const resultValidationError = useMemo(() => {
+        if (!template || jsonOnly) return null;
+        const valueSets =
+            recipientMode === 'people' && recipients.length > 0
+                ? recipients.map(roster.valuesForRow)
+                : [variableValues];
+        return (
+            valueSets
+                .map(values => getResultValidationError(template, values))
+                .find((message): message is string => Boolean(message)) ??
+            getResultValidationError(template)
+        );
+    }, [
+        template,
+        jsonOnly,
+        usePerRecipient,
+        recipients,
+        recipientValues,
+        variableValues,
+        roster.scopes,
+        roster.run,
+    ]);
 
     const hasRecipientEvidence = recipients.some(
         r => (recipientEvidence[recipientKey(r)]?.length ?? 0) > 0
@@ -237,7 +330,7 @@ const IssueCredentialPage: React.FC = () => {
         const out: Record<string, Record<string, unknown>> = {};
         for (const recipient of recipients) {
             const key = recipientKey(recipient);
-            const values = usePerRecipient ? recipientValues[key] ?? {} : variableValues;
+            const values = usePerRecipient ? (recipientValues[key] ?? {}) : variableValues;
             const evidence = attachmentsToEvidence(recipientEvidence[key] ?? []);
             const data: Record<string, unknown> = { ...values };
             if (evidence.length > 0) {
@@ -264,18 +357,32 @@ const IssueCredentialPage: React.FC = () => {
         [template]
     );
     const validationJson = useMemo<Record<string, unknown> | null>(
-        () => (issuableJson ? applyVariableValues(issuableJson, previewValues) : null),
+        () =>
+            issuableJson
+                ? materializePreview(applyVariableValues(issuableJson, previewValues))
+                : null,
         [issuableJson, previewValues]
     );
     const identity = useCredentialIdentity(validationJson, jsonError);
 
     const canIssue =
         Boolean(template) &&
+        (recipientMode !== 'people' ||
+            !roster.run ||
+            recipients.some(
+                row =>
+                    roster.run?.outcomes[recipientKey(row)]?.state === 'ready' ||
+                    !roster.run?.outcomes[recipientKey(row)]
+            )) &&
         recipientValid &&
         !isSubmitting &&
+        !roster.busy &&
+        (recipientMode !== 'people' ||
+            (Boolean(currentLCNUser?.profileId) && !roster.hasProblems)) &&
         !jsonError &&
         allVariablesFilled &&
-        (jsonOnly ? identity.status === 'valid' : detailsValid);
+        !resultValidationError &&
+        (jsonOnly ? identity.status === 'valid' : nameValid);
 
     const issuerName = currentLCNUser?.displayName?.trim() || 'You';
     const issuerImage = currentLCNUser?.image || undefined;
@@ -283,37 +390,37 @@ const IssueCredentialPage: React.FC = () => {
     const provenanceLabel = !provenance
         ? null
         : provenance.source === 'credential-engine'
-        ? 'Credential Engine'
-        : provenance.source === 'reuse'
-        ? 'your library'
-        : provenance.label || 'an external source';
+          ? 'Credential Engine'
+          : provenance.source === 'reuse'
+            ? 'your library'
+            : provenance.label || 'an external source';
 
     const missingHint = !template
         ? m['issueFlow.gate.pickType']()
         : jsonError
-        ? m['issueFlow.gate.fixJson']()
-        : viewingJson && identity.status === 'invalid'
-        ? identity.reason
-        : !jsonOnly && !nameValid
-        ? m['issueFlow.gate.addName']()
-        : !allVariablesFilled
-        ? `Fill in ${unfilledCount} detail${unfilledCount === 1 ? '' : 's'} to continue`
-        : !recipientValid
-        ? m['issueFlow.gate.addRecip']()
-        : null;
+          ? m['issueFlow.gate.fixJson']()
+          : viewingJson && identity.status === 'invalid'
+            ? identity.reason
+            : !jsonOnly && !nameValid
+              ? m['issueFlow.gate.addName']()
+              : !allVariablesFilled
+                ? `Fill in ${unfilledCount} detail${unfilledCount === 1 ? '' : 's'} to continue`
+                : resultValidationError
+                  ? resultValidationError
+                  : !recipientValid
+                    ? m['issueFlow.gate.addRecip']()
+                    : null;
 
-    const handleSelectType = useCallback((entry: CredentialTypeEntry) => {
+    const handleSelectType = (entry: CredentialTypeEntry): void => {
         log.info('issue.type_selected', { obv3Type: entry.obv3Type });
-        setSelectedType(entry);
-        setVariableValues({});
-        setRecipientValues({});
-        setTemplate(() => {
-            const base = buildSimpleTemplate({
-                credentialType: entry.baseSimpleType,
-                name: '',
-                description: '',
-            });
-            return {
+        const base = buildSimpleTemplate({
+            credentialType: entry.baseSimpleType,
+            name: '',
+            description: '',
+        });
+        // replaceTemplate commits the template and its selected type together after its lock guard.
+        roster.replaceTemplate(
+            {
                 ...base,
                 credentialSubject: {
                     ...base.credentialSubject,
@@ -322,31 +429,30 @@ const IssueCredentialPage: React.FC = () => {
                         achievementType: staticField(entry.obv3Type),
                     },
                 },
-            };
-        });
-    }, []);
+            },
+            true
+        );
+    };
 
-    const handleImport = useCallback(
-        (result: NormalizedImport) => {
-            log.info('issue.imported', { source: result.provenance.source });
-            const { template: next, note } = prepareImportedTemplate(result);
-            setTemplate(next);
-            setVariableValues({});
-            setRecipientValues({});
-            const achievementType = next.credentialSubject.achievement.achievementType?.value;
-            setSelectedType(
-                (achievementType ? getTypeByObv3(achievementType) : undefined) ??
-                    getTypeByObv3('Badge') ??
-                    null
-            );
-            setProvenance(result.provenance);
-            setError(null);
-            if (note) {
-                presentToast(note, { type: ToastTypeEnum.Success, hasDismissButton: true });
-            }
-        },
-        [presentToast]
-    );
+    const handleImport = async (imported: IssueImportResult): Promise<void> => {
+        if (imported.kind === 'spreadsheet') {
+            await roster.importSheet(imported.sheet);
+            return;
+        }
+        const result = imported.value;
+        log.info('issue.imported', { source: result.provenance.source });
+        const { template: next, note } = prepareImportedTemplate(result);
+        roster.replaceTemplate(next, false);
+        const achievementType = next.credentialSubject.achievement.achievementType?.value;
+        setSelectedType(
+            (achievementType ? getTypeByObv3(achievementType) : undefined) ??
+                getTypeByObv3('Badge') ??
+                null
+        );
+        setProvenance(result.provenance);
+        setError(null);
+        if (note) presentToast(note, { type: ToastTypeEnum.Success, hasDismissButton: true });
+    };
 
     const handleResolvedSkillsChange = useCallback((resolved: ResolvedSkill[]) => {
         setResolvedSkills(resolved);
@@ -397,7 +503,9 @@ const IssueCredentialPage: React.FC = () => {
 
     const previewCredential = useMemo<Record<string, unknown> | null>(() => {
         if (!template) return null;
-        const json = applyVariableValues(templateToJson(template), previewValues);
+        const json = materializePreview(
+            applyVariableValues(templateToJson(template), previewValues)
+        );
         const fill = (obj: unknown): unknown => {
             if (typeof obj === 'string') {
                 return obj.replace(/\{\{(\w+)\}\}/g, (_m, v) =>
@@ -434,10 +542,8 @@ const IssueCredentialPage: React.FC = () => {
         // it here when there's no badge image, keeping the preview faithful.
         const hasBadgeImage = hasAchievementImage(filledJson) || hasAchievementImage(ach);
         const specificProfileRecipient =
-            recipientMode === 'people' &&
-            recipients.length === 1 &&
-            recipients[0].kind === 'profile'
-                ? recipients[0]
+            recipientMode === 'people' && roster.previewRecipient?.kind === 'profile'
+                ? roster.previewRecipient
                 : undefined;
         const hasSpecificRecipient = recipientMode === 'self' || Boolean(specificProfileRecipient);
         const imageForSubject = hasSpecificRecipient
@@ -448,12 +554,8 @@ const IssueCredentialPage: React.FC = () => {
 
         if (recipientMode === 'self') {
             credentialSubjectName = currentLCNUser?.displayName || issuerName;
-        } else if (
-            recipientMode === 'people' &&
-            recipients.length === 1 &&
-            recipients[0].kind === 'profile'
-        ) {
-            credentialSubjectName = recipients[0].displayName;
+        } else if (recipientMode === 'people' && roster.previewRecipient) {
+            credentialSubjectName = recipientDisplayName(roster.previewRecipient);
         } else {
             // No specific recipient yet (link / anyone / email / multiple): don't
             // let the badge fall back to the issuer's photo — show the category's
@@ -469,6 +571,30 @@ const IssueCredentialPage: React.FC = () => {
 
         return {
             ...filledJson,
+            ...(recipientMode === 'people' && roster.previewRecipient
+                ? {
+                      evidence: [
+                          ...(Array.isArray(filledJson.evidence)
+                              ? filledJson.evidence
+                              : filledJson.evidence
+                                ? [filledJson.evidence]
+                                : []),
+                          ...attachmentsToEvidence(
+                              recipientEvidence[recipientKey(roster.previewRecipient)] ?? []
+                          ),
+                          ...(roster.evidence[recipientKey(roster.previewRecipient)]?.trim()
+                              ? [
+                                    {
+                                        id: roster.evidence[
+                                            recipientKey(roster.previewRecipient)
+                                        ]!.trim(),
+                                        type: ['Evidence'],
+                                    },
+                                ]
+                              : []),
+                      ],
+                  }
+                : {}),
             issuer: {
                 id: recipientMode === 'self' && selfIssuedDid ? selfIssuedDid : 'did:web:preview',
                 name: issuerName,
@@ -492,10 +618,17 @@ const IssueCredentialPage: React.FC = () => {
         recipientMode,
         recipients,
         previewValues,
+        roster.evidence,
+        recipientEvidence,
+        roster.previewIndex,
     ]);
 
     const handleIssue = useCallback(async () => {
         if (!template || !canIssue) return;
+        if (recipientMode === 'people') {
+            await roster.execute();
+            return;
+        }
         setError(null);
         setIsSubmitting(true);
 
@@ -505,7 +638,7 @@ const IssueCredentialPage: React.FC = () => {
         const analyticsCredentialType = ach?.achievementType?.value;
         const analyticsCategory =
             getDefaultCategoryForCredential(templateJson as UnsignedVC) || undefined;
-        const analyticsRecipientCount = recipientMode === 'people' ? recipients.length : undefined;
+        const analyticsRecipientCount = undefined;
 
         track(AnalyticsEvents.CREDENTIAL_ISSUE_STARTED, {
             flow_id: issueFlowId,
@@ -547,9 +680,6 @@ const IssueCredentialPage: React.FC = () => {
             // Email recipients are delivered to an inbox and signed server-side,
             // which requires a registered signing authority on the account. Link
             // mode needs one too. Ensure one exists before issuing.
-            const hasEmailRecipient =
-                recipientMode === 'people' && recipients.some(r => r.kind === 'email');
-
             if (recipientMode === 'link') {
                 const rsas = await getRegisteredSigningAuthorities(wallet);
                 if (rsas && rsas.length > 0) {
@@ -568,23 +698,19 @@ const IssueCredentialPage: React.FC = () => {
                         };
                     }
                 }
-            } else if (hasEmailRecipient) {
-                await getRegisteredSigningAuthority(wallet);
             }
 
             captureProfileSnapshot();
 
-            const result = await withTransientRetry(() =>
-                issueViaBoost(wallet, template, {
-                    mode: recipientMode,
-                    recipients,
-                    linkOptions,
-                    currentLCNUser: currentLCNUser ?? undefined,
-                    claimLinkSA,
-                    variableValues,
-                    variableValuesByRecipient: recipientTemplateData,
-                })
-            );
+            const result = await issueViaBoost(wallet, template, {
+                mode: recipientMode,
+                recipients,
+                linkOptions,
+                currentLCNUser: currentLCNUser ?? undefined,
+                claimLinkSA,
+                variableValues,
+                variableValuesByRecipient: recipientTemplateData,
+            });
 
             if (recipientMode === 'self') {
                 if (!result.credentialUri) {
@@ -645,13 +771,6 @@ const IssueCredentialPage: React.FC = () => {
                     msSinceSessionStart:
                         now - Number(localStorage.getItem(SESSION_START_KEY) ?? now),
                 });
-            } else if (recipientMode === 'people') {
-                track(AnalyticsEvents.SEND_BOOST, {
-                    category: analyticsCategory,
-                    boostType: analyticsCredentialType,
-                    method: 'Issue Page',
-                    msSinceMethodStarted: Date.now() - issueStartedAt,
-                });
             } else if (recipientMode === 'link') {
                 track(AnalyticsEvents.GENERATE_CLAIM_LINK, {
                     category: analyticsCategory,
@@ -698,6 +817,7 @@ const IssueCredentialPage: React.FC = () => {
         captureProfileSnapshot,
         profileSnapshotRef,
         issueEntryPoint,
+        roster.execute,
     ]);
 
     useEffect(() => {
@@ -732,6 +852,7 @@ const IssueCredentialPage: React.FC = () => {
     ]);
 
     const reset = useCallback(() => {
+        roster.reset();
         clearSuccessSnapshot();
         setIssuedUri(null);
         setClaimLink(null);
@@ -751,7 +872,7 @@ const IssueCredentialPage: React.FC = () => {
         setSelectedSkills([]);
         setResolvedSkills([]);
         setError(null);
-    }, []);
+    }, [roster.reset]);
 
     const handleIssueAnother = useCallback(() => {
         if (claimLink && !linkConsumed) {
@@ -790,8 +911,180 @@ const IssueCredentialPage: React.FC = () => {
         history.push(route ?? '/wallet');
     }, [previewCredential, recipientMode, history]);
 
+    const spreadsheet: SpreadsheetView = {
+        locked: roster.locked,
+        canRemove: roster.canRemove,
+        mappings: roster.source ? (
+            <ColumnMappings
+                saveError={roster.error}
+                key={roster.source.source.name}
+                source={roster.source}
+                template={template}
+                mappings={roster.mappings}
+                disabled={roster.busy || Boolean(roster.run?.templateUri)}
+                onAdd={roster.addColumn}
+                onRemove={roster.removeColumn}
+            />
+        ) : null,
+        controls: (
+            <SpreadsheetUpload
+                onImport={roster.importSheet}
+                onDownload={() => roster.download()}
+                pastedText={roster.pastedText}
+                onPasteConsumed={() => roster.setPastedText('')}
+                disabled={roster.busy}
+            />
+        ),
+        onPaste: roster.setPastedText,
+        sourceName: roster.source?.source.name,
+        busy: roster.busy,
+        templateLocked: Boolean(roster.run?.templateUri),
+        details: (
+            <RosterDetails
+                saveError={roster.error}
+                attachments={recipientEvidence}
+                onAttachmentsChange={handleRecipientEvidenceChange}
+                recipients={recipients}
+                variables={dynamicVars}
+                dateVariables={[
+                    template?.validFrom,
+                    template?.validUntil,
+                    template?.awardedDate,
+                ].flatMap(field =>
+                    field?.isDynamic && !field.isSystem && field.variableName
+                        ? [field.variableName]
+                        : []
+                )}
+                labels={Object.fromEntries(
+                    roster.mappings.map(mapping => [mapping.variable, mapping.label])
+                )}
+                scopes={roster.scopes}
+                shared={variableValues}
+                values={Object.fromEntries(
+                    recipients.map(row => [recipientKey(row), roster.valuesForRow(row)])
+                )}
+                evidence={roster.evidence}
+                problems={roster.problems}
+                fieldProblems={roster.fieldProblems}
+                locked={roster.locked}
+                canRemove={roster.canRemove}
+                disabled={roster.busy}
+                onRecipientsChange={roster.changeRecipients}
+                onScopeChange={roster.changeScope}
+                onSharedChange={handleVariableChange}
+                onChange={handleRecipientVariableChange}
+                onEvidenceChange={(rowId, value) =>
+                    roster.setEvidence(previous => ({ ...previous, [rowId]: value }))
+                }
+                onDownload={() => {
+                    void roster
+                        .download()
+                        .catch(error =>
+                            roster.setError(getFriendlyIssueError(error, 'people').message)
+                        );
+                }}
+                onUpload={() =>
+                    document
+                        .querySelector<HTMLInputElement>('[data-testid="issue-spreadsheet-file"]')
+                        ?.click()
+                }
+            />
+        ),
+        results: (
+            <>
+                {roster.error && (
+                    <p role="alert" className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-2xl">
+                        {roster.error}
+                    </p>
+                )}
+                {roster.recoverable && !roster.run && (
+                    <div className="mb-4 p-4 bg-grayscale-100 border border-grayscale-200 rounded-2xl space-y-v3-2">
+                        <p className="text-sm text-grayscale-700">
+                            {m['issueFlow.sheet.recoverable']()}
+                        </p>
+                        <button
+                            type="button"
+                            disabled={roster.busy}
+                            onClick={() => {
+                                roster.restore(roster.recoverable!);
+                            }}
+                            className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white text-sm"
+                        >
+                            {m['issueFlow.sheet.restore']()}
+                        </button>
+                        <button
+                            type="button"
+                            disabled={roster.busy}
+                            onClick={() => {
+                                void roster.dismissRecovery();
+                            }}
+                            className="inline-flex items-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm disabled:opacity-40"
+                        >
+                            {roster.busy && (
+                                <span
+                                    aria-hidden="true"
+                                    className="h-4 w-4 rounded-full border-2 border-grayscale-300 border-t-grayscale-900 animate-spin"
+                                />
+                            )}
+                            {roster.busy
+                                ? m['issueFlow.sheet.saving']()
+                                : m['issueFlow.sheet.dismissRecovery']()}
+                        </button>
+                    </div>
+                )}
+                {!roster.recoverable && !roster.run && roster.dismissedRecoverable && (
+                    <button
+                        type="button"
+                        disabled={roster.busy}
+                        onClick={() => roster.restore(roster.dismissedRecoverable!)}
+                        className="mb-4 text-sm text-grayscale-600 hover:text-grayscale-900"
+                    >
+                        {m['issueFlow.sheet.viewSaved']()}
+                    </button>
+                )}
+                {roster.run && (
+                    <div className="mb-5">
+                        <IssuanceResults
+                            run={roster.run}
+                            busy={roster.busy}
+                            onResume={() => {
+                                void roster.execute();
+                            }}
+                            onRetry={() => {
+                                void roster.execute(true);
+                            }}
+                            onDownload={() => {
+                                void roster
+                                    .download(true)
+                                    .catch(error =>
+                                        roster.setError(
+                                            getFriendlyIssueError(error, 'people').message
+                                        )
+                                    );
+                            }}
+                            onNew={handleIssueAnother}
+                            onCheckStatus={() => {
+                                void roster.checkStatus();
+                            }}
+                            checking={roster.checking}
+                        />
+                    </div>
+                )}
+            </>
+        ),
+        previewControls:
+            recipientMode === 'people' && recipients.length > 0 ? (
+                <RecipientPreviewControls
+                    recipients={recipients}
+                    index={roster.previewIndex}
+                    onChange={roster.setPreviewIndex}
+                />
+            ) : null,
+    };
+
     return (
         <IssueCredentialView
+            spreadsheet={spreadsheet}
             issuedUri={issuedUri}
             previewCredential={previewCredential}
             selectedType={selectedType}
@@ -803,7 +1096,7 @@ const IssueCredentialPage: React.FC = () => {
             provenance={provenance}
             provenanceLabel={provenanceLabel}
             error={error}
-            isSubmitting={isSubmitting}
+            isSubmitting={isSubmitting || roster.busy}
             canIssue={canIssue}
             missingHint={missingHint}
             showJson={showJson}
@@ -829,7 +1122,7 @@ const IssueCredentialPage: React.FC = () => {
             onChangeTemplate={setTemplate}
             onImport={handleImport}
             onRecipientModeChange={setRecipientMode}
-            onRecipientsChange={setRecipients}
+            onRecipientsChange={roster.changeRecipients}
             onLinkOptionsChange={setLinkOptions}
             onSelectedSkillsChange={setSelectedSkills}
             onResolvedSkillsChange={handleResolvedSkillsChange}

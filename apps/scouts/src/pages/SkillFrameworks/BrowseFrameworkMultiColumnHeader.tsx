@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 
+import * as m from '../../paraglide/messages.js';
 import { IonInput, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import Pencil from '../../components/svgs/Pencil';
@@ -10,7 +12,6 @@ import FrameworkSearchResults from './FrameworkSearchResults';
 
 import { SetState } from 'packages/shared-types/dist';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
-import { conditionalPluralize } from 'learn-card-base';
 import { SkillFrameworkNode, SkillFrameworkNodeWithSearchInfo } from '../../components/boost/boost';
 
 type BrowseFrameworkMultiColumnHeaderProps = {
@@ -56,7 +57,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     changesExist,
     useShortText,
     openManageJsonModal,
-    isEdit,
+    isEdit: editRequested,
     setIsEdit,
     handleDisableEdit,
     frameworkInfo,
@@ -69,6 +70,8 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     handleSaveSkills,
     disableSave,
 }) => {
+    const canManageCompetencies = useCanManageCompetencies();
+    const isEdit = canManageCompetencies && editRequested;
     const inputRef = useRef<HTMLIonInputElement>(null);
     const [showResults, setShowResults] = useState(false);
 
@@ -80,14 +83,14 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     }, [search, showResults]);
 
     return (
-        <header className="flex items-center gap-[20px] p-[20px] border-b-[1px] border-grayscale-200 border-solid">
-            <div className="flex items-center gap-[15px] pl-[10px] pr-[20px] border-r-[1px] border-grayscale-200 border-solid">
+        <header className="flex items-center gap-[20px] p-[20px] border-b border-grayscale-200 border-solid">
+            <div className="flex items-center gap-[15px] pl-[10px] pr-[20px] border-r border-grayscale-200 border-solid">
                 <button
                     onClick={handleBack}
                     disabled={backDisabled}
                     className="text-grayscale-900 disabled:text-grayscale-400"
                 >
-                    <SkinnyArrowLeft version="2" />
+                    <SkinnyArrowLeft version="2" className="rtl-mirror" />
                 </button>
             </div>
 
@@ -103,7 +106,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                             className="w-[40px] h-[40px] shrink-0 text-grayscale-800"
                         />
                         <span className="text-[22px] font-poppins font-[600] leading-[24px] text-grayscale-900">
-                            Add {conditionalPluralize(selectedSkills?.length || 0, 'Skill')}
+                            {m['skillFrameworks.addSkills']({ count: selectedSkills?.length || 0 })}
                         </span>
                     </div>
                 )}
@@ -111,8 +114,8 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                     <div className="relative">
                         <IonInput
                             ref={inputRef}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] ion-padding font-poppins text-[14px] w-full !pr-[24px]"
-                            placeholder="Search framework..."
+                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] ion-padding font-poppins text-[14px] w-full pr-[24px]!"
+                            placeholder={m['skillFrameworks.searchPlh']()}
                             value={search}
                             onIonInput={e => {
                                 const value = e.detail.value || '';
@@ -182,9 +185,9 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                     {!isApproveFlow && (
                                         <button
                                             onClick={handleDisableEdit}
-                                            className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
+                                            className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                         >
-                                            Cancel
+                                            {m['common.cancel']()}
                                         </button>
                                     )}
                                     <button
@@ -193,10 +196,18 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                         disabled={!changesExist && !isApproveFlow}
                                     >
                                         {isApproveFlow && (
-                                            <>{useShortText ? 'Approve' : 'Approve Framework'}</>
+                                            <>
+                                                {useShortText
+                                                    ? m['common.verify']()
+                                                    : m['skillFrameworks.approveFw']()}
+                                            </>
                                         )}
                                         {!isApproveFlow && (
-                                            <>{useShortText ? 'Save' : 'Save Framework'}</>
+                                            <>
+                                                {useShortText
+                                                    ? m['common.save']()
+                                                    : m['skillFrameworks.saveFw']()}
+                                            </>
                                         )}
                                     </button>
                                 </>
@@ -208,31 +219,35 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                         className="bg-emerald-700 disabled:bg-grayscale-200 text-white font-[600] flex items-center justify-center rounded-[30px] px-[20px] py-[7px] font-poppins text-[17px] line-clamp-1 flex-1 h-full"
                                         disabled={disableSave}
                                     >
-                                        Save
+                                        {m['common.save']()}
                                     </button>
                                 </>
                             )}
-                            {!isEdit && !isSelectSkillsFlow && (
+                            {canManageCompetencies && !isEdit && !isSelectSkillsFlow && (
                                 <>
                                     <button
                                         onClick={() => setIsEdit(true)}
-                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
+                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                     >
                                         <Pencil
                                             version={3}
                                             className="w-[25px] h-[25px] shrink-0"
                                         />
-                                        {useShortText ? 'Edit' : 'Edit Framework'}
+                                        {useShortText
+                                            ? m['common.edit']()
+                                            : m['skillFrameworks.editFwOpt']()}
                                     </button>
                                     <button
                                         onClick={openManageJsonModal}
-                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
+                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                     >
                                         <CodeIcon
                                             className="w-[25px] h-[25px] shrink-0"
                                             version="with-slash"
                                         />
-                                        {useShortText ? 'JSON' : 'Manage JSON'}
+                                        {useShortText
+                                            ? m['skillFrameworks.json']()
+                                            : m['skillFrameworks.manageJson']()}
                                     </button>
                                 </>
                             )}

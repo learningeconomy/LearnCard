@@ -1,5 +1,6 @@
 import { UnsignedVC } from '@learncard/types';
 
+import { prepareManagedRefreshContext } from '@learncard/helpers';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
 import { getDefaultVerificationMethod } from './helpers';
@@ -14,9 +15,14 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
 
         if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 
-        const contexts = Array.isArray(credential['@context'])
-            ? credential['@context']
-            : [credential['@context']];
+        // Credentials carrying a LearnCard-managed refresh service need the inline
+        // JSON-LD context fragment that defines its terms; sign the prepared payload.
+        // Untouched credentials (no managed service) pass through by reference.
+        const preparedCredential = prepareManagedRefreshContext(credential);
+
+        const contexts = Array.isArray(preparedCredential['@context'])
+            ? preparedCredential['@context']
+            : [preparedCredential['@context']];
 
         const hasV2Context = contexts.some(
             ctx =>
@@ -28,8 +34,8 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
         const proofType =
             hasV2Context && signingOptions.type === 'Ed25519Signature2018'
                 ? 'Ed25519Signature2020'
-                : signingOptions.type ??
-                  (signingOptions.proofFormat === 'jwt' ? undefined : 'DataIntegrityProof');
+                : (signingOptions.type ??
+                  (signingOptions.proofFormat === 'jwt' ? undefined : 'DataIntegrityProof'));
 
         const options: ProofOptions = {
             proofPurpose: 'assertionMethod',
@@ -43,17 +49,19 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
 
         if (!('verificationMethod' in options)) {
             const issuerDid =
-                typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id!;
+                typeof preparedCredential.issuer === 'string'
+                    ? preparedCredential.issuer
+                    : preparedCredential.issuer.id!;
 
             options.verificationMethod = await getDefaultVerificationMethod(learnCard, issuerDid);
         }
 
         learnCard.debug?.('Signing with these options', {
-            credential,
+            credential: preparedCredential,
             options,
             kp,
         });
 
-        return initLearnCard.invoke.issueCredential(credential, options, kp);
+        return initLearnCard.invoke.issueCredential(preparedCredential, options, kp);
     };
 };

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { auth } from '../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import React, { useState, useEffect, useRef } from 'react';
+import { authUserStore, useSignInAdapter } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
 import { z } from 'zod';
 import { Clipboard } from '@capacitor/clipboard';
@@ -29,6 +28,8 @@ import HandshakeIcon from '../svgs/HandshakeIcon';
 
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import DeleteUserConfirmationPrompt from '../userOptions/DeleteUserConfirmationPrompt';
+import * as m from '../../paraglide/messages.js';
+import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
 import { JoinNetworkModalWrapper } from '../network-prompts/hooks/useJoinLCNetworkModal';
 
 import { useImageUpload, UploadRes } from 'learn-card-base';
@@ -57,7 +58,7 @@ type UserProfileUpdateFormProps = {
     showNetworkModal?: boolean;
     showNotificationsModal?: boolean;
     handleChapiInfo: () => void;
-    children?: any;
+    children?: React.ReactNode;
 };
 
 const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
@@ -70,6 +71,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     handleChapiInfo,
     children,
 }) => {
+    const adapter = useSignInAdapter();
+    authUserStore.use.currentUser(); // Re-render when live provider metadata changes.
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -80,7 +83,28 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const { updateCurrentUser } = useSQLiteStorage();
     const { presentToast } = useToast();
 
-    const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
+    const {
+        data: lcNetworkProfile,
+        isLoading: profileLoading,
+        refetch: refetchProfile,
+    } = useGetProfile();
+    const providerName = adapter.getCurrentUser()?.displayName?.trim() || '';
+    // Only confirmed first-time setup prefers provider enrichment. Existing (or still
+    // loading) profiles keep local saves, which may be newer than Firebase/query cache.
+    const suggestedName =
+        lcNetworkProfile === null
+            ? providerName || currentUser?.name || ''
+            : currentUser?.name || lcNetworkProfile?.displayName || providerName;
+
+    const isAppleLogin = authStore.use.typeOfLogin() === SocialLoginTypes.apple;
+    const [name, setName] = useState(suggestedName);
+    const nameEditedRef = useRef(false);
+    useEffect(() => {
+        if (!nameEditedRef.current) {
+            setName(suggestedName);
+        }
+    }, [suggestedName]);
+
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
     const [email, setEmail] = useState<string | null | undefined>(currentUser?.email ?? '');
     const [phone, setPhone] = useState<string | null | undefined>(currentUser?.phoneNumber ?? '');
@@ -90,7 +114,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
-    const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
+    const displayName = name.trim() || (isAppleLogin ? lcNetworkProfile?.profileId || '' : '');
 
     useEffect(() => {
         const getWalletDid = async () => {
@@ -167,16 +191,16 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         handleLogout();
     };
 
-    const handleStorageUpdate = async () => {
-        await updateCurrentUser(currentUser?.privateKey as string, {
-            name: name ?? currentUser?.name ?? '',
-            profileImage: photo ?? currentUser?.profileImage ?? '',
+    const handleStorageUpdate = async (user: NonNullable<typeof currentUser>) => {
+        await updateCurrentUser(user.uid, {
+            name: displayName,
+            profileImage: photo ?? user.profileImage ?? '',
         });
         currentUserStore.set.currentUser({
-            ...currentUser,
-            name: name ?? currentUser?.name ?? '',
-            profileImage: photo ?? currentUser?.profileImage ?? '',
-        } as any);
+            ...user,
+            name: displayName,
+            profileImage: photo ?? user.profileImage ?? '',
+        });
     };
 
     const handleLCNetworkProfileUpdate = async () => {
@@ -184,7 +208,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
         if (lcNetworkProfile && lcNetworkProfile?.profileId) {
             await wallet?.invoke?.updateProfile({
-                displayName: name as string,
+                displayName,
                 image: photo as string,
                 notificationsWebhook: getNotificationsEndpoint(),
             });
@@ -192,24 +216,56 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     };
 
     const handleUpdateUser = async () => {
-        const typeOfLogin = authStore.get.typeOfLogin();
-
-        // ! APPLE HOT FIX
-        if (typeOfLogin === SocialLoginTypes.apple) {
-            // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser as any, {
-                displayName: name ?? '',
-                photoURL: photo ?? '',
+        if (isLoading || profileLoading) return;
+        if (lcNetworkProfile === undefined) {
+            presentToast(m['networkPrompts.profileSaveFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
+            void refetchProfile();
+            return;
+        }
+        if (!currentUser) {
+            presentToast(m['networkPrompts.profileSaveFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            return;
+        }
 
-            handleStorageUpdate();
-
-            // update LC network profile
-            await handleLCNetworkProfileUpdate();
-
-            setIsLoading(false);
-            handleCloseModal();
-            // ! APPLE HOT FIX
+        if (isAppleLogin) {
+            // Account settings has no username field. Finish creation in the setup form,
+            // preserving edits (including a deliberately blank name) until it succeeds.
+            if (!lcNetworkProfile?.profileId) {
+                handleCloseModal();
+                newModal(
+                    <NewJoinNetworkPrompt
+                        initialName={name}
+                        initialPhoto={photo}
+                        handleCloseModal={closeModal}
+                        showNotificationsModal={showNotificationsModal}
+                    />
+                );
+                return;
+            }
+            setIsLoading(true);
+            try {
+                if (adapter.getCurrentUser()) {
+                    await adapter.updateProfile?.({ displayName, photoUrl: photo ?? '' });
+                }
+                await handleLCNetworkProfileUpdate();
+                await handleStorageUpdate(currentUser);
+                handleCloseModal();
+                if (showNetworkModal) presentNetworkModal();
+            } catch (error) {
+                log.error('Could not save Apple profile', error);
+                presentToast(m['networkPrompts.profileSaveFailed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            } finally {
+                setIsLoading(false);
+            }
         } else {
             if (validate()) {
                 setIsLoading(true);
@@ -217,9 +273,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     if (authToken === 'dummy') {
                         currentUserStore.set.currentUser({
                             ...currentUser,
-                            name: name ?? currentUser?.name ?? '',
+                            name: displayName,
                             profileImage: photo ?? currentUser?.profileImage ?? '',
-                        } as any);
+                        });
 
                         // update LC network profile
                         await handleLCNetworkProfileUpdate();
@@ -231,16 +287,18 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         }
                     } else {
                         // update firebase profile
-                        await updateProfile(auth()?.currentUser as any, {
-                            displayName: name as string,
-                            photoURL: photo as string,
-                        });
+                        if (adapter.getCurrentUser()) {
+                            await adapter.updateProfile?.({
+                                displayName,
+                                photoUrl: photo as string,
+                            });
+                        }
 
                         // update LC network profile
                         await handleLCNetworkProfileUpdate();
 
                         // update sqlite + context store
-                        handleStorageUpdate();
+                        await handleStorageUpdate(currentUser);
 
                         setIsLoading(false);
                         handleCloseModal();
@@ -261,12 +319,12 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             await Clipboard.write({
                 string: walletDid,
             });
-            presentToast('DID copied to clipboard', {
+            presentToast(m['userProfile.toasts.didCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy DID to clipboard', {
+            presentToast(m['userProfile.toasts.didCopyError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -319,7 +377,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         onClick={installChapi}
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-grayscale-900 text-xl w-[85%] shadow-lg"
                     >
-                        <HandshakeIcon className="mr-2" /> Connect Handler
+                        <HandshakeIcon className="mr-2" /> {m['userProfile.connectHandler']()}
                     </button>
                     <button
                         onClick={handleChapiInfo}
@@ -349,21 +407,32 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             autocapitalize="on"
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             value={`@${lcNetworkProfile?.profileId}`}
-                            placeholder="User ID"
+                            placeholder={m['userProfile.userID']()}
                             type="text"
                             disabled={true}
                         />
                     )}
                     <div className="flex flex-col items-center justify-center w-full mb-4">
-                        <IonInput
-                            autocapitalize="on"
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
-                                errors.name ? 'login-input-email-error' : ''
-                            }`}
-                            onIonInput={e => setName(e.detail.value)}
-                            value={name as string}
-                            placeholder="Full Name"
+                        <label
+                            htmlFor="scoutpass-profile-name"
+                            className="text-xs font-medium text-grayscale-700 mb-1.5 w-full"
+                        >
+                            {isAppleLogin
+                                ? m['userProfile.fullNameOptional']()
+                                : m['userProfile.fullName']()}
+                        </label>
+                        <input
+                            id="scoutpass-profile-name"
+                            autoComplete="name"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            onChange={e => {
+                                nameEditedRef.current = true;
+                                setName(e.target.value);
+                            }}
+                            value={name}
+                            placeholder={m['userProfile.fullName']()}
                             type="text"
+                            required={!isAppleLogin}
                         />
                         {errors.name && (
                             <p className="p-0 m-0 w-full text-left mt-1 text-red-600">
@@ -377,7 +446,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
                                 <div className="w-[80%] flex flex-col justify-center items-start text-left">
                                     <p className="text-grayscale-500 font-medium text-sm">
-                                        ScoutPass Number (DID)
+                                        {m['userProfile.scoutpassNumber']()}
                                     </p>
                                     <p className="w-full text-grayscale-900 line-clamp-1 tracking-widest">
                                         {walletDid}
@@ -398,7 +467,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             onIonInput={e => setEmail(e.detail.value)}
                             value={email as string}
-                            placeholder="Email address"
+                            placeholder={m['userProfile.emailAddress']()}
                             type="email"
                             disabled={true}
                         />
@@ -409,7 +478,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             onIonInput={e => setPhone(e.detail.value)}
                             value={phone as string}
-                            placeholder="Phone Number"
+                            placeholder={m['userProfile.phoneNumber']()}
                             type="tel"
                             disabled={true}
                         />
@@ -427,18 +496,24 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             className="flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 text-2xl w-full shadow-lg"
                         >
                             <TrashBin className="ml-[5px] h-[30px] w-[30px] mr-2" />
-                            Delete Account
+                            {m['userProfile.deleteAccount']()}
                         </button>
                     </IonRow>
                 )}
 
                 <IonRow className="w-full flex items-center justify-center mt-2">
                     <button
-                        disabled={isLoading}
+                        disabled={isLoading || profileLoading}
+                        aria-busy={isLoading || profileLoading}
                         type="submit"
-                        className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-grayscale-900 text-2xl w-full shadow-lg"
+                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm w-full hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {isLoading ? 'Saving...' : 'Save'}
+                        {(isLoading || profileLoading) && <IonSpinner name="crescent" />}
+                        {profileLoading
+                            ? m['common.loading']()
+                            : isLoading
+                              ? m['common.saving']()
+                              : m['common.save']()}
                     </button>
                 </IonRow>
             </form>

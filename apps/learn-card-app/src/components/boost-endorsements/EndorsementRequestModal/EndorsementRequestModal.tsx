@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import EndorsementForm from '../EndorsementForm/EndorsementForm';
 import EndorsementBadge from '../../../assets/images/endorsement-badge.png';
@@ -19,6 +19,7 @@ import {
     UserProfilePicture,
     useWallet,
     useGetCurrentLCNUser,
+    getLogger,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { endorsementsRequestStore } from '../../../stores/endorsementsRequestStore';
@@ -27,12 +28,16 @@ import { BoostEndorsement, BoostEndorsementStatusEnum } from '../boost-endorseme
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
+import { findEndorsementForRequest } from '../EndorsementRequestForm/endorsement-request.helpers';
+
+const log = getLogger('endorsement-request-modal');
 
 export const EndorsementRequestModal: React.FC<{
     credential: VC;
     shareLinkInfo?: string;
+    targetCredential?: VC;
     existingEndorsements?: VC[];
-}> = ({ credential, shareLinkInfo, existingEndorsements }) => {
+}> = ({ credential, targetCredential, shareLinkInfo, existingEndorsements }) => {
     const { desktopLoginBgAlt } = useTenantBrandingAssets();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
@@ -44,8 +49,15 @@ export const EndorsementRequestModal: React.FC<{
 
     const [showSuccess, setShowSuccess] = useState<boolean>(false);
     const [pendingEndorsement, setPendingEndorsement] = useState<BoostEndorsement | null>(null);
+    const initWalletRef = useRef(initWallet);
+    const currentLCNUserRef = useRef(currentLCNUser);
 
-    let {
+    useEffect(() => {
+        initWalletRef.current = initWallet;
+        currentLCNUserRef.current = currentLCNUser;
+    });
+
+    const {
         issuerProfile,
         issueeProfile,
         issueeName,
@@ -56,45 +68,58 @@ export const EndorsementRequestModal: React.FC<{
     } = useGetVCInfo(credential, categoryType);
 
     useEffect(() => {
-        getPendingEndorsement();
-    }, [issueeProfile]);
+        let cancelled = false;
+        const profileId = issueeProfile?.profileId;
 
-    const getPendingEndorsement = async () => {
-        const wallet = await initWallet();
-        // fetch sent credentials / notifications
-        const sentCredentials = await wallet.invoke.getSentCredentials(
-            issueeProfile?.profileId || ''
-        );
+        setPendingEndorsement(null);
 
-        // filter for the specific credential
-        const [pendingEndorsement] = await sentCredentials?.filter(
-            c => c?.metadata?.credentialId === credential?.id
-        );
-
-        if (!pendingEndorsement) {
-            return;
+        if (!profileId || !shareLinkInfo) {
+            return () => {
+                cancelled = true;
+            };
         }
 
-        // get the endorsement request
-        const pendingEndorsementRequest = await wallet.read.get(pendingEndorsement?.uri);
+        const getPendingEndorsement = async () => {
+            try {
+                const wallet = await initWalletRef.current();
+                const sentCredentials = await wallet.invoke.getSentCredentials(profileId);
+                const matchingEndorsement = findEndorsementForRequest(
+                    sentCredentials,
+                    shareLinkInfo
+                );
 
-        const pendingEndorsementState = {
-            user: {
-                name: currentLCNUser?.displayName || pendingEndorsement?.from,
-                image: currentLCNUser?.image,
-            },
-            description: pendingEndorsementRequest?.description,
-            qualification: pendingEndorsementRequest?.credentialSubject?.endorsementComment,
-            mediaAttachments: pendingEndorsementRequest?.credentialSubject?.evidence,
-            relationship: pendingEndorsement?.metadata?.relationship,
-            status: pendingEndorsement?.received
-                ? BoostEndorsementStatusEnum.Approved
-                : BoostEndorsementStatusEnum.Pending,
-            date: pendingEndorsement?.sent,
-            deleted: false,
+                if (!matchingEndorsement || cancelled) return;
+
+                const pendingEndorsementRequest = await wallet.read.get(matchingEndorsement.uri);
+
+                if (cancelled) return;
+
+                setPendingEndorsement({
+                    user: {
+                        name: currentLCNUserRef.current?.displayName || matchingEndorsement.from,
+                        image: currentLCNUserRef.current?.image,
+                    },
+                    description: pendingEndorsementRequest?.description,
+                    qualification: pendingEndorsementRequest?.credentialSubject?.endorsementComment,
+                    mediaAttachments: pendingEndorsementRequest?.credentialSubject?.evidence,
+                    relationship: matchingEndorsement.metadata?.relationship,
+                    status: matchingEndorsement.received
+                        ? BoostEndorsementStatusEnum.Approved
+                        : BoostEndorsementStatusEnum.Pending,
+                    date: matchingEndorsement.sent,
+                    deleted: false,
+                });
+            } catch (error) {
+                if (!cancelled) log.warn('Unable to load an existing endorsement', error);
+            }
         };
-        setPendingEndorsement(pendingEndorsementState);
-    };
+
+        void getPendingEndorsement();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [credential?.id, targetCredential?.id, issueeProfile?.profileId, shareLinkInfo]);
 
     const handleOnSuccess = (endorsementRequest: EndorsementState) => {
         endorsementRequestStore.set.setEndorsementRequest(endorsementRequest);
@@ -114,6 +139,7 @@ export const EndorsementRequestModal: React.FC<{
             <EndorsementForm
                 credential={credential}
                 categoryType={categoryType}
+                targetCredential={targetCredential}
                 isRequest
                 onSuccess={handleOnSuccess}
                 shareLinkInfo={shareLinkInfo}
@@ -142,6 +168,7 @@ export const EndorsementRequestModal: React.FC<{
         return (
             <EndorsementDraftRequestSuccess
                 credential={credential}
+                targetCredential={targetCredential}
                 closeModal={closeModal}
                 autoSend={false}
                 endorsementState={pendingEndorsement}
@@ -155,10 +182,10 @@ export const EndorsementRequestModal: React.FC<{
 
     return (
         <div
-            className="flex h-full w-full flex-col items-center justify-center px-4"
+            className="relative flex h-full w-full flex-col items-center justify-center px-4"
             style={loggedOutBGStyles}
         >
-            {credential ? (
+            {credential && targetCredential ? (
                 <div className="flex flex-col items-center justify-center bg-white  w-full max-w-[375px] rounded-[20px] pt-4 relative">
                     {/* endorsement badge */}
                     <img
@@ -184,7 +211,7 @@ export const EndorsementRequestModal: React.FC<{
                                 subjectProfileImageElement
                             )}
                         </div>
-                        <div className="w-full flex flex-col items-center justify-center border-b-[2px] border-grayscale-100 pb-4 px-[16px]">
+                        <div className="w-full flex flex-col items-center justify-center border-b-2 border-grayscale-100 pb-4 px-[16px]">
                             <p className="text-center w-full text-grayscale-900 text-base">
                                 <TransP
                                     m={m['endorsement.modal.requestedEndorsement']}
@@ -193,8 +220,8 @@ export const EndorsementRequestModal: React.FC<{
                                         title,
                                     }}
                                     components={[
-                                        <span className="font-semibold" />,
-                                        <span className="font-semibold" />,
+                                        <span key="name" className="font-semibold" />,
+                                        <span key="title" className="font-semibold" />,
                                     ]}
                                 />
                             </p>
@@ -206,7 +233,7 @@ export const EndorsementRequestModal: React.FC<{
                             existingEndorsements={existingEndorsements}
                             credential={credential}
                             categoryType={categoryType}
-                            className="shadow-none !p-0 !m-0 !gap-2 rounded-b-[20px]"
+                            className="shadow-none p-0! m-0! gap-2! rounded-b-[20px]"
                             dateFormat="DD MMM, YY"
                             showDetails
                         />
@@ -216,7 +243,7 @@ export const EndorsementRequestModal: React.FC<{
                 <EndorsementRequestModalSkeletonLoader />
             )}
 
-            {!isLoggedIn && credential && (
+            {!isLoggedIn && credential && targetCredential && (
                 <button
                     onClick={handleOpenEndorsementRequestForm}
                     className={`py-[9px] pl-[20px] pr-[15px] items-center justify-center rounded-[30px] font-poppins text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] max-w-[375px] mt-2 bg-white font-semibold z-9999`}
@@ -229,7 +256,7 @@ export const EndorsementRequestModal: React.FC<{
                 </button>
             )}
 
-            {isLoggedIn && (
+            {isLoggedIn && credential && targetCredential && (
                 <EndorsementRequestModalFooter handleOnClick={handleOpenEndorsementRequestForm} />
             )}
         </div>

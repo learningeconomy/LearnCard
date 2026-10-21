@@ -1,11 +1,10 @@
 # BoostGetBoostsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
+| Name      | Type                                                            | Description | Notes      |
+| --------- | --------------------------------------------------------------- | ----------- | ---------- |
+| **query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_get_boosts_request_dict = boost_get_boosts_request_instance.to_dict()
 # create an instance of BoostGetBoostsRequest from a dict
 boost_get_boosts_request_from_dict = BoostGetBoostsRequest.from_dict(boost_get_boosts_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

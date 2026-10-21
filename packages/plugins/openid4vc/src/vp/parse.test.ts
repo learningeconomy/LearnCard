@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import {
     parseAuthorizationRequestUri,
     resolvePresentationDefinitionByReference,
@@ -361,7 +362,7 @@ describe('resolvePresentationDefinitionByReference', () => {
         } as unknown as Response);
 
     it('fetches and validates a remote presentation_definition', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(minimalPd));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(minimalPd));
 
         const pd = await resolvePresentationDefinitionByReference(
             'https://verifier.example.com/pd.json',
@@ -375,7 +376,7 @@ describe('resolvePresentationDefinitionByReference', () => {
     });
 
     it('rejects a non-https uri up front (no fetch call)', async () => {
-        const fetchMock = jest.fn();
+        const fetchMock = vi.fn();
 
         await expect(
             resolvePresentationDefinitionByReference(
@@ -388,7 +389,7 @@ describe('resolvePresentationDefinitionByReference', () => {
     });
 
     it('surfaces HTTP errors as presentation_definition_fetch_failed', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({}, { ok: false, status: 404 }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({}, { ok: false, status: 404 }));
 
         await expect(
             resolvePresentationDefinitionByReference(
@@ -402,7 +403,7 @@ describe('resolvePresentationDefinitionByReference', () => {
     });
 
     it('surfaces network errors as presentation_definition_fetch_failed', async () => {
-        const fetchMock = jest.fn().mockRejectedValue(new Error('timeout'));
+        const fetchMock = vi.fn().mockRejectedValue(new Error('timeout'));
 
         await expect(
             resolvePresentationDefinitionByReference(
@@ -416,7 +417,7 @@ describe('resolvePresentationDefinitionByReference', () => {
     });
 
     it('surfaces invalid JSON bodies as invalid_json', async () => {
-        const fetchMock = jest.fn().mockResolvedValue({
+        const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
             statusText: 'OK',
@@ -434,7 +435,7 @@ describe('resolvePresentationDefinitionByReference', () => {
     });
 
     it('throws invalid_presentation_definition on malformed remote PD', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ id: 'x' }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ id: 'x' }));
 
         await expect(
             resolvePresentationDefinitionByReference(
@@ -455,7 +456,7 @@ describe('resolveAuthorizationRequest', () => {
         } as unknown as Response);
 
     it('returns the by-value request unchanged when presentation_definition is inline', async () => {
-        const fetchMock = jest.fn();
+        const fetchMock = vi.fn();
 
         const request = await resolveAuthorizationRequest(
             buildByValueUri(),
@@ -467,7 +468,7 @@ describe('resolveAuthorizationRequest', () => {
     });
 
     it('fetches presentation_definition_uri and inlines the PD', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(minimalPd));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(minimalPd));
 
         const params = new URLSearchParams({
             client_id: 'https://x',
@@ -493,7 +494,7 @@ describe('resolveAuthorizationRequest', () => {
         // the JWS. Our mock returns a non-JWS body, so the Slice 7.5
         // module surfaces a typed RequestObjectError — NOT the old
         // request_object_not_supported VpError.
-        const fetchMock = jest.fn(
+        const fetchMock = vi.fn(
             async () =>
                 ({
                     ok: true,
@@ -526,7 +527,7 @@ describe('resolveAuthorizationRequest', () => {
     });
 
     it('rejects an invalid request_uri_method on a by-reference request instead of falling back to GET', async () => {
-        const fetchMock = jest.fn();
+        const fetchMock = vi.fn();
 
         await expect(
             resolveAuthorizationRequest(

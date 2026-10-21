@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { X, Check, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('credential-claim-modal');
 
@@ -10,6 +11,7 @@ import {
     ToastTypeEnum,
     BoostPageViewMode,
     BoostCategoryOptionsEnum,
+    connectionPromptKeys,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -41,6 +43,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 }) => {
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
+    const queryClient = useQueryClient();
 
     const [isLoading, setIsLoading] = useState(true);
     const [isClaiming, setIsClaiming] = useState(false);
@@ -200,6 +203,16 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
             if (acceptResult.status === 'rejected') {
                 log.warn('Failed to accept credential server-side:', acceptResult.reason);
+            } else if (
+                wallet &&
+                addResult.status === 'fulfilled' &&
+                addResult.value === true &&
+                acceptResult.value === true
+            ) {
+                // Prompt visibility depends on both the network acceptance and the
+                // credential being present locally. Invalidate only after both have
+                // succeeded so a fast local write cannot dismiss the prompt early.
+                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
             }
 
             // Fire-and-forget the notification metadata update. The user already sees claim
@@ -250,7 +263,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Success state
     if (claimed) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
                     <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -280,7 +293,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Loading state
     if (isLoading) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8">
                     <div className="flex flex-col items-center justify-center">
                         <IonSpinner name="crescent" className="w-12 h-12 text-cyan-500" />
@@ -297,7 +310,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Error state
     if (error || !credential) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
                     <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
@@ -341,7 +354,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     const credentialName = resolvedCredentialName || m['claim.modal.credentialFallback']();
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col relative">
                 {/* Close button */}
                 <button
@@ -353,13 +366,13 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 </button>
 
                 {/* Header */}
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white text-center flex-shrink-0">
+                <div className="bg-linear-to-br/srgb from-indigo-500 to-purple-600 p-4 text-white text-center shrink-0">
                     <h3 className="text-lg font-semibold">{m['claim.modal.earnedTitle']()}</h3>
 
                     <p className="text-white/80 text-sm mt-1 min-h-[20px]">
                         {showCredentialNameShimmer ? (
                             <span
-                                className="inline-block h-[14px] w-32 bg-white/30 rounded animate-pulse align-middle"
+                                className="inline-block h-[14px] w-32 bg-white/30 rounded-sm animate-pulse align-middle"
                                 aria-label={m['claim.modal.loadingNameAria']()}
                             />
                         ) : (
@@ -393,7 +406,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="p-4 border-t border-gray-200 flex-shrink-0 space-y-2">
+                <div className="p-4 border-t border-gray-200 shrink-0 space-y-v3-2">
                     <button
                         onClick={handleClaim}
                         disabled={isClaiming || claimed || !walletReady}

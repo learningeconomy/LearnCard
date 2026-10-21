@@ -42,7 +42,6 @@ When Vite bundles the app, it imports both `@learncard/init` (8.4 MB) and `@lear
 | `@learncard/vpqr-plugin`             | 2              | 1.4 MB                 |                               |
 | `@learncard/claimable-boosts-plugin` | 2              | 3.7 MB                 | Starting to re-bundle heavily |
 | `@learncard/vc-api-plugin`           | 2              | 4.2 MB                 |                               |
-| `@learncard/simple-signing-plugin`   | 1              | 4.4 MB                 |                               |
 | `@learncard/learn-card-plugin`       | 3              | 4.7 MB                 |                               |
 | `@learncard/ethereum-plugin`         | 1              | 8.1 MB                 |                               |
 | `@learncard/didkey-plugin`           | 3              | 9.1 MB                 |                               |

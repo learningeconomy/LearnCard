@@ -1,23 +1,24 @@
 import React from 'react';
+import { ClrCreditValues } from '../ClrCreditValues';
 
-import ClrTranscriptResultsList from '../ClrTranscriptResultsList';
+import ClrResultWithScaleList from '../ClrResultWithScaleList';
 
-import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import { ClrRecordDetails } from '../ClrRecordDetails';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const StructuredTranscriptView: React.FC<{
     model: ClrTranscriptDisplayModel;
     showSource?: boolean;
 }> = ({ model, showSource = false }) => {
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {model.programs.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <p className="text-sm font-medium text-grayscale-900">Programs</p>
                     {model.programs.map(program => (
                         <div
                             key={program.sourceCredentialId}
-                            className="bg-white border border-grayscale-200 rounded-xl p-3 space-y-1"
+                            className="bg-white border border-grayscale-200 rounded-xl p-3 space-y-v3-1"
                         >
                             <p className="text-sm text-grayscale-900">
                                 {program.name?.value || 'Program'}
@@ -27,16 +28,12 @@ const StructuredTranscriptView: React.FC<{
                                     {program.description.value}
                                 </p>
                             )}
-                            {(program.earnedAt?.value || program.validUntil?.value) && (
-                                <p className="text-xs text-grayscale-500">
-                                    {program.earnedAt?.value &&
-                                        `Earned: ${formatClrDate(program.earnedAt.value)}`}
-                                    {program.earnedAt?.value && program.validUntil?.value && ' · '}
-                                    {program.validUntil?.value &&
-                                        `Expires: ${formatClrDate(program.validUntil.value)}`}
-                                </p>
-                            )}
-                            <ClrTranscriptResultsList
+                            <ClrRecordDetails
+                                record={model.records.find(
+                                    record => record.id === program.sourceCredentialId
+                                )}
+                            />
+                            <ClrResultWithScaleList
                                 results={program.results}
                                 showResultType={showSource}
                             />
@@ -44,7 +41,7 @@ const StructuredTranscriptView: React.FC<{
                     ))}
                 </div>
             )}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <p className="text-sm font-medium text-grayscale-900">Courses</p>
                 {(() => {
                     const withTerm = model.courses.filter(c => c.term?.value);
@@ -61,13 +58,13 @@ const StructuredTranscriptView: React.FC<{
                     const renderCourse = (course: (typeof model.courses)[number]) => (
                         <div
                             key={course.sourceCredentialId}
-                            className="bg-white border border-grayscale-200 rounded-xl p-3 space-y-1"
+                            className="bg-white border border-grayscale-200 rounded-xl p-3 space-y-v3-1"
                         >
                             <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                         {course.humanCode?.value && (
-                                            <span className="text-xs font-mono font-medium text-grayscale-600 bg-grayscale-100 px-1.5 py-0.5 rounded">
+                                            <span className="text-xs font-mono font-medium text-grayscale-600 bg-grayscale-100 px-1.5 py-0.5 rounded-sm">
                                                 {course.humanCode.value}
                                             </span>
                                         )}
@@ -82,28 +79,15 @@ const StructuredTranscriptView: React.FC<{
                                     )}
                                 </div>
                                 <div className="flex flex-col items-end gap-0.5 shrink-0">
-                                    {course.creditsEarned?.value !== undefined && (
-                                        <span className="text-xs font-medium text-grayscale-900 whitespace-nowrap">
-                                            {course.creditsEarned.value} cr earned
-                                        </span>
-                                    )}
-                                    {course.creditsAvailable?.value !== undefined && (
-                                        <span className="text-xs text-grayscale-500 whitespace-nowrap">
-                                            {course.creditsAvailable.value} cr available
-                                        </span>
-                                    )}
+                                    <ClrCreditValues course={course} />
                                 </div>
                             </div>
-                            {(course.earnedAt?.value || course.validUntil?.value) && (
-                                <p className="text-xs text-grayscale-500">
-                                    {course.earnedAt?.value &&
-                                        `Earned: ${formatClrDate(course.earnedAt.value)}`}
-                                    {course.earnedAt?.value && course.validUntil?.value && ' · '}
-                                    {course.validUntil?.value &&
-                                        `Expires: ${formatClrDate(course.validUntil.value)}`}
-                                </p>
-                            )}
-                            <ClrTranscriptResultsList
+                            <ClrRecordDetails
+                                record={model.records.find(
+                                    record => record.id === course.sourceCredentialId
+                                )}
+                            />
+                            <ClrResultWithScaleList
                                 results={course.results}
                                 showResultType={showSource}
                             />
@@ -113,7 +97,7 @@ const StructuredTranscriptView: React.FC<{
                     return (
                         <>
                             {termGroups.map(([term, courses]) => (
-                                <div key={term} className="space-y-2">
+                                <div key={term} className="space-y-v3-2">
                                     <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                         {term}
                                     </p>
@@ -121,7 +105,7 @@ const StructuredTranscriptView: React.FC<{
                                 </div>
                             ))}
                             {withoutTerm.length > 0 && (
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {termGroups.length > 0 && (
                                         <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                             Other

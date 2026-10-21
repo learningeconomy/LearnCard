@@ -12,6 +12,8 @@ import {
     ChatBotQuestionsEnum,
     existingSessionQAInitState,
     newSessionQAInitState,
+    resolveChatBotEmphasis,
+    resolveChatBotQuestion,
 } from '../newAiSessionChatbot.helpers';
 import {
     aiPassportApps,
@@ -28,10 +30,10 @@ export const ChatBotBubbleAnswer: React.FC<{
 }> = ({ qa, index, handleEditChatBotAnswer, disableEdit, className }) => {
     const { isDesktop } = useDeviceTypeByWidth();
     let containerStyles = 'items-start';
-    const firstStyles = index === 0 ? '!pt-[30px]' : '';
+    const firstStyles = index === 0 ? 'pt-[30px]!' : '';
     const lastStyles =
         index === newSessionQAInitState.length - 1 || index === existingSessionQAInitState.length
-            ? '!pb-[30px]'
+            ? 'pb-[30px]!'
             : '';
     const animationDelay = `${index * 150}ms`;
 
@@ -148,8 +150,8 @@ export const ChatBotBubbleQuestion: React.FC<{ qa: ChatBotQA; index: number }> =
                 <div className="bg-grayscale-100 rounded-[20px] px-[15px] py-[10px] flex items-center">
                     <p className="text-grayscale-800 text-[17px]">
                         <FormatQuestionTitle
-                            title={qa?.question as string}
-                            phraseToEmphasize={qa?.phraseToEmphasize as string}
+                            title={resolveChatBotQuestion(qa)}
+                            phraseToEmphasize={resolveChatBotEmphasis(qa)}
                         />
                     </p>
                 </div>

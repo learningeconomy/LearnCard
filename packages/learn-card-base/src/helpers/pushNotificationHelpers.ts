@@ -28,6 +28,8 @@ export const resolveNotificationRoute = (notification: LCNNotification): string 
             return '/notifications';
         case LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED:
             return '/contacts';
+        case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED:
+            return resolveCredentialRefreshRoute(notification);
         case LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED:
         case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED:
             return `/notifications?uri=${notification?.data?.vcUris?.[0]}&claim=true`;
@@ -52,11 +54,26 @@ export const resolveNotificationRoute = (notification: LCNNotification): string 
     }
 };
 
+/**
+ * Claim-free deep link for a managed credential refresh notification. Carries only
+ * the opaque, URL-encoded refreshId — never a credential URI, claim action, or any
+ * subject/body data. A missing or malformed refreshId falls back to the plain
+ * notifications list, where the in-app card performs the authenticated lookup.
+ */
+const resolveCredentialRefreshRoute = (notification: LCNNotification): string => {
+    const metadata = notification.data?.metadata as Record<string, unknown> | undefined;
+    const refreshId = metadata?.refreshId;
+
+    if (typeof refreshId !== 'string' || refreshId.length === 0) return '/notifications';
+
+    return `/notifications?refreshId=${encodeURIComponent(refreshId)}&refresh=true`;
+};
+
 export const getNotificationToastCopy = (
     notification: LCNNotification
 ): { title: string; body: string } => {
     const fromName =
-        typeof notification.from === 'string' ? '' : notification.from?.displayName ?? '';
+        typeof notification.from === 'string' ? '' : (notification.from?.displayName ?? '');
 
     if (notification.message?.title || notification.message?.body) {
         return {
@@ -81,6 +98,15 @@ export const getNotificationToastCopy = (
             return {
                 title: 'New credential received',
                 body: fromName ? `${fromName} sent you a credential` : 'You received a credential',
+            };
+        case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED:
+            // Generic by design: the credential is identified only after the holder
+            // authenticates and fetches it. No subject, title, or summary here.
+            return {
+                title: 'Credential updated',
+                body: fromName
+                    ? `${fromName} updated one of your credentials`
+                    : 'One of your credentials was updated',
             };
         case LCNNotificationTypeEnumValidator.enum.PRESENTATION_REQUEST:
             return {

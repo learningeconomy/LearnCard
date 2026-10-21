@@ -29,12 +29,6 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
         userRole === LearnCardRolesEnum.admin ||
         profileType === 'service';
 
-    const filteredAdminToolOptions = adminToolOptions.filter(option =>
-        option.type === AdminToolOptionsEnum.GUARDIAN_CREDENTIAL_TEST
-            ? flags.showGuardianCredentialTestAdmin
-            : true
-    );
-
     const filteredDeveloperToolOptions = developerToolOptions.filter(option =>
         option.type === AdminToolOptionsEnum.LEARNER_CONTEXT_TEST
             ? flags.enableLearnerContextTest
@@ -51,7 +45,7 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
                 </div>
                 <div className="w-full flex items-center justify-start">
                     <ul className="w-full">
-                        {filteredAdminToolOptions.map(option => (
+                        {adminToolOptions.map(option => (
                             <AdminToolOptionsListItem
                                 shortCircuitDevTool={shortCircuitDevTool}
                                 option={option}

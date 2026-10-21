@@ -67,7 +67,7 @@ const WhatIsACredential: React.FC = () => {
                 A credential is yours to keep.
             </h3>
 
-            <ul className="space-y-1.5 text-xs text-grayscale-600 leading-relaxed">
+            <ul className="space-y-v3-1.5 text-xs text-grayscale-600 leading-relaxed">
                 <li className="flex gap-2">
                     <span className="text-grayscale-400 shrink-0">•</span>
                     It lives in your wallet — only you can see it.
@@ -80,7 +80,8 @@ const WhatIsACredential: React.FC = () => {
 
                 <li className="flex gap-2">
                     <span className="text-grayscale-400 shrink-0">•</span>
-                    The issuer signed it cryptographically, so anyone you share with can verify it's real.
+                    The issuer signed it cryptographically, so anyone you share with can verify it's
+                    real.
                 </li>
             </ul>
 

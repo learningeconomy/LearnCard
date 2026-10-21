@@ -40,7 +40,7 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { AiSessionMode, NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
+import { AiSessionMode, NewAiSessionStepEnum } from '../newAiSession.helpers';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
 
@@ -52,9 +52,11 @@ interface ChatInputProps {
     showUserAvatar?: boolean;
 }
 
+// Resolved per call (not hoisted to a module constant) so the placeholder
+// follows the active locale — Paraglide resolves at call time.
 const getDefaultPlaceholder = (mode: AiSessionMode): string => {
-    if (mode === AiSessionMode.insights) return 'Ask anything...';
-    return 'Say anything...';
+    if (mode === AiSessionMode.insights) return m['aiSession.chat.placeholderInsights']();
+    return m['aiSession.chat.placeholderTutor']();
 };
 
 const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = true }) => {
@@ -123,7 +125,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                     onClick={continuePlan}
                     className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px] mr-2`}
                 >
-                    Start Session
+                    {m['aiSession.chat.startSession']()}
                 </button>
             </div>
         );
@@ -143,7 +145,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                         </div>
                     ) : (
                         <p className="text-grayscale-600 mb-4 text-center font-semibold text-[17px]">
-                            Nice work! Now what?
+                            {m['aiSession.chat.niceWork']()}
                         </p>
                     )}
 
@@ -159,7 +161,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                     }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                                 >
-                                    Return Home
+                                    {m['aiSession.chat.returnHome']()}
                                 </button>
                             </>
                         )}
@@ -187,7 +189,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 }}
                                 className={`bg-${primaryColor} text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-${primaryColor} transition-colors`}
                             >
-                                Session Summary
+                                {m['aiSession.chat.sessionSummary']()}
                             </button>
                         )}
 
@@ -196,7 +198,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 onClick={handleKeepGoing}
                                 className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                             >
-                                Keep Going
+                                {m['aiSession.chat.keepGoing']()}
                             </button>
                         )}
                     </div>
@@ -210,7 +212,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 {/* Close button */}
                                 <button
                                     onClick={() => setShowPathwaySelection(false)}
-                                    className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                                    className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-hidden focus:ring-2 focus:ring-blue-500 rounded-sm"
                                     aria-label={m['common.close']()}
                                 >
                                     ×
@@ -219,10 +221,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 {/* Header */}
                                 <div className="px-6 pt-6 text-center">
                                     <h2 className="text-2xl font-semibold text-gray-800">
-                                        Continue Your Learning Journey
+                                        {m['aiSession.chat.pathwayModalTitle']()}
                                     </h2>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Select a pathway to keep exploring this topic
+                                        {m['aiSession.chat.pathwayModalSubtitle']()}
                                     </p>
                                 </div>
 
@@ -236,7 +238,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                             <button
                                                 key={pathway.id || index}
                                                 onClick={() => handlePathwaySelect(pathway)}
-                                                className="w-full text-left p-4 border border-gray-200 border-l-4 border-l-blue-600 rounded-lg shadow-sm hover:shadow-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                                className="w-full text-left p-4 border border-gray-200 border-l-4 border-l-blue-600 rounded-lg shadow-xs hover:shadow-md hover:bg-blue-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-all"
                                             >
                                                 <h4 className="font-medium text-gray-900 mb-2">
                                                     {pathway.learningPathway?.step?.title ||
@@ -251,7 +253,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                     </div>
                                 ) : (
                                     <div className="text-center py-10 text-gray-500 px-6">
-                                        No learning pathways available for this session.
+                                        {m['aiSession.chat.noPathways']()}
                                     </div>
                                 )}
                             </div>
@@ -290,16 +292,16 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     return (
         <>
-            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+env(safe-area-inset-bottom))] sm:pb-[env(safe-area-inset-bottom)] bg-grayscale-50">
+            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[15px] sm:pb-0 bg-grayscale-50">
                 {showUserAvatar && (
-                    <div className="flex-shrink-0 pb-[6px]">
+                    <div className="shrink-0 pb-[6px]">
                         <ProfilePicture
                             customContainerClass="h-[40px] w-[40px] min-h-[40px] min-w-[40px]"
                             customImageClass="w-full h-full object-cover rounded-full"
                         />
                     </div>
                 )}
-                <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid">
+                <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border border-grayscale-200 border-solid">
                     <form
                         className="flex-1 min-w-0 flex items-center bg-white pr-[8px] sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
                         // className="flex items-end gap-3 w-full p-5 bg-white rounded-2xl shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]"
@@ -311,7 +313,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                     >
                         <textarea
                             rows={1}
-                            className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto phone:!pl-[12px]"
+                            className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-hidden disabled:opacity-60 resize-none overflow-y-auto phone:pl-[12px]!"
                             value={$input}
                             onChange={e => {
                                 chatInputText.set(e.target.value);
@@ -334,7 +336,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                         ></textarea>
                         <button
                             type="submit"
-                            className={`flex-shrink-0 bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full`}
+                            className={`shrink-0 bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full`}
                             disabled={disableSend}
                         >
                             <ArrowUp className="text-white" />
@@ -343,7 +345,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                     {/* <div className="h-full px-[15px] hidden sm:block">
                         <button
                             onClick={handleFinish}
-                            className="flex gap-[5px] items-center px-[15px] py-[10px] rounded-[15px] bg-grayscale-900 text-white font-poppins text-[18px] font-[600] leading-[24px] tracking-[0.25px]"
+                            className="flex gap-[5px] items-center px-[15px] py-[10px] rounded-[15px] bg-grayscale-900 text-white font-poppins text-[18px] font-semibold leading-[24px] tracking-[0.25px]"
                         >
                             Finish
                             <TickSquareIcon />
@@ -353,7 +355,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
                 {/* <button
                 onClick={handleFinish}
-                className="sm:hidden flex gap-[5px] justify-center items-center px-[15px] py-[10px] rounded-[15px] bg-grayscale-900 text-white font-poppins text-[18px] font-[600] leading-[24px] tracking-[0.25px]"
+                className="sm:hidden flex gap-[5px] justify-center items-center px-[15px] py-[10px] rounded-[15px] bg-grayscale-900 text-white font-poppins text-[18px] font-semibold leading-[24px] tracking-[0.25px]"
             >
                 Finish Session
                 <TickSquareIcon />

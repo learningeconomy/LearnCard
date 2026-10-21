@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential and skill payloads are dynamically shaped. */
 import React, { useState, useRef, useEffect } from 'react';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -27,15 +28,15 @@ import {
     type SkillProfileWorkHistoryData,
 } from './SkillProfileStep2.constants';
 
-import SelectFrameworkToManageModal from 'src/pages/SkillFrameworks/SelectFrameworkToManageModal';
-import BrowseFrameworkPage from 'src/pages/SkillFrameworks/BrowseFrameworkPage';
-import DatePickerInput from 'src/components/date-picker/DatePickerInput';
-import CompetencyIcon from 'src/pages/SkillFrameworks/CompetencyIcon';
-import BoostEarnedCard from 'src/components/boost/boost-earned-card/BoostEarnedCard';
-import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
-import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
-import Plus from 'src/components/svgs/Plus';
-import X from 'src/components/svgs/X';
+import SelectFrameworkToManageModal from '../../../pages/SkillFrameworks/SelectFrameworkToManageModal';
+import BrowseFrameworkPage from '../../../pages/SkillFrameworks/BrowseFrameworkPage';
+import DatePickerInput from '../../../components/date-picker/DatePickerInput';
+import CompetencyIcon from '../../../pages/SkillFrameworks/CompetencyIcon';
+import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import SlimCaretLeft from '../../../components/svgs/SlimCaretLeft';
+import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
+import Plus from '../../../components/svgs/Plus';
+import X from '../../../components/svgs/X';
 import { MapPin } from 'lucide-react';
 
 import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
@@ -293,7 +294,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 }}
             />,
             {
-                sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+                sectionClassName: 'bg-transparent! shadow-none! overflow-visible!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -380,7 +381,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                             }
                                             isInSkillsModal
                                             hideOptionsMenu
-                                            className="!min-h-[310px]"
+                                            className="min-h-[310px]!"
                                         />
                                     </SwiperSlide>
                                 );
@@ -550,7 +551,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         </div>
 
                         <div className="flex flex-col gap-[10px]">
-                            <div className="flex items-start justify-between py-[10px] border-t-[1px] border-t-grayscale-200 border-solid">
+                            <div className="flex items-start justify-between py-[10px] border-t border-t-grayscale-200 border-solid">
                                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
                                     {m['skillProfile.step2.attachSkills']()}
                                     {selectedSkills.length > 0 && ` • ${selectedSkills.length}`}
@@ -610,7 +611,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
 
             <div className="flex gap-[10px] w-full">
                 <button
-                    className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border-[1px] border-solid border-grayscale-200 h-[44px]"
+                    className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border border-solid border-grayscale-200 h-[44px]"
                     onClick={handleBack}
                     disabled={workHistorySaving}
                 >

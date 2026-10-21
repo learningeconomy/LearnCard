@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import {
     useModal,
     useGetSkillPath,
@@ -88,7 +89,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                     }`}
                 >
                     <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[450px] mx-auto min-w-[300px]">
-                        <div className="flex flex-col gap-[5px] px-[20px] py-[10px] border-b-[1px] border-grayscale-200 border-solid">
+                        <div className="flex flex-col gap-[5px] px-[20px] py-[10px] border-b border-grayscale-200 border-solid">
                             <div className="flex items-center gap-[10px]">
                                 <FrameworkImage
                                     image={frameworkImage}
@@ -103,7 +104,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                             <SkillBreadcrumbText frameworkId={frameworkId} skillId={skillId} />
                         </div>
 
-                        <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
+                        <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b border-grayscale-200 border-solid">
                             <div
                                 className={`${
                                     isTier
@@ -133,7 +134,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                             version="outlined"
                                         />
                                         <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                            Framework Tier
+                                            {m['skillFrameworks.fwTier']()}
                                         </p>
                                     </>
                                 ) : (
@@ -143,7 +144,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                             version="filled"
                                         />
                                         <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                            Competency
+                                            {m['skillFrameworks.compLabel']()}
                                         </p>
                                     </>
                                 )}
@@ -155,7 +156,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                 {!isTier && (
                                     <div className="flex flex-col gap-[5px] w-full">
                                         <span className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                                            Code
+                                            {m['skillFrameworks.codeLabel']()}
                                         </span>
                                         <p className="text-grayscale-900 font-poppins text-[16px] font-[600] tracking-[-0.25px]">
                                             {alignment?.targetCode}
@@ -166,7 +167,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                 {alignment?.targetDescription && (
                                     <div className="flex flex-col gap-[5px] w-full">
                                         <span className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                                            Description
+                                            {m['skillFrameworks.descLabel']()}
                                         </span>
                                         <p className="text-grayscale-700 font-poppins text-[16px] tracking-[-0.25px]">
                                             {alignment?.targetDescription}
@@ -180,14 +181,14 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                 {isMobile && (
                     <IonFooter
                         mode="ios"
-                        className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                        className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
                     >
                         <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                             <button
                                 onClick={closeModal}
                                 className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                             >
-                                Close
+                                {m['common.close']()}
                             </button>
                         </div>
                     </IonFooter>

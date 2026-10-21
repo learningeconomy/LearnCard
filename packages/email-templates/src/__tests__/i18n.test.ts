@@ -49,8 +49,14 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
     },
     'account-approved': { user: { displayName: 'New User' } },
     'account-approved-email': { user: { displayName: 'New User' } },
-    'recovery-key': { recoveryKey: 'mango-delta-fox-echo-bravo-seven-lima-niner' },
-    'recovery-key-backup': { recoveryKey: 'mango-delta-fox-echo-bravo-seven-lima-niner' },
+    'recovery-key': {
+        recoveryKey: 'mango-delta-fox-echo-bravo-seven-lima-niner',
+        confirmationCode: '123456',
+    },
+    'recovery-key-backup': {
+        recoveryKey: 'mango-delta-fox-echo-bravo-seven-lima-niner',
+        confirmationCode: '123456',
+    },
     'endorsement-request': {
         shareLink: 'https://learncard.app/share/xyz',
         recipient: { name: 'Dr. Emily Chen' },
@@ -84,6 +90,35 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         issuer: { name: 'Springfield School District' },
         credential: { name: 'Perfect Attendance Award' },
         recipient: { email: 'student@example.com' },
+    },
+    'account-sign-in-changed': {},
+
+    'escrow-hold-started': {
+        requestedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+        deviceHint: 'Chrome on Windows',
+    },
+
+    'escrow-hold-reminder': {
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+    },
+
+    'escrow-hold-released': {
+        completedAt: 'October 2, 2026, 3:00 PM',
+        supportUrl: 'https://learncard.app/support',
+    },
+
+    'escrow-hold-cancelled': {
+        cancelledAt: 'September 26, 2026, 9:15 AM',
+        reason: 'user',
+    },
+
+    'escrow-pin-locked': {
+        lockedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
     },
 };
 
@@ -125,6 +160,8 @@ describe('i18n — non-EN locales localize content', () => {
         'guardian-credential-approval',
         'guardian-email-otp',
         'credential-awaiting-guardian',
+        'escrow-hold-started',
+        'escrow-hold-cancelled',
     ];
 
     for (const templateId of SAMPLES) {

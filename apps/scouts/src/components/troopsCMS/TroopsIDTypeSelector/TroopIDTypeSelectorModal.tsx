@@ -1,26 +1,26 @@
 import React, { useState } from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 import TroopIDTypeSelectorListItem from './TroopIDTypeSelectorListItem';
-
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { troopsCMSViewModeDefaults, TroopsCMSViewModeEnum } from '../troopCMSState';
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { Boost } from '@learncard/types';
+import { VC } from '@learncard/types';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 const TroopIDTypeSelectorModal: React.FC<{
     handleCloseModal: () => void;
-    earnedBoostIDs: Boost[];
+    earnedBoostIDs: VC[];
     isLoading?: boolean;
     onSuccess?: (boostUri?: string) => void;
 }> = ({ handleCloseModal, earnedBoostIDs = [], isLoading, onSuccess }) => {
     // oxlint-disable-next-line no-unused-vars
     const flags = useFlags();
-   const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
+    const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
 
     const [_viewMode, _setViewMode] = useState<TroopsCMSViewModeEnum | null>(null);
 
@@ -38,7 +38,6 @@ const TroopIDTypeSelectorModal: React.FC<{
 
     const allowedIDTypesToCreate = [];
 
-
     if (!globalAdminId && canCreateGlobalIDs) {
         allowedIDTypesToCreate.push(troopsCMSViewModeDefaults?.global);
     }
@@ -55,7 +54,7 @@ const TroopIDTypeSelectorModal: React.FC<{
                             color="grayscale-900"
                             className="scale-[2] mb-8 mt-6"
                         />
-                        <p className="font-notoSans text-grayscale-800">Loading...</p>
+                        <p className="font-notoSans text-grayscale-800">{m['common.loading']()}</p>
                     </div>
                 ) : (
                     <>

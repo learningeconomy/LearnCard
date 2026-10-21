@@ -4,6 +4,21 @@ export type CategoryIcons = {
     Icon?: React.FC<{ className?: string }>;
     IconWithShape?: React.FC<{ version?: string; className?: string }>;
     IconWithLightShape?: React.FC<{ className?: string }>;
+    /**
+     * Flat, single-colour glyph with no background shape (LC-1969).
+     *
+     * Used by surfaces that render the category at small sizes against a
+     * plain background — currently the passport activity feed — where the
+     * illustrated `Icon`/`IconWithShape` art is too busy to read.
+     *
+     * Optional: a set only needs to declare this when its `Icon` is *not*
+     * already the solid glyph. `ActivityCredentialIcon` falls back to `Icon`.
+     */
+    IconSolid?: React.FC<{ className?: string }>;
+    /** Dark variant (grayscale-700) for inactive filter states. */
+    IconDark?: React.FC<{ className?: string }>;
+    /** White variant for active/selected filter states on dark backgrounds. */
+    IconWhite?: React.FC<{ className?: string }>;
 };
 
 export type LaunchPadIcons = {
@@ -25,6 +40,7 @@ export type SideMenuIcons = {
     [CredentialCategoryEnum.skill]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.socialBadge]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.achievement]: React.FC<{ className?: string }>;
+    [CredentialCategoryEnum.qualifications]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.learningHistory]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.accomplishment]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.accommodation]: React.FC<{ className?: string }>;
@@ -36,6 +52,7 @@ export type SideMenuIcons = {
     // with the non-category members of `SideMenuLinksEnum` in
     // `learn-card-base/components/sidemenu/sidemenuHelpers`.
     pathways: React.FC<{ className?: string }>;
+    myAssistant: React.FC<{ className?: string }>;
     dashboard: React.FC<{ className?: string }>;
 };
 

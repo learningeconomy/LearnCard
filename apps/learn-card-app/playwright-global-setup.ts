@@ -1,11 +1,20 @@
 import { chromium, firefox, FullConfig } from '@playwright/test';
-import { locatorExists } from './tests/test.helpers';
+import { finishSetupSignIn } from './tests/setup-auth';
 import { mockDidKitWasmForContext } from './tests/route.helpers';
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('playwright-global-setup');
 
 export const globalSetup = async (config: FullConfig) => {
+    // Application addressing is independent of who owns the server lifecycle.
+    let appURL: URL;
+    try {
+        appURL = new URL(config.projects[0]?.use.baseURL ?? '');
+        if (!['http:', 'https:'].includes(appURL.protocol)) throw new Error('Invalid protocol');
+    } catch {
+        throw new Error('Playwright project use.baseURL must be an absolute HTTP(S) URL');
+    }
+
     // Run headed if DEBUG_SETUP=true OR if tests are run with --headed flag
     const projectHeadless = config.projects?.[0]?.use?.headless;
     const isHeaded = process.env.DEBUG_SETUP === 'true' || projectHeadless === false;
@@ -24,8 +33,8 @@ export const globalSetup = async (config: FullConfig) => {
 
     const page = await context.newPage();
 
-    log.info('[GlobalSetup] Navigating to:', config.webServer?.url);
-    await page.goto(config.webServer?.url!);
+    log.info('[GlobalSetup] Navigating to:', appURL.href);
+    await page.goto(appURL.href);
     log.info('[GlobalSetup] Page loaded, current URL:', page.url());
 
     // Wait for the email textbox to be visible (don't use networkidle - app polls constantly)
@@ -37,13 +46,13 @@ export const globalSetup = async (config: FullConfig) => {
     log.info('[GlobalSetup] Email filled, clicking sign in button');
 
     await page.getByRole('button', { name: /sign in with email/i }).click();
-    log.info('[GlobalSetup] Sign in clicked, waiting for /wallet/ URL...');
+    log.info('[GlobalSetup] Sign in clicked, completing onboarding if required...');
 
     try {
-        await page.waitForURL(/wallet/, { timeout: 60000 });
+        await finishSetupSignIn(page, 'test-demo');
         log.info('[GlobalSetup] Successfully navigated to wallet');
     } catch (error) {
-        log.error('[GlobalSetup] FAILED waiting for /wallet/ URL');
+        log.error('[GlobalSetup] Failed to complete sign-in/onboarding');
         log.error('[GlobalSetup] Current URL:', page.url());
         log.error('[GlobalSetup] Page title:', await page.title());
         await page.screenshot({ path: 'test-results/global-setup-failure.png', fullPage: true });
@@ -51,29 +60,8 @@ export const globalSetup = async (config: FullConfig) => {
         throw error;
     }
 
-    try {
-        // Handle role selection screen if it appears
-        const learnerButton = page.getByText('Learner').first();
-        if (await locatorExists(learnerButton, 3000)) {
-            log.info('[GlobalSetup] Role selection screen detected, clicking Learner');
-            await learnerButton.click();
-            await page.getByRole('button', { name: /continue/i }).click();
-            log.info('[GlobalSetup] Clicked Continue on role selection');
-        }
-
-        // Skip profile setup if it appears
-        const skipButton = page.getByText('Skip For Now');
-        if (await locatorExists(skipButton, 3000)) {
-            log.info('[GlobalSetup] Profile setup screen detected, clicking Skip For Now');
-            await skipButton.click();
-        }
-    } catch (error) {
-        // This is expected and okay - user may already have an account
-        log.info('[GlobalSetup] Onboarding skipped or already complete');
-    }
-
     const state = await page.context().storageState();
-    const localhostState = state.origins.find(origin => origin.origin === 'http://localhost:3000');
+    const localhostState = state.origins.find(origin => origin.origin === appURL.origin);
     const userState = JSON.parse(
         localhostState?.localStorage.find(storage => storage.name === 'currentUserStore')?.value ??
             ''
@@ -100,39 +88,14 @@ export const globalSetup = async (config: FullConfig) => {
     await mockDidKitWasmForContext(context2);
 
     const page2 = await context2.newPage();
-    await page2.goto(`${config.webServer?.url!}/hidden/seed`);
+    await page2.goto(new URL('/developer/sign-in', appURL).href);
     await page2.getByRole('textbox').fill('2'.repeat(64));
 
-    await page2.getByRole('button', { name: /sign in with seed/i }).click();
-    await page2.waitForURL(/wallet/);
-
-    try {
-        // Handle role selection screen if it appears
-        const learnerButton2 = page2.getByText('Learner').first();
-        if (await locatorExists(learnerButton2, 3000)) {
-            log.info('[GlobalSetup] Role selection screen detected for test2, clicking Learner');
-            await learnerButton2.click();
-            await page2.getByRole('button', { name: /continue/i }).click();
-            log.info('[GlobalSetup] Clicked Continue on role selection for test2');
-        }
-
-        // Skip profile setup if it appears
-        const skipButton2 = page2.getByText('Skip For Now');
-        if (await locatorExists(skipButton2, 3000)) {
-            log.info(
-                '[GlobalSetup] Profile setup screen detected for test2, clicking Skip For Now'
-            );
-            await skipButton2.click();
-        }
-    } catch (error) {
-        // This is expected and okay - user may already have an account
-        log.info('[GlobalSetup] Onboarding skipped or already complete for test2');
-    }
+    await page2.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await finishSetupSignIn(page2, 'test-seed-two');
 
     const state2 = await page2.context().storageState();
-    const localhostState2 = state2.origins.find(
-        origin => origin.origin === 'http://localhost:3000'
-    );
+    const localhostState2 = state2.origins.find(origin => origin.origin === appURL.origin);
     const userState2 = JSON.parse(
         localhostState2?.localStorage.find(storage => storage.name === 'currentUserStore')?.value ??
             ''

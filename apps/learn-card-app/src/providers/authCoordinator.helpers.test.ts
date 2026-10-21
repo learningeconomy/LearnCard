@@ -1,6 +1,53 @@
 import { describe, it, expect } from 'vitest';
 
-import { shouldResetWalletOnStatus, mergeAuthUserIntoCurrentUser } from './authCoordinator.helpers';
+import {
+    countUserConfiguredRecoveryMethods,
+    registerRecoveryMethodCompletion,
+    shouldResetWalletOnStatus,
+    mergeAuthUserIntoCurrentUser,
+    decidePinPromptAfterReady,
+} from './authCoordinator.helpers';
+
+describe('registerRecoveryMethodCompletion', () => {
+    it('registers each method once per setup session', () => {
+        const completedMethods = new Set<string>();
+
+        expect(registerRecoveryMethodCompletion(completedMethods, 'phrase')).toBe(true);
+        expect(registerRecoveryMethodCompletion(completedMethods, 'phrase')).toBe(false);
+        expect(registerRecoveryMethodCompletion(completedMethods, 'email')).toBe(true);
+        expect([...completedMethods]).toEqual(['phrase', 'email']);
+    });
+});
+
+describe('countUserConfiguredRecoveryMethods', () => {
+    it('does not count automatic recovery as a user-configured method', () => {
+        expect(countUserConfiguredRecoveryMethods([{ type: 'escrow' }])).toBe(0);
+        expect(countUserConfiguredRecoveryMethods([{ type: 'escrow' }, { type: 'phrase' }])).toBe(
+            1
+        );
+    });
+    it('counts durable methods and ignores a synthetic primary-email entry', () => {
+        expect(
+            countUserConfiguredRecoveryMethods([
+                { type: 'email' },
+                { type: 'passkey' },
+                { type: 'phrase' },
+            ])
+        ).toBe(2);
+    });
+
+    it('counts a verified recovery email after reload', () => {
+        expect(countUserConfiguredRecoveryMethods([{ type: 'email' }], 'r***@example.com')).toBe(1);
+    });
+
+    it('counts a code-confirmed email method even without a masked recovery email', () => {
+        expect(
+            countUserConfiguredRecoveryMethods([
+                { type: 'email', confirmedAt: '2026-09-03T00:00:00.000Z' },
+            ])
+        ).toBe(1);
+    });
+});
 
 describe('shouldResetWalletOnStatus', () => {
     it('keeps the wallet while the coordinator is in a transitional status', () => {
@@ -76,5 +123,49 @@ describe('mergeAuthUserIntoCurrentUser', () => {
         expect(mergeAuthUserIntoCurrentUser(null, { id: 'uid' })).toBeNull();
         expect(mergeAuthUserIntoCurrentUser(baseUser, null)).toBeNull();
         expect(mergeAuthUserIntoCurrentUser(baseUser, undefined)).toBeNull();
+    });
+});
+
+describe('decidePinPromptAfterReady', () => {
+    const base = { pinEnabled: false, enrollment: 'enrolled', promptFlag: null } as const;
+
+    it('offers a new PIN after a PIN recovery', () => {
+        expect(decidePinPromptAfterReady({ ...base, recoveredVia: 'pin' })).toEqual({
+            kind: 'after-recovery',
+        });
+    });
+
+    it('offers a PIN after waiting out the hold, even if a PIN was set before', () => {
+        expect(decidePinPromptAfterReady({ ...base, recoveredVia: 'hold' })).toEqual({
+            kind: 'after-hold-recovery',
+        });
+        expect(
+            decidePinPromptAfterReady({ ...base, recoveredVia: 'hold', promptFlag: 'set' })
+        ).toEqual({ kind: 'after-hold-recovery' });
+    });
+
+    it('does not offer a PIN after a hold recovery unless escrow is enrolled', () => {
+        expect(
+            decidePinPromptAfterReady({ ...base, recoveredVia: 'hold', enrollment: 'not-enrolled' })
+        ).toEqual({ kind: 'none' });
+    });
+
+    it('waits until PIN status is known and never prompts when a PIN works', () => {
+        for (const pinEnabled of [undefined, true]) {
+            expect(
+                decidePinPromptAfterReady({ ...base, pinEnabled, recoveredVia: 'hold' })
+            ).toEqual({
+                kind: 'none',
+            });
+        }
+    });
+
+    it('shows the reset banner only for a previously set PIN without a recovery', () => {
+        expect(
+            decidePinPromptAfterReady({ ...base, recoveredVia: null, promptFlag: 'set' })
+        ).toEqual({ kind: 'reset-banner' });
+        expect(decidePinPromptAfterReady({ ...base, recoveredVia: null })).toEqual({
+            kind: 'none',
+        });
     });
 });

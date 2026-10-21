@@ -23,17 +23,10 @@
 import React, { useMemo, useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
-import {
-    chevronDownOutline,
-    chevronUpOutline,
-    ribbonOutline,
-} from 'ionicons/icons';
+import { chevronDownOutline, chevronUpOutline, ribbonOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 
-import {
-    ProjectionError,
-    toAchievementCredential,
-} from '../projection/toAchievementCredential';
+import { ProjectionError, toAchievementCredential } from '../projection/toAchievementCredential';
 import type { PathwayNode } from '../types';
 
 interface CredentialPreviewProps {
@@ -88,10 +81,7 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                     className="shrink-0 w-8 h-8 rounded-full bg-emerald-100
                                flex items-center justify-center"
                 >
-                    <IonIcon
-                        icon={ribbonOutline}
-                        className="text-emerald-700 text-base"
-                    />
+                    <IonIcon icon={ribbonOutline} className="text-emerald-700 text-base" />
                 </span>
 
                 <div className="min-w-0 flex-1">
@@ -121,7 +111,7 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                         transition={{ duration: 0.25, ease: 'easeOut' }}
                         className="overflow-hidden"
                     >
-                        <div className="px-3 pb-3 space-y-2 border-t border-emerald-100/80 pt-3">
+                        <div className="px-3 pb-3 space-y-v3-2 border-t border-emerald-100/80 pt-3">
                             {achievement.description && (
                                 <p className="text-sm text-grayscale-700 leading-relaxed">
                                     {achievement.description}
@@ -143,8 +133,8 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                                     {evidenceCount === 0
                                         ? 'No evidence attached'
                                         : evidenceCount === 1
-                                            ? '1 piece of evidence'
-                                            : `${evidenceCount} pieces of evidence`}
+                                          ? '1 piece of evidence'
+                                          : `${evidenceCount} pieces of evidence`}
                                 </span>
 
                                 {endorsementCount > 0 && (

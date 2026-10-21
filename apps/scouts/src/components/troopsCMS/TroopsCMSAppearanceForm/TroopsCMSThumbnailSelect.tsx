@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
 
@@ -105,14 +106,14 @@ export const TroopCMSThumbnailSelect: React.FC<{
                 <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-[15px] mt-4 p-2">
                     <div className="flex items-center justify-start w-[70%] overflow-hidden">
                         <div
-                            className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-full border-solid border-white border-[1px]`}
+                            className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-full border-solid border-white border`}
                         >
                             {(!thumbnail && !state?.inheritNetworkStyles && !isInIDMode) ||
                             (!thumbnail && isInIDMode) ? (
                                 getDefaultBadgeThumbForViewMode(viewMode)
                             ) : (
                                 <img
-                                    alt="badge thumbnail"
+                                    alt=""
                                     src={
                                         state?.inheritNetworkStyles && !isInIDMode
                                             ? insertParamsToFilestackUrl(
@@ -140,7 +141,7 @@ export const TroopCMSThumbnailSelect: React.FC<{
                         {(!thumbnail && !state?.inheritNetworkStyles && !isInIDMode) ||
                             (!thumbnail && isInIDMode && (
                                 <p className="ml-[10px] font-notoSans text-sm font-bold text-grayscale-500">
-                                    None
+                                    {m['scoutsId.none']()}
                                 </p>
                             ))}
                     </div>

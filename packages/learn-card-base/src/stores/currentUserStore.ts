@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { UserInfo } from '@web3auth/base';
 import { createStore } from '@udecode/zustood';
 
@@ -69,5 +70,45 @@ export const currentUserStore = createStore('currentUserStore')<{
     }));
 
 export const useIsLoggedIn = currentUserStore.useTracked.currentUserIsLoggedIn;
+
+// zustood's bundled types don't model zustand v3 persist's `.persist` runtime API
+// (hasHydrated/onFinishHydration), so we bridge it through a narrow local type
+// instead of `as any`. This is real, documented zustand behavior — see
+// `zustand/middleware`'s `StorePersist` — just not reflected in zustood's types.
+type PersistCapableApi = {
+    persist?: {
+        hasHydrated: () => boolean;
+        onFinishHydration: (listener: () => void) => () => void;
+    };
+};
+
+const persistApi = (currentUserStore.store as PersistCapableApi).persist;
+
+let hasCurrentUserHydrated = persistApi ? persistApi.hasHydrated() : true;
+const hydrationListeners = new Set<() => void>();
+
+persistApi?.onFinishHydration(() => {
+    hasCurrentUserHydrated = true;
+    hydrationListeners.forEach(listener => listener());
+});
+
+const getHasCurrentUserHydrated = (): boolean => hasCurrentUserHydrated;
+
+const subscribeToHydration = (listener: () => void): (() => void) => {
+    hydrationListeners.add(listener);
+    return () => {
+        hydrationListeners.delete(listener);
+    };
+};
+
+/**
+ * Whether the persisted `currentUserStore` slice has finished rehydrating from
+ * storage. Storage reads are synchronous for `localStorage`, but this stays
+ * correct if the backing storage ever becomes async. Gate any effect that reads
+ * `currentUser` on mount behind this so it doesn't act on stale/partial state
+ * before rehydration (and the async privateKey backfill it triggers) settles.
+ */
+export const useHasCurrentUserHydrated = (): boolean =>
+    useSyncExternalStore(subscribeToHydration, getHasCurrentUserHydrated);
 
 export default currentUserStore;

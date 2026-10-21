@@ -126,12 +126,12 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                         <p className="text-[15px] font-medium text-grayscale-900">
                             {m['settings.aiFeatures']()}
                         </p>
-                        <p className="text-sm text-grayscale-500 mt-0.5 leading-relaxed">
+                        <p className="text-sm text-grayscale-600 mt-0.5 leading-relaxed">
                             {m['dataShareCenter.aiFeaturesDesc']()}
                         </p>
                         {lockedNote && (
                             <p className="flex items-center gap-1.5 text-xs text-sky-700 mt-2 leading-relaxed">
-                                <Lock className="w-3.5 h-3.5 shrink-0" />
+                                <Lock aria-hidden="true" className="w-3.5 h-3.5 shrink-0" />
                                 {lockedNote}
                             </p>
                         )}
@@ -147,21 +147,23 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
 
                 {showAiConnectionStatus && (
                     <div
+                        role="status"
+                        aria-live="polite"
                         className={`px-5 pb-4 transition-opacity duration-300 ${
                             isAiConnectionVisible ? 'opacity-100' : 'opacity-0'
                         }`}
                     >
                         {aiConnectionStatus === 'connecting' ? (
-                            <p className="text-xs text-grayscale-500 leading-relaxed">
+                            <p className="text-xs text-grayscale-600 leading-relaxed">
                                 {m['dataSharing.connecting']()}
                             </p>
                         ) : aiConnectionStatus === 'disconnecting' ? (
-                            <p className="text-xs text-grayscale-500 leading-relaxed">
+                            <p className="text-xs text-grayscale-600 leading-relaxed">
                                 {m['dataSharing.disconnecting']()}
                             </p>
                         ) : (
                             <p className="flex items-center gap-1.5 text-xs text-emerald-600 leading-relaxed">
-                                <Check className="w-3.5 h-3.5 shrink-0" />
+                                <Check aria-hidden="true" className="w-3.5 h-3.5 shrink-0" />
                                 <span>
                                     {aiConnectionStatus === 'connected'
                                         ? m['dataSharing.connected']()
@@ -174,7 +176,10 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
 
                 {shouldShowConsentWarning && (
                     <div className="px-5 pb-4">
-                        <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3">
+                        <div
+                            role="alert"
+                            className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3"
+                        >
                             <p className="text-sm text-red-700 leading-relaxed">
                                 {m['dataShareCenter.aiRefreshNote']()}
                                 <button

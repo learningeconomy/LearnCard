@@ -4,18 +4,19 @@ import { IonRow, IonCol, IonToggle } from '@ionic/react';
 import CaretLeft from '../svgs/CaretLeft';
 
 import {
-    networkSettingOptions,
+    getNetworkSettingOptions,
     NetworkSettingsState,
     NetworkSettingsEnum,
 } from './networkSettings.helpers';
 import ModalLayout from '../../layout/ModalLayout';
+import * as m from '../../paraglide/messages.js';
 
 const NetworkSettings: React.FC<{
     handleCloseModal: () => void;
     settings: NetworkSettingsState;
     handleStateChange: (settingsType: NetworkSettingsEnum, settingState: boolean) => void;
 }> = ({ handleCloseModal, settings, handleStateChange }) => {
-    const settingsList = networkSettingOptions.map(setting => {
+    const settingsList = getNetworkSettingOptions().map(setting => {
         return (
             <IonRow key={setting.id} className="w-full flex items-center justify-center px-2">
                 <IonCol className="w-full max-w-[600px] flex-col ion-padding">
@@ -33,7 +34,7 @@ const NetworkSettings: React.FC<{
                             color="emerald-700"
                         />
                     </div>
-                    <p className="text-left p-0 pt-2 pb-5 m-0 text-xs border-b-[1px] border-grayscale-200">
+                    <p className="text-left p-0 pt-2 pb-5 m-0 text-xs border-b border-grayscale-200">
                         {setting.description}
                     </p>
                 </IonCol>
@@ -49,10 +50,10 @@ const NetworkSettings: React.FC<{
                         className="text-grayscale-50 p-0 mr-[10px]"
                         onClick={() => handleCloseModal()}
                     >
-                        <CaretLeft className="h-auto w-3 text-grayscale-900" />
+                        <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-900" />
                     </button>
                     <p className="font-bold text-black font-mouse text-3xl">
-                        Edit Requested Access
+                        {m['networkPrompts.settings.editAccess']()}
                     </p>
                 </IonCol>
             </IonRow>

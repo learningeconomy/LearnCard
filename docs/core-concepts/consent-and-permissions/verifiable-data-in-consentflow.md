@@ -1,19 +1,19 @@
 # Verifiable Data in ConsentFlow
 
-ConsentFlow contracts can now read and share verifiable data from **My Skill Profile**. This gives contract owners a way to access the learner’s profile fields as consented, structured data instead of treating them as a single generic category.
+A learner's **My Skills Profile** — goals, title, experience, pay expectations, self-assessed skills — is stored as verifiable data in their LearnCard. A consent contract can ask for it field by field, so a career platform or tutor can read exactly what the learner agreed to share, as structured data.
 
 ## Supported fields
 
 The supported My Skill Profile categories are:
 
--   **Goals**
--   **Professional Title**
--   **Role Experience**
--   **Work Experience**
--   **Pay Rate**
--   **Work Life Balance**
--   **Job Stability**
--   **Self-Assigned Skills**
+- **Goals**
+- **Professional Title**
+- **Role Experience**
+- **Work Experience**
+- **Pay Rate**
+- **Work Life Balance**
+- **Job Stability**
+- **Self-Assigned Skills**
 
 These categories use the canonical `CredentialCategoryEnum` keys in contracts and app code.
 
@@ -89,36 +89,42 @@ Add the categories you want to share under `read.credentials.categories`. The ca
 
 ### Notes
 
--   `shareAll: true` lets the contract sync the full category.
--   `sharing: true` keeps the category eligible for sync.
--   The `shared` array is populated by ConsentFlow when the learner syncs their data to the contract.
+- `shareAll: true` lets the contract sync the full category.
+- `sharing: true` keeps the category eligible for sync.
+- The `shared` array is populated by ConsentFlow when the learner syncs their data to the contract.
 
-## Reading the data in an app
+## Reading it from your platform
 
-The LearnCard app now prefetches the supported categories for ConsentFlow. A simplified example looks like this:
+Once a user has consented, their shared fields show up in their consented data like any other category: each record's `credentials` array holds `{ category, uri }` pairs. Resolve the URI and the structured data is in `credentialSubject.dataPayload`. Two things to remember: the learner chooses which credential URIs to share under each category, and if the credential was stored encrypted, your platform's DID must be one of its encryption recipients — consent to a category does not by itself grant decryption.
 
-```tsx
-import { useConsentFlowCredentials } from './useConsentFlowCredentials';
+<!-- snippet: understand/read-verifiable-data.mjs -->
 
-const { mappedCredentials } = useConsentFlowCredentials(contractDetails);
+```javascript
+import { initLearnCard } from '@learncard/init';
 
-const goalCredentials = mappedCredentials['Goals'] ?? [];
-const selfAssignedSkills = mappedCredentials['Self-Assigned Skills'] ?? [];
+const { SECURE_SEED, USER_DID, CONTRACT_URI } = process.env;
+
+const learnCard = await initLearnCard({ seed: SECURE_SEED, network: true });
+
+// 1. Is this user's consent still live? Never read without checking.
+const profile = await learnCard.invoke.getProfile(USER_DID);
+const consented =
+    profile && (await learnCard.invoke.verifyConsent(CONTRACT_URI, profile.profileId));
+if (!consented) throw new Error('No active consent');
+
+// 2. Fetch what they shared, keeping only records for this contract.
+const { records } = await learnCard.invoke.getConsentFlowDataForDid(USER_DID, { limit: 100 });
+const mine = records.filter(record => record.contractUri === CONTRACT_URI);
+
+// 3. Resolve the Pay Rate credential(s) and read the structured payload.
+for (const { category, uri } of mine.flatMap(record => record.credentials)) {
+    if (category !== 'Pay Rate') continue;
+
+    const vc = await learnCard.read.get(uri);
+    console.log(JSON.stringify(vc.credentialSubject.dataPayload));
+}
 ```
 
-For in-app summaries, the Skill Profile flow also reads the underlying verifiable data record with `useVerifiableData()` and renders a category-specific summary.
+<!-- /snippet -->
 
-## Reading the shared data locally
-
-For local testing, the ConsentFlow REPL includes helper functions to inspect the synced data and the full credentials behind each URI. This script assumes the full app is being run locally via docker.
-
-```ts
-await readVerifiableDataSummary();
-await readUri(uri);
-```
-
-Use `readVerifiableDataSummary()` to inspect the shared data at a glance, and `readUri(uri)` to inspect the full credential payload.
-
-## Why this matters
-
-This support lets ConsentFlow contracts expose the learner’s skill profile data in a structured way, so contract owners can request only the fields they need and learners keep control over what gets shared.
+Gate every read on `verifyConsent(contractUri, profileId)` first — see [Reading & Writing Consented Data](writing-consented-data.md).

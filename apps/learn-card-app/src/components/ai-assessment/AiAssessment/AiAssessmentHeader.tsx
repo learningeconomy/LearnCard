@@ -22,7 +22,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
         session?.record?.contractUri || topicRecord?.contractUri || ''
     );
     return (
-        <div className="w-full absolute top-0 overflow-hidden flex flex-col z-50 safe-area-top-margin">
+        <div className="w-full absolute top-0 overflow-hidden flex flex-col z-50 mt-(--lc-overlay-inset-top,var(--ion-safe-area-top,0px))">
             <div className="w-full flex items-center justify-center flex-col bg-transparent relative">
                 {showBackButton && (
                     <button
@@ -33,7 +33,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
                     </button>
                 )}
                 <div className="w-full relative flex items-center justify-center flex-col">
-                    <div className="w-full absolute top-[0] h-[90px] bg-white" />
+                    <div className="w-full absolute top-0 h-[90px] bg-white" />
                     <div className="w-full flex flex-col items-center justify-center mb-4 mt-6 z-50">
                         <h4 className="font-semibold text-indigo-500 text-sm">
                             AI Session <span className="text-grayscale-900">• {app?.name}</span>

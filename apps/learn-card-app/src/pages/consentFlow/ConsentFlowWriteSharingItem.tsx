@@ -137,13 +137,13 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
                     </output> */}
 
                 <div className="flex flex-col flex-1 items-start">
-                    <h4 className="text-[17px] text-grayscale-900 font-notoSans font-[600] leading-[24px] tracking-[0.25px] line-clamp-1 grow text-left capitalize">
+                    <h4 className="text-[17px] text-grayscale-900 font-notoSans font-semibold leading-[24px] tracking-[0.25px] line-clamp-1 grow text-left capitalize">
                         {titleOverride ?? localizeCategoryTitle(title)}
                     </h4>
 
                     {required && (
                         <span className="text-[14px] text-grayscale-600 text-left self-start">
-                            Required
+                            {m['arabicFixes.required']()}
                         </span>
                     )}
 
@@ -157,12 +157,12 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
 
                 <section className="flex items-center">
                     {term && !isAnonymous && (
-                        <span className="text-emerald-700 font-notoSans text-[14px] font-[600]">
+                        <span className="text-emerald-700 font-notoSans text-[14px] font-semibold">
                             {allowWord}
                         </span>
                     )}
                     {(!term || isAnonymous) && (
-                        <span className="text-grayscale-600 font-notoSans text-[14px] font-[600]">
+                        <span className="text-grayscale-600 font-notoSans text-[14px] font-semibold">
                             {isAnonymous && _isSupportedPersonalField
                                 ? m['consentFlow.anonymized']()
                                 : denyWord}

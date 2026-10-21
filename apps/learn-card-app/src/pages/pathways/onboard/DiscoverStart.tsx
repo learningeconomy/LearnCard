@@ -136,7 +136,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
     };
 
     return (
-        <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8 font-poppins space-y-7">
+        <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8 font-poppins space-y-v3-7">
             {/*
                 In-page welcome <header> intentionally omitted: the
                 shell-level `JourneysSubHeader` now anchors the page
@@ -155,10 +155,10 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                 hanging off it.
             */}
             {SHOWCASES.length > 0 && (
-                <section aria-labelledby="discover-showcases" className="space-y-3">
+                <section aria-labelledby="discover-showcases" className="space-y-v3-3">
                     <SectionLabel id="discover-showcases">Try a curated journey</SectionLabel>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-v3-2.5">
                         {SHOWCASES.map(showcase => (
                             <ShowcaseCard
                                 key={showcase.id}
@@ -172,7 +172,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                 </section>
             )}
 
-            <section aria-labelledby="discover-quick-build" className="space-y-3">
+            <section aria-labelledby="discover-quick-build" className="space-y-v3-3">
                 <SectionLabel id="discover-quick-build">Build one on the fly</SectionLabel>
 
                 <button
@@ -192,7 +192,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                         <IonIcon icon={sparklesOutline} className="text-2xl" />
                     </div>
 
-                    <div className="flex-1 min-w-0 space-y-0.5">
+                    <div className="flex-1 min-w-0 space-y-v3-0.5">
                         <div className="text-sm font-semibold text-grayscale-900 leading-tight">
                             Quick-build a pathway
                         </div>
@@ -213,10 +213,10 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                 (CredentialScan → SuggestionGrid → instantiate) is
                 unchanged.
             */}
-            <section aria-labelledby="discover-goal" className="space-y-3">
+            <section aria-labelledby="discover-goal" className="space-y-v3-3">
                 <SectionLabel id="discover-goal">Or describe your own goal</SectionLabel>
 
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     <label
                         htmlFor="pathways-discover-goal"
                         className="text-xs font-medium text-grayscale-700"
@@ -234,7 +234,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                         disabled={isPicking}
                         className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm
                                    text-grayscale-900 placeholder:text-grayscale-400
-                                   focus:outline-none focus:ring-2 focus:ring-emerald-500
+                                   focus:outline-hidden focus:ring-2 focus:ring-emerald-500
                                    focus:border-transparent bg-white resize-none font-poppins
                                    disabled:opacity-60 disabled:cursor-not-allowed"
                     />
@@ -242,7 +242,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                     <p className="text-xs text-grayscale-400 text-right">{text.length} / 280</p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <button
                         type="button"
                         onClick={() => onContinueWithGoal(trimmed)}

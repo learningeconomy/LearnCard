@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { LCNProfile } from '@learncard/types';
 
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast, ToastTypeEnum, invalidateBoostRecipientQueries } from 'learn-card-base';
 import useWallet from 'learn-card-base/hooks/useWallet';
+import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 import {
     sendAndSaveBoostCredentialSelf,
@@ -15,16 +17,22 @@ import {
 import { useAddCredentialToWallet } from '../mutations';
 import { LCNBoostStatusEnum } from '../boost';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 const log = getLogger('use-boost');
 
 // oxlint-disable-next-line no-unused-vars
 const useBoost = (history: RouteComponentProps['history']) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const [loading, setIsLoading] = useState(false);
     const { mutate: addCredentialToWallet } = useAddCredentialToWallet();
 
-    const boostSomeoneElse = async (issueTo: LCNProfile[], wallet: any, boostUri: string) => {
+    const boostSomeoneElse = async (
+        issueTo: LCNProfile[],
+        wallet: BespokeLearnCard,
+        boostUri: string
+    ) => {
         try {
             setIsLoading(true);
 
@@ -40,8 +48,9 @@ const useBoost = (history: RouteComponentProps['history']) => {
                         return issuedVc;
                     })
                 ).then(() => {
+                    void invalidateBoostRecipientQueries(queryClient, boostUri);
                     setIsLoading(false);
-                    presentToast(`Boost issued successfully`, {
+                    presentToast(m['boostCMS.issuedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -50,7 +59,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             log.debug('error', e);
             setIsLoading(false);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -82,28 +91,29 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             log.debug('error', e);
             setIsLoading(false);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }
     };
 
-    const boostSelf = async (wallet: any, profileId: string, boostUri: string) => {
+    const boostSelf = async (wallet: BespokeLearnCard, profileId: string, boostUri: string) => {
         try {
             setIsLoading(true);
 
             const vcUri = await sendAndSaveBoostCredentialSelf(wallet, profileId, boostUri);
             await addCredentialToWallet({ uri: vcUri });
+            void invalidateBoostRecipientQueries(queryClient, boostUri);
             setIsLoading(false);
-            presentToast(`Boost issued successfully`, {
+            presentToast(m['boostCMS.issuedOk'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             log.debug('error', e);
             setIsLoading(false);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -134,7 +144,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             log.debug('error', e);
             setIsLoading(false);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

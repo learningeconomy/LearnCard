@@ -1,9 +1,11 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import { useQueryClient } from '@tanstack/react-query';
 import { ModalTypes, useModal, useWallet } from 'learn-card-base';
 
 import Pencil from '../../components/svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
+import * as m from '../../paraglide/messages.js';
 import DeleteFrameworkConfirmationModal from './DeleteFrameworkConfirmationModal';
 
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
@@ -24,7 +26,7 @@ const FrameworkOptionsModal: React.FC<FrameworkOptionsModalProps> = ({ framework
             newModal(
                 <CreateFrameworkModal isEdit frameworkInfo={frameworkInfo} />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none',
+                    sectionClassName: 'bg-transparent! shadow-none!',
                 },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
             );
@@ -43,7 +45,7 @@ const FrameworkOptionsModal: React.FC<FrameworkOptionsModalProps> = ({ framework
                     closeAllModals();
                 }}
             />,
-            { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+            { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
@@ -55,17 +57,17 @@ const FrameworkOptionsModal: React.FC<FrameworkOptionsModalProps> = ({ framework
                 className="flex items-center gap-[10px] py-[10px] font-notoSans text-[18px] text-grayscale-800"
             >
                 <Pencil version={3} className="w-[35px] h-[35px]" />
-                Edit Framework
+                {m['skillFrameworks.editFwOpt']()}
             </button>
             <button
                 onClick={handleDeleteFramework}
                 className="flex items-center gap-[10px] py-[10px] font-notoSans text-[18px] text-grayscale-800"
             >
                 <TrashBin version="thin" className="w-[35px] h-[35px]" />
-                Delete Framework
+                {m['skillFrameworks.delFwOpt']()}
             </button>
         </div>
     );
 };
 
-export default FrameworkOptionsModal;
+export default withCompetencyAdmin(FrameworkOptionsModal);

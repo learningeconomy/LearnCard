@@ -1,19 +1,25 @@
 import React from 'react';
 
-import type { CredentialFixture } from '@learncard/credential-library';
+import type { LibraryFixture } from '@learncard/credential-library';
 
 import { Badge } from './Badge';
 import { SPEC_COLORS, SPEC_LABELS, PROFILE_LABELS, VALIDITY_COLORS } from '../lib/colors';
 
 interface FixtureCardProps {
-    fixture: CredentialFixture;
+    fixture: LibraryFixture;
     isSelected: boolean;
     isChecked: boolean;
     onToggleCheck: () => void;
     onClick: () => void;
 }
 
-export const FixtureCard: React.FC<FixtureCardProps> = ({ fixture, isSelected, isChecked, onToggleCheck, onClick }) => {
+export const FixtureCard: React.FC<FixtureCardProps> = ({
+    fixture,
+    isSelected,
+    isChecked,
+    onToggleCheck,
+    onClick,
+}) => {
     const specColor = SPEC_COLORS[fixture.spec];
     const validityColor = VALIDITY_COLORS[fixture.validity];
 
@@ -31,8 +37,8 @@ export const FixtureCard: React.FC<FixtureCardProps> = ({ fixture, isSelected, i
                 isSelected
                     ? 'bg-gray-800/80 border-blue-500/60 ring-1 ring-blue-500/30'
                     : isChecked
-                        ? 'bg-gray-800/80 border-emerald-500/40 ring-1 ring-emerald-500/20'
-                        : 'bg-gray-900/60 border-gray-800 hover:border-gray-700 hover:bg-gray-800/40'
+                    ? 'bg-gray-800/80 border-emerald-500/40 ring-1 ring-emerald-500/20'
+                    : 'bg-gray-900/60 border-gray-800 hover:border-gray-700 hover:bg-gray-800/40'
             }`}
         >
             {/* Header row */}
@@ -50,8 +56,18 @@ export const FixtureCard: React.FC<FixtureCardProps> = ({ fixture, isSelected, i
                             }`}
                         >
                             {isChecked && (
-                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                <svg
+                                    className="w-3 h-3 text-white"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={3}
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M5 13l4 4L19 7"
+                                    />
                                 </svg>
                             )}
                         </div>

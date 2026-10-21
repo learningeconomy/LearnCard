@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
-import { ConsentFlowContract, ConsentFlowTerms } from '@learncard/types';
+import { ConsentFlowContract, ConsentFlowTerms, type VC } from '@learncard/types';
 
 let a: LearnCard;
 let b: LearnCard;
@@ -217,6 +217,14 @@ describe('Send E2E Tests', () => {
 
             expect(result.credentialUri).toBeDefined();
             expect(result.uri).toBeDefined();
+            const stored = await b.read.get(result.credentialUri!);
+            expect(stored).toEqual(signedCredential);
+            expect((stored as VC).boostId).toBeUndefined();
+            const verification = await b.invoke.verifyCredential(stored as VC);
+            expect(verification.errors).toEqual([]);
+            expect(verification.warnings).toContain(
+                'Boost Authenticity could not be verified: Boost ID metadata is missing.'
+            );
         });
 
         it('should auto-create a fetchable boost from signedCredential', async () => {

@@ -35,6 +35,7 @@ import Lottie from 'react-lottie-player';
 import Pulpo from '../../assets/lotties/cuteopulpo.json';
 import MainHeader from '../../components/main-header/MainHeader';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('address-book');
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
@@ -65,7 +66,15 @@ const AddressBook: React.FC = () => {
 
     // Search state and query
     const [search, setSearch] = useState<string>('');
-    const { data: connections, isLoading: loading, refetch } = useGetSearchProfiles(search);
+    // Results only render while searching (see isSearching below). Don't fire an empty
+    // search on every mount/focus: it full-scans Profile and fans out per result.
+    const {
+        data: connections,
+        isLoading: loading,
+        refetch,
+    } = useGetSearchProfiles(search, {
+        enabled: search.length > 0,
+    });
     const { data: records, isLoading: isLoadingRecords } = useGetIDs();
     // Active tab (derived from the route URL) and connection count state
     const initialTab = getActiveRouteTab(url) || AddressBookTabsEnum.Connections;
@@ -102,10 +111,11 @@ const AddressBook: React.FC = () => {
                         onSuccess: async () => {
                             await refetch();
                         },
-                        onError: (error: any) => {
+                        onError: error => {
                             refetch();
                             presentToast(
-                                error?.message || 'An error occurred, unable to block user',
+                                (error as { message?: string } | undefined)?.message ||
+                                    m['addressBook.toasts.unableToBlockUser'](),
                                 {
                                     type: ToastTypeEnum.Error,
                                     hasDismissButton: true,
@@ -114,9 +124,10 @@ const AddressBook: React.FC = () => {
                         },
                     }
                 );
-            } catch (err: any) {
+            } catch (err) {
                 log.debug('blockProfile::error', err);
-                presentToast(err?.message || 'An error occurred, unable to block user', {
+                const message = (err as { message?: string } | undefined)?.message;
+                presentToast(message || m['addressBook.toasts.unableToBlockUser'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -169,7 +180,7 @@ const AddressBook: React.FC = () => {
                 isLoadingRecords={isLoadingRecords}
             />,
             {
-                sectionClassName: '!max-w-[550px]',
+                sectionClassName: 'max-w-[550px]!',
             }
         );
     };
@@ -201,15 +212,17 @@ const AddressBook: React.FC = () => {
                             (selectedGroupId === 'all' ? (
                                 <button
                                     onClick={handleContactSelection}
-                                    className="flex border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                                    className="flex border-solid border-grayscale-200 border rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
                                 >
                                     <AllContactsIcon />
                                     <div className="flex flex-col items-start ml-2">
                                         <span className="text-sp-purple-base text-[12px] font-bold font-notoSans">
-                                            All Contacts
+                                            {m['addressBook.allContacts']()}
                                         </span>
                                         <span className="text-grayscale-800 text-[17px] font-normal font-notoSans">
-                                            {connectionCount} Contacts
+                                            {m['addressBook.contactsCount']({
+                                                count: connectionCount,
+                                            })}
                                         </span>
                                     </div>
                                     <CaretDown className="ml-auto mr-[15px] mt-[15px]" />
@@ -217,7 +230,7 @@ const AddressBook: React.FC = () => {
                             ) : (
                                 <button
                                     onClick={handleContactSelection}
-                                    className="relative flex bg-white border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                                    className="relative flex bg-white border-solid border-grayscale-200 border rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
                                 >
                                     <img
                                         className="w-[40px] h-[40px] rounded-[40px] mr-2"
@@ -226,10 +239,10 @@ const AddressBook: React.FC = () => {
                                     <div className="flex flex-col items-start">
                                         <p>{resolvedCredential?.boostCredential?.name}</p>
                                         <p>
-                                            {troopCount && troopCount[1]}{' '}
-                                            {troopCount && troopCount[1] === 1
-                                                ? 'Contact'
-                                                : 'Contacts'}
+                                            {troopCount &&
+                                                m['addressBook.contactsCount']({
+                                                    count: troopCount[1],
+                                                })}
                                         </p>
                                     </div>
                                     <CaretDown className="ml-auto mr-[15px] mt-[15px]" />
@@ -250,7 +263,9 @@ const AddressBook: React.FC = () => {
                             {showLoadingSpinner && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
                                     <IonSpinner color="black" />
-                                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                                    <p className="mt-2 font-bold text-lg">
+                                        {m['addressBook.loading']()}
+                                    </p>
                                 </section>
                             )}
 
@@ -277,7 +292,7 @@ const AddressBook: React.FC = () => {
                                             style={{ width: '100%', height: '100%' }}
                                         />
                                     </div>
-                                    <strong>No Search Results</strong>
+                                    <strong>{m['addressBook.noSearchResults']()}</strong>
                                 </section>
                             )}
 

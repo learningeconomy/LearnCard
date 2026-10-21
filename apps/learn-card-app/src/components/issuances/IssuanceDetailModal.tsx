@@ -47,7 +47,7 @@ import {
     isInboxActivity,
     isAutoDelivery,
     getActivityLabel,
-} from 'src/pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
+} from '../../pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
 
 export interface IssuanceDetailModalProps {
     item: CredentialActivityRecord;
@@ -134,16 +134,16 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                 action === 'revoke'
                     ? m['issue.confirmRevoke']()
                     : action === 'suspend'
-                    ? m['issue.confirmSuspend']()
-                    : m['issue.confirmUnsuspend'](),
+                      ? m['issue.confirmSuspend']()
+                      : m['issue.confirmUnsuspend'](),
             onConfirm: async () => {
                 try {
                     const mutation =
                         action === 'revoke'
                             ? revokeRecipient
                             : action === 'suspend'
-                            ? suspendRecipient
-                            : unsuspendRecipient;
+                              ? suspendRecipient
+                              : unsuspendRecipient;
                     await mutation.mutateAsync({
                         boostUri: item.boostUri!,
                         recipientProfileId: item.recipientProfile!.profileId,
@@ -246,10 +246,10 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                     {m['common.details']()}
                 </h2>
 
-                <div className="space-y-5">
+                <div className="space-y-v3-5">
                     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                         <div
-                            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusBg}`}
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${statusBg}`}
                         >
                             {currentEventType === 'CLAIMED' ? (
                                 <CheckCircle2 className={`w-6 h-6 ${statusColor}`} />
@@ -304,9 +304,9 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-v3-4">
                         <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                                 <User className="w-4 h-4 text-gray-600" />
                             </div>
 
@@ -324,7 +324,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                         </div>
 
                         <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                                 <Calendar className="w-4 h-4 text-gray-600" />
                             </div>
 
@@ -349,7 +349,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
 
                         {isFailed && errorMessage && (
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
                                     <AlertTriangle className="w-4 h-4 text-red-600" />
                                 </div>
 
@@ -362,7 +362,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
 
                         {isPending && (
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
                                     <Clock className="w-4 h-4 text-amber-600" />
                                 </div>
 
@@ -390,7 +390,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                     )}
                                 </p>
 
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {isLoadingChain ? (
                                         <div className="flex items-center gap-2 text-sm text-gray-400">
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -424,7 +424,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                                         className="flex items-center gap-3"
                                                     >
                                                         <div
-                                                            className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}
+                                                            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${bg}`}
                                                         >
                                                             <Icon className={`w-3 h-3 ${color}`} />
                                                         </div>
@@ -471,9 +471,9 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                 Technical Details
                             </p>
 
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                                         <Zap className="w-4 h-4 text-gray-600" />
                                     </div>
 
@@ -488,7 +488,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                 </div>
 
                                 <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                                         <Activity className="w-4 h-4 text-gray-600" />
                                     </div>
 
@@ -499,7 +499,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                 </div>
                                 {item?.metadata && (
                                     <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                                             <Hash className="w-4 h-4 text-gray-600" />
                                         </div>
 
@@ -513,7 +513,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                 )}
                                 {item.boostUri && (
                                     <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                                             <LinkIcon className="w-4 h-4 text-gray-600" />
                                         </div>
 
@@ -528,7 +528,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
 
                                 {item.credentialUri && (
                                     <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                                             <Award className="w-4 h-4 text-gray-600" />
                                         </div>
 
@@ -542,7 +542,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                 )}
 
                                 <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                                         <FileText className="w-4 h-4 text-gray-600" />
                                     </div>
 
@@ -603,7 +603,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                     {actions.map(action => (
                                         <div key={action.key} className="flex items-start gap-3">
                                             <button
-                                                className={`flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex-shrink-0 w-32 disabled:opacity-60 ${action.btn}`}
+                                                className={`flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shrink-0 w-32 disabled:opacity-60 ${action.btn}`}
                                                 onClick={() => handleCredentialAction(action.key)}
                                                 disabled={action.pending}
                                             >

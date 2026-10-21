@@ -23,7 +23,7 @@ const OnboardingHeader: React.FC<{
                         <br />
                         <HeaderBranding
                             branding={BrandingEnum.learncard}
-                            className="!text-grayscale-900 !text-2xl"
+                            className="text-grayscale-900! text-2xl!"
                             disableClick
                         />
                     </h6>
@@ -39,7 +39,7 @@ const OnboardingHeader: React.FC<{
                         {text}
                     </h1>
                     {secondaryText && (
-                        <p className="max-w-[520px] text-sm font-poppins font-normal leading-5 text-grayscale-500">
+                        <p className="max-w-[520px] text-sm font-poppins font-normal leading-5 text-grayscale-600">
                             {secondaryText}
                         </p>
                     )}

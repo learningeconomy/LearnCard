@@ -82,9 +82,8 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
             const frameworkResults = await Promise.all(
                 frameworkIds.map(async frameworkId => {
                     try {
-                        const frameworkAndSkills = await wallet.invoke.getSkillFrameworkById(
-                            frameworkId
-                        );
+                        const frameworkAndSkills =
+                            await wallet.invoke.getSkillFrameworkById(frameworkId);
 
                         return frameworkAndSkills.framework;
                     } catch (error) {
@@ -122,7 +121,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                     frameworksLoading={frameworksLoading}
                 />,
                 {
-                    sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                    sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
                 },
                 {}
             );
@@ -138,7 +137,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                 onClick={handleSortMenu}
                 type="button"
                 ref={isMobile ? null : buttonRef}
-                className={`bg-white flex items-center justify-center p-[10px] rounded-[10px] shadow-sm border-solid border-[1px] ${
+                className={`bg-white flex items-center justify-center p-[10px] rounded-[10px] shadow-xs border-solid border ${
                     showSortPopover ? `border-${primaryColor}` : 'border-grayscale-200'
                 }`}
             >
@@ -161,7 +160,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                                 return (
                                     <button
                                         className={`font-poppins text-[16px] flex gap-[10px] items-center justify-start text-left text-grayscale-900 rounded-[15px] w-full p-[10px] ${
-                                            option.type === sortBy ? '!bg-grayscale-100' : ''
+                                            option.type === sortBy ? 'bg-grayscale-100!' : ''
                                         }`}
                                         key={option.id}
                                         onClick={() => setSortBy(option.type)}
@@ -189,7 +188,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                                     <button
                                         className={`font-poppins text-[16px] flex gap-[10px] items-start justify-start text-left text-grayscale-900 rounded-[15px] w-full p-[10px] ${
                                             filterBy.includes(option.type)
-                                                ? '!bg-grayscale-100'
+                                                ? 'bg-grayscale-100!'
                                                 : ''
                                         }`}
                                         key={option.id}
@@ -210,7 +209,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                                 return (
                                     <button
                                         className={`font-poppins text-[16px] flex gap-[10px] items-start justify-start text-left text-grayscale-900 w-full p-[10px] rounded-[15px] ${
-                                            filterBy.includes(option.id) ? '!bg-grayscale-100' : ''
+                                            filterBy.includes(option.id) ? 'bg-grayscale-100!' : ''
                                         }`}
                                         key={option.id}
                                         onClick={() =>

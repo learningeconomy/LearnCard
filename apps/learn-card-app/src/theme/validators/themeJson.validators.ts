@@ -51,6 +51,7 @@ const iconPaletteJsonSchema = z
         primaryLight: z.string().optional(),
         accent: z.string().optional(),
         stroke: z.string().optional(),
+        secondary: z.string().optional(),
     })
     .partial();
 

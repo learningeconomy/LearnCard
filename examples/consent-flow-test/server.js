@@ -1,5 +1,6 @@
 import { createRequire } from 'module';
 import express from 'express';
+import { resolveNetworkUrl } from './network-url.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -26,7 +27,7 @@ async function getWallet(key, networkUrl) {
     const cacheKey = `${key}:${networkUrl || 'default'}`;
     if (walletCache.has(cacheKey)) return walletCache.get(cacheKey);
 
-    const network = networkUrl || true;
+    const network = resolveNetworkUrl(networkUrl);
 
     let opts;
     if (isApiKey(key)) {
@@ -47,7 +48,11 @@ async function getWallet(key, networkUrl) {
     } catch {
         // API key mode: no local DID key, need to wait for profile
         await new Promise(r => setTimeout(r, 2000));
-        try { walletDid = wallet.id.did(); } catch { /* still pending */ }
+        try {
+            walletDid = wallet.id.did();
+        } catch {
+            /* still pending */
+        }
     }
     console.log('Wallet DID:', walletDid || '(resolving from profile...)');
 
@@ -71,7 +76,10 @@ app.post('/api/send', async (req, res) => {
         // Note: getProfile() swallows errors internally and may return undefined
         // instead of throwing, so we must check the return value explicitly.
         const profile = await wallet.invoke.getProfile();
-        console.log('Profile check result:', profile ? `${profile.displayName || profile.profileId}` : 'null/undefined');
+        console.log(
+            'Profile check result:',
+            profile ? `${profile.displayName || profile.profileId}` : 'null/undefined'
+        );
         if (!profile || !profile.profileId) {
             walletCache.delete(`${seed}:${networkUrl || 'default'}`);
             return res.status(401).json({
@@ -100,7 +108,7 @@ app.post('/api/send', async (req, res) => {
             // API key mode: no local signing keys, so wallet.invoke.send() fails
             // when it tries local credential issuance. Use direct HTTP to the
             // brain-service tRPC endpoint instead (server-side signing).
-            const networkBase = networkUrl || 'https://api.learncard.com/trpc';
+            const networkBase = resolveNetworkUrl(networkUrl, 'https://api.learncard.com/trpc');
             console.log('Using direct HTTP send (API key mode)...');
             // Use brain-client directly for API key mode to avoid SDK local signing.
             // The SDK's send() tries to sign credentials locally, but API key wallets
@@ -115,7 +123,11 @@ app.post('/api/send', async (req, res) => {
 
         console.log('Send result:', result);
         let issuerDid = '';
-        try { issuerDid = wallet.id.did(); } catch { /* API key mode */ }
+        try {
+            issuerDid = wallet.id.did();
+        } catch {
+            /* API key mode */
+        }
         res.json({ success: true, result, issuerDid });
     } catch (err) {
         console.error('Send failed:', err);
@@ -139,12 +151,21 @@ app.post('/api/init', async (req, res) => {
         const wallet = await getWallet(seed, networkUrl);
 
         let did = '';
-        try { did = wallet.id.did(); } catch { /* API key mode — no local DID */ }
+        try {
+            did = wallet.id.did();
+        } catch {
+            /* API key mode — no local DID */
+        }
 
         // Actually verify the profile resolves (this is the real test)
         const profile = await wallet.invoke.getProfile();
         if (profile && profile.profileId) {
-            console.log('Init verified — profile:', profile.profileId, 'displayName:', profile.displayName);
+            console.log(
+                'Init verified — profile:',
+                profile.profileId,
+                'displayName:',
+                profile.displayName
+            );
             res.json({
                 success: true,
                 did: profile.did || did || '(unknown)',
@@ -161,7 +182,12 @@ app.post('/api/init', async (req, res) => {
                 debug: {
                     isApiKey: seed.startsWith('eyJ'),
                     networkUrl: networkUrl || '(default/production)',
-                    profileResult: profile === undefined ? 'undefined' : profile === null ? 'null' : 'empty object',
+                    profileResult:
+                        profile === undefined
+                            ? 'undefined'
+                            : profile === null
+                              ? 'null'
+                              : 'empty object',
                 },
             });
         }

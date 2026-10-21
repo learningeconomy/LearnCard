@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import prettyBytes from 'pretty-bytes';
+import * as m from '../../../paraglide/messages.js';
 
 import Camera from '../svgs/Camera';
 import LinkIcon from '../svgs/LinkIcon';
@@ -132,7 +133,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
     return (
         <div className="media-attachments-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-            <h3 className="text-[20px] leading-[20px] text-grayscale-900">Media Attachments</h3>
+            <h3 className="text-[20px] leading-[20px] text-grayscale-900">
+                {m['troops.media.title']()}
+            </h3>
             {mediaAttachments.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
                     {enableLightbox && (
@@ -157,8 +160,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px]"
                                     style={{
                                         backgroundImage: metadata?.imageUrl
-                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
-                                            })`
+                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${
+                                                  metadata?.imageUrl ?? ''
+                                              })`
                                             : undefined,
                                     }}
                                 >
@@ -166,8 +170,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         <VideoIcon size="60" className="m-auto" />
                                     )}
                                     <div
-                                        className={`absolute ${iconTop ? 'top-[10px]' : 'bottom-[10px]'
-                                            } left-[10px] z-10 flex items-center gap-[5px]`}
+                                        className={`absolute ${
+                                            iconTop ? 'top-[10px]' : 'bottom-[10px]'
+                                        } left-[10px] z-10 flex items-center gap-[5px]`}
                                     >
                                         {metadata?.imageUrl && <VideoIcon />}
                                         {metadata?.videoLength && (
@@ -183,7 +188,10 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         } else {
                             innerContent = (
                                 <div className="absolute top-0 left-0 right-0 bottom-0 h-full w-full flex items-center justify-center">
-                                    <img className="rounded-[15px] object-cover h-full w-full" src={media.url} />
+                                    <img
+                                        className="rounded-[15px] object-cover h-full w-full"
+                                        src={media.url}
+                                    />
                                     <Camera className="absolute bottom-[10px] left-[10px] z-10" />
                                 </div>
                             );
@@ -236,7 +244,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     )}
                                     {docOrLink.type === 'link' && <LinkIcon className="shrink-0" />}
                                     <span className="text-grayscale-900 font-[400]">
-                                        {docOrLink.title ?? 'No title'}
+                                        {docOrLink.title ?? m['troops.media.noTitle']()}
                                     </span>
                                 </div>
                                 {docOrLink.type === 'document' && metadata && (
@@ -253,7 +261,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         {fileExtension && (numberOfPages || sizeInBytes) && ' • '}
                                         {numberOfPages && (
                                             <span>
-                                                {numberOfPages} page{numberOfPages === 1 ? '' : 's'}
+                                                {m['troops.media.pages']({ count: numberOfPages })}
                                             </span>
                                         )}
                                         {numberOfPages && sizeInBytes && ' • '}

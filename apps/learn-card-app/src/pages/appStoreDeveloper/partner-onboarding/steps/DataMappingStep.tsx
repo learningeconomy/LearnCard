@@ -1003,11 +1003,11 @@ const learnCard = await initLearnCard({
 const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: '${recipientExample}', // profile ID, DID, email, or phone${
-            integrationId
-                ? `
+        integrationId
+            ? `
     integrationId: '${integrationId}', // Track activity for this integration`
-                : ''
-        },
+            : ''
+    },
     templateUri: '${boostUri}',
     templateData: {
 ${templateDataCode}
@@ -1192,14 +1192,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
     // Render based on integration method
     if (integrationMethod === 'api') {
         return (
-            <div className="space-y-6">
+            <div className="space-y-v3-6">
                 {/* View Mode Toggle */}
                 <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
                     <button
                         onClick={() => setApiViewMode('reference')}
                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                             apiViewMode === 'reference'
-                                ? 'bg-white text-gray-800 shadow-sm'
+                                ? 'bg-white text-gray-800 shadow-xs'
                                 : 'text-gray-500 hover:text-gray-700'
                         }`}
                     >
@@ -1211,7 +1211,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         onClick={() => setApiViewMode('example')}
                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                             apiViewMode === 'example'
-                                ? 'bg-white text-gray-800 shadow-sm'
+                                ? 'bg-white text-gray-800 shadow-xs'
                                 : 'text-gray-500 hover:text-gray-700'
                         }`}
                     >
@@ -1222,9 +1222,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                 {/* Reference View - All Boost URIs */}
                 {apiViewMode === 'reference' && (
-                    <div className="space-y-4">
+                    <div className="space-y-v3-4">
                         <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                            <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                            <Zap className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
                                 <p className="font-medium mb-1">
                                     {m['developerPortal.onboarding.dataMapping.apiBoostUrisInfo']()}
@@ -1238,7 +1238,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {/* Copy All Config Button */}
                         <button
                             onClick={handleCopyAllConfig}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 transition-all"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r/srgb from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 transition-all"
                         >
                             {apiCopiedConfig ? (
                                 <>
@@ -1256,7 +1256,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </button>
 
                         {/* All Templates List */}
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             {masterTemplates.map(master => (
                                 <div
                                     key={master.id}
@@ -1302,7 +1302,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             onClick={() =>
                                                                 handleCopyUri(child.boostUri!)
                                                             }
-                                                            className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            className="shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                         >
                                                             {apiCopiedUri === child.boostUri ? (
                                                                 <Check className="w-4 h-4 text-emerald-500" />
@@ -1371,7 +1371,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                                         template.boostUri!
                                                                     )
                                                                 }
-                                                                className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                                className="shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                             >
                                                                 {apiCopiedUri ===
                                                                 template.boostUri ? (
@@ -1392,7 +1392,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {/* API Key Reference */}
                         {project?.apiKey && (
                             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <Code className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-medium text-amber-800">
                                         {m['developerPortal.onboarding.dataMapping.yourApiKey']()}
@@ -1408,8 +1408,8 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 apiKeyPreview: project.apiKey.slice(0, 12) + '...',
                                             }}
                                             components={[
-                                                <code className="bg-amber-100 px-1 rounded" />,
-                                                <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                                <code className="bg-amber-100 px-1 rounded-sm" />,
+                                                <code className="bg-amber-100 px-1 rounded-sm ml-1 font-mono" />,
                                             ]}
                                         />
                                     </p>
@@ -1423,7 +1423,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                 {apiViewMode === 'example' && (
                     <>
                         <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                            <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                            <Zap className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
                                 <p className="font-medium mb-1">
                                     {m[
@@ -1440,7 +1440,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         {/* Template Selector - organized by master templates */}
                         {issuableTemplates.length > 0 && (
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <label className="block text-sm font-medium text-gray-700">
                                     {m[
                                         'developerPortal.onboarding.dataMapping.selectTemplateForExample'
@@ -1469,7 +1469,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             </div>
                                         </div>
 
-                                        <div className="p-2 bg-white max-h-48 overflow-y-auto space-y-1">
+                                        <div className="p-2 bg-white max-h-48 overflow-y-auto space-y-v3-1">
                                             {master.childTemplates?.map(child => (
                                                 <button
                                                     key={child.id}
@@ -1501,7 +1501,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     </div>
 
                                                     {child.boostUri && (
-                                                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
+                                                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded-sm text-xs shrink-0">
                                                             {m[
                                                                 'developerPortal.onboarding.dataMapping.saved'
                                                             ]()}
@@ -1509,7 +1509,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     )}
 
                                                     {apiSelectedTemplate === child.id && (
-                                                        <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+                                                        <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />
                                                     )}
                                                 </button>
                                             ))}
@@ -1521,7 +1521,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 {issuableTemplates.filter(
                                     t => !childTemplateIds.has(t.id) && !t.isMasterTemplate
                                 ).length > 0 && (
-                                    <div className="space-y-2">
+                                    <div className="space-y-v3-2">
                                         {masterTemplates.length > 0 && (
                                             <p className="text-xs text-gray-500 font-medium pt-2">
                                                 {m[
@@ -1577,7 +1577,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     </div>
 
                                                     {template.boostUri && (
-                                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
+                                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-sm text-xs">
                                                             {m[
                                                                 'developerPortal.onboarding.dataMapping.saved'
                                                             ]()}
@@ -1597,7 +1597,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {/* Info about child boost - course data is baked in */}
                         {selectedApiTemplateMaster && (
                             <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <Layers className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                                 <div className="text-sm text-emerald-800">
                                     <p className="font-medium">
                                         {m[
@@ -1615,7 +1615,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         {/* Template Data Inputs - User-provided variables */}
                         {apiTemplateVariables.length > 0 && (
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <div className="flex items-center justify-between">
                                     <label className="block text-sm font-medium text-gray-700">
                                         {m['developerPortal.onboarding.dataMapping.templateData']()}
@@ -1638,7 +1638,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     ]()}
                                 </p>
 
-                                <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                <div className="space-y-v3-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
                                     {apiTemplateVariables.map(varName => {
                                         // Format display name
                                         const displayName = varName
@@ -1664,7 +1664,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         }))
                                                     }
                                                     placeholder={getSmartDefault(varName)}
-                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
                                         );
@@ -1676,7 +1676,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {/* System Variables - Auto-injected at issuance */}
                         {apiSystemVariables.length > 0 && (
                             <div className="flex items-start gap-3 p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
-                                <Zap className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                <Zap className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-medium text-cyan-800">
                                         {m[
@@ -1691,7 +1691,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         )}
 
                         {/* Recipient Input */}
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             <label className="block text-sm font-medium text-gray-700">
                                 {m['developerPortal.onboarding.dataMapping.recipient']()}
                             </label>
@@ -1703,7 +1703,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 placeholder={m[
                                     'developerPortal.onboarding.dataMapping.profileIdOrEmail'
                                 ]()}
-                                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                             />
 
                             <p className="text-xs text-gray-500">
@@ -1716,7 +1716,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {/* API Key Reference */}
                         {project?.apiKey && (
                             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <Code className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-medium text-amber-800">
                                         {m['developerPortal.onboarding.dataMapping.yourApiKey']()}
@@ -1732,8 +1732,8 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 apiKeyPreview: project.apiKey.slice(0, 12) + '...',
                                             }}
                                             components={[
-                                                <code className="bg-amber-100 px-1 rounded" />,
-                                                <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                                <code className="bg-amber-100 px-1 rounded-sm" />,
+                                                <code className="bg-amber-100 px-1 rounded-sm ml-1 font-mono" />,
                                             ]}
                                         />
                                     </p>
@@ -1755,7 +1755,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']()
                                 : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
                             {apiHasAdvancedOptions && (
-                                <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
+                                <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-sm text-xs">
                                     {m['developerPortal.onboarding.dataMapping.active']()}
                                 </span>
                             )}
@@ -1763,7 +1763,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         {/* Advanced Options Panel */}
                         {apiShowAdvanced && (
-                            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+                            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-v3-4">
                                 <p className="text-sm text-gray-600">
                                     {m[
                                         'developerPortal.onboarding.dataMapping.customizeBrandingWebhooks'
@@ -1771,7 +1771,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 </p>
 
                                 {/* Branding Section */}
-                                <div className="space-y-3">
+                                <div className="space-y-v3-3">
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                         <Building2 className="w-4 h-4 text-indigo-500" />
                                         {m[
@@ -1798,7 +1798,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 placeholder={m[
                                                     'developerPortal.onboarding.dataMapping.yourOrganization'
                                                 ]()}
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
 
@@ -1818,7 +1818,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     }))
                                                 }
                                                 placeholder="https://example.com/logo.png"
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
 
@@ -1840,14 +1840,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 placeholder={m[
                                                     'developerPortal.onboarding.dataMapping.johnDoe'
                                                 ]()}
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Webhook Section */}
-                                <div className="space-y-3 pt-3 border-t border-gray-200">
+                                <div className="space-y-v3-3 pt-3 border-t border-gray-200">
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                         <Webhook className="w-4 h-4 text-emerald-500" />
                                         {m[
@@ -1871,7 +1871,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 }))
                                             }
                                             placeholder="https://your-server.com/webhook"
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
                                             {m[
@@ -1882,7 +1882,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 </div>
 
                                 {/* Suppress Delivery */}
-                                <div className="space-y-3 pt-3 border-t border-gray-200">
+                                <div className="space-y-v3-3 pt-3 border-t border-gray-200">
                                     <label className="flex items-center gap-3 cursor-pointer">
                                         <input
                                             type="checkbox"
@@ -1893,7 +1893,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     suppressDelivery: e.target.checked,
                                                 }))
                                             }
-                                            className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                                            className="w-4 h-4 rounded-sm border-gray-300 text-cyan-500 focus:ring-cyan-500"
                                         />
                                         <div className="flex items-center gap-2">
                                             <BellOff className="w-4 h-4 text-amber-500" />
@@ -1923,9 +1923,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         />
 
                         {/* Verification Section */}
-                        <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
+                        <div className="p-4 bg-linear-to-br/srgb from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
                             <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
                                     <Send className="w-5 h-5 text-indigo-600" />
                                 </div>
 
@@ -2008,7 +2008,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             {!apiPollResult.success && (
                                                 <button
                                                     onClick={handleApiStartPolling}
-                                                    className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
+                                                    className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded-sm hover:bg-amber-200"
                                                 >
                                                     {m[
                                                         'developerPortal.onboarding.dataMapping.tryAgain'
@@ -2057,10 +2057,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         const hasMasterTemplates = masterTemplates.length > 0;
 
         return (
-            <div className="space-y-6">
+            <div className="space-y-v3-6">
                 {/* Header */}
                 <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <FileSpreadsheet className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <FileSpreadsheet className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
 
                     <div className="text-sm text-amber-800">
                         <p className="font-medium mb-1">
@@ -2071,7 +2071,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                 </div>
 
                 {/* Template Info */}
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
                             <Download className="w-5 h-5 text-cyan-600" />
@@ -2090,23 +2090,23 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     </div>
 
                     {/* Template columns preview */}
-                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-v3-3">
                         <p className="text-xs font-medium text-gray-600">
                             {m['developerPortal.onboarding.dataMapping.templateColumns']()}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-sm text-xs font-medium">
                                 {m['developerPortal.onboarding.dataMapping.recipientColumn']()}
                             </span>
                             {hasMasterTemplates && (
-                                <span className="px-2 py-1 bg-violet-100 text-violet-700 rounded text-xs font-medium">
+                                <span className="px-2 py-1 bg-violet-100 text-violet-700 rounded-sm text-xs font-medium">
                                     {m['developerPortal.onboarding.dataMapping.courseIdColumn']()}
                                 </span>
                             )}
                             {targetFields.map(v => (
                                 <span
                                     key={v}
-                                    className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs"
+                                    className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded-sm text-xs"
                                 >
                                     {v}
                                 </span>
@@ -2132,7 +2132,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                 </div>
 
                 {/* How it works */}
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                             <FileStack className="w-5 h-5 text-blue-600" />
@@ -2150,7 +2150,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     <div className="grid gap-3">
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center shrink-0">
                                 {/* eslint-disable-next-line i18next/no-literal-string */}
                                 <span
                                     className="text-xs font-bold text-cyan-700"
@@ -2172,7 +2172,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center shrink-0">
                                 {/* eslint-disable-next-line i18next/no-literal-string */}
                                 <span
                                     className="text-xs font-bold text-cyan-700"
@@ -2192,7 +2192,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center shrink-0">
                                 {/* eslint-disable-next-line i18next/no-literal-string */}
                                 <span
                                     className="text-xs font-bold text-cyan-700"
@@ -2237,9 +2237,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
     // Webhook integration (default)
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Webhook URL */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                         <GitMerge className="w-5 h-5 text-emerald-600" />
@@ -2274,7 +2274,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
             </div>
 
             {/* Sample Payload / Simulate */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                         <FileJson className="w-5 h-5 text-blue-600" />
@@ -2293,7 +2293,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                 {!samplePayload ? (
                     <div className="p-6 border-2 border-dashed border-gray-200 rounded-xl text-center">
                         {isWaiting ? (
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mx-auto" />
                                 <p className="text-sm text-gray-600">
                                     {m[
@@ -2302,7 +2302,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <p className="text-sm text-gray-600">
                                     {m[
                                         'developerPortal.onboarding.dataMapping.simulateEventDesc'
@@ -2322,7 +2322,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         )}
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <div className="flex items-center gap-2 text-sm text-emerald-600">
                             <Check className="w-4 h-4" />
                             {m[
@@ -2341,7 +2341,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
             {/* Boost Selector for Master Templates */}
             {samplePayload && masterTemplates.length > 0 && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
                             <FileStack className="w-5 h-5 text-violet-600" />
@@ -2364,7 +2364,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
                     </div>
 
-                    <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-4">
+                    <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-v3-4">
                         <div>
                             <label className="block text-sm font-medium text-violet-800 mb-2">
                                 {m[
@@ -2375,7 +2375,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <select
                                 value={boostSelectorField}
                                 onChange={e => setBoostSelectorField(e.target.value)}
-                                className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-hidden focus:ring-2 focus:ring-violet-500"
                             >
                                 <option value="">
                                     {m['developerPortal.onboarding.dataMapping.selectField']()}
@@ -2395,7 +2395,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 ]()}
                             </label>
 
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:border-violet-400">
                                     <input
                                         type="radio"
@@ -2446,7 +2446,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         {boostSelectorField && (
                             <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                                 <p className="text-xs text-emerald-800">
                                     <TransP
                                         m={
@@ -2466,7 +2466,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                       ](),
                                         }}
                                         components={[
-                                            <code className="bg-emerald-100 px-1 rounded" />,
+                                            <code className="bg-emerald-100 px-1 rounded-sm" />,
                                         ]}
                                     />
                                 </p>
@@ -2478,7 +2478,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
             {/* Field Mapping */}
             {samplePayload && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
                             <GitMerge className="w-5 h-5 text-cyan-600" />
@@ -2514,7 +2514,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Current Mappings */}
                     {mappings.length > 0 && (
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {mappings.map((mapping, idx) => (
                                 <div
                                     key={idx}
@@ -2532,7 +2532,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                     <button
                                         onClick={() => handleRemoveMapping(idx)}
-                                        className="ml-auto p-1 text-gray-400 hover:text-red-500 rounded"
+                                        className="ml-auto p-1 text-gray-400 hover:text-red-500 rounded-sm"
                                         aria-label={m[
                                             'developerPortal.onboarding.dataMapping.removeMapping'
                                         ]()}
@@ -2546,7 +2546,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Instructions */}
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <Link2 className="w-4 h-4 text-blue-600 shrink-0" />
                         <p className="text-xs text-blue-800">
                             <TransP
                                 m={m['developerPortal.onboarding.dataMapping.howToMapInstructions']}
@@ -2567,7 +2567,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 )}
                             </label>
 
-                            <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                            <div className="space-y-v3-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
                                 {sourceFields
                                     .filter(f => !mappings.some(m => m.sourceField === f))
                                     .map(field => {
@@ -2614,7 +2614,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 )}
                             </label>
 
-                            <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                            <div className="space-y-v3-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
                                 {targetFields
                                     .filter(f => !mappings.some(m => m.targetField === f))
                                     .map(field => {
@@ -2658,7 +2658,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {(selectedSource || selectedTarget) && (
                         <div className="flex items-center justify-center gap-2 p-2 bg-cyan-50 rounded-lg text-sm text-cyan-700">
                             {selectedSource && (
-                                <code className="bg-cyan-500 text-white px-2 py-0.5 rounded">
+                                <code className="bg-cyan-500 text-white px-2 py-0.5 rounded-sm">
                                     {selectedSource}
                                 </code>
                             )}
@@ -2666,7 +2666,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <ChevronRight className="w-4 h-4" />
                             )}
                             {selectedTarget && (
-                                <code className="bg-emerald-500 text-white px-2 py-0.5 rounded">
+                                <code className="bg-emerald-500 text-white px-2 py-0.5 rounded-sm">
                                     {selectedTarget}
                                 </code>
                             )}
@@ -2688,7 +2688,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         0 &&
                         mappings.length > 0 && (
                             <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                                 <p className="text-xs text-amber-800">
                                     {
                                         targetFields.filter(
@@ -2708,7 +2708,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Generated templateData Preview */}
                     {mappings.length > 0 && (
-                        <div className="space-y-3 pt-4 border-t border-gray-100">
+                        <div className="space-y-v3-3 pt-4 border-t border-gray-100">
                             <div className="flex items-center gap-2">
                                 <Code className="w-4 h-4 text-violet-600" />
                                 <span className="text-sm font-medium text-gray-700">
@@ -2725,7 +2725,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             'developerPortal.onboarding.dataMapping.templateDataPreviewDesc'
                                         ]
                                     }
-                                    components={[<code className="bg-gray-100 px-1 rounded" />]}
+                                    components={[<code className="bg-gray-100 px-1 rounded-sm" />]}
                                 />
                             </p>
 

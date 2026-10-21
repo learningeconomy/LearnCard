@@ -46,8 +46,8 @@ export const ChapiPrompt: React.FC<ChapiPromptProps> = ({ onBack }) => {
         <section className="h-full flex flex-col bg-white">
             {/* Top Bar */}
             <div
-                className="shrink-0 flex items-center px-4 py-3 border-b border-grayscale-100 safe-area-top-margin"
-                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+                className="shrink-0 flex items-center px-4 py-3 border-b border-grayscale-100"
+                style={{ paddingTop: '1rem' }}
             >
                 <button
                     onClick={onBack}
@@ -73,7 +73,7 @@ export const ChapiPrompt: React.FC<ChapiPromptProps> = ({ onBack }) => {
                         {m['chapi.title']()}
                     </h4>
 
-                    <div className="text-center space-y-4 text-[15px] text-grayscale-600 leading-relaxed mb-8">
+                    <div className="text-center space-y-v3-4 text-[15px] text-grayscale-600 leading-relaxed mb-8">
                         <p>{m['chapi.p1']()}</p>
                         <p>{m['chapi.p2']()}</p>
                         <p>{m['chapi.p3']()}</p>
@@ -92,7 +92,7 @@ export const ChapiPrompt: React.FC<ChapiPromptProps> = ({ onBack }) => {
             {/* Bottom Action Area */}
             <div
                 className="shrink-0 px-6 py-4 border-t border-grayscale-100 bg-white"
-                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+                style={{ paddingBottom: '1rem' }}
             >
                 <div className="max-w-[500px] mx-auto">
                     <button

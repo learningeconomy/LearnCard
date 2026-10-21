@@ -3,7 +3,7 @@ import React from 'react';
 import * as m from '../../paraglide/messages.js';
 import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
-import { IonRow, IonCol, useIonModal, IonSpinner } from '@ionic/react';
+import { IonRow, IonCol, IonSpinner } from '@ionic/react';
 
 import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
@@ -40,7 +40,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     count,
     countLoading,
 }) => {
-    const { newModal } = useModal();
+    const { newModal, closeModal } = useModal();
     const { completionPercentage } = usePersonalizationQA();
     const { getThemedCategoryColors, getThemedCategoryIcons, theme } = useTheme();
     const colors = getThemedCategoryColors(category as CredentialCategoryEnum);
@@ -52,6 +52,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
 
     const { labels } = theme?.categories.find(c => c.categoryId === category) || {};
     const { headerTextColor, helperTextColor } = colors;
+    const accessibleHeaderTextColor =
+        headerTextColor === 'text-white' ? 'text-grayscale-900' : headerTextColor;
 
     // Resolve a Paraglide message by dotted key, returning undefined when the
     // key has no compiled message so callers can fall back to tenant theme copy.
@@ -72,18 +74,24 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const { iconPadding, helperText, helperTextClickable, showBetaLabel } =
         SubheaderContentType[subheaderType];
 
-    const [presentCategoryDescriptorModal, dismissCategoryDescriptorModal] = useIonModal(
-        CategoryDescriptorModal,
-        {
-            handleCloseModal: () => dismissCategoryDescriptorModal(),
-            title: pluralName,
-        }
-    );
+    const presentCategoryDescriptorModal = () => {
+        if (!category) return;
+
+        newModal(
+            <CategoryDescriptorModal
+                handleCloseModal={closeModal}
+                title={pluralName}
+                category={category}
+            />,
+            { sectionClassName: 'h-full' },
+            { desktop: ModalTypes.Freeform, mobile: ModalTypes.Freeform }
+        );
+    };
 
     const handlePersonalizeMyAi = () => {
         newModal(
             <AiPassportPersonalizationContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -115,7 +123,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
             <span>{translatedLead}</span>{' '}
             {translatedLink && (
                 <button
-                    className="font-[600] underline"
+                    className="font-semibold underline"
                     onClick={() => presentCategoryDescriptorModal()}
                 >
                     {translatedLink}.
@@ -151,12 +159,13 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                     />
                 )}
                 <h2
-                    className={`select-none whitespace-nowrap flex flex-col gap-[4px] ${headerTextColor}`}
+                    className={`select-none whitespace-nowrap flex flex-col gap-[4px] ${accessibleHeaderTextColor}`}
                 >
                     <span className="font-poppins text-[30px] leading-[100%] flex items-center">
                         {countLoading && (
                             <IonSpinner
                                 name="crescent"
+                                aria-label={m['common.loading']()}
                                 className="text-white w-[20px] h-[20px] mr-[5px]"
                             />
                         )}{' '}

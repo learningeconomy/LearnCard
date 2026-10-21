@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../../../paraglide/messages.js';
 import { BoostMediaOptionsEnum } from '../../../boost';
 import Pencil from '../../../../svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
@@ -32,7 +33,7 @@ const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 showCloseButton={false}
                 title={
                     <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                        Media Attachment
+                        {m['boostCMS.mediaAttachment']()}
                     </p>
                 }
             />
@@ -52,13 +53,13 @@ const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 style={{ textDecoration: 'none' }}
             >
                 <FileIcon className="text-[#FF3636] h-[35px] min-h-[35px] min-w-[35px] w-[35px] mr-1" />
-                <div className="flex items-start justify-center text-left ml-2 flex-col flex-grow">
+                <div className="flex items-start justify-center text-left ml-2 flex-col grow">
                     <p className="text-grayscale-800 text-xs text-left line-clamp-1 font-notoSans">
                         {media.title}
                     </p>
                     <div className="w-full overflow-hidden">
                         <span className="line-clamp-1 text-indigo-600 text-base font-semibold font-notoSans">
-                            View Document
+                            {m['boostCMS.viewDocument']()}
                         </span>
                     </div>
                 </div>
@@ -67,11 +68,11 @@ const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 <button
                     onClick={() => handleEdit()}
                     type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
+                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow-sm"
                 >
                     <Pencil className="h-[60%]" />
                 </button>
-                <div className="flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] cursor-pointer drop-shadow">
+                <div className="flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] cursor-pointer drop-shadow-sm">
                     <TrashBin
                         className="h-[25px] w-[25px] text-grayscale-800"
                         onClick={e => {

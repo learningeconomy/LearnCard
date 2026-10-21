@@ -146,10 +146,7 @@ const TradeoffChip: React.FC<{ tradeoff: Tradeoff }> = ({ tradeoff }) => {
         <span
             className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${tone.chip}`}
         >
-            <IonIcon
-                icon={DIMENSION_ICON[tradeoff.dimension]}
-                className={`text-xs ${tone.icon}`}
-            />
+            <IonIcon icon={DIMENSION_ICON[tradeoff.dimension]} className={`text-xs ${tone.icon}`} />
 
             <span className={`text-[11px] font-medium ${tone.label}`}>
                 {DIMENSION_LABEL[tradeoff.dimension]}
@@ -185,9 +182,7 @@ const TradeoffDetailRow: React.FC<{ tradeoff: Tradeoff }> = ({ tradeoff }) => {
                     {DIMENSION_LABEL[tradeoff.dimension]}
                 </p>
 
-                <p className={`text-sm leading-snug ${tone.label}`}>
-                    {tradeoff.deltaDescription}
-                </p>
+                <p className={`text-sm leading-snug ${tone.label}`}>{tradeoff.deltaDescription}</p>
             </div>
         </li>
     );
@@ -208,10 +203,7 @@ const DeltaChip: React.FC<{
         <div
             className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${classes.chip}`}
         >
-            <IonIcon
-                icon={DIRECTION_ICON[tone]}
-                className={`text-xs ${classes.icon}`}
-            />
+            <IonIcon icon={DIRECTION_ICON[tone]} className={`text-xs ${classes.icon}`} />
 
             <span className={`text-xs font-medium ${classes.label}`}>
                 {value} {label}
@@ -247,37 +239,27 @@ const BaselineCard: React.FC<{
     goal: string;
     baseline: SimulationSummary;
 }> = ({ goal, baseline }) => (
-    <section className="p-5 rounded-[20px] bg-white border border-grayscale-200 shadow-sm space-y-3">
+    <section className="p-5 rounded-[20px] bg-white border border-grayscale-200 shadow-xs space-y-v3-3">
         <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden />
 
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">
                 Your path today
             </p>
         </div>
 
-        <h2 className="text-lg font-semibold text-grayscale-900 leading-snug">
-            {goal}
-        </h2>
+        <h2 className="text-lg font-semibold text-grayscale-900 leading-snug">{goal}</h2>
 
         <div className="flex flex-wrap gap-2">
             <div className="flex items-center gap-1.5 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1">
-                <IonIcon
-                    icon={timeOutline}
-                    className="text-sm text-grayscale-500"
-                />
+                <IonIcon icon={timeOutline} className="text-sm text-grayscale-500" />
                 <span className="text-xs font-medium text-grayscale-700">
-                    {baseline.etaMinutes !== null
-                        ? formatEta(baseline.etaMinutes)
-                        : 'No ETA yet'}
+                    {baseline.etaMinutes !== null ? formatEta(baseline.etaMinutes) : 'No ETA yet'}
                 </span>
             </div>
 
             <div className="flex items-center gap-1.5 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1">
-                <IonIcon
-                    icon={layersOutline}
-                    className="text-sm text-grayscale-500"
-                />
+                <IonIcon icon={layersOutline} className="text-sm text-grayscale-500" />
                 <span className="text-xs font-medium text-grayscale-700">
                     {baseline.remainingSteps !== null
                         ? `${baseline.remainingSteps} ${baseline.remainingSteps === 1 ? 'step' : 'steps'} left`
@@ -287,8 +269,8 @@ const BaselineCard: React.FC<{
         </div>
 
         <p className="text-xs text-grayscale-500 leading-relaxed">
-            Everything below is compared against this baseline. Pick one to
-            commit — your previous walk stays one tap away.
+            Everything below is compared against this baseline. Pick one to commit — your previous
+            walk stays one tap away.
         </p>
     </section>
 );
@@ -386,18 +368,18 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
 
     return (
         <article
-            className={`relative p-4 sm:p-5 rounded-[20px] bg-white shadow-sm space-y-3 border transition-colors ${
+            className={`relative p-4 sm:p-5 rounded-[20px] bg-white shadow-xs space-y-v3-3 border transition-colors ${
                 comparisonSelected
                     ? 'border-indigo-300 ring-2 ring-indigo-100'
                     : standoutLabel
-                        ? 'border-emerald-200'
-                        : 'border-grayscale-200'
+                      ? 'border-emerald-200'
+                      : 'border-grayscale-200'
             }`}
         >
             <header className="flex items-start justify-between gap-3">
-                <div className="space-y-1 min-w-0 flex-1">
+                <div className="space-y-v3-1 min-w-0 flex-1">
                     {standoutLabel && (
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">
                             ✨ {standoutLabel}
                         </p>
                     )}
@@ -424,9 +406,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
                         onClick={onToggleComparison}
                         aria-pressed={comparisonSelected}
                         aria-label={
-                            comparisonSelected
-                                ? 'Remove from comparison'
-                                : 'Add to comparison'
+                            comparisonSelected ? 'Remove from comparison' : 'Add to comparison'
                         }
                         className={`shrink-0 w-6 h-6 rounded-md border flex items-center justify-center transition-colors ${
                             comparisonSelected
@@ -457,17 +437,11 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
                 previous three-stacked layout (deltas row + total
                 row + tradeoff list) which made every card a wall.
             */}
-            {(etaChip ||
-                stepsChip ||
-                simulation.etaMinutes !== null ||
-                tradeoffs.length > 0) && (
+            {(etaChip || stepsChip || simulation.etaMinutes !== null || tradeoffs.length > 0) && (
                 <div className="flex flex-wrap items-center gap-1.5">
                     {simulation.etaMinutes !== null && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-grayscale-200 bg-grayscale-10 px-2 py-0.5">
-                            <IonIcon
-                                icon={timeOutline}
-                                className="text-xs text-grayscale-500"
-                            />
+                            <IonIcon icon={timeOutline} className="text-xs text-grayscale-500" />
                             <span className="text-[11px] font-medium text-grayscale-700">
                                 {formatEta(simulation.etaMinutes)}
                             </span>
@@ -501,12 +475,9 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
                     </button>
 
                     {detailsOpen && (
-                        <ul className="mt-2 space-y-2">
+                        <ul className="mt-2 space-y-v3-2">
                             {tradeoffs.map((t, i) => (
-                                <TradeoffDetailRow
-                                    key={`${t.dimension}-${i}`}
-                                    tradeoff={t}
-                                />
+                                <TradeoffDetailRow key={`${t.dimension}-${i}`} tradeoff={t} />
                             ))}
                         </ul>
                     )}
@@ -594,16 +565,12 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
  * so the result is deterministic. Returns a Map for O(1)
  * per-card lookup at render time.
  */
-const pickStandoutLabels = (
-    results: readonly ScenarioResult[],
-): Map<string, string> => {
+const pickStandoutLabels = (results: readonly ScenarioResult[]): Map<string, string> => {
     const labels = new Map<string, string>();
 
     // Best for less time — only meaningful saves count.
     const fastest = [...results]
-        .filter(
-            r => r.deltas.etaMinutes !== null && r.deltas.etaMinutes <= -10,
-        )
+        .filter(r => r.deltas.etaMinutes !== null && r.deltas.etaMinutes <= -10)
         .sort((a, b) => (a.deltas.etaMinutes ?? 0) - (b.deltas.etaMinutes ?? 0))[0];
 
     if (fastest) labels.set(fastest.scenario.id, 'Best for less time');
@@ -617,15 +584,10 @@ const pickStandoutLabels = (
     const externalDrop = results.find(
         r =>
             !labels.has(r.scenario.id) &&
-            r.tradeoffs.some(
-                t =>
-                    t.dimension === 'external-dependency' &&
-                    t.direction === 'better',
-            ),
+            r.tradeoffs.some(t => t.dimension === 'external-dependency' && t.direction === 'better')
     );
 
-    if (externalDrop)
-        labels.set(externalDrop.scenario.id, 'Best for fewer dependencies');
+    if (externalDrop) labels.set(externalDrop.scenario.id, 'Best for fewer dependencies');
 
     // Best for deeper practice — `effort:'worse'` is the
     // authored signal for "more reps / heavier lift" in
@@ -633,13 +595,10 @@ const pickStandoutLabels = (
     const deeperPractice = results.find(
         r =>
             !labels.has(r.scenario.id) &&
-            r.tradeoffs.some(
-                t => t.dimension === 'effort' && t.direction === 'worse',
-            ),
+            r.tradeoffs.some(t => t.dimension === 'effort' && t.direction === 'worse')
     );
 
-    if (deeperPractice)
-        labels.set(deeperPractice.scenario.id, 'Best for deeper practice');
+    if (deeperPractice) labels.set(deeperPractice.scenario.id, 'Best for deeper practice');
 
     return labels;
 };
@@ -677,82 +636,82 @@ const ComparisonOverlay: React.FC<{
 
     return (
         <PathwayPortal>
-        <div
-            className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-grayscale-900/40 backdrop-blur-sm font-poppins"
-            style={{
-                overscrollBehavior: 'contain',
-                paddingTop: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))',
-                paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
-            }}
-            role="dialog"
-            aria-label="Compare two scenarios"
-            onClick={e => {
-                if (e.target === e.currentTarget) onClose();
-            }}
-        >
             <div
-                className="relative w-full max-w-2xl max-h-full overflow-y-auto bg-white rounded-[24px] shadow-2xl p-6 space-y-5"
-                style={{ overscrollBehavior: 'contain' }}
+                className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-grayscale-900/40 backdrop-blur-xs font-poppins"
+                style={{
+                    overscrollBehavior: 'contain',
+                    paddingTop: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))',
+                    paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
+                }}
+                role="dialog"
+                aria-label="Compare two scenarios"
+                onClick={e => {
+                    if (e.target === e.currentTarget) onClose();
+                }}
             >
-                <header className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-indigo-700">
-                            Side by side
-                        </p>
-                        <h2 className="text-lg font-semibold text-grayscale-900 leading-snug">
-                            Compare two paths
-                        </h2>
-                        <p className="text-xs text-grayscale-600 leading-relaxed">
-                            Both walks are compared against your current
-                            route. Accept one from its card.
-                        </p>
-                    </div>
+                <div
+                    className="relative w-full max-w-2xl max-h-full overflow-y-auto bg-white rounded-[24px] shadow-2xl p-6 space-y-v3-5"
+                    style={{ overscrollBehavior: 'contain' }}
+                >
+                    <header className="flex items-start justify-between gap-3">
+                        <div className="space-y-v3-1">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-indigo-700">
+                                Side by side
+                            </p>
+                            <h2 className="text-lg font-semibold text-grayscale-900 leading-snug">
+                                Compare two paths
+                            </h2>
+                            <p className="text-xs text-grayscale-600 leading-relaxed">
+                                Both walks are compared against your current route. Accept one from
+                                its card.
+                            </p>
+                        </div>
 
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        aria-label="Close comparison"
-                        className="shrink-0 w-8 h-8 rounded-full bg-grayscale-100 text-grayscale-600 hover:bg-grayscale-200 hover:text-grayscale-900 flex items-center justify-center transition-colors"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="w-4 h-4"
-                            aria-hidden
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            aria-label="Close comparison"
+                            className="shrink-0 w-8 h-8 rounded-full bg-grayscale-100 text-grayscale-600 hover:bg-grayscale-200 hover:text-grayscale-900 flex items-center justify-center transition-colors"
                         >
-                            <path
-                                fillRule="evenodd"
-                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                    </button>
-                </header>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-4 h-4"
+                                aria-hidden
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                        </button>
+                    </header>
 
-                <ComparisonColumn
-                    label="Path A"
-                    title={scenarioA.scenario.title}
-                    subtitle={scenarioA.scenario.subtitle}
-                    pathway={pathway}
-                    currentRoute={pathway.chosenRoute}
-                    proposedRoute={routeA}
-                    etaDelta={scenarioA.deltas.etaMinutes}
-                    stepsDelta={scenarioA.deltas.steps}
-                />
+                    <ComparisonColumn
+                        label="Path A"
+                        title={scenarioA.scenario.title}
+                        subtitle={scenarioA.scenario.subtitle}
+                        pathway={pathway}
+                        currentRoute={pathway.chosenRoute}
+                        proposedRoute={routeA}
+                        etaDelta={scenarioA.deltas.etaMinutes}
+                        stepsDelta={scenarioA.deltas.steps}
+                    />
 
-                <ComparisonColumn
-                    label="Path B"
-                    title={scenarioB.scenario.title}
-                    subtitle={scenarioB.scenario.subtitle}
-                    pathway={pathway}
-                    currentRoute={pathway.chosenRoute}
-                    proposedRoute={routeB}
-                    etaDelta={scenarioB.deltas.etaMinutes}
-                    stepsDelta={scenarioB.deltas.steps}
-                />
+                    <ComparisonColumn
+                        label="Path B"
+                        title={scenarioB.scenario.title}
+                        subtitle={scenarioB.scenario.subtitle}
+                        pathway={pathway}
+                        currentRoute={pathway.chosenRoute}
+                        proposedRoute={routeB}
+                        etaDelta={scenarioB.deltas.etaMinutes}
+                        stepsDelta={scenarioB.deltas.steps}
+                    />
+                </div>
             </div>
-        </div>
         </PathwayPortal>
     );
 };
@@ -766,28 +725,15 @@ const ComparisonColumn: React.FC<{
     proposedRoute: readonly string[] | null;
     etaDelta: number | null;
     stepsDelta: number | null;
-}> = ({
-    label,
-    title,
-    subtitle,
-    pathway,
-    currentRoute,
-    proposedRoute,
-    etaDelta,
-    stepsDelta,
-}) => (
-    <section className="p-4 rounded-2xl border border-grayscale-200 space-y-3">
+}> = ({ label, title, subtitle, pathway, currentRoute, proposedRoute, etaDelta, stepsDelta }) => (
+    <section className="p-4 rounded-2xl border border-grayscale-200 space-y-v3-3">
         <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-indigo-600">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-indigo-600">
                     {label}
                 </p>
-                <h3 className="text-sm font-semibold text-grayscale-900 leading-snug">
-                    {title}
-                </h3>
-                <p className="text-xs text-grayscale-600 leading-relaxed mt-0.5">
-                    {subtitle}
-                </p>
+                <h3 className="text-sm font-semibold text-grayscale-900 leading-snug">{title}</h3>
+                <p className="text-xs text-grayscale-600 leading-relaxed mt-0.5">{subtitle}</p>
             </div>
 
             <div className="flex flex-wrap gap-1.5 justify-end shrink-0">
@@ -834,16 +780,14 @@ const EmptyFrame: React.FC<{
     ctaLabel?: string;
     onCta?: () => void;
 }> = ({ title, body, ctaLabel, onCta }) => (
-    <div className="p-8 rounded-[20px] bg-grayscale-10 border border-grayscale-200 text-center space-y-3">
+    <div className="p-8 rounded-[20px] bg-grayscale-10 border border-grayscale-200 text-center space-y-v3-3">
         <div className="inline-flex w-11 h-11 items-center justify-center rounded-full bg-white border border-grayscale-200">
             <IonIcon icon={compassOutline} className="text-xl text-grayscale-500" />
         </div>
 
         <h2 className="text-lg font-semibold text-grayscale-900">{title}</h2>
 
-        <p className="text-sm text-grayscale-600 leading-relaxed max-w-sm mx-auto">
-            {body}
-        </p>
+        <p className="text-sm text-grayscale-600 leading-relaxed max-w-sm mx-auto">{body}</p>
 
         {ctaLabel && onCta && (
             <button
@@ -879,7 +823,7 @@ const WhatIfMode: React.FC = () => {
     // returns, so memo invalidation lines up with real state change.
     const baseline = useMemo(
         () => (activePathway ? simulateBaseline(activePathway) : null),
-        [activePathway],
+        [activePathway]
     );
 
     const results = useMemo<ScenarioResult[]>(() => {
@@ -900,10 +844,7 @@ const WhatIfMode: React.FC = () => {
 
         const map = new Map<string, ToProposalReason>();
         for (const r of results) {
-            map.set(
-                r.scenario.id,
-                classifyScenarioForProposal(activePathway, r.scenario),
-            );
+            map.set(r.scenario.id, classifyScenarioForProposal(activePathway, r.scenario));
         }
         return map;
     }, [activePathway, results]);
@@ -914,8 +855,7 @@ const WhatIfMode: React.FC = () => {
     // computation on every card render. `null` when the scenario
     // has no route-level effect (returns from `computeTargetRoute`).
     const targetRouteByScenarioId = useMemo(() => {
-        if (!activePathway)
-            return new Map<string, readonly string[] | null>();
+        if (!activePathway) return new Map<string, readonly string[] | null>();
 
         const map = new Map<string, readonly string[] | null>();
         for (const r of results) {
@@ -941,7 +881,7 @@ const WhatIfMode: React.FC = () => {
     // ------------------------------------------------------------------
     const originalWalk = useMemo(
         () => (activePathway ? seedChosenRoute(activePathway) : []),
-        [activePathway],
+        [activePathway]
     );
 
     const showRevertCard = useMemo(() => {
@@ -1007,9 +947,7 @@ const WhatIfMode: React.FC = () => {
         const target = targetRouteByScenarioId.get(result.scenario.id) ?? null;
 
         if (!target || target.length < 2) {
-            setAcceptError(
-                'This path can\u2019t be committed as a route swap right now.',
-            );
+            setAcceptError('This path can\u2019t be committed as a route swap right now.');
 
             return;
         }
@@ -1018,11 +956,7 @@ const WhatIfMode: React.FC = () => {
         setAcceptError(null);
 
         try {
-            pathwayStore.set.applyRouteSwap(
-                pathway.id,
-                target,
-                result.scenario.title,
-            );
+            pathwayStore.set.applyRouteSwap(pathway.id, target, result.scenario.title);
 
             // Telemetry: still attribute the swap to the `router`
             // agent (route-swap proposals — even direct-commit ones
@@ -1038,9 +972,7 @@ const WhatIfMode: React.FC = () => {
             history.push('/pathways/map');
         } catch (err) {
             setAcceptError(
-                err instanceof Error
-                    ? err.message
-                    : 'Something went wrong. Please try again.',
+                err instanceof Error ? err.message : 'Something went wrong. Please try again.'
             );
             setAcceptingId(null);
         }
@@ -1060,11 +992,7 @@ const WhatIfMode: React.FC = () => {
         setAcceptError(null);
 
         try {
-            pathwayStore.set.applyRouteSwap(
-                pathway.id,
-                originalWalk,
-                'Original walk',
-            );
+            pathwayStore.set.applyRouteSwap(pathway.id, originalWalk, 'Original walk');
 
             analytics.track(AnalyticsEvents.PATHWAYS_PROPOSAL_CREATED, {
                 agent: 'router',
@@ -1076,9 +1004,7 @@ const WhatIfMode: React.FC = () => {
             history.push('/pathways/map');
         } catch (err) {
             setAcceptError(
-                err instanceof Error
-                    ? err.message
-                    : 'Something went wrong. Please try again.',
+                err instanceof Error ? err.message : 'Something went wrong. Please try again.'
             );
             setAcceptingId(null);
         }
@@ -1102,10 +1028,7 @@ const WhatIfMode: React.FC = () => {
     // Standout-label map — runs once per (pathway, results) change.
     // Cheap (linear in results.length, max ~5), and pulling it out of
     // render keeps each ScenarioCard pure on its props.
-    const standoutLabels = useMemo(
-        () => pickStandoutLabels(results),
-        [results],
-    );
+    const standoutLabels = useMemo(() => pickStandoutLabels(results), [results]);
 
     // Compare entry-point gating: only show when at least two
     // scenarios are convertible (otherwise there's nothing meaningful
@@ -1129,7 +1052,7 @@ const WhatIfMode: React.FC = () => {
                     'linear-gradient(180deg, rgba(236, 253, 245, 0.4) 0%, rgba(251, 251, 252, 1) 40%, rgba(251, 251, 252, 1) 100%)',
             }}
         >
-            <div className="max-w-2xl mx-auto px-4 py-8 font-poppins space-y-5">
+            <div className="max-w-2xl mx-auto px-4 py-8 font-poppins space-y-v3-5">
                 {/*
                     Single-line invitational header. The previous
                     layout had an eyebrow + headline + subtitle that
@@ -1144,9 +1067,7 @@ const WhatIfMode: React.FC = () => {
                     </h1>
                 </header>
 
-                {baseline && (
-                    <BaselineCard goal={activePathway.goal} baseline={baseline} />
-                )}
+                {baseline && <BaselineCard goal={activePathway.goal} baseline={baseline} />}
 
                 {/*
                     "Return to original walk" affordance — only shown
@@ -1185,7 +1106,7 @@ const WhatIfMode: React.FC = () => {
                         body="There are no review, practice, or external steps here that a scenario could reshape. That's often a good thing."
                     />
                 ) : (
-                    <section className="space-y-3">
+                    <section className="space-y-v3-3">
                         <h2 className="text-sm font-semibold text-grayscale-700 px-1">
                             Other paths
                         </h2>
@@ -1196,7 +1117,7 @@ const WhatIfMode: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             {results.map(r => (
                                 <ScenarioCard
                                     key={r.scenario.id}
@@ -1205,12 +1126,8 @@ const WhatIfMode: React.FC = () => {
                                         convertibilityByScenarioId.get(r.scenario.id) ?? null
                                     }
                                     pathway={activePathway}
-                                    targetRoute={
-                                        targetRouteByScenarioId.get(r.scenario.id) ?? null
-                                    }
-                                    standoutLabel={
-                                        standoutLabels.get(r.scenario.id) ?? null
-                                    }
+                                    targetRoute={targetRouteByScenarioId.get(r.scenario.id) ?? null}
+                                    standoutLabel={standoutLabels.get(r.scenario.id) ?? null}
                                     busy={acceptingId !== null}
                                     onAccept={() => handleAccept(activePathway, r)}
                                     comparisonSelected={comparisonIds.includes(r.scenario.id)}
@@ -1244,9 +1161,7 @@ const WhatIfMode: React.FC = () => {
                                     aria-pressed={comparisonMode}
                                     className="text-xs text-grayscale-500 hover:text-grayscale-900 underline underline-offset-2 transition-colors"
                                 >
-                                    {comparisonMode
-                                        ? 'Done comparing'
-                                        : 'Compare two paths →'}
+                                    {comparisonMode ? 'Done comparing' : 'Compare two paths →'}
                                 </button>
                             </div>
                         )}
@@ -1263,18 +1178,10 @@ const WhatIfMode: React.FC = () => {
                 {comparisonMode && comparisonIds.length === 2 && (
                     <ComparisonOverlay
                         pathway={activePathway}
-                        scenarioA={results.find(
-                            r => r.scenario.id === comparisonIds[0],
-                        )}
-                        scenarioB={results.find(
-                            r => r.scenario.id === comparisonIds[1],
-                        )}
-                        routeA={
-                            targetRouteByScenarioId.get(comparisonIds[0]!) ?? null
-                        }
-                        routeB={
-                            targetRouteByScenarioId.get(comparisonIds[1]!) ?? null
-                        }
+                        scenarioA={results.find(r => r.scenario.id === comparisonIds[0])}
+                        scenarioB={results.find(r => r.scenario.id === comparisonIds[1])}
+                        routeA={targetRouteByScenarioId.get(comparisonIds[0]!) ?? null}
+                        routeB={targetRouteByScenarioId.get(comparisonIds[1]!) ?? null}
                         onClose={() => setComparisonIds([])}
                     />
                 )}

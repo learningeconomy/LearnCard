@@ -12,10 +12,10 @@ describe('posthog.helpers', () => {
         process.env.POSTHOG_API_KEY = 'phc_test_key';
         const captureSpy = vi.fn();
         vi.doMock('posthog-node', () => ({
-            PostHog: vi.fn().mockImplementation(() => ({
-                capture: captureSpy,
-                shutdown: vi.fn(),
-            })),
+            PostHog: class MockPostHog {
+                capture = captureSpy;
+                shutdown = vi.fn();
+            },
         }));
         const mod = await import('./posthog.helpers');
         const result = await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 });
@@ -23,10 +23,10 @@ describe('posthog.helpers', () => {
         expect(captureSpy).not.toHaveBeenCalled();
     });
 
-    it('captureBenchEvent is a no-op when POSTHOG_API_KEY is unset', async () => {
+    it('fails startup when telemetry is enabled without POSTHOG_API_KEY', async () => {
         process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY = 'true';
-        const mod = await import('./posthog.helpers');
-        expect(await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 })).toBe(false);
+
+        await expect(import('./posthog.helpers')).rejects.toThrow(/POSTHOG_API_KEY/);
     });
 
     it('captureBenchEvent attempts emission when telemetry is enabled and POSTHOG_API_KEY is set', async () => {
@@ -34,10 +34,10 @@ describe('posthog.helpers', () => {
         process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY = 'true';
         const captureSpy = vi.fn();
         vi.doMock('posthog-node', () => ({
-            PostHog: vi.fn().mockImplementation(() => ({
-                capture: captureSpy,
-                shutdown: vi.fn(),
-            })),
+            PostHog: class MockPostHog {
+                capture = captureSpy;
+                shutdown = vi.fn();
+            },
         }));
         const mod = await import('./posthog.helpers');
         const result = await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 });
@@ -53,31 +53,31 @@ describe('posthog.helpers', () => {
         process.env.POSTHOG_API_KEY = 'phc_test_key';
         process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY = 'true';
         vi.doMock('posthog-node', () => ({
-            PostHog: vi.fn().mockImplementation(() => ({
-                capture: () => {
+            PostHog: class MockPostHog {
+                capture = () => {
                     throw new Error('posthog down');
-                },
-                shutdown: vi.fn(),
-            })),
+                };
+                shutdown = vi.fn();
+            },
         }));
         const mod = await import('./posthog.helpers');
         const result = await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 });
         expect(result).toBe(false);
     });
 
-    it('captureBenchEvent treats non-"true" values of the env var as off', async () => {
+    it('accepts the documented numeric true spelling', async () => {
         process.env.POSTHOG_API_KEY = 'phc_test_key';
-        process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY = '1'; // strict "true" only
+        process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY = '1';
         const captureSpy = vi.fn();
         vi.doMock('posthog-node', () => ({
-            PostHog: vi.fn().mockImplementation(() => ({
-                capture: captureSpy,
-                shutdown: vi.fn(),
-            })),
+            PostHog: class MockPostHog {
+                capture = captureSpy;
+                shutdown = vi.fn();
+            },
         }));
         const mod = await import('./posthog.helpers');
         const result = await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 });
-        expect(result).toBe(false);
-        expect(captureSpy).not.toHaveBeenCalled();
+        expect(result).toBe(true);
+        expect(captureSpy).toHaveBeenCalledOnce();
     });
 });

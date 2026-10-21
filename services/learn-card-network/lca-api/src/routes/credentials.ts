@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
 import { VCValidator, JWEValidator } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
@@ -7,9 +8,14 @@ import { getDeliveryService, getFrom } from '../services/delivery';
 import { IssueEndpointValidator } from 'types/credentials';
 import { t, authorizedDidRoute, openRoute } from '@routes';
 import { getSigningAuthorityLearnCard } from '@helpers/learnCard.helpers';
+import { SeedEncryptionError } from '@helpers/seedEncryption.helpers';
+import {
+    encryptCredentialForRecipients,
+    resolveRecipientEncrypters,
+} from '@helpers/recipient-encryption.helpers';
 
 const ENDORSEMENT_REQUEST_TEMPLATE_ALIAS =
-    process.env.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
+    environment.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
 
 export const credentialsRouter = t.router({
     issueCredential: authorizedDidRoute
@@ -60,6 +66,14 @@ export const credentialsRouter = t.router({
                 const saDid = learnCard.id.did();
                 console.log('[LCA /credentials/issue] SA LearnCard resolved, DID:', saDid);
 
+                // Validate and capture each public key once, before signing. Encryption
+                // uses these same snapshots even if a DID rotates during issuance.
+                const recipientEncrypters = encryption
+                    ? await resolveRecipientEncrypters([saDid, ...encryption.recipients], did =>
+                          learnCard.invoke.resolveDid(did)
+                      )
+                    : [];
+
                 // Preserve issuer.name/image if the credential has an object-form issuer
                 if (typeof credential.issuer === 'object' && credential.issuer !== null) {
                     credential.issuer.id = saDid;
@@ -70,14 +84,37 @@ export const credentialsRouter = t.router({
                     ? `${saDid}#${signingAuthority.name}`
                     : undefined;
 
-                console.log('[LCA /credentials/issue] Issuing credential...', {
-                    verificationMethod,
-                    issuer: credential.issuer,
-                });
-                const issuedCredential = await learnCard.invoke.issueCredential(credential, {
-                    ...options,
-                    verificationMethod,
-                });
+                const issuedCredential = await learnCard.invoke
+                    .issueCredential(credential, {
+                        ...options,
+                        verificationMethod,
+                    })
+                    .catch(async (error: unknown) => {
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+
+                        // DIDKit does not expose a structured code for this resolver failure,
+                        // so this targeted retry is coupled to its current error message.
+                        if (
+                            !verificationMethod ||
+                            (!errorMessage.includes('Missing verification relationship.') &&
+                                !errorMessage.includes('Key mismatch'))
+                        ) {
+                            throw error;
+                        }
+
+                        console.warn(
+                            '[LCA /credentials/issue] Refreshing stale did:web document and retrying',
+                            { issuer: saDid }
+                        );
+
+                        await learnCard.invoke.resolveDid(saDid, { noCache: true });
+
+                        return learnCard.invoke.issueCredential(credential, {
+                            ...options,
+                            verificationMethod,
+                        });
+                    });
+
                 console.log('[LCA /credentials/issue] Credential issued successfully');
 
                 if (encryption) {
@@ -86,13 +123,33 @@ export const credentialsRouter = t.router({
                         '[LCA /credentials/issue] Encrypting JWE for recipients:',
                         recipients
                     );
-                    const jwe = await learnCard.invoke.createDagJwe(issuedCredential, recipients);
+                    const jwe = await encryptCredentialForRecipients(
+                        issuedCredential,
+                        recipientEncrypters
+                    ).catch((error: unknown) => {
+                        // An unresolved recipient is a permanent input failure, not an issuer
+                        // failure. Return 4xx so callers do not retry it as a transient 5xx.
+                        throw new TRPCError({
+                            code: 'BAD_REQUEST',
+                            message: `Unable to encrypt for a recipient: ${
+                                error instanceof Error ? error.message : String(error)
+                            }`,
+                        });
+                    });
                     console.log('[LCA /credentials/issue] JWE created successfully');
                     return jwe;
                 }
 
                 return issuedCredential;
             } catch (error) {
+                if (error instanceof TRPCError) throw error;
+                if (error instanceof SeedEncryptionError) {
+                    // The helper has already logged sanitized metadata. Do not expose KMS details.
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Signing authority key is unavailable. Please try again.',
+                    });
+                }
                 const errMsg = error instanceof Error ? error.message : String(error);
                 const errStack = error instanceof Error ? error.stack : undefined;
                 console.error('[LCA /credentials/issue] Failed:', {

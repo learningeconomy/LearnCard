@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import type { ClrNormalizedRecord } from 'learn-card-base/helpers/credentials/clr/types';
+import { getClrProfileImage } from 'learn-card-base/helpers/credentials/clr/selectors';
 
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import ClrIssuerBadge from './ClrIssuerBadge';
@@ -7,21 +9,44 @@ import { ChevronDown, ChevronUp, Paperclip } from 'lucide-react';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 import type { VC } from '@learncard/types';
-import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import type {
+    AssessmentDisplayModel,
+    CourseDisplayModel,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+
+type CollapsibleRecord = Pick<
+    CourseDisplayModel,
+    'name' | 'achievementType' | 'earnedAt' | 'evidence'
+> &
+    Partial<Pick<CourseDisplayModel, 'fieldOfStudy'>>;
 
 const ClrCourseCredentialCollapsible: React.FC<{
-    course: CourseDisplayModel;
+    course: CollapsibleRecord | AssessmentDisplayModel;
     issuerName?: string;
     issuerLogo?: string;
     skillCount?: number;
     credential?: VC;
-}> = ({ course, issuerName, issuerLogo, skillCount = 0, credential }) => {
+    record?: ClrNormalizedRecord;
+}> = ({
+    course,
+    issuerName: publisherName,
+    issuerLogo: publisherLogo,
+    skillCount = 0,
+    credential: transcript,
+    record,
+}) => {
     const [open, setOpen] = useState(true);
+    const issuerName = record
+        ? (record.provenance.issuer?.name?.value ?? record.provenance.issuer?.id?.value)
+        : publisherName;
+    const issuerLogo = record ? getClrProfileImage(record.provenance.issuer)?.value : publisherLogo;
+    const credential = record ? (record.sourceCredential as VC | undefined) : transcript;
+    const awarded = record?.dates.awarded?.value;
     const evidenceCount = course.evidence.length;
-    const hasFooter = Boolean(
-        credential || course.earnedAt?.value || skillCount > 0 || evidenceCount > 0
-    );
+    const hasFooter = Boolean(credential || awarded || skillCount > 0 || evidenceCount > 0);
+
+    if (record && !record.sourceCredential) return null;
 
     return (
         <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full">
@@ -30,7 +55,7 @@ const ClrCourseCredentialCollapsible: React.FC<{
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3.5"
             >
-                <p className="text-sm font-semibold text-grayscale-900">1 Credential</p>
+                <p className="text-base font-semibold text-grayscale-900">1 Credential</p>
                 <span className="text-grayscale-600 text-xs">
                     {open ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                 </span>
@@ -49,16 +74,17 @@ const ClrCourseCredentialCollapsible: React.FC<{
                         </div>
                         <div className="min-w-0 flex-1">
                             <div className="">
-                                <p className="text-sm font-semibold text-grayscale-900 truncate">
+                                <p className="text-base font-semibold text-grayscale-900 truncate">
                                     {course.name?.value ?? 'Course'}
                                 </p>
-                                <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide truncate">
+                                <p className="text-sm font-semibold text-grayscale-500 uppercase tracking-wide truncate">
                                     {course.achievementType.value}
-                                    {course.fieldOfStudy?.value &&
+                                    {'fieldOfStudy' in course &&
+                                        course.fieldOfStudy?.value &&
                                         ` • ${course.fieldOfStudy.value}`}
                                 </p>
                                 {issuerName && (
-                                    <p className="text-sm text-grayscale-800 truncate">
+                                    <p className="text-base text-grayscale-800 truncate">
                                         By <span className="font-semibold">{issuerName}</span>
                                     </p>
                                 )}
@@ -66,17 +92,17 @@ const ClrCourseCredentialCollapsible: React.FC<{
 
                             {hasFooter && (
                                 <div className="mt-2 pt-1 border-t border-grayscale-200 flex flex-wrap items-center justify-between gap-3">
-                                    {(credential || course.earnedAt?.value) && (
-                                        <p className="flex items-center gap-1.5 text-sm font-semibold text-grayscale-600 min-w-0">
+                                    {(credential || awarded) && (
+                                        <p className="flex items-center gap-1.5 text-base font-semibold text-grayscale-600 min-w-0">
                                             {credential && (
                                                 <CredentialVerificationDisplay
                                                     credential={credential}
-                                                    iconClassName="!w-5 !h-5"
+                                                    iconClassName="w-5! h-5!"
                                                 />
                                             )}
-                                            {course.earnedAt?.value && (
+                                            {awarded && (
                                                 <span className="truncate">
-                                                    Issued {formatClrDate(course.earnedAt.value)}
+                                                    Awarded {formatClrDate(awarded)}
                                                 </span>
                                             )}
                                         </p>
@@ -84,7 +110,7 @@ const ClrCourseCredentialCollapsible: React.FC<{
 
                                     <div className="ml-auto flex items-center gap-4">
                                         {skillCount > 0 && (
-                                            <span className="flex items-center gap-1.5 text-sm font-semibold text-grayscale-600">
+                                            <span className="flex items-center gap-1.5 text-base font-semibold text-grayscale-600">
                                                 <FlatIcon>
                                                     <SkillsIcon className="w-5 h-5 text-grayscale-500" />
                                                 </FlatIcon>
@@ -92,7 +118,7 @@ const ClrCourseCredentialCollapsible: React.FC<{
                                             </span>
                                         )}
                                         {evidenceCount > 0 && (
-                                            <span className="flex items-center gap-1.5 text-sm font-semibold text-grayscale-600">
+                                            <span className="flex items-center gap-1.5 text-base font-semibold text-grayscale-600">
                                                 <Paperclip
                                                     size={19}
                                                     className="text-grayscale-500"

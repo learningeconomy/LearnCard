@@ -25,6 +25,7 @@ import {
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import { useUploadVcFromText } from '../../../../hooks/useUploadVcFromText';
 import useTheme from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
 export type RawVCFileType = {
     id: string;
@@ -135,7 +136,7 @@ export const CheckListUploadRawVC: React.FC = () => {
             );
 
             const _rawVCs = rawVCsCredentials.map(
-                ({ recordId, fileName, fileSize, fileType, category, uri }: any) => ({
+                ({ recordId, fileName, fileSize, fileType, category, uri }) => ({
                     id: recordId,
                     fileName,
                     fileSize,
@@ -205,7 +206,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                 log.error('Paste VC upload failed', result?.errors);
                 setRawTextErrors([FRIENDLY_PASTE_ERROR]);
             }
-        } catch (error: any) {
+        } catch (error) {
             log.error('Paste VC upload threw', error);
             setRawTextErrors([FRIENDLY_PASTE_ERROR]);
         } finally {
@@ -217,16 +218,13 @@ export const CheckListUploadRawVC: React.FC = () => {
 
     return (
         <div className="h-full relative bg-grayscale-100">
-            <IonHeader
-                color="light"
-                className="rounded-b-[30px] safe-area-top-margin overflow-hidden shadow-md "
-            >
-                <IonToolbar color="light" className="text-white px-4 !py-4">
+            <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md ">
+                <IonToolbar color="light" className="text-white px-4 py-4!">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center gap-[10px]">
                             <BulkImportWithPlusIcon className="w-[65px] h-[65px]" />
                             <h5 className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[24px]">
-                                Add Credentials
+                                {m['arabicFixes.addCredentials']()}
                             </h5>
                         </div>
                     </div>
@@ -239,10 +237,10 @@ export const CheckListUploadRawVC: React.FC = () => {
                 <div className="w-full bg-white flex flex-col gap-[20px] items-center justify-center shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                     <div className="flex flex-col items-start justify-center gap-[5px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            Verifiable Credentials
+                            {m['arabicFixes.verifiableCredentials']()}
                         </h4>
                         <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                            Upload or paste raw JSON credentials to add them to your wallet.
+                            {m['arabicFixes.uploadCredentialsHelp']()}
                         </p>
                     </div>
 
@@ -259,7 +257,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                             if (results) {
                                 setRawVCs(prev => [
                                     ...prev,
-                                    ...results?.map((result: any) => ({
+                                    ...results.map(result => ({
                                         id: result?.id,
                                         fileName: result?.fileInfo?.name,
                                         fileSize: result?.fileInfo?.size,
@@ -277,7 +275,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
                     {fileErrors.length > 0 && (
                         <div className="flex flex-col gap-[5px] p-[10px] bg-orange-100 rounded-[10px] text-orange-700 w-full">
-                            <h5 className="font-poppins text-[17px] font-[600] flex items-center gap-[8px]  ">
+                            <h5 className="font-poppins text-[17px] font-semibold flex items-center gap-[8px]  ">
                                 <AlertTriangle className="w-[24px] h-[24px]" />
                                 {conditionalPluralize(fileErrors.length, 'Error', {
                                     includeCount: false,
@@ -306,7 +304,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
                     <button
                         onClick={triggerFileInput}
-                        className={`w-full flex gap-[10px] rounded-[30px] items-center justify-center py-[7px] px-[15px] font-[600] text-[17px] leading-[24px] tracking-[0.25px] bg-${primaryColor} text-white disabled:opacity-60`}
+                        className={`w-full flex gap-[10px] rounded-[30px] items-center justify-center py-[7px] px-[15px] font-semibold text-[17px] leading-[24px] tracking-[0.25px] bg-${primaryColor} text-white disabled:opacity-60`}
                         disabled={isUploading}
                     >
                         <UploadIcon className="w-[25px] h-[25px] text-white" strokeWidth="2" />
@@ -321,7 +319,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                             onIonInput={e => {
                                 setRawVcText(e.detail.value);
                             }}
-                            className="ion-no-padding !mb-0 h-[112px] overflow-hidden bg-grayscale-100 rounded-[10px] text-grayscale-800 text-[15px] font-notoSans"
+                            className="ion-no-padding mb-0! h-[112px] overflow-hidden bg-grayscale-100 rounded-[10px] text-grayscale-800 text-[15px] font-notoSans"
                             // For some reason placeholder-grayscale-400 doesn't work
                             style={{
                                 '--placeholder-color': 'rgb(156 163 175)', // grayscale-400 equivalent
@@ -337,7 +335,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
                         {rawTextErrors.length > 0 && (
                             <div className="flex flex-col gap-[5px] p-[10px] bg-orange-100 rounded-[10px] text-orange-700">
-                                <h5 className="font-poppins text-[17px] font-[600] flex items-center gap-[8px]  ">
+                                <h5 className="font-poppins text-[17px] font-semibold flex items-center gap-[8px]  ">
                                     <AlertTriangle className="w-[24px] h-[24px]" />
                                     {conditionalPluralize(rawTextErrors.length, 'Error', {
                                         includeCount: false,
@@ -355,7 +353,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
                         <button
                             onClick={handleAddRawVcText}
-                            className={`w-full flex gap-[10px] rounded-[30px] items-center justify-center py-[7px] px-[15px] font-[600] text-[17px] leading-[24px] tracking-[0.25px] text-white ${
+                            className={`w-full flex gap-[10px] rounded-[30px] items-center justify-center py-[7px] px-[15px] font-semibold text-[17px] leading-[24px] tracking-[0.25px] text-white ${
                                 isUploadingRawVC ? 'opacity-60' : ''
                             } ${
                                 !rawVcText || rawTextErrors.length > 0
@@ -373,8 +371,11 @@ export const CheckListUploadRawVC: React.FC = () => {
                 {rawVCs?.length !== 0 && (
                     <div className="w-full bg-white flex flex-col gap-[20px] justify-center shadow-bottom-2-4 p-[15px] mt-4 mb-12 rounded-[15px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            {isLoading ? '...' : rawVCs?.length ?? 0} Verifiable Credential
-                            {rawVCs?.length === 1 ? '' : 's'}
+                            {isLoading
+                                ? '...'
+                                : m['arabicFixes.verifiableCredentialCount']({
+                                      count: rawVCs?.length ?? 0,
+                                  })}
                         </h4>
 
                         {isLoading && <CheckListItemSkeleton />}

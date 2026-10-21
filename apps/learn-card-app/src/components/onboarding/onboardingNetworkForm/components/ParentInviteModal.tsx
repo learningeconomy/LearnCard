@@ -113,6 +113,8 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                 <div className="w-full flex items-center justify-center mt-4 px-2">
                     <button
                         type="button"
+                        aria-busy={loading}
+                        aria-label={m['onboarding.consent.parentInvite.shareInvite']()}
                         onClick={handleShareInvite}
                         disabled={loading || !inviteLink}
                         className="flex items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[12px] text-white font-poppins text-[16px] w-full shadow-lg"
@@ -134,17 +136,21 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                 </div>
 
                 <div className="w-full flex items-center justify-center mt-1 px-2">
+                    <label htmlFor="parent-invite-email" className="sr-only">
+                        {m['onboarding.consent.parentInvite.placeholder']()}
+                    </label>
                     <input
+                        id="parent-invite-email"
                         type="email"
                         placeholder={m['onboarding.consent.parentInvite.placeholder']()}
                         value={email}
                         onChange={e => setEmail(e.target.value)}
-                        className="w-full bg-grayscale-100 rounded-2xl px-4 py-3 text-grayscale-800 placeholder:text-grayscale-500"
+                        className="w-full bg-grayscale-100 rounded-2xl px-4 py-3 text-grayscale-800 placeholder:text-grayscale-400"
                     />
                 </div>
             </div>
 
-            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom">
+            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! safe-area-bottom">
                 <div className="w-full max-w-[700px] flex gap-[10px]">
                     <button
                         type="button"
@@ -155,6 +161,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                     </button>
                     <button
                         type="button"
+                        aria-busy={loading}
                         onClick={handleSendEmailInvite}
                         disabled={loading || !inviteLink}
                         className="shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"

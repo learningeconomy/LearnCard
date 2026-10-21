@@ -6,6 +6,8 @@ import { Boost, BoostInstance } from '@models';
 import { int } from 'neo4j-driver';
 import { getBoostUri } from '@helpers/boost.helpers';
 import { parseIntegration } from '@helpers/integrations.helpers';
+import { getContractById } from '@accesslayer/consentflowcontract/read';
+import type { DbContractType } from 'types/consentflowcontract';
 
 export const getIntegrationForListing = async (
     listingIdOrSlug: string
@@ -93,7 +95,9 @@ export const getBoostForListingByTemplateAlias = async (
 ): Promise<{ boost: BoostInstance; templateAlias: string; boostUri: string } | null> => {
     const result = await neogma.queryRunner.run(
         `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {templateAlias: $templateAlias}]->(b:Boost)
-         RETURN b.id AS id, r.templateAlias AS templateAlias`,
+         RETURN b.id AS id, r.templateAlias AS templateAlias
+         ORDER BY r.createdAt DESC
+         LIMIT 1`,
         { listingId, templateAlias }
     );
 
@@ -146,6 +150,25 @@ export const hasTemplateAliasForListing = async (
     return result.records[0]?.get('exists') ?? false;
 };
 
+export const getConsentContractForListingByScopeHash = async (
+    listingId: string,
+    scopeHash: string
+): Promise<DbContractType | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})
+               -[:HAS_CONSENT_CONTRACT {scopeHash: $scopeHash}]->(contract:ConsentFlowContract)
+         RETURN contract.id AS id
+         ORDER BY contract.createdAt ASC
+         LIMIT 1`,
+        { listingId, scopeHash }
+    );
+
+    const id = result.records[0]?.get('id');
+    if (typeof id !== 'string') return null;
+
+    return getContractById(id);
+};
+
 export const getCredentialsSentByListingToProfile = async (
     listingId: string,
     profileId: string,
@@ -192,11 +215,12 @@ export const getCredentialsSentByListingToProfile = async (
             const isReceived = record.get('isReceived');
             const sentStatus = record.get('sentStatus');
             const receivedStatus = record.get('receivedStatus');
-            const rawStatus = sentStatus ?? receivedStatus;
             let status: 'pending' | 'claimed' | 'revoked' | 'suspended' = 'pending';
 
-            if (rawStatus === 'revoked' || rawStatus === 'suspended') {
-                status = rawStatus;
+            if (sentStatus === 'revoked' || receivedStatus === 'revoked') {
+                status = 'revoked';
+            } else if (sentStatus === 'suspended' || receivedStatus === 'suspended') {
+                status = 'suspended';
             } else if (isReceived) {
                 status = 'claimed';
             }

@@ -36,7 +36,7 @@ export const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = (
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white overflow-hidden shadow-md px-6 py-5 shrink-0 safe-area-top-margin">
+            <div className="bg-white overflow-hidden shadow-md px-6 py-5 shrink-0 mt-[var(--ion-safe-area-top,0px)]">
                 <div className="flex items-center justify-between gap-3">
                     <p className="text-[22px] text-grayscale-900 leading-tight font-semibold">
                         Become a Trusted Issuer
@@ -44,7 +44,7 @@ export const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = (
                     <button
                         onClick={closeModal}
                         aria-label="Close"
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px]"
+                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2"
                     >
                         <X className="w-6 h-6" />
                     </button>

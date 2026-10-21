@@ -21,7 +21,7 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
     return (
         <div
             onClick={e => e.stopPropagation()}
-            className="flex flex-col gap-[10px] bg-transparent mx-auto cursor-auto min-w-[300px] h-full safe-area-top-margin"
+            className="flex flex-col gap-[10px] bg-transparent mx-auto cursor-auto min-w-[300px] h-full"
         >
             <div className="h-full relative overflow-hidden bg-grayscale-200">
                 <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col gap-[20px] items-center justify-start">
@@ -40,7 +40,7 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
             </div>
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     <button

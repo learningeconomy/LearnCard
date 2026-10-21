@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 import CaretDown from '../../../components/svgs/CaretDown';
@@ -26,11 +27,13 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     const { data: earnedBoostIDs } = useGetIDs();
 
     const nationalNetworkIds =
-        earnedBoostIDs?.filter(
-            cred =>
-                getDefaultCategoryForCredential(cred) ===
-                CredentialCategoryEnum.nationalNetworkAdminId
-        ) ?? [];
+        earnedBoostIDs
+            ?.map(({ vc }) => vc)
+            .filter(
+                cred =>
+                    getDefaultCategoryForCredential(cred) ===
+                    CredentialCategoryEnum.nationalNetworkAdminId
+            ) ?? [];
 
     const { data: networkBoost, isLoading } = useGetBoost(parentUri);
     const networkName = networkBoost?.meta?.edits?.name ?? networkBoost?.name;
@@ -39,7 +42,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     const presentModal = () => {
         newModal(
             <BulkBoostParentSelectorModal parentUri={parentUri} setParentUri={setParentUri} />,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 
@@ -53,11 +56,11 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     return (
         <button
             onClick={() => presentModal()}
-            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4 h-[58px]"
+            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-300 mt-4 mb-4 h-[58px]"
         >
             {!parentUri && (
                 <p className="m-0 pl-[10px] p-0 text-lg font-notoSans text-grayscale-600 line-clamp-1">
-                    Select a network...
+                    {m['adminTools.bulkImport.selectNetwork']()}
                 </p>
             )}
             {parentUri && (
@@ -75,14 +78,14 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
                             ) : (
                                 <img
                                     src={networkImage}
-                                    alt="network thumb"
+                                    alt=""
                                     className="w-full h-full object-cover"
                                 />
                             )}
                         </div>
                         <div className="flex flex-col items-start justify-center">
                             <h4 className="text-sp-fire-red font-bold p-0 m-0 text-xs font-notoSans">
-                                Network
+                                {m['adminTools.bulkImport.network']()}
                             </h4>
 
                             {isLoading ? (

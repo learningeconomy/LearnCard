@@ -59,7 +59,7 @@ export const RecoveryPrompt: React.FC<RecoveryPromptProps> = ({
                     </button>
                     <button
                         onClick={onDiscard}
-                        className="flex items-center justify-center text-grayscale-800 rounded-[30px] border-solid border-[1px] border-grayscale-200 px-[15px] py-[7px] bg-grayscale-50 font-poppins font-semibold text-[17px] w-full mt-4"
+                        className="flex items-center justify-center text-grayscale-800 rounded-[30px] border-solid border border-grayscale-200 px-[15px] py-[7px] bg-grayscale-50 font-poppins font-semibold text-[17px] w-full mt-4"
                     >
                         {discardButtonText}
                     </button>

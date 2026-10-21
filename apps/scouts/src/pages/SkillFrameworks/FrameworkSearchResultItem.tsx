@@ -2,6 +2,7 @@ import React from 'react';
 import { middleTruncate, useGetSkillPath } from 'learn-card-base';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 import TierIcon from './TierIcon';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
@@ -100,7 +101,7 @@ const FrameworkSearchResultItem: React.FC<FrameworkSearchResultItemProps> = ({
                             {node.targetName}
                         </span>
                         <span className="flex font-poppins text-[12px] text-grayscale-700 font-[700]">
-                            Framework Tier •{' '}
+                            {m['skillFrameworks.fwTierResult']()}{' '}
                             <FrameworkSkillsCount
                                 frameworkId={frameworkInfo.id}
                                 skillId={node.id}
@@ -137,19 +138,22 @@ const FrameworkSearchResultItem: React.FC<FrameworkSearchResultItemProps> = ({
                             <div className="w-[40px] h-[40px] rounded-full bg-grayscale-300" />
                         )}
                         <button
-                            className="pl-[10px] border-l-[1px] border-grayscale-200 border-solid text-grayscale-500 h-full"
+                            className="pl-[10px] border-l border-grayscale-200 border-solid text-grayscale-500 h-full"
                             onClick={e => {
                                 e.stopPropagation();
                                 onClick?.(node, path);
                             }}
                         >
-                            <SlimCaretRight className="w-[24px] h-[24px]" strokeWidth="2" />
+                            <SlimCaretRight
+                                className="rtl-mirror w-[24px] h-[24px]"
+                                strokeWidth="2"
+                            />
                         </button>
                     </div>
                 )}
 
                 {!isSelectSkillsFlow && (
-                    <SlimCaretRight className="ml-auto text-grayscale-400 h-[20px] w-[20px] shrink-0" />
+                    <SlimCaretRight className="rtl-mirror ml-auto text-grayscale-400 h-[20px] w-[20px] shrink-0" />
                 )}
             </div>
         </div>

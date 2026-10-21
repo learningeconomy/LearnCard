@@ -15,10 +15,76 @@ https://docs.learncard.com
 
 ## Install
 
--   Clone this repo
--   Set up AWS CLI
--   Add a .env file exporting a wallet seed (e.g. `WALLET_SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
--   Run `bun run serverless-deploy`
+- Clone this repo
+- Set up AWS CLI
+- Add a .env file exporting a wallet seed (e.g. `WALLET_SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
+- Run `bun run serverless-deploy`
+
+## Local VC-API conformance testing
+
+The bridge uses a source-controlled DIDKit WASM copied from the current plugin build. Every
+build and start command verifies the canonical plugin artifact's SHA-256 before refreshing the
+bridge copy, so local, CLI, and serverless execution cannot silently use different binaries.
+
+```bash
+cd lib/didkit/lib/web
+wasm-pack build --target=web && cd pkg && wasm-opt -Oz --enable-mutable-globals --enable-nontrapping-float-to-int --enable-bulk-memory --enable-sign-ext --enable-reference-types --enable-multivalue -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
+bun --cwd ../../../../packages/plugins/didkit run build
+```
+
+Pass the explicit `--enable-*` feature flags to `wasm-opt`, matching
+`packages/plugins/didkit/scripts/build-wasm-from-submodules.sh`. Stripped DIDKit release builds
+have no `target_features` section, so a plain `wasm-opt -Oz` fails validation.
+
+Stop and restart any running bridge after rebuilding; it loads the DIDKit WASM during
+initialization.
+When intentionally rebuilding DIDKit, review the new binary and run
+`bun scripts/sync-didkit.ts --update-integrity` from this package. Commit the updated
+`EXPECTED_DIDKIT_SHA256` guard together with the plugin artifact. The repository's
+`build-wasm-from-submodules.sh` helper does this explicitly after generation, and the
+WASM update automation includes the guard and artifacts in its PR. Ordinary builds only verify
+the pin; they never update it. To test an unreviewed local artifact
+without changing that pin, set `LOCAL_DIDKIT_PATH` as described below.
+
+Start the LearnCard HTTP bridge in the first terminal:
+
+```bash
+cd packages/learn-card-bridge-http
+WALLET_SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+bun run start:local
+```
+
+Set `LOCAL_DIDKIT_PATH=/absolute/path/to/didkit_wasm_bg.wasm` only to override the
+package-provided WASM. The test seed must match the issuer DID in `w3c-localConfig.cjs`.
+
+Run the current W3C EdDSA Data Integrity suite in a second terminal:
+
+```bash
+git clone --depth 1 https://github.com/w3c/vc-di-eddsa-test-suite.git
+cd vc-di-eddsa-test-suite
+npm install
+cp "$LEARN_CARD_REPO/packages/learn-card-bridge-http/w3c-localConfig.cjs" localConfig.cjs
+npx mocha tests/05-di-rdfc-create.js --timeout 30000
+npx mocha tests/15-di-rdfc-verify.js --timeout 30000
+```
+
+Set `LEARN_CARD_REPO` to the absolute path of this monorepo. Set `BASE_URL` when the
+bridge is not listening at `http://127.0.0.1:3100`.
+
+## URL issuer verification policy
+
+When a credential names an HTTPS issuer but its proof uses a DID verification method, a
+successful `proof` check establishes signature integrity only. DIDKit cannot establish that the
+named URL issuer authorized that DID key because there is no issuer DID document to supply the
+assertion-method relationship. The raw verification result therefore includes this
+security-relevant warning:
+
+```text
+Issuer authorization was not checked because the credential issuer is not a DID
+```
+
+Consumers must surface or enforce this warning according to their trust policy; they must not
+interpret `checks: ["proof"]` by itself as issuer authorization.
 
 ## Local VC-API conformance testing
 

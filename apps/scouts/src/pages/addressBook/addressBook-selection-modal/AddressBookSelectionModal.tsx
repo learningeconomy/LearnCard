@@ -6,15 +6,18 @@ import AllContactsIcon from 'apps/scouts/src/components/svgs/AllContactsIcon';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal, useWallet, useGetConnections } from 'learn-card-base';
 import TroopButton from './TroopButton';
-import { VC } from '@learncard/types';
+import type { VC_WITH_URI } from 'learn-card-base';
+import type { PaginatedBoostsType } from '@learncard/types';
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 const log = getLogger('address-book-selection-modal');
 
 type AddressBookSelectionModalProps = {
     onGroupSelect: (groupId: string, boostId?: string) => void;
     selectedGroupId: string;
     setTroopCounts: React.Dispatch<React.SetStateAction<{ [key: string]: number }>>;
-    records: VC[];
+    records: VC_WITH_URI[];
     isLoadingRecords: boolean;
 };
 
@@ -33,7 +36,7 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
     const [troopCountsInModal, setTroopCountsInModal] = useState<Record<string, number>>({});
     const [loadingCounts, setLoadingCounts] = useState(false);
 
-    const getTroopCount = async (uri: string) => {
+    const getTroopCount = async (uri: string): Promise<number> => {
         const wallet = await initWallet();
         const troopCount = await wallet.invoke.countBoostRecipientsWithChildren(uri);
         return troopCount;
@@ -50,16 +53,15 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
             try {
                 const wallet = await initWallet();
 
-                const parentDataArray = await Promise.all(
-                    records.map(record => wallet.invoke.getBoostParents(record.boostId, 2))
+                // Preserve the existing immediate-parent lookup for contact counts.
+                const parentDataArray: PaginatedBoostsType[] = await Promise.all(
+                    records.map(({ vc }) => wallet.invoke.getBoostParents(vc.boostId))
                 );
 
                 // For each record, figure out which URI we should use to look up troop counts.
                 const uris = parentDataArray.map((parentData, i) => {
-                    const troopParent = parentData.records?.find(
-                        (p: any) => p.type === 'ext:TroopID'
-                    );
-                    return troopParent?.uri ?? records[i].boostId;
+                    const troopParent = parentData.records?.find(p => p.type === 'ext:TroopID');
+                    return troopParent?.uri ?? records[i].vc.boostId;
                 });
 
                 // Fetch all troop counts at once
@@ -67,7 +69,8 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
 
                 const countsMap: Record<string, number> = {};
                 counts.forEach((count, i) => {
-                    countsMap[records[i].uri] = Math.max(count - 1, 0);
+                    const uri = records[i].uri;
+                    if (uri) countsMap[uri] = Math.max(count - 1, 0);
                 });
 
                 // Only update state if the effect hasn't been cancelled during async calls
@@ -102,15 +105,16 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
         onGroupSelect(group, boostId);
     };
 
-    const filteredRecords = records?.filter(record =>
-        record?.boostCredential?.name?.toLowerCase().includes(search.toLowerCase())
+    const filteredRecords = records?.filter(({ vc }) =>
+        unwrapBoostCredential(vc)?.name?.toLowerCase().includes(search.toLowerCase())
     );
 
     const troopButtons = filteredRecords?.map((record, index) => {
         return (
             <TroopButton
                 key={index}
-                record={record}
+                record={record.vc}
+                credentialUri={record.uri}
                 handleSelectingContactGroup={handleSelectingContactGroup}
                 selectedGroup={selectedGroup}
                 troopCountsInModal={troopCountsInModal}
@@ -123,10 +127,10 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
             <IonRow class="w-full max-w-[600px] px-3 py-[20px]">
                 <IonCol className="flex w-full items-center justify-start">
                     <div className="cursor-pointer text-grayscale-900" onClick={closeModal}>
-                        <CaretLeft />
+                        <CaretLeft className="rtl-mirror" />
                     </div>
                     <h1 className="text-[22px] font-notoSans font-normal text-grayscale-900 ml-[15px]">
-                        Select from Contacts
+                        {m['addressBook.selectFromContacts']()}
                     </h1>
                 </IonCol>
             </IonRow>
@@ -135,7 +139,7 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
                     <IonCol className="flex w-full items-center justify-start">
                         <IonInput
                             autocapitalize="on"
-                            placeholder="Search..."
+                            placeholder={m['common.search']()}
                             value={search}
                             className="bg-white text-grayscale-800 ion-padding rounded-[15px] text-base font-medium tracking-wider subpixel-antialiased font-notoSans"
                             onIonInput={e => setSearch(e?.detail?.value as string)}
@@ -148,15 +152,15 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
                 {selectedGroup?.toLowerCase().includes(search.toLowerCase()) && (
                     <button
                         onClick={() => handleSelectingContactGroup('all')}
-                        className="relative flex bg-white border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                        className="relative flex bg-white border-solid border-grayscale-200 border rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
                     >
                         <AllContactsIcon />
                         <div className="flex flex-col items-start ml-2">
                             <span className="text-sp-purple-base text-[12px] font-bold font-notoSans">
-                                All Contacts
+                                {m['addressBook.allContacts']()}
                             </span>
                             <span className="text-grayscale-800 text-[17px] font-normal font-notoSans">
-                                {data?.length} Contacts
+                                {m['addressBook.contactsCount']({ count: data?.length ?? 0 })}
                             </span>
                         </div>
                         {selectedGroup === 'all' && (

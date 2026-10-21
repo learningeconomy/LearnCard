@@ -9,10 +9,11 @@
  * tenant identity (e.g. "VetPass <login@vetpass.app>").
  */
 
+import { environment } from '@environment';
 import type { TenantBranding } from '@learncard/email-templates';
 
-const BRAND_NAME = process.env.POSTMARK_BRAND_NAME ?? '';
-const FROM_DOMAIN = process.env.POSTMARK_FROM_EMAIL ?? '';
+const BRAND_NAME = environment.POSTMARK_BRAND_NAME ?? '';
+const FROM_DOMAIN = environment.POSTMARK_FROM_EMAIL ?? '';
 
 /**
  * Build a formatted "From" address, e.g. `"LearnCard <login@learncard.com>"`.

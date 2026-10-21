@@ -1,18 +1,22 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
 
 import BoostMediaPreview from './BoostMediaPreview';
 
-const { getFilestackPreviewUrlMock, resolvePdfDocumentResourceMock, revokeUrlsMock } = vi.hoisted(
-    () => ({
-        getFilestackPreviewUrlMock: vi.fn(),
-        resolvePdfDocumentResourceMock: vi.fn(),
-        revokeUrlsMock: vi.fn(),
-    })
-);
+const {
+    getFilestackPreviewUrlMock,
+    resolvePdfDocumentResourceMock,
+    revokeUrlsMock,
+    getVideoMetadataMock,
+} = vi.hoisted(() => ({
+    getFilestackPreviewUrlMock: vi.fn(),
+    resolvePdfDocumentResourceMock: vi.fn(),
+    revokeUrlsMock: vi.fn(),
+    getVideoMetadataMock: vi.fn(),
+}));
 
 vi.mock('swiper/react', () => ({
     Swiper: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
@@ -31,12 +35,16 @@ vi.mock('learn-card-base', () => ({
     BoostCategoryOptionsEnum: { accomplishment: 'accomplishment' },
     DisplayTypeEnum: { Media: 'media' },
     getLogger: () => ({ error: vi.fn() }),
-    getVideoMetadata: vi.fn(),
+    getVideoMetadata: getVideoMetadataMock,
     useDeviceTypeByWidth: () => ({ isMobile: true }),
     useModal: () => ({ closeModal: vi.fn() }),
 }));
 
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
+    // The preview renders a screen-reader-only heading from the credential
+    // name, so the mock resolves the same fields the real helper prefers.
+    getCredentialName: (credential: any): string =>
+        credential?.name ?? credential?.credentialSubject?.achievement?.name ?? '',
     getExistingAttachmentsOrEvidence: (
         attachments: unknown[],
         evidence: unknown[],
@@ -73,6 +81,19 @@ vi.mock('../../../svgs/SlimCaretRight', () => ({ default: () => null }));
 vi.mock('learn-card-base/components/boost/boostFooter/BoostFooter', () => ({
     default: () => null,
 }));
+// Surface footerProps so tests can assert on which footer controls are offered.
+// The preview renders the accessible footer wrapper rather than the shared
+// base layout, so the stub has to stand in for that module.
+vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
+    default: ({ children, footerProps }: any) => (
+        <div
+            data-testid="footer-layout"
+            data-show-full-screen={String(!!footerProps?.showFullScreen)}
+        >
+            {children}
+        </div>
+    ),
+}));
 vi.mock('learn-card-base/svgs/SpilledCup', () => ({ default: () => null }));
 
 const CERTIFICATE_DATA = 'data:application/pdf;base64,Y2VydGlmaWNhdGU=';
@@ -85,6 +106,16 @@ const credential = {
             fileName: 'certificate.pdf',
             fileType: 'PDF',
             data: CERTIFICATE_DATA,
+        },
+    ],
+} as unknown as VC;
+
+const videoCredential = {
+    attachments: [
+        {
+            type: 'video',
+            title: 'A video',
+            url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         },
     ],
 } as unknown as VC;
@@ -167,5 +198,67 @@ describe('BoostMediaPreview', () => {
             CERTIFICATE_DATA,
             'legacy-certificate.pdf'
         );
+    });
+
+    describe('video that must open in an external browser', () => {
+        const setProtocol = (protocol: string) => {
+            Object.defineProperty(window, 'location', {
+                configurable: true,
+                writable: true,
+                value: { ...window.location, protocol },
+            });
+        };
+
+        beforeEach(() => {
+            getVideoMetadataMock.mockResolvedValue({
+                type: 'youtube',
+                videoId: 'dQw4w9WgXcQ',
+                embedUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+            });
+        });
+
+        afterEach(() => setProtocol('http:'));
+
+        it('hides the expand-to-full-screen control — there is nothing inline to expand', async () => {
+            setProtocol('capacitor:');
+
+            const { findByTestId, findByRole, container } = render(
+                <BoostMediaPreview
+                    credential={videoCredential}
+                    openDetailsSideModal={vi.fn()}
+                    handleShareBoost={vi.fn()}
+                    onDotsClick={vi.fn()}
+                    verifications={[]}
+                />
+            );
+
+            await findByRole('button', { name: 'Watch on YouTube' });
+            expect(container.querySelector('iframe')).not.toBeInTheDocument();
+            expect(await findByTestId('footer-layout')).toHaveAttribute(
+                'data-show-full-screen',
+                'false'
+            );
+        });
+
+        it('keeps the expand control when the video plays inline', async () => {
+            setProtocol('https:');
+
+            const { findByTestId, container } = render(
+                <BoostMediaPreview
+                    credential={videoCredential}
+                    openDetailsSideModal={vi.fn()}
+                    handleShareBoost={vi.fn()}
+                    onDotsClick={vi.fn()}
+                    verifications={[]}
+                />
+            );
+
+            await waitFor(() => expect(container.querySelector('iframe')).toBeInTheDocument());
+            expect(await findByTestId('footer-layout')).toHaveAttribute(
+                'data-show-full-screen',
+                'true'
+            );
+        });
     });
 });

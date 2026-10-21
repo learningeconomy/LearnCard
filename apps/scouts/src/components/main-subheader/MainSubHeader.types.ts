@@ -10,6 +10,7 @@ import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
 import { CredentialCategoryEnum } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 export enum SubheaderTypeEnum {
     SocialBadge = 'socialBadge',
@@ -28,100 +29,128 @@ export interface LocationState {
     pathname: string;
 }
 
+export type SubheaderCopy = {
+    title: string;
+    helperText?: string;
+    helperTextClickable?: string;
+};
+
+// Resolved at call time (render) so the active locale is honored on every switch.
+export const getSubheaderCopy = (type: SubheaderTypeEnum): SubheaderCopy => {
+    switch (type) {
+        case SubheaderTypeEnum.SocialBadge:
+            return {
+                title: m['mainSubheader.socialBadge.title'](),
+                helperText: m['mainSubheader.socialBadge.helper'](),
+                helperTextClickable: m['mainSubheader.socialBadge.helperAction'](),
+            };
+        case SubheaderTypeEnum.Membership:
+            return {
+                title: m['mainSubheader.membership.title'](),
+                helperText: m['mainSubheader.membership.helper'](),
+                helperTextClickable: m['mainSubheader.membership.helperAction'](),
+            };
+        case SubheaderTypeEnum.MeritBadge:
+            return {
+                title: m['mainSubheader.meritBadge.title'](),
+                helperText: m['mainSubheader.meritBadge.helper'](),
+                helperTextClickable: m['mainSubheader.meritBadge.helperAction'](),
+            };
+        case SubheaderTypeEnum.Skill:
+            return {
+                title: m['mainSubheader.skill.title'](),
+                helperText: m['mainSubheader.skill.helper'](),
+                helperTextClickable: m['mainSubheader.skill.helperAction'](),
+            };
+        case SubheaderTypeEnum.Currency:
+            return { title: m['mainSubheader.currency.title']() };
+        case SubheaderTypeEnum.ID:
+            return { title: m['mainSubheader.id.title']() };
+        case SubheaderTypeEnum.Achievement:
+            return { title: m['mainSubheader.achievement.title']() };
+        case SubheaderTypeEnum.Job:
+            return { title: m['mainSubheader.job.title']() };
+        case SubheaderTypeEnum.Learning:
+            return { title: m['mainSubheader.learning.title']() };
+        case SubheaderTypeEnum.default:
+        default:
+            return { title: '' };
+    }
+};
+
 export const SubheaderContentType: Record<
     SubheaderTypeEnum,
     {
-        title: string;
         IconComponent: React.FC<{ className?: string }> | null;
         iconColor: string;
         textColor: string;
         bgColor: string;
-        helperText?: string;
-        helperTextClickable?: string;
     }
 > = {
     // Scouts - Boosts
     [SubheaderTypeEnum.SocialBadge]: {
-        title: 'Social Boosts',
         IconComponent: BlueBoostOutline2,
         iconColor: 'text-sp-blue-dark-ocean',
         textColor: 'text-white',
         bgColor: 'bg-sp-blue-ocean',
-        helperText: 'Showcase your',
-        helperTextClickable: 'social milestones',
     },
 
     // Scouts - Troops
     [SubheaderTypeEnum.Membership]: {
-        title: 'Troops',
         IconComponent: GreenScoutsPledge2,
         iconColor: 'text-sp-green-forest-dark',
         textColor: 'text-white',
         bgColor: 'bg-sp-green-forest',
-        helperText: 'Access your',
-        helperTextClickable: 'troop affiliations',
     },
 
     // Scouts - Merit Badges
     [SubheaderTypeEnum.MeritBadge]: {
-        title: 'Merit Badges',
         IconComponent: PurpleMeritBadgesIcon,
         iconColor: 'text-sp-purple-base',
         textColor: 'text-white',
         bgColor: 'bg-sp-purple-base',
-        helperText: 'Collect your',
-        helperTextClickable: 'scouting achievements',
     },
 
     // Scouts - Skills
     [SubheaderTypeEnum.Skill]: {
-        title: 'Competencies Hub',
         IconComponent: SkillsIconWithShape,
         iconColor: 'text-indigo-500',
         textColor: 'text-grayscale-900',
         bgColor: 'bg-white',
-        helperText: 'Your',
-        helperTextClickable: 'competency roadmap.',
     },
 
     // Not currently used in Scouts
     [SubheaderTypeEnum.Currency]: {
-        title: 'Currencies',
         IconComponent: Coins,
         iconColor: 'text-cyan-700',
         textColor: 'text-white',
         bgColor: 'bg-cyan-700',
     },
     [SubheaderTypeEnum.ID]: {
-        title: 'IDs',
         IconComponent: IDIcon,
         iconColor: 'text-yellow-400',
         textColor: 'text-white',
         bgColor: 'bg-yellow-400',
     },
     [SubheaderTypeEnum.Achievement]: {
-        title: 'Achievements',
         IconComponent: Trophy,
         iconColor: 'text-spice-400',
         textColor: 'text-white',
         bgColor: 'bg-spice-400',
     },
     [SubheaderTypeEnum.Job]: {
-        title: 'Work History',
         IconComponent: Briefcase,
         iconColor: 'text-rose-400',
         textColor: 'text-white',
         bgColor: 'bg-rose-400',
     },
     [SubheaderTypeEnum.Learning]: {
-        title: 'Learning History',
         IconComponent: Graduation,
         iconColor: 'text-emerald-700',
         textColor: 'text-white',
         bgColor: 'bg-emerald-700',
     },
     [SubheaderTypeEnum.default]: {
-        title: '',
         IconComponent: null,
         iconColor: '',
         textColor: '',

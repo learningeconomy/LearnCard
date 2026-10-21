@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -22,6 +23,7 @@ import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import type { DidWebPlugin } from '@learncard/did-web-plugin';
 import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
+import type { JWE } from '@learncard/types';
 
 // The DIDKit WASM is copied next to the compiled handler at build time (see
 // esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
@@ -64,7 +66,7 @@ const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugi
     if (cached) return cached;
 
     const promise = (async () => {
-        if (process.env.SKIP_DIDKIT_NAPI) {
+        if (environment.SKIP_DIDKIT_NAPI) {
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
@@ -110,7 +112,7 @@ export type SeedLearnCard = LearnCard<
         VCPlugin,
         VCTemplatePlugin,
         ExpirationPlugin,
-        LearnCardPlugin
+        LearnCardPlugin,
     ]
 >;
 
@@ -124,16 +126,24 @@ export type DidWebLearnCard = LearnCard<
         VCTemplatePlugin,
         ExpirationPlugin,
         LearnCardPlugin,
-        DidWebPlugin
+        DidWebPlugin,
     ]
 >;
+
+/**
+ * The wallet level captured _before_ the Encryption plugin is added. Its
+ * `invoke.createDagJwe` is the lower-level DIDKit method, which encrypts for
+ * exactly the given recipients.
+ */
+export type DidKeyLearnCard = LearnCard<[CryptoPluginType, DIDKitPlugin, DidKeyPlugin<DidMethod>]>;
 
 let emptyLearnCard: EmptyLearnCard;
 
 const learnCards: Record<string, SeedLearnCard> = {};
+const didKeyLearnCards: Record<string, DidKeyLearnCard> = {};
 let didWebLearnCard: DidWebLearnCard;
 
-const IS_OFFLINE = process.env.IS_OFFLINE;
+const IS_OFFLINE = environment.IS_OFFLINE;
 
 export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     if (!emptyLearnCard || IS_OFFLINE) {
@@ -152,7 +162,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
 };
 
 export const getLearnCard = async (
-    seed = process.env.SEED,
+    seed = environment.SEED,
     allowRemoteContexts = false
 ): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
@@ -171,6 +181,8 @@ export const getLearnCard = async (
         const didkeyLc = await didkitLc.addPlugin(
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
         );
+
+        didKeyLearnCards[cacheKey] = didkeyLc as DidKeyLearnCard;
 
         const encryptionLc = await didkeyLc.addPlugin(await getEncryptionPlugin(didkeyLc));
 
@@ -194,9 +206,34 @@ export const getLearnCard = async (
     return learnCard;
 };
 
+/**
+ * Encrypts `cleartext` for exactly `recipients` — no implicit caller recipient.
+ *
+ * The Encryption plugin's convenience `createDagJwe` always adds the calling
+ * wallet's own DID, which would hand this service a persistent decrypt capability
+ * for every managed refresh payload. Managed credential refresh (LC-2135) requires
+ * holder-only payloads, so this helper deliberately uses the lower-level DIDKit
+ * plugin method on the wallet level captured before the Encryption plugin is added.
+ *
+ * Private to brain-service: do not re-export beyond this service's helpers.
+ */
+export const createDagJweForRecipients = async <T>(
+    cleartext: T,
+    recipients: string[],
+    seed = environment.SEED
+): Promise<JWE> => {
+    await getLearnCard(seed);
+
+    const wallet = didKeyLearnCards[`${seed}:false`];
+
+    if (!wallet) throw new Error('LearnCard not initialized');
+
+    return wallet.invoke.createDagJwe(cleartext, recipients);
+};
+
 export const getServerDidWebDID = (): string => {
-    const domainName = process.env.DOMAIN_NAME;
-    const isOffline = !!process.env.IS_OFFLINE;
+    const domainName = environment.DOMAIN_NAME;
+    const isOffline = !!environment.IS_OFFLINE;
 
     // Misconfig guard: a deployed (non-offline) environment without DOMAIN_NAME
     // would silently fall back to localhost and produce an unresolvable did:web,
@@ -211,7 +248,7 @@ export const getServerDidWebDID = (): string => {
 
     // IS_OFFLINE forces localhost even if DOMAIN_NAME is set — preserves dev/prod
     // isolation so an inherited prod env var can't leak into a local dev session.
-    const domain = isOffline ? `localhost%3A${process.env.PORT || 3000}` : domainName!;
+    const domain = isOffline ? `localhost%3A${environment.PORT || 3000}` : domainName!;
     return `did:web:${domain}`;
 };
 
@@ -220,13 +257,13 @@ export const isServersDidWebDID = (did: string): boolean => {
 };
 
 export const isTrustedLoginProviderDID = (did: string): boolean => {
-    const loginProviderDid = process.env.LOGIN_PROVIDER_DID;
+    const loginProviderDid = environment.LOGIN_PROVIDER_DID;
 
     return did === getServerDidWebDID() || (loginProviderDid ? did === loginProviderDid : false);
 };
 
 export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {
-    const seed = process.env.SEED;
+    const seed = environment.SEED;
 
     const didWeb = getServerDidWebDID();
 

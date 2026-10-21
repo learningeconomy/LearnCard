@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
+import * as m from '../../paraglide/messages.js';
 import {
     useModal,
     useGetCurrentUserTroopIdsResolved,
@@ -55,12 +57,12 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
         const ids: Array<{ boostId: string; credType: 'global' | 'national' }> = [];
 
         troopIds?.globalAdmin?.forEach(credential => {
-            const boostId = (credential as any)?.boostId;
+            const boostId = credential.boostId;
             if (boostId) ids.push({ boostId, credType: 'global' });
         });
 
         troopIds?.nationalAdmin?.forEach(credential => {
-            const boostId = (credential as any)?.boostId;
+            const boostId = credential.boostId;
             if (boostId) ids.push({ boostId, credType: 'national' });
         });
 
@@ -94,9 +96,16 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
 
             resolvedNetworks.push({
                 uri: boostId,
-                name: boost.name || (credType === 'global' ? 'Global Network' : 'Regional Network'),
-                image: (boost.meta as any)?.image,
-                type: credType === 'global' ? 'Global Network' : 'Regional Network',
+                name:
+                    boost.name ||
+                    (credType === 'global'
+                        ? m['skillFrameworks.globalNet']()
+                        : m['skillFrameworks.regionalNet']()),
+                image: (boost.meta as { image?: string } | undefined)?.image,
+                type:
+                    credType === 'global'
+                        ? m['skillFrameworks.globalNet']()
+                        : m['skillFrameworks.regionalNet'](),
             });
         });
 
@@ -119,7 +128,7 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
         },
         onError: error => {
             log.error('Failed to update networks:', error);
-            alert('Failed to update networks. Please try again.');
+            alert(m['skillFrameworks.toasts.updateNetworksFail']());
         },
     });
 
@@ -139,7 +148,7 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
             <div className="py-[10px] pl-[10px] pr-[20px] flex gap-[10px] items-center shadow-bottom-1-5">
                 <ScoutsTroopIcon className="w-[65px] h-[65px]" />
                 <p className="text-grayscale-800 font-poppins text-[20px] leading-[130%] tracking-[-0.25px]">
-                    Manage Networks
+                    {m['skillFrameworks.mgNets']()}
                 </p>
                 <CaretDown className="ml-auto text-grayscale-800" />
             </div>
@@ -152,8 +161,7 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
                 ) : networks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-[20px]">
                         <p className="text-grayscale-600 font-poppins text-[16px]">
-                            No networks found. Create a Global or Regional network first from the
-                            Membership page.
+                            {m['skillFrameworks.noNetsFound']()}
                         </p>
                     </div>
                 ) : (
@@ -225,18 +233,20 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
                     onClick={closeModal}
                     className="bg-white text-grayscale-900 px-[20px] py-[7px] rounded-[30px] text-[17px] font-poppins flex-1 shadow-button-bottom"
                 >
-                    Close
+                    {m['common.close']()}
                 </button>
                 <button
                     onClick={handleSave}
                     disabled={updateNetworksMutation.isPending}
                     className="bg-emerald-700 text-white px-[20px] py-[7px] rounded-[30px] text-[17px] font-poppins flex-1 font-[600] leading-[130%] tracking-[-0.25px] shadow-button-bottom disabled:bg-grayscale-600"
                 >
-                    {updateNetworksMutation.isPending ? 'Saving...' : `Save (${selected.length})`}
+                    {updateNetworksMutation.isPending
+                        ? m['common.saving']()
+                        : m['skillFrameworks.saveWithCount']({ count: selected.length })}
                 </button>
             </div>
         </section>
     );
 };
 
-export default ManageFrameworkNetworksModal;
+export default withCompetencyAdmin(ManageFrameworkNetworksModal);

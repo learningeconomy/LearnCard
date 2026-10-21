@@ -1,13 +1,12 @@
 # ContractsGetTermsTransactionHistoryRequestQueryExpiresAt
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**gt** | **str** |  | 
-**lt** | **str** |  | 
-**eq** | **str** |  | 
+| Name   | Type    | Description | Notes |
+| ------ | ------- | ----------- | ----- |
+| **gt** | **str** |             |
+| **lt** | **str** |             |
+| **eq** | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_terms_transaction_history_request_query_expires_at_dict = contract
 # create an instance of ContractsGetTermsTransactionHistoryRequestQueryExpiresAt from a dict
 contracts_get_terms_transaction_history_request_query_expires_at_from_dict = ContractsGetTermsTransactionHistoryRequestQueryExpiresAt.from_dict(contracts_get_terms_transaction_history_request_query_expires_at_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

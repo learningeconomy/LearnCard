@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import moment from 'moment';
-
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
+import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate, formatLocaleTime } from '../../../i18n/formatters';
 
 import { VC, Boost } from '@learncard/types';
 
@@ -157,10 +157,10 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     let idSleeveFooterClass = '';
 
     if (isID) {
-        idDisplayContainerClass = '!border-white';
-        idSleeveFooterClass = '!bg-teal-300';
+        idDisplayContainerClass = 'border-white!';
+        idSleeveFooterClass = 'bg-teal-300!';
     } else if (isMembership) {
-        idDisplayContainerClass = '!border-white';
+        idDisplayContainerClass = 'border-white!';
         idSleeveFooterClass = '!bg-sp-green-light';
     }
 
@@ -276,14 +276,14 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                 customIssueHistoryComponent={
                     <IonList
                         lines="none"
-                        className="flex flex-col items-center justify-center w-[100%]"
+                        className="flex flex-col items-center justify-center w-full"
                     >
                         {recipients?.map((recipient, index) => {
                             return (
                                 <IonItem
                                     key={recipient?.received || index}
                                     lines="none"
-                                    className={`w-[100%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
+                                    className={`w-full max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
                                 >
                                     <div className="flex items-center justify-start w-full">
                                         <div className="flex items-center justify-start">
@@ -300,9 +300,16 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                                                     recipient?.to?.profileId}
                                             </p>
                                             <p className="text-grayscale-600 font-normal text-sm">
-                                                {moment(recipient?.received).format('DD MMMM YYYY')}{' '}
+                                                {formatLocaleDate(recipient?.received, {
+                                                    day: '2-digit',
+                                                    month: 'long',
+                                                    year: 'numeric',
+                                                })}{' '}
                                                 &bull;{' '}
-                                                {moment(recipient?.received).format('h:mm A')}
+                                                {formatLocaleTime(recipient?.received, {
+                                                    hour: 'numeric',
+                                                    minute: '2-digit',
+                                                })}
                                             </p>
                                         </div>
                                     </div>
@@ -328,7 +335,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="w-full text-center">
                     <p className="text-grayscale-600 font-semibold text-center text-[14px] leading-none">
-                        No Boosts Yet
+                        {m['boost.noBoostsYet']()}
                     </p>
                     <button
                         className="text-indigo-600 font-semibold text-base leading-snug"
@@ -337,7 +344,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                             handleEditOnClick();
                         }}
                     >
-                        Edit
+                        {m['common.edit']()}
                     </button>
                 </div>
             );
@@ -372,7 +379,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     const handleOptionsMenu = async () => handlePresentBoostMenuModal();
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             <IdDisplayContainer
                 achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                 title={cardTitle}

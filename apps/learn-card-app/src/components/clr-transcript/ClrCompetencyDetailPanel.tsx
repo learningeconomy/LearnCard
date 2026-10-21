@@ -8,13 +8,15 @@ import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 
 import { useModal } from 'learn-card-base';
-import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import {
+    formatClrDate,
+    getLinkedCompetencies,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type {
-    AssociationDisplayModel,
+    ClrTranscriptDisplayModel,
     CompetencyDisplayModel,
-    CourseDisplayModel,
-    ProgramDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { getRelationshipsForRecord } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 type CompetencySection = {
     id: string;
@@ -25,56 +27,63 @@ type CompetencySection = {
 };
 
 const ClrCompetencyDetailPanel: React.FC<{
-    competencies: CompetencyDisplayModel[];
-    courses: CourseDisplayModel[];
-    programs: ProgramDisplayModel[];
-    associations: AssociationDisplayModel[];
+    model: ClrTranscriptDisplayModel;
+    initialCompetencyId?: string;
+    onSelectRecord?: (recordId: string) => void;
     adminMode?: boolean;
-}> = ({ competencies, courses, programs, associations, adminMode = false }) => {
+}> = ({ model, initialCompetencyId, onSelectRecord, adminMode = false }) => {
+    const { competencies: allCompetencies, courses, programs, associations, relationships } = model;
+    const competencies = initialCompetencyId
+        ? allCompetencies.filter(
+              competency =>
+                  competency.sourceCredentialId === initialCompetencyId ||
+                  competency.achievementId === initialCompetencyId
+          )
+        : allCompetencies;
     const { closeModal } = useModal();
 
-    const linkedCourseSections: CompetencySection[] = courses
-        .map(course => {
-            const courseCompetencies = getLinkedCompetencies(
-                course.sourceCredentialId,
-                competencies,
-                associations
-            );
+    const linkedCourseSections = courses.flatMap<CompetencySection>(course => {
+        const courseCompetencies = getLinkedCompetencies(
+            course.sourceCredentialId,
+            competencies,
+            associations
+        );
 
-            if (courseCompetencies.length === 0) return undefined;
+        if (courseCompetencies.length === 0) return [];
 
-            return {
+        return [
+            {
                 id: `course-${course.sourceCredentialId}`,
                 dateLabel: course.earnedAt?.value
-                    ? `Earned ${formatClrDate(course.earnedAt.value)}`
+                    ? formatClrDate(course.earnedAt.value)
                     : undefined,
                 humanCode: course.humanCode?.value,
                 title: course.name?.value ?? 'Course',
                 competencies: courseCompetencies,
-            };
-        })
-        .filter((section): section is CompetencySection => section !== undefined);
+            },
+        ];
+    });
 
-    const linkedProgramSections: CompetencySection[] = programs
-        .map(program => {
-            const programCompetencies = getLinkedCompetencies(
-                program.sourceCredentialId,
-                competencies,
-                associations
-            );
+    const linkedProgramSections = programs.flatMap<CompetencySection>(program => {
+        const programCompetencies = getLinkedCompetencies(
+            program.sourceCredentialId,
+            competencies,
+            associations
+        );
 
-            if (programCompetencies.length === 0) return undefined;
+        if (programCompetencies.length === 0) return [];
 
-            return {
+        return [
+            {
                 id: `program-${program.sourceCredentialId}`,
                 dateLabel: program.earnedAt?.value
-                    ? `Awarded ${formatClrDate(program.earnedAt.value)}`
+                    ? formatClrDate(program.earnedAt.value)
                     : undefined,
                 title: program.name?.value ?? 'Program',
                 competencies: programCompetencies,
-            };
-        })
-        .filter((section): section is CompetencySection => section !== undefined);
+            },
+        ];
+    });
 
     const linkedCompetencyIds = new Set<string>();
     [...linkedCourseSections, ...linkedProgramSections].forEach(section => {
@@ -99,32 +108,36 @@ const ClrCompetencyDetailPanel: React.FC<{
             {!emptyHeader && section.title && (
                 <div className="px-3 py-3 flex items-center gap-2 min-w-0">
                     {section.dateLabel && (
-                        <p className="shrink-0 text-[13px] text-grayscale-700">
-                            {section.dateLabel}
-                        </p>
+                        <p className="shrink-0 text-base text-grayscale-700">{section.dateLabel}</p>
                     )}
                     {section.dateLabel && <span className="shrink-0 text-grayscale-700">•</span>}
                     <span className="shrink-0 text-grayscale-700">
                         <FlatIcon>{icon}</FlatIcon>
                     </span>
                     {section.humanCode && (
-                        <p className="shrink-0 text-[13px] font-semibold text-grayscale-700">
+                        <p className="shrink-0 text-base font-semibold text-grayscale-700">
                             {section.humanCode}
                         </p>
                     )}
-                    <p className="min-w-0 truncate text-[13px] text-grayscale-700">
-                        {section.title}
-                    </p>
+                    <p className="min-w-0 truncate text-base text-grayscale-700">{section.title}</p>
                 </div>
             )}
 
             <div className="border-b border-grayscale-100 border-solid w-[95%] mx-auto" />
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-v3-4">
                 {section.competencies.map(competency => (
                     <ClrCompetencyBlock
                         key={competency.sourceCredentialId}
                         competency={competency}
+                        record={model.records.find(
+                            record => record.id === competency.sourceCredentialId
+                        )}
+                        relationships={getRelationshipsForRecord(
+                            relationships,
+                            competency.sourceCredentialId
+                        )}
+                        onSelectRecord={onSelectRecord}
                         adminMode={adminMode}
                     />
                 ))}
@@ -133,7 +146,7 @@ const ClrCompetencyDetailPanel: React.FC<{
     );
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto safe-area-top-margin">
+        <div className="space-y-v3-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             <div className="bg-white rounded-b-[15px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -147,14 +160,14 @@ const ClrCompetencyDetailPanel: React.FC<{
                     </div>
                     <button
                         onClick={closeModal}
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px]"
+                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2"
                     >
                         <X className="w-6 h-6" />
                     </button>
                 </div>
             </div>
 
-            <div className="px-5 space-y-4">
+            <div className="px-5 space-y-v3-4">
                 {linkedCourseSections.map(section =>
                     renderSection(section, <StudiesIcon className="w-4 h-4" />)
                 )}
@@ -162,7 +175,7 @@ const ClrCompetencyDetailPanel: React.FC<{
                 {linkedProgramSections.map(section =>
                     renderSection(
                         section,
-                        <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-500" />
+                        <CertificateDisplayIcon className="w-4 h-4 text-grayscale-500!" />
                     )
                 )}
 

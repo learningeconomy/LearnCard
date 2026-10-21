@@ -4,10 +4,10 @@ The template to use for the credential delivery. If not provided, the default te
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** | The template ID to use for the credential delivery. If not provided, the default template will be used. | [optional] 
-**model** | [**InboxIssueRequestConfigurationDeliveryTemplateModel**](InboxIssueRequestConfigurationDeliveryTemplateModel.md) |  | 
+| Name      | Type                                                                                                              | Description                                                                                             | Notes      |
+| --------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------- |
+| **id**    | **str**                                                                                                           | The template ID to use for the credential delivery. If not provided, the default template will be used. | [optional] |
+| **model** | [**InboxIssueRequestConfigurationDeliveryTemplateModel**](InboxIssueRequestConfigurationDeliveryTemplateModel.md) |                                                                                                         |
 
 ## Example
 
@@ -26,6 +26,5 @@ inbox_issue_request_configuration_delivery_template_dict = inbox_issue_request_c
 # create an instance of InboxIssueRequestConfigurationDeliveryTemplate from a dict
 inbox_issue_request_configuration_delivery_template_from_dict = InboxIssueRequestConfigurationDeliveryTemplate.from_dict(inbox_issue_request_configuration_delivery_template_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

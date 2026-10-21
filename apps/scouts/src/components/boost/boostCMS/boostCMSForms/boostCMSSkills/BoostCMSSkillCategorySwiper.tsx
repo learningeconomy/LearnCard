@@ -66,7 +66,7 @@ const BoostCMSSkillCategoryTypeSwiper: React.FC<{
                         swiperRef?.current?.slidePrev();
                     }}
                 >
-                    <SkinnyArrowLeft className="text-black w-5" />
+                    <SkinnyArrowLeft className="rtl-mirror text-black w-5" />
                 </button>
             )}
 
@@ -77,7 +77,7 @@ const BoostCMSSkillCategoryTypeSwiper: React.FC<{
                         swiperRef?.current?.slideNext();
                     }}
                 >
-                    <SkinnyArrowRight className="text-black w-5" />
+                    <SkinnyArrowRight className="rtl-mirror text-black w-5" />
                 </button>
             )}
 

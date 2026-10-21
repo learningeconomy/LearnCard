@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 /**
  * App Store Admin Configuration
  *
@@ -7,9 +8,7 @@
  * Set via APP_STORE_ADMIN_PROFILE_IDS environment variable as a comma-separated list.
  * Example: APP_STORE_ADMIN_PROFILE_IDS=profile-id-1,profile-id-2
  */
-export const APP_STORE_ADMIN_PROFILE_IDS: string[] = (
-    process.env.APP_STORE_ADMIN_PROFILE_IDS ?? ''
-)
+export const APP_STORE_ADMIN_PROFILE_IDS: string[] = (environment.APP_STORE_ADMIN_PROFILE_IDS ?? '')
     .split(',')
     .map(id => id.trim())
     .filter(id => id.length > 0);

@@ -8,6 +8,7 @@ import ChildInviteModal, {
 
 import { useModal, ModalTypes, UserProfilePicture } from 'learn-card-base';
 import { FamilyChildAccount, FamilyCMSState, FamilyMember } from '../familyCMSState';
+import { getFamilyTitleLabel } from '../FamilyCMSMemberTitlesForm/FamilyCMSMemberTitlesToggle/familyTitles.helpers';
 
 export enum FamilyMembersListTabsEnum {
     all = 'all',
@@ -62,7 +63,7 @@ export const FamilyCMSMemberListItem: React.FC<FamilyCMSMemberListItemProps> = (
     return (
         <div
             key={user?.did}
-            className="flex items-center justify-between w-full bg-white border-t-grayscale-100 border-t-solid border-t-[2px] pb-[12px] pt-[12px]"
+            className="flex items-center justify-between w-full bg-white border-t-grayscale-100 border-t-solid border-t-2 pb-[12px] pt-[12px]"
         >
             <div className="flex items-center justify-start w-full">
                 <div className="flex items-center justify-start">
@@ -78,7 +79,7 @@ export const FamilyCMSMemberListItem: React.FC<FamilyCMSMemberListItemProps> = (
                         {user?.displayName || user?.name || user?.profileId}
                     </p>
                     <p className="text-grayscale-500 font-medium font-poppins flex items-center justify-center">
-                        {typeTitle}
+                        {getFamilyTitleLabel(typeTitle)}
                     </p>
                 </div>
             </div>

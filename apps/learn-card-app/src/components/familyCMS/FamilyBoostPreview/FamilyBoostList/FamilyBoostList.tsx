@@ -1,26 +1,30 @@
 import React from 'react';
+import { useHistory } from 'react-router-dom';
 
 import SocialBadges from '../../../svgs/SocialBadges';
 import SocialServices from '../../../svgs/SocialServices';
 import FamilyBoostListItem from './FamilyBoostListItem';
 
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, useModal } from 'learn-card-base';
 import { VC } from '@learncard/types';
-import useBoostModal from '../../../boost/hooks/useBoostModal';
+import * as m from '../../../../paraglide/messages.js';
 
 export const FamilyBoostList: React.FC<{ credential: VC }> = ({ credential }) => {
-    const { handlePresentBoostModal } = useBoostModal(
-        undefined,
-        BoostCategoryOptionsEnum.socialBadge
-    );
+    const history = useHistory();
+    const { closeAllModals } = useModal();
+
+    const handleIssue = () => {
+        closeAllModals();
+        history.push('/issue');
+    };
 
     const familyBoosts = [
         {
             id: 1,
-            title: 'Social Boosts',
+            title: m['arabicFixes.socialBoosts'](),
             icon: <SocialBadges />,
             boostType: BoostCategoryOptionsEnum.socialBadge,
-            onClick: handlePresentBoostModal,
+            onClick: handleIssue,
         },
         // ! Social Services hidden for now
         // {

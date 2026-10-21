@@ -346,8 +346,7 @@ const finalizeRequest = (
 };
 
 type RequestObjectPayload =
-    | { kind: 'jws'; jws: string }
-    | { kind: 'unsigned'; claims: Record<string, unknown> };
+    { kind: 'jws'; jws: string } | { kind: 'unsigned'; claims: Record<string, unknown> };
 
 /**
  * §5.10: unsigned Request Objects are only permitted for the
@@ -885,7 +884,11 @@ const base64UrlSha256 = async (bytes: Uint8Array): Promise<string> => {
         );
     }
 
-    const digest = new Uint8Array(await c.subtle.digest('SHA-256', bytes));
+    const digestInput =
+        bytes.buffer instanceof ArrayBuffer
+            ? new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+            : Uint8Array.from(bytes);
+    const digest = new Uint8Array(await c.subtle.digest('SHA-256', digestInput));
     let binary = '';
     for (let i = 0; i < digest.length; i++) binary += String.fromCharCode(digest[i]!);
     const b64 =

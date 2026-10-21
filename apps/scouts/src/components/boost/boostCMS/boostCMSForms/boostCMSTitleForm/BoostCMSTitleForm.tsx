@@ -6,6 +6,7 @@ import { IonTextarea } from '@ionic/react';
 import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
 import { isCustomBoostType } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSTitleForm: React.FC<{
     state: BoostCMSState;
@@ -57,14 +58,16 @@ const BoostCMSTitleForm: React.FC<{
 
     return (
         <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-2">
-            {showTitle && <p className="font-medium ml-[5px] mb-[5px]">Boost Title</p>}
+            {showTitle && (
+                <p className="font-medium ml-[5px] mb-[5px]">{m['boostCMS.boostTitle']()}</p>
+            )}
             <IonTextarea
                 autocapitalize="on"
                 value={basicInfo?.name}
                 onIonInput={e => handleStateChange('name', e?.detail?.value)}
                 placeholder={placeHolder}
                 className={`relative bg-grayscale-900 text-grayscale-400 rounded-[15px] px-[16px] py-[4px] font-medium text-base ${
-                    _disabled ? '!opacity-70' : ''
+                    _disabled ? 'opacity-70!' : ''
                 }`}
                 disabled={_disabled}
                 rows={3}

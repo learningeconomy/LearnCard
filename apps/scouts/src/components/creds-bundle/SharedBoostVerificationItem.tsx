@@ -1,5 +1,6 @@
 import React from 'react';
 
+import * as m from '../../paraglide/messages.js';
 import X from '../svgs/X';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import ExclamationPoint from '../svgs/ExclamationPoint';
@@ -44,7 +45,7 @@ export const SharedBoostVerificationItem: React.FC<{
         return (
             <div
                 className={`w-full flex flex-col items-start justify-center border-grayscale-200 mb-2 pb-2 ${
-                    hideBorder ? 'border-none' : 'border-b-[1px]'
+                    hideBorder ? 'border-none' : 'border-b'
                 }`}
             >
                 <p
@@ -53,10 +54,10 @@ export const SharedBoostVerificationItem: React.FC<{
                     {getIcon()} {verification?.status}
                 </p>
                 <p className="flex items-center justify-between text-sm mb-1 capitalize font-semibold text-grayscale-900">
-                    Authentic Boost:
+                    {m['credsBundle.authenticBoost']()}
                 </p>
                 <p className="flex items-center justify-between text-sm mb-1 capitalize text-grayscale-900">
-                    Verified by the LearnCard Network
+                    {m['credsBundle.networkVerified']()}
                 </p>
             </div>
         );
@@ -65,7 +66,7 @@ export const SharedBoostVerificationItem: React.FC<{
     return (
         <div
             className={`w-full flex flex-col items-start justify-center border-grayscale-200 mb-2 pb-2 ${
-                hideBorder ? 'border-none' : 'border-b-[1px]'
+                hideBorder ? 'border-none' : 'border-b'
             }`}
         >
             <p
@@ -75,7 +76,12 @@ export const SharedBoostVerificationItem: React.FC<{
             </p>
             <p className="flex items-center justify-between text-sm mb-1 capitalize text-grayscale-900">
                 {check}
-                {message && <span className="font-semibold text-wrap">:&nbsp;{message}</span>}
+                {message && (
+                    <span className="font-semibold text-wrap">
+                        {':\u00A0'}
+                        {message}
+                    </span>
+                )}
             </p>
         </div>
     );

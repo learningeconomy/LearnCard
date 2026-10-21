@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 
 import {
     ModalTypes,
     useModal,
     useWallet,
     useImageUpload,
-    conditionalPluralize,
     BoostUserTypeEnum,
     ShortBoostState,
     useGetSkillFrameworkAdmins,
     useGetBoostsThatUseFramework,
     CredentialCategoryEnum,
 } from 'learn-card-base';
+import { formatLocaleCount } from '../../i18n/formatters';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import * as m from '../../paraglide/messages.js';
 import Plus from 'apps/scouts/src/components/svgs/Plus';
 import Pencil from 'apps/scouts/src/components/svgs/Pencil';
 import BoostSearch from '../../components/boost/boost-search/BoostSearch';
@@ -43,8 +45,10 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
-    const [name, setName] = useState(isEdit ? frameworkInfo?.name ?? '' : '');
-    const [description, setDescription] = useState(isEdit ? frameworkInfo?.description ?? '' : '');
+    const [name, setName] = useState(isEdit ? (frameworkInfo?.name ?? '') : '');
+    const [description, setDescription] = useState(
+        isEdit ? (frameworkInfo?.description ?? '') : ''
+    );
     const [image, setImage] = useState<string | undefined>(
         isEdit ? frameworkInfo?.image : undefined
     );
@@ -134,7 +138,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             setTimeout(() => {
                 newModal(
                     <FrameworkCreatedSuccessModal framework={framework} />,
-                    { sectionClassName: '!bg-transparent !shadow-none' },
+                    { sectionClassName: 'bg-transparent! shadow-none!' },
                     {
                         desktop: ModalTypes.Center,
                         mobile: ModalTypes.Center,
@@ -144,7 +148,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         },
         onError: error => {
             log.error('Failed to create framework:', error);
-            alert('Failed to create framework. Please try again.');
+            alert(m['skillFrameworks.toasts.createFail']());
         },
     });
 
@@ -154,7 +158,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 selectedNetworks={selectedNetworks}
                 onSelectNetworks={networks => setSelectedNetworks(networks)}
             />,
-            { sectionClassName: '!max-w-[500px]' },
+            { sectionClassName: 'max-w-[500px]!' },
             {
                 desktop: ModalTypes.Center,
                 mobile: ModalTypes.Center,
@@ -168,7 +172,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 boostUserType={BoostUserTypeEnum.someone}
                 handleCloseModal={closeModal}
                 handleCloseUserOptionsModal={closeModal}
-                cssClass="boost-search-modal safe-area-top-margin"
+                cssClass="boost-search-modal"
                 state={selectedAdmins}
                 setState={setSelectedAdmins}
                 history={history}
@@ -176,8 +180,8 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 ignoreBoostSearchRestriction
             />,
             {
-                className: '!p-0',
-                sectionClassName: '!p-0',
+                className: 'p-0!',
+                sectionClassName: 'p-0!',
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
@@ -186,7 +190,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         //         selectedAdmins={selectedAdmins}
         //         onSelectAdmins={admins => setSelectedAdmins(admins)}
         //     />,
-        //     { sectionClassName: '!max-w-[500px]' },
+        //     { sectionClassName: 'max-w-[500px]!' },
         //     {
         //         desktop: ModalTypes.Center,
         //         mobile: ModalTypes.Center,
@@ -275,7 +279,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             // setTimeout(() => {
             //     newModal(
             //         <FrameworkCreatedSuccessModal isUpdate framework={framework} />,
-            //         { sectionClassName: '!bg-transparent !shadow-none' },
+            //         { sectionClassName: 'bg-transparent! shadow-none!' },
             //         {
             //             desktop: ModalTypes.Center,
             //             mobile: ModalTypes.Center,
@@ -285,7 +289,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         },
         onError: error => {
             log.error('Failed to update framework:', error);
-            alert('Failed to update framework. Please try again.');
+            alert(m['skillFrameworks.toasts.updateFail']());
         },
     });
 
@@ -316,11 +320,13 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[20px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
+            <div className="px-[20px] py-[20px] bg-white flex flex-col gap-[10px] z-20 relative border-b border-grayscale-200 border-solid rounded-b-[30px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <SkillsFrameworkIcon className="w-[40px] h-[40px]" color="currentColor" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
-                        {isEdit ? 'Edit Framework' : 'Create Framework'}
+                        {isEdit
+                            ? m['skillFrameworks.editFwOpt']()
+                            : m['skillFrameworks.createFwTitle']()}
                     </h5>
                 </div>
             </div>
@@ -329,15 +335,14 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 <div className="flex flex-col gap-[20px] bg-white p-[20px] rounded-[20px] shadow-bottom-0-4">
                     {!isEdit && (
                         <p className="font-poppins text-[14px] text-grayscale-90 w-full text-center">
-                            Start a new framework. You can add skills manually or import a file
-                            after creating it.
+                            {m['skillFrameworks.startNewDesc']()}
                         </p>
                     )}
 
                     <div className="flex flex-col gap-[10px] items-center">
                         <div className="relative">
                             {isUploadingImage && (
-                                <div className="absolute top-0 left-0 z-10 bg-white bg-opacity-60 h-full w-full flex items-center justify-center">
+                                <div className="absolute top-0 left-0 z-10 bg-white/60  h-full w-full flex items-center justify-center">
                                     <IonSpinner
                                         name="crescent"
                                         color="dark"
@@ -359,22 +364,22 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         >
                             <Pencil className="w-[24px] h-[24px]" />
                             <span className="font-poppins text-[14px] font-[600]">
-                                Edit thumbnail
+                                {m['skillFrameworks.editThumb']()}
                             </span>
                         </button>
                     </div>
 
                     <IonInput
                         onIonInput={e => setName(e.detail.value ?? '')}
-                        className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px] text-[17px] font-poppins"
-                        placeholder="Framework Name *"
+                        className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]! text-[17px] font-poppins"
+                        placeholder={m['skillFrameworks.fwNameLabel']()}
                         value={name}
                     />
 
                     <IonTextarea
                         onIonInput={e => setDescription(e.detail.value ?? '')}
-                        className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px]"
-                        placeholder="Framework Description"
+                        className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]!"
+                        placeholder={m['skillFrameworks.descLabel']()}
                         value={description}
                         rows={4}
                     />
@@ -382,7 +387,10 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
                 <div className="flex flex-col gap-[20px] bg-white p-[20px] rounded-[20px] shadow-bottom-0-4">
                     <div className="font-poppins text-[20px] text-grayscale-900 flex items-center">
-                        {conditionalPluralize(selectedNetworks.length, 'Attached Network')}
+                        {formatLocaleCount(selectedNetworks.length, {
+                            one: m['common.countLabels.attachedNetworkOne'](),
+                            other: m['common.countLabels.attachedNetworkOther'](),
+                        })}
                         <button
                             onClick={handleSelectNetwork}
                             className="ml-auto bg-emerald-700 p-[10px] rounded-full"
@@ -402,7 +410,10 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
                 <div className="flex flex-col gap-[20px] bg-white p-[20px] rounded-[20px] shadow-bottom-0-4">
                     <div className="font-poppins text-[20px] text-grayscale-900 flex items-center">
-                        {conditionalPluralize(selectedAdmins.issueTo.length, 'Admin')}
+                        {formatLocaleCount(selectedAdmins.issueTo.length, {
+                            one: m['troops.adminOne'](),
+                            other: m['troops.adminOther'](),
+                        })}
                         <button
                             onClick={handleSelectAdmin}
                             className="ml-auto bg-emerald-700 p-[10px] rounded-full"
@@ -426,14 +437,14 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     <button
                         onClick={closeModal}
                         className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
 
                     <button
@@ -447,9 +458,17 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         }
                     >
                         {isEdit ? (
-                            <>{updateFrameworkMutation.isPending ? 'Updating...' : 'Update'}</>
+                            <>
+                                {updateFrameworkMutation.isPending
+                                    ? m['common.updating']()
+                                    : m['skillFrameworks.update']()}
+                            </>
                         ) : (
-                            <>{createFrameworkMutation.isPending ? 'Creating...' : 'Create'}</>
+                            <>
+                                {createFrameworkMutation.isPending
+                                    ? m['common.creating']()
+                                    : m['common.create']()}
+                            </>
                         )}
                     </button>
                 </div>
@@ -458,4 +477,4 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
     );
 };
 
-export default CreateFrameworkModal;
+export default withCompetencyAdmin(CreateFrameworkModal);

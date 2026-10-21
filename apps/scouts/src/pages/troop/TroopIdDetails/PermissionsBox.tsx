@@ -4,6 +4,7 @@ import {
     childPermissionsToDisplayString,
     convertBoostPermissionsToCategoryPermissions,
 } from '../../../helpers/permissions.helpers';
+import * as m from '../../../paraglide/messages.js';
 import { VC } from '@learncard/types';
 import { getRoleFromCred } from '../../../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../../stores/troopPageStore';
@@ -93,7 +94,9 @@ const PermissionsBox: React.FC<PermissionsBoxProps> = ({
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full relative">
             <h3 className="text-[17px] text-grayscale-900 font-notoSans flex flex-col gap-[3px]">
-                <span className="text-[17px] text-grayscale-900 font-notoSans">Permissions</span>
+                <span className="text-[17px] text-grayscale-900 font-notoSans">
+                    {m['troops.perms.title']()}
+                </span>
                 <span className="text-[17px] text-grayscale-900 font-notoSans">
                     {scoutTypeNoun}
                 </span>
@@ -104,7 +107,7 @@ const PermissionsBox: React.FC<PermissionsBoxProps> = ({
                         return (
                             <div
                                 key={index}
-                                className="flex flex-col gap-[5px] py-[10px] border-b-[1px] border-grayscale-200 border-solid last:border-b-0 w-full items-start"
+                                className="flex flex-col gap-[5px] py-[10px] border-b border-grayscale-200 border-solid last:border-b-0 w-full items-start"
                             >
                                 <span className="text-grayscale-900 font-notoSans text-[14px] font-[600]">
                                     {key}

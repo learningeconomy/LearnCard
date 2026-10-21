@@ -18,7 +18,6 @@ ENV_FILES=(
   "services/learn-card-network/learn-cloud-service/.env"
   "apps/learn-card-app/.env"
   "services/learn-card-network/lca-api/.env"
-  "services/learn-card-network/simple-signing-service/.env"
 )
 
 echo "Backing up current .env files..."

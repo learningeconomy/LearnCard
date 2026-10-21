@@ -22,11 +22,36 @@ For now:
 2. copy network address from terminal IE: "http://10.6.17.241:3000"
 3. update the `capacitor.config.ts` file at the root of the project, add the following config field
     - `server: { url: "http://10.6.17.241:3000" }`
-4. `bunx cap sync`
+4. `bun run native:sync`
 5. `bunx cap open ios`
 6. select simulator on XCode + make changes locally, HMR should be enabled
 7. alternatively, you can run `bunx cap run ios` ... select a simulator from the terminal + make changes locally, HMR should be enabled as well
 8. Do not commit the following, remove the `server: { url: "http://10.6.17.241:3000" }` config field from `capacitor.config.ts` when not developing this is for local development only (NOT PRODUCTION)!
+
+### iOS simulator architecture and QR testing
+
+Google ML Kit Barcode Scanning 8 does not provide an arm64 simulator slice, and iOS 27 simulators on
+Apple Silicon cannot install an x86_64-only app. The native project therefore substitutes an explicit
+"unsupported" barcode plugin only for simulator SDK builds. Debug and Release physical-device builds
+still compile and link the real ML Kit implementation, preserving native arm64 QR scanning.
+
+Use an iOS simulator for launch, lifecycle, sign-in UI, callback URL, and universal-link checks. Use a
+physical iOS device with either a Debug or Release build for the final camera/QR scan because the
+simulator intentionally uses the unsupported stub.
+
+### Native smoke-test checklist
+
+After `bun scripts/prepare-native-config.ts <tenant> [--stage <stage>]` and `bun run native:sync`:
+
+1. Launch on iOS 27 and an iOS 26 simulator/device, background and foreground the app repeatedly,
+   and confirm there is no scene-lifecycle runtime assertion.
+2. Complete email-code, Apple, and Google sign-in. Cancel or interrupt each flow once, retry it, and
+   confirm the callback returns to the app.
+3. Open one configured custom-scheme URL and one configured universal link from outside the app,
+   both on a cold launch and while the app is already running.
+4. On a physical iOS device, grant camera access and scan a QR code. Cancel and restart the scanner,
+   then scan another code.
+5. Build and launch Android, repeat the sign-in callback/deep-link checks, and scan a QR code.
 
 (android)
 `bun run start-android`
@@ -44,6 +69,60 @@ If you forgot to run it, you'll likely see an error asking you to. If that _stil
 may need to install some system dependencies. See the Playwright docs [here](https://playwright.dev/docs/cli#install-browsers) for more info.
 
 After playwright is set up, you can simply run `bun run test` or `bunx nx test learn-card-app` to run the E2E tests!
+
+### Repeatable feature verification (`lc verify`)
+
+`lc verify` starts an owned, disposable local stack (Neo4j, MongoDB, Redis, ElasticMQ, brain,
+LearnCloud and LCA API built from this checkout, plus the Vite dev server) and proves behavior
+across the web app, SDK, `learncard` CLI, ConsentFlow, Partner Connect apps, and docs snippets.
+Use focused unit/mock checks and small scripts or the reusable signed-in browser in the edit loop.
+Run matching journeys near PR readiness, then the full serial catalog before marking cross-surface
+or network-touching work ready. From this app directory:
+
+```bash
+export LC_VERIFY_TRUST_LOCAL_DOCKER=1       # inspect/trust the local Docker daemon first
+bun run lc verify doctor --preflight       # actionable clean-checkout prerequisite checks
+bun run lc verify list                     # catalog; no running stack needed
+bun run lc verify up --dir /tmp/lcv --json  # self-prepare, start, authenticate; blocks until ready
+bun run lc verify run account --dir /tmp/lcv
+bun run lc verify script my-check.ts --dir /tmp/lcv
+bun run lc verify browser --dir /tmp/lcv --headed # reuse via a Playwright/CDP client
+bun run lc verify down --dir /tmp/lcv       # ownership-checked; evidence stays
+# One-shot gate: use a new directory, not the retained stack above
+bun run lc verify run all --fresh --json --dir /tmp/lcv-ready
+```
+
+Requires Linux (`/proc` ownership), the repo-pinned Node/Bun toolchain, installed workspace
+dependencies, a trusted local Docker Engine/default Unix socket with Compose v2, and Playwright
+Chromium. `up` prepares generated artifacts automatically; `prepare --dir <directory>` does it
+explicitly. Each directory allocates its own ports/configuration, so `lc dev` and independent stacks
+can coexist. Default to serial workers and one coordinator for shared-stack teardown; `down --force`
+recovers hung startup without bypassing ownership checks.
+
+Recommend **16 GiB RAM** and ample disk (preflight requires 10 GiB free before image/evidence growth).
+The reviewer's 8 GiB sandbox used roughly 4–5 GiB swap; this is not a proven minimum.
+Native macOS/Windows ownership is unsupported: run the secret-free
+[LearnCard Verification workflow](../../.github/workflows/verification.yml) from GitHub Actions
+(`gh workflow run verification.yml --ref <branch>`), or use a Linux VM/sandbox with local Docker.
+Hosted CI results are unobserved until actually triggered and completed.
+
+Evidence contains disposable secrets: keep raw reports, traces, sessions, logs and CLI `.env`
+files private. Hosted CI uploads only sanitized status/count summaries. The full guide is
+[`.agents/skills/verify-learncard/SKILL.md`](../../.agents/skills/verify-learncard/SKILL.md) and its
+[feature map](../../.agents/skills/verify-learncard/features/README.md).
+
+Browser query persistence uses localforage only. Native persistence waits for SQLite readiness and
+then uses SQLite exclusively, including across reloads; it never falls back to a stale localforage
+cache or reports a failed write as durable. Linux/browser verification does not prove native-device
+persistence; use the native test/device workflow for that claim.
+
+## Managed Account Consent
+
+- Consent identity uses the parent account's Family name/photo records. Its cache is separate from profile lists and scoped to the parent account.
+- An explicitly typed child remains a child even if a legacy record has the service-profile flag. Child pickers retain these accounts, organization pickers exclude them, and account switching preserves the persisted profile type rather than the manager's metadata.
+- Creating a Family requires an adult PIN. Approval-only actions stay on the child account and cannot continue without PIN verification; a missing PIN prompts the adult to set one up. Every switched-account request requires a known parent identity, including PIN-exempt service returns. Missing identity stops the request before verification and asks the user to sign in again.
+- After a correct PIN, a failed account action shows a retryable action error rather than a PIN-validation error. Verification remains busy until the action settles.
+- Profile-switch completion callbacks close their own token-scoped modal instead of also closing whichever modal is on top. Modal-hosted pickers must supply `onSwitchComplete`; inline hosts use `handlePlayerSwitchOverride`.
 
 ## Contributing
 

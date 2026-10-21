@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 
 type TrustedService = {
@@ -20,7 +21,7 @@ type DidDocumentWithServices = {
 let registryCache: { services: TrustedService[]; expiresAt: number } | null = null;
 
 export const getServerDidWebDID = (_domain: string): string => {
-    const domain = (_domain || process.env.DOMAIN_NAME) ?? '';
+    const domain = (_domain || environment.DOMAIN_NAME) ?? '';
     const encodedDomain = domain.replace(/:/g, '%3A');
     return `did:web:${encodedDomain}`;
 };
@@ -69,10 +70,10 @@ export const isServiceTrusted = async (senderDid: string, domain: string): Promi
 
     if (senderServerDid === getServerDidWebDID(domain)) return true;
 
-    const whitelist = (process.env.TRUSTED_BRAIN_SERVICES || '').split(',').filter(Boolean);
+    const whitelist = (environment.TRUSTED_BRAIN_SERVICES || '').split(',').filter(Boolean);
     if (whitelist.includes(senderServerDid)) return true;
 
-    const registryUrl = process.env.BRAIN_SERVICE_REGISTRY_URL;
+    const registryUrl = environment.BRAIN_SERVICE_REGISTRY_URL;
     if (registryUrl) {
         const registry = await fetchRegistry(registryUrl);
         return registry.services.some(s => s.did === senderServerDid);
@@ -91,10 +92,10 @@ export const getTrustedServices = async (domain: string): Promise<TrustedService
     services.push({
         did: ownDid,
         name: 'Self',
-        endpoint: `https://${domain || process.env.DOMAIN_NAME}`,
+        endpoint: `https://${domain || environment.DOMAIN_NAME}`,
     });
 
-    const whitelist = (process.env.TRUSTED_BRAIN_SERVICES || '').split(',').filter(Boolean);
+    const whitelist = (environment.TRUSTED_BRAIN_SERVICES || '').split(',').filter(Boolean);
     for (const did of whitelist) {
         if (did !== ownDid) {
             services.push({
@@ -105,7 +106,7 @@ export const getTrustedServices = async (domain: string): Promise<TrustedService
         }
     }
 
-    const registryUrl = process.env.BRAIN_SERVICE_REGISTRY_URL;
+    const registryUrl = environment.BRAIN_SERVICE_REGISTRY_URL;
     if (registryUrl) {
         const registry = await fetchRegistry(registryUrl);
         for (const service of registry.services) {

@@ -20,6 +20,9 @@ on:
 env:
     PREVIEW_BASE_DOMAIN: preview.learncard.ai
 
+permissions:
+    contents: read
+
 jobs:
     # =========================================================================
     # GATE: Determine if we should deploy a preview
@@ -27,10 +30,21 @@ jobs:
     should-deploy:
         name: Check Preview Trigger
         runs-on: ubuntu-latest
+        # `/preview` comments are limited to org members and collaborators,
+        # matching capgo-pr-preview.yml. Label and dispatch triggers already
+        # need triage or write access.
+        if: |
+            github.event_name != 'issue_comment' ||
+            contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+        permissions:
+            contents: read
+            pull-requests: read
+            issues: write
         outputs:
             deploy: ${{ steps.check.outputs.deploy }}
             pr_number: ${{ steps.check.outputs.pr_number }}
             branch: ${{ steps.check.outputs.branch }}
+            head_sha: ${{ steps.check.outputs.head_sha }}
             run_e2e: ${{ steps.check.outputs.run_e2e }}
         steps:
             - name: Determine trigger
@@ -41,19 +55,23 @@ jobs:
                       let deploy = false;
                       let prNumber = '';
                       let branch = '';
+                      let headSha = '';
+                      let headRepo;
                       let runE2e = false;
 
                       const event = context.eventName;
 
                       if (event === 'workflow_dispatch') {
                           // Manual trigger
-                          prNumber = '${{ github.event.inputs.pr_number }}';
+                          prNumber = String(context.payload.inputs.pr_number);
                           const { data: pr } = await github.rest.pulls.get({
                               owner: context.repo.owner,
                               repo: context.repo.repo,
                               pull_number: parseInt(prNumber),
                           });
                           branch = pr.head.ref;
+                          headSha = pr.head.sha;
+                          headRepo = pr.head.repo?.full_name;
                           deploy = true;
                           console.log(`Manual dispatch for PR #${prNumber} (${branch})`);
 
@@ -72,6 +90,8 @@ jobs:
                                   pull_number: parseInt(prNumber),
                               });
                               branch = pr.head.ref;
+                              headSha = pr.head.sha;
+                              headRepo = pr.head.repo?.full_name;
                               deploy = true;
                               console.log(`Comment trigger for PR #${prNumber} (${branch}), e2e=${runE2e}`);
 
@@ -92,20 +112,36 @@ jobs:
                               // Label was just added
                               prNumber = context.payload.pull_request.number.toString();
                               branch = context.payload.pull_request.head.ref;
+                              headSha = context.payload.pull_request.head.sha;
+                              headRepo = context.payload.pull_request.head.repo?.full_name;
                               deploy = true;
                               console.log(`Label trigger for PR #${prNumber} (${branch})`);
                           } else if (action === 'synchronize' && labels.includes('preview')) {
                               // New push to a PR that already has the preview label
                               prNumber = context.payload.pull_request.number.toString();
                               branch = context.payload.pull_request.head.ref;
+                              headSha = context.payload.pull_request.head.sha;
+                              headRepo = context.payload.pull_request.head.repo?.full_name;
                               deploy = true;
                               console.log(`Sync trigger for PR #${prNumber} (${branch})`);
                           }
                       }
 
+                      // Previews deploy by branch name from this repo, so only
+                      // same-repo heads can be previewed. A missing head repo
+                      // (deleted fork) is refused too.
+                      const baseRepo = `${context.repo.owner}/${context.repo.repo}`;
+                      if (deploy && headRepo !== baseRepo) {
+                          core.setFailed(
+                              `Refusing to preview PR #${prNumber}: head is from ${headRepo ?? 'a deleted fork'}, not ${baseRepo}. Push the branch to ${baseRepo} to preview it.`
+                          );
+                          return;
+                      }
+
                       core.setOutput('deploy', deploy.toString());
                       core.setOutput('pr_number', prNumber);
                       core.setOutput('branch', branch);
+                      core.setOutput('head_sha', headSha);
                       core.setOutput('run_e2e', runE2e.toString());
 
     # =========================================================================
@@ -118,6 +154,10 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 30
         environment: preview
+        permissions:
+            contents: read
+            issues: write
+            pull-requests: write
         concurrency:
             group: preview-deploy-${{ needs.should-deploy.outputs.pr_number }}
             cancel-in-progress: true
@@ -125,9 +165,12 @@ jobs:
             - name: Post "deploying" comment
               id: deploying-comment
               uses: actions/github-script@v7
+              env:
+                  PREVIEW_BRANCH: ${{ needs.should-deploy.outputs.branch }}
               with:
                   script: |
                       const prNumber = ${{ needs.should-deploy.outputs.pr_number }};
+                      const branch = process.env.PREVIEW_BRANCH;
                       const { data: comment } = await github.rest.issues.createComment({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
@@ -138,7 +181,7 @@ jobs:
                               '| Status | Details |',
                               '|--------|---------|',
                               '| **State** | ⏳ Deploying... |',
-                              `| **Branch** | \`${{ needs.should-deploy.outputs.branch }}\` |`,
+                              `| **Branch** | \`${branch}\` |`,
                               `| **PR** | #${prNumber} |`,
                               '',
                               `_Started at ${new Date().toISOString()}_`,
@@ -197,7 +240,6 @@ jobs:
                   # Optional overrides — set in GitHub environment "preview" to customize
                   BRAIN_SEED: ${{ vars.BRAIN_SEED || '' }}
                   CLOUD_SEED: ${{ vars.CLOUD_SEED || '' }}
-                  SIGNING_SEED: ${{ vars.SIGNING_SEED || '' }}
                   API_SEED: ${{ vars.API_SEED || '' }}
               with:
                   host: ${{ steps.ec2.outputs.ip }}
@@ -205,7 +247,7 @@ jobs:
                   key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
                   script_stop: true
                   command_timeout: 25m
-                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN,DOZZLE_USERNAME,DOZZLE_PASSWORD,BRAIN_SEED,CLOUD_SEED,SIGNING_SEED,API_SEED
+                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN,DOZZLE_USERNAME,DOZZLE_PASSWORD,BRAIN_SEED,CLOUD_SEED,API_SEED
                   script: |
                       cd ~/preview-workspace/LearnCard
 
@@ -268,9 +310,12 @@ jobs:
             - name: Update comment with preview URL
               if: always()
               uses: actions/github-script@v7
+              env:
+                  PREVIEW_BRANCH: ${{ needs.should-deploy.outputs.branch }}
               with:
                   script: |
                       const prNumber = ${{ needs.should-deploy.outputs.pr_number }};
+                      const branch = process.env.PREVIEW_BRANCH;
                       const commentId = ${{ steps.deploying-comment.outputs.comment_id }};
                       const success = '${{ job.status }}' === 'success';
                       const previewDomain = `pr-${prNumber}.${{ env.PREVIEW_BASE_DOMAIN }}`;
@@ -286,7 +331,7 @@ jobs:
                           '| **State** | ✅ Ready |',
                           `| **URL** | [${previewUrl}](${previewUrl}) |`,
                           `| **Logs** | [${logsUrl}](${logsUrl}) |`,
-                          `| **Branch** | \`${{ needs.should-deploy.outputs.branch }}\` |`,
+                          `| **Branch** | \`${branch}\` |`,
                           `| **PR** | #${prNumber} |`,
                           '',
                           '### Services',
@@ -309,7 +354,7 @@ jobs:
                           '| Status | Details |',
                           '|--------|---------|',
                           '| **State** | ❌ Failed |',
-                          `| **Branch** | \`${{ needs.should-deploy.outputs.branch }}\` |`,
+                          `| **Branch** | \`${branch}\` |`,
                           `| **PR** | #${prNumber} |`,
                           '',
                           `Check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`,
@@ -335,11 +380,15 @@ jobs:
             needs.deploy-preview.result == 'success'
         runs-on: ubuntu-latest
         timeout-minutes: 30
+        permissions:
+            contents: read
+            issues: write
+            pull-requests: write
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
               with:
-                  ref: ${{ needs.should-deploy.outputs.branch }}
+                  ref: ${{ needs.should-deploy.outputs.head_sha }}
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup

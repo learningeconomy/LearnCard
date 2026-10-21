@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useImmer } from 'use-immer';
 import { useHistory } from 'react-router-dom';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('credential-sync-confirmation');
 
 import { useModal, useToast, ToastTypeEnum, useCurrentUser, ModalTypes } from 'learn-card-base';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
@@ -43,7 +41,10 @@ const getSyncStateLabel = (state: SyncStateEnum): string => {
 
 export type CredentialSyncConfirmationProps = {
     contractDetails: ConsentFlowContractDetails;
-    handleAcceptContract: (terms?: ConsentFlowTerms) => Promise<void>;
+    handleAcceptContract: (
+        terms?: ConsentFlowTerms,
+        beforeSubmit?: () => Promise<void>
+    ) => Promise<void>;
 };
 
 const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
@@ -54,7 +55,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
 
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -71,23 +72,23 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
     );
 
     const handleSync = async () => {
-        await guardedAction(async () => {
-            setSyncState(SyncStateEnum.syncing);
-            try {
-                await handleAcceptContract(terms);
+        try {
+            await guardedAction(async () => {
+                setSyncState(SyncStateEnum.syncing);
+                await handleAcceptContract(terms, () => guardedAction(() => {}));
                 setSyncState(SyncStateEnum.synced);
                 setTimeout(() => {
                     closeModal();
                     history.push('/wallet');
                 }, 500);
-            } catch (e) {
-                presentToast(`Something went wrong: ${e.message}`, {
-                    type: ToastTypeEnum.Error,
-                });
-                log.error(e);
-                setSyncState(SyncStateEnum.error);
-            }
-        });
+            });
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            setSyncState(SyncStateEnum.error);
+        }
     };
 
     const handleEditAccess = () => {
@@ -127,7 +128,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
 
     return (
         <section className="w-full flex flex-col gap-[20px] items-center px-[30px] py-[30px] bg-white shadow-bottom rounded-[24px]">
-            <header className="flex items-center flex-col gap-[10px] border-solid border-b-[1px] border-grayscale-200 pb-[20px] w-full">
+            <header className="flex items-center flex-col gap-[10px] border-solid border-b border-grayscale-200 pb-[20px] w-full">
                 <div className="flex items-center justify-start w-[120px]">
                     <div className="flex items-end justify-center relative">
                         <div className="w-[80px] h-[80px] rounded-full overflow-hidden">
@@ -144,13 +145,13 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
 
                         {/* {currentLCNUser ? (
                             <UserProfilePicture
-                                customContainerClass="w-[44px] h-[44px] rounded-full overflow-hidden border-b-solid baorder-white border-2 !absolute bottom-0 right-[-40px] shadow-bottom text-white font-medium text-2xl"
+                                customContainerClass="w-[44px] h-[44px] rounded-full overflow-hidden border-b-solid baorder-white border-2 absolute! bottom-0 right-[-40px] shadow-bottom text-white font-medium text-2xl"
                                 customImageClass="h-full w-full object-cover"
                                 customSize={120}
                                 user={user}
                             />
                         ) : ( */}
-                        <div className="w-[44px] h-[44px] rounded-[10px] overflow-hidden border-b-solid border-white border-[2px] absolute bottom-[0px] right-[-40px] drop-shadow-bottom bg-white">
+                        <div className="w-[44px] h-[44px] rounded-[10px] overflow-hidden border-b-solid border-white border-2 absolute bottom-0 right-[-40px] drop-shadow-bottom bg-white">
                             <img
                                 src={useTenantBrandingAssets().appIcon}
                                 alt="App Icon"

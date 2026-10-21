@@ -751,12 +751,12 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 validationStatus === 'valid'
                                     ? 'bg-emerald-100 text-emerald-700'
                                     : validationStatus === 'invalid'
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                    : validationStatus === 'dirty'
-                                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                                    : validationStatus === 'validating'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                      : validationStatus === 'dirty'
+                                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                        : validationStatus === 'validating'
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                             title={
                                 validationStatus === 'valid'
@@ -764,27 +764,27 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                           'developerPortal.credentialBuilder.validate.tooltip.valid'
                                       ]()
                                     : validationStatus === 'invalid' && analyzedError
-                                    ? m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.invalidWithSuggestions'
-                                      ]({
-                                          summary: analyzedError.summary,
-                                          suggestions: analyzedError.suggestions.join('\n• '),
-                                      })
-                                    : validationStatus === 'invalid'
-                                    ? m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.invalidGeneric'
-                                      ]({ error: validationError || '' })
-                                    : validationStatus === 'dirty'
-                                    ? m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.dirty'
-                                      ]()
-                                    : validationStatus === 'validating'
-                                    ? m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.validating'
-                                      ]()
-                                    : m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.clickToValidate'
-                                      ]()
+                                      ? m[
+                                            'developerPortal.credentialBuilder.validate.tooltip.invalidWithSuggestions'
+                                        ]({
+                                            summary: analyzedError.summary,
+                                            suggestions: analyzedError.suggestions.join('\n• '),
+                                        })
+                                      : validationStatus === 'invalid'
+                                        ? m[
+                                              'developerPortal.credentialBuilder.validate.tooltip.invalidGeneric'
+                                          ]({ error: validationError || '' })
+                                        : validationStatus === 'dirty'
+                                          ? m[
+                                                'developerPortal.credentialBuilder.validate.tooltip.dirty'
+                                            ]()
+                                          : validationStatus === 'validating'
+                                            ? m[
+                                                  'developerPortal.credentialBuilder.validate.tooltip.validating'
+                                              ]()
+                                            : m[
+                                                  'developerPortal.credentialBuilder.validate.tooltip.clickToValidate'
+                                              ]()
                             }
                         >
                             {validationStatus === 'validating' ? (
@@ -802,12 +802,16 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 {validationStatus === 'validating'
                                     ? m['developerPortal.credentialBuilder.validate.validating']()
                                     : validationStatus === 'valid'
-                                    ? m['developerPortal.credentialBuilder.validate.valid']()
-                                    : validationStatus === 'invalid'
-                                    ? m['developerPortal.credentialBuilder.validate.invalid']()
-                                    : validationStatus === 'dirty'
-                                    ? m['developerPortal.credentialBuilder.validate.changed']()
-                                    : m['developerPortal.credentialBuilder.validate.validate']()}
+                                      ? m['developerPortal.credentialBuilder.validate.valid']()
+                                      : validationStatus === 'invalid'
+                                        ? m['developerPortal.credentialBuilder.validate.invalid']()
+                                        : validationStatus === 'dirty'
+                                          ? m[
+                                                'developerPortal.credentialBuilder.validate.changed'
+                                            ]()
+                                          : m[
+                                                'developerPortal.credentialBuilder.validate.validate'
+                                            ]()}
                             </span>
                         </button>
                     )}
@@ -886,7 +890,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                                     }`}
                                                 >
                                                     <div
-                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                                                             isActive ? 'bg-cyan-200' : 'bg-cyan-100'
                                                         }`}
                                                     >
@@ -909,7 +913,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                                     </div>
 
                                                     {isActive && (
-                                                        <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                                        <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
                                                     )}
                                                 </button>
                                             );
@@ -937,7 +941,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                                     }`}
                                                 >
                                                     <div
-                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                                                             isActive
                                                                 ? 'bg-indigo-200'
                                                                 : 'bg-indigo-100'
@@ -962,7 +966,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                                     </div>
 
                                                     {isActive && (
-                                                        <CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                                        <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                                                     )}
                                                 </button>
                                             );
@@ -1008,7 +1012,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             {validationStatus === 'invalid' && analyzedError && (
                 <div className="px-4 py-3 bg-red-50 border-b border-red-200">
                     <div className="flex items-start gap-3">
-                        <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                        <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
 
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-red-800">
@@ -1025,7 +1029,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                             'developerPortal.credentialBuilder.errorPanel.likelyCulprits'
                                         ]({ plural: changedFields.length > 1 ? 's' : '' })}
                                     </p>
-                                    <ul className="space-y-1">
+                                    <ul className="space-y-v3-1">
                                         {changedFields.map((change, i) => (
                                             <li
                                                 key={i}
@@ -1060,7 +1064,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             )}
 
                             {changedFields.length === 0 && (
-                                <ul className="mt-1 space-y-0.5">
+                                <ul className="mt-1 space-y-v3-0.5">
                                     {analyzedError.suggestions.map((suggestion, i) => (
                                         <li
                                             key={i}
@@ -1074,7 +1078,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             )}
 
                             {validationError && validationError !== analyzedError.summary && (
-                                <p className="mt-2 text-xs text-red-600 font-mono bg-red-100 px-2 py-1 rounded overflow-x-auto">
+                                <p className="mt-2 text-xs text-red-600 font-mono bg-red-100 px-2 py-1 rounded-sm overflow-x-auto">
                                     {validationError}
                                 </p>
                             )}
@@ -1084,7 +1088,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             <button
                                 type="button"
                                 onClick={runValidation}
-                                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded hover:bg-red-200 transition-colors"
+                                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-sm hover:bg-red-200 transition-colors"
                             >
                                 <RefreshCw className="w-3 h-3" />
                                 {m['developerPortal.credentialBuilder.errorPanel.retry']()}
@@ -1094,7 +1098,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 <button
                                     type="button"
                                     onClick={revertToLastValid}
-                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-red-600 rounded-sm hover:bg-red-700 transition-colors"
                                 >
                                     <Undo2 className="w-3 h-3" />
                                     {m['developerPortal.credentialBuilder.errorPanel.revert']()}
@@ -1131,7 +1135,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         </div>
                     </div>
                 ) : activeTab === 'builder' && template.schemaType === 'clr2' ? (
-                    <div className="h-full overflow-y-auto p-4 space-y-3">
+                    <div className="h-full overflow-y-auto p-4 space-y-v3-3">
                         <IssuerSection
                             template={template}
                             onChange={onChange}
@@ -1191,7 +1195,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         />
                     </div>
                 ) : activeTab === 'builder' ? (
-                    <div className="h-full overflow-y-auto p-4 space-y-3">
+                    <div className="h-full overflow-y-auto p-4 space-y-v3-3">
                         {/* CredentialInfoSection hidden - fields auto-populated from Achievement */}
 
                         <IssuerSection
@@ -1240,7 +1244,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                     </div>
                 ) : activeTab === 'preview' ? (
                     <div className="h-full overflow-y-auto p-6">
-                        <div className="space-y-6">
+                        <div className="space-y-v3-6">
                             <p className="text-sm text-gray-600 text-center">
                                 {m['developerPortal.credentialBuilder.preview.description']()}
                             </p>

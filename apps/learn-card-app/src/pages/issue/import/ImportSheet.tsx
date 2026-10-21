@@ -17,13 +17,17 @@ import { getLogger } from 'learn-card-base';
 
 import { detectSource, type ImportSourceKind } from './detectSource';
 import { ingestText, ingestFile, ImportError } from './ingest';
-import type { NormalizedImport } from './normalizeToObv3';
+import type { IssueImportSource, IssueImportResult } from './issueImport';
+import { SpreadsheetReview } from '../spreadsheet/SpreadsheetUpload';
+import { SpreadsheetError } from '../spreadsheet/parseSpreadsheet';
+import { spreadsheetErrorMessage } from '../spreadsheet/messages';
 import { summarizeObv3 } from './importSummary';
 import * as m from '../../../paraglide/messages.js';
 
 const log = getLogger('import-sheet');
 
 const KIND_ICON: Record<ImportSourceKind, React.FC<{ className?: string }>> = {
+    spreadsheet: Upload,
     empty: Sparkles,
     json: FileJson,
     ctid: Database,
@@ -34,7 +38,7 @@ const KIND_ICON: Record<ImportSourceKind, React.FC<{ className?: string }>> = {
 };
 
 interface ImportSheetProps {
-    onUse: (result: NormalizedImport) => void;
+    onUse: (result: IssueImportResult) => void | Promise<void>;
     handleCloseModal: () => void;
 }
 
@@ -44,14 +48,14 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
     const [error, setError] = useState<string | null>(null);
     const [canPaste, setCanPaste] = useState(false);
     const [dragging, setDragging] = useState(false);
-    const [result, setResult] = useState<NormalizedImport | null>(null);
+    const [result, setResult] = useState<IssueImportSource | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const detected = useMemo(() => detectSource(text), [text]);
     const Icon = KIND_ICON[detected.kind];
     const canResolve = detected.kind !== 'empty' && detected.kind !== 'unknown';
 
-    const run = useCallback(async (fn: () => Promise<NormalizedImport>) => {
+    const run = useCallback(async (fn: () => Promise<IssueImportSource>) => {
         setBusy(true);
         setError(null);
         setCanPaste(false);
@@ -59,7 +63,9 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
             setResult(await fn());
         } catch (e) {
             log.warn('import-sheet.resolve_failed', e);
-            if (e instanceof ImportError) {
+            if (e instanceof SpreadsheetError) {
+                setError(spreadsheetErrorMessage(e));
+            } else if (e instanceof ImportError) {
                 setError(e.message);
                 setCanPaste(e.canPasteInstead);
             } else if (e instanceof Error && e.message) {
@@ -94,16 +100,21 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
         [handleFile]
     );
 
-    const summary = result ? summarizeObv3(result.obv3Json) : null;
+    const credential = result?.kind === 'credential' ? result.value : null;
+    const summary = credential ? summarizeObv3(credential.obv3Json) : null;
+    if (result?.kind === 'spreadsheet')
+        return (
+            <SpreadsheetReview
+                source={result.source}
+                onImport={async sheet => {
+                    await onUse({ kind: 'spreadsheet', sheet });
+                }}
+                onClose={handleCloseModal}
+            />
+        );
 
     return (
-        <div
-            className="font-poppins w-full max-w-[520px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up"
-            style={{
-                paddingTop: 'env(safe-area-inset-top)',
-                paddingBottom: 'env(safe-area-inset-bottom)',
-            }}
-        >
+        <div className="font-poppins w-full h-full min-h-0 bg-white flex flex-col overflow-hidden animate-fade-in-up">
             <div className="px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-semibold text-grayscale-900">
@@ -123,7 +134,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                 </p>
             </div>
 
-            <div className="overflow-y-auto px-6 py-5 space-y-4">
+            <div className="overflow-y-auto px-6 py-5 space-y-v3-4">
                 {!result && (
                     <>
                         <div
@@ -147,13 +158,15 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                 }}
                                 placeholder={m['issueFlow.importPlaceholder']()}
                                 rows={4}
-                                className="w-full py-3 px-4 bg-transparent rounded-2xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none resize-none"
+                                className="w-full py-3 px-4 bg-transparent rounded-2xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden resize-none"
                             />
                             <div className="flex items-center justify-between px-4 pb-3">
                                 {detected.kind !== 'empty' && detected.kind !== 'unknown' ? (
                                     <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                                         <Icon className="w-3.5 h-3.5" />
-                                        {detected.label}
+                                        {detected.kind === 'spreadsheet'
+                                            ? m['issueFlow.sheet.spreadsheet']()
+                                            : detected.label}
                                     </span>
                                 ) : (
                                     <span className="text-xs text-grayscale-400">
@@ -171,7 +184,8 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                 <input
                                     ref={fileRef}
                                     type="file"
-                                    accept="application/json,.json"
+                                    accept="application/json,.json,.csv,.tsv,.xlsx"
+                                    data-testid="issue-import-file"
                                     className="hidden"
                                     onChange={e => handleFile(e.target.files?.[0])}
                                 />
@@ -181,7 +195,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                         {error && (
                             <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
                                 <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                                <div className="space-y-1">
+                                <div className="space-y-v3-1">
                                     <span className="block text-sm text-red-700 leading-relaxed">
                                         {error}
                                     </span>
@@ -215,8 +229,16 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                     </>
                 )}
 
-                {result && summary && (
-                    <div className="space-y-4 animate-fade-in-up">
+                {result?.kind === 'credential' && credential && summary && (
+                    <div className="space-y-v3-4 animate-fade-in-up">
+                        {error && (
+                            <p
+                                role="alert"
+                                className="p-3 bg-red-50 text-sm text-red-700 rounded-2xl"
+                            >
+                                {error}
+                            </p>
+                        )}
                         <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
                             <Check className="w-4 h-4" />
                             {m['issueFlow.foundIt']()}
@@ -251,16 +273,16 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                             </div>
                         </div>
 
-                        {result.provenance.source === 'credential-engine' && (
+                        {credential.provenance.source === 'credential-engine' && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-700">
                                 <Database className="w-3.5 h-3.5" />
                                 {m['issueFlow.fromCredEngine']()}
                             </span>
                         )}
 
-                        {result.warnings.length > 0 && (
-                            <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl space-y-1">
-                                {result.warnings.map(w => (
+                        {credential.warnings.length > 0 && (
+                            <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl space-y-v3-1">
+                                {credential.warnings.map(w => (
                                     <span
                                         key={w}
                                         className="block text-xs text-amber-700 leading-relaxed"
@@ -284,13 +306,21 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                             </button>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    onUse(result);
-                                    handleCloseModal();
+                                disabled={busy}
+                                onClick={async () => {
+                                    setBusy(true);
+                                    try {
+                                        await onUse(result);
+                                        handleCloseModal();
+                                    } catch {
+                                        setError(m['error.generic']());
+                                    } finally {
+                                        setBusy(false);
+                                    }
                                 }}
                                 className="flex-1 py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                             >
-                                {m['issueFlow.useThis']()}
+                                {busy ? m['common.loading']() : m['issueFlow.useThis']()}
                             </button>
                         </div>
                     </div>

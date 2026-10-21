@@ -25,7 +25,7 @@ const CaretListItem: React.FC<CaretListItemProps> = ({
             role={onClick ? 'button' : undefined}
             className={`flex gap-[10px] items-center py-[10px] ${
                 borderWanted
-                    ? 'border-grayscale-200 border-solid border-b-[1px] last:border-b-0'
+                    ? 'border-grayscale-200 border-solid border-b last:border-b-0'
                     : 'mb-[15px]'
             }`}
             onClick={onClick}
@@ -51,7 +51,7 @@ const CaretListItem: React.FC<CaretListItemProps> = ({
                 )}
                 {!caretOverride && (
                     <SlimCaretRight
-                        className="text-grayscale-400 h-[20px] w-[20px]"
+                        className="rtl-mirror text-grayscale-400 h-[20px] w-[20px]"
                         color="currentColor"
                     />
                 )}

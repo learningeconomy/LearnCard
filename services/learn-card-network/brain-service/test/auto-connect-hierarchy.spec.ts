@@ -1,9 +1,13 @@
-import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
+import { describe, it, beforeAll, beforeEach, afterAll, expect, vi } from 'vitest';
+
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { getUser } from './helpers/getClient';
 import { sendBoost, testUnsignedBoost } from './helpers/send';
 
-import { Profile, Boost, Credential } from '@models';
+import * as Notifications from '@helpers/notifications.helpers';
+import { neogma } from '@instance';
+import { Profile, Boost, Credential, CredentialActivity } from '@models';
 
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
@@ -99,8 +103,10 @@ describe('Auto-connect via parent boost with children', () => {
             true
         );
 
-        const beforeDeleteBConnections = await userB.clients.fullAuth.profile.paginatedConnections();
-        const beforeDeleteCConnections = await userC.clients.fullAuth.profile.paginatedConnections();
+        const beforeDeleteBConnections =
+            await userB.clients.fullAuth.profile.paginatedConnections();
+        const beforeDeleteCConnections =
+            await userC.clients.fullAuth.profile.paginatedConnections();
 
         expect(beforeDeleteBConnections.records.map(r => r.profileId)).toContain('userc');
         expect(beforeDeleteCConnections.records.map(r => r.profileId)).toContain('userb');
@@ -115,5 +121,112 @@ describe('Auto-connect via parent boost with children', () => {
 
         expect(afterDeleteBConnections.records.map(r => r.profileId)).not.toContain('userc');
         expect(afterDeleteCConnections.records.map(r => r.profileId)).not.toContain('userb');
+    });
+
+    it('reconciles a partial automatic connection batch on idempotent acceptance retry', async () => {
+        const parentUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            autoConnectRecipients: true,
+        });
+        await sendBoost(
+            { profileId: 'usera', user: userA },
+            { profileId: 'userb', user: userB },
+            parentUri,
+            true
+        );
+        const credentialUri = await sendBoost(
+            { profileId: 'usera', user: userA },
+            { profileId: 'userc', user: userC },
+            parentUri,
+            false
+        );
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let signalCreatorPairComplete: (() => void) | undefined;
+        const creatorPairComplete = new Promise<void>(resolve => {
+            signalCreatorPairComplete = resolve;
+        });
+        let failRecipientPair = true;
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                const isAutomaticPairWrite =
+                    typeof query === 'string' &&
+                    query.includes('MERGE (a)-[r:CONNECTED_WITH]') &&
+                    params?.aId === 'userc';
+
+                if (isAutomaticPairWrite && params?.bId === 'usera') {
+                    const result = await originalRun(query, params);
+                    signalCreatorPairComplete?.();
+                    return result;
+                }
+                if (isAutomaticPairWrite && params?.bId === 'userb' && failRecipientPair) {
+                    await creatorPairComplete;
+                    failRecipientPair = false;
+                    throw new Error('injected automatic recipient pair failure');
+                }
+
+                return originalRun(query, params);
+            });
+        const notificationSpy = vi
+            .spyOn(Notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined);
+
+        try {
+            try {
+                await expect(
+                    userC.clients.fullAuth.credential.acceptCredential({ uri: credentialUri })
+                ).rejects.toThrow('injected automatic recipient pair failure');
+
+                const partialConnections =
+                    await userC.clients.fullAuth.profile.paginatedConnections();
+                expect(partialConnections.records.map(record => record.profileId).sort()).toEqual([
+                    'usera',
+                ]);
+                expect(
+                    await CredentialActivity.findMany({
+                        where: { eventType: 'CLAIMED', credentialUri },
+                    })
+                ).toHaveLength(1);
+            } finally {
+                queryRunnerSpy.mockRestore();
+            }
+
+            await expect(
+                userC.clients.fullAuth.credential.acceptCredential({ uri: credentialUri })
+            ).resolves.toBe(true);
+
+            const reconciledConnections =
+                await userC.clients.fullAuth.profile.paginatedConnections();
+            expect(reconciledConnections.records.map(record => record.profileId).sort()).toEqual([
+                'usera',
+                'userb',
+            ]);
+            expect(
+                await CredentialActivity.findMany({
+                    where: { eventType: 'CLAIMED', credentialUri },
+                })
+            ).toHaveLength(1);
+            expect(
+                notificationSpy.mock.calls.filter(
+                    call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+                )
+            ).toHaveLength(1);
+
+            const sourceResult = await neogma.queryRunner.run(
+                `
+                    MATCH (:Profile { profileId: 'userc' })-[connection:CONNECTED_WITH]-
+                          (:Profile { profileId: 'userb' })
+                    RETURN connection.sources AS sources
+                    ORDER BY sources
+                `
+            );
+            expect(sourceResult.records.map(record => record.get('sources') as string[])).toEqual([
+                [`boost:${parentUri.split(':').at(-1)}`],
+                [`boost:${parentUri.split(':').at(-1)}`],
+            ]);
+        } finally {
+            queryRunnerSpy.mockRestore();
+            notificationSpy.mockRestore();
+        }
     });
 });

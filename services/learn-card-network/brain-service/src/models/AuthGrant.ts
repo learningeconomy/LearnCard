@@ -21,6 +21,7 @@ export const AuthGrant = ModelFactory<FlatAuthGrantType, AuthGrantRelationships>
             challenge: { type: 'string', required: true, uniqueItems: true },
             status: { type: 'string', required: true },
             scope: { type: 'string', required: true },
+            actAs: { type: 'string', required: false },
             createdAt: { type: 'string', required: true },
             expiresAt: { type: 'string', required: false },
         },

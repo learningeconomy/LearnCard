@@ -20,8 +20,9 @@ import BoostRecipients from 'learn-card-base/components/boost/BoostRecipients';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
+import * as m from '../../paraglide/messages.js';
 import { Boost, VC } from '@learncard/types';
-import { pluralize } from 'learn-card-base';
+import { selectLocalePlural } from '../../i18n/formatters';
 import { useCanInviteTroop } from './useCanInviteTroop';
 import {
     getDefaultBadgeThumbForCredential,
@@ -107,7 +108,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                 handleEdit={openEditTroopOrNetworkModal}
                 handleInviteMember={handleSelectInviteModal}
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             {
                 desktop: ModalTypes.Cancel,
                 mobile: ModalTypes.Cancel,
@@ -147,7 +148,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                 type={typeOverride || scoutNoun}
             />,
             {
-                sectionClassName: '!max-w-[450px]',
+                sectionClassName: 'max-w-[450px]!',
             },
             {
                 desktop: ModalTypes.Cancel,
@@ -178,7 +179,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                     leaderImage={leaderImage}
                     scoutImage={scoutImage}
                 />,
-                { sectionClassName: '!max-w-[450px]' },
+                { sectionClassName: 'max-w-[450px]!' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } else if (canInviteScout) {
@@ -192,7 +193,9 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         handleSelectInviteModal();
     };
 
-    const memberName = customMemberName ? customMemberName : 'Leader';
+    const memberForms = customMemberName
+        ? { one: customMemberName, other: customMemberName }
+        : { one: m['troops.leaderOne'](), other: m['troops.leaderOther']() };
 
     return (
         <div className="cursor-pointer relative rounded-[20px] shadow-bottom-1-4  flex min-h-[130px] items-center h-full bg-white mt-[20px] w-full px-[20px] py-[10px]">
@@ -200,7 +203,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
             <div className="thumb-container cursor-pointer h-[100px] w-[85px] flex items-center z-[0]">
                 <div className="thumbnail rounded-full bg-grayscale-100 h-[70px] w-[70px]">
                     <div
-                        className="thumb-bg-el bg-grayscale-50 absolute left-0 top-0 h-[90%] w-[100px] rounded-bl-[0px] rounded-tl-[20px] rounded-br-[100%] z-[2]"
+                        className="thumb-bg-el bg-grayscale-50 absolute left-0 top-0 h-[90%] w-[100px] rounded-bl-none rounded-tl-[20px] rounded-br-[100%] z-[2]"
                         style={bgImgStyle}
                     ></div>
 
@@ -224,9 +227,9 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
             <div className="flex flex-col z-[2] w-full pl-[15px]">
                 <span className="text-grayscale-900 cursor-pointer font-medium text-med relative">
                     {_resolvedBoost?.name}
-                    <div className="absolute right-[0px] top-[0px] cursor-pointer">
+                    <div className="absolute right-[0px] top-0 cursor-pointer">
                         <SlimCaretRight
-                            className="text-grayscale-400 h-[20px] w-[20px]"
+                            className="rtl-mirror text-grayscale-400 h-[20px] w-[20px]"
                             color="currentColor"
                         />
                     </div>
@@ -238,11 +241,13 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                 )}
                 {recipients && recipients?.length > 0 && (
                     <span className="font-medium text-grayscale-700">
-                        {recipients?.length} {pluralize(memberName, recipients?.length)}
+                        {recipients?.length} {selectLocalePlural(recipients.length, memberForms)}
                     </span>
                 )}
                 {recipients?.length === 0 && (
-                    <span className="font-medium text-grayscale-700">0 People</span>
+                    <span className="font-medium text-grayscale-700">
+                        {m['troops.list.zeroPeople']()}
+                    </span>
                 )}
                 <span className="h-[30px]">
                     <BoostRecipients
@@ -254,7 +259,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
 
             {/* <div className="absolute right-[20px] top-[20px] cursor-pointer">
                 <SlimCaretRight
-                    className="text-grayscale-400 h-[20px] w-[20px]"
+                    className="rtl-mirror text-grayscale-400 h-[20px] w-[20px]"
                     color="currentColor"
                 />
             </div> */}

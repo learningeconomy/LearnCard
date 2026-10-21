@@ -39,6 +39,19 @@ bun run run-network-tests  # builds dependencies then runs the Brain service tes
 
 Avoid running individual package builds or tests directly, as that can lead to stale artifacts.
 
+The shared local-service Docker image installs dependencies with Bun 1.4.2 to
+read lockfile v3, then runs services with Bun 1.3.14. Bun 1.4.2's runtime bypasses
+the Compose `localhost:host-gateway` mapping used for cross-service DID document
+resolution and notification delivery. Do not run dependency installation with
+the older runtime. Hosted service and browser E2E runners verify Cloud's
+localhost DID-document fetch before running their suites. To run that smoke
+against an already-started service stack:
+
+```bash
+cd tests/e2e
+bash ../../scripts/e2e-hosted/verify-service-did-resolution.sh
+```
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
@@ -49,13 +62,11 @@ Please make sure to update tests as appropriate.
 
 [![Stargazers repo roster for @learningeconomy/LearnCard](https://reporoster.com/stars/learningeconomy/LearnCard)](https://github.com/learningeconomy/LearnCard/stargazers)
 
-## Comments, Questions, or Palpitations of the Heart?
+## Get Help
 
-The best way to start engaging in the community is to participate in our Github Discussions:
-
--   [Post a Feature Request 💡](https://github.com/learningeconomy/LearnCard/discussions/categories/feature-requests)
--   [Ask for Help 💖](https://github.com/learningeconomy/LearnCard/discussions/categories/help)
--   [Show off your project to the community! 🙌](https://github.com/learningeconomy/LearnCard/discussions/categories/show-and-tell)
+- **Something broken?** [Open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) — bugs and technical questions live here, next to the code.
+- **Want a feature, or curious what's coming?** [Request and vote on the roadmap](https://roadmap.learncard.com) · [Changelog](https://roadmap.learncard.com/changelog)
+- **Private or commercial question?** [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io)
 
 ## Who is Learning Economy Foundation?
 

@@ -184,8 +184,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     className="bg-cover bg-no-repeat bg-center relative font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px] h-full"
                                     style={{
                                         backgroundImage: metadata?.imageUrl
-                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
-                                            })`
+                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${
+                                                  metadata?.imageUrl ?? ''
+                                              })`
                                             : undefined,
                                     }}
                                 >
@@ -220,7 +221,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     className="flex media-attachment-box bg-grayscale-100 items-center rounded-[15px] w-full"
                                 >
                                     <button
-                                        className="relative h-[80px] w-[80px] rounded-[15px] overflow-hidden flex-shrink-0"
+                                        className="relative h-[80px] w-[80px] rounded-[15px] overflow-hidden shrink-0"
                                         onClick={e => {
                                             e.stopPropagation();
                                             handleMediaAttachmentClick(media.url, media.type);

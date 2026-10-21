@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('consent-flow-code-tab');
@@ -57,10 +58,8 @@ const Section: React.FC<{
                 className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors"
             >
                 <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center bg-opacity-10 ${iconColor.replace(
-                        'text-',
-                        'bg-'
-                    )}`}
+                    style={{ backgroundColor: tailwindColorWithOpacity(iconColor, 10) }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
                 >
                     <Icon className={`w-4 h-4 ${iconColor}`} />
                 </div>
@@ -87,7 +86,7 @@ const Section: React.FC<{
                 </svg>
             </button>
 
-            {isOpen && <div className="px-4 pb-4 space-y-4">{children}</div>}
+            {isOpen && <div className="px-4 pb-4 space-y-v3-4">{children}</div>}
         </div>
     );
 };
@@ -162,7 +161,7 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.consentFlowCode.title']()}
@@ -180,7 +179,7 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                 description={m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.desc']()}
             >
                 {consentUrl ? (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <div className="flex items-center justify-between">
                             <p className="text-xs text-gray-500 font-medium">
                                 {m[
@@ -249,7 +248,7 @@ ${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(
             >
                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
                     <div className="flex gap-2">
-                        <Info className="w-4 h-4 text-violet-600 flex-shrink-0 mt-0.5" />
+                        <Info className="w-4 h-4 text-violet-600 shrink-0 mt-0.5" />
                         <p className="text-xs text-violet-800">
                             {m[
                                 'developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.info'
@@ -346,8 +345,8 @@ const result = await learnCard.invoke.send({
     recipient: userDID,
     contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
     templateUri: '${templateUri || 'YOUR_TEMPLATE_URI'}',${
-                            integration.id ? `\n    integrationId: '${integration.id}',` : ''
-                        }
+        integration.id ? `\n    integrationId: '${integration.id}',` : ''
+    }
 });
 
 log.info('Credential sent:', result.credentialUri);`,
@@ -359,14 +358,14 @@ log.info('Credential sent:', result.credentialUri);`,
     "recipient": "did:web:...",
     "contractUri": "${contractUri || 'YOUR_CONTRACT_URI'}",
     "templateUri": "${templateUri || 'YOUR_TEMPLATE_URI'}"${
-                            integration.id ? `,\n    "integrationId": "${integration.id}"` : ''
-                        }
+        integration.id ? `,\n    "integrationId": "${integration.id}"` : ''
+    }
   }'`,
                     }}
                 />
 
                 {templates.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <p className="text-xs text-gray-500 font-medium">
                             {m[
                                 'developerPortal.dashboards.tabs.consentFlowCode.yourTemplateUris'
@@ -450,7 +449,7 @@ log.info('User consent records:', userConsentData.records);`,
                 title={m['developerPortal.dashboards.tabs.consentFlowCode.settings.title']()}
                 description={m['developerPortal.dashboards.tabs.consentFlowCode.settings.desc']()}
             >
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {/* Integration ID (read-only) */}
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
@@ -485,7 +484,7 @@ log.info('User consent records:', userConsentData.records);`,
                     </div>
 
                     {/* Callback URL (editable) */}
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-v3-2">
                         <div className="flex items-center justify-between">
                             <p className="text-xs text-gray-500">
                                 {m[
@@ -508,13 +507,13 @@ log.info('User consent records:', userConsentData.records);`,
                         </div>
 
                         {editingCallbackUrl ? (
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 <input
                                     type="url"
                                     value={callbackUrlDraft}
                                     onChange={e => setCallbackUrlDraft(e.target.value)}
                                     placeholder="https://your-app.com/api/learncard/callback"
-                                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
+                                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
                                     autoFocus
                                 />
                                 <div className="flex gap-2">
@@ -522,11 +521,12 @@ log.info('User consent records:', userConsentData.records);`,
                                         onClick={async () => {
                                             try {
                                                 const currentGuideState = (integration.guideState ||
-                                                    {}) as Record<string, any>;
+                                                    {}) as Partial<GuideState>;
                                                 const currentConfig =
                                                     currentGuideState.config || {};
                                                 const currentCfConfig =
-                                                    currentConfig.consentFlowConfig || {};
+                                                    (currentConfig.consentFlowConfig ||
+                                                        {}) as Record<string, unknown>;
 
                                                 await updateIntegration.mutateAsync({
                                                     id: integration.id,

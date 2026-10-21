@@ -9,6 +9,7 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
+import * as m from '../../../paraglide/messages.js';
 
 import { closeAll } from '../../../helpers/uiHelpers';
 
@@ -47,8 +48,8 @@ export const useJoinLCNetworkModal = (
                 showNotificationsModal={showNotificationsModal}
             />,
             {
-                sectionClassName: '!max-w-[400px]',
-                cancelButtonTextOverride: 'Skip For Now',
+                sectionClassName: 'max-w-[400px]!',
+                cancelButtonTextOverride: m['common.skipForNow'](),
             }
         );
     }, [newModal, closeModal, showNotificationsModal, onDismiss]);

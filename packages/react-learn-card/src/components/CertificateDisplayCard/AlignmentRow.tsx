@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '../../i18n';
 
 type AlignmentsRowProps = {
     url?: string;
@@ -50,6 +51,7 @@ const AlignmentRow: React.FC<AlignmentsRowProps> = ({
     description,
     verified,
 }) => {
+    const t = useT();
     const title = name || code || 'Framework alignment';
 
     return (
@@ -68,7 +70,7 @@ const AlignmentRow: React.FC<AlignmentsRowProps> = ({
                     {verified && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-100 px-[6px] py-[2px] text-[10px] font-medium text-emerald-700 shrink-0">
                             <ShieldCheckIcon />
-                            Verified
+                            {t('credential.verifiedLabel')}
                         </span>
                     )}
                 </div>
@@ -79,7 +81,7 @@ const AlignmentRow: React.FC<AlignmentsRowProps> = ({
                         rel="noreferrer"
                         onClick={e => e.stopPropagation()}
                         className="text-grayscale-400 hover:text-grayscale-700 transition-colors shrink-0"
-                        aria-label="Open alignment source"
+                        aria-label={t('credential.openAlignmentSource')}
                     >
                         <ExternalLinkIcon />
                     </a>

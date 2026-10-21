@@ -106,7 +106,7 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
                 <>
                     {isCardView && (
                         <section className="relative flex flex-wrap gap-[10px] text-center justify-center items-center max-w-[800px]">
-                            <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] z-[-10]" />
+                            <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] -z-10" />
                             {credentials}
                             <div role="presentation" ref={infiniteScrollRef} />
                             {credentialsFetching && (
@@ -122,7 +122,7 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
                     )}
                     {!isCardView && (
                         <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
-                            <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] z-[-10]" />
+                            <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] -z-10" />
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
                                 {credentials}
                             </div>
@@ -145,7 +145,7 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
                 credentials &&
                 credentials?.length === 0 && (
                     <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center mt-[20px]">
-                        <img src={defaultImg} alt="ids" className="w-[200px] h-[200px] m-auto" />
+                        <img src={defaultImg} alt="" className="w-[200px] h-[200px] m-auto" />
                         <p
                             className={`absolute inset-0 flex items-center justify-center font-bold text-center w-[133px] m-auto text-[16px] ${emptyMessageStyle}`}
                         >

@@ -13,7 +13,7 @@
  */
 
 import 'fake-indexeddb/auto';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import {
     storeDeviceShare,
@@ -25,6 +25,11 @@ import {
     storeShareVersion,
     getShareVersion,
 } from './storage';
+import {
+    createSSSStrategy,
+    readPendingShareCandidates,
+    writePendingShareCandidates,
+} from './sss-strategy';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -249,7 +254,7 @@ describe('SSS Storage', () => {
             expect(await getShareVersion(id)).toBeNull();
         });
 
-        it('deleting one user does not affect another user\'s version', async () => {
+        it("deleting one user does not affect another user's version", async () => {
             const idA = 'sss-device-share:user-a';
             const idB = 'sss-device-share:user-b';
 
@@ -380,7 +385,10 @@ describe('SSS Storage', () => {
                 const t = db.transaction('shares', 'readwrite');
                 const s = t.objectStore('shares');
                 // Store garbage data that will fail AES-GCM decryption
-                const req = s.put({ version: 1, iv: 'bad', cipher: 'bad', keyVersion: 1 }, orphanId);
+                const req = s.put(
+                    { version: 1, iv: 'bad', cipher: 'bad', keyVersion: 1 },
+                    orphanId
+                );
                 req.onsuccess = () => resolve();
                 req.onerror = () => reject(req.error);
             });
@@ -427,11 +435,7 @@ describe('SSS Storage', () => {
 // Session-only storage (public computer mode)
 // ---------------------------------------------------------------------------
 
-import {
-    isPublicComputerMode,
-    setPublicComputerMode,
-    createAdaptiveStorage,
-} from './storage';
+import { isPublicComputerMode, setPublicComputerMode, createAdaptiveStorage } from './storage';
 
 describe('Session-only storage (public computer mode)', () => {
     beforeEach(() => {
@@ -528,3 +532,57 @@ describe('Session-only storage (public computer mode)', () => {
         });
     });
 });
+
+describe.each([false, true])(
+    'SSS automatic cleanup with adaptive storage (public mode=%s)',
+    publicMode => {
+        beforeEach(async () => {
+            sessionStorage.clear();
+            await clearAllShares();
+            setPublicComputerMode(publicMode);
+        });
+
+        afterEach(async () => {
+            sessionStorage.clear();
+            await clearAllShares();
+        });
+
+        it('preserves scoped and unscoped pending writes while clearing stale main shares', async () => {
+            const storage = createAdaptiveStorage();
+            const scoped = createSSSStrategy({ serverUrl: 'https://unused.test', storage });
+            const accountId = 'sss-device-share:account-a';
+            const otherId = 'sss-device-share:account-b';
+            const scopedPending = [{ share: 'pending-a', createdAt: Date.now() }];
+            const legacyPending = [{ share: 'pending-legacy', createdAt: Date.now() }];
+            const otherPending = [{ share: 'pending-b', createdAt: Date.now() }];
+
+            scoped.setActiveUser!('account-a');
+            await scoped.storeLocalKey('stale-a');
+            await scoped.storeLocalShareVersion!(3);
+            await writePendingShareCandidates(storage, scopedPending, accountId);
+            await storage.storeDeviceShare('share-b', otherId);
+            await storage.storeShareVersion(7, otherId);
+            await writePendingShareCandidates(storage, otherPending, otherId);
+
+            await scoped.clearLocalKeys({ preservePending: true });
+            expect(await storage.getDeviceShare(accountId)).toBeNull();
+            expect(await storage.getShareVersion(accountId)).toBeNull();
+            expect(await readPendingShareCandidates(storage, accountId)).toEqual(scopedPending);
+            expect(await scoped.getLocalKey()).toBe('pending-a');
+
+            const legacy = createSSSStrategy({ serverUrl: 'https://unused.test', storage });
+            await legacy.storeLocalKey('stale-legacy');
+            await legacy.storeLocalShareVersion!(2);
+            await writePendingShareCandidates(storage, legacyPending);
+            await legacy.clearLocalKeys({ preservePending: true });
+            expect(await storage.getDeviceShare()).toBeNull();
+            expect(await storage.getShareVersion()).toBeNull();
+            expect(await readPendingShareCandidates(storage)).toEqual(legacyPending);
+            expect(await legacy.getLocalKey()).toBe('pending-legacy');
+
+            expect(await storage.getDeviceShare(otherId)).toBe('share-b');
+            expect(await storage.getShareVersion(otherId)).toBe(7);
+            expect(await readPendingShareCandidates(storage, otherId)).toEqual(otherPending);
+        });
+    }
+);

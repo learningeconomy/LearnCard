@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../i18n/formatters';
 
 // @ts-ignore
 import EmptySocialBoostIcon from '../../assets/images/emptySocialBoost.svg';
@@ -92,7 +93,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
 
     const openPreviewModal = () => {
         newPreviewModal(
-            <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
                 {isBoost ? (
                     <BoostPreview
                         credential={cred as any}
@@ -222,10 +223,10 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     let idSleeveFooterClass = '';
 
     if (isID) {
-        idDisplayContainerClass = '!border-white';
-        idSleeveFooterClass = '!bg-teal-300';
+        idDisplayContainerClass = 'border-white!';
+        idSleeveFooterClass = 'bg-teal-300!';
     } else if (isMembership) {
-        idDisplayContainerClass = '!border-white';
+        idDisplayContainerClass = 'border-white!';
         idSleeveFooterClass = '!bg-sp-green-light';
     }
 
@@ -300,7 +301,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                 credential={(credential as any).boostCredential ?? credential}
                 uri={(credential as any).boostId ?? uri}
             />,
-            { sectionClassName: '!bg-transparent !shadow-none !max-w-[355px]' },
+            { sectionClassName: 'bg-transparent! shadow-none! max-w-[355px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -313,11 +314,15 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         closePreviewModal();
     };
 
-    const issueDate = moment(cred?.issuanceDate).format('MMMM DD YYYY');
+    const issueDate = formatLocaleDate(cred?.issuanceDate, {
+        month: 'long',
+        day: '2-digit',
+        year: 'numeric',
+    });
 
     if (!useWrapper) {
         return (
-            <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
                 <BoostGenericCard
                     innerOnClick={
                         !showChecked && !showSkeleton
@@ -360,7 +365,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     }
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             <IdDisplayContainer
                 showQRCode
                 handleQRCodeClick={() => {

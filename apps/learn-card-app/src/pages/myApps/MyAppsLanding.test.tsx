@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -19,7 +20,6 @@ vi.mock('./MoreAppTile', () => ({ default: () => null }));
 vi.mock('./useMoreApps', () => ({
     default: () => ({ apps: [], isSuggested: true, isLoading: false }),
 }));
-vi.mock('./useOpenBoostTemplateSelector', () => ({ default: () => vi.fn() }));
 vi.mock('learn-card-base', () => ({
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
     ModalTypes: { Cancel: 'Cancel', Right: 'Right', Center: 'Center', FullScreen: 'FullScreen' },

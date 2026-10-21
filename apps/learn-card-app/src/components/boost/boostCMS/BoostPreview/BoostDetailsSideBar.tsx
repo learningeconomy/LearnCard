@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import X from '../../../svgs/X';
-import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
+
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
@@ -10,7 +10,7 @@ import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 import SkillsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/SkillsBox';
 import BoostEndorsementDetails from '../../../boost-endorsements/BoostEndorsementDetails';
 import EndorsementsList from '../../../boost-endorsements/EndorsementsList/EndorsementsList';
@@ -34,10 +34,16 @@ import {
 import { VC, VerificationItem } from '@learncard/types';
 import { UnsignedVC } from '@learncard/types';
 import moment from 'moment';
+import {
+    getCredentialExpirationDate,
+    hasCredentialExpired,
+} from 'learn-card-base/helpers/credentialExpiration';
 import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
+    endorsementCredential?: VC;
+    shareCredentialUri?: string;
     categoryType?: CredentialCategoryEnum;
     customSkillsComponent?: React.ReactNode;
     verificationItems: VerificationItem[];
@@ -53,6 +59,8 @@ type BoostDetailsSideBarProps = {
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
+    endorsementCredential: endorsementCredentialProp,
+    shareCredentialUri,
     categoryType,
     customSkillsComponent,
     verificationItems,
@@ -66,8 +74,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     issuancesSummaryComponent,
     isPreview = false,
 }) => {
-    const enableRenderMethod = useRenderMethodEnabled();
-
+    const endorsementCredential = endorsementCredentialProp ?? credential;
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -86,6 +93,9 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                   .filter(Boolean)
                   .join(' – ')
             : null;
+
+    const expirationDate = getCredentialExpirationDate(credential);
+    const isExpired = hasCredentialExpired(credential);
     const { isMobile } = useDeviceTypeByWidth();
 
     const {
@@ -103,18 +113,18 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     const isMediaDisplay = displayType === DisplayTypeEnum.Media;
 
     const credentialVerificationDisplay = (
-        <div className="w-full flex items-center justify-start text-sm text-grayscale-600 font-semibold border-t-[1px] border-solid border-grayscale-200 pt-[10px]">
+        <div className="w-full flex items-center justify-start text-sm text-grayscale-600 font-semibold border-t border-solid border-grayscale-200 pt-[10px]">
             <CredentialVerificationDisplay
                 credential={credential}
-                iconClassName="!w-[20px] !h-[20px] mr-1"
+                iconClassName="w-[20px]! h-[20px]! mr-1"
                 showText
-                className="!capitalize !text-grayscale-900 text-sm"
+                className="capitalize! text-grayscale-900! text-sm"
             />
             &nbsp;on {createdAt}
         </div>
     );
 
-    let activeTabDetails = null;
+    let activeTabDetails: React.ReactNode;
     switch (selectedTab) {
         case BoostPreviewTabsEnum.Details:
             activeTabDetails = (
@@ -132,20 +142,30 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         {isMediaDisplay && <BoostSideMenuMediaDetails credential={credential} />}
 
                         {!isMediaDisplay && dateRangeText && (
-                            <span className="text-grayscale-500 font-poppins text-[12px] font-[500] w-full">
+                            <span className="text-grayscale-600 font-poppins text-[12px] font-[500] w-full">
                                 {dateRangeText}
                             </span>
                         )}
 
                         {!isMediaDisplay && (
                             <span
-                                className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                                className={`text-grayscale-600 font-poppins text-[12px] font-semibold w-full ${
                                     description || dateRangeText
-                                        ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
+                                        ? 'pt-[10px] border-t border-solid border-grayscale-200'
                                         : ''
                                 }`}
                             >
                                 Awarded on {createdAt}
+                            </span>
+                        )}
+                        {!isMediaDisplay && expirationDate && (
+                            <span
+                                className={`mt-2 block w-full font-poppins text-[12px] font-semibold ${
+                                    isExpired ? 'text-amber-700' : 'text-grayscale-600'
+                                }`}
+                            >
+                                {(isExpired ? m['wallet.expired'] : m['wallet.expires'])()}{' '}
+                                {moment(expirationDate).format('MMMM DD, YYYY')}
                             </span>
                         )}
                     </TruncateTextBox>
@@ -159,11 +179,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         </div>
                     )}
 
-                    {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
-                        <BoostDisplayStyleSelector
-                            credential={renderMethodCredential}
-                            enableRenderMethod={enableRenderMethod}
-                        />
+                    {!isMediaDisplay && renderMethodCredential && (
+                        <BoostDisplayStyleSelector credential={renderMethodCredential} />
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
@@ -184,14 +201,15 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     {!hideEndorsementRequestCard && (
                         <EndorsementCard
-                            credential={credential}
+                            credential={endorsementCredential}
+                            shareCredentialUri={shareCredentialUri}
                             categoryType={categoryType}
                             existingEndorsements={existingEndorsements}
                         />
                     )}
 
                     <EndorsementsList
-                        credential={credential}
+                        credential={endorsementCredential}
                         categoryType={categoryType}
                         existingEndorsements={existingEndorsements}
                     />
@@ -235,7 +253,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
         case BoostPreviewTabsEnum.Endorsements:
             activeTabDetails = (
                 <BoostEndorsementDetails
-                    credential={credential}
+                    credential={endorsementCredential}
                     categoryType={categoryType}
                     existingEndorsements={existingEndorsements}
                 />
@@ -252,7 +270,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     };
 
     return (
-        <aside className="bg-white bg-opacity-70 h-full max-w-full min-w-[375px] px-[20px]">
+        <aside className="bg-white/70  h-full max-w-full min-w-[375px] px-[20px]">
             <BoostFooterLayout
                 className="h-full"
                 footerProps={isMobile ? { handleBack: handleClose } : undefined}
@@ -261,10 +279,13 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                 <div className="min-h-full mx-auto px-[2px]">
                     {isMobile && (
                         <button
+                            type="button"
                             className="text-grayscale-900 flex items-center justify-center gap-[5px] px-[10px] py-[5px] rounded-[10px] bg-white/90 shadow-md mb-[20px]"
                             onClick={handleClose}
                         >
-                            <X className="w-[20px]" />
+                            <span aria-hidden="true">
+                                <X className="w-[20px]" />
+                            </span>
                             Close
                         </button>
                     )}

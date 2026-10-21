@@ -80,30 +80,30 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
                 className="relative w-full max-w-[480px] bg-white/80 backdrop-blur-xl border border-white/60 rounded-[28px] shadow-[0_16px_40px_rgba(0,0,0,0.12),0_4px_12px_rgba(0,0,0,0.06)] font-poppins text-center overflow-hidden"
                 variants={cardVariants}
             >
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
+                <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r/srgb from-transparent via-white to-transparent opacity-80" />
 
                 {showCloseX && (
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 bg-white/60 backdrop-blur border border-white/60 text-grayscale-400 hover:text-grayscale-900 transition-colors rounded-full hover:bg-white/80 z-10"
+                        className="absolute top-4 right-4 p-2 bg-white/60 backdrop-blur-sm border border-white/60 text-grayscale-400 hover:text-grayscale-900 transition-colors rounded-full hover:bg-white/80 z-10"
                         aria-label="Close"
                     >
                         <IonIcon icon={closeOutline} className="text-xl block" />
                     </button>
                 )}
 
-                <div className="p-6 sm:p-8 space-y-6">
+                <div className="p-6 sm:p-8 space-y-v3-6">
                     {message.media ? (
                         <MessageMedia media={message.media} />
                     ) : message.emoji ? (
-                        <div className="mx-auto w-16 h-16 rounded-full bg-white/70 backdrop-blur border border-white/60 shadow-sm flex items-center justify-center">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-white/70 backdrop-blur-sm border border-white/60 shadow-xs flex items-center justify-center">
                             <span className="text-[32px] leading-none" aria-hidden="true">
                                 {message.emoji}
                             </span>
                         </div>
                     ) : null}
 
-                    <div className="space-y-2 px-2">
+                    <div className="space-y-v3-2 px-2">
                         <h2 className="text-[22px] font-semibold text-grayscale-900 tracking-[-0.01em]">
                             {message.title}
                         </h2>
@@ -123,8 +123,8 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
                                 if (isCapgoTarget) {
                                     if (capgo.status === 'error') {
                                         return (
-                                            <div key={index} className="space-y-3">
-                                                <div className="p-3.5 bg-red-50/80 backdrop-blur border border-red-100 rounded-[20px] flex items-start gap-2.5 text-left">
+                                            <div key={index} className="space-y-v3-3">
+                                                <div className="p-3.5 bg-red-50/80 backdrop-blur-sm border border-red-100 rounded-[20px] flex items-start gap-2.5 text-left">
                                                     <IonIcon
                                                         icon={alertCircleOutline}
                                                         className="text-red-400 text-lg mt-0.5 shrink-0"
@@ -146,8 +146,8 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
 
                                     if (capgo.status === 'uptodate') {
                                         return (
-                                            <div key={index} className="space-y-3">
-                                                <div className="p-3.5 bg-emerald-50/80 backdrop-blur border border-emerald-100 rounded-[20px] flex items-start gap-2.5 text-left">
+                                            <div key={index} className="space-y-v3-3">
+                                                <div className="p-3.5 bg-emerald-50/80 backdrop-blur-sm border border-emerald-100 rounded-[20px] flex items-start gap-2.5 text-left">
                                                     <IonIcon
                                                         icon={checkmarkCircleOutline}
                                                         className="text-emerald-500 text-lg mt-0.5 shrink-0"
@@ -170,13 +170,13 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
                                         capgo.status === 'checking'
                                             ? 'Checking...'
                                             : capgo.status === 'downloading'
-                                            ? `Downloading... ${Math.round(capgo.progress)}%`
-                                            : 'Installing...';
+                                              ? `Downloading... ${Math.round(capgo.progress)}%`
+                                              : 'Installing...';
 
                                     return (
                                         <div
                                             key={index}
-                                            className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm flex flex-col gap-2 overflow-hidden relative shadow-sm"
+                                            className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm flex flex-col gap-2 overflow-hidden relative shadow-xs"
                                         >
                                             <div className="flex items-center justify-center gap-2 relative z-10">
                                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -216,11 +216,11 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
 
                                 if (action.style === 'primary') {
                                     buttonClass +=
-                                        'bg-grayscale-900 text-white hover:opacity-90 active:scale-[0.98] shadow-sm';
+                                        'bg-grayscale-900 text-white hover:opacity-90 active:scale-[0.98] shadow-xs';
                                     spinnerClass += 'border-white/30 border-t-white';
                                 } else if (action.style === 'positive') {
                                     buttonClass +=
-                                        'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98] shadow-sm';
+                                        'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98] shadow-xs';
                                     spinnerClass += 'border-white/30 border-t-white';
                                 } else if (action.style === 'secondary') {
                                     buttonClass +=

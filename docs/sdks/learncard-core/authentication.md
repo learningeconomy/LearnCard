@@ -22,7 +22,7 @@ Authentication begins with a **Key Generation Seed**. This is a crucial piece of
 
 Use a cryptographically secure random number generator to create 32 bytes of data and then convert it to a 64-character hexadecimal string.
 
--   **In a Browser Environment:**
+- **In a Browser Environment:**
 
     ```typescript
     const randomKeyHex = Array.from(crypto.getRandomValues(new Uint8Array(32)), dec =>
@@ -31,7 +31,7 @@ Use a cryptographically secure random number generator to create 32 bytes of dat
     // randomKeyHex will be a 64-character hexadecimal string like "1a2b3c..."
     ```
 
--   **In a Node.js Environment:**
+- **In a Node.js Environment:**
 
     ```typescript
     import crypto from 'node:crypto';
@@ -46,10 +46,11 @@ Use a cryptographically secure random number generator to create 32 bytes of dat
 
 Your 64-character hexadecimal **seed is the master key** for your LearnCard identity.
 
--   **Protect It Rigorously**: Anyone who gains access to this seed can regenerate all your associated private keys. This would allow them to impersonate you, control your DIDs, and access or modify any data or credentials linked to your identity.
--   **Irreversible Loss**: If you lose this seed and have no other backup of the private keys themselves, you may permanently lose access to your LearnCard identity and any associated assets or credentials.
--   **Handling**: Treat this hex string with the same (or even greater) caution as you would a mnemonic seed phrase for a cryptocurrency wallet. Store it securely, preferably offline and in multiple locations if you are managing it directly.
-    {% endhint %}
+- **Protect It Rigorously**: Anyone who gains access to this seed can regenerate all your associated private keys. This would allow them to impersonate you, control your DIDs, and access or modify any data or credentials linked to your identity.
+- **Irreversible Loss**: If you lose this seed and have no other backup of the private keys themselves, you may permanently lose access to your LearnCard identity and any associated assets or credentials.
+- **Handling**: Treat this hex string with the same (or even greater) caution as you would a mnemonic seed phrase for a cryptocurrency wallet. Store it securely, preferably offline and in multiple locations if you are managing it directly.
+
+{% endhint %}
 
 ### **Initializing LearnCard with Your Seed**:
 
@@ -77,9 +78,10 @@ initialize().then(lc => console.log('LearnCard Initialized!', lc));
 {% hint style="info" %}
 **Important Notes on the Seed**:
 
--   **Format**: The `seed` parameter for `initLearnCard` _must_ be a hexadecimal string. Providing a non-hex string will result in an error.
--   **Length**: If you provide a hexadecimal string that is shorter than 64 characters, `initLearnCard` will typically prefix it with zeroes until it reaches the required 64-character length. For example, `'abc'` would be treated as `'000...00abc'` (61 zeroes followed by 'abc').
-    {% endhint %}
+- **Format**: The `seed` parameter for `initLearnCard` _must_ be a hexadecimal string. Providing a non-hex string will result in an error.
+- **Length**: If you provide a hexadecimal string that is shorter than 64 characters, `initLearnCard` will typically prefix it with zeroes until it reaches the required 64-character length. For example, `'abc'` would be treated as `'000...00abc'` (61 zeroes followed by 'abc').
+
+{% endhint %}
 
 ## Authentication Flow: How It Works
 
@@ -136,8 +138,8 @@ After profile creation, you can use your `did:web` (and in some cases, still you
 
 Authentication with other APIs integrated into the LearnCard ecosystem (e.g., for decentralized storage, AI services) follows the same fundamental DID-Auth pattern:
 
--   Your LearnCard instance, holding keys derived from your seed, will use the appropriate DID (e.g., `did:key`, `did:web`) to sign authentication challenges presented by these services.
--   This proves your control over the identity requesting the action.
+- Your LearnCard instance, holding keys derived from your seed, will use the appropriate DID (e.g., `did:key`, `did:web`) to sign authentication challenges presented by these services.
+- This proves your control over the identity requesting the action.
 
 {% hint style="info" %}
 Always refer to the specific documentation for each API to understand any unique requirements or recommended DIDs for authentication.
@@ -147,7 +149,7 @@ Always refer to the specific documentation for each API to understand any unique
 
 For a more in-depth understanding of the concepts mentioned here, please refer to our Core Concept explainer documents:
 
--   [Core Concept: Seeds](../../core-concepts/identities-and-keys/seed-phrases.md)&#x20;
--   [Core Concept: DIDs (Decentralized Identifiers)](../../core-concepts/identities-and-keys/decentralized-identifiers-dids.md)
--   [Core Concept: Profiles](../../core-concepts/identities-and-keys/network-profiles.md)&#x20;
--   [Understanding DID-Auth Specification](https://www.w3.org/Security/201812-Auth-ID/04_-_Day_1_-_Understanding_DID_Auth.pdf)&#x20;
+- [Core Concept: Seeds](../../core-concepts/identities-and-keys/seed-phrases.md)&#x20;
+- [Core Concept: DIDs (Decentralized Identifiers)](../../core-concepts/identities-and-keys/decentralized-identifiers-dids.md)
+- [Core Concept: Profiles](../../core-concepts/identities-and-keys/network-profiles.md)&#x20;
+- [Understanding DID-Auth Specification](https://www.w3.org/Security/201812-Auth-ID/04_-_Day_1_-_Understanding_DID_Auth.pdf)&#x20;

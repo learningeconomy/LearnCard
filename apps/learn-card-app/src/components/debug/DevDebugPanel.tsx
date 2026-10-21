@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
-import { Bug, X, Shield, Settings, Palette, GitBranch, WifiOff, MessageSquare } from 'lucide-react';
+import {
+    Bug,
+    X,
+    Shield,
+    Settings,
+    Palette,
+    GitBranch,
+    WifiOff,
+    MessageSquare,
+    Gauge,
+} from 'lucide-react';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+import { environment } from '../../config/environment';
 
 import { WIDGET_ENABLED } from './debugComponents';
 import { AuthDebugTab, getMeta } from './AuthDebugTab';
@@ -10,12 +21,13 @@ import { ThemeDebugTab } from './ThemeDebugTab';
 import { PathwaysDebugTab } from './PathwaysDebugTab';
 import { OfflineDebugTab } from './OfflineDebugTab';
 import { InAppMessagesDebugTab } from './InAppMessagesDebugTab';
+import { FeedbackDebugTab } from './FeedbackDebugTab';
 
 // ---------------------------------------------------------------------------
 // Tab definitions
 // ---------------------------------------------------------------------------
 
-type TabId = 'auth' | 'config' | 'theme' | 'pathways' | 'offline' | 'messages';
+type TabId = 'auth' | 'config' | 'theme' | 'pathways' | 'offline' | 'messages' | 'feedback';
 
 interface TabDef {
     id: TabId;
@@ -30,6 +42,7 @@ const TABS: TabDef[] = [
     { id: 'pathways', label: 'Pathways', icon: <GitBranch className="w-3 h-3" /> },
     { id: 'offline', label: 'Offline', icon: <WifiOff className="w-3 h-3" /> },
     { id: 'messages', label: 'Messages', icon: <MessageSquare className="w-3 h-3" /> },
+    { id: 'feedback', label: 'Feedback', icon: <Gauge className="w-3 h-3" /> },
 ];
 
 // ---------------------------------------------------------------------------
@@ -49,10 +62,10 @@ export const DevDebugPanel: React.FC = () => {
     const fabBg = isOpen
         ? 'bg-gray-700 hover:bg-gray-600'
         : isReady
-        ? 'bg-emerald-600 hover:bg-emerald-500'
-        : state.status === 'error'
-        ? 'bg-red-600 hover:bg-red-500'
-        : 'bg-sky-600 hover:bg-sky-500';
+          ? 'bg-emerald-600 hover:bg-emerald-500'
+          : state.status === 'error'
+            ? 'bg-red-600 hover:bg-red-500'
+            : 'bg-sky-600 hover:bg-sky-500';
 
     return (
         <React.Fragment>
@@ -130,12 +143,13 @@ export const DevDebugPanel: React.FC = () => {
                         {activeTab === 'pathways' && <PathwaysDebugTab />}
                         {activeTab === 'offline' && <OfflineDebugTab />}
                         {activeTab === 'messages' && <InAppMessagesDebugTab />}
+                        {activeTab === 'feedback' && <FeedbackDebugTab />}
                     </div>
 
                     {/* ── Footer ── */}
                     <div className="px-3 py-1.5 border-t border-gray-800 bg-gray-900/50 flex items-center justify-between">
                         <p className="text-[9px] text-gray-600">
-                            {import.meta.env.DEV ? 'dev mode' : 'debug widget'}
+                            {environment.DEV ? 'dev mode' : 'debug widget'}
                         </p>
 
                         <p className="text-[9px] text-gray-600 font-mono">

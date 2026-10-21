@@ -1,10 +1,16 @@
 import React from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import CaretDown from '../../svgs/CaretDown';
 import TroopsNetworkList from './TroopsNetworkList';
 
-import { TroopsCMSState, troopsCMSViewModeDefaults, TroopsCMSViewModeEnum } from '../troopCMSState';
+import {
+    TroopsCMSState,
+    troopsCMSViewModeDefaults,
+    viewModeTitle,
+    TroopsCMSViewModeEnum,
+} from '../troopCMSState';
 import { CredentialCategoryEnum, useGetIDs, useModal, ModalTypes } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -26,11 +32,13 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
     const { data: earnedBoostIDs } = useGetIDs();
 
     const nationalNetworkIds =
-        (earnedBoostIDs as any[])?.filter(
-            cred =>
-                getDefaultCategoryForCredential(cred as any) ===
-                CredentialCategoryEnum.nationalNetworkAdminId
-        ) ?? [];
+        earnedBoostIDs
+            ?.map(({ vc }) => vc)
+            .filter(
+                cred =>
+                    getDefaultCategoryForCredential(cred) ===
+                    CredentialCategoryEnum.nationalNetworkAdminId
+            ) ?? [];
 
     const nationalNetworkIdsCount = nationalNetworkIds.length ?? 0;
 
@@ -46,7 +54,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                 state={state}
                 setState={setState}
                 viewMode={viewMode}
-                nationalNetworkIds={nationalNetworkIds as any}
+                nationalNetworkIds={nationalNetworkIds}
             />
         );
     };
@@ -56,13 +64,13 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
     if (viewMode === TroopsCMSViewModeEnum.network) {
         const globalDefaults = troopsCMSViewModeDefaults?.global;
         const globalNetworkImage = globalDefaults?.image ?? '';
-        const globalNetworkTitle = globalDefaults?.title ?? '';
+        const globalNetworkTitle = viewModeTitle(globalDefaults?.titleKey);
         const globalColor = globalDefaults?.color ?? 'sp-purple-base';
 
         const globalNetwork = state?.parentID;
 
         return (
-            <div className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4">
+            <div className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-300 mt-4 mb-4">
                 <div className="flex items-center justify-start">
                     <div className="h-[40px] w-[40px] rounded-full bg-white mr-2 overflow-hidden">
                         {isParentBoostLoading ? (
@@ -78,7 +86,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                                 src={
                                     globalNetwork?.appearance?.badgeThumbnail ?? globalNetworkImage
                                 }
-                                alt="network thumb"
+                                alt=""
                                 className="w-full h-full object-cover"
                             />
                         )}
@@ -87,7 +95,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                         <h4
                             className={`text-${globalColor} font-bold p-0 m-0 text-xs font-notoSans`}
                         >
-                            Global Network
+                            {m['troops.globalNetworkLabel']()}
                         </h4>
 
                         {isParentBoostLoading ? (
@@ -113,7 +121,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
         <button
             disabled={disableClick}
             onClick={() => openNetworkList()}
-            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4"
+            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-300 mt-4 mb-4"
         >
             <div className="flex items-center justify-start">
                 <div className="w-[40px] h-[40px] rounded-full bg-white mr-2 overflow-hidden">
@@ -128,19 +136,19 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                     ) : (
                         <img
                             src={network?.appearance?.badgeThumbnail}
-                            alt="network thumb"
+                            alt=""
                             className="w-full h-full object-cover"
                         />
                     )}
                 </div>
                 <div className="flex flex-col items-start justify-center">
                     <h4 className="text-sp-fire-red font-bold p-0 m-0 text-xs font-notoSans">
-                        Network
+                        {m['troops.network']()}
                     </h4>
 
                     {isParentBoostLoading ? (
                         <p className="m-0 p-0 text-lg font-notoSans text-grayscale-900 line-clamp-1">
-                            ...
+                            {m['troops.loading']()}
                         </p>
                     ) : (
                         <p className="m-0 p-0 text-lg font-notoSans text-grayscale-900 line-clamp-1">

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy error payload is dynamically shaped. */
 import React, { useEffect, useState } from 'react';
 import {
     useManageSelfAssignedSkillsBoost,
@@ -9,8 +10,8 @@ import {
 } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 
-import SkillSearchSelector from 'src/pages/skills/SkillSearchSelector';
-import { SelectedSkill } from 'src/pages/skills/skillTypes';
+import SkillSearchSelector from '../../../pages/skills/SkillSearchSelector';
+import { SelectedSkill } from '../../../pages/skills/skillTypes';
 import {
     SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
     SkillProfileProfessionalTitleData,
@@ -171,7 +172,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
 
             <div className="flex gap-[10px] w-full mt-auto">
                 <button
-                    className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border-[1px] border-solid border-grayscale-200 h-[44px]"
+                    className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border border-solid border-grayscale-200 h-[44px]"
                     onClick={handleBack}
                     disabled={isUpdating}
                 >

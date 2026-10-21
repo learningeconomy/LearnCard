@@ -1,9 +1,13 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
+import {
+    aiPassportFetch,
+    useDeviceTypeByWidth,
+    useKeyboardHeight,
+    isPlatformIOS,
+} from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
-const log = getLogger('learn-card-ai-chat-bot');
 
 import {
     useAnalytics,
@@ -19,7 +23,9 @@ import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
 import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
+import AiSessionErrorHandler from '../AiSessionErrorHandler';
 import { MessageWithQuestions, StreamingMessage } from './MessageWithQuestions';
+import ChatBotTypingIndicator from '../NewAiSessionChatBot/helpers/TypingIndicator';
 
 import {
     messages,
@@ -40,7 +46,7 @@ import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
-import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
+import { getSessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import {
     AiPassportAppContractUri,
     getAiPassportAppByContractUri,
@@ -48,6 +54,8 @@ import {
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 import { useStickToBottom } from '../../../hooks/useStickToBottom';
 import { preloadMarkdownRenderer } from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
+
+const log = getLogger('learn-card-ai-chat-bot');
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
@@ -107,6 +115,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const isEnding = useStore(isEndingSession);
     const showEndingLoader = useStore(showEndingSessionLoader);
     const loading = useStore(isLoading);
+    const typing = useStore(isTyping);
     const authState = useStore(auth);
     const streaming = useStore(streamingMessage);
     const aiError = useStore(lastAiError);
@@ -204,19 +213,22 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     // This prevents brief tab switches from triggering auto-summary
                     // Also, only set the timer if one is not already running to prevent leaks.
                     if (!hiddenTimer) {
-                        hiddenTimer = setTimeout(() => {
-                            const form = new FormData();
-                            form.append('did', did);
-                            form.append('threadId', threadId);
-                            form.append('event', 'hidden');
-                            navigator.sendBeacon(
-                                `${getBackendUrl()}/threads/visibility?did=${did}`,
-                                form
-                            );
-                            log.debug('sent beacon after 5min hidden');
-                            // After the timer fires, reset it to null so a new one can be created.
-                            hiddenTimer = null;
-                        }, 5 * 60 * 1000); // 5 minutes
+                        hiddenTimer = setTimeout(
+                            () => {
+                                const form = new FormData();
+                                form.append('threadId', threadId);
+                                form.append('event', 'hidden');
+                                void aiPassportFetch(
+                                    '/threads/visibility',
+                                    { method: 'POST', body: form, keepalive: true },
+                                    did
+                                ).catch(error => log.warn('Failed to send hidden event', error));
+                                log.debug('sent beacon after 5min hidden');
+                                // After the timer fires, reset it to null so a new one can be created.
+                                hiddenTimer = null;
+                            },
+                            5 * 60 * 1000
+                        ); // 5 minutes
                     }
                 } else if (document.visibilityState === 'visible') {
                     // Cancel the hidden timer if user comes back
@@ -226,10 +238,13 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     }
                     // Send visible event immediately to cancel any existing timers
                     const form = new FormData();
-                    form.append('did', did);
                     form.append('threadId', threadId);
                     form.append('event', 'visible');
-                    navigator.sendBeacon(`${getBackendUrl()}/threads/visibility?did=${did}`, form);
+                    void aiPassportFetch(
+                        '/threads/visibility',
+                        { method: 'POST', body: form, keepalive: true },
+                        did
+                    ).catch(error => log.warn('Failed to send visible event', error));
                     log.debug('sent beacon visible');
                 }
             }
@@ -325,8 +340,8 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         const isNowStreaming = Boolean(streaming);
         const hasCurrentError = Boolean(
             aiError &&
-                aiError.at >= aiMountedAtRef.current &&
-                aiError.at !== aiHandledErrorAtRef.current
+            aiError.at >= aiMountedAtRef.current &&
+            aiError.at !== aiHandledErrorAtRef.current
         );
         if (aiPrevStreamingRef.current && !isNowStreaming) {
             if (aiSuppressNextStreamCompletionRef.current) {
@@ -356,6 +371,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         ) {
             return;
         }
+
         const response = aiResponseQueueRef.current[0];
         if (!response?.lifecycle.terminate()) {
             aiHandledErrorAtRef.current = aiError.at;
@@ -365,7 +381,8 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             flow_id: aiFlowIdRef.current,
             surface: 'ai_chat',
             message_index: response.messageIndex,
-            error_code: aiError.code,
+            error_code:
+                aiError.event === 'ai_error' ? (aiError.rawCode ?? aiError.code) : aiError.code,
             duration_ms: response.lifecycle.durationMs(),
         });
         if (streaming) {
@@ -388,13 +405,14 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     return (
         <AiFeatureGate>
             <div
-                className="flex flex-col h-full min-h-0 w-full bg-white"
+                className="relative flex flex-col h-full min-h-0 w-full bg-white"
                 style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
             >
+                <AiSessionErrorHandler />
                 {isEnding && showEndingLoader && (
                     <AiSessionLoader
                         contractUri={contractUri}
-                        overrideText={sessionWrapUpText}
+                        overrideText={getSessionWrapUpText()}
                         // !force user to wait
                         // showActionButton={true}
                         // actionButtonText="Back to AI Sessions"
@@ -431,12 +449,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                     {messagesToShow.map((msg, index) => {
                                         const isLastUser = index === lastUserIdx;
                                         const isTail = index === messagesToShow.length - 1;
-                                        // Reserve viewport space on whatever is the last rendered block.
-                                        // When streaming, that's the StreamingMessage below; otherwise
-                                        // it's the tail message wrapper. Keeps the user bubble pinned
-                                        // to the top without creating a gap before the assistant reply.
+                                        // Reserve viewport space on whichever block renders last.
+                                        // Streaming and typing indicators own this space while active;
+                                        // otherwise the tail message keeps the latest user bubble pinned.
                                         const pinStyle =
-                                            isTail && !streaming && viewportAllowance > 0
+                                            isTail && !streaming && !typing && viewportAllowance > 0
                                                 ? {
                                                       minHeight: `${Math.max(
                                                           0,
@@ -474,13 +491,33 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                             <StreamingMessage aiApp={aiApp} />
                                         </div>
                                     )}
+
+                                    {typing && !streaming && !aiError && (
+                                        <div
+                                            role="status"
+                                            aria-label="AI is responding"
+                                            className="w-full transition-opacity duration-150"
+                                            style={
+                                                viewportAllowance > 0
+                                                    ? {
+                                                          minHeight: `${Math.max(
+                                                              0,
+                                                              viewportAllowance - 24
+                                                          )}px`,
+                                                      }
+                                                    : undefined
+                                            }
+                                        >
+                                            <ChatBotTypingIndicator />
+                                        </div>
+                                    )}
                                 </div>
 
                                 {(!isAtBottom || streaming) && (
                                     <div className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 w-fit">
                                         <button
                                             onClick={() => scrollToBottom('smooth')}
-                                            className="relative p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 shadow-button-bottom text-grayscale-900"
+                                            className="relative p-[11px] bg-white rounded-full border-solid border border-grayscale-200 shadow-button-bottom text-grayscale-900"
                                             aria-label={
                                                 streaming
                                                     ? 'AI is responding — scroll to bottom'
@@ -489,7 +526,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         >
                                             {streaming && (
                                                 <span
-                                                    className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-emerald-700 animate-spin"
+                                                    className="pointer-events-none absolute inset-[-3px] rounded-full border-2 border-transparent border-t-emerald-700 animate-spin"
                                                     aria-hidden="true"
                                                 />
                                             )}

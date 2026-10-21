@@ -4,6 +4,7 @@ import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { boostCategoryOptions } from '../boost-options/boostOptions';
+import * as m from '../../../paraglide/messages.js';
 
 export enum BoostSelectMenuTabsEnum {
     new = 'new',
@@ -42,7 +43,7 @@ const NewBoostSelectMenuTabs: React.FC<{
                                 : 'text-grayscale-800'
                         }`}
                     >
-                        New {title}
+                        {m['boost.newTitle']({ title })}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -60,7 +61,7 @@ const NewBoostSelectMenuTabs: React.FC<{
                                 : 'text-grayscale-800'
                         }`}
                     >
-                        My {title}s
+                        {m['boost.myTitles']({ title })}
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>

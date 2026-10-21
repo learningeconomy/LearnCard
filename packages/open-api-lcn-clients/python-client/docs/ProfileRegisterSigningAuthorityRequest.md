@@ -1,13 +1,12 @@
 # ProfileRegisterSigningAuthorityRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**endpoint** | **str** |  | 
-**name** | **str** |  | 
-**did** | **str** |  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **endpoint** | **str** |             |
+| **name**     | **str** |             |
+| **did**      | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ profile_register_signing_authority_request_dict = profile_register_signing_autho
 # create an instance of ProfileRegisterSigningAuthorityRequest from a dict
 profile_register_signing_authority_request_from_dict = ProfileRegisterSigningAuthorityRequest.from_dict(profile_register_signing_authority_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

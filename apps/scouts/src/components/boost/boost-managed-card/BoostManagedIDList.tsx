@@ -11,8 +11,8 @@ import {
     useGetPaginatedManagedBoosts,
     BrandingEnum,
     searchManagedBoostsFromCache,
-    pluralize,
 } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 import {
     SubheaderContentType,
     credentialCategoryToSubheaderType,
@@ -59,7 +59,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
     const searchString = credentialSearchStore.use.searchString() || '';
     const searchResults = searchManagedBoostsFromCache(managedBoosts);
     const noSearchResults = searchResults?.length === 0;
-    const searchResultsCount = searchResults?.length;
+    const searchResultsCount = searchResults?.length ?? 0;
 
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
@@ -115,18 +115,27 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
     };
 
     const isCardView = viewMode === BoostPageViewMode.Card;
+    const searchResultsText =
+        searchString.trim() === ''
+            ? searchResultsCount === 1
+                ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
+                : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
+            : noSearchResults
+              ? m['common.searchResults.noManaged']({ query: searchString })
+              : searchResultsCount === 1
+                ? m['common.searchResults.foundOne']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  })
+                : m['common.searchResults.foundOther']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[12px]' : ''}`}>
-            <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' && `Search ${searchResultsCount} managed boosts`}
-                {noSearchResults && `No managed ${category} titled "${searchString}"`}
-                {searchResultsCount > 0 &&
-                    searchString?.trim?.() !== '' &&
-                    `Found ${searchResultsCount} ${pluralize(
-                        'result',
-                        searchResultsCount
-                    )} for "${searchString}" `}
+            <span className="font-notoSans text-grayscale-900 text-[14px] font-bold">
+                {searchResultsText}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
@@ -149,7 +158,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                         {isCardView && (
                             <section className="relative flex flex-wrap gap-[10px] text-center justify-center items-center max-w-[800px]">
                                 <div
-                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] z-[-10] ${bgFillerColor}`}
+                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
                                 {managedBoostsList}
                                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
@@ -167,7 +176,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                         {!isCardView && (
                             <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
                                 <div
-                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] z-[-10] ${bgFillerColor}`}
+                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
                                 <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
                                     {managedBoostsList}
@@ -191,7 +200,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                 managedBoostsList &&
                 managedBoostsList?.length === 0 && (
                     <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center mt-[20px]">
-                        <img src={defaultImg} alt="ids" className="w-[200px] h-[200px] m-auto" />
+                        <img src={defaultImg} alt="" className="w-[200px] h-[200px] m-auto" />
                         <p
                             className={`absolute inset-0 flex items-center justify-center font-bold text-center w-[133px] m-auto text-[16px] ${emptyMessageStyle}`}
                         >

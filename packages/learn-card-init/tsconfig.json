@@ -1,4 +1,5 @@
 {
+    "extends": "../../tsconfig.library.json",
     "compilerOptions": {
         "target": "ES2022",
         "module": "ESNext",
@@ -8,22 +9,13 @@
         "outDir": "dist",
         "strict": true,
         "esModuleInterop": true,
-        "lib": [
-            "dom",
-            "es2021"
-        ],
+        "lib": ["dom", "es2021"],
         "noLib": false,
         "rootDir": "src",
         "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "bundler"
     },
-    "include": [
-        "src",
-        "test"
-    ],
-    "exclude": [
-        "node_modules",
-        "example"
-    ]
+    "include": ["src", "test"],
+    "exclude": ["node_modules", "example"]
 }

@@ -65,7 +65,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
     const openEditGoalsModal = () => {
         newModal(
             <EditGoalsModal />,
-            { sectionClassName: '!bg-transparent' },
+            { sectionClassName: 'bg-transparent!' },
             {
                 desktop: ModalTypes.Right,
                 mobile: ModalTypes.Right,
@@ -110,7 +110,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900">
-            <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
+            <div className="px-[15px] py-[20px] bg-white flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <SkillsIconWithShape className="w-[50px] h-[50px]" />
                     <h5 className="text-[21px] font-poppins font-[600] leading-[24px] flex flex-col gap-[5px]">
@@ -153,7 +153,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
             </div>
 
             <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative flex flex-col gap-[15px]">
-                {/* <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
+                {/* <div className="flex flex-col gap-[10px] border-b border-grayscale-200 border-solid pb-[15px]">
                     <div className="flex flex-col gap-[10px] relative">
                         {loading && (
                             <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
@@ -174,8 +174,8 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                                 onClick={() => setActiveTab(tab)}
                                 className={`rounded-[10px] px-[15px] py-[7px] text-[13px] font-[600] font-poppins leading-[18px] tracking-[0.75px] transition-colors flex-1 ${
                                     isActive
-                                        ? 'border-[2px] border-violet-500 border-solid bg-violet-50 text-violet-600'
-                                        : 'border-[2px] border-transparent border-solid bg-grayscale-100 text-grayscale-700'
+                                        ? 'border-2 border-violet-500 border-solid bg-violet-50 text-violet-600'
+                                        : 'border-2 border-transparent border-solid bg-grayscale-100 text-grayscale-700'
                                 } ${tab === 'AI Sessions' ? 'min-w-[120px]' : ''}`}
                             >
                                 {tab}

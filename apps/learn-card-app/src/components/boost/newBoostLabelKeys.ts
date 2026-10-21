@@ -13,11 +13,12 @@ export const NEW_BOOST_LABEL_KEYS = {
     workHistory: 'boost.newBoost.experience',
     accommodation: 'boost.newBoost.assistance',
     accomplishment: 'boost.newBoost.portfolio',
-    socialBadge: 'boost.newBoost.boost',
+    socialBadge: 'boost.newBoost.badge',
     achievement: 'boost.newBoost.achievement',
     skill: 'boost.newBoost.skill',
     id: 'boost.newBoost.id',
     membership: 'boost.newBoost.membership',
+    qualifications: 'wallet.newQualification',
     course: 'boost.newBoost.course',
     // Fallback for categories without a dedicated label key.
     generic: 'boost.newBoost.generic',

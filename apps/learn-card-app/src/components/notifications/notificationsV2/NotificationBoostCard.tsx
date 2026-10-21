@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { capitalize } from 'lodash-es';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -31,6 +31,8 @@ import {
     BoostCategoryOptionsEnum,
     getBoostMetadata,
     useGetCredentialWithEdits,
+    useGetBoost,
+    contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
 
 import { ErrorBoundary } from 'react-error-boundary';
@@ -43,6 +45,7 @@ import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { NOTIFICATION_TYPES } from './NotificationCardContainer';
 import { useGetVCInfo } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { getNotificationDuplicateLookup } from './notificationDuplicateLookup';
 
 type NotificationBoostCardProps = {
     notification: NotificationType;
@@ -73,7 +76,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const [claimModalOpen, setClaimModalOpen] = useState<boolean>(false);
 
     // Ref for the element that we want to detect whether on screen
-    const ref: any = useRef<HTMLDivElement>();
+    const ref = useRef<HTMLDivElement>(null);
     // Call the hook passing in ref and root margin
     // In this case it would only be considered onScreen if more ...
     // ... than 300px of element is visible.
@@ -94,6 +97,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const { mutate: updateNotification } = useUpdateNotification();
 
     const boostVc = data;
+    const duplicateLookup = getNotificationDuplicateLookup(boostVc, notification?.data);
 
     let unwrappedCred = data && unwrapBoostCredential(boostVc);
 
@@ -105,7 +109,15 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCred);
     unwrappedCred = credentialWithEdits ?? unwrappedCred;
 
-    const credCategory = boostVc && getDefaultCategoryForCredential(unwrappedCred);
+    const boostUri = boostVc?.boostId ?? unwrappedCred?.boostId;
+    const { data: boost } = useGetBoost(boostUri ?? '');
+    const credCategory =
+        boostVc &&
+        ((boost?.category
+            ? ((contractCategoryNameToCategoryMetadata(boost.category)?.credentialType ??
+                  boost.category) as CredentialCategoryEnum)
+            : undefined) ??
+            getDefaultCategoryForCredential(unwrappedCred));
     const isEndorsementCredentialType = isEndorsementCredential(unwrappedCred);
 
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred, credCategory);
@@ -148,8 +160,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const badgeScaleClass = isCertDisplayType
         ? 'w-[120px] min-w-[120px] scale-[0.7]'
         : isMeritStyleBadge
-        ? 'w-[138px] min-w-[138px] scale-[0.8]'
-        : 'w-full';
+          ? 'w-[138px] min-w-[138px] scale-[0.8]'
+          : 'w-full';
 
     // Compact circular fallback (matching the ID treatment) for display types
     // whose full art can't fit the notification slot, e.g. media/portfolio.
@@ -204,6 +216,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                     <BoostClaimCard
                         credential={unwrappedCred}
                         credentialUri={credentialUri}
+                        duplicateLookup={duplicateLookup}
                         showFooter={false}
                         showBoostFooter={true}
                         handleClaimBoostCredential={handleClaimOnClick}
@@ -244,11 +257,20 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         buttonText = m['common.claim']();
     }
 
+    const handleMarkRead = () => {
+        if (!isRead) {
+            setIsRead(true);
+            handleReadStatus?.();
+        }
+    };
+
     const handleCardClick = () => {
+        handleMarkRead();
         newModal(
             <BoostClaimCard
                 credential={unwrappedCred}
                 credentialUri={credentialUri}
+                duplicateLookup={duplicateLookup}
                 showFooter={false}
                 showBoostFooter={true}
                 handleClaimBoostCredential={handleClaimOnClick}
@@ -300,10 +322,12 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     };
 
     const handleButtonClick = () => {
+        handleMarkRead();
         newModal(
             <BoostClaimCard
                 credential={unwrappedCred}
                 credentialUri={credentialUri}
+                duplicateLookup={duplicateLookup}
                 showFooter={false}
                 showBoostFooter={true}
                 handleClaimBoostCredential={handleClaimOnClick}
@@ -329,13 +353,6 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         );
     };
 
-    const handleMarkRead = () => {
-        if (!isRead) {
-            setIsRead(true);
-            handleReadStatus?.();
-        }
-    };
-
     if (cardLoading || isLoading) {
         return <NotificationSkeleton />;
     }
@@ -357,14 +374,18 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 }
             >
                 <div
-                    onClick={handleMarkRead}
                     ref={ref}
                     className={`${notificationCardStyles.shell} min-h-[120px] ${className}`}
                 >
                     {!isRead && !isLoading && (
-                        <div className="notification-count-mobile unread-indicator-dot" />
+                        <div
+                            aria-hidden="true"
+                            className="notification-count-mobile unread-indicator-dot"
+                        />
                     )}
-                    <div
+                    <button
+                        type="button"
+                        aria-label={`View ${capitalize(title)}`}
                         className="notification-card-left-side px-[0px] flex cursor-pointer"
                         onClick={handleCardClick}
                     >
@@ -385,7 +406,9 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                         className="w-[70%] h-[70%] rounded-full object-cover border-4 border-solid border-white"
                                     />
                                 ) : (
-                                    <IDsIconSolid className="w-[36px] h-[36px] text-white" />
+                                    <span aria-hidden="true">
+                                        <IDsIconSolid className="w-[36px] h-[36px] text-white" />
+                                    </span>
                                 )}
                             </div>
                         )}
@@ -430,7 +453,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                             showBackgroundImage={false}
                                             backgroundImage=""
                                             backgroundColor=""
-                                            badgeCircleCustomClass="!w-[90px] h-[90px]"
+                                            badgeCircleCustomClass="w-[90px]! h-[90px]"
                                             badgeContainerCustomClass="notification-cred-badge mt-[0px] mb-[0px]"
                                             badgeRibbonContainerCustomClass="notification-cred-badge-ribbon my-[0px]"
                                             displayType={displayType}
@@ -442,16 +465,21 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                         {isLoading && (
                             <div className="w-[90px] h-[90px] rounded-full bg-grayscale-50" />
                         )}
-                    </div>
+                    </button>
                     <div className="flex flex-col justify-center items-start relative w-full">
                         <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
-                            <h4
-                                onClick={handleCardClick}
-                                className={`cursor-pointer ${notificationCardStyles.title}`}
+                            <h3
+                                className={notificationCardStyles.title}
                                 data-testid="notification-title"
                             >
-                                {capitalize(title)}
-                            </h4>
+                                <button
+                                    type="button"
+                                    className="cursor-pointer text-left"
+                                    onClick={handleCardClick}
+                                >
+                                    {capitalize(title)}
+                                </button>
+                            </h3>
                             <p
                                 className={`${notificationCardStyles.meta} mt-[10px] ${textStyles}`}
                                 data-testid="notification-type"
@@ -469,27 +497,38 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
                             <div className="flex relative items-center justify-between mt-3 w-full">
                                 <button
+                                    type="button"
                                     className={`cursor-pointer ${notificationCardStyles.primaryButton} mr-[15px] w-[143px] ${claimButtonStyles}`}
                                     onClick={handleButtonClick}
                                     name="notification-claim-button"
                                 >
                                     {isLoading ? m['common.loading']() : buttonText}
-                                    {isClaimed && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
+                                    {isClaimed && (
+                                        <span aria-hidden="true">
+                                            <Checkmark className="h-[24px] p-0 m-0" />
+                                        </span>
+                                    )}{' '}
                                 </button>
 
                                 <button
+                                    type="button"
+                                    aria-label={
+                                        isArchived ? 'Restore notification' : 'Dismiss notification'
+                                    }
                                     onClick={handleArchiveAction}
                                     className={`${notificationCardStyles.iconButton} mr-2`}
                                     name="notification-view-button"
                                 >
                                     {!isArchived && (
-                                        <X className="text-grayscale-700 w-[20px] h-[20px] notification-card-x" />
+                                        <span aria-hidden="true">
+                                            <X className="text-grayscale-700 w-[20px] h-[20px] notification-card-x" />
+                                        </span>
                                     )}
 
                                     {isArchived && (
                                         <img
                                             src={ArrowArcLeft ?? ''}
-                                            alt="Cancel"
+                                            alt=""
                                             className="notification-card-x"
                                         />
                                     )}

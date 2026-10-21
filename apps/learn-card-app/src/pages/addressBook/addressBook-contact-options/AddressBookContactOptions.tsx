@@ -17,6 +17,7 @@ import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 import { QRCodeScannerStore } from 'learn-card-base';
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useInviteAction } from '../addressBookInvite/useInviteAction';
 import * as m from '../../../paraglide/messages.js';
 
 const AddressBookContactOptions: React.FC<{
@@ -26,6 +27,12 @@ const AddressBookContactOptions: React.FC<{
 }> = ({ handleCloseModal, showSearch = true, handleShowSearch }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+
+    // LC-2089: the ticket asks for an invite entry point that survives past the
+    // zero-contact empty state. It lives here rather than as a header pill —
+    // the header is spoken for by the Figma, and two pills crowd the title at
+    // phone widths.
+    const { share: shareInvite } = useInviteAction({ surface: 'menu' });
 
     const [walletDid, setWalletDid] = useState<string>('');
 
@@ -127,6 +134,15 @@ const AddressBookContactOptions: React.FC<{
         onClick?: () => void;
     }[] = [
         {
+            id: 0,
+            title: m['contacts.invite.cta'](),
+            icon: <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" version="thin" />,
+            onClick: () => {
+                handleCloseModal();
+                shareInvite();
+            },
+        },
+        {
             id: 1,
             title: m['contacts.showCode'](),
             icon: <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" />,
@@ -174,7 +190,9 @@ const AddressBookContactOptions: React.FC<{
             <ModalLayout handleOnClick={handleCloseModal} allowScroll>
                 <div className="flex w-full flex-col items-center justify-center mb-4">
                     <div className="flex w-full items-center justify-center">
-                        <h1 className="font-poppins m-0 p-0 text-xl">Add Contact</h1>
+                        <h1 className="font-poppins m-0 p-0 text-xl">
+                            {m['contacts.addContact']()}
+                        </h1>
                     </div>
                 </div>
                 <ul className="w-full flex flex-col items-center justify-center ion-padding cursor-pointer">
@@ -184,7 +202,7 @@ const AddressBookContactOptions: React.FC<{
                             <li
                                 key={id}
                                 onClick={() => onClick?.()}
-                                className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0"
+                                className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-2 last:border-0"
                             >
                                 <p className="text-grayscale-900">{title}</p>
                                 {icon}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
 import WallpaperEmptyState from '../../../assets/images/wallpaper-empty-state.png';
@@ -94,24 +95,24 @@ export const TroopCMSWallpaperSelect: React.FC<{
 
     return (
         <div
-            className={`flex items-center justify-between w-full bg-grayscale-100 p-2 pb-4 pl-[10px] mb-2 border-b-white border-b-solid border-b-[2px] ${className}`}
+            className={`flex items-center justify-between w-full bg-grayscale-100 p-2 pb-4 pl-[10px] mb-2 border-b-white border-b-solid border-b-2 ${className}`}
         >
             <div className="flex items-center justify-start w-[70%] overflow-hidden">
                 <div
-                    className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-[10px] border-solid border-white border-[1px]`}
+                    className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-[10px] border-solid border-white border`}
                 >
                     {(!wallpaper && !state?.inheritNetworkStyles && !isInIDMode) ||
                     (!wallpaper && isInIDMode) ? (
                         <div className="p-[6px]">
                             <img
-                                alt="wallpaper empty state"
+                                alt=""
                                 src={WallpaperEmptyState}
                                 className="w-full h-full object-contain"
                             />
                         </div>
                     ) : (
                         <img
-                            alt="badge thumbnail"
+                            alt=""
                             src={
                                 state?.inheritNetworkStyles && !isInIDMode
                                     ? parentAppearance?.backgroundImage
@@ -129,7 +130,7 @@ export const TroopCMSWallpaperSelect: React.FC<{
                 {(!wallpaper && !state?.inheritNetworkStyles && !isInIDMode) ||
                     (!wallpaper && isInIDMode && (
                         <p className="ml-[10px] font-notoSans text-sm font-bold text-grayscale-500">
-                            None
+                            {m['scoutsId.none']()}
                         </p>
                     ))}
             </div>

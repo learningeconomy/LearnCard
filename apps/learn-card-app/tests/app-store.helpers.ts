@@ -33,8 +33,8 @@ export interface SeededListing {
  */
 export const seedAppListing = async (): Promise<SeededListing> => {
     const listingId = randomUUID();
-    const displayName = `Test Embed App ${Date.now()}`;
-    const slug = `test-embed-app-${Date.now()}`;
+    const displayName = `Test Embed App ${listingId}`;
+    const slug = `test-embed-app-${listingId}`;
 
     log.info(`[seedAppListing] Connecting to Neo4j at ${NEO4J_URI}...`);
     const driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
@@ -77,6 +77,22 @@ export const seedAppListing = async (): Promise<SeededListing> => {
     }
 
     return { listingId, displayName };
+};
+
+/** Remove only this test's listing and its dedicated integration. */
+export const deleteAppListing = async (listingId: string): Promise<void> => {
+    const driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
+    const session = driver.session();
+    try {
+        await session.run(
+            `MATCH (integration:Integration)-[:PUBLISHES_LISTING]->(listing:AppStoreListing {listing_id: $listingId})
+             DETACH DELETE integration, listing`,
+            { listingId }
+        );
+    } finally {
+        await session.close();
+        await driver.close();
+    }
 };
 
 /**

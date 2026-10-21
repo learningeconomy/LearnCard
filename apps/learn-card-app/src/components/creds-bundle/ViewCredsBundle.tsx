@@ -122,12 +122,20 @@ const ViewCredsBundle: React.FC = () => {
                 <IonToolbar className="flex">
                     <div className="flex justify-between items-center">
                         <div>
-                            <h6
-                                onClick={openWebsite}
+                            <a
+                                href={websiteLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={event => {
+                                    if (!Capacitor.isNativePlatform()) return;
+
+                                    event.preventDefault();
+                                    void openWebsite();
+                                }}
                                 className="text-base tracking-[6px] mx-[20px] font-bold text-mv_red-700 w-full"
                             >
                                 LEARN<span className="text-mv_blue-700">CARD</span>
-                            </h6>
+                            </a>
                         </div>
 
                         <IonButton className="text-grayscale-600 mr-[20px]" onClick={openWebsite}>

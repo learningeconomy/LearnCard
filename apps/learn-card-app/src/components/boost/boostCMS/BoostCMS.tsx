@@ -62,7 +62,6 @@ import BoostCMSMediaDisplayWarning from './boostCMSForms/boostCMSMedia/BoostCMSM
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
-import BoostCMSPublish from './boostCMSForms/boostCMSPublish/boostCMSPublish';
 import RecoveryPrompt from '../../common/RecoveryPrompt';
 import useBoostCMSAutosave from '../../../hooks/useBoostCMSAutosave';
 
@@ -104,7 +103,6 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useAddCredentialToWallet } from '../mutations';
 import useWallet from 'learn-card-base/hooks/useWallet';
@@ -159,7 +157,6 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const { isDesktop } = useDeviceTypeByWidth();
 
     const { track } = useAnalytics();
-    const flags = useFlags();
 
     const { newModal, closeModal } = useModal();
     const { mutateAsync: createBoost } = useCreateBoost();
@@ -311,7 +308,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         }}
                         onDiscard={handleDiscard}
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
             }, 300);
@@ -388,7 +385,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         </div>
                     </div>
                 </div>,
-                { sectionClassName: '!max-w-[400px]' },
+                { sectionClassName: 'max-w-[400px]!' },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
 
@@ -602,7 +599,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             if (isMediaDisplay && state?.mediaAttachments?.length === 0) {
                 newModal(
                     <BoostCMSMediaDisplayWarning handleShowMediaOptions={handleShowMediaOptions} />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
@@ -610,27 +607,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
             closeModal();
 
-            // When skipPublishStep flag is enabled, skip directly to issueTo without creating the boost yet
-            if (flags?.skipPublishStep) {
-                setSkippedPublishStep(true);
-                setCurrentStep(BoostCMSStepsEnum.issueTo);
-                track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
-                    timestamp: Date.now(),
-                    action: 'issue_to',
-                    boostType: state?.basicInfo?.achievementType ?? undefined,
-                    category: state?.basicInfo?.type,
-                });
-            } else {
-                setCurrentStep(BoostCMSStepsEnum.publish);
-                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
-                    timestamp: Date.now(),
-                    action: 'publish',
-                    boostType: state?.basicInfo?.achievementType ?? undefined,
-                    category: state?.basicInfo?.type,
-                });
-            }
-        } else if (currentStep === BoostCMSStepsEnum.publish) {
-            closeModal();
+            setSkippedPublishStep(true);
             setCurrentStep(BoostCMSStepsEnum.issueTo);
             track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
                 timestamp: Date.now(),
@@ -642,15 +619,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     };
 
     const handlePrevStep = () => {
-        if (currentStep === BoostCMSStepsEnum.publish) {
+        if (currentStep === BoostCMSStepsEnum.issueTo) {
             setCurrentStep(BoostCMSStepsEnum.create);
-        } else if (currentStep === BoostCMSStepsEnum.issueTo) {
-            // When skipPublishStep flag is enabled, go back to create step (since publish was skipped)
-            if (flags?.skipPublishStep) {
-                setCurrentStep(BoostCMSStepsEnum.create);
-            } else {
-                handleConfirmationModal();
-            }
         }
     };
 
@@ -680,7 +650,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         isSaveLoading={isSaveLoading}
                         handleSubmit={handlePublishBoost}
                         isLoading={isLoading}
-                        showIssueButton={currentStep === BoostCMSStepsEnum.publish}
+                        showIssueButton={false}
                         showSaveAndQuitButton={currentStep !== BoostCMSStepsEnum.confirmation}
                         selectedVCType={state?.basicInfo?.type}
                     />
@@ -904,9 +874,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                                 finalBoostUri,
                                 { mediaAttachments: issuee.mediaAttachments }
                             );
-                            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                                sentBoost
-                            );
+                            const issuedVcUri =
+                                await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                             await addCredentialToWallet({ uri: issuedVcUri });
                             return issuedVcUri;
@@ -995,7 +964,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 }}
                 skippedPublishStep={skippedPublishStep}
             />,
-            { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
+            { sectionClassName: 'max-w-[400px]!', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -1012,7 +981,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     </p>
                 }
             />,
-            { sectionClassName: '!max-w-[500px]' }
+            { sectionClassName: 'max-w-[500px]!' }
         );
     };
 
@@ -1086,17 +1055,6 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     hideBoostShareableCode
                 />
             </>
-        );
-    } else if (currentStep === BoostCMSStepsEnum.publish) {
-        activeBoostCMSStep = (
-            <BoostCMSPublish
-                handlePreview={handlePreview}
-                handleSaveAndQuit={handleSaveAndQuit}
-                handlePublishBoost={handlePublishBoost}
-                showSaveAsDraftButton
-                isSaveLoading={isSaveLoading}
-                isPublishLoading={isPublishLoading}
-            />
         );
     } else if (currentStep === BoostCMSStepsEnum.issueTo) {
         activeBoostCMSStep = (

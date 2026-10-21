@@ -1,13 +1,12 @@
 # AuthGrantsGetAuthGrantsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] 
-**cursor** | **str** |  | [optional] 
-**query** | [**AuthGrantsGetAuthGrantsRequestQuery**](AuthGrantsGetAuthGrantsRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                              | Description | Notes      |
+| ---------- | --------------------------------------------------------------------------------- | ----------- | ---------- |
+| **limit**  | **float**                                                                         |             | [optional] |
+| **cursor** | **str**                                                                           |             | [optional] |
+| **query**  | [**AuthGrantsGetAuthGrantsRequestQuery**](AuthGrantsGetAuthGrantsRequestQuery.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ auth_grants_get_auth_grants_request_dict = auth_grants_get_auth_grants_request_i
 # create an instance of AuthGrantsGetAuthGrantsRequest from a dict
 auth_grants_get_auth_grants_request_from_dict = AuthGrantsGetAuthGrantsRequest.from_dict(auth_grants_get_auth_grants_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

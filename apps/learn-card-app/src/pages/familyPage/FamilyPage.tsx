@@ -5,7 +5,7 @@ import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore'
 import { lazyWithRetry } from 'learn-card-base';
 import { m } from '../../paraglide/messages.js';
 import { ErrorBoundary } from 'react-error-boundary';
-import { IonContent, IonModal, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import {
     SubheaderContentType,
     SubheaderTypeEnum,
@@ -38,7 +38,6 @@ import {
 import { usePathQuery } from 'learn-card-base';
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useLoadingLine } from '../../stores/loadingStore';
-import useBoostModal from '../../components/boost/hooks/useBoostModal';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -68,8 +67,6 @@ const FamilyPage: React.FC = () => {
         _activeTab ?? CredentialListTabEnum.Earned
     );
     const [viewMode, setViewMode] = useState<BoostPageViewModeType>(BoostPageViewMode.Card);
-
-    const { handlePresentBoostModal } = useBoostModal(history, BoostCategoryOptionsEnum.family);
 
     const { data: currentLCNUser } = useIsCurrentUserLCNUser();
 
@@ -126,6 +123,21 @@ const FamilyPage: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [credentialsLoading]);
 
+    // Auto-open the shared boost preview when requested via query params
+    // (?boostUri=<uri>&showPreview). The same wrapper is opened via newModal
+    // from LaunchPadActionModal's "View Family" action — mirror its modal
+    // type + options for consistency.
+    useEffect(() => {
+        if (_showPreview && _boostUri) {
+            newModal(
+                <FamilyBoostPreviewWrapper uri={_boostUri} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+            history.replace('/families');
+        }
+    }, [_showPreview, _boostUri, newModal, history]);
+
     const imgSrc = RelationshipCats;
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.Family];
 
@@ -178,7 +190,7 @@ const FamilyPage: React.FC = () => {
                     {currentLCNUser && (
                         <EarnedAndManagedTabs
                             handleActiveTab={setActiveTab}
-                            handlePlusClick={handlePresentBoostModal}
+                            handlePlusClick={() => history.push('/issue')}
                             activeTab={activeTab}
                             containerClassName="px-[5px]"
                             className="bg-amber-900"
@@ -210,9 +222,6 @@ const FamilyPage: React.FC = () => {
                     {activeTab === CredentialListTabEnum.Managed && (
                         <BoostManagedList {...listProps} />
                     )}
-                    <IonModal isOpen={Boolean(_showPreview) && _boostUri}>
-                        <FamilyBoostPreviewWrapper uri={_boostUri as string} />
-                    </IonModal>
                 </IonContent>
             </GenericErrorBoundary>
         </IonPage>

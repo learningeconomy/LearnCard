@@ -5,6 +5,7 @@ import type {
     StoredCredential,
     StoredCredentialEnvelope,
     VC,
+    VP,
 } from '@learncard/types';
 import { isStoredCredentialEnvelope } from '@learncard/types';
 
@@ -485,8 +486,8 @@ const projectJwtVcCompactToVc = (compact: string): VC | undefined => {
  * `read.get` result without branching themselves).
  */
 export const resolveStorageReadResult = (
-    value: VC | StoredCredentialEnvelope | undefined
-): VC | StoredCredentialEnvelope | undefined => {
+    value: VC | VP | StoredCredentialEnvelope | undefined
+): VC | VP | StoredCredentialEnvelope | undefined => {
     if (!value) return value;
     if (!isStoredCredentialEnvelope(value)) return value;
     const projected = projectEnvelopeToDisplayVc(value);
@@ -499,8 +500,8 @@ const inferW3cVersionFromContext = (vc: unknown): 'w3c-vc-2.0' | 'w3c-vc-1.1' =>
     const contexts = Array.isArray(contextRaw)
         ? contextRaw
         : contextRaw !== undefined
-        ? [contextRaw]
-        : [];
+          ? [contextRaw]
+          : [];
     const isV2 = contexts.some(
         c => typeof c === 'string' && c.includes('w3.org/ns/credentials/v2')
     );

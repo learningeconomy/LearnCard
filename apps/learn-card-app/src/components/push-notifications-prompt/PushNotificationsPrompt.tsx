@@ -110,7 +110,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
             {/* Top Bar */}
             <div
                 className="shrink-0 flex items-center px-4 py-3 border-b border-grayscale-100"
-                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+                style={{ paddingTop: '1rem' }}
             >
                 <button
                     onClick={handleCloseModal}
@@ -146,7 +146,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                         <h3 className="text-sm font-semibold text-grayscale-900 mb-4">
                             {m['settings.notifications.prompt.about']()}
                         </h3>
-                        <ul className="space-y-3">
+                        <ul className="space-y-v3-3">
                             <li className="flex items-start gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                                 <span className="text-[15px] text-grayscale-700 leading-relaxed">
@@ -167,7 +167,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
             {/* Bottom Action Area */}
             <div
                 className="shrink-0 px-6 pt-4 border-t border-grayscale-100 bg-white"
-                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+                style={{ paddingBottom: '1rem' }}
             >
                 <div className="max-w-[500px] mx-auto flex flex-col items-center gap-4">
                     {permState === 'PENDING' || permState === null ? (

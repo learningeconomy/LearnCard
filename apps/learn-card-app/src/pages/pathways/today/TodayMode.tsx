@@ -45,7 +45,11 @@ const TodayMode: React.FC = () => {
         if (!activePathway) return null;
 
         const lastActivityMs = activePathway.nodes
-            .map(n => (n.progress.streak.lastActiveAt ? new Date(n.progress.streak.lastActiveAt).getTime() : 0))
+            .map(n =>
+                n.progress.streak.lastActiveAt
+                    ? new Date(n.progress.streak.lastActiveAt).getTime()
+                    : 0
+            )
             .reduce((a, b) => Math.max(a, b), 0);
 
         type StreakSnapshot = {
@@ -57,9 +61,8 @@ const TodayMode: React.FC = () => {
         const initialStreak: StreakSnapshot = { current: 0, longest: 0 };
 
         const topStreak = activePathway.nodes.reduce<StreakSnapshot>(
-            (best, n) =>
-                n.progress.streak.current > best.current ? n.progress.streak : best,
-            initialStreak,
+            (best, n) => (n.progress.streak.current > best.current ? n.progress.streak : best),
+            initialStreak
         );
 
         const nowMs = new Date(now).getTime();
@@ -83,7 +86,7 @@ const TodayMode: React.FC = () => {
         const recentEndorsements = activePathway.nodes.flatMap(n =>
             n.endorsements
                 .filter(e => e.receivedAt)
-                .map(e => ({ nodeId: n.id, receivedAt: e.receivedAt! })),
+                .map(e => ({ nodeId: n.id, receivedAt: e.receivedAt! }))
         );
 
         return {
@@ -179,9 +182,7 @@ const TodayMode: React.FC = () => {
         );
     }
 
-    const nodeById = scored
-        ? activePathway.nodes.find(n => n.id === scored.node.nodeId)
-        : null;
+    const nodeById = scored ? activePathway.nodes.find(n => n.id === scored.node.nodeId) : null;
 
     // -- Completion moment -------------------------------------------------
     //
@@ -202,10 +203,7 @@ const TodayMode: React.FC = () => {
     useEffect(() => {
         if (!recentCompletion) return;
 
-        const handle = window.setTimeout(
-            () => pathwayStore.set.clearRecentCompletion(),
-            5000,
-        );
+        const handle = window.setTimeout(() => pathwayStore.set.clearRecentCompletion(), 5000);
 
         return () => window.clearTimeout(handle);
     }, [recentCompletion]);
@@ -238,7 +236,7 @@ const TodayMode: React.FC = () => {
                     'linear-gradient(180deg, rgba(236, 253, 245, 0.5) 0%, rgba(251, 251, 252, 1) 40%, rgba(251, 251, 252, 1) 100%)',
             }}
         >
-            <div className="relative max-w-md mx-auto px-4 py-8 font-poppins space-y-5">
+            <div className="relative max-w-md mx-auto px-4 py-8 font-poppins space-y-v3-5">
                 {/*
                     Identity banner — altitude-aware habit-identity whisper.
                     The synthesis doc names habit-identity framing as
@@ -252,12 +250,10 @@ const TodayMode: React.FC = () => {
                 {(() => {
                     const banner = buildIdentityBanner(
                         activePathway.goal,
-                        activePathway.intentAltitude,
+                        activePathway.intentAltitude
                     );
 
-                    return (
-                        <IdentityBanner kicker={banner.kicker} phrase={banner.phrase} />
-                    );
+                    return <IdentityBanner kicker={banner.kicker} phrase={banner.phrase} />;
                 })()}
 
                 {/* Time-aware greeting — sets the emotional tone of the page. */}
@@ -265,15 +261,11 @@ const TodayMode: React.FC = () => {
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, ease: 'easeOut' }}
-                    className="space-y-0.5 px-1"
+                    className="space-y-v3-0.5 px-1"
                 >
-                    <p className="text-sm font-medium text-grayscale-500">
-                        {greeting}.
-                    </p>
+                    <p className="text-sm font-medium text-grayscale-500">{greeting}.</p>
 
-                    <p className="text-[13px] text-grayscale-400">
-                        One step, when you're ready.
-                    </p>
+                    <p className="text-[13px] text-grayscale-400">One step, when you're ready.</p>
                 </motion.header>
 
                 {/*
@@ -299,7 +291,7 @@ const TodayMode: React.FC = () => {
                         onOpen={() => {
                             pathwayStore.set.clearRecentCompletion();
                             history.push(
-                                `/pathways/node/${scored.node.pathwayId}/${scored.node.nodeId}`,
+                                `/pathways/node/${scored.node.pathwayId}/${scored.node.nodeId}`
                             );
                         }}
                     />
@@ -312,8 +304,10 @@ const TodayMode: React.FC = () => {
                                    border border-white shadow-xl shadow-grayscale-900/5
                                    text-center"
                     >
-                        <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100
-                                        mx-auto mb-4 flex items-center justify-center">
+                        <div
+                            className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100
+                                        mx-auto mb-4 flex items-center justify-center"
+                        >
                             <IonIcon
                                 icon={checkmarkCircleOutline}
                                 className="text-2xl text-emerald-600"

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
 import { IonFooter, IonInput } from '@ionic/react';
 import {
@@ -32,7 +33,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
 
     const currentNodes =
         navigationPath.length > 0
-            ? navigationPath[navigationPath.length - 1].subskills ?? []
+            ? (navigationPath[navigationPath.length - 1].subskills ?? [])
             : framework.skills;
 
     const isTopLevel = navigationPath.length === 0;
@@ -146,7 +147,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[15px] py-[10px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid">
+            <div className="px-[15px] py-[10px] bg-white flex flex-col gap-[10px] z-20 relative border-b border-grayscale-200 border-solid">
                 <div className="flex items-center gap-[10px]">
                     {isTopLevel ? (
                         <FrameworkImage
@@ -166,10 +167,14 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                             {previousNode?.targetName || framework.name}
                         </h5>
                         <span className="text-grayscale-800 font-poppins font-[700] text-[12px] flex items-center gap-[5px]">
-                            {isTopLevel && 'Framework • '}
+                            {isTopLevel && m['skillFrameworks.fwTierBullet']()}
                             <span className="flex items-center gap-[2px]">
                                 <PuzzlePiece version="filled" />
-                                {isTopLevel ? totalCompetencies : competenciesInCurrentNode} Skills
+                                {m['skillFrameworks.skillsCount']({
+                                    count: isTopLevel
+                                        ? totalCompetencies
+                                        : competenciesInCurrentNode,
+                                })}
                             </span>
                         </span>
                     </div>
@@ -194,7 +199,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                     >
                         <button onClick={() => setNavigationPath([])}>
                             <SkillsFrameworkIcon
-                                className="!flex-shrink-0 w-[25px] h-[25px] text-grayscale-600"
+                                className="shrink-0! w-[25px] h-[25px] text-grayscale-600"
                                 color="currentColor"
                                 version="outlined"
                             />
@@ -246,7 +251,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
             <section className="h-full flex flex-col gap-[10px] pt-[15px] px-[20px] pb-[170px] overflow-y-auto z-0">
                 <IonInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
-                    placeholder="Search framework..."
+                    placeholder={m['skillFrameworks.searchPlh']()}
                     value={search}
                     onIonInput={e => setSearch(e.detail.value)}
                 />
@@ -274,7 +279,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     {navigationPath.length > 0 && (
@@ -282,14 +287,14 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                             onClick={() => setNavigationPath(navigationPath.slice(0, -1))}
                             className="bg-white rounded-full text-grayscale-900 shadow-button-bottom flex items-center justify-center h-[44px] w-[44px]"
                         >
-                            <SlimCaretLeft className="w-[20px] h-[20px]" />
+                            <SlimCaretLeft className="rtl-mirror w-[20px] h-[20px]" />
                         </button>
                     )}
                     <button
                         onClick={closeModal}
                         className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                     <button
                         onClick={() => {

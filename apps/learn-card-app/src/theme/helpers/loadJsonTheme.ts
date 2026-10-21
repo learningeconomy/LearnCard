@@ -159,6 +159,7 @@ const CATEGORY_TO_PALETTE_KEY: Partial<Record<CredentialCategoryEnum, string>> =
     [CredentialCategoryEnum.skill]: 'Skills',
     [CredentialCategoryEnum.socialBadge]: 'Boosts',
     [CredentialCategoryEnum.achievement]: 'Achievements',
+    [CredentialCategoryEnum.qualifications]: 'Qualifications',
     [CredentialCategoryEnum.learningHistory]: 'Studies',
     [CredentialCategoryEnum.accomplishment]: 'Portfolio',
     [CredentialCategoryEnum.accommodation]: 'Assistance',
@@ -285,6 +286,17 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
                     catIcons.IconWithLightShape as React.ComponentType<Record<string, unknown>>,
                     palette
                 ) as CategoryIcons['IconWithLightShape'];
+            }
+
+            // IconSolid, IconDark, IconWhite are pre-colored and don't need palette wrapping
+            if (catIcons.IconSolid) {
+                wrapped.IconSolid = catIcons.IconSolid;
+            }
+            if (catIcons.IconDark) {
+                wrapped.IconDark = catIcons.IconDark;
+            }
+            if (catIcons.IconWhite) {
+                wrapped.IconWhite = catIcons.IconWhite;
             }
 
             themedIcons[cat] = wrapped;

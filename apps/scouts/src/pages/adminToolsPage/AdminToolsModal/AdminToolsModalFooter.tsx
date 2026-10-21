@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonFooter } from '@ionic/react';
 
@@ -17,7 +18,7 @@ const AdminToolsModalFooter: React.FC<{
     return (
         <IonFooter
             mode="ios"
-            className={`w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white !max-h-[100px] ${className}`}
+            className={`w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60 max-h-[100px]! ${className}`}
         >
             <div className="w-full flex items-center justify-center">
                 <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
@@ -25,7 +26,7 @@ const AdminToolsModalFooter: React.FC<{
                         onClick={closeModal}
                         className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                     >
-                        {footerTextOverride || 'Close'}
+                        {footerTextOverride || m['common.close']()}
                     </button>
                     {showSaveButton && (
                         <button
@@ -35,7 +36,7 @@ const AdminToolsModalFooter: React.FC<{
                                 isDisabled ? 'bg-grayscale-300' : 'bg-emerald-700'
                             }`}
                         >
-                            {isLoading ? 'Loading...' : 'Save'}
+                            {isLoading ? m['common.loading']() : m['common.save']()}
                         </button>
                     )}
                 </div>

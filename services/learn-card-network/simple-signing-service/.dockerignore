@@ -1,6 +1,0 @@
-# Exclude Rust build artifacts to save space
-lib/didkit/target
-lib/ssi/target
-node_modules
-*.log
-.git

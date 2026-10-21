@@ -1,5 +1,5 @@
 import { RegExpTransformer } from '@learncard/helpers';
-import { createTRPCClient, TRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, TRPCClient, httpBatchLink, splitLink } from '@trpc/client';
 import type { AppRouter } from '@learncard/network-brain-service';
 
 import { callbackLink } from './callbackLink';
@@ -7,6 +7,14 @@ import { callbackLink } from './callbackLink';
 export type LCNClient = TRPCClient<AppRouter>;
 
 export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
+
+/** Keep size-limited issuance mutations out of unrelated tRPC request batches. */
+const isolatedInboxBatchLink = (options: Parameters<typeof httpBatchLink<AppRouter>>[0]) =>
+    splitLink<AppRouter>({
+        condition: operation => operation.path === 'inbox.issueBatch',
+        true: httpBatchLink({ ...options, maxItems: 1 }),
+        false: httpBatchLink(options),
+    });
 
 export const getClient = async (
     url: string,
@@ -18,7 +26,7 @@ export const getClient = async (
 
     const challengeRequester = createTRPCClient<AppRouter>({
         links: [
-            httpBatchLink({
+            isolatedInboxBatchLink({
                 methodOverride: 'POST',
                 url,
                 maxURLLength: 3072,
@@ -62,16 +70,12 @@ export const getClient = async (
         }
     };
 
-    // Pre-warm the pool while the caller continues client/plugin setup. Requests
-    // arriving before this settles await the same single-flight refill.
-    void refillChallenges().catch(() => undefined);
-
     const trpc = createTRPCClient<AppRouter>({
         links: [
             callbackLink(async () => {
                 challenges = await getChallenges();
             }),
-            httpBatchLink({
+            isolatedInboxBatchLink({
                 methodOverride: 'POST',
                 maxURLLength: 3072,
                 url,
@@ -108,7 +112,7 @@ export const getApiTokenClient = async (
 ): Promise<LCNClient> => {
     const trpc = createTRPCClient<AppRouter>({
         links: [
-            httpBatchLink({
+            isolatedInboxBatchLink({
                 methodOverride: 'POST',
                 url,
                 maxURLLength: 3072,
@@ -133,5 +137,21 @@ export const getApiTokenClient = async (
 
     return trpc;
 };
+
+/** Public routes only: no DID challenges, API tokens, or authority headers. */
+export const getAnonymousClient = (url: string): LCNClient =>
+    createTRPCClient<AppRouter>({
+        links: [
+            isolatedInboxBatchLink({
+                methodOverride: 'POST',
+                url,
+                maxURLLength: 3072,
+                transformer: {
+                    input: RegExpTransformer,
+                    output: { serialize: o => o, deserialize: o => o },
+                },
+            }),
+        ],
+    });
 
 export default getClient;

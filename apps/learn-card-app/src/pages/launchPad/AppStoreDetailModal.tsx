@@ -178,7 +178,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const ageRating: string | undefined = listing.age_rating;
 
     // Map age_rating to numeric value for display purposes
-    const ageRatingMinAge = ageRating ? AGE_RATING_TO_MIN_AGE[ageRating] ?? 0 : 0;
+    const ageRatingMinAge = ageRating ? (AGE_RATING_TO_MIN_AGE[ageRating] ?? 0) : 0;
 
     // Calculate user's age from DOB
     const userAge = useMemo(() => {
@@ -244,7 +244,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 onReject={closeModal}
             />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -257,7 +257,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
                 <div
                     className="border-b border-grayscale-200 p-6"
-                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                    style={{ paddingTop: 'max(1.5rem, var(--ion-safe-area-top, 0px))' }}
                 >
                     <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                         Age Restricted
@@ -265,7 +265,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 </div>
 
                 <div className="flex-1 p-6 overflow-auto">
-                    <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="flex flex-col items-center text-center space-y-v3-4">
                         <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
                             <ShieldAlert className="w-10 h-10 text-red-600" />
                         </div>
@@ -305,7 +305,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 <div
                     className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                     style={{
-                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                        paddingBottom: 'max(1.5rem, var(--ion-safe-area-bottom, 0px))',
                     }}
                 >
                     <button
@@ -317,7 +317,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 </div>
             </div>,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -354,7 +354,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
                     <div
                         className="border-b border-grayscale-200 p-6"
-                        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                        style={{ paddingTop: 'max(1.5rem, var(--ion-safe-area-top, 0px))' }}
                     >
                         <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                             Date of Birth Required
@@ -362,7 +362,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     </div>
 
                     <div className="flex-1 p-6 overflow-auto">
-                        <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="flex flex-col items-center text-center space-y-v3-4">
                             <div className="w-16 h-16 rounded-2xl overflow-hidden bg-grayscale-100 flex items-center justify-center shadow-md">
                                 <img
                                     src={listing.icon_url}
@@ -412,7 +412,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     <div
                         className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                         style={{
-                            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                            paddingBottom: 'max(1.5rem, var(--ion-safe-area-bottom, 0px))',
                         }}
                     >
                         <button
@@ -436,14 +436,14 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         newModal(
             <DobEntryModal />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
         );
     };
 
-    const handleInstall = () => {
+    const handleInstall = async () => {
         const result = checkAppInstallEligibility({
             isChildProfile,
             userAge,
@@ -452,32 +452,39 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             hasContract: Boolean(contractUri),
         });
 
-        switch (result.action) {
-            case 'hard_blocked':
-                showAgeBlockedModal();
-                return;
+        try {
+            switch (result.action) {
+                case 'hard_blocked':
+                    showAgeBlockedModal();
+                    return;
 
-            case 'require_dob':
-                guardedAction(
-                    () => {
-                        showDobEntryModal();
-                    },
-                    { ignorePriorVerification: true }
-                );
-                return;
+                case 'require_dob':
+                    await guardedAction(
+                        () => {
+                            showDobEntryModal();
+                        },
+                        { ignorePriorVerification: true }
+                    );
+                    return;
 
-            case 'require_guardian_approval':
-                guardedAction(
-                    () => {
-                        showInstallConsentModal();
-                    },
-                    { ignorePriorVerification: true }
-                );
-                return;
+                case 'require_guardian_approval':
+                    await guardedAction(
+                        () => {
+                            showInstallConsentModal();
+                        },
+                        { ignorePriorVerification: true }
+                    );
+                    return;
 
-            case 'proceed':
-                showInstallConsentModal();
-                return;
+                case 'proceed':
+                    showInstallConsentModal();
+                    return;
+            }
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -616,7 +623,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     </button>
                 </li>
             </ul>,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
@@ -653,7 +660,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             contractDetails={contract}
                             redirectUrl={redirectUrl}
                         />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { sectionClassName: 'bg-transparent! shadow-none!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                     return;
@@ -682,14 +689,13 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
 
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
+                    })) as unknown as string;
 
                     urlObj.searchParams.set('vp', vp);
                 }
@@ -718,7 +724,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             replaceModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={(listing as any).slug || listing.listing_id}
+                    appId={listing.slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled={isInstalled}
@@ -744,10 +750,10 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Header */}
             <IonHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
-                    <div className="flex items-center justify-normal ion-padding safe-area-top-margin">
-                        <div className="h-[65px] w-[65px] mr-3">
+                    <div className="flex items-center gap-3 ion-padding mt-[var(--ion-safe-area-top,0px)]">
+                        <div className="h-[65px] w-[65px] shrink-0">
                             <img
-                                className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
+                                className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border border-solid border-grayscale-200"
                                 alt={`${listing.display_name} logo`}
                                 src={listing.icon_url}
                                 onError={e => {
@@ -757,17 +763,17 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             />
                         </div>
 
-                        <div className="flex flex-col items-start justify-center flex-1 min-w-0">
-                            <p className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[1]">
+                        <div className="flex flex-col items-start justify-center flex-1 min-w-0 text-start">
+                            <p className="w-full wrap-break-word text-[22px] font-semibold text-grayscale-900 font-poppins leading-tight">
                                 {listing.display_name}
                             </p>
 
-                            <p className="text-sm text-grayscale-600 font-poppins mt-1">
+                            <p className="w-full wrap-break-word text-sm text-grayscale-600 font-poppins mt-1">
                                 {listing.tagline}
                             </p>
 
                             {!iosMetadata && (
-                                <div className="flex items-center gap-2 mt-2">
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
                                     {listing.category && (
                                         <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full capitalize">
                                             {listing.category}
@@ -786,7 +792,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* iOS App Store Metadata Section */}
                     {iosMetadata && (
                         <div className="flex items-center justify-evenly ">
-                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r">
                                 <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
                                     {iosMetadata.userRatingCount >= 1000
                                         ? numeral(iosMetadata.userRatingCount).format('0.0a')
@@ -801,7 +807,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 <StaticStarRating rating={iosMetadata.averageUserRating} />
                             </div>
 
-                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r">
                                 <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
                                     AGE
                                 </p>
@@ -847,7 +853,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 <div className="w-full flex flex-col pb-[120px]">
                     {/* Screenshots Section */}
                     {screenshots.length > 0 && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                             <h3 className="text-xl text-gray-900 font-notoSans mb-4">
                                 {m['common.preview']()}
                             </h3>
@@ -857,7 +863,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     )}
 
                     {/* About Section */}
-                    <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                    <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                         <h3 className="text-xl text-gray-900 font-notoSans">
                             {m['common.about']()}
                         </h3>
@@ -884,7 +890,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* Highlights Section */}
                     {listing.highlights && listing.highlights.length > 0 && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                             <h3 className="text-xl text-gray-900 font-notoSans">
                                 {m['launchpad.detail.whyUseThisApp']()}
                             </h3>
@@ -903,7 +909,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* Promo Video Section */}
                     {listing.promo_video_url && getEmbedUrl(listing.promo_video_url) && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                             <h3 className="text-xl text-gray-900 font-notoSans mb-4">
                                 {m['launchpad.detail.watch']()}
                             </h3>
@@ -922,12 +928,12 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* Links Section */}
                     {(listing.privacy_policy_url || listing.terms_url) && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-xs">
                             <h3 className="text-xl text-gray-900 font-notoSans mb-3">
                                 {m['launchpad.detail.links']()}
                             </h3>
 
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 {listing.privacy_policy_url && (
                                     <a
                                         href={listing.privacy_policy_url}
@@ -948,7 +954,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                             />
                                         </svg>
-                                        Privacy Policy
+                                        {m['launchpad.detail.privacyPolicy']()}
                                     </a>
                                 )}
 
@@ -972,7 +978,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                             />
                                         </svg>
-                                        Terms of Service
+                                        {m['launchpad.detail.termsOfService']()}
                                     </a>
                                 )}
                             </div>
@@ -992,7 +998,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Footer */}
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center justify-between max-w-[600px] ion-padding gap-2">

@@ -14,7 +14,6 @@ import {
     ExternalLink,
     Rocket,
     Loader2,
-    Lock,
 } from 'lucide-react';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
@@ -22,10 +21,9 @@ import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelect
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
-import { useBetaAccess } from '../components/BetaGate';
 import * as m from '../../../paraglide/messages.js';
 import { mDynamic } from '../../../i18n/mDynamic';
-import { openExternalLink } from 'src/helpers/externalLinkHelpers';
+import { openExternalLink } from '../../../helpers/externalLinkHelpers';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
     'award': Award,
@@ -50,7 +48,6 @@ interface UseCaseCardProps {
     bgColor: string;
     comingSoon?: boolean;
     isActive?: boolean;
-    isLocked?: boolean;
     onClick: () => void;
 }
 
@@ -66,7 +63,6 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
     bgColor,
     comingSoon,
     isActive,
-    isLocked,
     onClick,
 }) => {
     const IconComponent = ICON_MAP[icon] || Award;
@@ -91,35 +87,6 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                 <p className="text-sm text-gray-400 mb-3">{mDynamic(subtitleKey)}</p>
 
                 <p className="text-sm text-gray-400 flex-1">{mDynamic(descriptionKey)}</p>
-            </div>
-        );
-    }
-
-    // Beta access: show locked state for guides user doesn't have access to
-    if (isLocked) {
-        return (
-            <div className="flex flex-col p-6 bg-gray-50 border-2 border-gray-200 rounded-2xl">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                        <IconComponent className="w-6 h-6 text-gray-400" />
-                    </div>
-
-                    <span className="px-2 py-1 bg-gray-200 text-gray-500 rounded-full text-xs font-medium flex items-center gap-1">
-                        <Lock className="w-3 h-3" />
-                        {m['developerPortal.guides.hub.locked']()}
-                    </span>
-                </div>
-
-                <h3 className="text-lg font-semibold text-gray-500 mb-1">{mDynamic(titleKey)}</h3>
-
-                <p className="text-sm text-gray-400 mb-3">{mDynamic(subtitleKey)}</p>
-
-                <p className="text-sm text-gray-400 flex-1">{mDynamic(descriptionKey)}</p>
-
-                <div className="flex items-center gap-1.5 mt-4 text-gray-400 font-medium text-sm">
-                    <Lock className="w-4 h-4" />
-                    <span>{m['developerPortal.guides.hub.requestAccess']()}</span>
-                </div>
             </div>
         );
     }
@@ -166,9 +133,6 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 const IntegrationHub: React.FC = () => {
     const history = useHistory();
     const [newProjectName, setNewProjectName] = useState('');
-
-    // Beta access check - to remove beta gate, delete this line and isLocked prop below
-    const { isGuideUnlocked } = useBetaAccess();
 
     // Use context for all state management
     const {
@@ -243,7 +207,7 @@ const IntegrationHub: React.FC = () => {
                     {showSetupPrompt && (
                         <div className="max-w-lg mx-auto py-12">
                             <div className="text-center mb-8">
-                                <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
+                                <div className="w-16 h-16 bg-linear-to-br/srgb from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
                                     <Rocket className="w-8 h-8 text-white" />
                                 </div>
 
@@ -270,7 +234,7 @@ const IntegrationHub: React.FC = () => {
                                             e.key === 'Enter' && handleCreateFirstProject()
                                         }
                                         placeholder="e.g. My Awesome App"
-                                        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
+                                        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-xs"
                                         disabled={isCreatingIntegration}
                                     />
 
@@ -323,7 +287,7 @@ const IntegrationHub: React.FC = () => {
                                             className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl"
                                         >
                                             <div
-                                                className={`w-10 h-10 ${useCase.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}
+                                                className={`w-10 h-10 ${useCase.bgColor} rounded-lg flex items-center justify-center shrink-0`}
                                             >
                                                 <IconComponent
                                                     className={`w-5 h-5 ${useCase.color}`}
@@ -343,9 +307,9 @@ const IntegrationHub: React.FC = () => {
                                 })}
                             </div>
 
-                            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 shadow-lg shadow-cyan-100">
+                            <div className="bg-linear-to-br/srgb from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 shadow-lg shadow-cyan-100">
                                 <div className="flex items-start gap-4 mb-5">
-                                    <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-200 flex-shrink-0">
+                                    <div className="w-14 h-14 bg-linear-to-br/srgb from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-200 shrink-0">
                                         <Rocket className="w-7 h-7 text-white" />
                                     </div>
                                     <div className="flex-1">
@@ -360,14 +324,14 @@ const IntegrationHub: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {integrations.map(integration => (
                                         <button
                                             key={integration.id}
                                             onClick={() => selectIntegration(integration.id)}
                                             className="w-full flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl hover:border-cyan-400 hover:shadow-md hover:shadow-cyan-50 transition-all group text-left"
                                         >
-                                            <div className="w-10 h-10 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <div className="w-10 h-10 bg-linear-to-br/srgb from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center shrink-0">
                                                 <Layout className="w-5 h-5 text-cyan-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -383,7 +347,7 @@ const IntegrationHub: React.FC = () => {
                                                             ? m[
                                                                   USE_CASES[
                                                                       integration.guideType as UseCaseId
-                                                                  ]?.titleKey!
+                                                                  ]?.titleKey
                                                               ]()
                                                             : USE_CASES[
                                                                   integration.guideType as UseCaseId
@@ -393,7 +357,7 @@ const IntegrationHub: React.FC = () => {
                                                           ]()}
                                                 </p>
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                                            <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all shrink-0" />
                                         </button>
                                     ))}
                                 </div>
@@ -427,7 +391,6 @@ const IntegrationHub: React.FC = () => {
                                         key={useCase.id}
                                         {...useCase}
                                         isActive={activeGuideType === useCase.id}
-                                        isLocked={!isGuideUnlocked(useCase.id)}
                                         onClick={() => handleUseCaseClick(useCase.id)}
                                     />
                                 ))}
@@ -448,7 +411,7 @@ const IntegrationHub: React.FC = () => {
                                     onClick={() => openExternalLink('https://docs.learncard.com')}
                                     className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
                                 >
-                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-xs">
                                         <BookOpen className="w-5 h-5 text-gray-600" />
                                     </div>
 
@@ -476,7 +439,7 @@ const IntegrationHub: React.FC = () => {
                                     }
                                     className="flex items-start gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
                                 >
-                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-xs">
                                         <svg
                                             className="w-5 h-5 text-gray-600"
                                             viewBox="0 0 24 24"
@@ -506,7 +469,7 @@ const IntegrationHub: React.FC = () => {
                                     onClick={() => history.push('/app-store/developer')}
                                     className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group text-left"
                                 >
-                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-xs">
                                         <Layout className="w-5 h-5 text-gray-600" />
                                     </div>
 

@@ -36,7 +36,7 @@ class TestContractsGetTermsTransactionHistoryRequestQueryTermsRead(unittest.Test
         if include_optional:
             return ContractsGetTermsTransactionHistoryRequestQueryTermsRead(
                 anonymize = True,
-                credentials = openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials.contracts_getConsentedContracts_request_query_read_credentials(
+                credentials = openapi_client.models.contracts_get_terms_transaction_history_request_query_terms_read_credentials.contracts_getTermsTransactionHistory_request_query_terms_read_credentials(
                     share_all = True, 
                     sharing = True, 
                     categories = {

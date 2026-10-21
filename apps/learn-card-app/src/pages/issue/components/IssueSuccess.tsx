@@ -13,7 +13,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import type { SimpleCredentialType } from '../../../components/simple-send/simpleSend.helpers';
 import { Confetti } from './Confetti';
-import SentimentStrip from '../../../feedback/SentimentStrip';
+import FeedbackMoment from '../../../feedback/FeedbackMoment';
 import type { LinkOptions, Recipient, RecipientMode } from './recipientTypes';
 import * as m from '../../../paraglide/messages.js';
 
@@ -184,7 +184,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             <Confetti />
             {claimLink ? (
                 <div className="relative w-full max-w-[860px] mx-auto desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center">
-                    <div className="text-center space-y-6 mb-8 desktop:mb-0">
+                    <div className="text-center space-y-v3-6 mb-8 desktop:mb-0">
                         {renderCard()}
                         <div className="animate-fade-in-up">
                             <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -197,8 +197,8 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         </div>
                     </div>
 
-                    <div className="animate-fade-in-up space-y-6 text-center max-w-[420px] mx-auto w-full">
-                        <div className="bg-white p-6 rounded-[20px] shadow-sm border border-grayscale-200 flex flex-col items-center gap-4">
+                    <div className="animate-fade-in-up space-y-v3-6 text-center max-w-[420px] mx-auto w-full">
+                        <div className="bg-white p-6 rounded-[20px] shadow-xs border border-grayscale-200 flex flex-col items-center gap-4">
                             <div className="w-48 h-48 relative">
                                 <QRCodeSVG
                                     className="w-full h-full"
@@ -228,7 +228,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             </div>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <button
                                 type="button"
                                 onClick={handleCopy}
@@ -271,11 +271,15 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             {m['issueFlow.success.issueAnother']()}
                         </button>
 
-                        <SentimentStrip surface="issue_success" className="pt-3" />
+                        <FeedbackMoment
+                            surface="issue_success"
+                            className="mt-3"
+                            allowAdvocacy={false}
+                        />
                     </div>
                 </div>
             ) : recipientMode === 'people' ? (
-                <div className="relative w-full max-w-[420px] text-center space-y-6">
+                <div className="relative w-full max-w-[420px] text-center space-y-v3-6">
                     {renderCard()}
                     <div className="animate-fade-in-up">
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -288,7 +292,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         </p>
                     </div>
 
-                    <div className="space-y-3 animate-fade-in-up">
+                    <div className="space-y-v3-3 animate-fade-in-up">
                         <button
                             type="button"
                             onClick={onViewWallet}
@@ -304,11 +308,11 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             {m['issueFlow.success.issueAnother']()}
                         </button>
 
-                        <SentimentStrip surface="issue_success" className="pt-3" />
+                        <FeedbackMoment surface="issue_success" className="mt-3" />
                     </div>
                 </div>
             ) : (
-                <div className="relative w-full max-w-[420px] text-center space-y-6">
+                <div className="relative w-full max-w-[420px] text-center space-y-v3-6">
                     {renderCard()}
                     <div className="animate-fade-in-up">
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -319,7 +323,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         </p>
                     </div>
 
-                    <div className="space-y-3 animate-fade-in-up">
+                    <div className="space-y-v3-3 animate-fade-in-up">
                         <button
                             type="button"
                             onClick={onViewWallet}
@@ -335,7 +339,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             {m['issueFlow.success.issueAnother']()}
                         </button>
 
-                        <SentimentStrip surface="issue_success" className="pt-3" />
+                        <FeedbackMoment surface="issue_success" className="mt-3" />
                     </div>
                 </div>
             )}

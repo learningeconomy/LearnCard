@@ -115,7 +115,7 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
 
             answeredRef.current = true;
             setAnswered(sentiment);
-            feedbackGovernorStore.set.recordAnswered(surface);
+            feedbackGovernorStore.set.recordAnswered(surface, sentiment);
 
             void track(AnalyticsEvents.FEEDBACK_SENTIMENT_GIVEN, {
                 surface,
@@ -125,7 +125,7 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
 
             if (sentiment !== 'positive') {
                 newModal(<FeedbackFollowUpSheet surface={surface} sentiment={sentiment} />, {
-                    sectionClassName: '!max-w-[440px]',
+                    sectionClassName: 'max-w-[440px]!',
                 });
             }
 
@@ -142,12 +142,12 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
             data-testid="sentiment-strip"
         >
             {answered ? (
-                <p className="text-sm text-grayscale-600 animate-fade-in-up">
+                <p className="text-sm text-grayscale-700 animate-fade-in-up">
                     {m['feedback.thanks']()}
                 </p>
             ) : (
                 <>
-                    <span className="text-sm text-grayscale-500">{m['feedback.howWasThat']()}</span>
+                    <span className="text-sm text-grayscale-700">{m['feedback.howWasThat']()}</span>
 
                     <div className="flex items-center gap-1">
                         {SENTIMENT_OPTIONS.map(({ sentiment, Icon, labelKey, hoverClass }) => (

@@ -4,11 +4,11 @@ The error information
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**message** | **str** | The error message | 
-**code** | **str** | The error code | 
-**issues** | [**List[ErrorBADREQUESTIssuesInner]**](ErrorBADREQUESTIssuesInner.md) | An array of issues that were responsible for the error | [optional] 
+| Name        | Type                                                                  | Description                                            | Notes      |
+| ----------- | --------------------------------------------------------------------- | ------------------------------------------------------ | ---------- |
+| **message** | **str**                                                               | The error message                                      |
+| **code**    | **str**                                                               | The error code                                         |
+| **issues**  | [**List[ErrorBADREQUESTIssuesInner]**](ErrorBADREQUESTIssuesInner.md) | An array of issues that were responsible for the error | [optional] |
 
 ## Example
 
@@ -27,6 +27,5 @@ error_badrequest_dict = error_badrequest_instance.to_dict()
 # create an instance of ErrorBADREQUEST from a dict
 error_badrequest_from_dict = ErrorBADREQUEST.from_dict(error_badrequest_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

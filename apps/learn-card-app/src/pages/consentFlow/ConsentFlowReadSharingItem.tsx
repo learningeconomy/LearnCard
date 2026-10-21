@@ -91,7 +91,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
 
                     {required && (
                         <span className="text-[14px] text-grayscale-600 text-left self-start">
-                            Required
+                            {m['arabicFixes.required']()}
                         </span>
                     )}
 

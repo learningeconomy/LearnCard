@@ -1,44 +1,101 @@
 .qr-code-scanner-overlay {
-    background-color: rgba(0, 0, 0, 0.5);
+    .qr-code-scanner-target {
+        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.58);
+    }
 
-    .qr-code-scanner-square {
-        height: 320px;
-        width: 320px;
-        position: relative;
+    .qr-code-scanner-line {
+        top: 12px;
+        background: linear-gradient(90deg, transparent, var(--ion-color-tertiary), transparent);
+        box-shadow: 0 0 10px rgba(var(--ion-color-tertiary-rgb), 0.7);
+        animation: qr-code-scanner-line 2.4s ease-in-out infinite alternate;
     }
-    .qr-code-scanner-square:before,
-    .qr-code-scanner-square:after,
-    .qr-code-scanner-square > :first-child:before,
-    .qr-code-scanner-square > :first-child:after {
-        position: absolute;
-        width: 30px;
-        height: 30px;
-        border-color: #6366F1; /* or whatever colour */
-        border-style: solid; /* or whatever style */
-        content: ' ';
+}
+
+@keyframes qr-code-scanner-line {
+    0% {
+        top: 12px;
+        opacity: 0.25;
     }
-    .qr-code-scanner-square:before {
-        top: 0;
-        left: 0;
-        border-width: 5px 0 0 5px;
-        border-radius: 5px;
+
+    50% {
+        opacity: 0.9;
     }
-    .qr-code-scanner-square:after {
-        top: 0;
-        right: 0;
-        border-width: 5px 5px 0 0;
-        border-radius: 5px;
+
+    100% {
+        top: calc(100% - 14px);
+        opacity: 0.25;
     }
-    .qr-code-scanner-square > :first-child:before {
-        bottom: 0;
-        right: 0;
-        border-width: 0 5px 5px 0;
-        border-radius: 5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qr-code-scanner-overlay .qr-code-scanner-line {
+        top: 50%;
+        animation: none;
+        opacity: 0.55;
     }
-    .qr-code-scanner-square > :first-child:after {
-        bottom: 0;
-        left: 0;
-        border-width: 0 0 5px 5px;
-        border-radius: 5px;
+}
+// ML Kit renders the camera beneath the WebView. Keep the scanner controls
+// visible while hiding routes, modal backdrops, and other app chrome.
+body.scanner-active {
+    visibility: hidden;
+    background: transparent !important;
+    --background: transparent;
+    --ion-background-color: transparent;
+
+    #root,
+    ion-app {
+        background: transparent !important;
+    }
+
+    // A portal or component can override inherited visibility. Keep every
+    // background descendant hidden (and out of focus/accessibility navigation).
+    :not(.qr-code-scanner-overlay, .qr-code-scanner-overlay *) {
+        visibility: hidden !important;
+    }
+
+    .qr-code-scanner-overlay {
+        visibility: visible;
+    }
+}
+
+// Keep scanner notices compact, with a gutter even on narrow phones.
+#center-modal.scanner-notice-modal {
+    --lc-gutter: 20px;
+    padding-inline: 20px;
+
+    &.open {
+        background-color: rgba(24, 34, 78, 0.24);
+        backdrop-filter: blur(6px);
+    }
+
+    & > section {
+        width: 100%;
+        max-width: 380px;
+        max-height: 100%;
+        padding: 0 !important;
+        border-radius: 20px;
+        box-shadow: 0 16px 48px rgba(24, 34, 78, 0.16);
+        animation: scanner-notice-intro 180ms ease-out;
+        transition: transform 180ms ease-out;
+    }
+}
+
+@keyframes scanner-notice-intro {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #center-modal.scanner-notice-modal,
+    #center-modal.scanner-notice-modal > section {
+        animation: none;
+        transition: none;
     }
 }

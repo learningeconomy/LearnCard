@@ -1,4 +1,6 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
+import * as m from '../../paraglide/messages.js';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import User from 'apps/scouts/src/components/svgs/User';
@@ -31,7 +33,7 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
         },
         onError: error => {
             log.error('Failed to delete framework:', error);
-            alert('Failed to delete framework. Please try again.');
+            alert(m['skillFrameworks.deleteFail']());
         },
     });
 
@@ -39,7 +41,7 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
         if (!frameworkId) return;
         closeModal();
         newModal(<EditFrameworkModal frameworkId={frameworkId} />, {
-            sectionClassName: '!bg-transparent !shadow-none',
+            sectionClassName: 'bg-transparent! shadow-none!',
             cancelButtonTextOverride: 'Back',
         });
     };
@@ -65,9 +67,7 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
     const handleDelete = () => {
         if (!frameworkId) return;
 
-        const confirmed = window.confirm(
-            'Are you sure you want to delete this framework? This action cannot be undone.'
-        );
+        const confirmed = window.confirm(m['skillFrameworks.confirmDelFw']());
 
         if (confirmed) {
             deleteFrameworkMutation.mutate(frameworkId);
@@ -76,22 +76,22 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
 
     const options = [
         {
-            label: 'Edit Framework',
+            label: m['skillFrameworks.editFwOpt'](),
             icon: <Pencil className="w-[35px] h-[35px]" />,
             onClick: handleEdit,
         },
         {
-            label: 'Manage Networks',
+            label: m['skillFrameworks.mgNets'](),
             icon: <User className="w-[35px] h-[35px]" />,
             onClick: handleManageNetworks,
         },
         {
-            label: 'Manage Admins',
+            label: m['skillFrameworks.mgAdmins'](),
             icon: <User className="w-[35px] h-[35px]" />,
             onClick: handleManageAdmins,
         },
         {
-            label: 'Delete Framework',
+            label: m['skillFrameworks.delFwOpt'](),
             icon: <TrashBin className="w-[35px] h-[35px]" />,
             onClick: handleDelete,
             className: 'text-red-600',
@@ -117,4 +117,4 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
     );
 };
 
-export default SkillFrameworkActionMenu;
+export default withCompetencyAdmin(SkillFrameworkActionMenu);

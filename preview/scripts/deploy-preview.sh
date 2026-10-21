@@ -119,10 +119,6 @@ $([ -n "${BRAIN_SEED:-}" ] && echo "      SEED: ${BRAIN_SEED}" || true)
       DOMAIN_NAME: ${PREVIEW_DOMAIN}:cloud
       IS_OFFLINE: ''
 $([ -n "${CLOUD_SEED:-}" ] && echo "      LEARN_CLOUD_SEED: ${CLOUD_SEED}" || true)
-  signing:
-    environment:
-      AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN}:brain
-$([ -n "${SIGNING_SEED:-}" ] && echo "      SEED: ${SIGNING_SEED}" || true)
   api:
     environment:
       AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN}:brain

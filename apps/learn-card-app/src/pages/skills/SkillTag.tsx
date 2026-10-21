@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy skill callback accepts API-specific payloads. */
 import React from 'react';
 
 import { ModalTypes, useGetSkill, useModal } from 'learn-card-base';
@@ -5,12 +6,12 @@ import { ModalTypes, useGetSkill, useModal } from 'learn-card-base';
 import AddSkillModal from './AddSkillModal';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SkillProficiencyCircle from './SkillProficiencyCircle';
-import TrashBin from 'src/components/svgs/TrashBin';
-import Pencil from 'src/components/svgs/Pencil';
+import TrashBin from '../../components/svgs/TrashBin';
+import Pencil from '../../components/svgs/Pencil';
 
 import { SkillLevel } from './skillTypes';
 import type { SelectedSkill } from './skillTypes';
-import { SkillFrameworkNode } from 'src/components/boost/boost';
+import { SkillFrameworkNode } from '../../components/boost/boost';
 
 type SkillTagProps = {
     frameworkId: string;

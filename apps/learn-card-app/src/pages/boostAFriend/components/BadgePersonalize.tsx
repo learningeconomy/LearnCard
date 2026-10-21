@@ -115,7 +115,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                     </div>
                 </div>
 
-                <div className="w-full py-6 space-y-8 px-6 sm:px-2 relative z-0">
+                <div className="w-full py-6 space-y-v3-8 px-6 sm:px-2 relative z-0">
                     <div className="flex justify-center">
                         <div className="w-[160px] sm:w-[200px]">
                             <BoostEarnedCard
@@ -131,7 +131,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                         </div>
                     </div>
 
-                    <div className="max-w-sm mx-auto w-full space-y-8">
+                    <div className="max-w-sm mx-auto w-full space-y-v3-8">
                         <div>
                             <label className="block text-sm font-medium text-grayscale-900 mb-2">
                                 {m['boostAFriend.person.name']()}
@@ -141,7 +141,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                 value={title}
                                 onChange={e => onTitleChange(e.target.value)}
                                 placeholder={m['boostAFriend.person.namePlace']()}
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all shadow-sm"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-xs transition-all shadow-xs"
                             />
                         </div>
 
@@ -158,7 +158,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                     value={subtype}
                                     onChange={e => onSubtypeChange(e.target.value)}
                                     placeholder={m['boostAFriend.person.namePlace']()}
-                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all shadow-sm"
+                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-xs transition-all shadow-xs"
                                 />
                             </div>
                         )}
@@ -198,8 +198,8 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                             {isUploadingImage
                                                 ? m['boost.cms.media.uploading']()
                                                 : effectiveImageUrl
-                                                ? m['boostAFriend.person.change']()
-                                                : m['boostAFriend.person.uploadImg']()}
+                                                  ? m['boostAFriend.person.change']()
+                                                  : m['boostAFriend.person.uploadImg']()}
                                         </button>
                                         {imageUrl?.trim() && !isUploadingImage && (
                                             <button
@@ -229,7 +229,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                         key={color}
                                         type="button"
                                         onClick={() => onVibeColorChange(color)}
-                                        className={`aspect-square w-full rounded-full transition-transform shadow-sm ${
+                                        className={`aspect-square w-full rounded-full transition-transform shadow-xs ${
                                             vibeColor === color
                                                 ? 'ring-2 ring-offset-2 ring-grayscale-900'
                                                 : 'hover:scale-105'
@@ -252,7 +252,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                     notePlaceholder?.trim() || m['boostAFriend.person.notePlace']()
                                 }
                                 rows={3}
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all resize-none shadow-sm"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-xs transition-all resize-none shadow-xs"
                             />
                         </div>
                     </div>
@@ -264,7 +264,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                     type="button"
                     onClick={onNext}
                     disabled={!title.trim()}
-                    className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     {m['common.next']()}
                 </button>

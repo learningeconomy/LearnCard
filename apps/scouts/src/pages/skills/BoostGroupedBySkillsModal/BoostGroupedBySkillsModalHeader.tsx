@@ -20,7 +20,7 @@ const BoostGroupedBySkillsModalHeader: React.FC<BoostGroupedBySkillsModalProps> 
 
     return (
         <IonHeader color="violet-600" className="rounded-b-[30px] overflow-hidden shadow-md ">
-            <IonToolbar color="violet-600" className="text-white px-4 !pt-8">
+            <IonToolbar color="violet-600" className="text-white px-4 pt-8!">
                 <div className="w-full flex">
                     {/* Left Column */}
                     <div className="relative flex flex-col items-center justify-start mb-[-10px] ml-4">
@@ -28,7 +28,7 @@ const BoostGroupedBySkillsModalHeader: React.FC<BoostGroupedBySkillsModalProps> 
                         <div className="absolute top-[25px] w-[70px] h-[70px] rounded-full overflow-hidden">
                             <img
                                 src={IconComponent}
-                                alt="category icon"
+                                alt=""
                                 className="w-full h-full object-contain"
                             />
                         </div>

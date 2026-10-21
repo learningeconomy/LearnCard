@@ -70,7 +70,7 @@ const ConsentFlowAiSessionsReadItem: React.FC<ConsentFlowAiSessionsReadItemProps
                         <>
                             {allEnabled && (
                                 <span className="text-emerald-700 font-notoSans text-[14px] font-[600]">
-                                    Live Sync
+                                    {m['arabicFixes.liveSync']()}
                                 </span>
                             )}
                             {!allEnabled && (
@@ -82,7 +82,7 @@ const ConsentFlowAiSessionsReadItem: React.FC<ConsentFlowAiSessionsReadItemProps
                     )}
                     {!someEnabled && (
                         <span className="text-grayscale-500 font-notoSans text-[14px] font-[600]">
-                            Deny
+                            {m['arabicFixes.deny']()}
                         </span>
                     )}
 

@@ -2,6 +2,7 @@ import XAPI from '@xapi/xapi';
 import jwtDecode from 'jwt-decode';
 import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
+import fastifyRateLimit from '@fastify/rate-limit';
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { areDidsEqual } from '@helpers/did.helpers';
@@ -12,8 +13,23 @@ import type { XAPIRequest } from 'types/xapi';
 import { verifyDelegateCredential } from '@helpers/credential.helpers';
 import { injectContractUriIntoStatement, verifyVoidStatement } from '@helpers/xapi.helpers';
 import { generateToken } from '@helpers/auth.helpers';
+import cache from '@cache';
 
 export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
+    // Register rate limiter inside the plugin so it applies to all entry points (standalone + Docker)
+    // Uses Redis when available for shared state across Lambda containers; falls back to in-memory
+    await fastify.register(fastifyRateLimit, {
+        max: 100,
+        timeWindow: '1 minute',
+        // Use Redis for shared rate limiting across Lambda containers when available
+        ...(cache.redis ? { redis: cache.redis } : {}),
+        errorResponseBuilder: () => ({
+            statusCode: 429,
+            error: 'Too Many Requests',
+            message: 'Too many requests, please try again later.',
+        }),
+    });
+
     fastify.all<XAPIRequest>('/xapi/*', async (request, reply) => {
         try {
             if (!XAPI_ENDPOINT || XAPI_ENDPOINT === 'false')

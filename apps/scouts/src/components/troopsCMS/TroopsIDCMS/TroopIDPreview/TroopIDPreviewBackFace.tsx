@@ -1,8 +1,15 @@
 import React from 'react';
 
 import TruncateTextBox from '../../../../pages/troop/TroopIdDetails/TruncateTextBox';
+import * as m from '../../../../paraglide/messages.js';
 
-import { scoutPermissions, TroopsCMSState, TroopsCMSViewModeEnum } from '../../troopCMSState';
+import {
+    scoutPermissions,
+    permissionTitle,
+    permissionRole,
+    TroopsCMSState,
+    TroopsCMSViewModeEnum,
+} from '../../troopCMSState';
 
 export const TroopIDPreviewBackFace: React.FC<{
     rootViewMode: TroopsCMSViewModeEnum;
@@ -20,23 +27,23 @@ export const TroopIDPreviewBackFace: React.FC<{
     const networkName =
         isInLeaderViewMode || isInMemberViewMode
             ? network?.parentID?.basicInfo?.name
-            : network?.basicInfo?.name ?? '';
+            : (network?.basicInfo?.name ?? '');
     const globalNetworkName =
         state?.grandParentID?.basicInfo?.name ?? state?.parentID?.basicInfo?.name ?? '';
 
     let permissionsTitle = '';
     let permissions = [];
     if (isInGlobalViewMode) {
-        permissionsTitle = 'Global Admin Permissions';
+        permissionsTitle = m['troops.globalAdminPermissions']();
         permissions = scoutPermissions?.global ?? [];
     } else if (isInNetworkViewMode) {
-        permissionsTitle = 'National Admin Permissions';
+        permissionsTitle = m['troops.nationalAdminPermissions']();
         permissions = scoutPermissions?.network ?? [];
     } else if (isInTroopViewMode && isInLeaderViewMode) {
-        permissionsTitle = 'Leader Permissions';
+        permissionsTitle = m['troops.leaderPermissions']();
         permissions = scoutPermissions?.leader ?? [];
     } else if (isInTroopViewMode && isInMemberViewMode) {
-        permissionsTitle = 'Scout Permissions';
+        permissionsTitle = m['troops.scoutPermissions']();
         permissions = scoutPermissions?.member ?? [];
     }
 
@@ -44,31 +51,31 @@ export const TroopIDPreviewBackFace: React.FC<{
         <div className="rounded-t-[20px] rounded-b-[20px] shadow-box-bottom overflow-hidden flex flex-col">
             <TruncateTextBox
                 className="mb-4"
-                headerText="Details"
-                subHeaderText="About"
+                headerText={m['common.details']()}
+                subHeaderText={m['common.about']()}
                 text={networkDescription}
             >
-                <div className="flex flex-col gap-[5px] font-notoSans text-[14px] pt-[10px] border-t-[1px] border-solid border-grayscale-200 w-full">
+                <div className="flex flex-col gap-[5px] font-notoSans text-[14px] pt-[10px] border-t border-solid border-grayscale-200 w-full">
                     <div className="flex gap-[4px]">
-                        <span className="font-[600] text-grayscale-900 font-notoSans">
-                            Issued by:
+                        <span className="font-semibold text-grayscale-900 font-notoSans">
+                            {m['troops.issuedBy']()}
                         </span>
                         <span className="text-grayscale-700 font-notoSans">
-                            {isInTroopViewMode && 'Troop'} {network?.basicInfo?.name}
+                            {isInTroopViewMode && m['troops.troop']()} {network?.basicInfo?.name}
                         </span>
                     </div>
                     {!isInGlobalViewMode && !isInNetworkViewMode && (
                         <div className="flex gap-[4px]">
-                            <span className="font-[600] text-grayscale-900 font-notoSans">
-                                National Network:
+                            <span className="font-semibold text-grayscale-900 font-notoSans">
+                                {m['troops.nationalNetwork']()}
                             </span>
                             <span className="text-grayscale-700 font-notoSans">{networkName}</span>
                         </div>
                     )}
                     {!isInGlobalViewMode && (
                         <div className="flex gap-[4px]">
-                            <span className="font-[600] text-grayscale-900 font-notoSans">
-                                Global Network:
+                            <span className="font-semibold text-grayscale-900 font-notoSans">
+                                {m['troops.globalNetwork']()}
                             </span>
                             <span className="text-grayscale-700 font-notoSans">
                                 {globalNetworkName}
@@ -79,20 +86,22 @@ export const TroopIDPreviewBackFace: React.FC<{
             </TruncateTextBox>
 
             <TruncateTextBox headerText={permissionsTitle} text="">
-                <div className="flex flex-col gap-[5px] font-notoSans text-[14px] pt-[10px] border-t-[1px] border-solid border-grayscale-200 w-full">
+                <div className="flex flex-col gap-[5px] font-notoSans text-[14px] pt-[10px] border-t border-solid border-grayscale-200 w-full">
                     {permissions?.map(permission => {
                         return (
                             <div
                                 key={permission?.id}
-                                className="w-full flex flex-col last-of-type:border-none border-b-[1px] border-b-solid border-b-grayscale-200 py-2"
+                                className="w-full flex flex-col last-of-type:border-none border-b border-b-solid border-b-grayscale-200 py-2"
                             >
                                 <h4 className="text-sm font-semibold font-notoSans">
-                                    {permission?.title}
+                                    {permissionTitle(permission?.titleKey)}
                                 </h4>
                                 <div className="flex">
-                                    {permission?.roles.map((role, i) => {
-                                        const isLast = i === permission.roles.length - 1; // Check if it's the last item
-                                        const _role = isLast ? role : `${role},`; // Conditionally add the comma
+                                    {permission?.roleKeys.map((role, i) => {
+                                        const isLast = i === permission.roleKeys.length - 1; // Check if it's the last item
+                                        const _role = isLast
+                                            ? permissionRole(role)
+                                            : `${permissionRole(role)},`; // Conditionally add the comma
 
                                         return (
                                             <p

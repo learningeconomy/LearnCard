@@ -6,7 +6,12 @@ import fs from 'fs/promises';
 const buildOptions = {
     target: 'es2020',
     sourcemap: true,
-    external: ['@learncard/types', 'zod'],
+    external: [
+        '@learncard/sd-jwt-vc-plugin',
+        '@learncard/types',
+        '@sd-jwt/sd-jwt-vc',
+        'zod',
+    ],
 };
 
 const configurations = [

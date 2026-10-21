@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../paraglide/messages.js';
+
 import { IonRow, IonCol } from '@ionic/react';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import MembershipSleeve from 'learn-card-base/assets/images/troops-sleeve.svg';
@@ -142,7 +144,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                     left: 0,
                     width: '400px',
                 }}
-                className="min-w-[100%] w-full h-[55%] bg-repeat bg-contain z-50"
+                className="min-w-full w-full h-[55%] bg-repeat bg-contain z-50"
             >
                 <IonRow className="w-full flex items-center">
                     <IonCol className="flex justify-start items-center pl-2">
@@ -189,7 +191,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                         handleEditOnClick();
                     }}
                 >
-                    Edit Draft
+                    {m['scoutsId.editDraft']()}
                 </button>
             );
         }
@@ -209,9 +211,9 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 <BoostPreviewBody
                     recipients={recipients}
                     showRecipientText={false}
-                    customRecipientContainerClass="!py-0 !pl-[4px] !items-start !justify-start"
+                    customRecipientContainerClass="py-0! pl-[4px]! items-start! justify-start!"
                     customBoostPreviewContainerClass="bg-none"
-                    customBoostPreviewContainerRowClass="!items-start !justify-start"
+                    customBoostPreviewContainerRowClass="items-start! justify-start!"
                 />
             );
         }
@@ -225,7 +227,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                     bottom: -65,
                     left: 0,
                 }}
-                className="min-w-[100%] w-full h-[55%] bg-repeat bg-contain z-50"
+                className="min-w-full w-full h-[55%] bg-repeat bg-contain z-50"
             >
                 <IonRow className="w-full flex items-center">
                     <IonCol className="flex justify-start items-center pl-2 mt-1">
@@ -261,7 +263,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 }}
                                 className="flex items-center justify-center bg-white rounded-full pl-[2.5px] pr-[10px] py-[4px] text-grayscale-800 text-base font-medium shadow-bottom"
                             >
-                                <RibbonAwardIcon className="ml-[5px] h-[23px] w-[23px] mr-1" /> Send
+                                <RibbonAwardIcon className="ml-[5px] h-[23px] w-[23px] mr-1" />{' '}
+                                {m['scoutsId.send']()}
                             </button>
                         )}
                     </IonCol>
@@ -295,7 +298,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                     <div className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-full overflow-hidden relative">
                                         {issuerThumbnail ? (
                                             <img
-                                                alt="issuer thumbnail"
+                                                alt=""
                                                 src={insertParamsToFilestackUrl(
                                                     issuerThumbnail,
                                                     'resize=width:200/quality=value:75/'
@@ -372,7 +375,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                             name={currentUser.currentLCNUser?.displayName ?? 'Unknown'}
                             thumbSrc={currentUser.currentLCNUser?.image}
                             containerClassName="w-[325px]"
-                            mainClassName="!pt-[15px] pb-[22px] !items-start"
+                            mainClassName="pt-[15px]! pb-[22px] items-start!"
                             hideFooter
                         />
                         {!loading && (

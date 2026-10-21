@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { VC } from '@learncard/types';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router-dom';
 
@@ -19,7 +20,6 @@ import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/Crede
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostCMSTitleForm from './boostCMSForms/boostCMSTitleForm/BoostCMSTitleForm';
-import BoostCMSPublish from './boostCMSForms/boostCMSPublish/boostCMSPublish';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
 import BoostCMSIDAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSIDAppearanceController';
 import BoostCMSIDCard from '../boost-id-card/BoostIDCard';
@@ -53,7 +53,6 @@ import {
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import {
@@ -72,7 +71,9 @@ import {
     BoostCategoryOptionsEnum,
     useToast,
     ToastTypeEnum,
+    invalidateBoostRecipientQueries,
 } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppearance/BoostCMSAchievementTypeSelectorButton';
 import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSMembersForm';
@@ -89,9 +90,9 @@ const UpdateBoostCMS: React.FC = () => {
     const query = usePathQuery();
 
     const { track } = useAnalytics();
-    const flags = useFlags();
 
     const { initWallet, addVCtoWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const { data: profile } = useGetProfile();
     const _boostCategoryType = query.get('boostCategoryType') as BoostCategoryOptionsEnum;
@@ -123,7 +124,9 @@ const UpdateBoostCMS: React.FC = () => {
             displayType: getDefaultDisplayType(_boostCategoryType) || 'certificate',
         },
     });
-    const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
+    const [customTypes, setCustomTypes] = useState<
+        Record<string, { title: string; type: string | null }[]>
+    >(initialCustomBoostTypesState);
 
     const [isEditDisabled, setIsEditDisabled] = useState<boolean>(false);
     const [currentStep, setCurrentStep] = useState<BoostCMSStepsEnum>(BoostCMSStepsEnum.create);
@@ -145,7 +148,7 @@ const UpdateBoostCMS: React.FC = () => {
                 getBoostAdmin(wallet, uri),
                 wallet?.invoke?.getBoost(uri),
             ]);
-            const _boostVC = unwrapBoostCredential(boostVC as any);
+            const _boostVC = unwrapBoostCredential(boostVC as VC | undefined);
             const filteredAdmin = admin?.records?.filter(
                 record => record.profileId !== profile?.profileId
             );
@@ -221,7 +224,7 @@ const UpdateBoostCMS: React.FC = () => {
                             longitude: _boostVC?.address?.geo?.longitude,
                         },
                     },
-                    mediaAttachments: [...state?.mediaAttachments, ...boostVcAttachments],
+                    mediaAttachments: [...(state?.mediaAttachments ?? []), ...boostVcAttachments],
                     alignments: derivedAlignments,
                     boostPermissions: {
                         canView:
@@ -287,7 +290,7 @@ const UpdateBoostCMS: React.FC = () => {
                 return {
                     ...prevState,
                     [_boostCategoryType]: [
-                        ...prevState?.[_boostCategoryType],
+                        ...(prevState?.[_boostCategoryType] ?? []),
                         {
                             title: customTypeTitle,
                             type: _boostSubCategoryType,
@@ -361,26 +364,7 @@ const UpdateBoostCMS: React.FC = () => {
     const handleNextStep = async () => {
         dissmissModal();
         if (currentStep === BoostCMSStepsEnum.create) {
-            // When skipPublishStep flag is enabled, skip directly to issueTo without updating the boost yet
-            if (flags?.skipPublishStep) {
-                setSkippedPublishStep(true);
-                setCurrentStep(BoostCMSStepsEnum.issueTo);
-                track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
-                    timestamp: Date.now(),
-                    action: 'issue_to',
-                    boostType: state?.basicInfo?.achievementType,
-                    category: state?.basicInfo?.type,
-                });
-            } else {
-                setCurrentStep(BoostCMSStepsEnum.publish);
-                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
-                    timestamp: Date.now(),
-                    action: 'publish',
-                    boostType: state?.basicInfo?.achievementType,
-                    category: state?.basicInfo?.type,
-                });
-            }
-        } else if (currentStep === BoostCMSStepsEnum.publish) {
+            setSkippedPublishStep(true);
             setCurrentStep(BoostCMSStepsEnum.issueTo);
             track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
                 timestamp: Date.now(),
@@ -400,20 +384,13 @@ const UpdateBoostCMS: React.FC = () => {
     };
 
     const handlePrevStep = () => {
-        if (currentStep === BoostCMSStepsEnum.publish) {
-            setCurrentStep(BoostCMSStepsEnum.create);
-        } else if (currentStep === BoostCMSStepsEnum.issueTo) {
+        if (currentStep === BoostCMSStepsEnum.issueTo) {
             if (issueMode) {
                 history.replace(
                     `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`
                 );
             }
-            // When skipPublishStep flag is enabled, go back to create step (since publish was skipped)
-            if (flags?.skipPublishStep) {
-                setCurrentStep(BoostCMSStepsEnum.create);
-            } else {
-                handleConfirmationModal();
-            }
+            setCurrentStep(BoostCMSStepsEnum.create);
         }
     };
 
@@ -567,9 +544,8 @@ const UpdateBoostCMS: React.FC = () => {
                             );
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
-                            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                                sentBoost
-                            );
+                            const issuedVcUri =
+                                await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
                             await addVCtoWallet({ uri: issuedVcUri });
                             return issuedVcUri;
                         }
@@ -584,6 +560,8 @@ const UpdateBoostCMS: React.FC = () => {
                         return issuedVc;
                     })
                 );
+
+                void invalidateBoostRecipientQueries(queryClient, _boostUri);
 
                 if (uris.length > 0) {
                     setIsLoading(false);
@@ -615,7 +593,7 @@ const UpdateBoostCMS: React.FC = () => {
         }
     };
 
-    let previewDisplay = null;
+    let previewDisplay: React.ReactNode;
     if (isDisplayID) {
         previewDisplay = (
             <BoostCMSIDCard
@@ -662,7 +640,7 @@ const UpdateBoostCMS: React.FC = () => {
                 showSaveAndQuitButton={
                     currentStep !== BoostCMSStepsEnum.confirmation && !isEditDisabled
                 }
-                showIssueButton={currentStep === BoostCMSStepsEnum.publish && !isEditDisabled}
+                showIssueButton={false}
                 selectedVCType={state?.basicInfo?.type}
                 isEditMode
             />
@@ -691,13 +669,13 @@ const UpdateBoostCMS: React.FC = () => {
                 isSaveLoading={isSaveLoading}
                 skippedPublishStep={skippedPublishStep}
             />,
-            { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
+            { sectionClassName: 'max-w-[400px]!', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
 
     let activeBoostCMSStep: null | React.ReactNode = null;
-    let appearanceControllerDisplay = null;
+    let appearanceControllerDisplay: React.ReactNode;
     if (isDisplayID) {
         appearanceControllerDisplay = (
             <BoostCMSIDAppearanceController
@@ -793,17 +771,6 @@ const UpdateBoostCMS: React.FC = () => {
                 />
                 <BoostCMSAdminsForm state={state} setState={setState} disabled={isEditDisabled} /> */}
             </>
-        );
-    } else if (currentStep === BoostCMSStepsEnum.publish) {
-        activeBoostCMSStep = (
-            <BoostCMSPublish
-                handlePreview={handlePreview}
-                handleSaveAndQuit={handleSaveAndQuit}
-                handlePublishBoost={handlePublishBoost}
-                showSaveAsDraftButton={!isEditDisabled}
-                isSaveLoading={isSaveLoading}
-                isPublishLoading={isPublishLoading}
-            />
         );
     } else if (currentStep === BoostCMSStepsEnum.issueTo) {
         activeBoostCMSStep = (

@@ -17,16 +17,13 @@ interface AppDetailsStepProps {
 
 export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, errors }) => {
     const flags = useFlags();
-
-    // Filter category options based on pluginVisibility flag
-    const visibleCategoryOptions = useMemo(() => {
-        return CATEGORY_OPTIONS.filter(cat => {
-            if (cat.value === 'plugin' && !flags?.pluginVisibility) {
-                return false;
-            }
-            return true;
-        });
-    }, [flags?.pluginVisibility]);
+    const visibleCategoryOptions = useMemo(
+        () =>
+            CATEGORY_OPTIONS.filter(
+                category => category.value !== 'plugin' || flags?.pluginVisibility
+            ),
+        [flags?.pluginVisibility]
+    );
 
     const handleChange = (field: keyof AppStoreListingCreate, value: string) => {
         onChange({ [field]: value });
@@ -57,7 +54,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="text-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-700">
                     {m['developerPortal.components.appDetailsStep.title']()}
@@ -71,7 +68,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Icon Upload */}
             <div className="flex flex-col items-center gap-3">
                 <label className="text-sm font-medium text-gray-600">
-                    {m['developerPortal.components.appDetailsStep.appIcon']()}
+                    {m['developerPortal.components.appDetailsStep.appIcon']()}{' '}
+                    <span className="text-red-500" aria-hidden="true">
+                        *
+                    </span>
                 </label>
 
                 <ImageUpload
@@ -92,7 +92,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Display Name */}
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                    {m['developerPortal.components.appDetailsStep.displayName']()}
+                    {m['developerPortal.components.appDetailsStep.displayName']()}{' '}
+                    <span className="text-red-500" aria-hidden="true">
+                        *
+                    </span>
                 </label>
 
                 <input
@@ -102,7 +105,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     placeholder={m[
                         'developerPortal.components.appDetailsStep.displayNamePlaceholder'
                     ]()}
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                         errors.display_name ? 'border-red-300' : 'border-gray-200'
                     }`}
                     maxLength={50}
@@ -138,7 +141,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         )
                     }
                     placeholder="my-amazing-app"
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                         errors.slug ? 'border-red-300' : 'border-gray-200'
                     }`}
                     maxLength={50}
@@ -156,7 +159,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Tagline */}
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                    {m['developerPortal.components.appDetailsStep.tagline']()}
+                    {m['developerPortal.components.appDetailsStep.tagline']()}{' '}
+                    <span className="text-red-500" aria-hidden="true">
+                        *
+                    </span>
                 </label>
 
                 <input
@@ -166,7 +172,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     placeholder={m[
                         'developerPortal.components.appDetailsStep.taglinePlaceholder'
                     ]()}
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                         errors.tagline ? 'border-red-300' : 'border-gray-200'
                     }`}
                     maxLength={100}
@@ -186,7 +192,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Full Description */}
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                    {m['developerPortal.components.appDetailsStep.fullDescription']()}
+                    {m['developerPortal.components.appDetailsStep.fullDescription']()}{' '}
+                    <span className="text-red-500" aria-hidden="true">
+                        *
+                    </span>
                 </label>
 
                 <textarea
@@ -195,7 +204,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     placeholder={m[
                         'developerPortal.components.appDetailsStep.fullDescriptionPlaceholder'
                     ]()}
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y ${
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y ${
                         errors.full_description ? 'border-red-300' : 'border-gray-200'
                     }`}
                     maxLength={2000}
@@ -223,7 +232,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <select
                     value={data.category || ''}
                     onChange={e => handleChange('category', e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 >
                     <option value="">
                         {m['developerPortal.components.appDetailsStep.selectCategory']()}
@@ -269,7 +278,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                                     age_rating: (e.target.value as AgeRating) || undefined,
                                 })
                             }
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         >
                             <option value="">
                                 {m['developerPortal.components.appDetailsStep.noRating']()}
@@ -306,13 +315,13 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                             placeholder={m[
                                 'developerPortal.components.appDetailsStep.ageRatingPlaceholder'
                             ]()}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         />
                     </div>
                 </div>
 
                 {(data.age_rating || data.min_age !== undefined) && (
-                    <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg space-y-1">
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg space-y-v3-1">
                         {data.min_age !== undefined && (
                             <p className="text-xs text-red-700">
                                 <strong>
@@ -377,7 +386,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         value={data.hero_background_color || ''}
                         onChange={e => handleChange('hero_background_color', e.target.value)}
                         placeholder="#00BA88"
-                        className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
+                        className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
                         maxLength={7}
                     />
 
@@ -410,7 +419,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     {m['developerPortal.components.appDetailsStep.highlightsDesc']()}
                 </p>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     {(data.highlights || []).map((highlight, index) => (
                         <div key={index} className="flex gap-2">
                             <input
@@ -420,7 +429,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                                 placeholder={m[
                                     'developerPortal.components.appDetailsStep.highlightPlaceholder'
                                 ]()}
-                                className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                 maxLength={200}
                             />
 
@@ -457,7 +466,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     {m['developerPortal.components.appDetailsStep.screenshotsDesc']()}
                 </p>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {(data.screenshots || []).map((screenshot, index) => (
                         <ScreenshotUpload
                             key={index}
@@ -502,7 +511,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     placeholder={m[
                         'developerPortal.components.appDetailsStep.promoVideoPlaceholder'
                     ]()}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 />
             </div>
 
@@ -520,7 +529,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <input
                         type="url"
                         value={data.privacy_policy_url || ''}
@@ -528,7 +537,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         placeholder={m[
                             'developerPortal.components.appDetailsStep.privacyPolicyUrl'
                         ]()}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
 
                     <input
@@ -538,7 +547,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         placeholder={m[
                             'developerPortal.components.appDetailsStep.termsOfServiceUrl'
                         ]()}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>
             </div>
@@ -557,13 +566,13 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <input
                         type="text"
                         value={data.ios_app_store_id || ''}
                         onChange={e => handleChange('ios_app_store_id', e.target.value)}
                         placeholder={m['developerPortal.components.appDetailsStep.iosAppStoreId']()}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
 
                     <input
@@ -573,7 +582,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         placeholder={m[
                             'developerPortal.components.appDetailsStep.androidAppStoreId'
                         ]()}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>
                 <div>
@@ -595,7 +604,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         value={data.contact_email || ''}
                         onChange={e => handleChange('contact_email', e.target.value.trim())}
                         placeholder={m['developerPortal.components.appDetailsStep.emailAddress']()}
-                        className={`flex-1 w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                        className={`flex-1 w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                             errors.contact_email ? 'border-red-300' : 'border-gray-200'
                         }`}
                     />
@@ -607,14 +616,14 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Info box */}
             <div className="flex gap-3 p-4 bg-cyan-50 rounded-xl border border-cyan-100">
-                <Info className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" />
+                <Info className="w-5 h-5 text-cyan-600 shrink-0 mt-0.5" />
 
                 <div className="text-sm text-gray-600">
                     <p className="font-medium text-gray-700 mb-1">
                         {m['developerPortal.components.appDetailsStep.tipsForGreatListing']()}
                     </p>
 
-                    <ul className="space-y-1 text-xs">
+                    <ul className="space-y-v3-1 text-xs">
                         <li>• {m['developerPortal.components.appDetailsStep.tip1']()}</li>
 
                         <li>• {m['developerPortal.components.appDetailsStep.tip2']()}</li>

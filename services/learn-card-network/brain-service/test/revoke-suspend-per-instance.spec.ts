@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Profile, Credential, Boost, StatusList, CredentialActivity } from '@models';
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { app as statusListsApp } from '../src/status-lists';
@@ -70,7 +72,7 @@ const isStatusBitSet = async (entry: any): Promise<boolean> => {
     const index = Number(entry.statusListIndex);
     const byte = bitstring[Math.floor(index / 8)] ?? 0;
 
-    return (byte & (1 << index % 8)) !== 0;
+    return (byte & (1 << (index % 8))) !== 0;
 };
 
 const statusBoostTemplate = {
@@ -95,12 +97,18 @@ const statusBoostTemplate = {
 const issueStatusInstanceToUserB = async (
     boostUri: string
 ): Promise<{ credentialUri: string; credential: any }> => {
+    // The issuer signs status metadata before sending. There is no network wrapper
+    // to add status entries after issuance (the SDK uses this same allocation route).
+    const credentialStatus = await userA.clients.fullAuth.boost.allocateCredentialStatus({
+        statusPurposes: ['revocation', 'suspension'],
+    });
     const signedCredential = await userA.learnCard.invoke.issueCredential({
         ...statusBoostTemplate,
         issuer: userA.learnCard.id.did(),
         validFrom: new Date().toISOString(),
         credentialSubject: { id: userB.learnCard.id.did() },
         boostId: boostUri,
+        credentialStatus,
     });
 
     const credentialUri = await userA.clients.fullAuth.boost.sendBoost({

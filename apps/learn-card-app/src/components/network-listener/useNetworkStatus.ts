@@ -1,37 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Network } from '@capacitor/network';
-import type { PluginListenerHandle } from '@capacitor/core';
+import { useEffect } from 'react';
 
-export function useNetworkStatus() {
-    const [isConnected, setIsConnected] = useState<boolean | undefined>();
+import { connectivityStore, type ConnectivityStatus } from 'learn-card-base';
 
-    useEffect(() => {
-        let listenerHandle: PluginListenerHandle | undefined;
+import { attachAppConnectivity } from './connectivity';
 
-        // Check network status once on mount
-        const checkNetworkStatus = async () => {
-            const status = await Network.getStatus();
-            setIsConnected(status.connected);
-        };
-        checkNetworkStatus();
+/**
+ * Attaches the app connectivity monitor (ref-counted, StrictMode-safe) and
+ * returns the VERIFIED connectivity status from the shared connectivity store.
+ *
+ * Raw Capacitor hints never leave this module: the monitor owns verification
+ * (probe with deadline), optimistic positive hints, offline backoff, and the
+ * diagnostic reason. Gating consumers read the store — this hook is just the
+ * lifecycle owner plus a reactive status.
+ */
+export function useNetworkStatus(): ConnectivityStatus {
+    useEffect(() => attachAppConnectivity(), []);
 
-        // Create a helper to set up the listener
-        const setupListener = async () => {
-            listenerHandle = await Network.addListener('networkStatusChange', status => {
-                if (isConnected !== status.connected) {
-                    setIsConnected(status.connected);
-                }
-            });
-        };
-        setupListener();
-
-        // Cleanup
-        return () => {
-            if (listenerHandle) {
-                listenerHandle.remove();
-            }
-        };
-    }, []);
-
-    return isConnected;
+    return connectivityStore.use.status();
 }

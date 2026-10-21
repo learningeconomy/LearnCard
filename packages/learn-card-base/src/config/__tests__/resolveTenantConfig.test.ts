@@ -68,14 +68,42 @@ describe('resolveTenantConfig – full boot path', () => {
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it('falls back to DEFAULT config when all sources fail', async () => {
-        // Baked fetch 404s
-        fetchMock.mockImplementation(async (url: string) => ({
+    it('rejects an invalid explicit static config', async () => {
+        await expect(
+            resolveTenantConfig({ staticConfig: { tenantId: 'incomplete' } })
+        ).rejects.toThrow(/Invalid TenantConfig from static override/);
+    });
+
+    it('rejects an invalid successful config response instead of using defaults', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (url.includes('tenant-config.json')) return { ok: false, status: 404 };
+
+            return {
+                ok: true,
+                json: async () => ({
+                    tenantId: 'broken',
+                    domain: 'broken.example.com',
+                    apis: { brainService: 'not-a-url' },
+                }),
+            };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(/Invalid TenantConfig/);
+    });
+
+    it('fails when no source resolves unless the default is explicitly allowed', async () => {
+        fetchMock.mockResolvedValue({ ok: false, status: 404 });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(/No valid TenantConfig source/);
+    });
+
+    it('uses the validated default only when explicitly allowed', async () => {
+        fetchMock.mockImplementation(async () => ({
             ok: false,
             status: 404,
         }));
 
-        const result = await resolveTenantConfig();
+        const result = await resolveTenantConfig({ allowDefault: true });
 
         expect(result.tenantId).toBe(DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId);
         expect(result.domain).toBe(DEFAULT_LEARNCARD_TENANT_CONFIG.domain);
@@ -98,6 +126,46 @@ describe('resolveTenantConfig – full boot path', () => {
         const result = await resolveTenantConfig();
 
         expect(result.tenantId).toBe('baked');
+    });
+
+    it('falls back to baked config when /__tenant-config returns HTTP 200 with non-JSON (native SPA fallback)', async () => {
+        const bakedConfig = buildFullConfig({ tenantId: 'baked' });
+
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: true, json: async () => bakedConfig };
+            }
+
+            return {
+                ok: true,
+                status: 200,
+                json: async () => {
+                    throw new SyntaxError('Unexpected token <');
+                },
+            };
+        });
+
+        const result = await resolveTenantConfig();
+
+        expect(result.tenantId).toBe('baked');
+    });
+
+    it('rejects non-JSON /__tenant-config response when no baked config exists', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return {
+                ok: true,
+                status: 200,
+                json: async () => {
+                    throw new SyntaxError('Unexpected token <');
+                },
+            };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(/returned invalid JSON/);
     });
 
     it('prefers fresh edge-function config over baked config', async () => {
@@ -151,6 +219,112 @@ describe('resolveTenantConfig – full boot path', () => {
         expect(result.features.aiFeatures).toBe(true);
     });
 
+    it('accepts a partial auth overlay whose cross-field requirements are satisfied by the base', async () => {
+        const vetpassLikeOverlay = {
+            tenantId: 'vetpass',
+            domain: 'vetpass.app',
+            auth: {
+                keyDerivation: 'web3auth',
+                web3Auth: {
+                    clientId: 'client-id',
+                    network: 'testnet',
+                    verifierId: 'learncardapp-firebase',
+                    rpcTarget: 'https://rpc.example.com',
+                },
+            },
+        };
+
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return { ok: true, json: async () => vetpassLikeOverlay };
+        });
+
+        const result = await resolveTenantConfig();
+
+        expect(result.tenantId).toBe('vetpass');
+        expect(result.auth.keyDerivation).toBe('web3auth');
+        expect(result.auth.web3Auth?.clientId).toBe('client-id');
+        expect(result.auth.provider).toBe('firebase');
+        expect(result.auth.firebase).toEqual(DEFAULT_LEARNCARD_TENANT_CONFIG.auth.firebase);
+    });
+
+    it('does not let overlay parsing inject defaults that clobber the base config', async () => {
+        const bakedConfig = buildFullConfig({
+            tenantId: 'baked',
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                provider: 'custom-oidc',
+                sss: {
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
+                    serverUrl: 'https://sss.baked.example.com',
+                    requireEmailForPhoneUsers: false,
+                },
+            },
+        });
+
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: true, json: async () => bakedConfig };
+            }
+
+            return {
+                ok: true,
+                json: async () => ({
+                    auth: {
+                        provider: 'custom-oidc',
+                        keyDerivation: 'sss',
+                        sss: { enableEmailBackupShare: false },
+                    },
+                }),
+            };
+        });
+
+        const result = await resolveTenantConfig();
+
+        expect(result.auth.provider).toBe('custom-oidc');
+        expect(result.auth.sss?.serverUrl).toBe('https://sss.baked.example.com');
+        expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(false);
+        expect(result.auth.sss?.enableEmailBackupShare).toBe(false);
+    });
+
+    it('still rejects a merged config whose overlay breaks cross-field requirements', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return {
+                ok: true,
+                json: async () => ({
+                    tenantId: 'broken',
+                    domain: 'broken.example.com',
+                    auth: { keyDerivation: 'web3auth' },
+                }),
+            };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(
+            /merged overlay; overlay keys: tenantId, domain, auth → defaults[\s\S]*Required when auth.keyDerivation is web3auth/
+        );
+    });
+
+    it('rejects a non-object overlay payload', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return { ok: true, json: async () => 'not a config' };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(
+            /Invalid TenantConfig from fetch \/__tenant-config \(overlay shape\)/
+        );
+    });
+
     it('writes fresh config to localStorage cache', async () => {
         const freshConfig = buildFullConfig({ tenantId: 'cached-test' });
 
@@ -176,7 +350,7 @@ describe('resolveTenantConfig – full boot path', () => {
     });
 
     it('skips network fetch when offlineOnly is set', async () => {
-        const result = await resolveTenantConfig({ offlineOnly: true });
+        const result = await resolveTenantConfig({ offlineOnly: true, allowDefault: true });
 
         // Only baked fetch should have been called (for /tenant-config.json)
         const fetchCalls = fetchMock.mock.calls.map((c: unknown[]) => c[0]);

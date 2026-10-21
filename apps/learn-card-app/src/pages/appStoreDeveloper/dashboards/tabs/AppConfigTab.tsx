@@ -513,7 +513,7 @@ const nextConfig = {
 module.exports = nextConfig;`;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.appConfig.title']()}
@@ -546,7 +546,7 @@ module.exports = nextConfig;`;
                                 }
                             }
                         }}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500 text-gray-800"
                     >
                         {listings.map(listing => (
                             <option key={listing.listing_id} value={listing.listing_id}>
@@ -572,20 +572,20 @@ module.exports = nextConfig;`;
             {selectedListing && (
                 <>
                     {/* URL Configuration */}
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <label className="block text-sm font-medium text-gray-700">
                             {m['developerPortal.dashboards.tabs.appConfig.appUrl']()}
                         </label>
 
                         <div className="flex gap-2">
                             <div className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-cyan-500 focus-within:border-cyan-500">
-                                <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                <Globe className="w-4 h-4 text-gray-400 shrink-0" />
                                 <input
                                     type="url"
                                     value={appUrl}
                                     onChange={handleUrlChange}
                                     placeholder="https://your-app.com"
-                                    className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400"
+                                    className="flex-1 outline-hidden bg-transparent text-gray-800 placeholder-gray-400"
                                     onKeyDown={e => {
                                         if (e.key === 'Enter' && appUrl.trim()) {
                                             handleCheckUrl();
@@ -620,10 +620,10 @@ module.exports = nextConfig;`;
                                 isChecking
                                     ? 'bg-gray-50 border-gray-200'
                                     : allPassed
-                                    ? 'bg-emerald-50 border-emerald-200'
-                                    : hasFailed
-                                    ? 'bg-red-50 border-red-200'
-                                    : 'bg-gray-50 border-gray-200'
+                                      ? 'bg-emerald-50 border-emerald-200'
+                                      : hasFailed
+                                        ? 'bg-red-50 border-red-200'
+                                        : 'bg-gray-50 border-gray-200'
                             }`}
                         >
                             <div className="flex items-center gap-2 mb-3">
@@ -642,10 +642,10 @@ module.exports = nextConfig;`;
                                         isChecking
                                             ? 'text-gray-700'
                                             : allPassed
-                                            ? 'text-emerald-800'
-                                            : hasFailed
-                                            ? 'text-red-800'
-                                            : 'text-gray-700'
+                                              ? 'text-emerald-800'
+                                              : hasFailed
+                                                ? 'text-red-800'
+                                                : 'text-gray-700'
                                     }`}
                                 >
                                     {isChecking
@@ -653,20 +653,20 @@ module.exports = nextConfig;`;
                                               'developerPortal.dashboards.tabs.appConfig.checkResults.checking'
                                           ]()
                                         : allPassed
-                                        ? m[
-                                              'developerPortal.dashboards.tabs.appConfig.checkResults.allPassed'
-                                          ]()
-                                        : hasFailed
-                                        ? m[
-                                              'developerPortal.dashboards.tabs.appConfig.checkResults.issuesFound'
-                                          ]()
-                                        : m[
-                                              'developerPortal.dashboards.tabs.appConfig.checkResults.resultsTitle'
-                                          ]()}
+                                          ? m[
+                                                'developerPortal.dashboards.tabs.appConfig.checkResults.allPassed'
+                                            ]()
+                                          : hasFailed
+                                            ? m[
+                                                  'developerPortal.dashboards.tabs.appConfig.checkResults.issuesFound'
+                                              ]()
+                                            : m[
+                                                  'developerPortal.dashboards.tabs.appConfig.checkResults.resultsTitle'
+                                              ]()}
                                 </h4>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 {checkResults.map(result => (
                                     <div key={result.id} className="flex items-center gap-3">
                                         {getCheckIcon(result.id)}
@@ -686,10 +686,10 @@ module.exports = nextConfig;`;
                                                         result.status === 'pass'
                                                             ? 'text-emerald-600'
                                                             : result.status === 'fail'
-                                                            ? 'text-red-600'
-                                                            : result.status === 'warn'
-                                                            ? 'text-amber-600'
-                                                            : 'text-gray-500'
+                                                              ? 'text-red-600'
+                                                              : result.status === 'warn'
+                                                                ? 'text-amber-600'
+                                                                : 'text-gray-500'
                                                     }`}
                                                 >
                                                     {result.messageKey
@@ -756,7 +756,7 @@ module.exports = nextConfig;`;
                         </button>
 
                         {showHeaderExamples && (
-                            <div className="p-4 border-t border-gray-200 space-y-4">
+                            <div className="p-4 border-t border-gray-200 space-y-v3-4">
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-medium text-gray-700">
@@ -818,7 +818,7 @@ module.exports = nextConfig;`;
                     </div>
 
                     {/* Permissions */}
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <div className="flex items-center justify-between">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
@@ -880,14 +880,14 @@ module.exports = nextConfig;`;
                                                     {getPermissionName(perm.id)}
                                                 </span>
                                                 {perm.required && (
-                                                    <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
+                                                    <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded-sm">
                                                         {m[
                                                             'developerPortal.dashboards.tabs.appConfig.permissions.required'
                                                         ]()}
                                                     </span>
                                                 )}
                                                 {isFromGuide && !perm.required && (
-                                                    <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-600 text-xs rounded">
+                                                    <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-600 text-xs rounded-sm">
                                                         {m[
                                                             'developerPortal.dashboards.tabs.appConfig.permissions.fromGuide'
                                                         ]()}
@@ -900,7 +900,7 @@ module.exports = nextConfig;`;
                                         </div>
 
                                         <div
-                                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                                                 isSelected
                                                     ? 'border-cyan-500 bg-cyan-500'
                                                     : 'border-gray-300'
@@ -948,7 +948,7 @@ module.exports = nextConfig;`;
                     {m['developerPortal.dashboards.tabs.appConfig.commonIssues.title']()}
                 </h4>
 
-                <div className="space-y-2 text-sm">
+                <div className="space-y-v3-2 text-sm">
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>

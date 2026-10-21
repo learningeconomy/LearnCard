@@ -37,7 +37,7 @@ class TestContractsGetTermsTransactionHistoryRequestQueryTerms(unittest.TestCase
             return ContractsGetTermsTransactionHistoryRequestQueryTerms(
                 read = openapi_client.models.contracts_get_terms_transaction_history_request_query_terms_read.contracts_getTermsTransactionHistory_request_query_terms_read(
                     anonymize = True, 
-                    credentials = openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials.contracts_getConsentedContracts_request_query_read_credentials(
+                    credentials = openapi_client.models.contracts_get_terms_transaction_history_request_query_terms_read_credentials.contracts_getTermsTransactionHistory_request_query_terms_read_credentials(
                         share_all = True, 
                         sharing = True, 
                         categories = {
@@ -53,7 +53,7 @@ class TestContractsGetTermsTransactionHistoryRequestQueryTerms(unittest.TestCase
                         'key' : ''
                         }, ),
                 write = openapi_client.models.contracts_get_consented_contracts_request_query_write.contracts_getConsentedContracts_request_query_write(
-                    credentials = openapi_client.models.contracts_get_consented_data_for_contract_request_query_credentials.contracts_getConsentedDataForContract_request_query_credentials(
+                    credentials = openapi_client.models.contracts_get_consented_data_for_did_request_query_credentials.contracts_getConsentedDataForDid_request_query_credentials(
                         categories = {
                             'key' : True
                             }, ), 

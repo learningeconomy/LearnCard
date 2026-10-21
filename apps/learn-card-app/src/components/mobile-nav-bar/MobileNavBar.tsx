@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import {
@@ -53,6 +54,21 @@ const MobileNavBar: React.FC = () => {
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const isWalletSyncing = walletStore.useTracked.syncState();
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+        () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    );
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+        if (!mediaQuery) return undefined;
+
+        const handleChange = (event: MediaQueryListEvent): void => {
+            setPrefersReducedMotion(event.matches);
+        };
+
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, []);
 
     const navlinks = theme?.navbar ?? [];
 
@@ -60,7 +76,7 @@ const MobileNavBar: React.FC = () => {
     // border) per the Figma "LearnCard Footer Nav - V3".
     // Strip only the trailing shade (`-500`) so multi-word families survive,
     // e.g. `baltic-blue-500` → `baltic-blue` (not `baltic`). Safelist the
-    // resulting `bg-{family}-200/50` in tailwind.config.js.
+    // resulting `bg-{family}-200/50` in src/tailwind.css's @source inline list.
     const pillFamily = theme?.colors?.defaults?.primaryColor?.replace(/-\d+$/, '') || 'indigo';
     const iconPillClass = (active: boolean): string =>
         `flex items-center justify-center p-[5px] rounded-[40px] ${
@@ -87,10 +103,12 @@ const MobileNavBar: React.FC = () => {
     return (
         <GenericErrorBoundary>
             <IonTabs className={`${getNavBarColor(activePathname)}`}>
-                <IonRouterOutlet animated={true}>
+                <IonRouterOutlet animated={!prefersReducedMotion}>
                     <Routes />
                 </IonRouterOutlet>
-                {isLoggedIn && showNavBar(activePathname) ? (
+                {isLoggedIn &&
+                !/^\/s(?:\/|$)/.test(activePathname) &&
+                showNavBar(activePathname) ? (
                     <IonTabBar
                         slot="bottom"
                         className="lc-footer-nav"

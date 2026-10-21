@@ -13,8 +13,8 @@ import {
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import type { DashboardConfig, DashboardStats, CredentialTemplate } from '../types';
-import { openExternalLink } from 'src/helpers/externalLinkHelpers';
-import { IssuanceList } from 'src/components/issuances/IssuanceList';
+import { openExternalLink } from '../../../../helpers/externalLinkHelpers';
+import { IssuanceList } from '../../../../components/issuances/IssuanceList';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
@@ -112,7 +112,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     const docsUrl = getDocsUrl(integration.guideType);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">
                     {m['developerPortal.dashboards.tabs.overview.title']()}
@@ -160,7 +160,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                 value={listingFilter}
                                 onChange={e => setListingFilter(e.target.value)}
                                 className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
-                                           text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                                           text-gray-700 hover:bg-gray-100 focus:outline-hidden focus:ring-2 focus:ring-cyan-500
                                            focus:border-transparent cursor-pointer transition-colors max-w-[180px]"
                             >
                                 <option value="ALL">

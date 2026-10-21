@@ -10,9 +10,13 @@ import { analyticsRouter } from '@routes/analytics';
 export { createContext } from '@routes';
 import { preferencesRouter } from '@routes/preferences';
 import { keysRouter } from '@routes/keys';
+import { escrowRouter } from '@routes/escrow';
 import { qrLoginRouter } from '@routes/qr-login';
+import { authRouter } from '@routes/auth';
+import { testRouter, type TestRouter } from '@routes/test';
+import { environment } from '@environment';
 
-export const appRouter = t.router({
+const routes = {
     notifications: notificationsRouter,
     utilities: utilitiesRouter,
     signingAuthority: signingAuthorityRouter,
@@ -23,6 +27,14 @@ export const appRouter = t.router({
     analytics: analyticsRouter,
     preferences: preferencesRouter,
     keys: keysRouter,
+    escrow: escrowRouter,
     qrLogin: qrLoginRouter,
+    auth: authRouter,
+};
+
+export const appRouter = t.router<typeof routes & { test?: TestRouter }>({
+    ...routes,
+    // E2E-only observability routes (see routes/test.ts); undefined in production.
+    test: environment.IS_E2E_TEST ? testRouter : undefined,
 });
 export type AppRouter = typeof appRouter;

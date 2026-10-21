@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
@@ -9,6 +8,7 @@ import * as m from '../../paraglide/messages.js';
 import Search from 'learn-card-base/svgs/Search';
 
 import MainHeader from '../../components/main-header/MainHeader';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import AppGrid from './AppGrid';
 import AppGridTile from './AppGridTile';
@@ -18,7 +18,6 @@ import {
     JOURNEYS_SHORTCUT,
     LearnCardAppShortcut,
 } from './learnCardAppShortcuts';
-import useOpenBoostTemplateSelector from './useOpenBoostTemplateSelector';
 import useMoreApps from './useMoreApps';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 
@@ -58,19 +57,10 @@ const MyAppsLanding: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
     const { isMobile } = useDeviceTypeByWidth();
-    const openBoost = useOpenBoostTemplateSelector();
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
+    const onHeaderScroll = useHeaderScrollSync();
     const pathwaysEnabled = usePathwaysEnabled();
-    const flags = useFlags();
-
-    const openBoostAFriend = useMemo(
-        () => () => {
-            if (flags?.boostAFriendV2 === true) history.push('/boost-a-friend');
-            else openBoost();
-        },
-        [flags?.boostAFriendV2, history, openBoost]
-    );
 
     const shortcuts = useMemo(
         () =>
@@ -91,10 +81,7 @@ const MyAppsLanding: React.FC = () => {
         if (hasDeepLink) history.replace(`/launchpad/browse${search}`);
     }, [hasDeepLink, search, history]);
 
-    const helpers = useMemo(
-        () => ({ push: (path: string) => history.push(path), openBoost, openBoostAFriend }),
-        [history, openBoost, openBoostAFriend]
-    );
+    const helpers = useMemo(() => ({ push: (path: string) => history.push(path) }), [history]);
 
     const query = searchInput.trim().toLowerCase();
     const isSearching = query.length > 0;
@@ -163,7 +150,7 @@ const MyAppsLanding: React.FC = () => {
                     <ProfileAlertsIsland />
                 </div>
             )}
-            <IonContent fullscreen color="grayscale-100">
+            <IonContent fullscreen color="grayscale-100" scrollEvents onIonScroll={onHeaderScroll}>
                 <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12 md:pt-6">
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
                         <div className="flex items-center justify-between gap-3 md:contents">
@@ -186,7 +173,7 @@ const MyAppsLanding: React.FC = () => {
                                 onChange={e => setSearchInput(e.target.value)}
                                 placeholder={m['myAppsPage.searchPlaceholder']()}
                                 aria-label={m['myAppsPage.searchAria']()}
-                                className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none"
+                                className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-hidden"
                             />
                         </div>
                     </div>
@@ -197,11 +184,11 @@ const MyAppsLanding: React.FC = () => {
                                 {resultsCount === 0
                                     ? m['myAppsPage.noResultsFor']({ query: searchInput.trim() })
                                     : resultsCount === 1
-                                    ? m['myAppsPage.oneResult']({ query: searchInput.trim() })
-                                    : m['myAppsPage.manyResults']({
-                                          count: resultsCount,
-                                          query: searchInput.trim(),
-                                      })}
+                                      ? m['myAppsPage.oneResult']({ query: searchInput.trim() })
+                                      : m['myAppsPage.manyResults']({
+                                            count: resultsCount,
+                                            query: searchInput.trim(),
+                                        })}
                             </p>
                             {resultsCount > 0 && (
                                 <AppGrid>{matchedApps.map(renderAppTile)}</AppGrid>

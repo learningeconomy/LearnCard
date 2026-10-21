@@ -6,11 +6,11 @@ import { useTheme } from '../../../theme/hooks/useTheme';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import LaunchPadActionModal from './LaunchPadActionModal';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
-import CaretRightFilled from 'src/components/svgs/CaretRightFilled';
+import CaretRightFilled from '../../../components/svgs/CaretRightFilled';
 import { roleIcons } from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
 import { LearnCardRolesEnum } from '../../../components/onboarding/onboarding.helpers';
 
-export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
+export const LaunchPadHeaderUserGreeting: React.FC = () => {
     const currentUser = useCurrentUser();
     const currentHour = moment().hour(); // returns 0–23
     const { newModal } = useModal({
@@ -39,7 +39,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
 
         newModal(<LaunchPadActionModal />, {
             className: 'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
-            sectionClassName: '!max-w-[500px] disable-scrollbars',
+            sectionClassName: 'max-w-[500px]! disable-scrollbars',
         });
     };
 
@@ -57,7 +57,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                     <button
                         type="button"
                         onClick={() => void handleOpenActionModal()}
-                        className="w-full max-w-[600px] flex items-center justify-between px-[10px] py-[5px] rounded-[10px] shadow-[0_2px_2px_0_rgba(0,0,0,0.25)] border-solid border border-grayscale-200"
+                        className="w-full max-w-[600px] flex items-center justify-between px-[10px] py-[5px] rounded-[10px] shadow-soft-bottom border-solid border border-grayscale-200"
                         style={{ backgroundColor: quickActionBgColor }}
                     >
                         <div className="flex items-center">
@@ -68,7 +68,10 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                                     className="h-[20px] w-[20px] object-contain mr-[5px]"
                                 />
                             )}
-                            <span className="font-poppins font-semibold text-[20px]" style={{ color: quickActionTextColor }}>
+                            <span
+                                className="font-poppins font-semibold text-[20px]"
+                                style={{ color: quickActionTextColor }}
+                            >
                                 What would you like to do?
                             </span>
                         </div>

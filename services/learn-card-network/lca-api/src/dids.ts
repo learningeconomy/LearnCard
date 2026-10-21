@@ -1,10 +1,11 @@
+import { environment } from '@environment';
 import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
 import { base64url } from 'multiformats/bases/base64';
 import { base58btc } from 'multiformats/bases/base58';
 
-import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getDidDocForProfile, setDidDocForProfile } from '@cache/did-docs';
 
 const encodeKey = (key: Uint8Array) => {
@@ -51,8 +52,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const domainName: string = request.hostname || (request as any).requestContext.domainName;
         const domain =
-            !domainName || process.env.IS_OFFLINE
-                ? `localhost%3A${process.env.PORT || 3000}`
+            !domainName || environment.IS_OFFLINE
+                ? `localhost%3A${environment.PORT || 3000}`
                 : domainName.replace(/:/g, '%3A');
 
         const did = learnCard.id.did();
@@ -83,6 +84,16 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         setDidDocForProfile('::root::', finalDoc);
 
         return reply.send(finalDoc);
+    });
+
+    fastify.get('/test/clear-cache', async (_request, reply) => {
+        if (!environment.IS_OFFLINE) return reply.status(403).send();
+
+        const learnCard = await getEmptyLearnCard();
+
+        await learnCard.invoke.clearDidWebCache();
+
+        return reply.status(200).send();
     });
 };
 

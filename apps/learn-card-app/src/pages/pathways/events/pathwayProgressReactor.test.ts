@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { pathwayStore, proposalStore } from '../../../stores/pathways';

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -19,7 +18,6 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     className = '',
     mode = 'default',
 }) => {
-    const flags = useFlags();
     const { newModal } = useModal();
     const { gate } = useLCNGatedAction();
     const brandingConfig = useBrandingConfig();
@@ -45,12 +43,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
         if (prompted) return;
         newModal(
             <CheckListContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
-
-    if (!flags?.enableOnboardingChecklist) return null;
 
     const helperCopy = m['passport.buildMyLearnCard.helper']();
 
@@ -61,10 +57,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
         const family = primaryColor?.replace(/-\d+$/, '') || 'indigo';
 
         return (
-            <div
-                role="button"
+            <button
+                type="button"
                 onClick={handleCheckListButton}
-                className={`flex items-center gap-[10px] rounded-[15px] border-[3px] border-solid border-white p-[10px] shadow-[0_2px_1.5px_rgba(0,0,0,0.25)] bg-${family}-50 ${className}`}
+                className={`w-full text-left flex items-center gap-[10px] rounded-[15px] border-[3px] border-solid border-white p-[10px] shadow-[0_2px_1.5px_rgba(0,0,0,0.25)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 bg-${family}-50 ${className}`}
             >
                 <div className="shrink-0 w-[40px] h-[40px] rounded-[10px] overflow-hidden flex items-center justify-center">
                     {isParsing ? (
@@ -73,7 +69,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         <img
                             src={buildMyLCIcon}
                             className="w-[40px] h-[40px] object-contain"
-                            alt="blocks"
+                            alt=""
                         />
                     )}
                 </div>
@@ -82,26 +78,27 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         <span className="text-[15px] font-poppins text-grayscale-900 leading-[normal] text-left">
                             {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                         </span>
-                        <span className="text-[11px] font-poppins font-medium text-grayscale-600 leading-[normal]">
+                        <span className="text-[11px] font-poppins font-medium text-grayscale-700 leading-[normal]">
                             {isParsing
                                 ? m['passport.buildMyLearnCard.processing']()
                                 : hasPendingReview
-                                ? m['passport.buildMyLearnCard.pendingReview']({
-                                      count: pendingReviewCount,
-                                  })
-                                : helperCopy}
+                                  ? m['passport.buildMyLearnCard.pendingReview']({
+                                        count: pendingReviewCount,
+                                    })
+                                  : helperCopy}
                         </span>
                     </div>
                 </div>
-            </div>
+            </button>
         );
     }
 
     if (mode === 'inline') {
         return (
-            <div
-                role="button"
+            <button
+                type="button"
                 onClick={handleCheckListButton}
+                aria-label={m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                 className={`w-full h-[150px] max-h-[150px] rounded-[28px] p-4 flex flex-col justify-center shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
                 style={
                     featuredCardBgColor
@@ -115,24 +112,20 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             isParsing
                                 ? `bg-${primaryColor}`
                                 : featuredCardBgColor
-                                ? 'bg-transparent'
-                                : 'bg-white'
+                                  ? 'bg-transparent'
+                                  : 'bg-white'
                         }`}
                     >
                         {isParsing ? (
                             <CustomSpinner className="w-[34px] h-[34px] text-white" />
                         ) : (
-                            <img
-                                src={buildMyLCIcon}
-                                className="w-[36px] h-[36px]"
-                                alt="Build LearnCard"
-                            />
+                            <img src={buildMyLCIcon} className="w-[36px] h-[36px]" alt="" />
                         )}
                     </div>
                 </div>
 
                 <h5
-                    className={`text-[17px] leading-[130%] font-poppins font-[600] text-left ${
+                    className={`text-[17px] leading-[130%] font-poppins font-semibold text-left ${
                         featuredCardTextColor ?? 'text-grayscale-900'
                     }`}
                 >
@@ -162,13 +155,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         {helperCopy}
                     </p>
                 )}
-            </div>
+            </button>
         );
     }
 
     return (
-        <div
-            role="button"
+        <button
+            type="button"
             onClick={handleCheckListButton}
             className={`w-full flex items-center justify-between max-w-[900px] rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
             style={
@@ -183,19 +176,19 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         isParsing
                             ? `bg-${primaryColor}`
                             : featuredCardBgColor
-                            ? 'bg-transparent'
-                            : 'bg-white'
+                              ? 'bg-transparent'
+                              : 'bg-white'
                     }`}
                 >
                     {isParsing ? (
                         <CustomSpinner className="w-[30px] h-[30px] text-white" />
                     ) : (
-                        <img src={buildMyLCIcon} className="w-[30px] h-[30px]" alt="blocks" />
+                        <img src={buildMyLCIcon} className="w-[30px] h-[30px]" alt="" />
                     )}
                 </div>
                 <div className="flex flex-col">
                     <h5
-                        className={`text-[17px] font-poppins font-[600] leading-[130%] text-left ${
+                        className={`text-[17px] font-poppins font-semibold leading-[130%] text-left ${
                             featuredCardTextColor ?? 'text-grayscale-900'
                         }`}
                     >
@@ -226,10 +219,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     )}
                 </div>
             </div>
-            <button className="cursor-pointer">
+            <span aria-hidden="true" className="cursor-pointer">
                 <SlimCaretRight className="w-[20px] h-[20px] text-grayscale-400" />
-            </button>
-        </div>
+            </span>
+        </button>
     );
 };
 

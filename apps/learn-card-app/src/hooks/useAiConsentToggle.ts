@@ -9,6 +9,7 @@ import {
 
 import useAutoConsentLearnCardAi from './useAutoConsentLearnCardAi';
 import { useGuardianGate } from './useGuardianGate';
+import * as m from '../paraglide/messages.js';
 
 /**
  * Shared hook for toggling AI features with transaction-like consistency
@@ -94,12 +95,20 @@ export const useAiConsentToggle = () => {
             if (isChildProfile) {
                 let synced = false;
 
-                await guardedAction(
-                    async () => {
-                        synced = await syncConsent();
-                    },
-                    { ignorePriorVerification: true }
-                );
+                try {
+                    await guardedAction(
+                        async () => {
+                            synced = await syncConsent();
+                        },
+                        { ignorePriorVerification: true }
+                    );
+                } catch {
+                    presentToast(m['error.generic'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                    return false;
+                }
 
                 return synced;
             }

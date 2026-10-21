@@ -16,7 +16,7 @@
             "statusBarColor": "light",
             "headerBrandingTextColor": "text-grayscale-800",
             "headerTextColor": "text-grayscale-800",
-            "backgroundPrimaryColor": "!bg-white",
+            "backgroundPrimaryColor": "bg-white!",
             "backgroundSecondaryColor": "grayscale-100",
             "tabActiveColor": "bg-grayscale-200"
         },
@@ -43,16 +43,16 @@
             "primaryButtonColor": "bg-grayscale-800 text-white",
             "secondaryButtonColor": "bg-blue-500 text-white border-blue-500",
             "indicatorColor": "text-emerald-500",
-            "syncingColor": "!text-blue-500",
-            "completedColor": "!text-emerald-700",
+            "syncingColor": "text-blue-500!",
+            "completedColor": "text-emerald-900!",
             "logoColor": "text-grayscale-900"
         },
 
         "navbar": {
             "activeColor": "text-grayscale-900",
             "inactiveColor": "text-grayscale-800",
-            "syncingColor": "!text-blue-500",
-            "completedColor": "!text-emerald-700"
+            "syncingColor": "text-blue-500!",
+            "completedColor": "text-emerald-900!"
         },
 
         "introSlides": {
@@ -84,6 +84,7 @@
             "loginBgColor": "#353E64",
             "loginButtonBgColor": "#1E2440",
             "loginButtonTextColor": "#FFFFFF",
+            "passportCardBgColor": "#FFFFFF",
             "actionModalButtonColors": [
                 "#E2E3E9",
                 "#D1D5DB",

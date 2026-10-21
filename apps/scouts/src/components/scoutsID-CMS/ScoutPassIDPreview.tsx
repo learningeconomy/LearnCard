@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../paraglide/messages.js';
+
 import { IonFooter, IonPage, IonToolbar } from '@ionic/react';
 import ScoutPassIDCMSLayout from './ScoutPassIDCMSLayout';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
@@ -15,11 +17,11 @@ export const ScoutPassIDPreview: React.FC<{
         <IonPage>
             <ScoutPassIDCMSLayout
                 scoutPassID={scoutPassID}
-                containerClassName="!justify-center"
-                layoutClassName="!max-w-[375px]"
+                containerClassName="justify-center!"
+                layoutClassName="max-w-[375px]!"
             >
                 <div className="rounded-t-[20px] shadow-box-bottom flex flex-col">
-                    <div className="w-full flex items-center justify-center flex-col bg-white bg-opacity-70 backdrop-blur-[10px] rounded-t-[20px]">
+                    <div className="w-full flex items-center justify-center flex-col bg-white/70  backdrop-blur-[10px] rounded-t-[20px]">
                         <div className="w-full py-4 max-w-[335px]">
                             <ScoutPassID user={user} scoutPassID={scoutPassID} />
                         </div>
@@ -38,7 +40,7 @@ export const ScoutPassIDPreview: React.FC<{
             </ScoutPassIDCMSLayout>
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] absolute bottom-0 bg-white max-h-[100px]"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[100px]"
             >
                 <IonToolbar color="transparent" mode="ios">
                     <div className="w-full flex items-center justify-center">
@@ -47,7 +49,7 @@ export const ScoutPassIDPreview: React.FC<{
                                 onClick={handleCloseModal}
                                 className={`text-grayscale-900 bg-grayscale-100 text-lg font-bold rounded-full py-[12px] w-full`}
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                         </div>
                     </div>

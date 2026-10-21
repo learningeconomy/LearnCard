@@ -20,7 +20,7 @@ const CertificatePreviewRecipients: React.FC<CertificatePreviewRecipientsProps> 
                 return (
                     <div
                         key={index}
-                        className="profile-thumb-img border-[2px] border-white border-solid  vc-issuee-image h-[50px] w-[50px] rounded-full overflow-hidden mx-[-6px] bg-white"
+                        className="profile-thumb-img border-2 border-white border-solid  vc-issuee-image h-[50px] w-[50px] rounded-full overflow-hidden mx-[-6px] bg-white"
                     >
                         <UserProfilePicture
                             customContainerClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden text-white font-medium text-2xl mr-3"

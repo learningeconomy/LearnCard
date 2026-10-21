@@ -26,8 +26,6 @@ import LaunchPadAppTabs, {
     getTabTranslationKey,
 } from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
-import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
-import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import {
     LaunchPadFilterOptionsEnum,
@@ -59,9 +57,8 @@ const LaunchPad: React.FC = () => {
             [LaunchPadTabEnum.other]: m['launchpad.tabs.other'],
             [LaunchPadTabEnum.plugins]: m['launchpad.tabs.plugins'],
             [LaunchPadTabEnum.all]: m['launchpad.tabs.all'],
-        }[tab]());
+        })[tab]();
 
-    const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
@@ -75,10 +72,10 @@ const LaunchPad: React.FC = () => {
         appImage,
         tab: tabParam,
     } = queryString.parse(search);
-    const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
-    const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
-    const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
-    const appImageParam = Array.isArray(appImage) ? appImage[0] ?? '' : appImage ?? '';
+    const contractUri = Array.isArray(uri) ? (uri[0] ?? '') : (uri ?? '');
+    const embedUrlParam = Array.isArray(embedUrl) ? (embedUrl[0] ?? '') : (embedUrl ?? '');
+    const appNameParam = Array.isArray(appName) ? (appName[0] ?? '') : (appName ?? '');
+    const appImageParam = Array.isArray(appImage) ? (appImage[0] ?? '') : (appImage ?? '');
 
     const initialTab = (() => {
         const raw = Array.isArray(tabParam) ? tabParam[0] : tabParam;
@@ -288,7 +285,7 @@ const LaunchPad: React.FC = () => {
 
     return (
         <IonPage className="bg-white">
-            <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
+            <MainHeader customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
@@ -322,14 +319,7 @@ const LaunchPad: React.FC = () => {
                                 />
                             </div>
                         </LaunchPadHeader>
-                        <div className="flex-grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
-                            {capabilities.recovery && (
-                                <RecoveryBanner
-                                    recoveryMethodCount={recoveryMethodCount}
-                                    onSetup={openRecoverySetup}
-                                />
-                            )}
-
+                        <div className="grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
                             {tab === LaunchPadTabEnum.ai && !isAiEnabled ? (
                                 <div className="w-full max-w-[600px] flex flex-col items-center justify-center text-center px-6 py-12">
                                     <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-6 max-w-[450px]">
@@ -406,7 +396,7 @@ const LaunchPad: React.FC = () => {
                                     {filteredAvailableApps.length === 0 &&
                                         !customAppFromQueryParams && (
                                             <div className="w-full flex items-center justify-center z-10">
-                                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t border-solid border-grayscale-200 pt-2">
                                                     <p className="text-grayscale-800 text-base font-normal font-notoSans">
                                                         <TransP
                                                             m={
@@ -416,7 +406,10 @@ const LaunchPad: React.FC = () => {
                                                             }
                                                             values={{ query: searchInput }}
                                                             components={[
-                                                                <span className="text-black italic" />,
+                                                                <span
+                                                                    key="query"
+                                                                    className="text-black italic"
+                                                                />,
                                                             ]}
                                                         />
                                                     </p>
@@ -582,16 +575,16 @@ const LaunchPad: React.FC = () => {
                                         const title = isMyApps
                                             ? m['launchpad.emptyStates.noInstalledApps']()
                                             : isAll
-                                            ? m['launchpad.emptyStates.noAppsAvailable']()
-                                            : m['launchpad.emptyStates.nothingInCategory']({
-                                                  category: tabLabelStr,
-                                              });
+                                              ? m['launchpad.emptyStates.noAppsAvailable']()
+                                              : m['launchpad.emptyStates.nothingInCategory']({
+                                                    category: tabLabelStr,
+                                                });
 
                                         const subtitle = isMyApps
                                             ? m['launchpad.emptyStates.installSomething']()
                                             : isAll
-                                            ? m['launchpad.emptyStates.checkBackLater']()
-                                            : m['launchpad.emptyStates.checkBackSoon']();
+                                              ? m['launchpad.emptyStates.checkBackLater']()
+                                              : m['launchpad.emptyStates.checkBackSoon']();
 
                                         const showCta = !isAll;
 

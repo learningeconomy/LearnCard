@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../../../paraglide/messages.js';
 import { BoostMediaOptionsEnum } from '../../../boost';
 import Pencil from '../../../../svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
@@ -78,7 +79,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 showCloseButton={false}
                 title={
                     <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                        Media Attachment
+                        {m['boostCMS.mediaAttachment']()}
                     </p>
                 }
             />
@@ -90,7 +91,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
             key={index}
             className="group bg-grayscale-100 rounded-[20px] relative text-xs min-h-[120px] max-h-[120px] w-full flex overflow-hidden mb-4"
         >
-            <div className="w-2/5 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px] flex-shrink-0">
+            <div className="w-2/5 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px] shrink-0">
                 <a
                     href={media.url || ''}
                     target="_blank"
@@ -99,10 +100,10 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 >
                     <img
                         src={getCoverImageUrl(media.url || EmptyImage)}
-                        alt={media.title || 'Video Cover'}
+                        alt={media.title || m['boostCMS.videoCover']()}
                         className="h-full w-full object-cover"
                     />
-                    <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent z-10"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-1/2 bg-linear-to-t/srgb from-black to-transparent z-10"></div>
                     <Video className="absolute left-2 bottom-2 h-[30px] w-[30px] text-white z-20" />
                 </a>
             </div>
@@ -126,7 +127,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 <button
                     onClick={() => handleEdit()}
                     type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
+                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow-sm"
                 >
                     <Pencil className="h-[60%]" />
                 </button>

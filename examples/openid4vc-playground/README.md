@@ -179,7 +179,7 @@ For wallets on networks that can't reach your LAN (e.g. testing from a coffee sh
 The walt.id Docker stack probably isn't running. `cd ../../tests/openid4vc-interop-e2e && docker compose ps` should show two running services on ports 7002 (issuer) and 7003 (verifier).
 
 **"walt.id verifier returned URI with no state param"**
-walt.id schema drift. Check `compose.yaml` is using the version pinned by the e2e tests (currently `waltid/issuer-api:latest` and `waltid/verifier-api:latest`).
+walt.id schema drift. Check `compose.yaml` is using the pinned version from the e2e tests (the `WALTID_IMAGE_TAG` default in `tests/openid4vc-interop-e2e/compose.yaml`) — an unpinned `latest` may have drifted.
 
 **QR scans but nothing happens in the wallet**
 The wallet's deep-link handler probably isn't registered. On macOS, install the LearnCard iOS app (or LCA web) and re-scan; the OS prompt will offer to open in the wallet.

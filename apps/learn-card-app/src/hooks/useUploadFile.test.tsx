@@ -67,7 +67,7 @@ vi.mock('./useUploadVcFromText', () => ({
 
 import { createRawArtifactVC, getFileInfo, useUploadFile } from './useUploadFile';
 import { addCertificateAttachment } from './certificateAttachment';
-import { UploadTypesEnum } from 'learn-card-base';
+import { ToastTypeEnum, UploadTypesEnum } from 'learn-card-base';
 
 const createChangeEvent = (files: File[]): React.ChangeEvent<HTMLInputElement> =>
     ({ target: { files } } as unknown as React.ChangeEvent<HTMLInputElement>);
@@ -146,6 +146,63 @@ describe('useUploadFile certificate uploads', () => {
         expect(credential.rawArtifact.data).toBe('data:application/pdf;base64,Y2VydGlmaWNhdGU=');
         expect(credential.rawArtifact).not.toHaveProperty('url');
         expect(JSON.stringify(credential['@context'])).not.toContain('rawArtifactUrl');
+    });
+});
+
+describe('useUploadFile toast options', () => {
+    beforeEach(() => {
+        initWalletMock.mockReset();
+        logErrorMock.mockReset();
+        presentToastMock.mockReset();
+        refetchQueriesMock.mockReset();
+        initWalletMock.mockResolvedValue({
+            id: { did: () => 'did:key:test' },
+            invoke: { issueCredential: vi.fn().mockResolvedValue({}) },
+            store: {
+                LearnCloud: { uploadEncrypted: vi.fn().mockResolvedValue('credential-uri') },
+            },
+            index: {
+                LearnCloud: {
+                    get: vi.fn().mockResolvedValue([]),
+                    add: vi.fn().mockResolvedValue(undefined),
+                },
+            },
+        });
+    });
+
+    it('keeps the no-credentials error visible until it is dismissed', async () => {
+        vi.useFakeTimers();
+
+        try {
+            const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+            const rawArtifactCredential = {
+                rawArtifact: { fileName: 'Katie_Kempton_Resume.pdf' },
+            };
+
+            await act(async () => {
+                await result.current.storeSelectedCredentials(
+                    [],
+                    rawArtifactCredential,
+                    UploadTypesEnum.Resume
+                );
+                vi.advanceTimersByTime(100);
+            });
+
+            expect(presentToastMock).toHaveBeenCalledWith(
+                'No credentials could be extracted from this file.',
+                {
+                    title: 'Resume "Katie_Kempton_Resume.pdf" saved',
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                    autoDismiss: false,
+                }
+            );
+        } finally {
+            vi.clearAllTimers();
+            vi.useRealTimers();
+        }
     });
 });
 

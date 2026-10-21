@@ -1,112 +1,38 @@
-import serverlessHttp from 'serverless-http';
-import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
-import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import * as Sentry from '@sentry/serverless';
+import { bootstrapLambda } from '@learncard/service-config';
 
-import app from './src/openapi';
-import didWebApp from './src/dids';
-import { appRouter, createContext } from './src/app';
-import { getEmptyLearnCard } from './src/helpers/learnCard.helpers';
-import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
-import { handleTrpcError, sentryBeforeSend, getTracesSampleRate } from './src/helpers/sentry.helpers';
+import { base, stages } from './src/config/stageConfig';
 
-let promise = getEmptyLearnCard(); // Load WASM in for better cold starts
+type LambdaApp = typeof import('./lambdaApp');
 
-Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
-    tracesSampleRate: getTracesSampleRate(),
-    beforeSend: sentryBeforeSend,
-    integrations: [
-        new Sentry.Integrations.Console(),
-        new Sentry.Integrations.Http({ tracing: true }),
-        new Sentry.Integrations.ContextLines(),
-        new Sentry.Integrations.Mongo(),
-    ],
+const getApplication = bootstrapLambda<LambdaApp>({
+    base,
+    stages,
+    stage: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? process.env.LAMBDA_STAGE
+        : process.env.CONFIG_STAGE,
+    importApp: () => import('./lambdaApp'),
 });
 
-export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
-export const didWebHandler = serverlessHttp(didWebApp);
+export const trpcHandler = async (...args: Parameters<LambdaApp['trpcHandler']>) =>
+    (await getApplication()).trpcHandler(...args);
 
-export const _openApiHandler = createOpenApiAwsLambdaHandler({
-    router: appRouter,
-    responseMeta: () => {
-        return {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-            },
-        };
-    },
-    createContext,
-    onError: handleTrpcError,
-});
+export const openApiHandler = async (...args: Parameters<LambdaApp['openApiHandler']>) =>
+    (await getApplication()).openApiHandler(...args);
 
-export const _trpcHandler = awsLambdaRequestHandler({
-    router: appRouter,
-    createContext,
-    onError: handleTrpcError,
-    responseMeta: () => {
-        return {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': '*',
-                'Access-Control-Allow-Headers': 'authorization',
-            },
-        };
-    },
-});
+export const swaggerUiHandler = async (...args: Parameters<LambdaApp['swaggerUiHandler']>) =>
+    (await getApplication()).swaggerUiHandler(...args);
 
-export const openApiHandler = Sentry.AWSLambda.wrapHandler(
-    async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        await promise;
+export const didWebHandler = async (...args: Parameters<LambdaApp['didWebHandler']>) =>
+    (await getApplication()).didWebHandler(...args);
 
-        if ((event as any).source === 'serverless-plugin-warmup') {
-            console.log('[Warmup] Initializing LearnCard...');
-            await getEmptyLearnCard();
-            console.log('[Warmup] Done!');
-            return 'All done! 😄';
-        }
+// Preserve the local/offline handler name without importing the full API for OIDC.
+export { handler as oidcHandler } from './oidcLambda';
 
-        if (event.requestContext.http.method === 'OPTIONS') {
-            return {
-                statusCode: 200,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Methods': '*',
-                },
-            };
-        }
+// Scheduled (EventBridge) escrow jobs share the API bootstrap: they need Mongo/Postmark from the bundle.
+export const escrowHoldRemindersHandler = async (
+    ...args: Parameters<LambdaApp['escrowHoldRemindersHandler']>
+) => (await getApplication()).escrowHoldRemindersHandler(...args);
 
-        return _openApiHandler(event, context);
-    }
-);
-
-export const trpcHandler = Sentry.AWSLambda.wrapHandler(
-    async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        await promise;
-
-        if ((event as any).source === 'serverless-plugin-warmup') {
-            console.log('[Warmup] Initializing LearnCard...');
-            await getEmptyLearnCard();
-            console.log('[Warmup] Done!');
-            return 'All done! 😄';
-        }
-
-        if (event.requestContext.http.method === 'OPTIONS') {
-            return {
-                statusCode: 200,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Methods': '*',
-                },
-            };
-        }
-
-        return _trpcHandler(event, context);
-    }
-);
+export const escrowBlobRewrapHandler = async (
+    ...args: Parameters<LambdaApp['escrowBlobRewrapHandler']>
+) => (await getApplication()).escrowBlobRewrapHandler(...args);

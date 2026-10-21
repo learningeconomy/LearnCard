@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Swiper and legacy API payloads are dynamically shaped. */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('explore-pathways-modal');
@@ -19,10 +20,10 @@ import {
 } from 'learn-card-base';
 
 import { Plus, X } from 'lucide-react';
-import PuzzlePiece from 'src/components/svgs/PuzzlePiece';
-import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
-import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
-import Pencil from 'src/components/svgs/Pencil';
+import PuzzlePiece from '../../components/svgs/PuzzlePiece';
+import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
+import SlimCaretRight from '../../components/svgs/SlimCaretRight';
+import Pencil from '../../components/svgs/Pencil';
 import SkillTag from '../skills/SkillTag';
 import SkillSearchSelector from '../skills/SkillSearchSelector';
 import {
@@ -253,7 +254,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
     const openEditGoalsModal = () => {
         newModal(
             <EditGoalsModal />,
-            { sectionClassName: '!bg-transparent' },
+            { sectionClassName: 'bg-transparent!' },
             {
                 desktop: ModalTypes.Right,
                 mobile: ModalTypes.Right,
@@ -312,7 +313,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900 flex flex-col">
-            <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
+            <div className="px-[15px] py-[20px] bg-white flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <WalletIcons.AiPathwaysIconWithShape className="w-[50px] h-[50px]" />
                     <h5 className="text-[21px] font-poppins font-[600] leading-[24px]">
@@ -333,7 +334,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
             </div>
 
             <section className="flex-1 min-h-0 pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
-                <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
+                <div className="flex flex-col gap-[10px] border-b border-grayscale-200 border-solid pb-[15px]">
                     <div className="flex flex-col gap-[10px] relative">
                         {skillsSaving && (
                             <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
@@ -344,7 +345,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                         {selectedSkills.length === 0 && !sasBoostSkillsLoading && (
                             <button
                                 onClick={openSelfAssignSkillsModal}
-                                className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white"
+                                className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border border-solid border-grayscale-200 rounded-[10px] bg-white"
                             >
                                 Add Skills
                                 <Plus className="h-[30px] w-[30px]" />
@@ -557,7 +558,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                     {goals.length === 0 && !goalsLoading && (
                         <button
                             onClick={openEditGoalsModal}
-                            className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white"
+                            className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border border-solid border-grayscale-200 rounded-[10px] bg-white"
                         >
                             Add Goals
                             <Plus className="h-[30px] w-[30px]" />
@@ -633,7 +634,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                                         >
                                             {goals.map((goal, index) => (
                                                 <SwiperSlide key={index} style={{ width: 'auto' }}>
-                                                    <span className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
+                                                    <span className="flex items-center gap-[8px] border-solid border-2 border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
                                                         {goal}
                                                         <button
                                                             type="button"
@@ -676,7 +677,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                                         {goals.map((goal, index) => (
                                             <span
                                                 key={index}
-                                                className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px] w-fit"
+                                                className="flex items-center gap-[8px] border-solid border-2 border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px] w-fit"
                                             >
                                                 {goal}
                                                 <button
@@ -710,7 +711,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                 />
             </section>
 
-            <footer className="w-full flex justify-center bg-opacity-70 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white">
+            <footer className="w-full flex justify-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/70 border-solid border border-white">
                 <div className="w-full flex flex-col items-center justify-center gap-[10px] max-w-[600px]">
                     {(showAllOptions || showGrowSkillsButton) && (
                         <button

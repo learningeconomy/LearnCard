@@ -51,7 +51,7 @@ const CompletionMoment: React.FC<CompletionMomentProps> = ({ title, onDismiss })
             }}
             className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-emerald-600
                        flex items-center justify-center
-                       shadow-sm shadow-emerald-600/30"
+                       shadow-xs shadow-emerald-600/30"
             aria-hidden
         >
             {/*
@@ -74,13 +74,9 @@ const CompletionMoment: React.FC<CompletionMomentProps> = ({ title, onDismiss })
         </motion.span>
 
         <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-emerald-800 leading-snug truncate">
-                {title}
-            </p>
+            <p className="text-sm font-semibold text-emerald-800 leading-snug truncate">{title}</p>
 
-            <p className="text-xs text-emerald-700/90 mt-0.5">
-                Done. Next up below.
-            </p>
+            <p className="text-xs text-emerald-700/90 mt-0.5">Done. Next up below.</p>
         </div>
 
         {onDismiss && (

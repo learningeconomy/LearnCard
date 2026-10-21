@@ -1,361 +1,138 @@
-# Send xAPI Statements
-
-This tutorial will walk you through the essential steps to send an xAPI statement to LearnCloud Storage and then read it back. We'll keep it simple so you can get up and running quickly!
-
-## **What you'll accomplish:**
-
--   Construct a basic xAPI statement.
--   Send the statement to the LearnCloud xAPI endpoint.
--   Retrieve and verify the statement you sent.
--   View xAPI statements in the LearnCard app's Activity Feed.
-
-{% embed url="https://codepen.io/Jacks-n-Smith/pen/xbbBmBV" fullWidth="false" %}
-
-## **Prerequisites:**
-
-1. **Understanding Key Concepts:**
-    - **What is xAPI?** xAPI (Experience API) is a way to track learning experiences using a simple "Actor - Verb - Object" structure (e.g., "Sarah completed 'Safety Course'"). For a deeper dive, see our [Understanding xAPI Data in LearnCard](../core-concepts/credentials-and-data/xapi-data.md) core concept page.
-    - **What is a DID?** A DID (Decentralized Identifier) is a unique identifier for your user. Think of it as a secure, private digital ID. More details can be found on our [Understanding DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) core concept page.
-2. **Your Environment:**
-    - You have the [LearnCard SDK ](../sdks/learncard-core/)initialized in your project.
-    - You have obtained a **JSON Web Token (JWT)** for authentication. This JWT represents the authenticated user (the "actor"). As an example of how to create this JWT, check out the[ "Create a Connected Website Tutorial."](create-a-connected-website.md)
-    - You have the **DID** of the authenticated user.
-    - The default LearnCloud xAPI endpoint is `https://cloud.learncard.com/xapi/statements`.
-
+---
+description: After a user connects their LearnCard, log what they do — and let them see it in their Activity Feed.
 ---
 
-## Part 1: Sending an xAPI Statement
+# Record Learning Activity
 
-Let's send a statement indicating a user has attempted a challenge in a game.
-
-{% stepper %}
-{% step %}
-
-### **Define Your xAPI Statement**
-
-An xAPI statement has three main parts: an `actor` (who did it), a `verb` (what they did), and an `object` (what they did it to).
-
-```typescript
-// Placeholders: Replace with your actual data
-const userDid = 'did:example:YOUR_USER_DID'; // The DID of the user performing the action
-const jwtToken = 'YOUR_JWT_TOKEN'; // Your authentication JWT
-const xapiEndpoint = 'https://cloud.learncard.com/xapi/statements';
-
-const attemptStatement = {
-    actor: {
-        objectType: 'Agent',
-        name: userDid, // Use the user's DID here
-        account: {
-            homePage: 'https://www.w3.org/TR/did-core/', // Standard homepage for DID accounts
-            name: userDid, // Crucial: Also use the user's DID here
-        },
-    },
-    verb: {
-        id: 'http://adlnet.gov/expapi/verbs/attempted', // A standard xAPI verb URI
-        display: {
-            'en-US': 'attempted', // Human-readable display for the verb
-        },
-    },
-    object: {
-        id: 'http://yourgame.com/activities/level-1-challenge', // A unique URI for your activity
-        definition: {
-            name: { 'en-US': 'Level 1 Challenge' },
-            description: { 'en-US': 'The first exciting challenge of the game.' },
-            type: 'http://adlnet.gov/expapi/activities/simulation', // Type of activity
-        },
-    },
-};
-
-// Type interface for clarity (optional, but good practice)
-interface XAPIStatement {
-    actor: {
-        objectType: 'Agent';
-        name: string;
-        account: { homePage: string; name: string };
-    };
-    verb: {
-        id: string;
-        display: { 'en-US': string };
-    };
-    object: {
-        id: string;
-        definition: {
-            name: { 'en-US': string };
-            description: { 'en-US': string };
-            type: string;
-        };
-    };
-    result?: any; // Optional result object
-}
-```
-
-✨ **Good to know:**
-
--   **DID Usage:** For LearnCloud, ensure the `userDid` is used in both `actor.name` and `actor.account.name`.
--   **Verb Selection:** Use standard xAPI verb URIs when possible. You can find lists of common verbs online (e.g., on the ADLNet website).
--   **Activity IDs:** Make your `object.id` URIs unique for each distinct activity. They don't need to be real, live URLs.
-    {% endstep %}
-
-{% step %}
-**Prepare and Send the Statement**
-
-We'll use a `Workspace` request to send this statement. The key things are the `POST` method, correct headers, and the statement in the body.
-
-```typescript
-async function sendStatement(statement: XAPIStatement, token: string, endpointUrl: string) {
-    console.log('Sending xAPI Statement:', JSON.stringify(statement, null, 2));
-
-    try {
-        const response = await fetch(endpointUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Experience-API-Version': '1.0.3', // Standard xAPI version header
-                'X-VP': token, // LearnCloud specific: Your JWT for authentication
-            },
-            body: JSON.stringify(statement),
-        });
-
-        if (!response.ok) {
-            // If the server response is not OK (e.g., 400, 401, 500)
-            let errorData;
-            try {
-                errorData = await response.json(); // Try to parse a JSON error response
-            } catch (e) {
-                errorData = { status: response.status, statusText: response.statusText }; // Fallback if no JSON body
-            }
-            console.error('xAPI Statement Error:', errorData);
-            throw new Error(
-                `Failed to send xAPI statement: ${response.status} ${response.statusText}`
-            );
-        }
-
-        // If successful, the LRS usually returns an array with the ID of the stored statement
-        const responseData = await response.json();
-        console.log('xAPI Statement Sent Successfully! Response:', responseData);
-        return responseData; // This often is an array with the statement ID(s)
-    } catch (networkError) {
-        console.error('Network or other error sending xAPI statement:', networkError);
-        throw networkError;
-    }
-}
-
-// Let's send our 'attemptStatement'
-// (Ensure userDid and jwtToken are defined as in Step 1)
-sendStatement(attemptStatement, jwtToken, xapiEndpoint)
-    .then(ids => {
-        if (ids && ids.length > 0) {
-            console.log('Statement ID received:', ids[0]);
-            // You might want to store this ID if you plan to void the statement later.
-        }
-    })
-    .catch(error => {
-        // Error already logged in sendStatement, but you can do more here if needed
-    });
-```
-
-{% endstep %}
-
-{% step %}
-**Check the Response**
-
-If successful, the LearnCloud Storage API will typically return an HTTP status like `200 OK` or `204 No Content`. Often, a `200 OK` response to a `POST` will include an array containing the unique ID(s) of the statement(s) just stored. Our `sendStatement` function logs this.
-{% endstep %}
-{% endstepper %}
-
----
-
-## Part 2: Reading xAPI Statements
-
-Now that we've sent a statement, let's try to read statements for that user.
-
-{% stepper %}
-{% step %}
-
-### **Prepare Your Request Parameters**
-
-To read statements, you'll usually query for statements related to a specific `agent` (the actor). The `agent` parameter must be a JSON string.
-
-```typescript
-// (Ensure userDid and jwtToken are defined as in Part 1, Step 1)
-// And xapiEndpoint is also defined: const xapiEndpoint = 'https://cloud.learncard.com/xapi/statements';
-
-// Define the actor (agent) for whom you want to retrieve statements
-const actorToQuery = {
-    objectType: 'Agent',
-    name: userDid,
-    account: {
-        homePage: 'https://www.w3.org/TR/did-core/',
-        name: userDid,
-    },
-};
-
-// Construct URL parameters
-const params = new URLSearchParams({
-    agent: JSON.stringify(actorToQuery), // Key parameter: filter by agent
-    // You can add other parameters like 'verb', 'activity', 'since', 'limit' here
-    // For example: limit: '10'
-});
-```
-
-{% endstep %}
-
-{% step %}
-**Make the API Call to Read Statements**
-
-This will be a `GET` request.
-
-```typescript
-async function readStatements(queryParams: URLSearchParams, token: string, endpointUrl: string) {
-    console.log(`Reading xAPI Statements with params: ${queryParams.toString()}`);
-
-    try {
-        const response = await fetch(`${endpointUrl}?${queryParams.toString()}`, {
-            method: 'GET',
-            headers: {
-                // 'Content-Type': 'application/json', // Not strictly needed for GET, but often included
-                'X-Experience-API-Version': '1.0.3',
-                'X-VP': token, // Your authentication JWT
-            },
-        });
-
-        if (!response.ok) {
-            let errorData;
-            try {
-                errorData = await response.json();
-            } catch (e) {
-                errorData = { status: response.status, statusText: response.statusText };
-            }
-            console.error('Error Reading xAPI Statements:', errorData);
-            throw new Error(
-                `Failed to read xAPI statements: ${response.status} ${response.statusText}`
-            );
-        }
-
-        const data = await response.json();
-        console.log('Successfully Read xAPI Statements:', data);
-        return data; // Contains 'statements' array and possibly a 'more' link for pagination
-    } catch (networkError) {
-        console.error('Network or other error reading xAPI statements:', networkError);
-        throw networkError;
-    }
-}
-
-// Let's read statements for our user
-// (Ensure params, jwtToken, and xapiEndpoint are defined)
-readStatements(params, jwtToken, xapiEndpoint)
-    .then(data => {
-        if (data.statements && data.statements.length > 0) {
-            console.log(`Found ${data.statements.length} statement(s).`);
-            // You can now iterate through data.statements
-            // Try to find the statement you sent earlier!
-            const myStatement = data.statements.find(
-                stmt => stmt.object.id === 'http://yourgame.com/activities/level-1-challenge'
-            );
-            if (myStatement) {
-                console.log('Found the statement we sent:', myStatement);
-            }
-        } else {
-            console.log('No statements found for this agent or an error occurred.');
-        }
-        if (data.more) {
-            console.log('More statements available at:', data.more);
-        }
-    })
-    .catch(error => {
-        // Error already logged
-    });
-```
-
-{% endstep %}
-
-{% step %}
-**Process the Response**
-
-The response from a `GET` request to the `/statements` endpoint will be a JSON object. This object typically contains an array called `statements` and optionally a `more` property. The `more` property provides a URL to fetch the next page of results if pagination is active.
-{% endstep %}
-{% endstepper %}
-
----
-
-## Part 3: Viewing xAPI Statements in the LearnCard App
-
-Once xAPI statements have been sent, users can view their activity data directly in the LearnCard app. This provides a user-friendly way to see all learning activities associated with a specific app or contract.
-
-{% stepper %}
-{% step %}
-
-### **Navigate to Data Sharing**
-
-From the LearnCard app:
-
-1. Tap on your **profile picture** in the top corner
-2. Select **"Manage Data Sharing"** to see all your consented apps and contracts
-
-{% endstep %}
-
-{% step %}
-
-### **Select a Contract**
-
-In the Data Sharing view, you'll see a list of apps you've consented to share data with. Tap on any contract to view its details.
-
-{% endstep %}
-
-{% step %}
-
-### **Open the Activity Feed**
-
-In the contract detail view, look for the **"xAPI Data Feed"** button. Tap it to open the Activity Feed modal.
-
-{% endstep %}
-
-{% step %}
-
-### **View Your Activity Data**
-
-The Activity Feed displays all xAPI statements associated with that specific contract, including:
-
--   **Verb badges** (e.g., "completed", "attempted", "mastered") with color-coded styling
--   **Activity name and description**
--   **Timestamps** showing when each activity occurred
--   **Result data** (scores, completion status, success/failure)
--   **Raw JSON view** for developers who want to inspect the full statement
-
-The feed supports infinite scrolling, so you can browse through all your historical activity data.
-
-{% endstep %}
-{% endstepper %}
+You've connected a user's LearnCard to your platform — see [Connect a User's LearnCard](create-a-consentflow.md). Now log what they do there. Each activity becomes an [xAPI statement](../core-concepts/credentials-and-data/xapi-data.md) stored in the user's own LearnCloud, and shows up in their LearnCard Activity Feed.
 
 {% hint style="info" %}
-**For Developers:** The Activity Feed filters statements by the `contractUri` extension in `context.extensions`. When you send xAPI statements with a contract URI (as shown in [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements)), they will automatically appear in this feed for the associated contract.
+**~15 min** · After [Connect a User's LearnCard](create-a-consentflow.md).
 {% endhint %}
 
----
+## 1. The consent `vp` is your permission slip
 
-## Important Considerations (Recap)
+When the user accepted your contract, the `vp` in the redirect wasn't only proof of who consented. It contains a **delegate credential** the user issued to your DID granting `statementAccess: ['read', 'write']`. Send that same `vp` string as the `X-VP` header and LearnCloud will accept statements about that user from you.
 
--   **Authentication (`X-VP` Header):** All requests to the LearnCloud xAPI endpoint must include a valid JWT in the `X-VP` header.
--   **Permissions:**
-    -   Users can only send statements where they are the actor (or have delegated authority).
-    -   Users can typically only read statements where they are the actor. The DID in your JWT (`X-VP` header) must match the actor's DID you are querying for. A `401 Unauthorized` error often means a DID mismatch or an invalid/expired JWT.
--   **Error Handling:** Always check response statuses and handle potential errors from the API or network issues.
--   **Delegated Access:** For scenarios where another party needs to read or write statements on behalf of a user, LearnCloud supports a delegated access mechanism using Verifiable Credentials. (See [Delegated Access](../sdks/learncloud-storage-api/xapi-reference.md#delegated-access) for more info).
--   **Contract-Scoped Statements:** When using ConsentFlow, xAPI statements can be automatically tagged with the contract URI, enabling queries by contract. (See [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements) for details).
--   **Voiding Statements:** You can invalidate previously sent statements. (See [Advanced Topics: Voiding Statements](../sdks/learncloud-storage-api/xapi-reference.md#voiding-statements) for how).
+So: store the `vp` per user, server-side, encrypted. It is a bearer credential — never log it or expose it to the browser.
 
----
+{% hint style="info" %}
+**Treat the `vp` like any bearer credential you hold on a user's behalf.** Check `verifyConsent` before each write and delete the stored `vp` when a user withdraws — the pattern below does both. Today the xAPI endpoint validates the `vp` itself rather than re-checking live consent, so this check is yours to make.
+{% endhint %}
 
-## Next Steps
+Save the blocks below together as `record-activity.mjs` next to the two helper files:
 
-Congratulations! You've now seen how to send, read, and view xAPI statements with LearnCloud.
+```javascript
+import { initLearnCard } from '@learncard/init';
+import { verifyConsentRedirect } from './consent-callback.mjs';
+import { readUserData } from './read-user-data.mjs';
 
-From here, you can explore:
+const { SECURE_SEED, CONTRACT_URI, CONSENT_VP: vp } = process.env;
+if (!SECURE_SEED || !CONTRACT_URI || !vp) {
+    throw new Error('Set SECURE_SEED, CONTRACT_URI, and CONSENT_VP');
+}
+const learnCard = await initLearnCard({ seed: SECURE_SEED, network: true });
+const verified = await verifyConsentRedirect(learnCard, vp, CONTRACT_URI);
+if (verified.status !== 'verified') throw new Error('Consent denied or abandoned');
+const userDid = verified.userDid; // Verified holder, not the redirect's did parameter
 
--   Sending different types of xAPI statements (e.g., `completed`, `mastered`, with `result` objects).
--   Using the other examples provided in our [xAPI Concepts Guide](../core-concepts/credentials-and-data/xapi-data.md).
--   Implementing more advanced queries to filter and retrieve statements. (See [Advanced xAPI Statement Queries](../sdks/learncloud-storage-api/xapi-reference.md#advanced-xapi-statement-queries)).
--   Using [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements) to associate activity data with specific apps.
--   Connecting these xAPI statements as evidence for Verifiable Credentials.
+const requireConsent = async () => {
+    if ((await readUserData(learnCard, userDid, CONTRACT_URI)).length === 0) {
+        throw new Error('No active consent');
+    }
+};
+```
 
-Happy tracking!
+## 2. Send a statement
+
+The `actor` is the **user** (their DID), not you. LearnCloud checks that the delegate credential inside `X-VP` was issued by that same DID and includes `write`; the statement is then stored under the user's account.
+
+This example uses the standard `completed` verb. Replace the sample activity URI with a stable URI owned by your platform, following the [activity and verb naming rules](../core-concepts/credentials-and-data/xapi-data.md).
+
+```javascript
+const endpoint = 'https://cloud.learncard.com/xapi/statements';
+const headers = {
+    'Content-Type': 'application/json',
+    'X-Experience-API-Version': '1.0.3',
+    'X-VP': vp,
+};
+const actor = {
+    objectType: 'Agent',
+    name: userDid,
+    account: { homePage: 'https://www.w3.org/TR/did-core/', name: userDid },
+};
+const statement = {
+    actor,
+    verb: {
+        id: 'http://adlnet.gov/expapi/verbs/completed',
+        display: { 'en-US': 'completed' },
+    },
+    object: {
+        id: 'https://example.com/activities/lesson-1',
+        definition: {
+            name: { 'en-US': 'Lesson 1' },
+            description: { 'en-US': 'An introductory learning activity.' },
+        },
+    },
+    timestamp: new Date().toISOString(),
+};
+
+await requireConsent();
+const sent = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(statement),
+});
+if (!sent.ok) throw new Error(`Statement write failed: ${sent.status}`);
+const ids = await sent.json();
+console.log('Stored statement IDs:', ids);
+```
+
+The proxy copies the signed `contractUri` into `context.extensions['https://learncard.com/xapi/extensions/contractUri']` automatically. You do not need to modify or re-sign the presentation.
+
+## 3. Read statements back
+
+Use the same `vp` and actor with a `GET` request. Delegated reads require `read` instead of `write`, with the same issuer/actor and holder matching rules.
+
+```javascript
+await requireConsent();
+const params = new URLSearchParams({ agent: JSON.stringify(actor), limit: '10' });
+const received = await fetch(`${endpoint}?${params}`, { headers });
+if (!received.ok) throw new Error(`Statement read failed: ${received.status}`);
+const data = await received.json();
+const contractExtension = 'https://learncard.com/xapi/extensions/contractUri';
+const matching = data.statements.filter(
+    item => item.context?.extensions?.[contractExtension] === CONTRACT_URI
+);
+console.log(
+    'Found this statement:',
+    matching.some(item => ids.includes(item.id))
+);
+```
+
+The response contains `statements` and may contain a `more` pagination link. The query selects the user's activity; the local filter selects this contract. See [contract-scoped queries](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements) for more detail.
+
+Run `node --env-file=.env record-activity.mjs` once. Re-running creates another activity record; production writes should come from authorized learning events with your own duplicate prevention, not from the consent callback GET.
+
+## 4. What the user sees
+
+In LearnCard, open **Manage Data Sharing**, select your contract, and open **xAPI Data Feed**. The Activity Feed shows the activity name, verb, timestamp, and any result data, with a raw JSON view for inspection. It filters by the contract extension injected above, so keeping the original consent VP also keeps the activity associated with the right contract.
+
+## What you should see
+
+- The POST returns a successful response containing the stored statement ID(s).
+- The read prints `Found this statement: true` for the newly stored activity; if other activity fills the first page, follow pagination.
+- The learner sees **completed · Lesson 1** in the contract's Activity Feed.
+- After withdrawal, the consent guard stops further reads and writes with `No active consent`.
+
+## Troubleshooting
+
+For authentication failures, see [Common causes of 401](../sdks/learncloud-storage-api/xapi-reference.md#common-causes-of-401), including the delegated-access exception to direct actor/holder matching. Do not substitute an API key or Partner Connect identity token for `vp`.
+
+If a stored statement is missing from the contract feed, check its contract extension against the saved `CONTRACT_URI` and confirm you used the original consent VP. A missing or invalid actor account is a bad request, not evidence that you need another identity token.
+
+## Next steps
+
+- Add scores and completion results using the [xAPI concepts guide](../core-concepts/credentials-and-data/xapi-data.md).
+- Explore [advanced statement queries](../sdks/learncloud-storage-api/xapi-reference.md#advanced-xapi-statement-queries).
+- [Issue a credential through the contract](create-a-consentflow.md#5-issue-a-credential-through-the-contract) when an authorized completion event earns a badge.

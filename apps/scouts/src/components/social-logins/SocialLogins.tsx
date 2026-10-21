@@ -4,7 +4,8 @@ import { IonRow } from '@ionic/react';
 import useSocialLogins, { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 
 import { LoginTypesEnum } from 'learn-card-base/helpers/loginHelpers';
-import { BrandingEnum } from 'learn-card-base';
+import { BrandingEnum, useSignInAdapter } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 export const SocialLogins: React.FC<{
     branding: BrandingEnum;
@@ -24,20 +25,26 @@ export const SocialLogins: React.FC<{
     extraSocialLogins = [],
 }) => {
     const socialLogins = useSocialLogins(branding);
+    const adapter = useSignInAdapter();
 
-    const _socialLogins = [...socialLogins, ...extraSocialLogins];
+    const _socialLogins = [...socialLogins, ...extraSocialLogins].filter(login => {
+        if (login.type === SocialLoginTypes.google) return adapter.capabilities.google;
+        if (login.type === SocialLoginTypes.apple) return adapter.capabilities.apple;
+        return adapter.capabilities.social;
+    });
+    if (!_socialLogins.length) return null;
 
     return (
         <IonRow className="w-full max-w-[600px] px-6 flex items-center justify-center social-logins-container">
             <div className="relative w-full flex items-center justify-center">
                 <div className="h-[1px] bg-[#EFF0F5] absolute top-1/2 left-0 right-0" />
-                <span className="bg-white py-0 px-[10px] z-10">OR</span>
+                <span className="bg-white py-0 px-[10px] z-10">{m['socialLogins.or']()}</span>
             </div>
 
             <div className="w-full flex flex-col items-center justify-center max-w-[500px] ion-padding-horizontal">
                 <div className="w-full text-left">
                     <p className="font-medium text-sm text-grayscale-600 uppercase mb-4">
-                        Login With
+                        {m['socialLogins.loginWith']()}
                     </p>
                 </div>
 
@@ -55,6 +62,7 @@ export const SocialLogins: React.FC<{
 
                         return (
                             <button
+                                aria-label={socialLogin.alt}
                                 className={`flex items-center justify-center rounded-full overflow-hidden mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] ${buttonStyles}`}
                                 onClick={socialLogin.onClick}
                                 key={socialLogin.id}
@@ -62,7 +70,7 @@ export const SocialLogins: React.FC<{
                                 <img
                                     src={socialLogin.src}
                                     key={socialLogin.id}
-                                    alt={socialLogin.alt}
+                                    alt=""
                                     className={`rounded-full ${iconStyles}`}
                                 />
                             </button>

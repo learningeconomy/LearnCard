@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { IonRow } from '@ionic/react';
-import moment from 'moment';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import CredentialVerificationDisplay, {
@@ -28,7 +27,53 @@ import { BoostMediaOptionsEnum } from './boost';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
 import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
-import { useT } from 'learn-card-base/i18n';
+import { useI18nLocale, useT } from 'learn-card-base/i18n';
+import {
+    getCredentialExpirationDate,
+    hasCredentialExpired,
+} from '../../helpers/credentialExpiration';
+
+const DISPLAY_TYPE_KEYS: Record<string, string> = {
+    Badge: 'badge',
+    Boost: 'badge',
+    Qualification: 'qualifications',
+    Qualifications: 'qualifications',
+    Family: 'family',
+    Achievement: 'achievement',
+    Course: 'course',
+    Study: 'course',
+    Membership: 'membership',
+    Skill: 'skill',
+    ID: 'id',
+    Experience: 'experience',
+    'Work History': 'experience',
+    Portfolio: 'portfolio',
+    Accomplishment: 'portfolio',
+    Assistance: 'assistance',
+    Accommodation: 'assistance',
+};
+
+export const formatRelativeDate = (date: string, locale: string, now = Date.now()): string => {
+    const timestamp = new Date(date).getTime();
+    if (Number.isNaN(timestamp)) return '';
+
+    const seconds = Math.round((timestamp - now) / 1000);
+    const units: [Intl.RelativeTimeFormatUnit, number][] = [
+        ['year', 31_536_000],
+        ['month', 2_592_000],
+        ['week', 604_800],
+        ['day', 86_400],
+        ['hour', 3_600],
+        ['minute', 60],
+        ['second', 1],
+    ];
+    const [unit, divisor] = units.find(([, size]) => Math.abs(seconds) >= size) ?? units.at(-1)!;
+
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+        Math.round(seconds / divisor),
+        unit
+    );
+};
 
 type BoostListItemProps = {
     title?: string;
@@ -76,6 +121,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     trustedVerifierOnly = false,
 }) => {
     const t = useT();
+    const activeLocale = useI18nLocale();
     // Shared revoked/suspended treatment (kept in sync with the grid card).
     const {
         isInactive,
@@ -93,15 +139,23 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         () => getAchievementTypeDisplayText(achievementType, categoryType),
         [achievementType, categoryType]
     );
+    const localizedBoostTypeDisplayName =
+        DISPLAY_TYPE_KEYS[boostTypeDisplayName] != null
+            ? t(`credential.category.${DISPLAY_TYPE_KEYS[boostTypeDisplayName]}`)
+            : boostTypeDisplayName;
 
     const issuanceDateDisplay = useMemo(() => {
-        if (relativeDate) return moment(getIssuanceDate(credential)).fromNow();
+        if (relativeDate) {
+            return formatRelativeDate(getIssuanceDate(credential), activeLocale);
+        }
 
         const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
             uppercaseDate: false,
         });
         return createdAt;
-    }, [credential, relativeDate]);
+    }, [activeLocale, credential, relativeDate]);
+    const expirationDate = getCredentialExpirationDate(credential);
+    const isExpired = hasCredentialExpired(credential);
 
     const { subColor } = categoryMetadata[categoryType];
 
@@ -112,6 +166,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             [CredentialCategoryEnum.learningHistory]: 'bg-emerald-500',
             [CredentialCategoryEnum.socialBadge]: 'bg-cyan-500',
             [CredentialCategoryEnum.achievement]: 'bg-orange-300',
+            [CredentialCategoryEnum.qualifications]: 'bg-emerald-500',
             [CredentialCategoryEnum.accomplishment]: 'bg-lime-300',
             [CredentialCategoryEnum.workHistory]: 'bg-blue-300',
             [CredentialCategoryEnum.accommodation]: 'bg-amber-300',
@@ -181,7 +236,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     />
                 </div>
 
-                <div className="flex flex-col items-start text-[14px] font-poppins w-[50%] space-y-1">
+                <div className="flex flex-col items-start text-[14px] font-poppins w-[50%] space-y-v3-1">
                     <BoostTextSkeleton
                         containerClassName="w-[60%]"
                         skeletonStyles={{ width: '100%' }}
@@ -210,13 +265,26 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     const thumbSize = compact ? 'h-[34px] w-[34px]' : 'h-[40px] w-[40px]';
     const textBlockSize = compact ? 'text-[13px]' : 'text-[14px]';
     const verificationIconClass = compact
-        ? '!w-[14px] !h-[14px] !min-w-[14px] !min-h-[14px] mr-1 z-50'
-        : '!w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] mr-1 z-50';
+        ? 'w-[14px]! h-[14px]! min-w-[14px]! min-h-[14px]! mr-1 z-50'
+        : 'w-[20px]! h-[20px]! min-w-[20px]! min-h-[20px]! mr-1 z-50';
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+        if (event.target !== event.currentTarget) return;
+        if (!onClick || (event.key !== 'Enter' && event.key !== ' ')) return;
+
+        event.preventDefault();
+        onClick();
+    };
 
     return (
         <IonRow
-            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2]`}
+            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                onClick ? 'cursor-pointer' : ''
+            }`}
             onClick={onClick}
+            role={onClick ? 'button' : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={onClick ? handleKeyDown : undefined}
             data-testid="boost-list-item"
         >
             {showMediaBadge ? (
@@ -227,9 +295,9 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     <CredentialMediaBadge
                         credential={credential}
                         backgroundColor={backgroundColor}
-                        badgeContainerCustomClass="!m-0"
+                        badgeContainerCustomClass="m-0!"
                         showIcon={false}
-                        playIconClassName="!w-[30px] !h-[30px]"
+                        playIconClassName="w-[30px]! h-[30px]!"
                     />
                 </div>
             ) : (
@@ -297,7 +365,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 <span
                     className={`font-normal flex items-center w-full min-w-0 ${
                         compact
-                            ? 'text-grayscale-600 text-[11px] leading-tight mt-0.5'
+                            ? 'text-grayscale-600 text-xs leading-tight mt-0.5'
                             : 'text-grayscale-800'
                     }`}
                 >
@@ -314,10 +382,12 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     {compact ? (
                         <>
                             {newItemIndicator}
-                            {boostTypeDisplayName && (
-                                <span className="truncate min-w-0">{boostTypeDisplayName}</span>
+                            {localizedBoostTypeDisplayName && (
+                                <span className="truncate min-w-0">
+                                    {localizedBoostTypeDisplayName}
+                                </span>
                             )}
-                            {boostTypeDisplayName && (
+                            {localizedBoostTypeDisplayName && (
                                 <span className="shrink-0 mx-1 text-grayscale-400">·</span>
                             )}
                             <span className="shrink-0 whitespace-nowrap">
@@ -336,6 +406,16 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         </>
                     )}
                 </span>
+                {expirationDate && (
+                    <span
+                        className={`text-xs ${isExpired ? 'text-amber-700 font-semibold' : 'text-grayscale-500'}`}
+                    >
+                        {t(isExpired ? 'credential.lifecycle.expired' : 'credential.expires')}{' '}
+                        {new Intl.DateTimeFormat(activeLocale, { dateStyle: 'medium' }).format(
+                            new Date(expirationDate)
+                        )}
+                    </span>
+                )}
             </div>
 
             {onOptionsClick && (
@@ -350,7 +430,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             e.stopPropagation();
                             onOptionsClick();
                         }}
-                        className="flex !h-full items-start justify-start h-[20px] w-[20px] ml-auto bg-white"
+                        className="flex h-full! items-start justify-start h-[20px] w-[20px] ml-auto bg-white"
                         aria-label="More options"
                     >
                         <ThreeDots className="text-grayscale-900" />
@@ -362,6 +442,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 <div
                     className={`flex-1 absolute right-0 bottom-0 w-[66px] h-[35px] flex items-center justify-center z-[3] rounded-tl-[10px]  ${linkedCredentialsClassName}`}
                 >
+                    {/* Dynamic display-type icon selected from the established icon registry. */}
+                    {/* eslint-disable-next-line react-hooks/static-components */}
                     <DisplayIcon className="w-[20px] h-[20px]" />
                     <span className="text-white font-semibold text-[14px] ml-1">
                         +{linkedCredentialsCount}

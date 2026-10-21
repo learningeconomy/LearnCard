@@ -13,13 +13,13 @@ Plugins are defined using the `Plugin` type, which takes three type parameters:
 For example, a plugin implementing the Read and Store planes would be typed like:
 
 ```typescript
-Plugin<'MyPlugin', 'read' | 'store', {}>
+Plugin<'MyPlugin', 'read' | 'store', {}>;
 ```
 
 A plugin providing a custom method would be typed like:
 
 ```typescript
-Plugin<'MyPlugin', any, { customMethod: (param: string) => Promise<string> }>
+Plugin<'MyPlugin', any, { customMethod: (param: string) => Promise<string> }>;
 ```
 
 Plugins can be added to a LearnCard instance using the `addPlugin` method:
@@ -36,11 +36,7 @@ These details are to be provided along with the plugin.
 
 ## How to Create a Plugin
 
-If you're looking for a guide on creating a plugin, check-out the [Build a Plugin ](../../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)guide:
-
-{% content-ref url="../../how-to-guides/deploy-infrastructure/the-simplest-plugin.md" %}
-[the-simplest-plugin.md](../../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
-{% endcontent-ref %}
+For a step-by-step guide, see [Build a Plugin (GitHub)](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-core/PLUGINS.md).
 
 ## The Plugin Type
 
@@ -53,6 +49,7 @@ If you're creating a plugin, it is _highly_ recommended you use TypeScript and t
 The `Plugin` type is a [generic](https://www.typescriptlang.org/docs/handbook/2/generics.html) type, taking in up to five total generic parameters. A Plugin using all five parameters would look like this:
 
 {% code title="Complex Plugin" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
@@ -61,6 +58,7 @@ type DependentMethods = { bar: () => 'baz' };
 
 type ComplexPlugin = Plugin<'Complex', 'store', Methods, 'id', DependentMethods>;
 ```
+
 {% endcode %}
 
 This type describes a plugin named `'Complex'` that implements the [Store](../../core-concepts/architecture-and-principles/control-planes.md#store-control-plane) [Control Plane](../../core-concepts/architecture-and-principles/control-planes.md), as well as the method `foo`. This plugin is also [dependent](writing-plugins.md#depending-on-plugins) on plugins that implement the [ID](../../core-concepts/architecture-and-principles/control-planes.md#id-control-plane) Control Plane, as well as the method _bar_.
@@ -89,9 +87,9 @@ type ComplexPlugin = Plugin<'Complex', 'store', Methods, 'id', DependentMethods>
 
 This argument specifies which [Control Planes](../../core-concepts/architecture-and-principles/control-planes.md) the plugin implements. It can be:
 
-* `any` or `never`, which specifies that this plugin does not implement any Control Planes
-* A single string (such as used in the example above), which specifies that this plugin implements a single Control Plane
-* A [union](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#union-types) of strings (e.g. `'store' | 'read'`), which specifies that this plugin implements multiple Control Planes
+- `any` or `never`, which specifies that this plugin does not implement any Control Planes
+- A single string (such as used in the example above), which specifies that this plugin implements a single Control Plane
+- A [union](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#union-types) of strings (e.g. `'store' | 'read'`), which specifies that this plugin implements multiple Control Planes
 
 This argument defaults to `any`, specifying that this plugin does not implement any Control Planes.
 
@@ -121,9 +119,9 @@ type ComplexPlugin = Plugin<'Complex', 'store', Methods, 'id', DependentMethods>
 
 This argument specifies which [Control Planes](../../core-concepts/architecture-and-principles/control-planes.md) the plugin depends on. It can be:
 
-* `any` or `never`, which specifies that this plugin does not depend on any Control Planes
-* A single string (such as used in the example above), which specifies that this plugin depends on a single Control Plane
-* A [union](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#union-types) of strings (e.g. `'store' | 'read'`), which specifies that this plugin depends on multiple Control Planes
+- `any` or `never`, which specifies that this plugin does not depend on any Control Planes
+- A single string (such as used in the example above), which specifies that this plugin depends on a single Control Plane
+- A [union](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#union-types) of strings (e.g. `'store' | 'read'`), which specifies that this plugin depends on multiple Control Planes
 
 This argument defaults to `never`, specifying that this plugin does not depend on any Control Planes.
 
@@ -184,8 +182,6 @@ type ImplementsBoth = LearnCard<any, 'id', { foo: () => 'bar': }>;
 
 With this code, `ImplementsIdPlane` will accept any `LearnCard` that has plugins that implement the [ID](../../core-concepts/architecture-and-principles/control-planes.md#id-control-plane) [Control Plane](../../core-concepts/architecture-and-principles/control-planes.md), `ImplementsFoo` will accept any `LearnCard` that implements a method named `foo` that returns `'bar'`, and `ImplementsBoth` will accept any `LearnCard` that implements both.
 
-
-
 ## Implementing Control Planes
 
 In order to promote convergence across Plugin APIs to support common functionality over complex workflows, plugins may choose to implement [Control Planes](../../core-concepts/architecture-and-principles/control-planes.md). Because each plane is slightly different, _how_ they are actually implemented will also be slightly different. For the most part, there are some standard conventions that plugins must follow when implementing methods for a plane.
@@ -197,11 +193,13 @@ To demonstrate this, let's build a plugin that implements the [Read](../../core-
 Let's start with the types! We will use [the `Plugin` type](writing-plugins.md#the-plugin-type) to define a Plugin that implements the Read and Store planes like so:
 
 {% code title="src/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
 export type LocalStoragePlugin = Plugin<'LocalStorage', 'read' | 'store'>;
 ```
+
 {% endcode %}
 
 ### Implementation
@@ -231,7 +229,7 @@ Because we specified that this plugin is implementing the `read` and `store` pla
 Let's start by implementing the Store Plane! The [Store Plane docs](../../core-concepts/architecture-and-principles/control-planes.md#store-control-plane) mention that the `upload` method should return a [`URI`](../../core-concepts/credentials-and-data/uris.md), so we will now devise a URI scheme. It looks like this:
 
 ```typescript
-`lc:localStorage:${id}`
+`lc:localStorage:${id}`;
 ```
 
 Where `id` is the identifier used as a key in `localStorage`.
@@ -335,13 +333,14 @@ const vc = await learnCard.read.get(uri);
 
 Sometimes plugins need to expose some bespoke logic that doesn't fit neatly into one of the [Control Planes](../../core-concepts/architecture-and-principles/control-planes.md). Plugin methods allow plugins to expose this logic directly on the resulting LearnCard object.
 
-We have already seen this in action in [The Simplest Plugin](../../how-to-guides/deploy-infrastructure/the-simplest-plugin.md), but let's go into a bit more depth about what's happening here by making a quick plugin that implements a basic counter.
+We have already seen this in action in [Build a Plugin (GitHub)](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-core/PLUGINS.md), but let's go into a bit more depth about what's happening here by making a quick plugin that implements a basic counter.
 
 ## Types
 
 Before implementing methods on a Plugin object, it's best to get the types in order. In general, starting with the types can be easier to think through, and once they're in place, they can guide the implementation. To add types for methods, we use the third generic argument of [the `Plugin` type](writing-plugins.md#the-plugin-type).
 
 {% code title="src/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
@@ -353,6 +352,7 @@ export type CounterPluginMethods = {
 
 export type CounterPlugin = Plugin<'Counter', any, CounterPluginMethods>;
 ```
+
 {% endcode %}
 
 The types above have defined a Plugin with three methods: `get`, `increment`, and `reset`, which will provide basic counter controls.
@@ -364,6 +364,7 @@ The types above have defined a Plugin with three methods: `get`, `increment`, an
 With the above types in place, we can build out a skeleton plugin before actually implementing anything:
 
 {% code title="src/index.ts" lineNumbers="true" %}
+
 ```typescript
 import { CounterPlugin } from './types';
 
@@ -378,6 +379,7 @@ export const getCounterPlugin = (): CounterPlugin => {
     };
 };
 ```
+
 {% endcode %}
 
 {% hint style="info" %}
@@ -444,12 +446,13 @@ The Implicit LearnCard allows your Plugin's methods to access an up-to-date vers
 
 There are a few use-cases for using the Implicit LearnCard, such as:
 
-* Calling a method that is implemented in the same plugin
-* Ensuring the most up-to-date method is called
+- Calling a method that is implemented in the same plugin
+- Ensuring the most up-to-date method is called
 
 Let's implement a quick plugin that generates names to demonstrate this. The plugin will expose three methods: `generateFirstName`, `generateLastName`, and `generateFullName`. The types for this plugin look like this (using [the `Plugin` type](writing-plugins.md#the-plugin-type)):
 
 {% code title="src/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
@@ -461,6 +464,7 @@ export type NamePluginMethods = {
 
 export type NamePluginType = Plugin<'Name', any, NamePluginMethods>;
 ```
+
 {% endcode %}
 
 The implementation for this plugin can have `generateFullName` easily call `generateFirstName` and `generateLastName` without having to define them outside of the function thanks to the Implicit LearnCard:
@@ -480,10 +484,10 @@ export const NamePlugin: NamePluginType = {
 
 While this example may be a bit contrived, it _does_ demonstrate a few important benefits of the Implicit LearnCard:
 
-* We were able to reuse plugin methods without defining them outside the plugin
-* Other plugins are now able to override the functionality of `generateFirstName` and `generateLastName` and `generateFullName` will _automatically_ call the overriden methods!
-  * This allows plugins to easily define interfaces for _sub-plugins_ or plugin extensions.
-  * This also gives plugins the ability to monkey-patch pieces of another plugin, enhancing or changing that earlier plugin's functionality
+- We were able to reuse plugin methods without defining them outside the plugin
+- Other plugins are now able to override the functionality of `generateFirstName` and `generateLastName` and `generateFullName` will _automatically_ call the overriden methods!
+    - This allows plugins to easily define interfaces for _sub-plugins_ or plugin extensions.
+    - This also gives plugins the ability to monkey-patch pieces of another plugin, enhancing or changing that earlier plugin's functionality
 
 ### When would you not use it?
 
@@ -511,18 +515,20 @@ export const getNamePlugin = (): NamePluginType => {
 
 #### Plugin Extensions
 
-Another reason not to use the Implicit LearnCard is when you _specifically_ want an old version of a method you are overriding. To demonstrate this, let's build a quick [Verification Extension](../official-plugins/vc/#verification-extension)
+Another reason not to use the Implicit LearnCard is when you _specifically_ want an old version of a method you are overriding. To demonstrate this, let's build a quick [Verification Extension](../official-plugins/README.md#included-by-default)
 
 ### Types
 
-Building a Verification Extension is super easy with the `VerifyExtension` type coming from the [VC Plugin](../official-plugins/vc/):&#x20;
+Building a Verification Extension is super easy with the `VerifyExtension` type coming from the [VC Plugin](../official-plugins/README.md#included-by-default):&#x20;
 
 {% code title="src/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin, VerifyExtension } from '@learncard/core';
 
 export type ExtensionPlugin = Plugin<'Extension', any, VerifyExtension>;
 ```
+
 {% endcode %}
 
 <pre class="language-typescript" data-title="src/index.ts" data-line-numbers><code class="lang-typescript">import { LearnCard, VerifyExtension } from '@learncard/core';
@@ -554,12 +560,12 @@ This pattern allows any number of plugins to add extra verification logic to the
 
 ## Depending On Plugins
 
-While it is useful for [The Simplest Plugin](../../how-to-guides/deploy-infrastructure/the-simplest-plugin.md) to add its own isolated logic to a LearnCard, part of the beauty of LearnCard plugins is to _depend_ on other plugins 💪&#x20;
+While it is useful for [Build a Plugin (GitHub)](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-core/PLUGINS.md) to add its own isolated logic to a LearnCard, part of the beauty of LearnCard plugins is to _depend_ on other plugins 💪&#x20;
 
 Plugin dependence comes in two flavors:&#x20;
 
-* Depending on a [Control Plane](../../core-concepts/architecture-and-principles/control-planes.md)&#x20;
-* Depending on one or more [methods](writing-plugins.md#depending-on-methods).
+- Depending on a [Control Plane](../../core-concepts/architecture-and-principles/control-planes.md)&#x20;
+- Depending on one or more [methods](writing-plugins.md#depending-on-methods).
 
 ### Boilerplate Plugins
 
@@ -568,14 +574,17 @@ To demonstrate this, let's create a simple base plugin, as well as two plugins t
 #### Base Plugin
 
 {% code title="src/dependence/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
 export type DependencePluginType = Plugin<'Dependence', any, { bar: () => 'baz' }>;
 ```
+
 {% endcode %}
 
 {% code title="src/dependence/index.ts" lineNumbers="true" %}
+
 ```typescript
 import { DependencePluginType } from './types';
 
@@ -584,36 +593,46 @@ export const DependencePlugin: DependencePluginType = {
     methods: { bar: () => 'baz' },
 };
 ```
+
 {% endcode %}
 
 #### Control Plane Plugin
 
 {% code title="src/controlplane/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
 export type ControlPlanePluginType = Plugin<'Control Plane', 'id'>;
 ```
+
 {% endcode %}
 
 {% code title="src/controlplane/index.ts" lineNumbers="true" %}
+
 ```typescript
 import { ControlPlanePluginType } from './types';
 
 export const ControlPlanePlugin: ControlPlanePluginType = {
     name: 'Control Plane',
     id: {
-        did: () => { throw new Error('TODO'); },
-        keypair: () => { throw new Error('TODO'); },
+        did: () => {
+            throw new Error('TODO');
+        },
+        keypair: () => {
+            throw new Error('TODO');
+        },
     },
     methods: {},
-}
+};
 ```
+
 {% endcode %}
 
 #### Methods Plugin
 
 {% code title="src/methods/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
@@ -623,17 +642,20 @@ export type MethodsPluginMethods = {
 
 export type MethodsPluginType = Plugin<'Methods', any, MethodsPluginMethods>;
 ```
+
 {% endcode %}
 
 {% code title="src/methods/index.ts" lineNumbers="true" %}
+
 ```typescript
 import { MethodsPluginType } from './types';
 
 export const MethodsPlugin: MethodsPluginType = {
     name: 'Methods',
     methods: { foo: () => 'bar' },
-}
+};
 ```
+
 {% endcode %}
 
 ### Dependence Convention
@@ -701,6 +723,7 @@ This change allows us to call `learnCard.id.did` on line 5, and requires consume
 
 {% tabs %}
 {% tab title="Passing in an empty wallet" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
@@ -709,9 +732,11 @@ const learnCard = await initLearnCard({ custom: true });
 const errors = await learnCard.addPlugin(getDependencePlugin(learnCard));
 // TS Error: Property 'id' is missing
 ```
+
 {% endtab %}
 
 {% tab title="Passing in an incorrect wallet" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
@@ -720,6 +745,7 @@ const learnCard = await initLearnCard();
 const errors = await learnCard.addPlugin(getDependencePlugin(learnCard));
 // TS Error: Property 'id' is missing
 ```
+
 {% endtab %}
 
 {% tab title="Incorrect plugin config" %}
@@ -728,6 +754,7 @@ const errors = await learnCard.addPlugin(getDependencePlugin(learnCard));
 </strong>    console.log(learnCard.id.did());
     // TS Error: Property 'id' does not exist
 </code></pre>
+
 {% endtab %}
 {% endtabs %}
 
@@ -760,6 +787,7 @@ With this change in place, just like when we depended on a Control Plane, we are
 
 {% tabs %}
 {% tab title="Passing in an empty wallet" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
@@ -768,9 +796,11 @@ const learnCard = await initLearnCard({ custom: true });
 const errors = await learnCard.addPlugin(getDependencePlugin(learnCard));
 // TS Error: Property 'foo' is missing
 ```
+
 {% endtab %}
 
 {% tab title="Passing in an incorrect wallet" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
@@ -779,6 +809,7 @@ const learnCard = await initLearnCard();
 const errors = await learnCard.addPlugin(getDependencePlugin(learnCard));
 // TS Error: Property 'foo' is missing
 ```
+
 {% endtab %}
 
 {% tab title="Incorrect plugin config" %}
@@ -787,6 +818,7 @@ const errors = await learnCard.addPlugin(getDependencePlugin(learnCard));
 </strong>    console.log(learnCard.invoke.foo());
     // TS Error: Property 'foo' does not exist
 </code></pre>
+
 {% endtab %}
 {% endtabs %}
 
@@ -833,6 +865,7 @@ Sometimes it is important for a Plugin to keep private state/data. This can be d
 To demonstrate this, let's build a quick secret message plugin that gates a string behind a password. This plugin will use a constructor function that takes in a message and a password, exposing a `getMessage` method that will return the message if the correct password is passed in and `changePassword`/`changeMessage` methods that allow updating the password/message.
 
 {% code title="src/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
@@ -844,6 +877,7 @@ export type SecretMessagePluginMethods = {
 
 export type SecretMessagePlugin = Plugin<'Secret Message', any, SecretMessagePluginMethods>;
 ```
+
 {% endcode %}
 
 <pre class="language-typescript" data-title="src/index.ts" data-line-numbers><code class="lang-typescript">import { SecretMessagePlugin } from './types';
@@ -885,12 +919,12 @@ This plugin can be used like so:
 const secretMessageLearnCard = await learnCard.addPlugin(getSecretMessagePlugin('nice', 'pw'));
 
 secretMessageLearnCard.invoke.getMessage(); // Error: Wrong password!
-secretMessageLearnCard.invoke.getMessage('pw') // 'nice'
+secretMessageLearnCard.invoke.getMessage('pw'); // 'nice'
 
-secretMessageLearnCard.invoke.changePassword('pw', 'test') // true
-secretMessageLearnCard.invoke.getMessage('pw') // Error: Wrong password!
-secretMessageLearnCard.invoke.getMessage('test') // 'nice'
+secretMessageLearnCard.invoke.changePassword('pw', 'test'); // true
+secretMessageLearnCard.invoke.getMessage('pw'); // Error: Wrong password!
+secretMessageLearnCard.invoke.getMessage('test'); // 'nice'
 
-secretMessageLearnCard.invoke.changeMessage('Neat!', 'test') // true
-secretMessageLearnCard.invoke.getMessage('test') // 'Neat!'
+secretMessageLearnCard.invoke.changeMessage('Neat!', 'test'); // true
+secretMessageLearnCard.invoke.getMessage('test'); // 'Neat!'
 ```

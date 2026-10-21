@@ -17,4 +17,8 @@ describe('OpenAPI generation', () => {
         expect(paths).toContain('/custom-storage/update');
         expect(paths).toContain('/custom-storage/delete');
     });
+
+    it('exposes a root-relative server URL that resolves on any tenant domain', () => {
+        expect(openApiDocument.servers?.[0]?.url).toBe('/api');
+    });
 });

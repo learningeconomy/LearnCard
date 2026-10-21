@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 
 import { IonPage } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 import TroopsCMSLayout from './TroopsCMSLayout';
 import TroopsCMSThumbnail from './TroopsCMSThumbnail';
 import TroopsCMSHeader from './TroopsCMSHeader/TroopsCMSHeader';
@@ -22,7 +23,9 @@ import {
     CredentialCategoryEnum,
     useToast,
     ToastTypeEnum,
+    invalidateBoostRecipientQueries,
 } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
     getNetworkIDPayload,
@@ -40,13 +43,13 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('troops-cms');
 
 const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
-    description: z.string().min(1, 'Description is required!'),
+    name: z.string().min(1, () => m['troops.nameRequired']()),
+    description: z.string().min(1, () => m['troops.descriptionRequired']()),
 });
 
 const TroopStateValidator = z.object({
     troopNumber: z.number().min(0),
-    description: z.string().min(1, 'Description is required!'),
+    description: z.string().min(1, () => m['troops.descriptionRequired']()),
 });
 
 type TroopsCMSProps = {
@@ -77,6 +80,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
 }) => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { presentToast } = useToast();
 
     const { mutateAsync: createBoost } = useCreateBoost();
@@ -147,9 +151,8 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                             skipNotification: true,
                         });
 
-                        const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                            sentBoost
-                        );
+                        const issuedVcUri =
+                            await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
                         await addCredentialToWallet({ uri: issuedVcUri, boostUri });
                         return issuedVcUri;
                     }
@@ -158,6 +161,9 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                     return issuedVc;
                 })
             );
+
+            // Troop membership lists read these, so show the new member right away.
+            void invalidateBoostRecipientQueries(queryClient, boostUri);
         } catch (e) {
             setIsLoading(false);
             log.error('handleIssueBoost::error', e);
@@ -225,13 +231,13 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
 
         let admins: string[] = state?.admins?.map(admin => admin?.profileId) ?? [];
 
-        let members: string[] = state?.issueTo?.map(member => member?.profileId) ?? [];
+        const members: string[] = state?.issueTo?.map(member => member?.profileId) ?? [];
 
         const networkIDPayload = getNetworkIDPayload(state, viewMode);
 
         const networkMeta = (() => {
             const nf = state?.networkFields ?? {};
-            const n: Record<string, any> = {};
+            const n: Record<string, unknown> = {};
             if (nf.networkType) n.networkType = nf.networkType;
             if (nf.country) n.country = nf.country;
             if (nf.region) n.region = nf.region;
@@ -390,7 +396,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             log.error('handlePublishBoost::error', e);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['troops.toasts.errorIssuingBoost'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -406,9 +412,9 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
 
         const wallet = await initWallet();
 
-        let adminsToAdd: string[] =
+        const adminsToAdd: string[] =
             state?.admins?.filter(a => !a.unremovable).map(admin => admin?.profileId) ?? [];
-        let membersToAdd: string[] =
+        const membersToAdd: string[] =
             state?.issueTo?.filter(m => !m.unremovable).map(member => member?.profileId) ?? [];
 
         if (!editBoostUri) return;
@@ -473,7 +479,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             log.error('handleEditBoost::error', e);
-            presentToast(`Error editing boost`, {
+            presentToast(m['troops.toasts.errorEditingBoost'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -483,7 +489,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
     return (
         <IonPage>
             {(isLoading || isSaveLoading || isPublishLoading) && (
-                <BoostLoader text={'Loading...'} darkBackground />
+                <BoostLoader text={m['troops.loading']()} darkBackground />
             )}
             <TroopsCMSHeader
                 state={state}

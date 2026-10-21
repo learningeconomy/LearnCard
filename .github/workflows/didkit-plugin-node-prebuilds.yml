@@ -7,10 +7,14 @@ on:
         paths:
             - 'packages/plugins/didkit-plugin-node/**'
             - '.github/workflows/didkit-plugin-node-prebuilds.yml'
+            - 'lib/ssi'
+            - 'lib/didkit'
     pull_request:
         paths:
             - 'packages/plugins/didkit-plugin-node/**'
             - '.github/workflows/didkit-plugin-node-prebuilds.yml'
+            - 'lib/ssi'
+            - 'lib/didkit'
     workflow_dispatch:
 
 env:
@@ -66,6 +70,8 @@ jobs:
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.2
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -188,11 +194,13 @@ jobs:
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.2
 
-            - name: Use Node.js 24 for npm trusted publishing
+            - name: Use Node.js 24.12.0 for npm trusted publishing
               uses: actions/setup-node@v6
               with:
-                  node-version: 24
+                  node-version: 24.12.0
                   package-manager-cache: false
 
             - name: Setup Bun cache
@@ -247,9 +255,15 @@ jobs:
               if: steps.published.outputs.exists != 'true'
               run: bunx nx run didkit-plugin-node:build
 
+            - name: Test publish dependency preparation
+              if: steps.published.outputs.exists != 'true'
+              run: node --test scripts/prepare-publish-workspace-deps.test.mjs
+
+            # This job builds only the native addon. Preparing every public
+            # package would require unrelated backend bundle/declaration evidence.
             - name: Prepare publish dependency versions
               if: steps.published.outputs.exists != 'true'
-              run: node scripts/prepare-publish-workspace-deps.mjs
+              run: node scripts/prepare-publish-workspace-deps.mjs --package=@learncard/didkit-plugin-node
 
             - name: Publish platform packages
               if: steps.published.outputs.exists != 'true'

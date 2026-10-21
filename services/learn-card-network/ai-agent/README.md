@@ -1,0 +1,378 @@
+# LearnCard AI Agent Service
+
+Production-capable request/response AI agent service for LearnCard Network.
+
+## Run Locally
+
+```bash
+cp services/learn-card-network/ai-agent/.env.example services/learn-card-network/ai-agent/.env
+bun run --cwd apps/learn-card-app dev
+```
+
+Then open `http://localhost:3000`. The agent service is exposed at `http://localhost:4300`
+by the LearnCard App compose stack.
+
+The LearnCard App local compose stack starts MongoDB and passes it to the agent. The
+agent can also run against a separate MongoDB with `AI_AGENT_MONGO_URI` or `MONGO_URI`.
+The service can boot without `OPENAI_API_KEY`, but chat and ConsentFlow contract creation
+return 503 until a provider key is configured.
+
+To run the agent outside compose, use `bun run --cwd services/learn-card-network/ai-agent dev`.
+The development script runs `src/index.ts` directly with Bun watch mode; it does not rebuild
+workspace packages first.
+
+## Environment
+
+| Variable                                           | Default                                                                    | Purpose                                                                                                                                          |
+| -------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `OPENAI_API_KEY`                                   | none                                                                       | API key for the first provider adapter.                                                                                                          |
+| `AI_AGENT_MODEL`                                   | `gpt-5.6-luna`                                                             | Model name passed to the provider. Luna tool calls use Chat Completions with `reasoning_effort: none`, as required by the provider.              |
+| `AI_AGENT_WALLET_SEED`                             | `LEARNCARD_AGENT_SEED` or `SEED`                                           | Seed used by LearnCard wallet tools and Mongo persistence encryption through DIDKit DAG-JWE. Required whenever Mongo persistence is configured.  |
+| `AI_AGENT_WALLET_DID_WEB`                          | none                                                                       | Optional authorized service profile passed as `didWeb` to `initLearnCard` for ConsentFlow and wallet tools. Persistence keeps the seed identity. |
+| `AI_AGENT_CLOUD_URL`                               | `LEARN_CLOUD_URL` or `https://cloud.learncard.com/trpc`                    | LearnCloud tRPC endpoint for the agent wallet.                                                                                                   |
+| `AI_AGENT_NETWORK_URL`                             | `LEARNCARD_NETWORK_URL` or `https://network.learncard.com/trpc`            | LearnCard Network tRPC endpoint for the agent wallet.                                                                                            |
+| `AI_AGENT_PORT`                                    | `PORT` or `3000`                                                           | HTTP port.                                                                                                                                       |
+| `AI_AGENT_TRUST_PROXY_HOPS`                        | `0`                                                                        | Number of known reverse-proxy hops trusted when resolving client IPs for baseline and public-endpoint rate limits.                               |
+| `AI_AGENT_MAX_TOOL_ROUNDS`                         | `8`                                                                        | Maximum tool-call rounds within one request. Integer from `1` through `20`.                                                                      |
+| `AI_AGENT_RUN_TIMEOUT_MS`                          | `120000`                                                                   | Shared wall-clock limit for the primary response and retrospective work. Allowed range: 5 seconds through 10 minutes.                            |
+| `AI_AGENT_MAX_OUTPUT_TOKENS`                       | `4096`                                                                     | Maximum output tokens passed to each model call.                                                                                                 |
+| `AI_AGENT_MAX_RUN_TOKENS`                          | `50000`                                                                    | Combined measured input + output token limit for the primary run and retrospective.                                                              |
+| `AI_AGENT_MAX_RUN_COST_USD`                        | `1`                                                                        | Combined estimated model cost limit for the primary run and retrospective.                                                                       |
+| `AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION`        | none                                                                       | Current model input-token price used for cost telemetry and limits. Required in production.                                                      |
+| `AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION`       | none                                                                       | Current model output-token price used for cost telemetry and limits. Required in production.                                                     |
+| `AI_AGENT_METRICS_NAMESPACE`                       | `LearnCard/AIAgent`                                                        | Namespace used for direct CloudWatch `PutMetricData` publishing.                                                                                 |
+| `AI_AGENT_AUTH_DOMAIN`                             | none                                                                       | Expected DID Auth domain. Required in production; local dev falls back to request origin.                                                        |
+| `AI_AGENT_AUTH_CHALLENGE_TTL_MS`                   | `300000`                                                                   | DID Auth challenge lifetime in milliseconds.                                                                                                     |
+| `AI_AGENT_ENCRYPTION_KEY_ID`                       | `agent-learncard-dag-jwe-v1`                                               | Versioned key identifier stored in encrypted Mongo field envelopes.                                                                              |
+| `AI_AGENT_DEBUG_ENABLED`                           | `true` outside `NODE_ENV=production`                                       | Enables debug endpoints. Production refuses to start unless this is `false`.                                                                     |
+| `AI_AGENT_DEBUG_TOKEN`                             | none                                                                       | Optional in local development. When set, send it as `X-AI-Agent-Debug-Token` for debug endpoints.                                                |
+| `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`               | none                                                                       | ConsentFlow contract URI used for user-context data. Required on production network.                                                             |
+| `AI_AGENT_CONSENT_FLOW_APP_URL`                    | `https://learncard.app`                                                    | Base app URL used to build consent links.                                                                                                        |
+| `AI_AGENT_CONSENT_FLOW_DATA_PAGE_SIZE`             | `100`                                                                      | Page size when preloading consented user data.                                                                                                   |
+| `AI_AGENT_CONSENT_FLOW_DATA_MAX_PAGES`             | `10`                                                                       | Maximum pages to read for one user-data preload.                                                                                                 |
+| `AI_AGENT_CONSENT_FLOW_CREDENTIAL_READ_LIMIT`      | `50`                                                                       | Maximum consented credential URIs to hydrate with `read.get`.                                                                                    |
+| `AI_AGENT_MONGO_URI`                               | `MONGO_URI`; local Mongo only outside production when a wallet seed exists | MongoDB connection URI. Production requires explicit Mongo.                                                                                      |
+| `AI_AGENT_MONGO_DB_NAME`                           | `MONGO_DB_NAME` or `learn-card-ai-agent`                                   | MongoDB database name.                                                                                                                           |
+| `AI_AGENT_SELF_IMPROVEMENT_ENABLED`                | `true` outside `NODE_ENV=production`                                       | Enables per-DID dynamic docs, trace persistence, and post-response retro updates.                                                                |
+| `AI_AGENT_RETRO_MODEL`                             | `AI_AGENT_MODEL`                                                           | Model used by the background retro agent.                                                                                                        |
+| `AI_AGENT_RETRO_INPUT_TOKEN_COST_USD_PER_MILLION`  | main-model price when models match                                         | Input-token price for a different retrospective model; required when enforcing a cost limit.                                                     |
+| `AI_AGENT_RETRO_OUTPUT_TOKEN_COST_USD_PER_MILLION` | main-model price when models match                                         | Output-token price for a different retrospective model; required when enforcing a cost limit.                                                    |
+| `AI_AGENT_RETRO_MAX_TRACE_CHARS`                   | `24000`                                                                    | Maximum serialized run-trace size sent to the retro agent.                                                                                       |
+| `AI_AGENT_AUTONOMY_DEV_ENABLED`                    | `false`                                                                    | Enables the separate development autonomy worker. Rejected outside `NODE_ENV=development`; never starts from the HTTP service.                   |
+| `AI_AGENT_AUTONOMY_DEV_DIDS`                       | none                                                                       | Comma-separated exact test DIDs allowed by the local development worker.                                                                         |
+| `AI_AGENT_AUTONOMY_DEV_POLL_INTERVAL_MS`           | `30000`                                                                    | Delay after one completed development cycle before the next cycle starts. Minimum `1000`.                                                        |
+| `AI_AGENT_AUTONOMY_DEV_MAX_RUNS_PER_CYCLE`         | `3`                                                                        | Maximum due schedules attempted sequentially in one worker cycle. Integer from `1` through `10`.                                                 |
+| `AI_AGENT_AUTONOMY_DEV_LEASE_MS`                   | `900000`                                                                   | Owner/run lease duration. Must exceed the poll interval; active runs renew leases and terminal writes are fenced.                                |
+| `AI_AGENT_TRIGGER_ENABLED`                         | `false`                                                                    | Enables Trigger.dev scheduling. Deployed environments require server-side LaunchDarkly gating.                                                   |
+| `AI_AGENT_TRIGGER_ENVIRONMENT`                     | `dev` in development, otherwise `NODE_ENV`                                 | `dev` locally; `staging` or `production` when deployed, matching `SENTRY_ENV`. Included in schedule deduplication keys.                          |
+| `AI_AGENT_AUTONOMY_LAUNCHDARKLY_FLAG_KEY`          | `ai-agent-autonomy-enabled`                                                | Boolean flag evaluated with the authenticated owner's DID as the LaunchDarkly `user` context key.                                                |
+| `LAUNCHDARKLY_SDK_KEY`                             | none                                                                       | Server-side SDK key for the matching LaunchDarkly environment. Required for staging and production schedules.                                    |
+| `TRIGGER_SECRET_KEY`                               | none                                                                       | Environment-specific Trigger.dev secret used by the HTTP service to synchronize schedule CRUD. Required when Trigger integration is enabled.     |
+| `AI_AGENT_WEB_SEARCH_PROVIDER`                     | `brave` when `BRAVE_SEARCH_API_KEY` exists, otherwise `none`               | Current-info provider. Supported values: `brave`, `none`; `mock` is for tests.                                                                   |
+| `BRAVE_SEARCH_API_KEY`                             | none                                                                       | Brave Web Search API key. Never returned in health responses or tool output.                                                                     |
+| `AI_AGENT_WEB_SEARCH_DEFAULT_LIMIT`                | `5`                                                                        | Default result count for `webSearch`.                                                                                                            |
+| `AI_AGENT_WEB_SEARCH_MAX_LIMIT`                    | `10`                                                                       | Maximum result count exposed to the agent, hard-capped at `20`.                                                                                  |
+| `AI_AGENT_WEB_SEARCH_COUNTRY`                      | none                                                                       | Optional default 2-letter country code, such as `US`.                                                                                            |
+| `AI_AGENT_WEB_SEARCH_LANG`                         | none                                                                       | Optional default search language, such as `en`.                                                                                                  |
+| `AI_AGENT_WEB_SEARCH_SAFESEARCH`                   | none                                                                       | Optional default SafeSearch level: `off`, `moderate`, or `strict`.                                                                               |
+| `AI_AGENT_CLOUDWATCH_METRICS_ENABLED`              | `false`                                                                    | Publishes metrics directly with CloudWatch `PutMetricData`; enabled on ECS only.                                                                 |
+| `SENTRY_DSN`                                       | none                                                                       | Raw Sentry DSN URL for sanitized operational errors and traces. Required in production.                                                          |
+| `SENTRY_ENV`                                       | `NODE_ENV`                                                                 | Sentry environment and CloudWatch metric environment dimension.                                                                                  |
+| `SENTRY_RELEASE`                                   | `GIT_SHA`                                                                  | Deployed release identifier.                                                                                                                     |
+| `SENTRY_TRACES_SAMPLE_RATE`                        | `0.1`                                                                      | Sentry trace sampling rate from `0` through `1`; staging ECS and Trigger tasks use `1`.                                                          |
+
+## Health, telemetry, and AWS deployment
+
+- `GET /api/health/live` is a process liveness probe.
+- `GET /api/health/ready` returns 503 until the model provider and MongoDB are ready.
+- `GET /api/health` retains detailed feature/configuration status, including the Sentry deployment-delivery check.
+- Every response includes `X-Request-ID`; agent runs also return a `runId`.
+- Concise logfmt application lines correlate HTTP, model, tool, run, and post-run stages without recording DIDs, prompts, responses, memory, tool payloads, or exception messages. ECS sends metrics directly to CloudWatch instead of mixing EMF JSON records into the log stream.
+- With Sentry configured, every existing safe per-run `writeLog` record reaches **both CloudWatch and Sentry**, in addition to the existing unsampled lifecycle/error events and separately sampled performance transactions. This includes model/tool/main/post-run records, contextual service errors, and autonomy occurrences with a run ID. Forwarding never captures global console/stdout or adds HTTP run-log records. `SENTRY_TRACES_SAMPLE_RATE=0` does not suppress log or lifecycle/error events.
+- Sentry exceptions retain privacy-safe built-in types, diagnostic messages, and bounded cause chains. Custom error types and every stack frame's file/function identifiers are hashed independently of content-redaction capacity; line/column numbers remain available for correlation. Run events include `runId`, hashed correlation/provider/owner identifiers, trigger type, main/post-run phase, timing, budgets, observed token usage, completed model calls, and tool success/failure counts. Caller-supplied UUID correlation IDs are hashed too.
+- Raw prompts, model output, tool arguments/results, credentials, arbitrary error properties, request/user contexts, and breadcrumbs are not event payloads. Per-run sensitive-content registration includes own string keys and values before provider parsing and budget checks, without invoking getters or serializers. Keys and values share the 4,096-entry traversal budget and 512-own-key object limit; unavailable content fails closed. Character limits remain 16,384 per value and 65,536 cumulatively across newly registered exact values, not a 256-word cutoff. Already-covered exact strings are not charged again. Malformed model tool arguments and retrospective JSON throw fixed `SyntaxError`s without native parser previews or causes. Wallet backend failures intentionally use a fixed operational message as a privacy tradeoff; local argument validation retains specific errors. Wallet-call wrappers never expose backend prose, serialized backend properties, or raw stack previews; the original cause remains available only through approved sanitized diagnostics. Approved payloads stay private from SDK processors, and unapproved SDK events are dropped.
+- Common prompt/output/tool words are deliberately masked even when they overlap an otherwise useful external error diagnostic: echoed private fragments and provider prose have no trusted provenance distinction. Non-overlapping text and known-safe internal diagnostics remain available; no stopword exemption weakens privacy. Diagnostics longer than 8,192 characters are withheld before fragment replacement or regex scrubbing, preventing unbounded email-pattern cost and truncated private previews.
+- SDK 7.61.0 has no native structured Logs API. Each application record is one bounded event (`recordKind=application-log`, `extra.logRecord={event,level,timestamp,sequence,fields}`) through the same private snapshot gate. Fields retain the existing 256-character string cap; no whole-run buffer or tail truncation is used. `sequence` is process-local, not cross-worker/restart ordering. Query these in Sentry events, not the native Logs product.
+- Run-log event tags index only bounded `component`, `recordKind`, `runId`, hashed `correlationId`/`ownerId`, `triggerType`, `phase`, and `status` when present. All sanitized fields remain in `extra.logRecord.fields`; counters, tool/model/runtime values, budgets, provider IDs, and schedule details are not copied into run-log tags. Existing lifecycle/error metadata is unchanged.
+- Non-run ordinary records—startup/delivery checks, all HTTP completion records, autonomy cycle summaries, and occurrences without a run ID—remain CloudWatch-only. Uncorrelated service errors can still produce the existing separate Sentry operational exception.
+- Configured credentials are explicitly registered for redaction, including LaunchDarkly SDK keys and Mongo URIs plus raw/decoded URI username/password, rather than relying only on secret-named environment entries. Raw request IDs remain in response headers, but HTTP telemetry hashes them.
+- Failed scheduled runs and post-run processing retain their existing run telemetry without a duplicate scheduler exception or `service.error` log. Scheduler-only setup, feed, persistence, and lease/heartbeat failures still emit operational diagnostics.
+- Volume: one additional unsampled Sentry event per safe run log record: `3 + M + T` for a basic completed run, where `M` is completed model calls and `T` is completed tool calls (post-run failures and other run-associated records can add more). A basic completed run with one model call and no tools produces about 9 events (5 lifecycle + 4 log records), versus 5 previously, whether invoked through HTTP or directly. The additional 80% event volume increases ingestion/quota/storage cost; reducing trace sampling does not reduce log volume. SDK delivery and server quota/rate limits still apply.
+
+Offline verification uses the actual WASM artifact and the actual Sentry SDK with an in-memory transport, synthetic keys/content, and no production or telemetry network access:
+
+```bash
+cd services/learn-card-network/ai-agent
+bun run smoke:feed-wasm
+bun run smoke:sentry
+```
+
+The production ARM64 container, reusable-infrastructure ECS/Fargate CloudFormation stack, deployment workflow, alarms, dashboard, staging smoke test, rollout procedure, key rotation, troubleshooting, and rollback steps are documented in [RUNBOOK.md](./RUNBOOK.md).
+
+## Shape
+
+- `src/agent/types.ts` defines the provider and tool interfaces.
+- `src/agent/skills.ts` adds native skill-backed tool support with `listSkills` and `readSkill`.
+- `src/agent/openAIProvider.ts` is the first provider adapter.
+- `src/consentFlow.ts` resolves the configured ConsentFlow contract and preloads consented user data.
+- `src/helpers/learnCard.helpers.ts` initializes and caches the configured LearnCard wallet.
+- `src/mongo.ts` provides lazy MongoDB client/database access.
+- `src/selfImprovement/` stores per-DID Markdown docs, sanitized run traces, and retro results.
+- `src/runtime.ts` composes the provider, wallet, tools, ConsentFlow, Assistant, memory, trace, and awaited retro path shared by HTTP and autonomous execution.
+- `src/autonomy/` stores schedules/runs/leases and implements the development-only full-agent dispatcher.
+- `src/tools/index.ts` registers tools for the agent.
+- `src/tools/learnCardWallet/` exposes an explicit permitted capability set through the `learnCardWallet` tool and its bundled `SKILL.md`.
+- `src/tools/consentedUserData.ts` exposes consented learner data bound to the verified request principal.
+- `src/tools/webSearch/` defines the provider-neutral current-info search adapter contract, the stable `webSearch` agent tool, and the Brave Web Search provider.
+
+The authenticated HTTP service is request/response. `POST /api/agent/heartbeat` is a manually
+invoked proactive HTTP request; it is not the recurring scheduler. The separate, default-disabled
+development autonomy worker can run full-agent user schedules and await their retrospective pass.
+It never starts from the production HTTP service and is not a production deployment design.
+
+## Skill-Backed Tools
+
+Tools can include a `skill` definition. When at least one tool does this, the agent automatically receives:
+
+- `listSkills` for the compact index of available skill documents.
+- `readSkill` for loading the full `SKILL.md` only when needed.
+
+This keeps the core loop simple while letting broad tools ship their own usage instructions.
+When a DID-backed request has active Mongo docs, those docs are merged into the same compact
+`listSkills` index and loaded through `readSkill`. Static file-backed skills remain read-only.
+
+The `learnCardWallet` tool requires the server-supplied authenticated owner for both `inspect` and
+`call`. Inspection exposes only permitted methods and their metadata, not hidden properties or
+function source. The capability set supports the service DID, public profile lookup, Boost
+creation/lookup/sending, credential issuance, and inbox delivery. Public profile lookups use
+anonymous authority rather than the service's connections. Key export, account administration,
+private storage/decryption, aggregate learner data, and unknown methods are unavailable.
+
+Use `getConsentedUserData` for learner-specific information. Its owner comes from verified DID Auth,
+not model-supplied tool arguments. JWT issuer and presentation holder must agree when both exist.
+
+## Web Search / Current Information
+
+`webSearch` is registered only when a provider is configured. If `AI_AGENT_WEB_SEARCH_PROVIDER` is unset and `BRAVE_SEARCH_API_KEY` exists, the service enables Brave automatically. Set `AI_AGENT_WEB_SEARCH_PROVIDER=none` to keep the tool out of the agent tool list.
+
+The agent-facing schema is provider-neutral: `query`, optional `limit`, `freshness`, `country`, `searchLang`, and `safeSearch`. Tool results always return `{ query, provider, retrievedAt, results }`, where every result has `title`, `url`, `snippet`, `rank`, optional `score`, and `retrievedAt`. Raw provider payloads and provider error bodies are never returned.
+
+Use web search for current, time-sensitive, or source-attributed facts: recent events, current market/work information, live policy references, and URLs the answer should cite. Use memory tools for durable user context. Use ConsentFlow tools for user-approved personal data.
+
+To add another provider, implement `WebSearchProvider` in `src/tools/webSearch/`, add config selection in `src/tools/index.ts`, and keep the `webSearch` tool schema/result shape unchanged. Provider-specific response fields should be normalized inside the adapter.
+
+## ConsentFlow Context
+
+Set `AI_AGENT_CONSENT_FLOW_CONTRACT_URI` to the contract the agent should use. When the configured network is not production and no URI is set, the service lazily creates a development contract the first time `/api/consent-flow/contract` or a DID-backed chat run needs one. If the default OpenAI provider is not configured, these paths return 503 before attempting any ConsentFlow work.
+
+- `GET /api/consent-flow/contract` resolves the active contract and returns a consent URL.
+- `POST /api/agent/run` uses the verified DID Auth principal and adds a request-scoped `getConsentedUserData` tool. A request-body `did` does not grant access to another learner's data.
+
+## LearnCard Assistant
+
+The LearnCard Assistant stores proactive learner-facing inbox cards in MongoDB collection
+`learnCardAssistantFeedItems`. DID-backed chat and heartbeat runs receive the
+`recordLearnCardAssistantCard` tool, which creates or updates one card for the current learner.
+Use a stable `dedupeKey` when refreshing the same recommendation across runs.
+The key is optional: multiple unkeyed cards are valid for one learner. Keyed cards are unique
+per owner. Mongo initialization creates the partial unique index before removing the old sparse
+index; no card data is deleted.
+
+Assistant card types are `message`, `job-suggestion`, `pathway-update`, and `action-item`.
+Priorities are `normal` and `high`.
+
+Feedback timestamps are serialized as explicit ISO strings before DAG-JWE encryption and
+validated/rehydrated on read. The API returns `feedback.createdAt: string | null`: `null`
+means the original feedback time is unavailable, including older WASM-encrypted Dates that
+became `{}`. The thumbs-down remains recorded; the feed does not invent a timestamp or
+fail the entire batch because that feedback time is unknown. No backfill is performed.
+
+Run `bun run smoke:feed-wasm` from this service directory to exercise actual DIDKit WASM,
+repository/service readback, and the registered feed handler with isolated synthetic storage.
+
+The assistant profile is stored in `learnCardAssistantProfiles` and can customize the assistant
+name and personality used in the system prompt. Missing profiles fall back to `My Assistant`.
+
+Endpoints:
+
+- `GET /api/users/:did/assistant-feed` returns latest cards for one DID. Optional `limit` clamps to `1..50`.
+- `POST /api/users/:did/assistant-feed/:id/read` marks one card read.
+- `POST /api/users/:did/assistant-feed/:id/feedback` records `{ type: 'thumbs-down' }`.
+- `POST /api/agent/heartbeat` accepts `{ did, consentFlowContractUri?, maxItems? }` and runs a cron-invokable proactive pass. `maxItems` clamps to `1..5`.
+- `POST /api/debug/users/:did/assistant-feed` writes one validated card for local QA and seeded UI demos.
+- `GET /api/users/:did/assistant-profile` returns the assistant profile.
+- `PATCH /api/users/:did/assistant-profile` updates `{ name?, personality? }`.
+- `GET /api/users/:did/assistant-memories` returns the memory manifest and safe memory docs.
+- `POST /api/users/:did/assistant-memories/:name/approve` approves a proposed memory.
+- `POST /api/users/:did/assistant-memories/:name/archive` removes an active or proposed memory.
+
+## Assistant Schedules and Development Autonomy
+
+User schedules are default-absent, independently enabled, and limited to 10 per DID. The
+user-facing cadence is a name, task prompt, local `HH:mm` time, selected weekdays, and IANA
+timezone. Croner converts that restricted contract into the next DST-aware occurrence; users do
+not author raw cron.
+
+DID-authenticated matching-owner endpoints:
+
+- `GET /api/users/:did/assistant-schedules` lists schedules.
+- `POST /api/users/:did/assistant-schedules` creates one schedule.
+- `PATCH /api/users/:did/assistant-schedules/:id` updates cadence, prompt, name, or enabled state.
+- `DELETE /api/users/:did/assistant-schedules/:id` permanently deletes one schedule.
+
+Mongo collections:
+
+- `agentAutonomySchedules` stores queryable cadence/next-run metadata and DAG-JWE-encrypted
+  schedule names/prompts.
+- `agentAutonomousRuns` stores one unique owner/schedule/occurrence with lease-fenced status and
+  encrypted success summary or sanitized error.
+- `agentAutonomousLeases` serializes full-agent execution per owner across worker processes.
+
+Run one deliberately gated development cycle:
+
+```bash
+bun run --cwd services/learn-card-network/ai-agent autonomy:once
+```
+
+Run the non-overlapping development poller:
+
+```bash
+bun run --cwd services/learn-card-network/ai-agent autonomy:dev
+```
+
+Both commands require `AI_AGENT_AUTONOMY_DEV_ENABLED=true`, development mode, explicit fixture
+DIDs, Mongo, an agent wallet seed, an OpenAI key, and self-improvement. The poller handles
+`SIGINT`/`SIGTERM` by stopping future cycles, draining the active cycle, and closing Mongo.
+Scheduled runs use the same full tool/memory/ConsentFlow/wallet runtime as interactive chat, may
+perform irreversible effects, and still require tool-level idempotency and capability policy
+before broad rollout. LaunchDarkly access control does not make individual tool effects idempotent.
+
+### Trigger.dev scheduler
+
+Trigger.dev can replace the local polling loop while preserving the same Mongo occurrence, owner
+lease, full-agent runtime, Assistant card, trace, and retro lifecycle. Local Trigger development
+uses `AI_AGENT_AUTONOMY_DEV_DIDS`. Staging and production use separate Trigger projects and
+the corresponding environment's `ai-agent-autonomy-enabled` LaunchDarkly flag, evaluated with the
+authenticated owner's DID as the `user` context key. Keep production targeting off with its off
+variation and default rule both `false` until a deliberate rollout.
+
+All deployed schedule API routes check access before reading or mutating schedules. Dispatch and
+execution recheck access, so revoking a target also blocks queued work at its next check.
+Missing SDK keys, initialization failures, and evaluation errors fail closed. Turning the flag off
+does not cancel an already-running agent or undo its effects.
+
+If an occurrence was missed before it was claimed, a later valid current-cadence tick resumes the
+schedule. Missed ticks collapse into that current tick; previously claimed effects are not replayed.
+Schedule edits, stale timestamps, owner leases, and atomic occurrence/configuration checks remain
+fences against duplicate or outdated work.
+
+The main **Deploy** workflow sends affected `main` commits to staging and Changesets releases
+that update the AI Agent package to production. All deployment steps live in `deploy.yml`,
+including environment/project validation and ECS schedule synchronization in both environments.
+The existing `test.yml` workflow runs the AI Agent pull-request checks, including repository
+regressions against a disposable Mongo service. Locally, set `AI_AGENT_TEST_MONGO_URI` to a
+loopback-only Mongo URI to enable those integration tests; each test owns and removes its own
+temporary database.
+Production retains its environment approval; no separate action dispatch is required.
+See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
+
+Local and CI AI Agent commands pin **Node.js 24.18.0**. Trigger tasks select the stable
+**Node.js 24** major (`runtime: 'node-24'`); the hosted platform selects its minor version.
+The ECS HTTP service and repository dependency installation use **Bun 1.4.2**. ECS builds the
+service's own Dockerfile and uses Fargate `awsvpc` networking, without an
+`extra_hosts`/`host-gateway` override. Local Compose instead uses
+`Dockerfile.monorepo`: dependencies install on 1.4.2, but its final `source`
+runtime deliberately stays on 1.3.14 for local and hosted E2E did:web host-gateway
+resolution, an exception to the production `1.4.2-alpine` runtime. The local AI
+Agent startup runs `dev`, not `bun install`.
+Trigger SDK/build/CLI are pinned to 4.5.7, the first release with stable Node 24 support; see the
+[release notes](https://trigger.dev/changelog/v4-5-7) and
+[platform runtime versions](https://trigger.dev/docs/config/config-file#nodejs-versions).
+The service-local `.nvmrc`, package engines, and AI Agent PR/validation/deployment jobs
+use the service's Node pin; unrelated monorepo Node pins are unchanged. Use the
+service pin for local Trigger commands and native-package readiness checks.
+
+A live Bun task run failed in `@learncard/init` while loading DidKit, so the native
+`@learncard/didkit-plugin-node` package remains externalized from the Trigger bundle.
+The full-agent execution task uses `medium-1x`: Trigger.dev's default 0.5 GB worker exhausted
+its V8 heap while initializing the LearnCard runtime.
+Workspace `development` exports are enabled only inside esbuild, not in the worker's Node
+conditions: the published native package must resolve to compiled JavaScript at runtime.
+
+Before deploying Trigger tasks, `deploy.yml` waits for the checkout's exact native package
+version and Linux x64 binding to be installable from public npm, then verifies that
+`getDidKitPlugin()` loads in an isolated Node process. This prevents deployment from racing
+the separate native-package publishing workflow. The gate waits up to 15 minutes for
+unpublished packages; other install errors or a broken native addon fail immediately.
+Run `node scripts/wait-for-trigger-native-package.mjs` from the repository root on Linux
+x64 to check the same prerequisite without deploying or using credentials.
+
+For local development:
+
+1. Copy the project's DEV secret from Trigger.dev **API Keys** into the service `.env`.
+2. Set `AI_AGENT_TRIGGER_ENABLED=true`, `AI_AGENT_TRIGGER_ENVIRONMENT=dev`,
+   `AI_AGENT_AUTONOMY_DEV_DIDS` to dedicated test profiles, and keep
+   `AI_AGENT_AUTONOMY_DEV_ENABLED=false`.
+3. Restart the AI Agent HTTP service so schedule create/update/delete calls synchronize with
+   Trigger.dev.
+4. Start the task worker from the service directory:
+
+```bash
+cd services/learn-card-network/ai-agent
+bun run trigger:dev
+```
+
+If Bun is installed outside `~/.bun/bin`, expose its directory to the Trigger CLI:
+
+```bash
+cd services/learn-card-network/ai-agent
+BUN_INSTALL_BIN="$(dirname "$(command -v bun)")" bun run trigger:dev
+```
+
+`learncard-autonomous-schedule-dispatch` receives imperative schedules. It enqueues
+`learncard-autonomous-agent-execution` with a global occurrence idempotency key and a per-owner
+concurrency key. Queued deliveries re-check that the Mongo schedule still exists, remains enabled,
+and still points at the same occurrence before invoking the agent.
+
+See [AUTONOMY_SPIKE.md](./AUTONOMY_SPIKE.md) for measured runs, security/capability boundaries,
+Trigger.dev evaluation, and production ticket drafts.
+
+## Per-User Self-Improvement
+
+When enabled and MongoDB is reachable, DID-backed chat runs can use active user docs from
+`agentUserDocs`. Docs are Markdown records keyed by `ownerDid` and `name`, with `kind` set to
+`skill`, `user-profile`, `memory`, or `wiki`. Docs also carry `status`, `sourceType`,
+`confidence`, `sensitivity`, optional expiry, and provenance metadata. Only `active`,
+non-expired docs are exposed through `listSkills` and `readSkill`; `proposed` and `archived` docs
+stay in the debug/user-management layer until approved or restored.
+
+DID-backed runs also receive a compact memory manifest that separates durable memory from
+ConsentFlow data and credentials. The manifest tells the agent which docs are visible, which are
+proposed, and how to treat source precedence. The request-scoped memory tools are:
+
+- `getUserMemoryManifest` for current memory state.
+- `rememberUserMemory` for explicit user-approved saves and updates.
+- `proposeUserMemory` for inferred, ambiguous, or sensitive memories that need approval.
+- `forgetUserMemory` for user-requested memory removal.
+
+After a successful response is sent, the service stores a bounded run trace in `agentRunTraces`.
+ConsentFlow results are summarized so raw personal values and credential payloads are not written
+to traces. If an OpenAI key is configured, a retro agent reviews the trace plus current docs and can
+request a validated `noop`, `create`, `update`, or `propose`. Writes go through the doc service,
+which validates names, frontmatter, content size, prompt-injection-like text, provenance, approval
+state, expiry, and version history.
+
+The retrospective consumes only the primary run's remaining time, token, and cost allowances.
+Output is capped, oversized prompts are rejected before the model call, and actual retrospective
+usage contributes to operational token/cost metrics even if the proposed update fails validation.
+A different retrospective model needs its own prices when a financial limit is enabled.
+Retrospective errors are retained in the audit result and propagate to scheduled-run outcomes.
+Cancellation is checked before starting a memory commit; it cannot roll back a write already sent
+to storage.
+
+Debug endpoints:
+
+- `GET /api/debug/users/:did/docs` returns docs for one DID.
+- `GET /api/debug/users/:did/memory` returns a manifest plus docs for one DID.
+- `POST /api/debug/users/:did/memory` creates, updates, approves, or archives a memory.
+- `GET /api/debug/runs/:runId` returns a stored trace and retro results.

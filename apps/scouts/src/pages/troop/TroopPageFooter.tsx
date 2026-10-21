@@ -21,6 +21,7 @@ import TroopActionMenu from './TroopActionMenu';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
+import * as m from '../../paraglide/messages.js';
 import { getScoutsRole, getScoutsRoleLabelForCred } from '../../helpers/troop.helpers';
 import { VC, Boost } from '@learncard/types';
 
@@ -92,7 +93,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                 type={typeOverride || scoutNoun}
             />,
             {
-                sectionClassName: '!max-w-[450px]',
+                sectionClassName: 'max-w-[450px]!',
             },
             {
                 desktop: ModalTypes.Cancel,
@@ -104,7 +105,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     const handleDelete = async () => {
         const wallet = await initWallet();
         await confirm({
-            text: `Are you sure you want to delete ${credential?.name}?`,
+            text: m['troops.options.deleteConfirm']({ credential: credential?.name ?? '' }),
             onConfirm: async () => {
                 try {
                     const walletDid = wallet.id.did();
@@ -114,7 +115,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                 } catch (error: unknown) {
                     if (error) {
                         presentAlert(
-                            error instanceof Error ? error.message : 'Something went wrong'
+                            error instanceof Error ? error.message : m['boost.somethingWentWrong']()
                         );
                     }
                     closeAllModals();
@@ -149,7 +150,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                           leaderImage={leaderImage}
                           scoutImage={scoutImage}
                       />,
-                      { sectionClassName: '!max-w-[450px]' },
+                      { sectionClassName: 'max-w-[450px]!' },
                       { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                   );
               } else if (canInviteScout) {
@@ -179,7 +180,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                 role={role}
                 title={credential?.name ?? ''}
             />,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 
@@ -187,21 +188,21 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
 
     if (showEditButton) {
         return (
-            <footer className="w-full z-[99] bg-white bg-opacity-70 border-t-[1px] border-solid border-white fixed bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
+            <footer className="w-full z-[99] bg-white/70  border-t border-solid border-white fixed bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
                 <div className="max-w-[600px] mx-auto flex gap-[10px]">
                     <>
                         <button
                             onClick={showIdDetails ? handleDetails : closeTroopPage}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         <button
                             onClick={openEditTroopOrNetworkModal}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Edit
+                            {m['common.edit']()}
                         </button>
 
                         <button
@@ -217,7 +218,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     }
 
     return (
-        <footer className="w-full z-[99] bg-white bg-opacity-70 border-t-[1px] border-solid border-white sticky bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
+        <footer className="w-full z-[99] bg-white/70  border-t border-solid border-white sticky bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
             <div className="max-w-[600px] mx-auto flex gap-[10px]">
                 {!showIdDetails && (
                     <>
@@ -225,7 +226,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             onClick={closeTroopPage}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         {!isRevoked && (
@@ -246,7 +247,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             }}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         {!isRevoked && (

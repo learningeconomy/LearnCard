@@ -1,7 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 
+import * as m from '../../paraglide/messages.js';
 import { useModal, ModalTypes, useWallet, useGetSkillFrameworkById } from 'learn-card-base';
 
 import { IonFooter, IonSpinner } from '@ionic/react';
@@ -235,7 +237,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         setFrameworkApproved(false);
 
                         // Recursively add IDs to all skills and subskills
-                        const addIdsToNodes = (nodes: any[]): any[] => {
+                        const addIdsToNodes = (
+                            nodes: SkillFrameworkNode[]
+                        ): SkillFrameworkNode[] => {
                             return nodes.map(node => ({
                                 ...node,
                                 id: node.id || generateSkillId(),
@@ -343,7 +347,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
         }
 
         if (!selectedFrameworkId) {
-            alert('Please select a framework first');
+            alert(m['skillFrameworks.selectFwFirst']());
             return;
         }
 
@@ -411,7 +415,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                     useCloseAllModals
                 />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+                    sectionClassName: 'bg-transparent! shadow-none! overflow-visible!',
                     onClose: () => {
                         // close modals if they exist success modal via clicking on background space
                         // closeAllModals();
@@ -426,7 +430,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
         } catch (error) {
             log.error('Failed to add competencies to framework:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
-            alert(`Failed to add competencies: ${errorMessage}`);
+            alert(`${m['skillFrameworks.toasts.errorUpdate']()} ${errorMessage}`);
         } finally {
             setIsSaving(false);
         }
@@ -447,7 +451,10 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
             return;
         }
 
-        const confirmationText = type === 'back' ? 'Yes, Start Over' : 'Yes, Cancel & Exit';
+        const confirmationText =
+            type === 'back'
+                ? m['skillFrameworks.yesStartOver']()
+                : m['skillFrameworks.yesCancel']();
         newModal(
             <ManageSkillsCancelUpdateModal
                 confirmationText={confirmationText}
@@ -459,7 +466,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                     }
                 }}
             />,
-            { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+            { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
@@ -475,16 +482,16 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
     return (
         <div className="h-full relative bg-grayscale-100 flex flex-col">
             {isSaving && (
-                <div className="absolute top-0 left-0 w-full h-full bg-white bg-opacity-30 backdrop-blur-[2px] z-50 flex items-center justify-center">
+                <div className="absolute top-0 left-0 w-full h-full bg-white/30  backdrop-blur-[2px] z-50 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-[15px]">
                         <IonSpinner name="crescent" color="dark" className="h-[60px] w-[60px]" />
                         <span className="text-grayscale-900 font-poppins font-[600] text-[16px]">
-                            Saving...
+                            {m['common.saving']()}
                         </span>
                     </div>
                 </div>
             )}
-            <div className="ion-padding p-[20px] bg-white safe-area-top-margin rounded-b-[30px] shadow-bottom-1-5 flex flex-col gap-[10px] z-20 relative">
+            <div className="ion-padding p-[20px] bg-white rounded-b-[30px] shadow-bottom-1-5 flex flex-col gap-[10px] z-20 relative">
                 <div className="flex gap-[10px] items-center">
                     {isManageJsonVersion ? (
                         <CodeIcon
@@ -495,7 +502,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         <Pencil className="w-[40px] h-[40px] text-grayscale-900" version={3} />
                     )}
                     <h5 className="text-[22px] font-[600] text-grayscale-900 font-poppins leading-[24px]">
-                        {isManageJsonVersion ? 'Manage JSON' : 'Manage Competencies'}
+                        {isManageJsonVersion
+                            ? m['skillFrameworks.manageJson']()
+                            : m['skillFrameworks.mgComps']()}
                     </h5>
                     {isManageJsonVersion && (
                         <button
@@ -518,7 +527,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                 />,
                                 {
                                     sectionClassName:
-                                        '!bg-transparent !shadow-none !overflow-visible',
+                                        'bg-transparent! shadow-none! overflow-visible!',
                                 },
                                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                             );
@@ -533,7 +542,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                             />
                             <div className="flex flex-col items-start">
                                 <span className="text-grayscale-600 font-poppins text-[12px] font-[700]">
-                                    Competencies Framework
+                                    {m['skillFrameworks.compFramework']()}
                                 </span>
                                 <span className="text-grayscale-900 font-poppins text-[14px] font-[600] leading-[130%] line-clamp-1 text-left">
                                     {framework?.name}
@@ -583,7 +592,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] p-[20px] absolute bottom-0 left-0 bg-white"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] p-[20px] absolute bottom-0 left-0 bg-white/60"
             >
                 <div className="w-full flex flex-col items-center gap-[10px] max-w-[600px]">
                     {fileInfo && (
@@ -596,7 +605,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                     } disabled:bg-grayscale-300 text-white pl-[20px] pr-[15px] py-[10px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] w-full`}
                                 >
                                     <Pencil className="w-[25px] h-[25px]" version={3} />
-                                    Review Framework
+                                    {m['skillFrameworks.reviewFw']()}
                                 </button>
                             )}
                         </>
@@ -608,7 +617,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                 className="p-[12px] bg-white rounded-full shadow-bottom-3-4"
                             >
                                 <SlimCaretLeft
-                                    className="w-[20px] h-[20px] text-grayscale-900"
+                                    className="rtl-mirror w-[20px] h-[20px] text-grayscale-900"
                                     color="currentColor"
                                 />
                             </button>
@@ -617,7 +626,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                             onClick={handleClose}
                             className="py-[7px] px-[15px] bg-white rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom h-[44px]"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                         <button
                             onClick={() => {
@@ -635,7 +644,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                         />,
                                         {
                                             sectionClassName:
-                                                '!bg-transparent !shadow-none !overflow-visible',
+                                                'bg-transparent! shadow-none! overflow-visible!',
                                         },
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );
@@ -650,7 +659,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                     : 'bg-emerald-700'
                             }`}
                         >
-                            {isSaving ? 'Saving...' : 'Save'}
+                            {isSaving ? m['common.saving']() : m['common.save']()}
                         </button>
                     </div>
                 </div>
@@ -659,4 +668,4 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
     );
 };
 
-export default ManageSkills;
+export default withCompetencyAdmin(ManageSkills);

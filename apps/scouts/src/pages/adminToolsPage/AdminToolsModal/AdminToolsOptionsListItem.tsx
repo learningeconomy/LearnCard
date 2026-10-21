@@ -43,7 +43,7 @@ export const AdminToolOptionsListItem: React.FC<{
             setTimeout(() => {
                 newModal(
                     <AdminToolsOptionsContainer option={option} />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                 );
             }, 500);
@@ -58,7 +58,7 @@ export const AdminToolOptionsListItem: React.FC<{
         setTimeout(() => {
             newModal(
                 <AdminToolsOptionsContainer option={option} />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
         }, 500);
@@ -87,7 +87,7 @@ export const AdminToolOptionsListItem: React.FC<{
                         {count}
                     </p>
                 )}
-                <SlimCaretRight className="w-[25px] h-[26px] text-grayscale-500" />
+                <SlimCaretRight className="rtl-mirror w-[25px] h-[26px] text-grayscale-500" />
             </div>
         </li>
     );

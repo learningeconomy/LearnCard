@@ -46,22 +46,20 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
 
     return (
         <div className={`flex items-center gap-3 p-3 rounded-xl border ${styles.bg}`}>
-            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+            <div className="shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-xs">
                 {styles.icon}
             </div>
 
             <div className="flex-1 min-w-0">
                 <p className={`text-sm font-medium ${styles.text}`}>{label}</p>
 
-                {description && (
-                    <p className="text-xs text-gray-500 mt-0.5">{description}</p>
-                )}
+                {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
             </div>
 
             {action && (
                 <button
                     onClick={action.onClick}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 rounded-lg transition-colors"
+                    className="shrink-0 px-3 py-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 rounded-lg transition-colors"
                 >
                     {action.label}
                 </button>

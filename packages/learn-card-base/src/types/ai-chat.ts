@@ -93,7 +93,6 @@ export type AuthenticatedMessage = {
     topic?: string;
     topicUri?: string; // URI of the topic boost to start a chat with
     pathwayUri?: string; // URI of the learning pathway credential to start a chat with
-    did?: string; // User's DID for authentication
 };
 
 export type DebugInfo = {

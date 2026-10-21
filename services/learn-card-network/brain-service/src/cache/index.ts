@@ -1,5 +1,6 @@
 /// <reference path="../global.d.ts" />
 
+import { environment } from '@environment';
 import Redis, { RedisValue, RedisKey } from 'ioredis';
 import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
 
@@ -65,6 +66,9 @@ export type Cache = {
     /** Gets a key from the cache, optionally reseting it's time to live */
     get: (key: RedisKey, resetTTL?: boolean, ttl?: number) => Promise<string | null | undefined>;
 
+    /** Atomically gets and evicts a key from the cache */
+    getdel: (key: RedisKey) => Promise<string | null | undefined>;
+
     /** Returns an array of keys matching a pattern */
     keys: (pattern: string) => Promise<RedisKey[] | undefined>;
 
@@ -81,11 +85,11 @@ export type Cache = {
     lrange: (key: RedisKey, start: number, stop: number) => Promise<string[] | undefined>;
 
     /**
-     * Atomically increments a key by 1 and returns the new value.
-     * If the key does not exist it is created with value 1.
-     * When ttl is provided and this is the first increment (result === 1), EXPIRE is set.
+     * Atomically increments a key by amount (default 1) and returns the new value.
+     * If the key does not exist it is created with value amount.
+     * When ttl is provided, increment and missing-expiry repair happen atomically.
      */
-    incr: (key: RedisKey, ttl?: number) => Promise<number | undefined>;
+    incr: (key: RedisKey, ttl?: number, amount?: number) => Promise<number | undefined>;
 };
 
 /** Evict all keys after one hour by default */
@@ -172,6 +176,17 @@ export const getCache = (): Cache => {
 
             return undefined;
         },
+        getdel: async key => {
+            try {
+                const redis = cache.redis ?? cache.node;
+
+                return await redis.getdel(key);
+            } catch (e) {
+                console.error('Cache getdel error', e);
+            }
+
+            return undefined;
+        },
         keys: async pattern => {
             try {
                 if (cache?.redis) return await simpleScan(cache.redis, pattern);
@@ -224,19 +239,31 @@ export const getCache = (): Cache => {
 
             return undefined;
         },
-        incr: async (key, ttl) => {
+        incr: async (key, ttl, amount = 1) => {
             try {
                 const redis = cache?.redis ?? cache?.node;
                 if (!redis) return undefined;
 
-                const newVal = await redis.incr(key);
-
-                // Set TTL on first increment so the window auto-expires
-                if (newVal === 1 && ttl) {
-                    await redis.expire(key, ttl);
-                }
-
-                return newVal;
+                if (!Number.isSafeInteger(amount) || amount <= 0) return undefined;
+                // Increment and expiry must be atomic: a crash between commands must not
+                // leave a permanent quota. Also repair counters created without an expiry.
+                if (ttl)
+                    return Number(
+                        await redis.eval(
+                            `
+                    local count = redis.call('INCRBY', KEYS[1], ARGV[1])
+                    if redis.call('TTL', KEYS[1]) < 0 then
+                        redis.call('EXPIRE', KEYS[1], ARGV[2])
+                    end
+                    return count
+                `,
+                            1,
+                            key,
+                            amount,
+                            ttl
+                        )
+                    );
+                return await redis.incrby(key, amount);
             } catch (e) {
                 console.error('Cache incr error', e);
             }
@@ -246,15 +273,14 @@ export const getCache = (): Cache => {
     };
 
     try {
-        const { REDIS_HOST: url, REDIS_PORT: _port } = process.env;
-        const port = parseInt(_port ?? '');
+        const { REDIS_HOST: host, REDIS_PORT: port } = environment;
 
-        if (url && !Number.isNaN(port)) {
+        if (host && port) {
             console.info('Setting up Redis-backed cache');
 
             cache.redis = new Redis({
-                host: url,
-                port: port,
+                host,
+                port,
                 retryStrategy: (times: number) => Math.min(times * 50, 2000),
                 enableAutoPipelining: true,
             });

@@ -18,13 +18,7 @@ import {
     newSessionQAInitState,
 } from './newAiSessionChatbot.helpers';
 
-import {
-    getLogger,
-    useGetCurrentLCNUser,
-    useModal,
-    useDeviceTypeByWidth,
-    LaunchPadAppListItem,
-} from 'learn-card-base';
+import { getLogger, useModal, useDeviceTypeByWidth, LaunchPadAppListItem } from 'learn-card-base';
 import type { ActiveSessionStatus } from 'learn-card-base/types/ai-chat';
 import { getActiveSessionStatus, resumeThread } from 'learn-card-base/stores/nanoStores/chatStore';
 import { showErrorModal } from 'learn-card-base/stores/nanoStores/ErrorModalStore';
@@ -35,7 +29,7 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { AiSessionMode, sessionLoadingText } from '../newAiSession.helpers';
+import { AiSessionMode, getSessionLoadingText } from '../newAiSession.helpers';
 import { usePathQuery } from 'learn-card-base';
 
 import { chatBotStore, useChatBotQA } from '../../../stores/chatBotStore';
@@ -61,7 +55,6 @@ export const NewAiSessionChatBotContainer: React.FC<{
     const query = usePathQuery();
     const { isDesktop } = useDeviceTypeByWidth();
     const { closeAllModals } = useModal();
-    const { currentLCNUser } = useGetCurrentLCNUser();
 
     // const [chatBotQA, setChatBotQA] = useState<ChatBotQA[]>(newSessionQAInitState);
     const { chatBotQA: chatBotQA } = useChatBotQA(newSessionQAInitState);
@@ -265,9 +258,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
             closeAllModals();
             const url = aiPassportApps.find(app => app.id === appAnswer)?.url;
 
-            window.location.href = `${url}/chats?topic=${encodeURIComponent(
-                topicAnswer || ''
-            )}&did=${currentLCNUser?.did}`;
+            window.location.href = `${url}/chats?topic=${encodeURIComponent(topicAnswer || '')}`;
         }, 3000);
     };
 
@@ -339,14 +330,14 @@ export const NewAiSessionChatBotContainer: React.FC<{
             className={`relative w-full flex flex-col pt-[80px] ${
                 isDesktop ? 'max-w-[800px]' : ''
             }`}
-            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
+            style={{ paddingTop: 'calc(80px + var(--ion-safe-area-top, 0px))' }}
         >
             <OnboardingHeader
                 title={m['aiSession.newTopic']()}
                 onClose={isDesktop ? handleStartOver : undefined}
             />
             {showLoader && (
-                <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
+                <AiSessionLoader chatBotQA={chatBotQA} overrideText={getSessionLoadingText()} />
             )}
             {chatBotQA.map((qa, index) => {
                 if (qa.hidden) return null;

@@ -1,404 +1,409 @@
-/**
- * authConfig Unit Tests
- *
- * Tests the split-precedence auth configuration model:
- * - Provider/strategy selection: config > ENV > default
- * - Operational values (URLs, keys): ENV > config > default
- * - Default values when no env vars or config overrides are set
- * - VITE_ prefix reading
- * - REACT_APP_ prefix fallback
- * - VITE_ takes precedence over REACT_APP_
- * - Helper functions: shouldUseSSS, isEmailBackupShareEnabled
- */
-
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-    getAuthConfig,
-    getSSSConfig,
-    shouldUseSSS,
-    isEmailBackupShareEnabled,
-    setAuthConfigOverrides,
     clearAuthConfigOverrides,
+    getAuthConfig,
+    getConfigCapabilities,
+    getKeycloakConfig,
+    getSSSConfig,
+    isEmailRelayConfigured,
+    getEscrowStrategyConfig,
+    isEmailBackupShareEnabled,
+    isProductionTenant,
+    setAuthConfigFromTenant,
+    setAuthConfigOverrides,
+    shouldUseSSS,
 } from '../authConfig';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
+import { tenantConfigSchema, tenantKeycloakConfigSchema } from '../tenantConfigSchema';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const PCR0 = 'a'.repeat(96);
+const PCR1 = 'b'.repeat(96);
+const PCR2 = 'c'.repeat(96);
+const ROOT_SHA256 = 'd'.repeat(64);
 
-const originalEnv = { ...process.env };
+describe('authConfig', () => {
+    beforeEach(() => clearAuthConfigOverrides());
+    afterEach(() => vi.unstubAllEnvs());
 
-const setEnv = (vars: Record<string, string>) => {
-    for (const [key, value] of Object.entries(vars)) {
-        process.env[key] = value;
-    }
-};
-
-const clearAuthEnvVars = () => {
-    const prefixes = ['VITE_', 'REACT_APP_'];
-
-    const suffixes = [
-        'AUTH_PROVIDER',
-        'KEY_DERIVATION',
-        'KEY_DERIVATION_PROVIDER',
-        'SSS_SERVER_URL',
-        'ENABLE_EMAIL_BACKUP_SHARE',
-        'REQUIRE_EMAIL_FOR_PHONE_USERS',
-    ];
-
-    for (const prefix of prefixes) {
-        for (const suffix of suffixes) {
-            delete process.env[`${prefix}${suffix}`];
-        }
-    }
-};
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-describe('getAuthConfig', () => {
-    beforeEach(() => {
-        clearAuthEnvVars();
-        clearAuthConfigOverrides();
+    it('uses enclave environment fallbacks only when tenant values are absent', () => {
+        vi.stubEnv('VITE_ESCROW_ENCLAVE_MODE', 'software');
+        vi.stubEnv('VITE_ESCROW_ENCLAVE_PUBLIC_KEYS', ' first, second , ');
+        expect(getSSSConfig()).toMatchObject({
+            escrowEnclaveMode: 'software',
+            escrowEnclavePublicKeys: ['first', 'second'],
+        });
+        setAuthConfigOverrides({
+            providerConfig: { sss: { escrowEnclaveMode: 'off', escrowEnclavePublicKeys: [] } },
+        });
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(getSSSConfig().escrowEnclavePublicKeys).toEqual([]);
     });
 
-    afterEach(() => {
-        clearAuthConfigOverrides();
-        process.env = { ...originalEnv };
-    });
-
-    describe('defaults', () => {
-        it('returns correct defaults when no env vars are set', () => {
-            const config = getAuthConfig();
-
-            expect(config.authProvider).toBe('firebase');
-            expect(config.keyDerivation).toBe('sss');
-
-            const sss = getSSSConfig();
-            expect(sss.serverUrl).toBe('http://localhost:5100/api');
-            expect(sss.enableEmailBackupShare).toBe(true);
-            expect(sss.requireEmailForPhoneUsers).toBe(true);
+    it('uses deterministic isolated-consumer defaults', () => {
+        expect(getAuthConfig()).toMatchObject({
+            authProvider: 'firebase',
+            keyDerivation: 'sss',
+            escrowRolloutPercent: 0,
+            escrowRolloutAllowlist: [],
+        });
+        expect(getSSSConfig()).toEqual({
+            serverUrl: 'http://localhost:5100/api',
+            escrowRelayPublicKey: '',
+            escrowRelayKeyId: '',
+            escrowEnclaveMode: 'off',
+            escrowEnclavePublicKeys: [],
+            escrowEnclaveMeasurements: [],
+            enableEmailBackupShare: true,
+            requireEmailForPhoneUsers: true,
         });
     });
 
-    describe('VITE_ prefix reading', () => {
-        it('reads VITE_AUTH_PROVIDER', () => {
-            setEnv({ VITE_AUTH_PROVIDER: 'supertokens' });
-
-            const config = getAuthConfig();
-
-            expect(config.authProvider).toBe('supertokens');
-        });
-
-        it('reads VITE_KEY_DERIVATION', () => {
-            setEnv({ VITE_KEY_DERIVATION: 'web3auth' });
-
-            const config = getAuthConfig();
-
-            expect(config.keyDerivation).toBe('web3auth');
-        });
-
-        it('reads VITE_SSS_SERVER_URL', () => {
-            setEnv({ VITE_SSS_SERVER_URL: 'https://custom.server/api' });
-
-            expect(getSSSConfig().serverUrl).toBe('https://custom.server/api');
-        });
-
-        it('reads VITE_ENABLE_EMAIL_BACKUP_SHARE=false', () => {
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
-
-            expect(getSSSConfig().enableEmailBackupShare).toBe(false);
-        });
-
-    });
-
-    describe('REACT_APP_ prefix fallback', () => {
-        it('falls back to REACT_APP_AUTH_PROVIDER', () => {
-            setEnv({ REACT_APP_AUTH_PROVIDER: 'supertokens' });
-
-            const config = getAuthConfig();
-
-            expect(config.authProvider).toBe('supertokens');
-        });
-
-        it('falls back to REACT_APP_KEY_DERIVATION_PROVIDER', () => {
-            setEnv({ REACT_APP_KEY_DERIVATION_PROVIDER: 'web3auth' });
-
-            const config = getAuthConfig();
-
-            expect(config.keyDerivation).toBe('web3auth');
-        });
-
-        it('falls back to REACT_APP_SSS_SERVER_URL', () => {
-            setEnv({ REACT_APP_SSS_SERVER_URL: 'https://react-app.server/api' });
-
-            expect(getSSSConfig().serverUrl).toBe('https://react-app.server/api');
-        });
-    });
-
-    describe('VITE_ takes precedence over REACT_APP_', () => {
-        it('prefers VITE_AUTH_PROVIDER over REACT_APP_AUTH_PROVIDER', () => {
-            setEnv({
-                VITE_AUTH_PROVIDER: 'vite-provider',
-                REACT_APP_AUTH_PROVIDER: 'react-provider',
-            });
-
-            const config = getAuthConfig();
-
-            expect(config.authProvider).toBe('vite-provider');
-        });
-
-        it('prefers VITE_SSS_SERVER_URL over REACT_APP_SSS_SERVER_URL', () => {
-            setEnv({
-                VITE_SSS_SERVER_URL: 'https://vite.server/api',
-                REACT_APP_SSS_SERVER_URL: 'https://react.server/api',
-            });
-
-            expect(getSSSConfig().serverUrl).toBe('https://vite.server/api');
-        });
-    });
-
-    describe('key derivation passthrough', () => {
-        it('passes through unknown key derivation values (open string)', () => {
-            setEnv({ VITE_KEY_DERIVATION: 'unknown-provider' });
-
-            const config = getAuthConfig();
-
-            expect(config.keyDerivation).toBe('unknown-provider');
-        });
-
-        it('accepts web3auth explicitly', () => {
-            setEnv({ VITE_KEY_DERIVATION: 'web3auth' });
-
-            const config = getAuthConfig();
-
-            expect(config.keyDerivation).toBe('web3auth');
-        });
-    });
-
-    describe('boolean parsing', () => {
-        it('enableEmailBackupShare defaults to true', () => {
-            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
-        });
-
-        it('enableEmailBackupShare is true for any value except "false"', () => {
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'true' });
-            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
-
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: '1' });
-            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
-
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'yes' });
-            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
-        });
-
-    });
-});
-
-describe('split-precedence: config wins for provider/strategy selection', () => {
-    beforeEach(() => {
-        clearAuthEnvVars();
-        clearAuthConfigOverrides();
-    });
-
-    afterEach(() => {
-        clearAuthConfigOverrides();
-        process.env = { ...originalEnv };
-    });
-
-    it('tenant config authProvider overrides ENV var', () => {
-        setEnv({ VITE_AUTH_PROVIDER: 'env-provider' });
-        setAuthConfigOverrides({ authProvider: 'tenant-provider' as never });
-
-        expect(getAuthConfig().authProvider).toBe('tenant-provider');
-    });
-
-    it('tenant config keyDerivation overrides ENV var', () => {
-        setEnv({ VITE_KEY_DERIVATION: 'env-strategy' });
-        setAuthConfigOverrides({ keyDerivation: 'tenant-strategy' });
-
-        expect(getAuthConfig().keyDerivation).toBe('tenant-strategy');
-    });
-
-    it('falls back to ENV var when config does not set authProvider', () => {
-        setEnv({ VITE_AUTH_PROVIDER: 'env-provider' });
-        setAuthConfigOverrides({ keyDerivation: 'sss' });
-
-        expect(getAuthConfig().authProvider).toBe('env-provider');
-    });
-});
-
-describe('split-precedence: ENV wins for operational values', () => {
-    beforeEach(() => {
-        clearAuthEnvVars();
-        clearAuthConfigOverrides();
-    });
-
-    afterEach(() => {
-        clearAuthConfigOverrides();
-        process.env = { ...originalEnv };
-    });
-
-    it('ENV SSS_SERVER_URL overrides tenant config sss.serverUrl', () => {
+    it('reads the pinned escrow relay key from tenant SSS config', () => {
         setAuthConfigOverrides({
             providerConfig: {
-                sss: { serverUrl: 'https://tenant-sss.example.com/api' },
+                sss: { escrowRelayPublicKey: 'relay-public-key', escrowRelayKeyId: '2026-09' },
             },
         });
 
-        setEnv({ VITE_SSS_SERVER_URL: 'https://env-sss.example.com/api' });
-
-        expect(getSSSConfig().serverUrl).toBe('https://env-sss.example.com/api');
+        expect(getSSSConfig()).toMatchObject({
+            escrowRelayPublicKey: 'relay-public-key',
+            escrowRelayKeyId: '2026-09',
+        });
     });
 
-    it('falls back to tenant config sss.serverUrl when no ENV var', () => {
+    it('reports whether emailed recovery keys can be sent', () => {
+        expect(isEmailRelayConfigured()).toBe(false);
         setAuthConfigOverrides({
             providerConfig: {
-                sss: { serverUrl: 'https://tenant-sss.example.com/api' },
+                sss: { escrowRelayPublicKey: 'relay-public-key', escrowRelayKeyId: '2026-09' },
             },
         });
-
-        expect(getSSSConfig().serverUrl).toBe('https://tenant-sss.example.com/api');
-    });
-
-    it('ENV ENABLE_EMAIL_BACKUP_SHARE overrides tenant config value', () => {
+        expect(isEmailRelayConfigured()).toBe(true);
         setAuthConfigOverrides({
-            providerConfig: {
-                sss: { enableEmailBackupShare: true },
-            },
+            providerConfig: { sss: { escrowRelayPublicKey: 'relay-public-key' } },
         });
-
-        setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
-
-        expect(getSSSConfig().enableEmailBackupShare).toBe(false);
+        expect(isEmailRelayConfigured()).toBe(false);
     });
 
-    it('falls back to tenant config enableEmailBackupShare when no ENV var', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                sss: { enableEmailBackupShare: false },
-            },
-        });
-
-        expect(getSSSConfig().enableEmailBackupShare).toBe(false);
-    });
-
-    it('ENV REQUIRE_EMAIL_FOR_PHONE_USERS overrides tenant config value', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                sss: { requireEmailForPhoneUsers: true },
-            },
-        });
-
-        setEnv({ VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: 'false' });
-
-        expect(getSSSConfig().requireEmailForPhoneUsers).toBe(false);
-    });
-
-    it('falls back to tenant config requireEmailForPhoneUsers when no ENV var', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                sss: { requireEmailForPhoneUsers: false },
-            },
-        });
-
-        expect(getSSSConfig().requireEmailForPhoneUsers).toBe(false);
-    });
-
-    it('preserves extra tenant SSS config fields when ENV overrides specific values', () => {
+    it('maps the software enclave policy and leaves escrow disabled by default', () => {
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
         setAuthConfigOverrides({
             providerConfig: {
                 sss: {
-                    serverUrl: 'https://tenant.example.com/api',
+                    escrowEnclaveMode: 'software',
+                    escrowEnclavePublicKeys: ['dev-key'],
+                },
+            },
+        });
+        expect(getEscrowStrategyConfig(getSSSConfig())).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+    });
+
+    it('maps a valid nitro PCR tuple, passing through root hash and max age', () => {
+        const pcrTuple = { pcr0: PCR0, pcr1: PCR1, pcr2: PCR2 };
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: {
+                    escrowEnclaveMode: 'nitro',
+                    escrowEnclaveMeasurements: [pcrTuple],
+                    escrowEnclaveRootSha256: ROOT_SHA256,
+                    escrowEnclaveMaxAgeMs: 60000,
+                },
+            },
+        });
+        expect(getEscrowStrategyConfig(getSSSConfig())).toEqual({
+            enabled: true,
+            attestation: {
+                mode: 'nitro',
+                pinnedMeasurements: [pcrTuple],
+                rootCertificateSha256: ROOT_SHA256,
+                maxAgeMs: 60000,
+            },
+        });
+    });
+
+    it('disables escrow and logs an error for a legacy image-only nitro config (no PCR pins)', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: {
+                    escrowEnclaveMode: 'nitro',
+                    escrowEnclaveMeasurements: [{ imageSha384: 'a'.repeat(96) }],
+                },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.nitro-mode.no-pcr-pins',
+            expect.anything()
+        );
+    });
+
+    it('disables escrow and logs an error for nitro mode with an empty pin list', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'nitro', escrowEnclaveMeasurements: [] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.nitro-mode.no-pcr-pins',
+            expect.anything()
+        );
+    });
+
+    it('blocks software mode for a production tenant on a production deploy stage, and logs an error', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'production' })).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.software-mode.blocked-in-production',
+            { tenantId: 'learncard', stage: 'production' }
+        );
+    });
+
+    it('allows software mode for a production tenant on a staging deploy', () => {
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'staging' })).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+    });
+
+    it('allows software mode on a local deploy, even for a production tenant', () => {
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'local' })).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+    });
+
+    it('keeps software mode working for a non-production tenant even on a production deploy stage', () => {
+        setAuthConfigOverrides({
+            tenantId: 'some-dev-tenant',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'production' })).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+    });
+
+    it('treats a missing stage as production and blocks software mode for a production tenant (fail-closed)', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        // No `stage` override at all — getAuthConfig().stage falls back to 'production'.
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.software-mode.blocked-in-production',
+            { tenantId: 'learncard', stage: 'production' }
+        );
+    });
+
+    it('recognizes only known production tenants', () => {
+        expect(isProductionTenant('learncard')).toBe(true);
+        expect(isProductionTenant('vetpass')).toBe(true);
+        expect(isProductionTenant('scoutpass')).toBe(true);
+        expect(isProductionTenant('some-dev-tenant')).toBe(false);
+        expect(isProductionTenant(undefined)).toBe(false);
+    });
+
+    it('schema rejects nitro measurements with an invalid hex length', () => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                sss: {
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
+                    escrowEnclaveMeasurements: [{ pcr0: 'too-short', pcr1: PCR1, pcr2: PCR2 }],
+                },
+            },
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it('schema rejects an escrowEnclaveRootSha256 with an invalid hex length', () => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                sss: {
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
+                    escrowEnclaveRootSha256: 'too-short',
+                },
+            },
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it('uses explicit validated overrides without consulting environment variables', () => {
+        setAuthConfigOverrides({
+            authProvider: 'keycloak',
+            keyDerivation: 'custom-strategy',
+            providerConfig: {
+                customStrategy: { endpoint: 'https://auth.example.com' },
+            },
+        });
+
+        expect(getAuthConfig()).toMatchObject({
+            authProvider: 'keycloak',
+            keyDerivation: 'custom-strategy',
+            providerConfig: {
+                customStrategy: { endpoint: 'https://auth.example.com' },
+            },
+        });
+    });
+
+    it('bridges the complete validated TenantConfig auth section', () => {
+        setAuthConfigFromTenant({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                keyDerivation: 'web3auth',
+                sss: {
+                    serverUrl: 'https://tenant.example.com/trpc',
+                    enableEmailBackupShare: false,
+                    requireEmailForPhoneUsers: false,
                     customTenantField: 'preserved',
                 },
+                web3Auth: {
+                    clientId: 'tenant-client-id',
+                    network: 'cyan',
+                    verifierId: 'tenant-verifier',
+                    rpcTarget: 'https://rpc.example.com',
+                },
+                keycloak: tenantKeycloakConfigSchema.parse({
+                    serverUrl: 'https://keycloak.example.com',
+                    realm: 'learncard',
+                    clientId: 'app',
+                }),
             },
         });
-
-        setEnv({ VITE_SSS_SERVER_URL: 'https://env.example.com/api' });
 
         const config = getAuthConfig();
-        const sss = config.providerConfig.sss!;
 
-        expect(sss.serverUrl).toBe('https://env.example.com/api');
-        expect(sss.customTenantField).toBe('preserved');
+        expect(config.authProvider).toBe('firebase');
+        expect(config.keyDerivation).toBe('web3auth');
+        expect(config.tenantId).toBe('learncard');
+        expect(config.escrowRolloutPercent).toBe(0);
+        expect(config.escrowRolloutAllowlist).toEqual([]);
+        expect(config.providerConfig.sss).toMatchObject({
+            serverUrl: 'https://tenant.example.com/trpc',
+            enableEmailBackupShare: false,
+            requireEmailForPhoneUsers: false,
+            customTenantField: 'preserved',
+        });
+        expect(config.providerConfig.web3Auth).toEqual({
+            clientId: 'tenant-client-id',
+            network: 'cyan',
+            verifierId: 'tenant-verifier',
+            rpcTarget: 'https://rpc.example.com',
+        });
+        expect(config.providerConfig.keycloak).toEqual({
+            serverUrl: 'https://keycloak.example.com',
+            realm: 'learncard',
+            clientId: 'app',
+            scopes: ['openid', 'profile', 'email', 'phone'],
+        });
+        expect(getKeycloakConfig()).toEqual(config.providerConfig.keycloak);
     });
 
-    it('ENV Web3Auth values override tenant config', () => {
+    it('leaves Keycloak config absent for other tenants', () => {
+        expect(getKeycloakConfig()).toBeUndefined();
+    });
+
+    it('bridges a non-default escrow rollout percent and allowlist from tenant features', () => {
+        const allowlistHash = 'b'.repeat(64);
+        setAuthConfigFromTenant({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutPercent: 10,
+                escrowRolloutAllowlist: [allowlistHash],
+            },
+        });
+
+        expect(getAuthConfig()).toMatchObject({
+            escrowRolloutPercent: 10,
+            escrowRolloutAllowlist: [allowlistHash],
+        });
+    });
+
+    it('clears host overrides back to deterministic defaults', () => {
+        setAuthConfigOverrides({ keyDerivation: 'web3auth' });
+        clearAuthConfigOverrides();
+
+        expect(getAuthConfig().keyDerivation).toBe('sss');
+    });
+
+    it('reports SSS selection and email-backup state from resolved config', () => {
         setAuthConfigOverrides({
+            keyDerivation: 'sss',
             providerConfig: {
-                web3Auth: {
-                    clientId: 'tenant-client-id',
-                    network: 'tenant-network',
-                    verifierId: 'tenant-verifier',
-                    rpcTarget: 'https://tenant-rpc.example.com',
+                sss: {
+                    serverUrl: 'https://tenant.example.com/trpc',
+                    enableEmailBackupShare: false,
+                    requireEmailForPhoneUsers: true,
                 },
             },
         });
 
-        setEnv({ VITE_WEB3AUTH_CLIENT_ID: 'env-client-id' });
-
-        const w3a = getAuthConfig().providerConfig.web3Auth!;
-
-        expect(w3a.clientId).toBe('env-client-id');
-        expect(w3a.network).toBe('tenant-network');
-        expect(w3a.verifierId).toBe('tenant-verifier');
-        expect(w3a.rpcTarget).toBe('https://tenant-rpc.example.com');
-    });
-
-    it('falls back to tenant Web3Auth config when no ENV vars', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                web3Auth: {
-                    clientId: 'tenant-client-id',
-                    network: 'tenant-network',
-                    verifierId: 'tenant-verifier',
-                },
-            },
-        });
-
-        const w3a = getAuthConfig().providerConfig.web3Auth!;
-
-        expect(w3a.clientId).toBe('tenant-client-id');
-        expect(w3a.network).toBe('tenant-network');
-        expect(w3a.verifierId).toBe('tenant-verifier');
-    });
-});
-
-describe('helper functions', () => {
-    beforeEach(() => {
-        clearAuthEnvVars();
-        clearAuthConfigOverrides();
-    });
-
-    afterEach(() => {
-        clearAuthConfigOverrides();
-        process.env = { ...originalEnv };
-    });
-
-    describe('shouldUseSSS', () => {
-        it('returns true by default', () => {
-            expect(shouldUseSSS()).toBe(true);
-        });
-
-        it('returns false when key derivation is web3auth', () => {
-            setEnv({ VITE_KEY_DERIVATION: 'web3auth' });
-
-            expect(shouldUseSSS()).toBe(false);
+        expect(shouldUseSSS()).toBe(true);
+        expect(isEmailBackupShareEnabled()).toBe(false);
+        expect(getConfigCapabilities()).toMatchObject({
+            recovery: true,
+            deviceLinking: true,
         });
     });
 
-    describe('isEmailBackupShareEnabled', () => {
-        it('returns true by default', () => {
-            expect(isEmailBackupShareEnabled()).toBe(true);
-        });
+    it('reports Web3Auth capabilities from explicit resolved config', () => {
+        setAuthConfigOverrides({ keyDerivation: 'web3auth' });
 
-        it('returns false when explicitly disabled', () => {
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
-
-            expect(isEmailBackupShareEnabled()).toBe(false);
+        expect(shouldUseSSS()).toBe(false);
+        expect(getConfigCapabilities()).toEqual({
+            recovery: false,
+            deviceLinking: false,
+            localKeyPersistence: false,
+            contactMethodUpgrade: false,
         });
     });
-
 });

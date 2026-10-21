@@ -10,6 +10,7 @@ import { useGetBlockedProfiles } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ReaperGhost from '../../../assets/lotties/reaperghost.json';
 import Lottie from 'react-lottie-player';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookBlockedContacts: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -24,7 +25,7 @@ const AddressBookBlockedContacts: React.FC<{
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full pt-[100px]">
                     <IonSpinner color="black" />
-                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                    <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
                 </section>
             )}
             {!isLoading && (
@@ -37,7 +38,7 @@ const AddressBookBlockedContacts: React.FC<{
             )}
             {!isLoading && (data?.length === 0 || error) && (
                 <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                    <strong>No blocked users yet.</strong>
+                    <strong>{m['addressBook.noBlockedUsers']()}</strong>
                     <div className="w-[280px] h-[280px] mt-[-30px]">
                         <Lottie
                             loop

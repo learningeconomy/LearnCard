@@ -11,6 +11,7 @@ import { Boost, VC } from '@learncard/types';
 import { BoostMenuType } from '../hooks/useBoostMenu';
 import { BoostCategoryOptionsEnum, ModalTypes, useModal, useConfirmation } from 'learn-card-base';
 import { isTroopCategory } from '../../../helpers/troop.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostOptionsMenuProps = {
     handleCloseModal: () => void;
@@ -56,7 +57,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
             newModal(
                 <ShareTroopIdModal credential={troopCredential} uri={troopUri} />,
-                { sectionClassName: '!bg-transparent !shadow-none !max-w-[355px]' },
+                { sectionClassName: 'bg-transparent! shadow-none! max-w-[355px]!' },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
             return;
@@ -81,7 +82,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
     const selfBoostConfirmationAlert = async () => {
         await confirm({
-            text: 'Are you sure you want to delete this?',
+            text: m['boost.areYouSureDelete'](),
             onConfirm: async () => {
                 await handleDelete();
                 closeAllModals();
@@ -95,7 +96,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
     const presentViewJsonModal = () => {
         newModal(<ViewJsonModal boost={boost} />, {
-            sectionClassName: '!max-h-[90%] !mx-[20px]',
+            sectionClassName: 'max-h-[90%]! mx-[20px]!',
         });
     };
 
@@ -106,7 +107,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                     onClick={selfBoostConfirmationAlert}
                     className="flex items-center font-medium justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                 >
-                    <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Delete
+                    <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                    {m['common.delete']()}
                 </button>
             </div>
 
@@ -118,7 +120,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                         }}
                         className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                     >
-                        <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" /> Share
+                        <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['common.share']()}
                     </button>
                 </div>
             )}
@@ -128,7 +131,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                     onClick={presentViewJsonModal}
                     className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                 >
-                    <CopyStack className="ml-[5px] h-[30px] w-[30px] mr-2" /> View JSON
+                    <CopyStack className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                    {m['boost.viewJson']()}
                 </button>
             </div>
         </section>
@@ -141,7 +145,7 @@ export default BoostOptionsMenu;
     /* <li
                         key={id}
                         onClick={() => onClick?.()}
-                        className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0"
+                        className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-2 last:border-0"
                     >
                         <p className="text-grayscale-900">{title}</p>
                         {icon}

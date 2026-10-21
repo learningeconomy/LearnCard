@@ -16,15 +16,12 @@ export const ActivityFeedItem: React.FC<{
     onSelect?: (item: ActivityFeedItemVM) => void;
 }> = ({ item, onSelect }) => {
     return (
-        <li
-            data-unread={item.unread}
-            className="[&:not(:last-of-type)]:border-b border-grayscale-100"
-        >
+        <li data-unread={item.unread} className="not-last-of-type:border-b border-grayscale-100">
             <button
                 type="button"
                 onClick={() => onSelect?.(item)}
                 aria-label={item.title}
-                className={`flex items-center gap-3 w-full text-left py-3 px-2 rounded-[12px] transition-colors hover:bg-grayscale-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                className={`flex items-center gap-3 w-full text-left py-3 px-2 rounded-[12px] transition-colors hover:bg-grayscale-10 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                     item.unread ? 'bg-emerald-50' : ''
                 }`}
             >
@@ -55,7 +52,7 @@ export const ActivityFeedItem: React.FC<{
                                 customContainerClass="h-[44px] w-[44px] min-h-[44px] min-w-[44px] text-[16px]"
                                 customImageClass="h-[44px] w-[44px] object-cover"
                             />
-                            <span className="absolute -right-[3px] -bottom-[3px] flex items-center justify-center h-[22px] w-[22px] rounded-full bg-white ring-2 ring-white shadow-sm">
+                            <span className="absolute right-[-3px] bottom-[-3px] flex items-center justify-center h-[22px] w-[22px] rounded-full bg-white ring-2 ring-white shadow-xs">
                                 <ActivityCredentialIcon
                                     category={item.category}
                                     isGeneric={item.isGenericCredential}
@@ -77,7 +74,7 @@ export const ActivityFeedItem: React.FC<{
                         )}
                     </p>
                     {item.credentialType && (
-                        <p className="font-poppins text-[13px] text-grayscale-500 truncate">
+                        <p className="font-poppins text-[13px] text-grayscale-600 truncate">
                             {item.credentialType}
                         </p>
                     )}
@@ -94,7 +91,7 @@ export const ActivityFeedItem: React.FC<{
                     )}
                 </div>
 
-                <span className="font-poppins text-[13px] text-grayscale-500 whitespace-nowrap">
+                <span className="font-poppins text-[13px] text-grayscale-600 whitespace-nowrap">
                     {shortDate(item.timestamp)}
                 </span>
                 <CaretRight className="h-3 w-auto text-grayscale-400" />

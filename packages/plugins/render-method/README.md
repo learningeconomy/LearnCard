@@ -20,53 +20,53 @@ const lc = await baseLc.addPlugin(getRenderMethodPlugin(baseLc));
 
 ### Write side
 
-| Method | Signature | Description |
-|---|---|---|
-| `attachRenderMethod` | `(vc, config?) => UnsignedVC` | Attaches a `TemplateRenderMethod` to the VC and injects the JSON-LD context. **Opt-in:** returns the VC unchanged when `config` is omitted. Merges with existing `renderMethod` entries. |
-| `buildTemplateRenderMethod` | `(config) => TemplateRenderMethod` | Builds a `TemplateRenderMethod` descriptor without mutating a VC. |
+| Method                      | Signature                          | Description                                                                                                                                                                              |
+| --------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `attachRenderMethod`        | `(vc, config?) => UnsignedVC`      | Attaches a `TemplateRenderMethod` to the VC and injects the JSON-LD context. **Opt-in:** returns the VC unchanged when `config` is omitted. Merges with existing `renderMethod` entries. |
+| `buildTemplateRenderMethod` | `(config) => TemplateRenderMethod` | Builds a `TemplateRenderMethod` descriptor without mutating a VC.                                                                                                                        |
 
 ### Read side
 
 Layered API — pick the level that fits your need:
 
-| Method | Signature | When to use |
-|---|---|---|
-| `findTemplateRenderMethod` | `(vc, suite \| suites[]) => TemplateRenderMethod \| null` | **Most common.** Filter by `renderSuite` string. Pass an array for capability negotiation. |
-| `findTemplateRenderMethods` | `(vc, suite \| suites[]) => TemplateRenderMethod[]` | All matches of a suite (or any of several). |
-| `getSvgMustacheRenderMethod` | `(vc) => TemplateRenderMethod \| null` | Backward-compatible alias for `findTemplateRenderMethod(vc, 'svg-mustache')`. |
-| `findRenderMethod` | `(vc, predicate) => T \| null` | Escape hatch: arbitrary predicate for non-template render methods. |
-| `findRenderMethods` | `(vc, predicate) => T[]` | Same, all matches. |
-| `getRenderMethods` | `(vc) => RenderMethod[]` | Raw access. Unwraps `CertifiedBoostCredential`, normalizes object↔array. No validation. |
-| `buildRenderData` | `(vc, renderProperty?) => Record<string, unknown>` | Portable Mustache context (adds `vc` / `credential` / `credentialSubjects` aliases). Optional RFC 6901 overlay. |
+| Method                       | Signature                                                 | When to use                                                                                                     |
+| ---------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `findTemplateRenderMethod`   | `(vc, suite \| suites[]) => TemplateRenderMethod \| null` | **Most common.** Filter by `renderSuite` string. Pass an array for capability negotiation.                      |
+| `findTemplateRenderMethods`  | `(vc, suite \| suites[]) => TemplateRenderMethod[]`       | All matches of a suite (or any of several).                                                                     |
+| `getSvgMustacheRenderMethod` | `(vc) => TemplateRenderMethod \| null`                    | Backward-compatible alias for `findTemplateRenderMethod(vc, 'svg-mustache')`.                                   |
+| `findRenderMethod`           | `(vc, predicate) => T \| null`                            | Escape hatch: arbitrary predicate for non-template render methods.                                              |
+| `findRenderMethods`          | `(vc, predicate) => T[]`                                  | Same, all matches.                                                                                              |
+| `getRenderMethods`           | `(vc) => RenderMethod[]`                                  | Raw access. Unwraps `CertifiedBoostCredential`, normalizes object↔array. No validation.                         |
+| `buildRenderData`            | `(vc, renderProperty?) => Record<string, unknown>`        | Portable Mustache context (adds `vc` / `credential` / `credentialSubjects` aliases). Optional RFC 6901 overlay. |
 
 ### Type guards (composable selection)
 
-| Guard | Narrows to |
-|---|---|
-| `isTemplateRenderMethod(rm)` | `TemplateRenderMethod` (Zod-validated shape) |
+| Guard                           | Narrows to                                                   |
+| ------------------------------- | ------------------------------------------------------------ |
+| `isTemplateRenderMethod(rm)`    | `TemplateRenderMethod` (Zod-validated shape)                 |
 | `isSvgMustacheRenderMethod(rm)` | `TemplateRenderMethod` with `renderSuite === 'svg-mustache'` |
 
 ### Constants
 
-- `DEFAULT_TEMPLATE_ID` — URL of the default hosted LearnCard template. Pass as `templateId` to opt in.
-- `RENDER_METHOD_CONTEXT` — JSON-LD context URL injected by `attachRenderMethod`. See the [draft context warning](#draft-context-warning).
+-   `DEFAULT_TEMPLATE_ID` — URL of the default hosted LearnCard template. Pass as `templateId` to opt in.
+-   `RENDER_METHOD_CONTEXT` — JSON-LD context URL injected by `attachRenderMethod`. See the [draft context warning](#draft-context-warning).
 
 ### Throws
 
-- `attachRenderMethod` / `buildTemplateRenderMethod` throw if:
-  - `templateId` is provided but is not an `http://` or `https://` URL.
-  - `templateValue` is provided but is empty or whitespace-only.
-  - `buildTemplateRenderMethod` is called without either field set.
+-   `attachRenderMethod` / `buildTemplateRenderMethod` throw if:
+    -   `templateId` is provided but is not an `http://` or `https://` URL.
+    -   `templateValue` is provided but is empty or whitespace-only.
+    -   `buildTemplateRenderMethod` is called without either field set.
 
 ### `AttachRenderMethodConfig`
 
 `templateId` and `templateValue` are mutually exclusive — provide one or the other. The discriminated union enforces this at compile time.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `templateId` | `string` | HTTPS URL of a hosted SVG Mustache template. Only `http://` and `https://` schemes are accepted. |
-| `templateValue` | `string` | Inline SVG Mustache content (embedded as a URL-encoded `data:image/svg+xml,` URI). Must be non-empty. |
-| `renderProperty` | `string[]?` | JSON Pointer paths (RFC 6901) scoping which VC fields are exposed to the template. |
+| Field            | Type        | Description                                                                                           |
+| ---------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| `templateId`     | `string`    | HTTPS URL of a hosted SVG Mustache template. Only `http://` and `https://` schemes are accepted.      |
+| `templateValue`  | `string`    | Inline SVG Mustache content (embedded as a URL-encoded `data:image/svg+xml,` URI). Must be non-empty. |
+| `renderProperty` | `string[]?` | JSON Pointer paths (RFC 6901) scoping which VC fields are exposed to the template.                    |
 
 ## Opt-in semantics
 
@@ -135,9 +135,7 @@ const renderMethod = lc.invoke.buildTemplateRenderMethod({
 
 ## Feature-flag interaction
 
-In `apps/learn-card-app`, the `useRenderMethodEnabled` hook gates the **display** path (the `RenderMethodDisplay` component, the `BoostDisplayStyleSelector`, the `getSvgMustacheRenderMethod` lookup). It does **not** gate the write path — whether to attach a render method to a credential is a per-callsite decision and follows the opt-in semantics above.
-
-In other words: enabling the LaunchDarkly flag turns on rendering for credentials that already have a `renderMethod`, but it does not retroactively change which credentials carry one.
+In `apps/learn-card-app`, credentials with a supported `renderMethod` are rendered across previews, claim surfaces, and the display-style selector. Attaching a render method remains a per-callsite decision and follows the opt-in semantics above.
 
 ## Draft context warning
 
@@ -149,14 +147,14 @@ https://digitalbazaar.github.io/vc-render-method-context/contexts/v2rc2.jsonld
 
 The `v2rc2` suffix means "v2, release candidate 2". This is **not** a finalized W3C TR. Risks of issuing VCs that reference this URL in their `@context`:
 
-- The URL could move, be renamed, or 404 — JSON-LD context resolution would fail at verification time.
-- Term definitions could change between rc2 and a final spec, breaking interpretation.
-- The context is not statically cached by DidKit — verification incurs a network fetch.
+-   The URL could move, be renamed, or 404 — JSON-LD context resolution would fail at verification time.
+-   Term definitions could change between rc2 and a final spec, breaking interpretation.
+-   The context is not statically cached by DidKit — verification incurs a network fetch.
 
 Mitigation plan (not yet implemented):
 
-- Bundle the context locally, mirroring the pattern in `packages/learn-card-contexts/`.
-- Migrate to the stable W3C TR context URL when the spec finalizes.
+-   Bundle the context locally, mirroring the pattern in `packages/learn-card-contexts/`.
+-   Migrate to the stable W3C TR context URL when the spec finalizes.
 
 Tracking: <https://www.w3.org/TR/vc-render-method/>
 
@@ -171,10 +169,7 @@ The read-side API is intentionally generic so new render suites can be added by 
 const found = lc.invoke.findTemplateRenderMethod(vc, 'html-mustache');
 
 // Capability negotiation — first match across the suites your renderer supports
-const renderable = lc.invoke.findTemplateRenderMethod(vc, [
-    'svg-mustache',
-    'html-mustache',
-]);
+const renderable = lc.invoke.findTemplateRenderMethod(vc, ['svg-mustache', 'html-mustache']);
 
 // All matches (e.g., when offering the user a choice)
 const allHtml = lc.invoke.findTemplateRenderMethods(vc, 'html-mustache');
@@ -186,13 +181,13 @@ The plugin handles **selection** and **data shaping** uniformly across suites. T
 
 ## Architectural boundary
 
-- **In the plugin** (this package): data domain — attach renderMethod to VCs, find renderMethod entries, shape Mustache contexts. Pure, isomorphic, CLI-safe.
-- **In the app**: render domain — Mustache hydration into a target format, DOMPurify sanitization, DOM insertion. Browser-specific.
+-   **In the plugin** (this package): data domain — attach renderMethod to VCs, find renderMethod entries, shape Mustache contexts. Pure, isomorphic, CLI-safe.
+-   **In the app**: render domain — Mustache hydration into a target format, DOMPurify sanitization, DOM insertion. Browser-specific.
 
 The seam is "data that describes how to render" (plugin) vs. "execute the render and put pixels on screen" (app).
 
 ## Notes
 
-- Only `svg-mustache` is supported as a render suite at this time. The renderer in `apps/learn-card-app/src/helpers/renderMethod.helpers.ts` performs DOMPurify sanitization on the hydrated SVG before insertion.
-- See `src/types.ts` for types, `src/plugin.ts` for the write side, `src/read.ts` for the read side.
-- See `src/test/plugin.test.ts` for the full behavior contract.
+-   Only `svg-mustache` is supported as a render suite at this time. The renderer in `apps/learn-card-app/src/helpers/renderMethod.helpers.ts` performs DOMPurify sanitization on the hydrated SVG before insertion.
+-   See `src/types.ts` for types, `src/plugin.ts` for the write side, `src/read.ts` for the read side.
+-   See `src/test/plugin.test.ts` for the full behavior contract.

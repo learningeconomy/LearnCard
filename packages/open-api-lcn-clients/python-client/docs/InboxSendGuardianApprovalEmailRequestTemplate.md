@@ -1,12 +1,11 @@
 # InboxSendGuardianApprovalEmailRequestTemplate
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
-**model** | **Dict[str, object]** |  | [optional] 
+| Name      | Type                            | Description | Notes      |
+| --------- | ------------------------------- | ----------- | ---------- |
+| **id**    | **str**                         |             | [optional] |
+| **model** | **Dict[str, Optional[object]]** |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_send_guardian_approval_email_request_template_dict = inbox_send_guardian_a
 # create an instance of InboxSendGuardianApprovalEmailRequestTemplate from a dict
 inbox_send_guardian_approval_email_request_template_from_dict = InboxSendGuardianApprovalEmailRequestTemplate.from_dict(inbox_send_guardian_approval_email_request_template_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -79,11 +79,15 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
     const presentEmojiPicker = () => {
         newModal(
             <Suspense
-                fallback={<div className="flex items-center justify-center p-8">Loading…</div>}
+                fallback={
+                    <div className="flex items-center justify-center p-8">
+                        {m['arabicFixes.loading']()}
+                    </div>
+                }
             >
                 <FamilyEmojiPicker handleSetEmoji={handleSetEmoji} handleCloseModal={closeModal} />
             </Suspense>,
-            { sectionClassName: '!bg-transparent !shadow-none !w-fit' }
+            { sectionClassName: 'bg-transparent! shadow-none! w-fit!' }
         );
     };
 
@@ -104,7 +108,7 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                             handleSetState('basicInfo', 'name', _familyName);
                             setErrors?.({});
                         }}
-                        className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !pr-4 flex ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
+                        className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] pr-4! flex ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                             errors?.name ? 'border-red-300 border-2' : ''
                         }`}
                         placeholder={m['family.editor.familyNamePlaceholder']()}

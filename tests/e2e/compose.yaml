@@ -19,17 +19,26 @@ services:
                 condition: service_started
             elasticmq:
                 condition: service_started
-            signing:
-                condition: service_started
 
         networks:
             - learn-card
 
         extra_hosts:
             - 'localhost:host-gateway'
+            # cli-commands.spec.ts's webhook test needs the brain container to reach a
+            # listener on the host; host-gateway only auto-adds this on Docker
+            # Desktop, not native Linux Docker Engine (e.g. CI runners).
+            - 'host.docker.internal:host-gateway'
 
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
+            # Workspace packages are baked into the shared image, so mount the refresh
+            # contracts explicitly to exercise branch-local validator changes without a
+            # full monorepo image rebuild.
+            - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src
+            # LC-2198: the unified send route signs through the shared managed context
+            # helpers (@learncard/helpers resolves to src under --conditions=development).
+            - ../../packages/learn-card-helpers/src:/app/packages/learn-card-helpers/src
 
         environment:
             PORT: 4000
@@ -41,6 +50,10 @@ services:
             SKIP_DIDKIT_NAPI: '1'
 
             DOMAIN_NAME: localhost%3A4000
+            # Trust proof-of-login presentations signed by this stack's LCA API.
+            LOGIN_PROVIDER_DID: did:web:localhost%3A5200
+            # Managed app signing authorities use this stack's LCA API, not the dev port (5100).
+            SIGNING_AUTHORITY_ENDPOINT: http://localhost:5200/api
 
             NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
             NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
@@ -63,6 +76,14 @@ services:
 
             APP_STORE_ADMIN_PROFILE_IDS: ${APP_STORE_ADMIN_PROFILE_IDS:-testa}
 
+            # Managed credential refresh (LC-2117/LC-2135/LC-2136)
+            CREDENTIAL_REFRESH_ENABLED: 'true'
+            CREDENTIAL_REFRESH_DIGEST_SECRET: ${CREDENTIAL_REFRESH_DIGEST_SECRET:-e2e-only-credential-refresh-digest-secret}
+            # 18-second delivery window so tests can deterministically observe window rollover
+            CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS:-0.005}
+            # Deliver notifications directly to the lca-api container (offline webhook fallback)
+            NOTIFICATIONS_SERVICE_PORT: ${NOTIFICATIONS_SERVICE_PORT:-5200}
+
     cloud:
         image: learncard-monorepo-local
         build:
@@ -75,6 +96,20 @@ services:
             - '4100:4100'
 
         command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
+
+        # LRS performs OIDC discovery once at startup and exits if cloud is still booting.
+        healthcheck:
+            test:
+                - CMD
+                - bun
+                - -e
+                - >-
+                    const response = await fetch('http://localhost:' + process.env.PORT + '/.well-known/openid-configuration', { signal: AbortSignal.timeout(4000) });
+                    process.exit(response.ok ? 0 : 1);
+            interval: 2s
+            timeout: 5s
+            retries: 60
+            start_period: 10s
 
         depends_on:
             - mongodb
@@ -108,48 +143,6 @@ services:
             SERVER_URL: http://cloud:4100
             JWT_SIGNING_KEY: test
 
-    signing:
-        image: learncard-monorepo-local
-        build:
-            context: ../../
-            dockerfile: Dockerfile.monorepo
-
-        expose:
-            - 4200
-        ports:
-            - '4200:4200'
-
-        command:
-            ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && bun run dev']
-
-        depends_on:
-            - mongodb
-            - redis3
-
-        networks:
-            - learn-card
-
-        extra_hosts:
-            - 'localhost:host-gateway'
-
-        volumes:
-            - ../../services/learn-card-network/simple-signing-service/src:/app/services/learn-card-network/simple-signing-service/src
-
-        environment:
-            PORT: 4200
-
-            IS_OFFLINE: true
-            SKIP_DIDKIT_NAPI: '1'
-
-            SEED: c
-            AUTHORIZED_DIDS: did:web:localhost%3A4000
-
-            MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
-            MONGO_DB_NAME: ${MONGO_DB_NAME:-simple-signing}
-
-            REDIS_HOST: redis3
-            REDIS_PORT: 6379
-
     lca-api:
         image: lca-api-service
         build:
@@ -180,6 +173,11 @@ services:
             IS_OFFLINE: true
             IS_E2E_TEST: true
             SEED: d
+            # Disposable test database only.
+            SA_SEED_LOCAL_KEK: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+            # Explicitly exercise encrypted signing in the disposable test stack.
+            SA_SEED_ENCRYPT_WRITES: 'true'
+            SA_SEED_ALLOW_LEGACY_READ: 'false'
             AUTHORIZED_DIDS: did:web:localhost%3A4000
             MONGO_URI: ${LCA_API_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             MONGO_DB_NAME: ${LCA_API_MONGO_DB_NAME:-lca-api-e2e}
@@ -188,7 +186,7 @@ services:
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-test-key}
 
     neo4j:
-        image: neo4j:latest
+        image: neo4j:2026.09.0-community
         ports:
             - '7687:7687'
             - '7474:7474'
@@ -209,7 +207,7 @@ services:
             - learn-card
 
     redis:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -219,7 +217,7 @@ services:
             - learn-card
 
     redis2:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -229,7 +227,7 @@ services:
             - learn-card
 
     redis3:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -269,7 +267,7 @@ services:
             - learn-card
 
     elasticmq:
-        image: softwaremill/elasticmq-native
+        image: softwaremill/elasticmq-native:1.7.1
         expose:
             - 9324
         ports:
@@ -278,7 +276,7 @@ services:
             - learn-card
 
     postgres:
-        image: postgres
+        image: postgres:18.6
         networks:
             - learn-card
         environment:
@@ -289,7 +287,7 @@ services:
             - '5432:5432'
 
     lrs:
-        image: yetanalytics/lrsql:latest
+        image: yetanalytics/lrsql:v0.9.9
         command:
             - /lrsql/bin/run_postgres.sh
         networks:
@@ -299,8 +297,10 @@ services:
         ports:
             - '8080:8080'
         depends_on:
-            - postgres
-            - cloud
+            postgres:
+                condition: service_started
+            cloud:
+                condition: service_healthy
         environment:
             LRSQL_API_KEY_DEFAULT: test-api-key
             LRSQL_API_SECRET_DEFAULT: test-api-secret

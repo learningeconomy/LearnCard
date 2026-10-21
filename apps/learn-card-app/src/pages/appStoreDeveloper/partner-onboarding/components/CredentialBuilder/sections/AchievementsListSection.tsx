@@ -270,7 +270,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                     {m['developerPortal.credentialBuilder.achievementsList.noAchievements']()}
                 </p>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {achievements.map((entry, index) => {
                         const entryExpanded = expandedEntries.has(entry.id);
                         const summary = getEntrySummary(entry);
@@ -303,10 +303,10 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                     isDragging
                                         ? 'opacity-40 border-dashed border-indigo-300'
                                         : isDragOver
-                                        ? 'border-indigo-500 ring-2 ring-indigo-200'
-                                        : entryHasErrors
-                                        ? 'border-red-400'
-                                        : 'border-gray-200'
+                                          ? 'border-indigo-500 ring-2 ring-indigo-200'
+                                          : entryHasErrors
+                                            ? 'border-red-400'
+                                            : 'border-gray-200'
                                 }`}
                             >
                                 {/* Entry Header */}
@@ -314,7 +314,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                     {/* Grip handle: only shown when collapsed */}
                                     {isDraggable && (
                                         <span
-                                            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0"
+                                            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0"
                                             title={m[
                                                 'developerPortal.credentialBuilder.achievementsList.dragReorder'
                                             ]()}
@@ -327,14 +327,14 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                         onClick={() => toggleEntry(entry.id)}
                                         className="flex items-center gap-2 flex-1 min-w-0 text-left"
                                     >
-                                        <Trophy className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                                        <Trophy className="w-4 h-4 text-indigo-500 shrink-0" />
 
                                         <span className="flex-1 text-sm font-medium text-gray-800 truncate">
                                             {summary}
                                         </span>
 
                                         {typeBadge && (
-                                            <span className="text-xs text-indigo-600 px-2 py-0.5 bg-indigo-100 rounded flex-shrink-0">
+                                            <span className="text-xs text-indigo-600 px-2 py-0.5 bg-indigo-100 rounded-sm shrink-0">
                                                 {typeBadge}
                                             </span>
                                         )}
@@ -343,7 +343,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                     <button
                                         type="button"
                                         onClick={() => removeAchievement(entry.id)}
-                                        className="p-1 text-gray-400 hover:text-red-500 rounded flex-shrink-0"
+                                        className="p-1 text-gray-400 hover:text-red-500 rounded-sm shrink-0"
                                         title={m[
                                             'developerPortal.credentialBuilder.achievementsList.removeAchievement'
                                         ]()}
@@ -354,7 +354,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                     <button
                                         type="button"
                                         onClick={() => toggleEntry(entry.id)}
-                                        className="p-1 text-gray-400 hover:text-gray-600 rounded flex-shrink-0"
+                                        className="p-1 text-gray-400 hover:text-gray-600 rounded-sm shrink-0"
                                         title={
                                             entryExpanded
                                                 ? m[
@@ -375,7 +375,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
 
                                 {/* Entry Body (expanded) */}
                                 {entryExpanded && (
-                                    <div className="p-4 space-y-4 border-t border-gray-100">
+                                    <div className="p-4 space-y-v3-4 border-t border-gray-100">
                                         {/* Achievement Editor */}
                                         <div className="pl-3 border-l-2 border-indigo-200">
                                             <AchievementEditor
@@ -399,7 +399,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                 ]()}
                                             </h4>
 
-                                            <div className="space-y-3 pl-3 border-l-2 border-indigo-200">
+                                            <div className="space-y-v3-3 pl-3 border-l-2 border-indigo-200">
                                                 <FieldEditor
                                                     label={m[
                                                         'developerPortal.credentialBuilder.achievementsList.creditsEarned'
@@ -506,7 +506,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                 <button
                                                     type="button"
                                                     onClick={() => addResult(index)}
-                                                    className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 transition-colors"
+                                                    className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-50 text-indigo-600 rounded-sm hover:bg-indigo-100 transition-colors"
                                                 >
                                                     <Plus className="w-3 h-3" />
                                                     {m[
@@ -527,7 +527,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                     ]()}
                                                 </p>
                                             ) : (
-                                                <div className="space-y-3 pl-3 border-l-2 border-indigo-200">
+                                                <div className="space-y-v3-3 pl-3 border-l-2 border-indigo-200">
                                                     {(entry.result || []).map(
                                                         (result, resultIndex) => (
                                                             <div
@@ -596,7 +596,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                                             result.id
                                                                         )
                                                                     }
-                                                                    className="mt-6 p-1 text-gray-400 hover:text-red-500 rounded flex-shrink-0"
+                                                                    className="mt-6 p-1 text-gray-400 hover:text-red-500 rounded-sm shrink-0"
                                                                     title={m[
                                                                         'developerPortal.credentialBuilder.achievementsList.removeResult'
                                                                     ]()}

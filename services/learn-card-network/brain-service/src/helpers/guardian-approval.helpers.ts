@@ -3,6 +3,7 @@
 // are full independent accounts with a guardian — not the same as family child accounts.
 // This is part of a larger goal of making child accounts independent of parent accounts.
 
+import { environment } from '@environment';
 import { v4 as uuid } from 'uuid';
 import cache from '@cache';
 
@@ -118,13 +119,13 @@ export const generateGuardianApprovalUrl = (token: string, appUrl?: string): str
     // Falls back to CLIENT_APP_DOMAIN_NAME env (or localhost when offline) if no tenant appUrl.
     if (appUrl) return `${appUrl.replace(/\/+$/, '')}/interactions/guardian-approval/${token}`;
 
-    const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
+    const domainName = environment.CLIENT_APP_DOMAIN_NAME;
     const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost:${process.env.PORT || 3000}`
+        !domainName || environment.IS_OFFLINE
+            ? `localhost:${environment.PORT || 3000}`
             : domainName;
 
-    const protocol = process.env.IS_OFFLINE ? 'http' : 'https';
+    const protocol = environment.IS_OFFLINE ? 'http' : 'https';
 
     return `${protocol}://${domain}/interactions/guardian-approval/${token}`;
 };
@@ -166,15 +167,13 @@ export const generateGuardianCredentialApprovalUrl = (token: string, appUrl?: st
         return `${appUrl.replace(/\/+$/, '')}/interactions/guardian-credential-approval/${token}`;
     }
 
-    const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
+    const domainName = environment.CLIENT_APP_DOMAIN_NAME;
     const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost:${process.env.CLIENT_APP_PORT || 3000}`
+        !domainName || environment.IS_OFFLINE
+            ? `localhost:${environment.CLIENT_APP_PORT || 3000}`
             : domainName;
 
-    const protocol = process.env.IS_OFFLINE ? 'http' : 'https';
+    const protocol = environment.IS_OFFLINE ? 'http' : 'https';
 
     return `${protocol}://${domain}/interactions/guardian-credential-approval/${token}`;
 };
-
-

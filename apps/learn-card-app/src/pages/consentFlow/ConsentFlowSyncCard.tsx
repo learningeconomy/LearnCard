@@ -17,12 +17,19 @@ import {
     useCurrentUser,
     useModal,
     ModalTypes,
+    ToastTypeEnum,
+    useToast,
     useWallet,
     useSyncConsentFlow,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import NewMyData from '../../components/new-my-data/NewMyData';
 import ConsentFlowEditAccess from '../launchPad/ConsentFlowEditAccess';
+import {
+    AiPassportReauthenticationRequired,
+    getConsentFlowContractRedirect,
+    getConsentFlowDidAuthRedirect,
+} from './issueConsentFlowDidAuth';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
@@ -67,6 +74,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
     const { newModal, closeModal, closeAllModals } = useModal();
 
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const [loading, setLoading] = useState(false);
 
@@ -74,7 +82,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
 
     const contractDetails = _contractDetails || contract;
 
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { mutateAsync: consentToContract, isPending } = useConsentToContract(
@@ -97,7 +105,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
     const location = useLocation();
     const brandingConfig = useBrandingConfig();
 
-    const { returnTo } = queryString.parse(location.search);
+    const { challenge, domain, returnTo } = queryString.parse(location.search);
 
     // state for handling - data share duration
     const [shareDuration, setShareDuration] = useState<{
@@ -159,7 +167,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             onClick={() => {
                                 newModal(
                                     <NewMyData />,
-                                    { sectionClassName: '!max-w-[350px]' },
+                                    { sectionClassName: 'max-w-[350px]!' },
                                     { desktop: ModalTypes.Cancel }
                                 );
                             }}
@@ -197,6 +205,13 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             setLoading(true);
 
                             try {
+                                getConsentFlowContractRedirect({
+                                    challenge,
+                                    domain,
+                                    registeredRedirectUrl: contractDetails.redirectUrl,
+                                    returnTo,
+                                    contractUri: contractDetails.uri,
+                                });
                                 const { redirectUrl: contractRedirectUrl } =
                                     await consentToContract({
                                         terms,
@@ -208,9 +223,17 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 //   this displays a toast that says "Successfully synced X credentials" when done
                                 fetchNewContractCredentials();
 
-                                if (contractRedirectUrl) {
-                                    // If the consentToContract call returned a specific redirect url, use it over everything else
-                                    window.location.href = contractRedirectUrl;
+                                const allowedContractRedirectUrl = getConsentFlowContractRedirect({
+                                    challenge,
+                                    contractRedirectUrl,
+                                    contractUri: contractDetails?.uri,
+                                    domain,
+                                    registeredRedirectUrl: contractDetails?.redirectUrl,
+                                    returnTo,
+                                });
+
+                                if (allowedContractRedirectUrl) {
+                                    window.location.href = allowedContractRedirectUrl;
                                     return;
                                 }
 
@@ -220,41 +243,31 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                         returnTo.startsWith('https://')
                                     ) {
                                         const wallet = await initWallet();
+                                        const ownerDid = contractDetails.owner.did;
 
-                                        // add user's did to returnTo url
-                                        const urlObj = new URL(returnTo);
-                                        urlObj.searchParams.set('did', wallet.id.did());
-                                        if (contractDetails.owner.did) {
-                                            const unsignedDelegateCredential =
-                                                wallet.invoke.newCredential({
-                                                    type: 'delegate',
-                                                    subject: contractDetails.owner.did,
-                                                    access: ['read', 'write'],
-                                                });
+                                        if (!ownerDid) throw new Error('Invalid consent request');
 
-                                            const delegateCredential =
-                                                await wallet.invoke.issueCredential(
-                                                    unsignedDelegateCredential
-                                                );
-
-                                            const unsignedDidAuthVp =
-                                                await wallet.invoke.newPresentation(
-                                                    delegateCredential
-                                                );
-                                            const vp = (await wallet.invoke.issuePresentation(
-                                                unsignedDidAuthVp,
-                                                {
-                                                    proofPurpose: 'authentication',
-                                                    proofFormat: 'jwt',
-                                                }
-                                            )) as any as string;
-
-                                            urlObj.searchParams.set('vp', vp);
-                                        }
-
-                                        window.location.href = urlObj.toString();
+                                        window.location.href = await getConsentFlowDidAuthRedirect({
+                                            challenge,
+                                            contractUri: contractDetails.uri,
+                                            domain,
+                                            ownerDid,
+                                            registeredRedirectUrl: contractDetails.redirectUrl,
+                                            returnTo,
+                                            wallet,
+                                        });
                                     } else history.push(returnTo);
                                 } else history.push(`/launchpad?uri=${contractDetails.uri}`);
+                            } catch (error) {
+                                presentToast(
+                                    error instanceof AiPassportReauthenticationRequired
+                                        ? m['consentFlow.aiPassportReauthenticationRequired']()
+                                        : 'Unable to complete sign in. Please try again.',
+                                    {
+                                        type: ToastTypeEnum.Error,
+                                    }
+                                );
+                                return; // Keep the consent review available for recovery.
                             } finally {
                                 setLoading(false);
                             }

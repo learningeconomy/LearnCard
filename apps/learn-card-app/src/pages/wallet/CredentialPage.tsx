@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 
-import useBoostModal from '../../components/boost/hooks/useBoostModal';
 import { useLoadingLine } from '../../stores/loadingStore';
 
 import {
@@ -104,6 +102,15 @@ const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
         searchInputColor: 'pink-500',
         tabBackgroundColor: 'pink-400',
     },
+    [CredentialCategoryEnum.qualifications]: {
+        boostCategory: CredentialCategoryEnum.qualifications,
+        subheaderType: SubheaderTypeEnum.Qualifications,
+        title: m['wallet.categories.qualifications'](),
+        iconColor: 'text-orange-700',
+        dividerLineColor: 'orange-400',
+        searchInputColor: 'orange-300',
+        tabBackgroundColor: 'orange-300',
+    },
     [CredentialCategoryEnum.id]: {
         boostCategory: CredentialCategoryEnum.id, // category
         subheaderType: SubheaderTypeEnum.ID, // header type
@@ -117,7 +124,7 @@ const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
 });
 
 type CredentialPageProps = {
-    category: keyof typeof CredentialCategoryEnum;
+    category: CredentialCategoryEnum;
 };
 
 const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
@@ -127,8 +134,6 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
     const { backgroundSecondaryColor } = colors;
 
     const query = usePathQuery();
-    const history = useHistory();
-
     const { data: currentLCNUser } = useIsCurrentUserLCNUser();
 
     const categoryToConfig = getCategoryToConfig();
@@ -152,8 +157,6 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
 
     const viewMode = passportPageStore.use.credentialViewMode();
     const setViewMode = passportPageStore.set.credentialViewMode;
-
-    const { handlePresentBoostModal } = useBoostModal(history, config.boostCategory);
 
     const { data: credentialCount, isLoading: countLoading } = useGetCredentialCount(
         category as any

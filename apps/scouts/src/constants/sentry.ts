@@ -4,27 +4,30 @@ import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
 import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
+import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 const log = getLogger('sentry');
 
 export type UseSentryIdentifyOptions = {
     debug?: boolean;
 };
 
-// Set TRUE for development testing of Sentry
-const isSentryEnabled = SENTRY_ENV && SENTRY_ENV !== 'development';
-
 export const initSentry = () => {
-    if (!SENTRY_DSN || !SENTRY_ENV) return;
-    if (Sentry.getClient()) return;
+    const config = getResolvedTenantConfig();
+    const dsn = config.observability.sentryDsn;
+    const sentryEnvironment = config.observability.sentryEnv;
+    const isSentryEnabled =
+        Boolean(dsn) && Boolean(sentryEnvironment) && sentryEnvironment !== 'scouts-development';
+
+    if (!isSentryEnabled || Sentry.getClient()) return;
 
     Sentry.init({
-        dsn: SENTRY_DSN,
-        environment: SENTRY_ENV,
+        dsn,
+        environment: sentryEnvironment,
         tracePropagationTargets: [
             'localhost',
-            /^https:\/\/api\.scoutnetwork\.org\/trpc/,
-            /^https:\/\/scoutnetwork\.org\/trpc/,
-            /^https:\/\/cloud\.scoutnetwork\.org\/trpc/,
+            ...(config.observability.sentryTraceDomains ?? []).map(
+                domain => new RegExp(`^https://${domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+            ),
         ],
         integrations: [
             Sentry.feedbackIntegration({
@@ -45,8 +48,6 @@ export const initSentry = () => {
         replaysSessionSampleRate: 0.1,
         replaysOnErrorSampleRate: 1.0,
     });
-
-    if (!isSentryEnabled) return;
 
     // Wire the injectable transport so learn-card-base logger forwards to Sentry
     configureSentryTransport({
@@ -75,6 +76,11 @@ export const initSentry = () => {
  * Optionally pass `{ debug: true }` to log additional details.
  */
 export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
+    const config = getResolvedTenantConfig();
+    const isSentryEnabled =
+        Boolean(config.observability.sentryDsn) &&
+        Boolean(config.observability.sentryEnv) &&
+        config.observability.sentryEnv !== 'scouts-development';
     const currentUser = useCurrentUser();
     const { getDID } = useWallet();
 

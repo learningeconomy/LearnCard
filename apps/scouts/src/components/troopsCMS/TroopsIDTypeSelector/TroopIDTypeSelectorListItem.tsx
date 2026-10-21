@@ -43,7 +43,7 @@ const TroopIDTypeSelectorListItem: React.FC<{
                     );
                     handleCloseModal();
                 }}
-                className={`w-full flex items-center justify-between border-solid border-b-[1px] px-2 border-b-grayscale-200 py-4 ${
+                className={`w-full flex items-center justify-between border-solid border-b px-2 border-b-grayscale-200 py-4 ${
                     isFirst && !isLast ? 'pb-4' : ''
                 } ${isFirst && isLast ? 'border-none p-0' : ''} ${
                     isLast ? 'border-none pb-2' : ''
@@ -60,7 +60,10 @@ const TroopIDTypeSelectorListItem: React.FC<{
                     </div>
                 </div>
 
-                <SlimCaretRight className="w-[20px] h-auto text-grayscale-400" strokeWidth="1" />
+                <SlimCaretRight
+                    className="rtl-mirror w-[20px] h-auto text-grayscale-400"
+                    strokeWidth="1"
+                />
             </button>
         </div>
     );

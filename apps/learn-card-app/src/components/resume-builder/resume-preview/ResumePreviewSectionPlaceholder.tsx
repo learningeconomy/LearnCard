@@ -59,6 +59,11 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
             description: `Add Achievements to your ${brandingName} passport to automatically populate this section.`,
             emphasis: 'Add Achievements',
         },
+        [CredentialCategoryEnum.qualifications]: {
+            actionLabel: 'Add Qualification',
+            description: `Add Qualifications to your ${brandingName} passport to automatically populate this section.`,
+            emphasis: 'Add Qualifications',
+        },
         [CredentialCategoryEnum.accomplishment]: {
             actionLabel: 'Add Accomplishment',
             description: `Add Accomplishments to your ${brandingName} passport to automatically populate this section.`,
@@ -94,8 +99,8 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
         isLoadingExactCredentials || isLoadingAllCredentials
             ? 'Checking credentials...'
             : hasAvailableCredentials
-            ? 'No credentials selected'
-            : 'No credentials found';
+              ? 'No credentials selected'
+              : 'No credentials found';
     const shouldSelectExistingCredentials = hasAvailableCredentials && onOpenCredentialPanel;
     const actionLabel = shouldSelectExistingCredentials ? 'Select Credentials' : copy.actionLabel;
     const handleActionClick = () => {
@@ -107,7 +112,7 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
         newModal(
             <ResumeSelfAttestModal category={category} />,
             {
-                sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none !overflow-visible',
+                sectionClassName: 'max-w-[500px]! bg-transparent! shadow-none! overflow-visible!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -144,10 +149,10 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
                     <button
                         type="button"
                         onClick={handleActionClick}
-                        className={`flex w-full md:inline-flex md:w-auto items-center justify-between gap-4 px-4 py-1.5 rounded-full shadow-sm bg-${colors.primaryColor}`}
+                        className={`flex w-full md:inline-flex md:w-auto items-center justify-between gap-4 px-4 py-1.5 rounded-full shadow-xs bg-${colors.primaryColor}`}
                     >
                         <span className="text-[15px] font-semibold text-white">{actionLabel}</span>
-                        <div className="h-[30px] w-[30px] rounded-full flex items-center justify-center shadow-sm">
+                        <div className="h-[30px] w-[30px] rounded-full flex items-center justify-center shadow-xs">
                             <GearPlusIcon className="h-full w-full text-grayscale-900" />
                         </div>
                     </button>

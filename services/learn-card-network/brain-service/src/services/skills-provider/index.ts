@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import type { SkillsProvider, ProviderId, Options, Framework, Skill, Obv3Alignment } from './types';
 import { createDummyProvider, seedFramework, seedSkills } from './providers/dummy';
 import { createNeo4jProvider } from './providers/neo4j';
@@ -37,22 +38,22 @@ const isOpenSaltStagingRef = (value?: string): boolean => {
 };
 
 const getOpenSaltOptions = (): Options => ({
-    baseUrl: process.env.OPENSALT_BASE_URL || 'https://opensalt.net',
-    apiKey: process.env.SKILLS_PROVIDER_API_KEY,
+    baseUrl: environment.OPENSALT_BASE_URL || 'https://opensalt.net',
+    apiKey: environment.SKILLS_PROVIDER_API_KEY,
 });
 
 const getOpenSaltStagingOptions = (): Options => ({
-    baseUrl: process.env.OPENSALT_STAGING_BASE_URL || 'https://staging.opensalt.net',
-    apiKey: process.env.SKILLS_PROVIDER_API_KEY,
+    baseUrl: environment.OPENSALT_STAGING_BASE_URL || 'https://staging.opensalt.net',
+    apiKey: environment.SKILLS_PROVIDER_API_KEY,
 });
 
 export function getSkillsProvider(config?: SkillsProviderConfig): SkillsProvider {
     if (config || !currentProvider) {
         const providerId =
-            config?.providerId || (process.env.SKILLS_PROVIDER as ProviderId) || 'neo4j';
+            config?.providerId || (environment.SKILLS_PROVIDER as ProviderId) || 'neo4j';
         const options = config?.options || {
-            baseUrl: process.env.SKILLS_PROVIDER_BASE_URL,
-            apiKey: process.env.SKILLS_PROVIDER_API_KEY,
+            baseUrl: environment.SKILLS_PROVIDER_BASE_URL,
+            apiKey: environment.SKILLS_PROVIDER_API_KEY,
         };
 
         switch (providerId) {
@@ -96,8 +97,8 @@ export function getSkillsProviderForFramework(
     }
 
     return createNeo4jProvider({
-        baseUrl: process.env.SKILLS_PROVIDER_BASE_URL,
-        apiKey: process.env.SKILLS_PROVIDER_API_KEY,
+        baseUrl: environment.SKILLS_PROVIDER_BASE_URL,
+        apiKey: environment.SKILLS_PROVIDER_API_KEY,
     });
 }
 

@@ -9,7 +9,6 @@ import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore'
 import { useLoadingLine } from '../../stores/loadingStore';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import {
-    EarnedAndManagedTabs,
     CredentialListTabEnum,
     CredentialCategoryEnum,
     useIsCurrentUserLCNUser,
@@ -25,6 +24,7 @@ import {
     useGetCurrentUserTroopIds,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
+import EarnedAndManagedTabs from '../../components/earned-and-managed-tabs/ScoutPassEarnedAndManagedTabs';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import BoostEarnedList from '../../components/boost/boost-earned-card/BoostEarnedList';
@@ -35,8 +35,11 @@ import Plus from '../../components/svgs/Plus';
 import { SubheaderContentType } from '../../components/main-subheader/MainSubHeader.types';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
+import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 
 const MeritBadgesPage: React.FC = () => {
+    const locale = useLocale();
     const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
@@ -51,8 +54,8 @@ const MeritBadgesPage: React.FC = () => {
         () =>
             Boolean(
                 myTroopIds?.isNationalAdmin ||
-                    myTroopIds?.isScoutGlobalAdmin ||
-                    myTroopIds?.isTroopLeader
+                myTroopIds?.isScoutGlobalAdmin ||
+                myTroopIds?.isTroopLeader
             ),
         [myTroopIds]
     );
@@ -98,7 +101,7 @@ const MeritBadgesPage: React.FC = () => {
                 handleCloseModal={closeModal}
                 category={CredentialCategoryEnum.meritBadge}
             />,
-            { className: '!p-0', sectionClassName: '!p-0' }
+            { className: 'p-0!', sectionClassName: 'p-0!' }
         );
     }, [newModal, closeModal]);
 
@@ -107,14 +110,14 @@ const MeritBadgesPage: React.FC = () => {
         () => (
             <button
                 type="button"
-                aria-label="Create new merit badge"
+                aria-label={m['meritBadges.createBtn']()}
                 onClick={handleCreateMeritBadge}
                 className={`flex items-center justify-center h-fit w-fit p-2 rounded-full bg-white ${textColor}`}
             >
                 <Plus className={`h-5 w-5 ${iconColor}`} />
             </button>
         ),
-        [handleCreateMeritBadge, iconColor, textColor]
+        [handleCreateMeritBadge, iconColor, textColor, locale]
     );
 
     const earnedAndManagedTabs = useMemo(
@@ -146,13 +149,13 @@ const MeritBadgesPage: React.FC = () => {
             viewMode,
             defaultImg: imgSrc,
             category: BoostCategoryOptionsEnum.meritBadge,
-            title: 'Merit Badges',
-            bgFillerColor: '!bg-sp-purple-light-medium',
+            title: m['meritBadges.title'](),
+            bgFillerColor: 'bg-sp-purple-light-medium!',
             emptyImg: EmptyMeritBadgeIcon,
-            emptyMessage: "You don't have any Merit Badges yet.",
+            emptyMessage: m['meritBadges.emptyMsg'](),
             emptyMessageStyle: 'text-[#4D006E]',
         }),
-        [viewMode, imgSrc]
+        [viewMode, imgSrc, locale]
     );
 
     useEffect(() => {

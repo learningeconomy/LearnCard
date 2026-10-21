@@ -25,8 +25,8 @@ import { useEngagementSignal } from './useEngagementSignal';
  * sets immediately after `wallet.invoke.createProfile()` succeeds.
  * The flag is consume-on-read.
  *
- * Mirrors the `lc_recovery_banner_dismissed` localStorage pattern
- * from RecoveryBanner.tsx.
+ * Uses the same consume-on-read localStorage approach as other one-time
+ * client-side lifecycle flags.
  */
 export const useAccountCreatedAndReturningSession = (
     /**

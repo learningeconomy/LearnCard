@@ -1,0 +1,1354 @@
+import { createHash } from 'crypto';
+
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+import {
+    VC,
+    type AllocateCredentialRefreshResult,
+    type CredentialRefreshSigningMode,
+    type ManagedCredentialRefreshReceipt,
+    type ManagedCredentialRefreshService,
+    type PublishCredentialRefreshInput,
+    type PublishCredentialRefreshNotification,
+    type PublishCredentialRefreshResult,
+} from '@learncard/types';
+import {
+    getCredentialEffectiveTime,
+    getCredentialIssuerId,
+    getManagedRefreshServices,
+    prepareManagedRefreshContext,
+} from '@learncard/helpers';
+
+import { neogma } from '@instance';
+
+import { storeCredential } from '@accesslayer/credential/create';
+import { deleteCredential } from '@accesslayer/credential/delete';
+import { getBoostByUri } from '@accesslayer/boost/read';
+import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
+import {
+    advanceCredentialRefreshHead,
+    generateRefreshId,
+    getCredentialRefresh,
+    getCredentialRefreshCanonicalLifecycle,
+    getCredentialRefreshHead,
+    getCredentialRefreshVersion,
+    getCredentialRefreshVersionByIdempotencyKey,
+    recordCredentialRefreshNotification,
+} from '@accesslayer/credential-refresh';
+import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import type {
+    CredentialRefreshRecord,
+    CredentialRefreshVersionNode,
+} from 'types/credential-refresh';
+
+import { createCredentialIssuedViaContractRelationship } from '@accesslayer/credential/relationships/create';
+import type { CredentialInstance } from '@models';
+import type { DbTermsType } from 'types/consentflowcontract';
+
+import { createDagJweForRecipients, getLearnCard } from './learnCard.helpers';
+import { verifyManagedRefreshProof } from './credential-refresh-proof.helpers';
+import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
+import {
+    computeCredentialMaterialDigest,
+    computeCredentialStatusDigest,
+    computeCredentialSubjectDigest,
+    decideCredentialRefreshNotification,
+} from './credential-refresh-materiality.helpers';
+import { isInitialRefreshVersionUniquenessRace } from './credential-refresh-initial-binding.helpers';
+import { ensureInitialNotificationPolicy } from './credential-refresh-notification-policy.helpers';
+import { getStatusListBaseUrl } from './status-list.helpers';
+import { constructUri } from './uri.helpers';
+import {
+    addNotificationToQueue,
+    buildInitialCredentialReceivedNotification,
+    buildCredentialRefreshedNotification,
+} from './notifications.helpers';
+import { deliverCredentialRefreshEmailNotification } from './credential-refresh-email.helpers';
+import { extractBoundedCredentialDisplayTitle } from './credential-refresh-email-content.helpers';
+import type { TenantBranding } from '@learncard/email-templates';
+import { getDidWeb } from './did.helpers';
+import { isRelationshipBlocked } from './connection.helpers';
+import { ProfileType } from 'types/profile';
+
+/**
+ * Managed credential refresh issuance helpers (LC-2135).
+ *
+ * Allocation reserves an unguessable refresh service ID _before_ the credential is
+ * signed. Managed send validates the signed original against the allocation,
+ * verifies its proof transiently in-memory, and persists only a holder-encrypted
+ * JWE — the legacy storage path that persists plaintext credential JSON is never
+ * called with the plaintext VC.
+ */
+
+/** Public URL of the managed refresh endpoint for a refreshId. */
+export const getCredentialRefreshServiceUrl = (refreshId: string, domain: string): string =>
+    `${getStatusListBaseUrl(domain)}/refresh/${refreshId}`;
+
+export const getManagedCredentialUri = (id: string, domain: string): string =>
+    constructUri('credential', id, domain);
+
+export type AllocateCredentialRefreshParams = {
+    issuerProfile: ProfileType;
+    holderProfile: ProfileType;
+    holderDid: string;
+    credentialId: string;
+    domain: string;
+};
+
+/**
+ * Creates an `awaiting_claim` aggregate bound to its issuer and intended holder,
+ * without any credential body (the credential does not exist yet — the returned
+ * service descriptor must be embedded before proof creation).
+ */
+export const allocateCredentialRefresh = async (
+    params: AllocateCredentialRefreshParams
+): Promise<AllocateCredentialRefreshResult> => {
+    const { issuerProfile, holderProfile, holderDid, credentialId, domain } = params;
+
+    const refreshId = generateRefreshId();
+    const now = new Date().toISOString();
+
+    const props = {
+        refreshId,
+        issuerProfileId: issuerProfile.profileId,
+        // Credentials issued through the network plugin use the profile's public
+        // did:web identity. `issuerProfile.did` is the internal controller did:key,
+        // so persisting it here would reject the normal SDK-issued credential when
+        // the allocation is bound after signing.
+        issuerDid: getDidWeb(domain, issuerProfile.profileId),
+        holderProfileId: holderProfile.profileId,
+        holderDid,
+        credentialId,
+        state: 'awaiting_claim',
+        // Version 1 is reserved for the original credential that will be bound by
+        // the managed send.
+        currentVersion: 1,
+        createdAt: now,
+        updatedAt: now,
+    };
+
+    await neogma.queryRunner.run(
+        `MATCH (issuer:Profile {profileId: $issuerProfileId})
+         MATCH (holder:Profile {profileId: $holderProfileId})
+         CREATE (refresh:CredentialRefresh $props)
+         CREATE (issuer)-[:ISSUED_REFRESH]->(refresh)
+         CREATE (holder)-[:HELD_REFRESH]->(refresh)
+         RETURN refresh`,
+        {
+            issuerProfileId: issuerProfile.profileId,
+            holderProfileId: holderProfile.profileId,
+            props,
+        }
+    );
+
+    return {
+        refreshId,
+        refreshService: {
+            id: getCredentialRefreshServiceUrl(refreshId, domain),
+            type: 'LearnCardCredentialRefresh2026',
+            authorization: { type: 'LearnCardDIDAuth' },
+        },
+    };
+};
+
+export type ManagedRefreshHandoff = {
+    refreshId: string;
+    refreshService: ManagedCredentialRefreshService;
+};
+
+/**
+ * Extracts and validates the local managed refresh service embedded in a signed
+ * credential (unified-send handoff, LC-2198 decision 6).
+ *
+ * Only THIS deployment's managed refresh endpoint origin/path is accepted: the
+ * service ID must be exactly the canonical URL for the refreshId it carries, and
+ * the refreshId is always derived from the service URL — never from caller-supplied
+ * receipt fields. Returns null when the credential carries no managed service;
+ * throws when it carries conflicting managed services or one pointing elsewhere
+ * (a third-party `1EdTechCredentialRefresh` service is not a handoff).
+ */
+export const extractManagedRefreshHandoff = (
+    credential: VC,
+    domain: string
+): ManagedRefreshHandoff | null => {
+    const services = getManagedRefreshServices(credential);
+
+    if (services.length === 0) return null;
+
+    const distinctIds = new Set(services.map(service => service.id));
+
+    if (distinctIds.size > 1) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                'Credential carries conflicting managed refresh services; a credential can only reference one managed refresh service.',
+        });
+    }
+
+    const service = services[0]!;
+    const prefix = `${getStatusListBaseUrl(domain)}/refresh/`;
+
+    if (!service.id.startsWith(prefix) || service.id.slice(prefix.length).length === 0) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                "Credential refreshService does not reference this deployment's managed refresh endpoint.",
+        });
+    }
+
+    const refreshId = service.id.slice(prefix.length);
+
+    if (!/^[A-Za-z0-9_-]{43}$/.test(refreshId)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                "Credential refreshService does not reference this deployment's managed refresh endpoint.",
+        });
+    }
+
+    return { refreshId, refreshService: service };
+};
+
+export type ManagedRefreshInitialBindingInfo = {
+    /** True when the refresh already has a bound root matching this exact credential. */
+    bound: boolean;
+    activityId?: string;
+    integrationId?: string;
+};
+
+/**
+ * Reports whether the refresh already has a bound root for this exact credential so
+ * unified-send retries can reuse the original delivery activity instead of creating
+ * a duplicate. Throws CONFLICT when the refresh is bound to a DIFFERENT credential
+ * or boost — rejecting the retry before any write or activity logging.
+ */
+export const peekCredentialRefreshInitialBinding = async (params: {
+    refreshId: string;
+    credential: VC;
+    boostId?: string;
+}): Promise<ManagedRefreshInitialBindingInfo> => {
+    const { refreshId, credential, boostId } = params;
+
+    const root = await getInitialRefreshRoot(refreshId);
+
+    if (!root) return { bound: false };
+
+    assertInitialCredentialMatches(
+        root,
+        computeCredentialMaterialDigest(credential as unknown as Record<string, unknown>),
+        computeCredentialStatusDigest(
+            (credential as unknown as Record<string, unknown>).credentialStatus
+        ),
+        boostId
+    );
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (:Profile)-[sent:CREDENTIAL_SENT]->(root:Credential {id: $rootId})
+         RETURN sent.activityId AS activityId, sent.integrationId AS integrationId
+         LIMIT 1`,
+        { rootId: root.rootId }
+    );
+    const row = result.records[0];
+
+    return {
+        bound: true,
+        activityId: row?.get('activityId') ?? undefined,
+        integrationId: row?.get('integrationId') ?? undefined,
+    };
+};
+
+/**
+ * Idempotently links a managed root credential to the approved consent-flow contract
+ * terms it was issued through, on both fresh binds and resume paths.
+ */
+const ensureCredentialIssuedViaContractRelationship = async (
+    credentialNodeId: string,
+    terms: DbTermsType
+): Promise<void> => {
+    const existing = await neogma.queryRunner.run(
+        `MATCH (root:Credential {id: $nodeId})-[:ISSUED_VIA_TRANSACTION]->()
+         RETURN 1 AS one LIMIT 1`,
+        { nodeId: credentialNodeId }
+    );
+
+    if (existing.records.length > 0) return;
+
+    await createCredentialIssuedViaContractRelationship(
+        { id: credentialNodeId } as unknown as CredentialInstance,
+        terms
+    );
+};
+
+/** Collects the subject identifiers of a credential (single object or array form). */
+const getCredentialSubjectIds = (credential: VC): string[] => {
+    const subjects = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject
+        : [credential.credentialSubject];
+
+    return subjects
+        .map(subject => (subject as { id?: string } | undefined)?.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+};
+
+/** True when the credential carries the exact service descriptor produced at allocation. */
+const hasAllocatedRefreshService = (credential: VC, refreshId: string, domain: string): boolean => {
+    const refreshService = (credential as unknown as Record<string, unknown>).refreshService;
+
+    if (!refreshService) return false;
+
+    const services = Array.isArray(refreshService) ? refreshService : [refreshService];
+    const expectedId = getCredentialRefreshServiceUrl(refreshId, domain);
+
+    return services.some(
+        service =>
+            service &&
+            typeof service === 'object' &&
+            (service as { id?: unknown }).id === expectedId &&
+            (service as { type?: unknown }).type === 'LearnCardCredentialRefresh2026'
+    );
+};
+
+export type SendRefreshableCredentialParams = {
+    issuerProfile: ProfileType;
+    refreshId: string;
+    credential: VC;
+    /**
+     * Optional boost the credential was issued from. When present, the stored
+     * credential instance is linked INSTANCE_OF the boost so canonical boost
+     * recipient management (recipient lists, revocation) sees it.
+     */
+    boostUri?: string;
+    /** Suppress the initial CREDENTIAL_RECEIVED notification for this delivery. */
+    skipNotification?: boolean;
+    /** Issuance activity to correlate (unified send, LC-2198). Stored on CREDENTIAL_SENT. */
+    activityId?: string;
+    /** Integration tracking for the unified send, stored on CREDENTIAL_SENT. */
+    integrationId?: string;
+    /** Approved consent-flow terms the credential was issued through (LC-2198). */
+    contractTerms?: DbTermsType;
+    domain: string;
+};
+
+/** Metadata-only issuance receipt derived from the signed version 1 and the validated allocation. */
+export type SendRefreshableCredentialResult = {
+    uri: string;
+    receipt: ManagedCredentialRefreshReceipt;
+};
+
+type InitialRefreshRoot = {
+    rootId: string;
+    materialDigest?: string;
+    credentialStatusDigest?: string;
+    boostId?: string;
+};
+
+export const getInitialRefreshRoot = async (
+    refreshId: string
+): Promise<InitialRefreshRoot | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
+         OPTIONAL MATCH (root)-[:INSTANCE_OF]->(boost:Boost)
+         WITH refresh, root, head(collect(DISTINCT boost.id)) AS inferredBoostId
+         RETURN root.id AS rootId,
+                coalesce(refresh.rootMaterialDigest, refresh.materialDigest) AS materialDigest,
+                refresh.credentialStatusDigest AS credentialStatusDigest,
+                coalesce(refresh.boostId, inferredBoostId) AS boostId
+         LIMIT 1`,
+        { refreshId }
+    );
+    const row = result.records[0];
+
+    if (!row) return null;
+
+    return {
+        rootId: row.get('rootId'),
+        materialDigest: row.get('materialDigest') ?? undefined,
+        credentialStatusDigest: row.get('credentialStatusDigest') ?? undefined,
+        boostId: row.get('boostId') ?? undefined,
+    };
+};
+
+/**
+ * Returns the boost a managed refresh's version 1 is already bound to, if any. Lets a
+ * replayed pre-signed send reuse its original boost instead of auto-creating another.
+ */
+export const getBoundRefreshBoostId = async (refreshId: string): Promise<string | undefined> =>
+    (await getInitialRefreshRoot(refreshId))?.boostId;
+
+const assertInitialCredentialMatches = (
+    root: InitialRefreshRoot,
+    materialDigest: string,
+    credentialStatusDigest: string,
+    boostId?: string
+): void => {
+    if (
+        !root.materialDigest ||
+        !root.credentialStatusDigest ||
+        root.materialDigest !== materialDigest ||
+        root.credentialStatusDigest !== credentialStatusDigest
+    ) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh is already bound to a different credential',
+        });
+    }
+
+    if ((root.boostId ?? null) !== (boostId ?? null)) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh is already bound to a different boost',
+        });
+    }
+};
+
+const ensureInitialRefreshRelationships = async (params: {
+    refreshId: string;
+    issuerProfileId: string;
+    holderProfileId: string;
+    boostId?: string;
+    activityId?: string;
+    integrationId?: string;
+}): Promise<string | undefined> => {
+    const { refreshId, issuerProfileId, holderProfileId, boostId, activityId, integrationId } =
+        params;
+    const now = new Date().toISOString();
+    const result = await neogma.queryRunner.run(
+        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
+         WHERE coalesce(refresh.boostId, '') = coalesce($boostId, '')
+         MATCH (issuer:Profile {profileId: $issuerProfileId})
+         OPTIONAL MATCH (boost:Boost {id: $boostId})
+         MERGE (issuer)-[sent:CREDENTIAL_SENT {to: $holderProfileId}]->(root)
+         ON CREATE SET sent.date = $now
+         SET sent.activityId = coalesce(sent.activityId, $activityId),
+             sent.integrationId = coalesce(sent.integrationId, $integrationId)
+         FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
+             MERGE (root)-[:INSTANCE_OF]->(boost)
+         )
+         RETURN root.id AS rootId`,
+        {
+            refreshId,
+            issuerProfileId,
+            holderProfileId,
+            boostId: boostId ?? null,
+            activityId: activityId ?? null,
+            integrationId: integrationId ?? null,
+            now,
+        }
+    );
+
+    return result.records[0]?.get('rootId') ?? undefined;
+};
+
+export const sendInitialCredentialNotificationOnce = async (params: {
+    refreshId: string;
+    uri: string;
+    issuerProfile: ProfileType;
+    holderProfile: ProfileType;
+    initialNotificationSuppressed: boolean;
+}): Promise<void> => {
+    const { refreshId, uri, issuerProfile, holderProfile, initialNotificationSuppressed } = params;
+
+    if (initialNotificationSuppressed) return;
+
+    const current = await getCredentialRefresh(refreshId);
+
+    if (current?.initialNotificationSentAt) return;
+
+    await addNotificationToQueue(
+        buildInitialCredentialReceivedNotification({
+            holderProfile,
+            issuerProfile,
+            refreshId,
+            uri,
+        })
+    );
+
+    const now = new Date().toISOString();
+    await neogma.queryRunner.run(
+        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+         SET refresh.initialNotificationSentAt = coalesce(refresh.initialNotificationSentAt, $now),
+             refresh.updatedAt = $now`,
+        { refreshId, now }
+    );
+};
+
+/**
+ * Holder-side JWE recipients for managed refresh storage.
+ *
+ * Mirrors the human-controlled keyAgreement keys of the holder's did:web document
+ * (see src/dids.ts): the profile's own controller did:key plus every profile that
+ * manages it. Managed profiles are created with a did:key whose seed is discarded,
+ * so their managers are the only parties able to decrypt. All recipients are
+ * did:keys, so encryption never needs a remote did:web fetch. Signing authorities
+ * and the brain DID are deliberately excluded.
+ * Do not add the aggregate's holder did:web here: its keyAgreement document can
+ * also include registered signing-authority keys, outside the holder-only boundary.
+ */
+const getHolderEncryptionRecipients = async (holderProfile: ProfileType): Promise<string[]> => {
+    const managers = await getProfilesThatManageAProfile(holderProfile.profileId);
+
+    return [...new Set([holderProfile.did, ...managers.map(manager => manager.did)])];
+};
+
+/**
+ * Binds the signed original credential to a previously allocated refresh aggregate.
+ *
+ * The plaintext VC is handled only within this request: its proof is verified and
+ * its invariants are checked against the allocation, then it is encrypted to the
+ * intended holder and only the resulting JWE is persisted. Creates the normal
+ * CREDENTIAL_SENT relationship plus ROOT/HEAD bindings and records version 1.
+ */
+export const sendRefreshableCredential = async (
+    params: SendRefreshableCredentialParams
+): Promise<SendRefreshableCredentialResult> => {
+    const {
+        issuerProfile,
+        refreshId,
+        credential,
+        boostUri,
+        skipNotification = false,
+        activityId,
+        integrationId,
+        contractTerms,
+        domain,
+    } = params;
+
+    const aggregate = await getCredentialRefresh(refreshId);
+
+    if (!aggregate) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
+    }
+
+    if (aggregate.issuerProfileId !== issuerProfile.profileId) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Profile did not allocate this credential refresh',
+        });
+    }
+
+    if (
+        !aggregate.holderDid ||
+        aggregate.state === 'pending_holder' ||
+        aggregate.inboxCredentialId
+    ) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Inbox refresh must be bound through its verified claim flow',
+        });
+    }
+
+    if (credential.id !== aggregate.credentialId) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential ID does not match the allocated refresh',
+        });
+    }
+
+    const credentialIssuerDid = getCredentialIssuerId(credential);
+    const publicIssuerDid = getDidWeb(domain, issuerProfile.profileId);
+
+    // A profile controls both its internal controller did:key and its public network
+    // did:web. The network plugin normally issues with did:web, while lower-level
+    // callers may legitimately issue with the controller DID. Bind the aggregate to
+    // whichever controlled identity appears on version 1; later versions must match
+    // that exact normalized issuer.
+    if (
+        !credentialIssuerDid ||
+        ![issuerProfile.did, publicIssuerDid].includes(credentialIssuerDid)
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential issuer does not match the allocated refresh',
+        });
+    }
+
+    if (
+        !aggregate.holderDid ||
+        !getCredentialSubjectIds(credential).includes(aggregate.holderDid)
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential subject does not match the intended holder',
+        });
+    }
+
+    if (!hasAllocatedRefreshService(credential, refreshId, domain)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential does not contain the allocated refresh service',
+        });
+    }
+
+    // Metadata-only issuance receipt (LC-2198 decision 2): populated from the actual
+    // signed credential and the validated allocation. It deliberately excludes all
+    // credential claims, subject bodies, plaintext VC content, and JWE payloads.
+    const buildReceipt = (): ManagedCredentialRefreshReceipt => ({
+        refreshId,
+        refreshService: {
+            id: getCredentialRefreshServiceUrl(refreshId, domain),
+            type: 'LearnCardCredentialRefresh2026',
+            authorization: { type: 'LearnCardDIDAuth' },
+        },
+        credentialId: aggregate.credentialId,
+        issuerDid: credentialIssuerDid,
+        holderDid: aggregate.holderDid!,
+        ...(credential.credentialStatus !== undefined && credential.credentialStatus !== null
+            ? { credentialStatus: credential.credentialStatus }
+            : {}),
+    });
+
+    const holderProfile = aggregate.holderProfileId
+        ? await getProfileByProfileId(aggregate.holderProfileId)
+        : null;
+
+    if (!holderProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+    }
+
+    if (await isRelationshipBlocked(issuerProfile, holderProfile)) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Profile not found. Are you sure this person exists?',
+        });
+    }
+
+    // Resolve the optional boost anchor up front so an unknown boost fails before any write.
+    const boost = boostUri ? await getBoostByUri(decodeURIComponent(boostUri)) : undefined;
+
+    if (boostUri && !boost) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+    }
+
+    // Match ordinary send authorization: a delegated issuer owns its refresh
+    // aggregate even when another profile created the reusable boost template.
+    if (boost && !(await canProfileIssueBoost(issuerProfile, boost))) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Profile does not have permissions to issue boost',
+        });
+    }
+
+    await verifyManagedRefreshProof((await getLearnCard()).invoke, credential, publicIssuerDid);
+
+    const rootMaterialDigest = computeCredentialMaterialDigest(
+        credential as unknown as Record<string, unknown>
+    );
+    const credentialStatusDigest = computeCredentialStatusDigest(
+        (credential as unknown as Record<string, unknown>).credentialStatus
+    );
+
+    const existingRoot = await getInitialRefreshRoot(refreshId);
+
+    if (existingRoot) {
+        assertInitialCredentialMatches(
+            existingRoot,
+            rootMaterialDigest,
+            credentialStatusDigest,
+            boost?.id
+        );
+
+        const rootId = await ensureInitialRefreshRelationships({
+            refreshId,
+            issuerProfileId: issuerProfile.profileId,
+            holderProfileId: holderProfile.profileId,
+            boostId: boost?.id,
+            activityId,
+            integrationId,
+        });
+
+        if (!rootId) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Credential refresh initial delivery could not be resumed',
+            });
+        }
+
+        if (contractTerms) {
+            await ensureCredentialIssuedViaContractRelationship(rootId, contractTerms);
+        }
+
+        const uri = getManagedCredentialUri(rootId, domain);
+        const initialNotificationSuppressed = await ensureInitialNotificationPolicy(
+            refreshId,
+            skipNotification
+        );
+        await sendInitialCredentialNotificationOnce({
+            refreshId,
+            uri,
+            issuerProfile,
+            holderProfile,
+            initialNotificationSuppressed,
+        });
+
+        return { uri, receipt: buildReceipt() };
+    }
+
+    // Holder-side encryption only (never the brain DID): the holder's did:key plus its
+    // managers' did:keys — see getHolderEncryptionRecipients.
+    const jwe = await createDagJweForRecipients(
+        credential,
+        await getHolderEncryptionRecipients(holderProfile)
+    );
+
+    const credentialInstance = await storeCredential(jwe);
+
+    const now = new Date().toISOString();
+
+    // Bind ROOT/HEAD and the canonical sent/boost relationships in one transaction.
+    let boundRecordsLength = 0;
+
+    try {
+        const bound = await neogma.queryRunner.run(
+            `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+         WHERE NOT EXISTS { MATCH (refresh)-[:ROOT]->(:Credential) }
+         MATCH (root:Credential {id: $rootCredentialNodeId})
+         MATCH (issuer:Profile {profileId: $issuerProfileId})
+         OPTIONAL MATCH (boost:Boost {id: $boostId})
+         CREATE (refresh)-[:ROOT]->(root)
+         CREATE (refresh)-[:HEAD]->(root)
+         CREATE (issuer)-[:CREDENTIAL_SENT {to: $holderProfileId, date: $now, activityId: $activityId, integrationId: $integrationId}]->(root)
+         FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
+             CREATE (root)-[:INSTANCE_OF]->(boost)
+         )
+         SET root.refreshId = $refreshId,
+             root.version = 1,
+             root.refreshVersionKey = $versionKey,
+             root.publishedAt = $now,
+             root.signingMode = 'issuer-signed',
+             refresh.issuerDid = $credentialIssuerDid,
+             refresh.materialDigest = $materialDigest,
+             refresh.rootMaterialDigest = $materialDigest,
+             refresh.credentialStatusDigest = $credentialStatusDigest,
+             refresh.credentialSubjectDigest = $credentialSubjectDigest,
+             refresh.boostId = $boostId,
+             refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
+             refresh.lastPublishedAt = $now,
+             refresh.updatedAt = $now
+         RETURN refresh`,
+            {
+                refreshId,
+                rootCredentialNodeId: credentialInstance.id,
+                issuerProfileId: issuerProfile.profileId,
+                holderProfileId: holderProfile.profileId,
+                boostId: boost?.id ?? null,
+                activityId: activityId ?? null,
+                integrationId: integrationId ?? null,
+                versionKey: `${refreshId}:1`,
+                now,
+                credentialIssuerDid,
+                materialDigest: rootMaterialDigest,
+                credentialSubjectDigest: computeCredentialSubjectDigest(
+                    credential.credentialSubject
+                ),
+                credentialStatusDigest,
+                initialNotificationSuppressed: skipNotification,
+            }
+        );
+
+        boundRecordsLength = bound.records.length;
+    } catch (error) {
+        if (!isInitialRefreshVersionUniquenessRace(error)) throw error;
+
+        // The bind transaction rolled back. Continue through the normal losing-race
+        // cleanup and winning-root verification path below.
+    }
+
+    if (boundRecordsLength === 0) {
+        try {
+            await deleteCredential(credentialInstance);
+        } catch (error) {
+            console.error(
+                'Credential Refresh Helpers - Failed to delete losing initial credential:',
+                error
+            );
+        }
+
+        const concurrentlyBoundRoot = await getInitialRefreshRoot(refreshId);
+
+        if (!concurrentlyBoundRoot) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Credential refresh was bound concurrently; retry initial delivery',
+            });
+        }
+
+        assertInitialCredentialMatches(
+            concurrentlyBoundRoot,
+            rootMaterialDigest,
+            credentialStatusDigest,
+            boost?.id
+        );
+
+        const rootId = await ensureInitialRefreshRelationships({
+            refreshId,
+            issuerProfileId: issuerProfile.profileId,
+            holderProfileId: holderProfile.profileId,
+            boostId: boost?.id,
+            activityId,
+            integrationId,
+        });
+
+        if (!rootId) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Credential refresh initial delivery could not be resumed',
+            });
+        }
+
+        if (contractTerms) {
+            await ensureCredentialIssuedViaContractRelationship(rootId, contractTerms);
+        }
+
+        const uri = getManagedCredentialUri(rootId, domain);
+        const initialNotificationSuppressed = await ensureInitialNotificationPolicy(
+            refreshId,
+            skipNotification
+        );
+        await sendInitialCredentialNotificationOnce({
+            refreshId,
+            uri,
+            issuerProfile,
+            holderProfile,
+            initialNotificationSuppressed,
+        });
+
+        return { uri, receipt: buildReceipt() };
+    }
+
+    if (contractTerms) {
+        await ensureCredentialIssuedViaContractRelationship(credentialInstance.id, contractTerms);
+    }
+
+    const uri = getManagedCredentialUri(credentialInstance.id, domain);
+    const initialNotificationSuppressed = await ensureInitialNotificationPolicy(
+        refreshId,
+        skipNotification
+    );
+    await sendInitialCredentialNotificationOnce({
+        refreshId,
+        uri,
+        issuerProfile,
+        holderProfile,
+        initialNotificationSuppressed,
+    });
+
+    return { uri, receipt: buildReceipt() };
+};
+
+// --- Publication (LC-2135) -----------------------------------------------------
+
+/**
+ * Route-level refinement of the Task 1 contract's permissive signing-authority
+ * descriptor: resolving ownership requires the registered name + endpoint.
+ */
+const SigningAuthorityReferenceValidator = z
+    .object({
+        type: z.string().min(1),
+        name: z.string().min(1),
+        endpoint: z.string().min(1),
+    })
+    .catchall(z.any());
+
+/** Opaque ETag derived from the stored encrypted bytes (never from plaintext). */
+export const computeRefreshEtag = (encryptedCredential: string): string =>
+    createHash('sha256').update(encryptedCredential).digest('base64url');
+
+const deliverCredentialRefreshNotification = async (params: {
+    version: CredentialRefreshVersionNode;
+    issuerProfile: ProfileType;
+    holderProfile: ProfileType;
+    branding?: Partial<TenantBranding>;
+}): Promise<PublishCredentialRefreshNotification> => {
+    const { version, issuerProfile, holderProfile, branding } = params;
+
+    let inAppOutcome: PublishCredentialRefreshNotification = 'queued';
+    let deliveryWindowKey = version.notificationDeliveryKey;
+
+    if (!version.notificationDeliveredAt) {
+        const event = buildCredentialRefreshedNotification({
+            holderProfile,
+            issuerProfile,
+            refreshId: version.refreshId,
+            version: version.version,
+            notificationId: version.notificationId,
+            deliveryKey: version.notificationDeliveryKey,
+            notifiedAt: version.notificationCreatedAt,
+        });
+        deliveryWindowKey = event.deliveryKey;
+
+        try {
+            await addNotificationToQueue(event.notification);
+            await recordCredentialRefreshNotification({
+                refreshId: version.refreshId,
+                version: version.version,
+                notificationId: event.notificationId,
+                deliveryKey: event.deliveryKey,
+                notifiedAt: event.notifiedAt,
+            });
+        } catch (error) {
+            console.error(
+                'Credential Refresh Helpers - Failed to enqueue CREDENTIAL_REFRESHED notification:',
+                error
+            );
+
+            inAppOutcome = 'delivery-failed';
+        }
+    }
+
+    // Email is an independent channel: attempted even when the durable in-app
+    // event was already delivered or just failed. Its own outcome is never allowed
+    // to change the publication result or duplicate the push notification.
+    try {
+        await deliverCredentialRefreshEmailNotification({
+            version: { ...version, notificationDeliveryKey: deliveryWindowKey },
+            issuerProfile,
+            holderProfile,
+            branding,
+        });
+    } catch (error) {
+        console.error(
+            'Credential Refresh Helpers - Unexpected error delivering refresh update email:',
+            error
+        );
+    }
+
+    return inAppOutcome;
+};
+
+const resolveCredentialRefreshReplayNotification = async (params: {
+    version: CredentialRefreshVersionNode;
+    aggregate: CredentialRefreshRecord;
+    issuerProfile: ProfileType;
+    branding?: Partial<TenantBranding>;
+}): Promise<PublishCredentialRefreshNotification> => {
+    const { version, aggregate, issuerProfile, branding } = params;
+    const persistedOutcome = version.notificationOutcome ?? 'suppressed';
+
+    if (persistedOutcome !== 'queued') return persistedOutcome;
+
+    const holderProfile = aggregate.holderProfileId
+        ? await getProfileByProfileId(aggregate.holderProfileId)
+        : null;
+
+    return holderProfile
+        ? deliverCredentialRefreshNotification({ version, issuerProfile, holderProfile, branding })
+        : 'delivery-failed';
+};
+
+/**
+ * Acceptance hook for publications made while the credential was awaiting claim.
+ * Failed delivery remains pending and is re-driven by an idempotent acceptance retry.
+ */
+export const deliverPendingCredentialRefreshNotificationForAcceptedCredential = async (params: {
+    credentialNodeId: string;
+    issuerProfile: ProfileType;
+    holderProfile: ProfileType;
+    /** Optional tenant branding for the update email; defaults to LearnCard. */
+    branding?: Partial<TenantBranding>;
+}): Promise<PublishCredentialRefreshNotification> => {
+    const { credentialNodeId, issuerProfile, holderProfile, branding } = params;
+    const result = await neogma.queryRunner.run(
+        `MATCH (refresh:CredentialRefresh)-[:ROOT]->(:Credential {id: $credentialNodeId})
+         RETURN refresh.refreshId AS refreshId, refresh.state AS state
+         LIMIT 1`,
+        { credentialNodeId }
+    );
+    const refreshId = result.records[0]?.get('refreshId');
+    const state = result.records[0]?.get('state');
+
+    if (!refreshId || state !== 'active') return 'not-applicable';
+
+    const head = await getCredentialRefreshHead(refreshId);
+
+    if (!head?.notificationPendingAfterClaim) {
+        return head?.notificationDeliveredAt ? 'queued' : 'not-applicable';
+    }
+
+    return deliverCredentialRefreshNotification({
+        version: head,
+        issuerProfile,
+        holderProfile,
+        branding,
+    });
+};
+
+/**
+ * Shared invariants every published version must satisfy, checked on the signed VC
+ * (issuer-signed mode) or on the unsigned body before proof creation
+ * (signing-authority mode). Error messages are deliberately generic — credential
+ * content must never appear in exception messages, tracing attributes, or logs.
+ */
+const assertRefreshVersionInvariants = (
+    credential: VC,
+    aggregate: CredentialRefreshRecord,
+    domain: string
+): void => {
+    if (credential.id !== aggregate.credentialId) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential ID does not match the allocated refresh',
+        });
+    }
+
+    if (getCredentialIssuerId(credential) !== aggregate.issuerDid) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential issuer does not match the allocated refresh',
+        });
+    }
+
+    if (
+        !aggregate.holderDid ||
+        !getCredentialSubjectIds(credential).includes(aggregate.holderDid)
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential subject does not match the intended holder',
+        });
+    }
+
+    if (
+        !aggregate.credentialSubjectDigest ||
+        computeCredentialSubjectDigest(credential.credentialSubject) !==
+            aggregate.credentialSubjectDigest
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                'Credential subjects do not match the original credential; legacy refreshes require reissuance',
+        });
+    }
+
+    if (!hasAllocatedRefreshService(credential, aggregate.refreshId, domain)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential does not contain the allocated refresh service',
+        });
+    }
+
+    if (
+        !aggregate.credentialStatusDigest ||
+        computeCredentialStatusDigest(
+            (credential as unknown as Record<string, unknown>).credentialStatus
+        ) !== aggregate.credentialStatusDigest
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential status does not match the original credential',
+        });
+    }
+};
+
+export type PublishCredentialRefreshParams = {
+    issuerProfile: ProfileType;
+    input: PublishCredentialRefreshInput;
+    domain: string;
+    /** Optional tenant branding for the update email; defaults to LearnCard. */
+    branding?: Partial<TenantBranding>;
+};
+
+/**
+ * Publishes a new immutable version of a managed refreshable credential and
+ * atomically advances the aggregate head.
+ *
+ * Plaintext exists only transiently inside this request: invariants and proofs are
+ * checked in memory, a server-keyed HMAC over the canonical user-visible projection
+ * is computed for materiality, and only the holder-encrypted JWE is persisted.
+ * The version chain is advanced through the single-writer compare-and-advance in
+ * the access layer; losers of a concurrent race receive CONFLICT and may retry.
+ */
+export const publishCredentialRefresh = async (
+    params: PublishCredentialRefreshParams
+): Promise<PublishCredentialRefreshResult> => {
+    const { issuerProfile, input, domain } = params;
+    const { refreshId, idempotencyKey, notifyHolder, updateSummary } = input;
+    const branding = params.branding;
+
+    // Email-only bounded display title. Read from the issuer-supplied publication
+    // input (never from the holder-encrypted payload); `undefined` falls back to
+    // the original boost template at delivery time, then to generic copy.
+    const credentialDisplayName = extractBoundedCredentialDisplayTitle(
+        input.mode === 'signing-authority' ? input.credential.name : input.signedCredential.name
+    );
+
+    const aggregate = await getCredentialRefresh(refreshId);
+
+    if (!aggregate) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
+    }
+
+    if (aggregate.issuerProfileId !== issuerProfile.profileId) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Profile did not allocate this credential refresh',
+        });
+    }
+
+    if (aggregate.state === 'revoked') {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh has been revoked',
+        });
+    }
+
+    const canonicalLifecycle = await getCredentialRefreshCanonicalLifecycle(refreshId);
+
+    if (canonicalLifecycle?.revoked) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh has been revoked',
+        });
+    }
+
+    if (aggregate.inboxCredentialId) {
+        const { getPendingInboxPublication } =
+            await import('@accesslayer/inbox-credential/refresh');
+        const replay = await getPendingInboxPublication(refreshId, idempotencyKey);
+        if (replay) return replay;
+        if (aggregate.state === 'pending_holder') {
+            const { publishPendingInboxRefresh } = await import('./inbox-refresh.helpers');
+            return publishPendingInboxRefresh(aggregate, issuerProfile, input, domain);
+        }
+    }
+
+    if (idempotencyKey) {
+        const replayed = await getCredentialRefreshVersionByIdempotencyKey(
+            refreshId,
+            idempotencyKey
+        );
+
+        if (replayed) {
+            const notification = await resolveCredentialRefreshReplayNotification({
+                version: replayed,
+                aggregate,
+                issuerProfile,
+                branding,
+            });
+
+            return {
+                refreshId,
+                version: replayed.version,
+                publishedAt: replayed.publishedAt,
+                notification,
+            };
+        }
+    }
+
+    const head = await getCredentialRefreshHead(refreshId);
+
+    if (!head) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh is not bound to a credential yet',
+        });
+    }
+
+    let signedCredential: VC;
+    let signingMode: CredentialRefreshSigningMode;
+
+    if (input.mode === 'issuer-signed') {
+        signedCredential = input.signedCredential;
+        signingMode = 'issuer-signed';
+
+        assertRefreshVersionInvariants(signedCredential, aggregate, domain);
+        await verifyManagedRefreshProof(
+            (await getLearnCard()).invoke,
+            signedCredential,
+            getDidWeb(domain, issuerProfile.profileId)
+        );
+    } else {
+        const reference = SigningAuthorityReferenceValidator.safeParse(input.signingAuthority);
+
+        if (!reference.success) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Signing authority reference requires a name and endpoint',
+            });
+        }
+
+        const signingAuthority = await getSigningAuthorityForUserByName(
+            issuerProfile,
+            reference.data.endpoint,
+            reference.data.name.toLowerCase()
+        );
+
+        if (!signingAuthority) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: 'Profile does not own this signing authority',
+            });
+        }
+
+        // Enforce the full invariant set on the unsigned body before proof creation.
+        // The signing authority is the issuer's own registered delegate and signs the
+        // body as supplied, so the completed credential is rechecked in full plus proof.
+        assertRefreshVersionInvariants(input.credential as VC, aggregate, domain);
+
+        // Managed refresh services require their inline JSON-LD context terms to be
+        // defined or signing fails (LC-2198): prepare the context exactly as the SDK
+        // path does. Idempotent when the issuer already supplied the definitions.
+        const preparedCredential = prepareManagedRefreshContext(input.credential);
+
+        // appendCredentialStatus: false — a refresh version must preserve the
+        // issuer-supplied credentialStatus descriptor; no new status-list entry is
+        // allocated for a version of an already-issued credential.
+        signedCredential = (
+            await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: issuerProfile },
+                preparedCredential,
+                signingAuthority,
+                domain,
+                false,
+                undefined,
+                false
+            )
+        ).credential as VC;
+        signingMode = 'signing-authority';
+
+        assertRefreshVersionInvariants(signedCredential, aggregate, domain);
+        await verifyManagedRefreshProof(
+            (await getLearnCard()).invoke,
+            signedCredential,
+            getDidWeb(domain, issuerProfile.profileId)
+        );
+    }
+
+    // Reject a strictly older effective/issuance timestamp. Equal or missing
+    // timestamps are accepted: some interoperable issuers omit or reuse them, and
+    // managed version ordering remains authoritative.
+    const effectiveTime = getCredentialEffectiveTime(signedCredential);
+
+    if (effectiveTime !== undefined && head.effectiveAt) {
+        const headTime = Date.parse(head.effectiveAt);
+
+        if (!Number.isNaN(headTime) && effectiveTime < headTime) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Credential effective time is older than the current version',
+            });
+        }
+    }
+
+    // Materiality + notification decision (transient comparison; only the keyed
+    // digest is persisted). Actual event emission is wired by the notification task.
+    const nextDigest = computeCredentialMaterialDigest(
+        signedCredential as unknown as Record<string, unknown>
+    );
+
+    const activeNotification = decideCredentialRefreshNotification({
+        state: 'active',
+        notifyHolder,
+        previousDigest: aggregate.materialDigest,
+        nextDigest,
+    });
+    const notification: PublishCredentialRefreshNotification =
+        aggregate.state === 'active' ? activeNotification : 'not-applicable';
+    const notificationPendingAfterClaim =
+        aggregate.state === 'awaiting_claim' &&
+        (head.notificationPendingAfterClaim === true || activeNotification === 'queued');
+
+    const holderProfile =
+        notification === 'queued' || notificationPendingAfterClaim
+            ? aggregate.holderProfileId
+                ? await getProfileByProfileId(aggregate.holderProfileId)
+                : null
+            : null;
+    const notificationEvent = holderProfile
+        ? buildCredentialRefreshedNotification({
+              holderProfile,
+              issuerProfile,
+              refreshId,
+              version: aggregate.currentVersion + 1,
+          })
+        : undefined;
+
+    const holderProfileForEncryption = aggregate.holderProfileId
+        ? await getProfileByProfileId(aggregate.holderProfileId)
+        : null;
+
+    // Same holder-side recipients as the initial send — see getHolderEncryptionRecipients.
+    const jwe = await createDagJweForRecipients(
+        signedCredential,
+        holderProfileForEncryption
+            ? await getHolderEncryptionRecipients(holderProfileForEncryption)
+            : [aggregate.holderDid!]
+    );
+    const encryptedCredential = JSON.stringify(jwe);
+    const etag = computeRefreshEtag(encryptedCredential);
+
+    const advance = await advanceCredentialRefreshHead({
+        refreshId,
+        expectedVersion: aggregate.currentVersion,
+        expectedState: aggregate.state,
+        encryptedCredential,
+        signingMode,
+        idempotencyKey,
+        etag,
+        materialDigest: nextDigest,
+        updateSummary,
+        credentialDisplayName,
+        effectiveAt:
+            effectiveTime !== undefined ? new Date(effectiveTime).toISOString() : undefined,
+        notificationOutcome: notification,
+        notificationId: notificationEvent?.notificationId,
+        notificationDeliveryKey: notificationEvent?.deliveryKey,
+        notificationCreatedAt: notificationEvent?.notifiedAt,
+        notificationPendingAfterClaim,
+    });
+
+    if (advance.status === 'conflict') {
+        // A concurrent publication advanced the head first; nothing was written.
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh was updated concurrently; retry the publication',
+        });
+    }
+
+    if (advance.status === 'replay') {
+        const replayed = await getCredentialRefreshVersion(refreshId, advance.version);
+
+        if (!replayed) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Credential refresh replay could not be resolved; retry the publication',
+            });
+        }
+
+        return {
+            refreshId,
+            version: replayed.version,
+            publishedAt: replayed.publishedAt,
+            notification: await resolveCredentialRefreshReplayNotification({
+                version: replayed,
+                aggregate,
+                issuerProfile,
+                branding,
+            }),
+        };
+    }
+
+    let deliveredNotification = notification;
+
+    if (notification === 'queued') {
+        const persistedVersion = await getCredentialRefreshVersion(refreshId, advance.version);
+
+        deliveredNotification =
+            persistedVersion && holderProfile
+                ? await deliverCredentialRefreshNotification({
+                      version: persistedVersion,
+                      issuerProfile,
+                      holderProfile,
+                      branding,
+                  })
+                : 'delivery-failed';
+    }
+
+    return {
+        refreshId,
+        version: advance.version,
+        publishedAt: advance.publishedAt ?? new Date().toISOString(),
+        notification: deliveredNotification,
+    };
+};

@@ -20,16 +20,40 @@ const didkitDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const wasmPath = path.join(didkitDir, 'pkg', 'didkit_wasm_bg.wasm');
 const indexPath = path.join(didkitDir, 'index.ts');
 
-const urlMatch = readFileSync(indexPath, 'utf8').match(/didkit_wasm_bg-([0-9a-f]{64})\.wasm/);
+const urlMatch = readFileSync(indexPath, 'utf8').match(
+    /export const DEFAULT_DIDKIT_WASM_URL\s*=\s*'([^']*)'/
+);
 
 if (!urlMatch) {
+    console.error(`Could not find a DEFAULT_DIDKIT_WASM_URL assignment in ${indexPath}.`);
+    process.exit(1);
+}
+
+const defaultUrl = urlMatch[1];
+
+// Both published layouts are content-addressed. The nested form is what
+// .github/workflows/update-didkit-wasm.yml writes; the flat form predates it. Anchored so a
+// stray 64-hex string elsewhere in the URL cannot satisfy the check.
+const contentAddressedPatterns = [
+    /\/didkit\/sha256-([0-9a-f]{64})\/didkit_wasm_bg\.wasm$/,
+    /\/didkit_wasm_bg-([0-9a-f]{64})\.wasm$/,
+];
+const shaMatch = contentAddressedPatterns.map(pattern => defaultUrl.match(pattern)).find(Boolean);
+
+if (!shaMatch) {
     console.error(
-        `Could not find a content-addressed didkit_wasm_bg-<sha256>.wasm URL in ${indexPath}.`
+        [
+            `DEFAULT_DIDKIT_WASM_URL is not content-addressed: ${defaultUrl}`,
+            '',
+            'Expected one of:',
+            '  https://<host>/didkit/sha256-<sha256>/didkit_wasm_bg.wasm',
+            '  https://<host>/didkit_wasm_bg-<sha256>.wasm',
+        ].join('\n')
     );
     process.exit(1);
 }
 
-const urlSha = urlMatch[1];
+const urlSha = shaMatch[1];
 const binarySha = createHash('sha256').update(readFileSync(wasmPath)).digest('hex');
 
 if (urlSha !== binarySha) {
@@ -43,8 +67,9 @@ if (urlSha !== binarySha) {
             'binary from the URL produces a LinkError at init time.',
             '',
             'To resolve: publish the checked-in binary as',
-            `  https://assets.learncard.ai/didkit_wasm_bg-${binarySha}.wasm`,
-            'then update the default URL in src/didkit/index.ts to that sha.',
+            `  https://assets.learncard.ai/didkit/sha256-${binarySha}/didkit_wasm_bg.wasm`,
+            'then point DEFAULT_DIDKIT_WASM_URL in src/didkit/index.ts at it. The Update DIDKit',
+            'WASM workflow does both automatically when DIDKit or SSI changes.',
         ].join('\n')
     );
     process.exit(1);

@@ -1,0 +1,454 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ContractRequest, PendingContractRequests } from './ContractRequest';
+import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
+import { setLocale } from '../../paraglide/runtime.js';
+
+const state = vi.hoisted(() => ({
+    status: {
+        requestId: 'req-1',
+        requestedBy: 'referrer',
+        status: 'pending',
+        readStatus: 'seen',
+        message: 'Career support',
+    },
+    contract: {
+        uri: 'lc:network:localhost%3A4000/trpc:contract:one',
+        name: 'Partner services',
+        createdAt: '2026-10-02T00:00:00.000Z',
+        updatedAt: '2026-10-02T00:00:00.000Z',
+        description: 'Get career support',
+        reasonForAccessing: 'To provide career services',
+        owner: {
+            did: 'did:key:partner',
+            profileId: 'partner',
+            displayName: 'Partner Org',
+            shortBio: '',
+            bio: '',
+        },
+        recipients: [
+            {
+                did: 'did:key:referrer',
+                profileId: 'referrer',
+                displayName: 'Referrer Org',
+                shortBio: '',
+            },
+        ],
+        contract: {
+            read: {
+                personal: {},
+                credentials: { categories: { Achievement: { required: false } } },
+            },
+            write: {
+                personal: {},
+                credentials: { categories: { Achievement: { required: true } } },
+            },
+        },
+        expiresAt: '',
+        needsGuardianConsent: false,
+    },
+    getStatus: vi.fn(),
+    getContract: vi.fn(),
+    seen: vi.fn(),
+    deny: vi.fn(),
+    modal: vi.fn(),
+    close: vi.fn(),
+    closeToken: vi.fn(),
+    beforeSubmit: undefined as undefined | (() => Promise<void>),
+    toast: vi.fn(),
+    confirm: vi.fn(),
+    flags: true,
+    tenant: true,
+    referrerLoaded: true,
+    list: [] as unknown[],
+}));
+const initWallet = async () => ({
+    invoke: {
+        getRequestStatusForProfile: state.getStatus,
+        getContract: state.getContract,
+        markContractRequestAsSeen: state.seen,
+        denyContractRequest: state.deny,
+    },
+});
+vi.mock('learn-card-base', () => ({
+    contractCategoryNameToCategoryMetadata: (key: string) =>
+        (
+            ({ Achievement: { title: 'Achievements' }, ID: { title: 'IDs' } }) as Record<
+                string,
+                { title: string }
+            >
+        )[key],
+    useWallet: () => ({ initWallet }),
+    useGetCurrentLCNUser: () => ({ currentLCNUser: { profileId: 'learner' } }),
+    useModal: () => ({
+        newModalWithToken: state.modal,
+        closeModal: state.close,
+        forceCloseModalByToken: state.closeToken,
+    }),
+    ModalTypes: { Right: 'right', FullScreen: 'fullscreen' },
+    useGetProfile: () => ({
+        data: state.referrerLoaded ? { displayName: 'Referrer Org' } : undefined,
+    }),
+    useAllContractRequestsForProfile: () => ({
+        data: state.list,
+        isPending: false,
+        isError: false,
+    }),
+    useConfirmation: () => state.confirm,
+    useToast: () => ({ presentToast: state.toast }),
+    ToastTypeEnum: { Success: 'success' },
+    useFeatureConfig: () => ({ contractRequests: state.tenant }),
+}));
+vi.mock('launchdarkly-react-client-sdk', () => ({
+    useFlags: () => ({ enableContractRequests: state.flags }),
+}));
+vi.mock('learn-card-base/config/TenantConfigProvider', () => ({ useBrandingConfig: () => ({}) }));
+vi.mock('../../pages/consentFlow/FullScreenConsentFlow', () => ({
+    default: (props: { beforeSubmit?: () => Promise<void> }) => {
+        state.beforeSubmit = props.beforeSubmit;
+        return <div data-testid="consent-review">Consent review</div>;
+    },
+}));
+vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
+const show = (element = <ContractRequest contractUri={state.contract.uri} requestId="req-1" />) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const view = render(<QueryClientProvider client={client}>{element}</QueryClientProvider>);
+    return {
+        ...view,
+        update: () =>
+            view.rerender(
+                <QueryClientProvider client={client}>
+                    {React.cloneElement(element)}
+                </QueryClientProvider>
+            ),
+    };
+};
+beforeEach(() => {
+    vi.clearAllMocks();
+    setLocale('en');
+    state.status.status = 'pending';
+    state.status.readStatus = 'seen';
+    state.contract.expiresAt = '';
+    state.contract.needsGuardianConsent = false;
+    state.tenant = true;
+    state.referrerLoaded = true;
+    state.flags = true;
+    state.list = [];
+    state.beforeSubmit = undefined;
+    state.modal.mockImplementation(() => ({ id: state.modal.mock.calls.length, generation: 0 }));
+    state.getStatus.mockImplementation(async () => ({ ...state.status }));
+    state.getContract.mockImplementation(async () => structuredClone(state.contract));
+    state.seen.mockResolvedValue(true);
+    state.deny.mockImplementation(async () => {
+        state.status.status = 'denied';
+        return true;
+    });
+    state.confirm.mockResolvedValue(true);
+});
+afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+});
+describe('referral actions', () => {
+    it.each(['cancelled', 'accepted'])(
+        'keeps initial consent pending-only when request becomes %s',
+        async status => {
+            show();
+            fireEvent.click(await screen.findByText('Accept & Connect'));
+            await waitFor(() => expect(state.modal).toHaveBeenCalled());
+            const flow = state.modal.mock.calls[0][0].props.children;
+            expect(flow.props.contractDetails.owner.displayName).toBe('Partner Org');
+            expect(flow.props.disableRedirect).toBe(true);
+            expect(flow.props.expectedRequestId).toBe('req-1');
+            expect(state.getContract).toHaveBeenCalledTimes(2);
+            state.status.status = status;
+            await expect(flow.props.beforeSubmit()).rejects.toThrow('no longer pending');
+        }
+    );
+    it.each(['flags', 'tenant'] as const)(
+        'closes only saved referral details when %s is disabled, after the card unmounts',
+        async gate => {
+            vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+            const card = show();
+            fireEvent.click(await screen.findByText('View Details'));
+            const saved = state.modal.mock.calls[0][0];
+            const token = state.modal.mock.results[0].value;
+            card.unmount();
+            const details = show(saved);
+            await screen.findByText('Decline');
+            const reads = state.getStatus.mock.calls.length;
+            state[gate] = false;
+            details.update();
+            await waitFor(() => expect(state.closeToken).toHaveBeenCalledExactlyOnceWith(token));
+            expect(screen.queryByTestId('contract-request-details')).toBeNull();
+            await vi.advanceTimersByTimeAsync(90_000);
+            expect(state.getStatus).toHaveBeenCalledTimes(reads);
+            expect(state.deny).not.toHaveBeenCalled();
+            expect(state.close).not.toHaveBeenCalled();
+        }
+    );
+    it('aborts a decline when the gate changes while confirmation is open', async () => {
+        let confirm!: (value: boolean) => void;
+        state.confirm.mockImplementation(
+            () =>
+                new Promise(resolve => {
+                    confirm = resolve;
+                })
+        );
+        const view = show(
+            <ContractRequest contractUri={state.contract.uri} requestId="req-1" details />
+        );
+        fireEvent.click(await screen.findByText('Decline'));
+        await waitFor(() => expect(state.confirm).toHaveBeenCalled());
+        state.flags = false;
+        view.update();
+        confirm(true);
+        await waitFor(() => expect(screen.queryByText('Decline')).toBeNull());
+        expect(state.deny).not.toHaveBeenCalled();
+    });
+    it('does not open consent when the gate changes during the fresh request read', async () => {
+        const card = show();
+        await screen.findByText('Accept & Connect');
+        let finish!: (value: unknown) => void;
+        state.getStatus.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    finish = resolve;
+                })
+        );
+        fireEvent.click(screen.getByText('Accept & Connect'));
+        await waitFor(() => expect(finish).toBeDefined());
+        state.flags = false;
+        card.update();
+        finish({ ...state.status });
+        await waitFor(() => expect(state.getContract).toHaveBeenCalledTimes(2));
+        expect(state.modal).not.toHaveBeenCalled();
+    });
+    it('guards a saved consent review independently of its card and aborts a gate change during final revalidation', async () => {
+        const card = show();
+        fireEvent.click(await screen.findByText('Accept & Connect'));
+        await waitFor(() => expect(state.modal).toHaveBeenCalled());
+        const saved = state.modal.mock.calls[0][0];
+        const token = state.modal.mock.results[0].value;
+        card.unmount();
+        const review = show(saved);
+        await screen.findByTestId('consent-review');
+        const submit = state.beforeSubmit!;
+        // The card has gone away; the saved review still permits a valid submission.
+        await expect(submit()).resolves.toBeUndefined();
+        let finish!: (value: unknown) => void;
+        state.getStatus.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    finish = resolve;
+                })
+        );
+        const submitting = expect(submit()).rejects.toThrow('Referrals are disabled');
+        await waitFor(() => expect(finish).toBeDefined());
+        state.flags = false;
+        review.update();
+        finish({ ...state.status });
+        await submitting;
+        expect(screen.queryByTestId('consent-review')).toBeNull();
+        expect(state.closeToken).toHaveBeenCalledExactlyOnceWith(token);
+        await expect(submit()).rejects.toThrow('Referrals are disabled');
+    });
+    it('does not fetch or offer actions when disabled, and leaves ordinary consent screens available', () => {
+        state.flags = false;
+        const card = show();
+        expect(screen.queryByTestId('contract-request-card')).toBeNull();
+        expect(state.getStatus).not.toHaveBeenCalled();
+        card.unmount();
+        show(<FullScreenConsentFlow contractDetails={state.contract} />);
+        expect(screen.getByTestId('consent-review')).toBeVisible();
+        expect(state.closeToken).not.toHaveBeenCalled();
+    });
+    it('uses the referrer profile ID when its display profile cannot be loaded', async () => {
+        state.referrerLoaded = false;
+        show();
+        expect(await screen.findByText('referrer has referred you to Partner Org.')).toBeVisible();
+    });
+    it('shows purpose, message and full audience; Not Now only closes', async () => {
+        show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
+        expect(await screen.findByText('To provide career services')).toBeVisible();
+        expect(screen.getByTestId('contract-request-shared-with')).toHaveTextContent('Partner Org');
+        expect(screen.getByTestId('contract-request-shared-with')).toHaveTextContent(
+            'Referrer Org'
+        );
+        fireEvent.click(screen.getByText('Not Now'));
+        expect(state.close).toHaveBeenCalled();
+        expect(state.deny).not.toHaveBeenCalled();
+    });
+    it('confirms decline, refreshes terminal state and removes the accept action', async () => {
+        show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
+        fireEvent.click(await screen.findByText('Decline'));
+        expect(await screen.findByText('Declined')).toBeVisible();
+        expect(state.deny).toHaveBeenCalledWith(state.contract.uri);
+        expect(state.toast).toHaveBeenCalled();
+        expect(screen.queryByText('Accept & Connect')).toBeNull();
+    });
+    it('cancelled confirmation does not decline', async () => {
+        state.confirm.mockResolvedValue(false);
+        show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
+        fireEvent.click(await screen.findByText('Decline'));
+        await waitFor(() => expect(state.confirm).toHaveBeenCalled());
+        expect(state.deny).not.toHaveBeenCalled();
+    });
+    it('dismisses independently of the decision', async () => {
+        const dismiss = vi.fn().mockResolvedValue(undefined);
+        show(
+            <ContractRequest
+                contractUri={state.contract.uri}
+                requestId="req-1"
+                onDismiss={dismiss}
+            />
+        );
+        fireEvent.click(await screen.findByLabelText('Dismiss invitation'));
+        await waitFor(() => expect(dismiss).toHaveBeenCalled());
+        expect(state.deny).not.toHaveBeenCalled();
+    });
+    it('retries a failed dismissal without refetching or deciding the request', async () => {
+        const dismiss = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('Network'))
+            .mockResolvedValue(undefined);
+        show(
+            <ContractRequest
+                contractUri={state.contract.uri}
+                requestId="req-1"
+                onDismiss={dismiss}
+            />
+        );
+        fireEvent.click(await screen.findByLabelText('Dismiss invitation'));
+        await screen.findByRole('alert');
+        const reads = state.getStatus.mock.calls.length;
+        fireEvent.click(screen.getByText('Try Again'));
+        await waitFor(() => expect(dismiss).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+        expect(state.getStatus).toHaveBeenCalledTimes(reads);
+        expect(state.deny).not.toHaveBeenCalled();
+    });
+    it('shows a distinct audience including owner-only contracts', async () => {
+        const recipients = state.contract.recipients;
+        state.getContract.mockResolvedValue({
+            ...state.contract,
+            recipients: [state.contract.owner, ...recipients, ...recipients],
+        });
+        show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
+        const audience = await screen.findByTestId('contract-request-shared-with');
+        expect(audience.querySelectorAll('li')).toHaveLength(2);
+        cleanup();
+        state.getContract.mockResolvedValue({ ...state.contract, recipients: [] });
+        show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
+        expect(
+            (await screen.findByTestId('contract-request-shared-with')).querySelectorAll('li')
+        ).toHaveLength(1);
+    });
+    it('localizes known fields and categories while retaining custom names', async () => {
+        setLocale('es');
+        state.getContract.mockResolvedValue({
+            ...state.contract,
+            contract: {
+                read: {
+                    personal: { name: true, email: true, image: true },
+                    credentials: {
+                        categories: { Achievement: {}, ID: {}, 'Custom Partner Category': {} },
+                    },
+                },
+                write: { personal: {}, credentials: { categories: { Achievement: true } } },
+            },
+        });
+        show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
+        await screen.findByTestId('contract-request-shared-with');
+        expect(screen.getByText(/Custom Partner Category/)).toHaveTextContent('Logros');
+        expect(screen.getByText(/Custom Partner Category/)).not.toHaveTextContent('Achievement');
+        expect(screen.getByText(/Custom Partner Category/)).not.toHaveTextContent('image');
+    });
+    it('fails closed on status read errors and supports retry', async () => {
+        state.getStatus.mockRejectedValueOnce(new Error('private technical error'));
+        show();
+        await screen.findByRole('alert');
+        expect(screen.queryByText('Accept & Connect')).toBeNull();
+        expect(screen.queryByText('private technical error')).toBeNull();
+        expect(screen.queryByText('This invitation is no longer available.')).toBeNull();
+        fireEvent.click(screen.getByText('Try Again'));
+        expect(await screen.findByText('Accept & Connect')).toBeEnabled();
+    });
+    it('stops background polling when a pending invitation becomes terminal', async () => {
+        vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+        show();
+        await screen.findByText('Accept & Connect');
+        state.status.status = 'accepted';
+        await vi.advanceTimersByTimeAsync(30_000);
+        await screen.findByText('Connected');
+        const reads = state.getStatus.mock.calls.length;
+        await vi.advanceTimersByTimeAsync(90_000);
+        expect(state.getStatus).toHaveBeenCalledTimes(reads);
+    });
+    it.each(['accepted', 'denied', 'cancelled'])('has no accept action for %s', async status => {
+        state.status.status = status;
+        show();
+        await waitFor(() => expect(state.getContract).toHaveBeenCalled());
+        await screen.findByRole('status');
+        expect(screen.queryByText('Accept & Connect')).toBeNull();
+    });
+    it('rejects cancellation on the action-time recheck', async () => {
+        show();
+        await screen.findByText('Accept & Connect');
+        state.status.status = 'cancelled';
+        fireEvent.click(screen.getByText('Accept & Connect'));
+        await screen.findByRole('alert');
+        expect(state.modal).not.toHaveBeenCalled();
+    });
+    it('marks a pending request seen as the target', async () => {
+        state.status.readStatus = 'unseen';
+        state.seen.mockImplementation(async () => {
+            state.status.readStatus = 'seen';
+        });
+        show();
+        await waitFor(() => expect(state.seen).toHaveBeenCalledWith(state.contract.uri, 'learner'));
+    });
+    it('suppresses expired and replaced invitations', async () => {
+        state.contract.expiresAt = '2020-01-01T00:00:00Z';
+        show();
+        await screen.findByText('This invitation is no longer available.');
+        expect(screen.queryByText('Accept & Connect')).toBeNull();
+        cleanup();
+        state.contract.expiresAt = '';
+        state.getStatus.mockResolvedValue({ ...state.status, requestId: 'req-2' });
+        show();
+        await screen.findByText('This invitation is no longer available.');
+        expect(state.seen).not.toHaveBeenCalled();
+    });
+    it('uses the existing guardian review flow', async () => {
+        state.contract.needsGuardianConsent = true;
+        show();
+        fireEvent.click(await screen.findByText('Accept & Connect'));
+        await waitFor(() => expect(state.modal).toHaveBeenCalled());
+        expect(
+            state.modal.mock.calls[0][0].props.children.props.contractDetails.needsGuardianConsent
+        ).toBe(true);
+    });
+    it('recovers only generic pending invitations independently of archived alerts', () => {
+        state.list = [
+            { requestId: 'req-1', status: 'pending', contract: state.contract },
+            { status: 'pending', contract: state.contract },
+            { requestId: 'req-2', status: 'denied', contract: state.contract },
+        ];
+        show(<PendingContractRequests />);
+        fireEvent.click(screen.getByText('Partner services'));
+        expect(state.modal.mock.calls[0][0].props.children.props.requestId).toBe('req-1');
+    });
+    it.each([
+        [false, true],
+        [true, false],
+        [false, false],
+    ])('requires both gates: tenant=%s LD=%s', (tenant, flags) => {
+        state.tenant = tenant;
+        state.flags = flags;
+        show(<PendingContractRequests />);
+        expect(screen.queryByTestId('pending-contract-requests')).toBeNull();
+    });
+});

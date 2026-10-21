@@ -1,4 +1,5 @@
 import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import type { LCNConnectionPromptStatus, LCNConnectionPromptSurface } from '@learncard/types';
 
 import { neogma } from '@instance';
 
@@ -34,6 +35,21 @@ type CredentialRelationshipProps = {
     unsuspendedAt?: string;
 } & Record<string, unknown>;
 
+type ConnectionPromptRelationshipProps = {
+    promptId: string;
+    status: LCNConnectionPromptStatus;
+    suppressed?: boolean;
+    triggerId: string;
+    coveredTriggerIds?: string[];
+    surface: LCNConnectionPromptSurface;
+    triggeredAt: string;
+    updatedAt: string;
+    notificationDelivered?: boolean;
+    notificationDeliveryAttemptToken?: string;
+    notificationDeliveryAttemptedAt?: string;
+    notificationDeliveryMayHaveSucceeded?: boolean;
+};
+
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<
@@ -43,6 +59,12 @@ export type ProfileRelationships = {
         { sources?: string[] }
     >;
     blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    connectionPrompt: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        ConnectionPromptRelationshipProps,
+        ConnectionPromptRelationshipProps
+    >;
     managedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
@@ -53,8 +75,8 @@ export type ProfileRelationships = {
     presentationSent: ModelRelatedNodesI<
         typeof Presentation,
         PresentationInstance,
-        { to: string; date: string },
-        { to: string; date: string }
+        { to: string; date: string; metadata?: Record<string, unknown> },
+        { to: string; date: string; metadata?: Record<string, unknown> }
     >;
     usesSigningAuthority: ModelRelatedNodesI<
         typeof SigningAuthority,
@@ -131,6 +153,61 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 },
             },
             blocked: { model: 'self', direction: 'out', name: 'BLOCKED' },
+            connectionPrompt: {
+                model: 'self',
+                direction: 'out',
+                name: 'CONNECTION_PROMPT',
+                properties: {
+                    promptId: {
+                        property: 'promptId',
+                        schema: { type: 'string', required: true },
+                    },
+                    status: {
+                        property: 'status',
+                        schema: { type: 'string', required: true },
+                    },
+                    suppressed: {
+                        property: 'suppressed',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    triggerId: {
+                        property: 'triggerId',
+                        schema: { type: 'string', required: true },
+                    },
+                    coveredTriggerIds: {
+                        property: 'coveredTriggerIds',
+                        schema: { type: 'array', items: { type: 'string' }, required: false },
+                    },
+                    surface: {
+                        property: 'surface',
+                        schema: { type: 'string', required: true },
+                    },
+                    triggeredAt: {
+                        property: 'triggeredAt',
+                        schema: { type: 'string', required: true },
+                    },
+                    updatedAt: {
+                        property: 'updatedAt',
+                        schema: { type: 'string', required: true },
+                    },
+                    notificationDelivered: {
+                        property: 'notificationDelivered',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    notificationDeliveryAttemptToken: {
+                        property: 'notificationDeliveryAttemptToken',
+                        schema: { type: 'string', required: false },
+                    },
+                    notificationDeliveryAttemptedAt: {
+                        property: 'notificationDeliveryAttemptedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    notificationDeliveryMayHaveSucceeded: {
+                        property: 'notificationDeliveryMayHaveSucceeded',
+                        schema: { type: 'boolean', required: false },
+                    },
+                },
+            },
             managedBy: { model: 'self', direction: 'out', name: 'MANAGED_BY' },
             credentialSent: {
                 model: Credential,
@@ -161,6 +238,7 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 properties: {
                     to: { property: 'to', schema: { type: 'string', required: true } },
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                    metadata: { property: 'metadata', schema: { type: 'object', required: false } },
                 },
             },
             usesSigningAuthority: {

@@ -148,7 +148,7 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
                             <div className="w-[40px] h-[40px] rounded-full bg-grayscale-300" />
                         )}
                         <button
-                            className="ml-auto pl-[10px] border-l-[1px] border-grayscale-200 border-solid text-grayscale-500 h-full"
+                            className="ml-auto pl-[10px] border-l border-grayscale-200 border-solid text-grayscale-500 h-full"
                             onClick={e => {
                                 e.stopPropagation();
                                 newModal(
@@ -160,14 +160,17 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
                                 );
                             }}
                         >
-                            <SlimCaretRight className="w-[24px] h-[24px]" strokeWidth="2" />
+                            <SlimCaretRight
+                                className="rtl-mirror w-[24px] h-[24px]"
+                                strokeWidth="2"
+                            />
                         </button>
                     </>
                 )}
             </div>
             {subskills?.map((subskill, index) => (
                 <div className="flex items-center gap-[10px] pl-[10px]" key={index}>
-                    <CornerDownRightArrow className="w-[25px] h-[25px]" />
+                    <CornerDownRightArrow className="rtl-mirror w-[25px] h-[25px]" />
 
                     {subskill.role === FrameworkNodeRole.tier ? (
                         <TierRow

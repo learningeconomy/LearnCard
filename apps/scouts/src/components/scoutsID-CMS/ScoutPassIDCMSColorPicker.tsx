@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+
+import * as m from '../../paraglide/messages.js';
+
 import { HexColorPicker } from 'react-colorful';
 
 import Eyedropper from 'learn-card-base/svgs/Eyedropper';
@@ -34,7 +37,7 @@ export const ScoutPassIDCMSColorPicker: React.FC<{
 
                 <HexColorPicker color={color ? color : '#353E64'} onChange={handleColorChange} />
             </div>,
-            { className: '!bg-transparent !shadow-none' },
+            { className: 'bg-transparent! shadow-none!' },
             { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
         );
     };
@@ -74,7 +77,7 @@ export const ScoutPassIDCMSColorPicker: React.FC<{
                         value={color}
                         onChange={e => handleColorInputOnChange(e.target.value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] p-4 font-medium tracking-widest text-base w-full"
-                        placeholder="Color Hex Code"
+                        placeholder={m['scoutsId.hexCode']()}
                         type="text"
                     />
 

@@ -120,9 +120,8 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
                 );
 
                 // upload boost to parent's LearnCloud
-                const issuedVcUri = await parentWallet?.store?.LearnCloud?.uploadEncrypted?.(
-                    sentBoost
-                );
+                const issuedVcUri =
+                    await parentWallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                 // add credential to parent's wallet
                 await addCredentialToWallet({ uri: issuedVcUri, didOverride: true });
@@ -211,7 +210,7 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
     return (
         <>
             {isLoading && (
-                <div className="absolute w-full h-full bg-white bg-opacity-50 z-9999 flex items-center justify-center backdrop-blur-[1px]">
+                <div className="absolute w-full h-full bg-white/50  z-9999 flex items-center justify-center backdrop-blur-[1px]">
                     <IonSpinner color="dark" />
                 </div>
             )}

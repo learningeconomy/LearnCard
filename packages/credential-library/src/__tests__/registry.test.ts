@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, expectTypeOf, beforeAll } from 'vitest';
 import { UnsignedVCValidator } from '@learncard/types';
 
 import {
@@ -10,21 +10,44 @@ import {
     getValidFixtures,
     getInvalidFixtures,
     getStats,
+    isCredentialFixture,
+    isSdJwtVcFixture,
     resetRegistry,
+    registerFixture,
     registerFixtures,
     prepareFixture,
     prepareFixtureById,
+    buildFinalTranscriptVariant,
 } from '../index';
 
 import { ALL_FIXTURES } from '../fixtures';
 
-import type { CredentialFixture } from '../types';
+import type { CredentialFixture, LibraryFixture, SdJwtVcFixture } from '../types';
+
+const sdJwtFixture: SdJwtVcFixture = {
+    kind: 'sd-jwt-vc',
+    id: 'sd-jwt-vc/test-course',
+    name: 'Test Course',
+    description: 'Registry-only SD-JWT VC fixture',
+    spec: 'sd-jwt-vc',
+    profile: 'course',
+    features: ['selective-disclosure', 'holder-binding'],
+    source: 'synthetic',
+    signed: false,
+    validity: 'valid',
+    template: {
+        format: 'dc+sd-jwt',
+        vct: 'https://example.com/vct/test-course',
+        claims: { course_name: 'Test Course' },
+        selectivelyDisclosable: ['course_name'],
+    },
+};
 
 // ---------------------------------------------------------------------------
 // Ensure fixtures are loaded
 // ---------------------------------------------------------------------------
 
-let fixtures: readonly CredentialFixture[];
+let fixtures: readonly LibraryFixture[];
 
 beforeAll(() => {
     fixtures = getAllFixtures();
@@ -56,7 +79,11 @@ describe('Registry integrity', () => {
             expect(f.source).toBeTruthy();
             expect(typeof f.signed).toBe('boolean');
             expect(f.validity).toBeTruthy();
-            expect(f.credential).toBeTruthy();
+            if (isCredentialFixture(f)) {
+                expect(f.credential).toBeTruthy();
+            } else {
+                expect(f.template).toBeTruthy();
+            }
         }
     });
 });
@@ -67,7 +94,11 @@ describe('Registry integrity', () => {
 
 describe('Fixture validation', () => {
     describe('Valid fixtures pass their declared validator', () => {
-        const validFixtures = () => getAllFixtures().filter(f => f.validity === 'valid');
+        const validFixtures = () =>
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    fixture.validity === 'valid' && isCredentialFixture(fixture)
+            );
 
         it.each(validFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             if (!fixture.validator) return;
@@ -79,7 +110,11 @@ describe('Fixture validation', () => {
     });
 
     describe('Valid fixtures also pass base UnsignedVC validator', () => {
-        const validFixtures = () => getAllFixtures().filter(f => f.validity === 'valid');
+        const validFixtures = () =>
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    fixture.validity === 'valid' && isCredentialFixture(fixture)
+            );
 
         it.each(validFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             const result = UnsignedVCValidator.safeParse(fixture.credential);
@@ -90,7 +125,11 @@ describe('Fixture validation', () => {
 
     describe('Invalid fixtures fail their declared validator', () => {
         const invalidFixtures = () =>
-            getAllFixtures().filter(f => f.validity === 'invalid' || f.validity === 'tampered');
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    (fixture.validity === 'invalid' || fixture.validity === 'tampered') &&
+                    isCredentialFixture(fixture)
+            );
 
         it.each(invalidFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             if (!fixture.validator) return;
@@ -114,12 +153,93 @@ describe('Query API', () => {
         expect(fixture.spec).toBe('vc-v2');
     });
 
+    it('registers the production Course Completion SD-JWT VC fixture', () => {
+        const fixture = getFixture('sd-jwt-vc/course-completion');
+
+        expect(isSdJwtVcFixture(fixture)).toBe(true);
+        if (!isSdJwtVcFixture(fixture)) throw new Error('Expected SD-JWT VC fixture');
+
+        expect(fixture.template.format).toBe('dc+sd-jwt');
+        expect(fixture.template.vct).toBe(
+            'https://credentials.learncard.com/vct/course-completion'
+        );
+        expect(getFixtures({ spec: 'sd-jwt-vc' }).map(item => item.id)).toContain(fixture.id);
+        expect(getFixtures({ kind: 'sd-jwt-vc' }).map(item => item.id)).toContain(fixture.id);
+        expect(getUnsignedFixtures().map(item => item.id)).not.toContain(fixture.id);
+    });
+
     it('getFixture throws for unknown ID', () => {
         expect(() => getFixture('nonexistent/fixture')).toThrow('not found');
     });
 
+    // -----------------------------------------------------------------------
+    // Provisional transcript fixture (LC-2117 / LC-2135 / LC-2136)
+    // -----------------------------------------------------------------------
+
+    describe('clr/provisional-transcript', () => {
+        it('is discoverable as a valid CLR 2.0 fixture with a LearnCard managed refresh service', () => {
+            const fixture = getFixture('clr/provisional-transcript');
+
+            expect(isCredentialFixture(fixture)).toBe(true);
+            expect(fixture.spec).toBe('clr-v2');
+            expect(fixture.profile).toBe('learner-record');
+            expect(fixture.validity).toBe('valid');
+            expect(fixture.features).toContain('refresh-service');
+
+            if (!isCredentialFixture(fixture)) throw new Error('Expected W3C VC fixture');
+
+            const refreshService = (
+                fixture.credential as { refreshService?: { type?: unknown; id?: unknown } }
+            ).refreshService;
+
+            expect(refreshService?.type).toBe('LearnCardCredentialRefresh2026');
+            expect(typeof refreshService?.id).toBe('string');
+        });
+
+        it('prepares provisional and final variants sharing one credential ID, issuer, and subject', () => {
+            const provisional = prepareFixtureById('clr/provisional-transcript', {
+                issuerDid: 'did:example:test-issuer',
+                subjectDid: 'did:example:test-holder',
+            });
+
+            expect(typeof provisional.id).toBe('string');
+            expect(provisional.name).toContain('Provisional');
+
+            const final = buildFinalTranscriptVariant(provisional, {
+                validFrom: '2026-06-01T00:00:00Z',
+            });
+            const provisionalIssuer =
+                typeof provisional.issuer === 'string' ? provisional.issuer : provisional.issuer.id;
+            const finalIssuer = typeof final.issuer === 'string' ? final.issuer : final.issuer.id;
+            const provisionalSubject = Array.isArray(provisional.credentialSubject)
+                ? provisional.credentialSubject[0]
+                : provisional.credentialSubject;
+            const finalSubject = Array.isArray(final.credentialSubject)
+                ? final.credentialSubject[0]
+                : final.credentialSubject;
+
+            // Identity stability: the final version shares the credential ID, issuer,
+            // and subject with the provisional version.
+            expect(final.id).toBe(provisional.id);
+            expect(finalIssuer).toBe(provisionalIssuer);
+            expect(finalSubject?.id).toBe(provisionalSubject?.id);
+
+            // The final variant is materially different and marked final.
+            expect(final.name).toContain('Final');
+            expect(final.validFrom).toBe('2026-06-01T00:00:00Z');
+            expect(final.refreshService).toEqual(provisional.refreshService);
+        });
+    });
+
     it('findFixture returns undefined for unknown ID', () => {
         expect(findFixture('nonexistent/fixture')).toBeUndefined();
+    });
+
+    it('types runtime string fixture lookups as the heterogeneous library union', () => {
+        const runtimeId: string = 'sd-jwt-vc/course-completion';
+
+        expectTypeOf(getFixture(runtimeId)).toEqualTypeOf<LibraryFixture>();
+        expectTypeOf(findFixture(runtimeId)).toEqualTypeOf<LibraryFixture | undefined>();
     });
 
     it('filters by spec', () => {
@@ -195,6 +315,134 @@ describe('Query API', () => {
         expect(unsigned.every(f => f.signed === false)).toBe(true);
     });
 
+    it('narrows SD-JWT fixtures and keeps W3C helpers narrow', () => {
+        expect(isSdJwtVcFixture(sdJwtFixture)).toBe(true);
+        expect(isCredentialFixture(getFixture('vc-v2/basic'))).toBe(true);
+        expect(getUnsignedFixtures().every(isCredentialFixture)).toBe(true);
+        expect(() =>
+            prepareFixture(sdJwtFixture, { issuerDid: 'did:key:z6MkTestIssuer123' })
+        ).toThrow('materializeSdJwtVcFixture');
+    });
+
+    it('stores SD-JWT fixtures separately from W3C fixtures', () => {
+        resetRegistry();
+
+        try {
+            registerFixtures([...ALL_FIXTURES, sdJwtFixture]);
+
+            const sdJwtFixtures = getFixtures({ kind: 'sd-jwt-vc' });
+            expect(sdJwtFixtures).toContainEqual(sdJwtFixture);
+            expect(sdJwtFixtures.map(fixture => fixture.id)).toContain(
+                'sd-jwt-vc/course-completion'
+            );
+            const w3cFixtures = getFixtures({ kind: 'w3c-vc' });
+            expect(w3cFixtures).toHaveLength(ALL_FIXTURES.filter(isCredentialFixture).length);
+            expect(w3cFixtures.every(isCredentialFixture)).toBe(true);
+            expect(getFixture('sd-jwt-vc/test-course').template).toEqual(sdJwtFixture.template);
+            expect(getUnsignedFixtures().every(isCredentialFixture)).toBe(true);
+            expect(getUnsignedFixtures().some(fixture => fixture.id === sdJwtFixture.id)).toBe(
+                false
+            );
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects SD-JWT fixtures outside the required ID prefix', () => {
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...sdJwtFixture,
+                    id: 'custom/course',
+                } as unknown as LibraryFixture)
+            ).toThrow('must start with "sd-jwt-vc/"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects W3C fixtures inside the reserved SD-JWT ID prefix', () => {
+        const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+        if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...w3cFixture,
+                    id: 'sd-jwt-vc/not-an-sd-jwt-template',
+                } as LibraryFixture)
+            ).toThrow('reserved for SD-JWT VC fixtures');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects SD-JWT fixtures whose kind and spec disagree', () => {
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...sdJwtFixture,
+                    spec: 'vc-v2',
+                } as unknown as LibraryFixture)
+            ).toThrow('must use spec "sd-jwt-vc"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects unrecognized fixture kinds at registration', () => {
+        const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+        if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...w3cFixture,
+                    kind: 'unknown-fixture-kind',
+                } as unknown as LibraryFixture)
+            ).toThrow('Unsupported fixture kind "unknown-fixture-kind"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it.each([undefined, 'w3c-vc'] as const)(
+        'rejects W3C fixtures with kind %s and the SD-JWT spec',
+        kind => {
+            const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+            if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+            resetRegistry();
+
+            try {
+                expect(() =>
+                    registerFixture({
+                        ...w3cFixture,
+                        kind,
+                        id: 'custom/not-an-sd-jwt-template',
+                        spec: 'sd-jwt-vc',
+                    } as unknown as LibraryFixture)
+                ).toThrow('W3C VC fixtures cannot use spec "sd-jwt-vc"');
+            } finally {
+                resetRegistry();
+                getAllFixtures();
+            }
+        }
+    );
+
     it('combined filters work together', () => {
         const results = getFixtures({
             spec: 'obv3',
@@ -260,6 +508,49 @@ describe('Spec coverage', () => {
 // ---------------------------------------------------------------------------
 
 describe('prepareFixture', () => {
+    it.each(['validUntil', 'expirationDate'])(
+        'refreshes stale %s even with a historical validFrom',
+        field => {
+            const fixture = getFixture('vc-v2/basic');
+            const original = {
+                ...fixture,
+                credential: { ...fixture.credential, [field]: '2001-01-01T00:00:00Z' },
+            };
+            const before = Date.now();
+            const prepared = prepareFixture(original, {
+                issuerDid: 'did:example:issuer',
+                validFrom: '2000-01-01T00:00:00Z',
+            });
+            const expiry = new Date(prepared[field] as string).getTime();
+            expect(expiry).toBeGreaterThanOrEqual(before + 180 * 24 * 60 * 60 * 1000);
+            expect(original.credential[field]).toBe('2001-01-01T00:00:00Z');
+        }
+    );
+
+    it.each(['validUntil', 'expirationDate'])(
+        'keeps regenerated %s after a future validFrom',
+        field => {
+            const fixture = getFixture('vc-v2/basic');
+            const from = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+            const prepared = prepareFixture(
+                { ...fixture, credential: { ...fixture.credential, [field]: from } },
+                { issuerDid: 'did:example:issuer', validFrom: from }
+            );
+            expect(new Date(prepared[field] as string).getTime()).toBe(
+                new Date(from).getTime() + 180 * 24 * 60 * 60 * 1000
+            );
+        }
+    );
+
+    it.each(['validUntil', 'expirationDate'])('preserves an explicit past %s override', field => {
+        const fixture = getFixture('vc-v2/basic');
+        const expiry = '2001-01-01T00:00:00Z';
+        const prepared = prepareFixture(
+            { ...fixture, credential: { ...fixture.credential, [field]: expiry } },
+            { issuerDid: 'did:example:issuer', validUntil: expiry }
+        );
+        expect(prepared[field]).toBe(expiry);
+    });
     const issuerDid = 'did:key:z6MkTestIssuer123';
     const subjectDid = 'did:key:z6MkTestSubject456';
 
@@ -289,6 +580,37 @@ describe('prepareFixture', () => {
         const subject = prepared.credentialSubject as Record<string, unknown>;
 
         expect(subject.id).toBe(subjectDid);
+    });
+
+    it('preserves signed credentials nested in a CLR', () => {
+        const fixture = getFixture('vc-v2/basic');
+        const signedEmbeddedCredential = {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            id: fixture.credential.id,
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:nested-issuer',
+            validFrom: '2025-01-01T00:00:00Z',
+            credentialSubject: { id: 'did:example:signed-subject' },
+            proof: { type: 'DataIntegrityProof', proofValue: 'signed-value' },
+        };
+        const prepared = prepareFixture(
+            {
+                ...fixture,
+                credential: {
+                    ...fixture.credential,
+                    credentialSubject: {
+                        id: 'did:example:old-root',
+                        verifiableCredential: [signedEmbeddedCredential],
+                    },
+                },
+            },
+            { issuerDid, subjectDid }
+        );
+        const subject = prepared.credentialSubject as UnknownRecord;
+        const embedded = subject.verifiableCredential as UnknownRecord[];
+
+        expect(subject.id).toBe(subjectDid);
+        expect(embedded[0]).toEqual(signedEmbeddedCredential);
     });
 
     it('generates fresh UUIDs for id fields by default', () => {
@@ -340,8 +662,7 @@ describe('prepareFixture', () => {
             ? (programAchievement?.resultDescription as UnknownArrayRecord[])
             : [];
         const programResultDescriptionId = programResults[0]?.resultDescription as
-            | string
-            | undefined;
+            string | undefined;
         const programResultDescription = programResultDescriptions[0]?.id as string | undefined;
 
         expect(programResultDescriptionId).toBe(programResultDescription);

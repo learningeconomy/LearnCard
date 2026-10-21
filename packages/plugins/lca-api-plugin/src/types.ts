@@ -92,8 +92,8 @@ export const SigningAuthorityValidator = z.object({
     _id: z.string().optional(),
     ownerDid: z.string(),
     name: z.string(),
-    did: z.string().optional(),
-    endpoint: z.string().optional(),
+    did: z.string(),
+    endpoint: z.string(),
 });
 
 /** @group LCA API Plugin */
@@ -210,7 +210,13 @@ export const EncryptedShareValidator = z.object({
 });
 export type EncryptedShare = z.infer<typeof EncryptedShareValidator>;
 
-export const RecoveryMethodTypeValidator = z.enum(['passkey', 'backup', 'phrase', 'email']);
+export const RecoveryMethodTypeValidator = z.enum([
+    'passkey',
+    'backup',
+    'phrase',
+    'email',
+    'escrow',
+]);
 export type RecoveryMethodType = z.infer<typeof RecoveryMethodTypeValidator>;
 
 export const SecurityLevelValidator = z.enum(['basic', 'enhanced', 'advanced']);
@@ -224,6 +230,7 @@ export const RecoveryMethodInfoValidator = z.object({
     createdAt: z.string(),
     credentialId: z.string().optional(),
     shareVersion: z.number().optional(),
+    confirmedAt: z.string().optional(),
 });
 export type RecoveryMethodInfo = z.infer<typeof RecoveryMethodInfoValidator>;
 
@@ -293,7 +300,10 @@ export type LCAPluginMethods = {
         authorization: SigningAuthorityAuthorization
     ) => Promise<boolean>;
     resetLCAClient: () => Promise<void>;
-    generateBoostInfo: (description: string) => Promise<{
+    generateBoostInfo: (
+        description: string,
+        locale?: string
+    ) => Promise<{
         title: string;
         description: string;
         category: string;
@@ -385,7 +395,8 @@ export type LCAPluginMethods = {
 
     deleteUserKey: (
         authToken: string,
-        providerType: AuthProviderType
+        providerType: AuthProviderType,
+        challenge: string
     ) => Promise<{ success: boolean }>;
 };
 
@@ -396,4 +407,7 @@ export type LCAPlugin = Plugin<
     LCAPluginMethods,
     'id',
     LCAPluginDependentMethods
->;
+> & {
+    /** Whether the plugin fell back because its initial LCA API setup failed. */
+    isOffline: boolean;
+};

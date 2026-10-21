@@ -2,7 +2,9 @@ name: Test Runner
 
 on:
     pull_request:
-        types: [opened, synchronize]
+        types: [opened, synchronize, reopened, ready_for_review]
+    merge_group:
+        types: [checks_requested]
     workflow_dispatch:
         inputs:
             branch:
@@ -11,6 +13,19 @@ on:
                 default: 'changeset-release/main'
 
 jobs:
+    deployment-tools:
+        name: Deployment recovery tools
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24.12.0'
+            - name: Test recovery validation, manifest diagnostics, and registry retries
+              run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs
+
     Test:
         runs-on: ubuntu-latest
         environment: ci-tests
@@ -18,7 +33,7 @@ jobs:
             - name: Checkout Repo
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
                   fetch-depth: 0
 
             - name: Fetch main for NX comparison
@@ -28,27 +43,213 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            # The escrow Rust crates share one pinned toolchain; installing it here
+            # stops nx's parallel `cargo test` runs racing to install it.
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
-                  timeout_minutes: 10
+                  # Full-suite PRs (shared packages touched) run ~9 min under load.
+                  timeout_minutes: 20
                   max_attempts: 3
                   command: bunx nx affected --target=test --base=origin/main --head=HEAD
               env:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
-    # Run E2E tests on changeset release PRs or manual trigger
-    # SSHs into EC2 to run Playwright tests against the branch
+    escrow-integration:
+        name: Escrow integration (lca-api)
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+
+            - name: Detect escrow changes
+              id: changes
+              run: |
+                  git fetch --no-tags --prune origin main
+                  if git diff --quiet origin/main...HEAD -- \
+                      services/learn-card-network/lca-api \
+                      services/escrow-enclave-app \
+                      packages/sss-key-manager \
+                      .github/workflows/test.yml; then
+                    echo "run=false" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "run=true" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Use Composite Setup Action
+              if: steps.changes.outputs.run == 'true'
+              uses: ./.github/actions/setup
+
+            # Live-Mongo (mongodb-memory-server) specs; the nx `test` target only
+            # runs vitest.config.ts, so these are otherwise never exercised in CI.
+            - name: Run escrow integration specs
+              if: steps.changes.outputs.run == 'true'
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/keys-escrow.spec.ts
+                  test/models/escrow.spec.ts
+                  test/jobs/escrowBlobRewrap.spec.ts
+                  test/jobs/escrowHoldReminders.spec.ts
+
+    ai-agent:
+        name: AI Agent CI
+        if: github.event_name == 'pull_request'
+        permissions:
+            contents: read
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        services:
+            mongo:
+                image: mongo:7
+                ports:
+                    - 27017:27017
+                options: >-
+                    --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 12
+        env:
+            CI: true
+            AI_AGENT_TEST_MONGO_URI: mongodb://127.0.0.1:27017
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            - name: Verify Trigger.dev deployment CLI startup
+              working-directory: services/learn-card-network/ai-agent
+              run: bunx trigger deploy --help
+
+            - name: Test Trigger native package readiness gate
+              run: node --test scripts/wait-for-trigger-native-package.test.mjs
+
+            - name: Run AI Agent tests
+              run: bun run --cwd services/learn-card-network/ai-agent test -- run
+
+            - name: Verify feed with real DIDKit WASM
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:feed-wasm
+
+            - name: Verify private Sentry telemetry
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:sentry
+
+            - name: Build AI Agent
+              run: bun run --cwd services/learn-card-network/ai-agent build
+
+            - name: Lint CloudFormation template
+              run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
+
+    share-link-security:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Test share lifecycle and attachment publication races with Neo4j
+              working-directory: services/learn-card-network/brain-service
+              run: bunx vitest run --config vitest.share-links-neo4j.config.ts
+
+    profile-search:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+            - name: Test profile search normalization and filters with Neo4j
+              run: bunx nx run network-brain-service:test:profile-search
+
+    inbox-security:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+            - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
+              run: bunx nx run network-brain-service:test:inbox:e2e
+
+    boost-recipients:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+            - name: Test boost recipient lists, counts and pagination with Neo4j
+              run: bunx nx run network-brain-service:test:boost-recipients
+
+    # Temporary manual fallback during the hosted-runner cutover.
+    # Remove after one sprint of stable GitHub-hosted E2E operation.
     e2e-tests:
-        if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch'
+        name: EC2 E2E fallback (manual)
+        if: github.event_name == 'workflow_dispatch'
+        concurrency:
+            group: learncard-e2e-ec2
+            cancel-in-progress: false
         runs-on: ubuntu-latest
         timeout-minutes: 60
         steps:
             - name: Start EC2 instance
               run: |
+                  mkdir -p e2e-artifacts
+                  set -o pipefail
                   echo "Starting EC2 instance..."
-                  curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/start"
+                  curl --silent --show-error --fail-with-body \
+                    --retry 3 \
+                    --retry-delay 5 \
+                    --retry-max-time 30 \
+                    "${{ secrets.E2E_EC2_LAMBDA_URL }}/start" 2>&1 \
+                    | tee e2e-artifacts/ec2-start.log
 
             - name: Wait for EC2 to be ready
               run: |
@@ -90,15 +291,31 @@ jobs:
                   command_timeout: 50m
                   script: |
                       cd ~/learncard-e2e-runner
-                      git pull origin main
+                      git fetch --no-tags origin main
+                      git reset --hard FETCH_HEAD
+                      echo "Runner repository resolved to: $(git rev-parse HEAD)"
                       ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
                       ./scripts/run-tests.sh
+
+                      # The runner script owns the existing Playwright suite. Run the
+                      # Axe-backed core-flow checks explicitly so accessibility remains
+                      # part of the same real-backend E2E gate.
+                      #
+                      # ssh-action opens a non-interactive shell that never sources the
+                      # login profile, so the toolchain run-tests.sh resolves for itself
+                      # is not on PATH here — without this, `bun` exits 127 and fails the
+                      # step even when every Playwright suite has passed.
+                      export PATH="$HOME/.bun/bin:$HOME/.node/bin:$PATH"
+                      command -v bun >/dev/null || { echo "bun not found on the runner"; exit 1; }
+
+                      cd workspace/LearnCard/apps/learn-card-app
+                      bun run test:a11y
 
             - name: Download Playwright report from EC2
               if: always()
               continue-on-error: true
               run: |
-                  mkdir -p playwright-report test-results
+                  mkdir -p playwright-report test-results playwright-report-a11y test-results-a11y
                   echo "${{ secrets.E2E_EC2_SSH_KEY }}" > /tmp/ec2_key
                   chmod 600 /tmp/ec2_key
                   # Download HTML report
@@ -109,6 +326,14 @@ jobs:
                   scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
                     ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/test-results/* \
                     test-results/ || echo "Failed to download test results"
+                  # Download the Axe suite's report, which writes to its own paths so
+                  # it does not overwrite the main Playwright suite's artifacts
+                  scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/playwright-report-a11y/* \
+                    playwright-report-a11y/ || echo "Failed to download a11y HTML report"
+                  scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/test-results-a11y/* \
+                    test-results-a11y/ || echo "Failed to download a11y test results"
                   rm /tmp/ec2_key
 
             - name: Upload Playwright report
@@ -119,10 +344,12 @@ jobs:
                   path: |
                       playwright-report/
                       test-results/
+                      playwright-report-a11y/
+                      test-results-a11y/
                   retention-days: 30
 
             - name: Cleanup EC2 (docker down, prune)
-              if: always()
+              if: ${{ always() && env.E2E_EC2_IP != '' }}
               continue-on-error: true
               uses: appleboy/ssh-action@v1.0.3
               with:
@@ -134,6 +361,58 @@ jobs:
                   script: |
                       cd ~/learncard-e2e-runner
                       ./scripts/cleanup.sh
+
+            - name: Download E2E diagnostics from EC2
+              if: ${{ always() && env.E2E_EC2_IP != '' }}
+              continue-on-error: true
+              run: |
+                  mkdir -p e2e-artifacts
+                  status_file=e2e-artifacts/artifact-transfer-status.txt
+                  key_file="$(mktemp)"
+                  trap 'rm -f "$key_file"' EXIT
+                  printf '%s\n' "${{ secrets.E2E_EC2_SSH_KEY }}" > "$key_file"
+                  chmod 600 "$key_file"
+                  set +e
+                  scp -o StrictHostKeyChecking=no -i "$key_file" -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/artifacts/. \
+                    e2e-artifacts/
+                  scp_status=$?
+                  set -e
+                  if [ "$scp_status" -eq 0 ]; then
+                    printf 'success\n' > "$status_file"
+                  else
+                    printf '%s\n' "$scp_status" > "$status_file"
+                  fi
+                  exit "$scp_status"
+
+            - name: Upload E2E diagnostics
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: e2e-diagnostics-${{ github.run_id }}
+                  path: e2e-artifacts/
+                  if-no-files-found: error
+                  retention-days: 30
+
+            - name: Publish E2E diagnostic summary
+              if: always()
+              run: |
+                  if [ -f e2e-artifacts/summary.md ]; then
+                    cat e2e-artifacts/summary.md >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    {
+                      echo '## E2E stage timings'
+                      echo
+                      echo 'Timing summary unavailable.'
+                      echo
+                      echo 'Artifact transfer status:'
+                      if [ -f e2e-artifacts/artifact-transfer-status.txt ]; then
+                        cat e2e-artifacts/artifact-transfer-status.txt
+                      else
+                        echo 'unavailable'
+                      fi
+                    } >> "$GITHUB_STEP_SUMMARY"
+                  fi
 
             - name: Stop EC2 instance
               if: always()

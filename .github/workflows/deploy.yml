@@ -38,6 +38,16 @@ on:
                 required: false
                 default: false
                 type: boolean
+            capgo-bundle-version:
+                description: 'LearnCard production frontend recovery only: <current package version>-recovery.N (unused N). Preserves future release versions; must satisfy native/channel update rules.'
+                required: false
+                default: ''
+                type: string
+            deploy-ai-agent:
+                description: 'Deploy AI Agent (ECS + Trigger.dev)'
+                required: false
+                default: false
+                type: boolean
             publish-npm:
                 description: 'Publish Registry Packages'
                 required: false
@@ -75,6 +85,7 @@ jobs:
             brain_service_changed: ${{ steps.check_versions.outputs.brain_service_changed }}
             learn_cloud_changed: ${{ steps.check_versions.outputs.learn_cloud_changed }}
             lca_api_changed: ${{ steps.check_versions.outputs.lca_api_changed }}
+            ai_agent_changed: ${{ steps.check_versions.outputs.ai_agent_changed }}
             lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
             # Dynamic environment names
@@ -85,7 +96,23 @@ jobs:
             frontend_deployment_matrix: ${{ steps.set-env.outputs.frontend_deployment_matrix }}
             frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
         steps:
-            # Check these first - no dependencies needed
+            # Recovery validation needs only the checkout; ordinary manual runs still skip it.
+            - name: Checkout Repo
+              if: github.event_name != 'workflow_dispatch' || inputs.capgo-bundle-version != ''
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            # Validate before any service or frontend deployment can start.
+            - name: Validate CapGo recovery input
+              if: inputs.capgo-bundle-version != ''
+              env:
+                  RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
+                  TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
+                  DEPLOY_FRONTEND: ${{ inputs.deploy-frontend }}
+              run: node scripts/validate-capgo-recovery-version.mjs
+
+            # Set deployment flags only after recovery input validation succeeds.
             - name: Check if this is a manual dispatch
               id: check_manual
               run: |
@@ -108,13 +135,6 @@ jobs:
                   else
                     echo "is_release=false" >> $GITHUB_OUTPUT
                   fi
-
-            # Skip heavy steps for manual dispatch - we already know what to deploy
-            - name: Checkout Repo
-              if: github.event_name != 'workflow_dispatch'
-              uses: actions/checkout@v7
-              with:
-                  fetch-depth: 0
 
             - name: Fetch main for NX comparison
               if: github.event_name != 'workflow_dispatch'
@@ -161,6 +181,13 @@ jobs:
                     echo "lca_api_changed=false" >> $GITHUB_OUTPUT
                   fi
 
+                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/ai-agent/package.json"; then
+                    echo "ai_agent_changed=true" >> $GITHUB_OUTPUT
+                    echo "AI Agent service version changed"
+                  else
+                    echo "ai_agent_changed=false" >> $GITHUB_OUTPUT
+                  fi
+
                   if echo "$CHANGED_FILES" | grep -q "apps/learn-card-app/package.json"; then
                     echo "lca_app_changed=true" >> $GITHUB_OUTPUT
                     echo "LearnCard App version changed"
@@ -180,8 +207,9 @@ jobs:
               run: |
                   LC_STAGING='{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"}'
                   LC_PRODUCTION='{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"}'
-                  SCOUTS_STAGING='{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
-                  SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
+                  # tenant selects the services' config.<tenant>.<stage>.json; LearnCard is the default.
+                  SCOUTS_STAGING='{"tenant":"scouts","name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
+                  SCOUTS_PRODUCTION='{"tenant":"scouts","name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
 
                   # Frontend legs mirror the service matrix, one Netlify site per GitHub
                   # Environment. capgo=false on ALL staging legs (automatic and manual): the
@@ -271,6 +299,8 @@ jobs:
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.2
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -344,10 +374,17 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            # Same as test.yml: install the escrow crates' pinned toolchain once, so
+            # nx's parallel `cargo test` runs don't race to install it (rustfmt conflict).
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
-                  timeout_minutes: 10
+                  # Matches test.yml; a large squash can make most projects affected.
+                  timeout_minutes: 20
                   max_attempts: 3
                   command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
               env:
@@ -363,6 +400,7 @@ jobs:
     # ============================================================================
     deploy-brain-service:
         name: Deploy Brain Service (${{ matrix.name }})
+        timeout-minutes: 20
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -434,56 +472,91 @@ jobs:
                     exit 1
                   fi
 
+            - name: Validate credential refresh configuration
+              env:
+                  SERVERLESS_STAGE: ${{ vars.SERVERLESS_STAGE }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
+              run: |
+                  # Bundle contents are validated at runtime; only validate GitHub fallbacks here.
+                  if [[ -n "$RUNTIME_SECRETS_ID" ]]; then exit 0; fi
+                  # Same tenant/stage file the runtime loads; a missing tenant file fails closed.
+                  enabled=$(node -e 'const stage = process.env.SERVERLESS_STAGE; const tenant = process.env.CONFIG_TENANT || "learncard"; if (!["dev", "production"].includes(stage)) process.exit(1); const file = tenant === "learncard" ? stage : `${tenant}.${stage}`; process.stdout.write(String(require(`./services/learn-card-network/brain-service/config/config.${file}.json`).CREDENTIAL_REFRESH_ENABLED ?? ""));')
+                  if [[ "$enabled" == "true" && -z "$CREDENTIAL_REFRESH_DIGEST_SECRET" ]]; then
+                    echo "::error::CREDENTIAL_REFRESH_DIGEST_SECRET must be configured when credential refresh is enabled."
+                    exit 1
+                  fi
+
+            - name: Validate share-link request hash secret
+              env:
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  SHARE_LINK_REQUEST_HASH_SECRET: ${{ secrets.SHARE_LINK_REQUEST_HASH_SECRET }}
+              run: |
+                  if [[ -n "$RUNTIME_SECRETS_ID" ]]; then exit 0; fi
+                  # Disabled share-link environments do not need this secret.
+                  if [[ -n "$SHARE_LINK_REQUEST_HASH_SECRET" ]]; then
+                    secret_bytes=$(printf '%s' "$SHARE_LINK_REQUEST_HASH_SECRET" | wc -c | tr -d '[:space:]')
+                    if (( secret_bytes < 32 )); then
+                      echo "::error::SHARE_LINK_REQUEST_HASH_SECRET must contain at least 32 bytes."
+                      exit 1
+                    fi
+                  fi
+
             - name: Deploy Brain Service Lambda
               run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  # serverless-esbuild invokes pnpm despite the Bun packageManager; remove once that boundary is gone.
+                  COREPACK_ENABLE_STRICT: '0'
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   AWS_DEFAULT_REGION: us-east-1
-                  CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
-                  POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+                  # Optional per-stage runtime-secrets bundle id. When set, the bundle
+                  # supplies the credentials below and serverless.function-env.cjs omits the
+                  # GitHub fallbacks. Non-secret per-stage config (DOMAIN_NAME, SENTRY_ENV,
+                  # POSTMARK_FROM_EMAIL, MESSAGEBIRD_ORIGINATOR, CLIENT_APP_DOMAIN_NAME,
+                  # the SHARE_LINK_MAINTENANCE_* trust/maintenance values, OIDC_TRUSTED_ISSUERS,
+                  # OIDC_EXPECTED_AUDIENCE, CREDENTIAL_REFRESH_ENABLED / _NOTIFICATION_WINDOW_HOURS,
+                  # SKILL_EMBEDDING_GOOGLE_MODEL) is checked in under config/, not passed here.
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
+                  # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
+                  CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
+                  # LC-2189: private request fingerprint key, stable across Brain deploys.
+                  SHARE_LINK_REQUEST_HASH_SECRET: ${{ secrets.SHARE_LINK_REQUEST_HASH_SECRET }}
                   SEED: ${{ secrets.SEED }}
-                  DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
                   NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
                   NEO4J_URI: ${{ secrets.NEO4J_URI }}
                   NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
                   NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
                   POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
                   MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
-                  MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
                   SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
                   SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
                   SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
                   LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
                   SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
-                  SKILL_EMBEDDING_GOOGLE_MODEL: ${{ secrets.SKILL_EMBEDDING_GOOGLE_MODEL }}
-                  SKILL_EMBEDDING_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BATCH_SIZE }}
-                  SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${{ secrets.SKILL_EMBEDDING_BACKFILL_ON_STARTUP }}
-                  SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
-                  SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
-                  SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
-                  OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
-                  OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
-                  # LC-1644 perf bench backend telemetry (admin-only). POSTHOG_HOST is a var (non-secret),
-                  # POSTHOG_API_KEY is a secret. GIT_SHA is the deploy commit for tagging events.
+                  SKILLS_PROVIDER_API_KEY: ${{ secrets.SKILLS_PROVIDER_API_KEY }}
+                  TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+                  TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+                  # Backend telemetry credentials and deploy metadata; tuning uses schema defaults.
                   POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-                  POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
                   GIT_SHA: ${{ github.sha }}
+                  # Build-time only (Sentry sourcemap upload); not Lambda runtime env.
+                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (${{ matrix.name }})
+        timeout-minutes: 20
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -558,16 +631,24 @@ jobs:
             - name: Deploy LearnCloud Lambda
               run: bunx nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  # serverless-esbuild invokes pnpm despite the Bun packageManager; remove once that boundary is gone.
+                  COREPACK_ENABLE_STRICT: '0'
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   AWS_DEFAULT_REGION: us-east-1
-                  SERVER_URL: ${{ vars.SERVER_URL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+                  # Optional per-stage runtime-secrets bundle id. When set, the bundle
+                  # supplies the credentials below and serverless.function-env.cjs omits the
+                  # GitHub fallbacks. Non-secret per-stage config (SERVER_URL, SENTRY_ENV,
+                  # SHARE_CONTENT_AUDIENCE / _SERVICE_DIDS / _VERIFICATION_METHODS /
+                  # _NAMESPACE_BINDINGS) is checked in under config/, not passed here.
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
+                  # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
                   LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
                   LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
@@ -578,13 +659,14 @@ jobs:
                   RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
                   JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  # Build-time only (Sentry sourcemap upload); not Lambda runtime env.
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
     deploy-lca-api:
         name: Deploy LCA API (${{ matrix.name }})
+        timeout-minutes: 20
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -659,7 +741,8 @@ jobs:
             - name: Deploy LCA API Service Lambda
               run: bunx nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  # serverless-esbuild invokes pnpm despite the Bun packageManager; remove once that boundary is gone.
+                  COREPACK_ENABLE_STRICT: '0'
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   AWS_DEFAULT_REGION: us-east-1
@@ -667,25 +750,40 @@ jobs:
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-                  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+                  # Optional per-stage runtime-secrets bundle id. When set, the bundle
+                  # supplies the credentials below and serverless.function-env.cjs omits the
+                  # GitHub fallbacks. Non-secret per-stage config is checked in, not passed here.
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
+                  # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
                   SEED: ${{ secrets.SEED }}
-                  METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
-                  POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
-                  POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS }}
-                  POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${{ vars.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS }}
-                  POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS }}
-                  POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS }}
-                  POSTMARK_FROM_EMAIL: ${{ secrets.POSTMARK_FROM_EMAIL }}
-                  POSTMARK_BRAND_NAME: ${{ secrets.POSTMARK_BRAND_NAME }}
-                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-                  AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
-                  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
                   MONGO_URI: ${{ secrets.MONGO_URI }}
                   MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+                  AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
+                  METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
+                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+                  POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
                   SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
-                  LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
+                  LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
+                  ESCROW_RELAY_URL: ${{ vars.ESCROW_RELAY_URL }}
+                  ESCROW_RELAY_AUTH_TOKEN: ${{ secrets.ESCROW_RELAY_AUTH_TOKEN }}
+                  ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${{ secrets.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON }}
+                  ESCROW_ENCLAVE_REMOTE_URL: ${{ vars.ESCROW_ENCLAVE_REMOTE_URL }}
+                  ESCROW_ENCLAVE_REMOTE_TOKEN: ${{ secrets.ESCROW_ENCLAVE_REMOTE_TOKEN }}
+                  # Non-secret operator toggles, forwarded in bundle mode too: escrow stays off
+                  # unless ESCROW_ENCLAVE_MODE is set; the kill switch halts releases immediately.
+                  ESCROW_ENCLAVE_MODE: ${{ vars.ESCROW_ENCLAVE_MODE }}
+                  ESCROW_RELEASE_KILL_SWITCH: ${{ vars.ESCROW_RELEASE_KILL_SWITCH }}
+                  # Deploy-time only (serverless.yml PrivateLink resources); empty = none created.
+                  ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME: ${{ vars.ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME }}
+                  ESCROW_ENCLAVE_HOSTNAME: ${{ vars.ESCROW_ENCLAVE_HOSTNAME }}
+                  # OIDC exception: the broker secret and redirect list reach the oidc function
+                  # directly because OidcExecutionRole cannot read the runtime-secrets bundle.
+                  OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
+                  OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}
+                  # Build-time only (Sentry sourcemap upload, Maps key); not Lambda runtime env.
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
@@ -742,6 +840,9 @@ jobs:
             fail-fast: false
             matrix: ${{ fromJSON(needs.determine-affected.outputs.frontend_deployment_matrix) }}
         environment: ${{ matrix.environment }}
+        concurrency:
+            group: deploy-frontend-${{ matrix.environment }}
+            cancel-in-progress: false
         steps:
             - name: Set Deployment Variables
               id: vars
@@ -778,25 +879,37 @@ jobs:
             - name: Prepare tenant config
               if: steps.vars.outputs.project_name == 'learn-card-app'
               working-directory: apps/learn-card-app
+              env:
+                  TENANT: ${{ vars.TENANT || 'learncard' }}
+                  STAGE: ${{ vars.STAGE || '' }}
               run: |
-                  TENANT="${{ vars.TENANT || 'learncard' }}"
-                  STAGE="${{ vars.STAGE || '' }}"
-                  STAGE_FLAG=""
+                  STAGE_ARGS=()
                   if [[ -n "$STAGE" ]]; then
-                    STAGE_FLAG="--stage $STAGE"
+                    STAGE_ARGS=(--stage "$STAGE")
                   fi
-                  echo "Preparing tenant config: $TENANT $STAGE_FLAG"
-                  bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+                  echo "Preparing tenant config: $TENANT ${STAGE_ARGS[*]}"
+                  bunx tsx scripts/prepare-native-config.ts "$TENANT" "${STAGE_ARGS[@]}"
 
             # Generate the resolved per-tenant configs consumed by the Netlify edge
             # function (netlify/edge-functions/shared/resolved-tenant-configs.generated.json).
             # This previously ran inside Netlify's own build command; now that CI builds the
             # artifact and deploys it with `--no-build`, we must generate it here so the
             # edge function bundles the up-to-date data. LCA only — Scouts has no edge config.
+            # A non-empty STAGE pins the edge overlay to the stage baked above, so
+            # /__tenant-config can't override it with the hostname-derived stage
+            # (staging.learncard.ai would otherwise always serve config.staging.json).
             - name: Generate edge tenant configs
               if: steps.vars.outputs.project_name == 'learn-card-app'
               working-directory: apps/learn-card-app
-              run: bun scripts/generate-edge-tenant-configs.ts
+              env:
+                  TENANT: ${{ vars.TENANT || 'learncard' }}
+                  STAGE: ${{ vars.STAGE || '' }}
+              run: |
+                  PIN_ARGS=()
+                  if [[ -n "$STAGE" ]]; then
+                    PIN_ARGS=(--tenant "$TENANT" --stage "$STAGE")
+                  fi
+                  bun scripts/generate-edge-tenant-configs.ts "${PIN_ARGS[@]}"
 
             # Scouts backend URLs come from the checked-in stage configs
             # (environments/scoutpass/config[.<stage>].json) via the same resolution local
@@ -814,30 +927,11 @@ jobs:
               run: bunx nx build ${{ steps.vars.outputs.project_name }}
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
-                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
-                  SENTRY_ENV: ${{ steps.scouts-stage-env.outputs.SENTRY_ENV || vars.SENTRY_ENV }}
-                  SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-                  VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
-                  VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
-                  VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
-                  VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
-                  VITE_AUTH_PROVIDER: ${{ vars.VITE_AUTH_PROVIDER }}
-                  VITE_KEY_DERIVATION: ${{ vars.VITE_KEY_DERIVATION }}
-                  VITE_SSS_SERVER_URL: ${{ steps.scouts-stage-env.outputs.VITE_SSS_SERVER_URL || vars.VITE_SSS_SERVER_URL }}
-                  VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
+                  VITE_NODE_ENV: ${{ steps.scouts-stage-env.outputs.VITE_NODE_ENV || vars.VITE_NODE_ENV }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
-                  VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
-                  VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
-                  VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
-                  # Backend URL build defines consumed by apps/scouts/vite.config.ts, resolved
-                  # from the checked-in stage configs above (empty for learn-card-app, which
-                  # uses the tenant config system instead).
-                  LCN_URL: ${{ steps.scouts-stage-env.outputs.LCN_URL }}
-                  LCN_API_URL: ${{ steps.scouts-stage-env.outputs.LCN_API_URL }}
-                  CLOUD_URL: ${{ steps.scouts-stage-env.outputs.CLOUD_URL }}
-                  LEARN_CLOUD_XAPI_URL: ${{ steps.scouts-stage-env.outputs.LEARN_CLOUD_XAPI_URL }}
-                  API_URL: ${{ steps.scouts-stage-env.outputs.API_URL }}
+                  VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+                  VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
             - name: Validate Netlify target
               run: |
@@ -900,25 +994,62 @@ jobs:
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
+              id: capgo-upload
               if: matrix.capgo
+              working-directory: apps/${{ steps.vars.outputs.project_name }}
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  PROJECT_NAME: ${{ steps.vars.outputs.project_name }}
+                  APP_VERSION: ${{ steps.app-version.outputs.version }}
+                  RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
               run: |
-                  bunx @capgo/cli@latest bundle upload \
+                  if [[ -n "$RECOVERY_VERSION" ]]; then
+                    # determine-affected already validated the target and version.
+                    APP_VERSION="$RECOVERY_VERSION"
+                  fi
+                  VERSION_ARGS=(--bundle "$APP_VERSION")
+                  if [[ "$PROJECT_NAME" == "scouts" ]]; then
+                    # OTA versions advance independently of package/store versions.
+                    # CapGo skips occupied names, including previously deleted bundles.
+                    VERSION_ARGS=(--auto-bump patch --auto-set-bundle --capacitor-config capacitor.config.ts)
+                  fi
+
+                  NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=${{ github.workspace }}/scripts/capgo-manifest-diagnostics.cjs" \
+                  bunx --package @capgo/cli@8.50.3 capgo bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
                     --delta \
-                    --apikey ${{ secrets.CAPGO_TOKEN }} \
-                    --path ${{ steps.vars.outputs.build_path }} \
+                    --path "${{ github.workspace }}/${{ steps.vars.outputs.build_path }}" \
                     --channel ${{ steps.capgo-channel.outputs.channel }} \
-                    --bundle ${{ steps.app-version.outputs.version }} \
-                    --package-json apps/${{ steps.vars.outputs.project_name }}/package.json \
-                    --node-modules node_modules
+                    "${VERSION_ARGS[@]}" \
+                    --package-json package.json \
+                    --node-modules "${{ github.workspace }}/node_modules"
+
+                  VERSION="$APP_VERSION"
+                  if [[ "$PROJECT_NAME" == "scouts" ]]; then
+                    # --auto-set-bundle saves the selected version in this runner's
+                    # Capacitor config; use it rather than relinking the package version.
+                    VERSION=$(bun -e "const version = (await import('./capacitor.config.ts')).default.plugins?.CapacitorUpdater?.version; if (!version) throw new Error('CapGo did not save the selected bundle version'); console.log(version)")
+                  fi
+                  if [[ -z "$VERSION" ]]; then
+                    echo "::error::No CapGo bundle version resolved; aborting."
+                    exit 1
+                  fi
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Set CapGo Channel
               if: matrix.capgo
+              working-directory: apps/${{ steps.vars.outputs.project_name }}
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  BUNDLE_VERSION: ${{ steps.capgo-upload.outputs.version }}
               run: |
-                  bunx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
+                  if [[ -z "$BUNDLE_VERSION" ]]; then
+                    echo "::error::No CapGo bundle version received; aborting channel assignment."
+                    exit 1
+                  fi
+                  bunx --package @capgo/cli@8.50.3 capgo channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
-                    -a ${{ secrets.CAPGO_TOKEN }} \
-                    -b ${{ steps.app-version.outputs.version }} \
+                    -b "$BUNDLE_VERSION" \
                     --self-assign \
                     ${{ steps.vars.outputs.capgo_id }}
 
@@ -1270,6 +1401,8 @@ jobs:
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
+        outputs:
+            package-versions: ${{ steps.smoke-versions.outputs.package-versions }}
         permissions:
             id-token: write
             contents: read
@@ -1285,11 +1418,22 @@ jobs:
             - name: Use Node.js 24 for npm trusted publishing
               uses: actions/setup-node@v6
               with:
-                  node-version: 24
+                  node-version: 24.12.0
                   package-manager-cache: false
 
             - name: Build packages
-              run: bunx nx run-many --target=build --exclude docs --exclude didkit-plugin-node
+              run: |
+                  PROJECTS=$(node scripts/select-registry-build-projects.mjs)
+                  bunx nx run-many --target=build --projects="$PROJECTS"
+
+            - name: Read exact smoketest package versions
+              id: smoke-versions
+              run: node scripts/smoketest-npm-packages.mjs versions --workspace >> "$GITHUB_OUTPUT"
+
+            # Validate private dependency leaks before the separately published
+            # native addon is temporarily marked private for Changesets.
+            - name: Prepare publish dependency versions
+              run: node scripts/prepare-publish-workspace-deps.mjs
 
             # The native DIDKit package is published by didkit-plugin-node-prebuilds.yml
             # with platform artifacts. Keep it out of the generic changeset publish pass.
@@ -1305,15 +1449,12 @@ jobs:
                   fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
                   '
 
-            - name: Prepare publish dependency versions
-              run: node scripts/prepare-publish-workspace-deps.mjs
-
             - name: Publish Registry Packages
               run: bunx changeset publish
     # ============================================================================
     # SMOKETEST PUBLISHED PACKAGES (verify external installability)
-    # Calls the reusable smoketest-npm-packages workflow against the freshly
-    # published `latest` dist-tags from a clean directory with no monorepo
+    # Calls the reusable smoketest-npm-packages workflow against the publishing
+    # checkout's exact versions from a clean directory with no monorepo
     # context. Catches regressions like the didkit-plugin-node@0.2.14
     # workspace:* leak that broke external `@learncard/cli` execution.
     # NOTE: `continue-on-error` is not valid on reusable-workflow caller jobs,
@@ -1329,6 +1470,8 @@ jobs:
             always() &&
             needs.publish-npm.result == 'success'
         uses: ./.github/workflows/smoketest-npm-packages.yml
+        with:
+            package-versions: ${{ needs.publish-npm.outputs.package-versions }}
 
     # ============================================================================
     # SMOKETEST (after deploys — one job per target environment)
@@ -1452,10 +1595,10 @@ jobs:
             # Our failed deploy: https://github.com/learningeconomy/LearnCard/actions/runs/28558778835/job/84673047463
             # Owner: release CI. Revisit after Node's fix is on the runner or Changesets stops using node-fetch@2:
             # https://github.com/nodejs/node/pull/64004
-            - name: Use Node.js 24.16 for Changesets
+            - name: Use Node.js 24.12.0 for Changesets
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.16.0
+                  node-version: 24.12.0
 
             - name: Create Release Pull Request
               uses: changesets/action@v1
@@ -1465,3 +1608,346 @@ jobs:
                   title: 'chore(release): version packages'
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+    # ============================================================================
+    # AI AGENT VALIDATION AND DEPLOYMENT
+    # ============================================================================
+    validate-ai-agent:
+        name: AI Agent CI
+        needs: [determine-affected, test-affected]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.result == 'success' &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && inputs.deploy-ai-agent && (inputs.target-environment == 'staging' || inputs.target-environment == 'production')) ||
+              (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.ai_agent_changed == 'true') ||
+              (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'ai-agent-service'))
+            )
+        permissions:
+            contents: read
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        outputs:
+            target-environment: ${{ needs.determine-affected.outputs.is_manual == 'true' && inputs.target-environment || (needs.determine-affected.outputs.is_release == 'true' && 'production' || 'staging') }}
+        env:
+            CI: true
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            - name: Verify Trigger.dev deployment CLI startup
+              working-directory: services/learn-card-network/ai-agent
+              run: bunx trigger deploy --help
+
+            - name: Test Trigger native package readiness gate
+              run: node --test scripts/wait-for-trigger-native-package.test.mjs
+
+            - name: Run AI Agent tests
+              run: bun run --cwd services/learn-card-network/ai-agent test -- run
+
+            - name: Verify feed with real DIDKit WASM
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:feed-wasm
+
+            - name: Verify private Sentry telemetry
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:sentry
+
+            - name: Build AI Agent
+              run: bun run --cwd services/learn-card-network/ai-agent build
+
+            - name: Lint CloudFormation template
+              run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
+
+    deploy-ai-agent:
+        name: Deploy AI Agent
+        if: always() && !cancelled() && github.event_name != 'pull_request' && needs.validate-ai-agent.result == 'success'
+        needs: [validate-ai-agent]
+        permissions:
+            contents: read
+            id-token: write
+        runs-on: ubuntu-latest
+        concurrency:
+            group: deploy-ai-agent-${{ needs.validate-ai-agent.outputs.target-environment }}
+            cancel-in-progress: false
+        environment: learn-card-ai-agent-${{ needs.validate-ai-agent.outputs.target-environment }}
+        env:
+            CI: true
+            TARGET_ENVIRONMENT: ${{ needs.validate-ai-agent.outputs.target-environment }}
+            AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            - name: Validate deployment configuration
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+                  BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
+                  AWS_ROLE_ARN: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+                  TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
+                  TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+                  LAUNCHDARKLY_SDK_KEY_SECRET_ARN: ${{ vars.AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN }}
+                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+              run: |
+                  test -n "$ECR_REPOSITORY_URL" || { echo "::error::AI_AGENT_ECR_REPOSITORY_URL is missing"; exit 1; }
+                  test -n "$CLOUDFORMATION_STACK" || { echo "::error::AI_AGENT_CLOUDFORMATION_STACK is missing"; exit 1; }
+                  test -n "$BASE_URL" || { echo "::error::AI_AGENT_BASE_URL is missing"; exit 1; }
+                  test -n "$AWS_ROLE_ARN" || { echo "::error::AI_AGENT_AWS_ROLE_ARN is missing"; exit 1; }
+
+                  test -n "$TRIGGER_SECRET_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN is missing"; exit 1; }
+                  test -n "$TRIGGER_PROJECT_REF" || { echo "::error::AI_AGENT_TRIGGER_PROJECT_REF is missing"; exit 1; }
+                  test -n "$LAUNCHDARKLY_SDK_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN is missing"; exit 1; }
+                  test -n "$TRIGGER_ACCESS_TOKEN" || { echo "::error::TRIGGER_ACCESS_TOKEN is missing"; exit 1; }
+
+                  case "$TARGET_ENVIRONMENT" in
+                    staging) EXPECTED_TRIGGER_PROJECT_REF=proj_lhgapsbwrnrqrszcpgzn ;;
+                    production) EXPECTED_TRIGGER_PROJECT_REF=proj_lyfepdqcmztsyzcqmcvx ;;
+                    *) echo "::error::Unsupported AI Agent deployment environment"; exit 1 ;;
+                  esac
+
+                  if [ "$TRIGGER_PROJECT_REF" != "$EXPECTED_TRIGGER_PROJECT_REF" ]; then
+                    echo "::error::AI_AGENT_TRIGGER_PROJECT_REF does not match $TARGET_ENVIRONMENT"
+                    exit 1
+                  fi
+
+            # The native prebuild workflow publishes independently of Deploy.
+            # Trigger installs this external package from npm, not the checkout.
+            - name: Wait for Trigger native package publication
+              timeout-minutes: 16
+              run: node scripts/wait-for-trigger-native-package.mjs
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v5
+              with:
+                  role-to-assume: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+                  role-session-name: learncard-ai-agent-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
+                  aws-region: ${{ env.AWS_DEFAULT_REGION }}
+            - name: Validate CloudFormation template
+              run: |
+                  aws cloudformation validate-template \
+                    --template-body file://services/learn-card-network/ai-agent/infra/aws/template.yml
+            - name: Verify ECR and stack consistency
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+              run: |
+                  STACK_ECR_REPOSITORY_URL="$(aws cloudformation describe-stacks \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --query "Stacks[0].Outputs[?OutputKey=='EcrRepositoryUrl'].OutputValue" \
+                    --output text)"
+
+                  if [ "$STACK_ECR_REPOSITORY_URL" != "$ECR_REPOSITORY_URL" ]; then
+                    echo "::error::AI_AGENT_ECR_REPOSITORY_URL does not match $CLOUDFORMATION_STACK"
+                    exit 1
+                  fi
+
+                  STACK_ENVIRONMENT="$(aws cloudformation describe-stacks \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --query "Stacks[0].Parameters[?ParameterKey=='Environment'].ParameterValue | [0]" \
+                    --output text)"
+
+                  if [ "$STACK_ENVIRONMENT" != "$TARGET_ENVIRONMENT" ]; then
+                    echo "::error::CloudFormation stack environment does not match $TARGET_ENVIRONMENT"
+                    exit 1
+                  fi
+
+            - name: Deploy Trigger.dev tasks
+              working-directory: services/learn-card-network/ai-agent
+              env:
+                  AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+                  AI_AGENT_TRIGGER_ENVIRONMENT: ${{ env.TARGET_ENVIRONMENT }}
+                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+              run: bunx trigger deploy --env prod --skip-update-check
+
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+              with:
+                  platforms: arm64
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Check immutable AI Agent image
+              id: image
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+              run: |
+                  set -euo pipefail
+
+                  REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
+                  IMAGE_COUNT="$(aws ecr list-images \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --filter tagStatus=TAGGED \
+                    --query "length(imageIds[?imageTag=='sha-${{ github.sha }}'])" \
+                    --output text)"
+
+                  if [ "$IMAGE_COUNT" = '0' ]; then
+                    echo 'exists=false' >> "$GITHUB_OUTPUT"
+                  elif [ "$IMAGE_COUNT" = '1' ]; then
+                    echo 'exists=true' >> "$GITHUB_OUTPUT"
+                  else
+                    echo "::error::Unexpected immutable image count: $IMAGE_COUNT"
+                    exit 1
+                  fi
+
+            - name: Build and push AI Agent image
+              if: steps.image.outputs.exists != 'true'
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: ./services/learn-card-network/ai-agent/Dockerfile
+                  push: true
+                  platforms: linux/arm64
+                  build-args: GIT_SHA=${{ github.sha }}
+                  cache-from: type=gha,scope=ai-agent-image
+                  cache-to: type=gha,mode=max,scope=ai-agent-image
+                  tags: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}:sha-${{ github.sha }}
+
+            - name: Reject vulnerable runtime image
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+              run: |
+                  set -euo pipefail
+
+                  REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
+                  ARM64_DIGEST="$(docker buildx imagetools inspect \
+                    "$ECR_REPOSITORY_URL:sha-${{ github.sha }}" \
+                    --raw | jq -r \
+                    '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "arm64") | .digest')"
+
+                  test -n "$ARM64_DIGEST" || {
+                    echo "::error::Could not resolve the pushed ARM64 image digest"
+                    exit 1
+                  }
+
+                  aws ecr wait image-scan-complete \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --image-id "imageDigest=$ARM64_DIGEST"
+
+                  FINDINGS="$(aws ecr describe-image-scan-findings \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --image-id "imageDigest=$ARM64_DIGEST" \
+                    --query imageScanFindings.findingSeverityCounts \
+                    --output json)"
+                  CRITICAL_FINDINGS="$(jq -r '.CRITICAL // 0' <<< "$FINDINGS")"
+                  HIGH_FINDINGS="$(jq -r '.HIGH // 0' <<< "$FINDINGS")"
+
+                  if (( CRITICAL_FINDINGS > 0 || HIGH_FINDINGS > 0 )); then
+                    echo "::error::ARM64 runtime image has $CRITICAL_FINDINGS critical and $HIGH_FINDINGS high findings"
+                    exit 1
+                  fi
+
+            - name: Deploy ECS/Fargate service
+              env:
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+                  TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
+                  LAUNCHDARKLY_SDK_KEY_SECRET_ARN: ${{ vars.AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN }}
+              run: |
+                  aws cloudformation deploy \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --template-file services/learn-card-network/ai-agent/infra/aws/template.yml \
+                    --capabilities CAPABILITY_NAMED_IAM \
+                    --parameter-overrides \
+                      CreateService=true \
+                      ImageTag=sha-${{ github.sha }} \
+                      DeploymentId=${{ github.run_id }}-${{ github.run_attempt }} \
+                      Model=gpt-5.6-luna \
+                      ModelInputCostUsdPerMillion=0.2 \
+                      ModelOutputCostUsdPerMillion=1.2 \
+                      EnableTriggerSchedules=true \
+                      TriggerSecretKeySecretArn="$TRIGGER_SECRET_KEY_SECRET_ARN" \
+                      LaunchDarklySdkKeySecretArn="$LAUNCHDARKLY_SDK_KEY_SECRET_ARN" \
+                    --tags \
+                      Project=learncard \
+                      Service=learncard-ai-agent \
+                      Environment="$TARGET_ENVIRONMENT" \
+                    --no-fail-on-empty-changeset
+
+            - name: Verify readiness
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_seconds: 15
+                  max_attempts: 10
+                  retry_wait_seconds: 10
+                  command: bun -e "const r = await fetch('${{ vars.AI_AGENT_BASE_URL }}/api/health/ready'); if (!r.ok) throw new Error('Readiness returned ' + r.status); const body = await r.json(); if (!body.ok) throw new Error('Service is not ready')"
+
+            - name: Verify observability delivery
+              run: |
+                  bun -e "
+                    const response = await fetch('${{ vars.AI_AGENT_BASE_URL }}/api/health');
+                    if (!response.ok) throw new Error('Health returned ' + response.status);
+                    const body = await response.json();
+                    if (!body.observability?.cloudWatchMetrics) {
+                      throw new Error('Direct CloudWatch metrics are not enabled');
+                    }
+                    if (body.observability?.sentry?.delivery !== 'delivered') {
+                      throw new Error('Sentry deployment event was not delivered');
+                    }
+                  "
+
+            - name: Run authenticated staging smoke test
+              id: staging-smoke
+              if: env.TARGET_ENVIRONMENT == 'staging'
+              continue-on-error: true
+              env:
+                  AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
+                  AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
+                  AI_AGENT_SMOKE_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+              run: |
+                  # The CloudWatch check below reads logs from here on; the scheduled-card wait can outlast its old 10-minute lookback.
+                  echo "AI_AGENT_SMOKE_STARTED_AT_MS=$(( $(date +%s) * 1000 - 60000 ))" >> "$GITHUB_ENV"
+                  bun run --cwd services/learn-card-network/ai-agent smoke:staging
+
+            - name: Verify readable CloudWatch application logs
+              if: always() && env.TARGET_ENVIRONMENT == 'staging'
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_seconds: 20
+                  max_attempts: 5
+                  retry_wait_seconds: 10
+                  command: |
+                      set -euo pipefail
+                      LOG_GROUP="$(aws cloudformation describe-stacks \
+                        --stack-name '${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}' \
+                        --query "Stacks[0].Outputs[?OutputKey=='ApplicationLogGroupName'].OutputValue | [0]" \
+                        --output text)"
+                      START_TIME="${AI_AGENT_SMOKE_STARTED_AT_MS:-$(( $(date +%s) * 1000 - 600000 ))}"
+                      MESSAGES="$(aws logs filter-log-events \
+                        --log-group-name "$LOG_GROUP" \
+                        --start-time "$START_TIME" \
+                        --query 'events[].message' \
+                        --output text)"
+                      [[ "$MESSAGES" == *'agent.run.'* ]]
+                      [[ "$MESSAGES" != *'"_aws"'* ]]
+                      printf '%s\n' "$MESSAGES"
+
+            - name: Require staging smoke success
+              if: always() && env.TARGET_ENVIRONMENT == 'staging'
+              env:
+                  SMOKE_OUTCOME: ${{ steps.staging-smoke.outcome }}
+              run: |
+                  if [ "$SMOKE_OUTCOME" != 'success' ]; then
+                    echo "::error::Authenticated staging smoke test failed"
+                    exit 1
+                  fi

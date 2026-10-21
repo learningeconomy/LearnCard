@@ -8,26 +8,36 @@ import ConsentFlowSyncCard from './ConsentFlowSyncCard';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 
-import { ModalTypes, ProfilePicture, useContract, useModal, useWallet } from 'learn-card-base';
+import {
+    ModalTypes,
+    ProfilePicture,
+    ToastTypeEnum,
+    useContract,
+    useModal,
+    useToast,
+    useWallet,
+} from 'learn-card-base';
 import { oauth2ReducerArgStore } from '../sync-my-school/ExternalAuthServiceProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import { useRegistryState } from '../../hooks/useRegistryEntryState';
 import * as m from '../../paraglide/messages.js';
+import { getConsentFlowDidAuthRedirect } from './issueConsentFlowDidAuth';
 
 // Deprecated - ConsentFlow happens on LaunchPad now
 const ConsentFlowSyncData: React.FC = () => {
     const currentUser = useCurrentUser();
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const location = useLocation();
     const history = useHistory();
 
     const { newModal } = useModal();
 
-    const { uri, returnTo } = queryString.parse(location.search);
+    const { challenge, domain, uri, returnTo } = queryString.parse(location.search);
 
-    const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
+    const contractUri = Array.isArray(uri) ? (uri[0] ?? '') : (uri ?? '');
 
     const { data: contractDetails } = useContract(contractUri);
     const { data: consentedContracts, isLoading } = useConsentedContracts();
@@ -43,14 +53,14 @@ const ConsentFlowSyncData: React.FC = () => {
             newModal(
                 <PostConsentFlowSyncCard consentedContract={consentedContract} />,
                 {
-                    sectionClassName: '!max-w-[400px]',
+                    sectionClassName: 'max-w-[400px]!',
                 },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
         } else {
             newModal(
                 <ConsentFlowSyncCard contractDetails={contractDetails} contractUri={contractUri} />,
-                { sectionClassName: '!max-w-[400px] !bg-transparent !shadow-none' }
+                { sectionClassName: 'max-w-[400px]! bg-transparent! shadow-none!' }
             );
         }
     };
@@ -67,7 +77,7 @@ const ConsentFlowSyncData: React.FC = () => {
         <IonContent className="fs-ion-content-fix bg-emerald-700 [&::part(scroll)]:justify-end">
             <section className="max-h-full py-[20px] overflow-y-auto disable-scrollbars safe-area-top-margin">
                 <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px]">
-                    <header className="flex items-center flex-col gap-[10px] border-solid border-b-[1px] border-grayscale-200 pb-[20px] w-full">
+                    <header className="flex items-center flex-col gap-[10px] border-solid border-b border-grayscale-200 pb-[20px] w-full">
                         <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] text-center">
                             LearnCard
                         </span>
@@ -85,7 +95,7 @@ const ConsentFlowSyncData: React.FC = () => {
                     </header>
 
                     <div className="flex flex-col gap-[10px] items-center">
-                        <span className="text-grayscale-900 text-[20px] font-poppins font-[600] leading-[160%]">
+                        <span className="text-grayscale-900 text-[20px] font-poppins font-semibold leading-[160%]">
                             {m['consentFlow.syncMyData']()}
                         </span>
                         <span className="text-grayscale-800 text-[17px] font-poppins text-center">
@@ -142,41 +152,32 @@ const ConsentFlowSyncData: React.FC = () => {
                     className="w-full bg-white flex items-center justify-center px-[20px] py-[15px] rounded-[24px] shadow-bottom font-montserrat text-center text-xl font-normal max-w-[350px] mt-[10px]"
                     type="button"
                     onClick={async () => {
-                        if (returnTo && !Array.isArray(returnTo)) {
-                            if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                                const wallet = await initWallet();
+                        try {
+                            if (returnTo && !Array.isArray(returnTo)) {
+                                if (
+                                    returnTo.startsWith('http://') ||
+                                    returnTo.startsWith('https://')
+                                ) {
+                                    const wallet = await initWallet();
+                                    const ownerDid = contractDetails?.owner?.did;
 
-                                // add user's did to returnTo url
-                                const urlObj = new URL(returnTo);
-                                urlObj.searchParams.set('did', wallet.id.did());
-                                if (contractDetails?.owner?.did) {
-                                    const unsignedDelegateCredential = wallet.invoke.newCredential({
-                                        type: 'delegate',
-                                        subject: contractDetails.owner.did,
-                                        access: ['read', 'write'],
+                                    if (!ownerDid) throw new Error('Invalid consent request');
+
+                                    window.location.href = await getConsentFlowDidAuthRedirect({
+                                        challenge,
+                                        contractUri,
+                                        domain,
+                                        ownerDid,
+                                        returnTo,
+                                        wallet,
                                     });
-
-                                    const delegateCredential = await wallet.invoke.issueCredential(
-                                        unsignedDelegateCredential
-                                    );
-
-                                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                                        delegateCredential
-                                    );
-                                    const vp = (await wallet.invoke.issuePresentation(
-                                        unsignedDidAuthVp,
-                                        {
-                                            proofPurpose: 'authentication',
-                                            proofFormat: 'jwt',
-                                        }
-                                    )) as any as string;
-
-                                    urlObj.searchParams.set('vp', vp);
-                                }
-
-                                window.location.href = urlObj.toString();
-                            } else history.push(returnTo);
-                        } else history.push('/home');
+                                } else history.push(returnTo);
+                            } else history.push('/home');
+                        } catch {
+                            presentToast('Unable to complete sign in. Please try again.', {
+                                type: ToastTypeEnum.Error,
+                            });
+                        }
                     }}
                 >
                     {m['common.close']()}

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useLocation } from 'react-router-dom';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -61,10 +60,7 @@ const SkillsPage: React.FC = () => {
     const colors = getThemedCategoryColors(CredentialCategoryEnum.skill);
     const { backgroundSecondaryColor } = colors;
 
-    const flags = useFlags();
-    const showAiInsights = flags?.showAiInsights;
     const showAdminPanel =
-        flags?.enableAdminTools ||
         lcNetworkProfile?.role === LearnCardRolesEnum.admin ||
         lcNetworkProfile?.role === LearnCardRolesEnum.teacher ||
         lcNetworkProfile?.role === LearnCardRolesEnum.developer ||
@@ -94,12 +90,8 @@ const SkillsPage: React.FC = () => {
 
     useLoadingLine(credentialsBackgroundFetching);
 
-    let isBoostsEmpty = false;
-    if ((!allResolvedBoostsLoading && allResolvedCreds?.length === 0) || allResolvedBoostsLoading) {
-        isBoostsEmpty = true;
-    } else {
-        isBoostsEmpty = false;
-    }
+    const isBoostsEmpty =
+        (!allResolvedBoostsLoading && allResolvedCreds?.length === 0) || allResolvedBoostsLoading;
 
     const total = alignments.length;
 
@@ -127,7 +119,6 @@ const SkillsPage: React.FC = () => {
                 <IonContent fullscreen className="skills-page" color={backgroundSecondaryColor}>
                     <div className="flex relative justify-center items-center w-full pb-[30px]">
                         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
-                            {/* {showAiInsights && <SkillsInsightCard />} */}
                             {showAdminPanel && (
                                 <div
                                     className={`flex items-center justify-start w-full ${

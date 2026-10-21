@@ -1,19 +1,17 @@
-import serverlessHttp from 'serverless-http';
-import * as Sentry from '@sentry/serverless';
+import { bootstrapLambda } from '@learncard/service-config';
 
-import didWebApp from './src/dids';
+import { base, stages } from './src/config/stageConfig';
 
-Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
-    tracesSampleRate: 1.0,
-    integrations: [
-        new Sentry.Integrations.Console(),
-        new Sentry.Integrations.Http(),
-        new Sentry.Integrations.ContextLines(),
-        new Sentry.Integrations.Mongo(),
-    ],
+type DidWebApp = typeof import('./didWebLambdaApp');
+
+const getApplication = bootstrapLambda<DidWebApp>({
+    base,
+    stages,
+    stage: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? process.env.LAMBDA_STAGE
+        : process.env.CONFIG_STAGE,
+    importApp: () => import('./didWebLambdaApp'),
 });
 
-export const didWebHandler = Sentry.AWSLambda.wrapHandler(serverlessHttp(didWebApp));
+export const didWebHandler = async (...args: Parameters<DidWebApp['didWebHandler']>) =>
+    (await getApplication()).didWebHandler(...args);
