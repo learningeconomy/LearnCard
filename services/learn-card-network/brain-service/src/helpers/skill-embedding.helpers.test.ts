@@ -61,6 +61,7 @@ const ENV_KEYS = [
     'SKILL_EMBEDDING_DIMENSION',
     'SKILL_EMBEDDING_CONCURRENCY',
     'SKILL_EMBEDDING_BACKFILL_ON_STARTUP',
+    'SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS',
 ];
 
 const purposeOf = (body: string) => JSON.parse(body).singleEmbeddingParams.embeddingPurpose;
@@ -686,6 +687,326 @@ describe('skill embedding helpers (Nova 2, mocked Bedrock)', () => {
             expect(
                 redis.data.get('skill-embeddings:backfill:lock:embedding_nova2_v1_0_d1024')
             ).toBe('other');
+        });
+    });
+
+    // Review r4339891845: a vector computed from old text must never replace a newer one.
+    describe('source compare-and-set (backfill vs live writes)', () => {
+        type FakeSkillNode = {
+            statement: string;
+            description: string | null;
+            vector?: number[];
+            key?: string;
+        };
+
+        /**
+         * In-memory stand-in for buildSkillEmbeddingUpdateQuery: writes only when the node's
+         * statement/description still equal the source the vector was computed from. An update
+         * with no source snapshot (the pre-fix shape) is written unconditionally, exactly as the
+         * old identity-only MATCH ... SET did. The real Cypher is covered by
+         * skillEmbedding.neo4j.test.ts against a local Neo4j.
+         */
+        const fakeGraph = (nodes: Record<string, FakeSkillNode>) => {
+            const writes: string[] = [];
+            const update = vi.fn(async (u: SkillEmbeddingUpdate) => {
+                const node = nodes[u.skillId];
+                if (!node) return false;
+                const source = (u as { source?: { statement: string; description: string } })
+                    .source;
+                if (
+                    source &&
+                    (source.statement !== node.statement ||
+                        source.description !== (node.description ?? ''))
+                ) {
+                    return false;
+                }
+                node.vector = u.embedding;
+                node.key = u.embeddingKey;
+                writes.push(`${u.skillId}:${u.embeddingKey.slice(0, 8)}`);
+                return true;
+            });
+            return { nodes, update, writes };
+        };
+
+        const candidateOf = (id: string, node: FakeSkillNode): SkillEmbeddingCandidate => ({
+            id,
+            frameworkId: 'fw',
+            statement: node.statement,
+            description: node.description,
+            code: null,
+            hasEmbedding: Boolean(node.vector),
+            embeddingKey: node.key ?? null,
+        });
+
+        it('a live edit that lands while the backfill is embedding the old text wins', async () => {
+            const helpers = await loadHelpers();
+            const generation = helpers.getSkillEmbeddingGeneration();
+            const graph = fakeGraph({ s1: { statement: 'Old text', description: null } });
+            const oldVector = unitVector(10);
+            // Mocked Bedrock for the live write; nothing here reaches AWS.
+            helpers.setSkillEmbeddingInvokeForTests((async () =>
+                novaBody(unitVector(11))) as never);
+
+            const stats = await helpers.runSkillEmbeddingBackfill(
+                {},
+                {
+                    getCandidates: vi
+                        .fn()
+                        .mockResolvedValueOnce({
+                            // Backfill reads the old text...
+                            records: [candidateOf('s1', graph.nodes.s1!)],
+                            hasMore: false,
+                            cursor: null,
+                        })
+                        .mockResolvedValue({ records: [], hasMore: false, cursor: null }),
+                    embedIndex: vi.fn(async () => {
+                        // ...and while Bedrock embeds it, a skill update commits new text and
+                        // the live write path stores the new vector first.
+                        graph.nodes.s1!.statement = 'New text';
+                        await helpers.upsertNovaSkillEmbeddings(
+                            [{ id: 's1', frameworkId: 'fw', statement: 'New text' }],
+                            graph.update
+                        );
+                        return oldVector;
+                    }),
+                    update: graph.update,
+                    keepAlive: async () => true,
+                    sleep: async () => undefined,
+                }
+            );
+
+            expect(graph.nodes.s1!.vector).not.toEqual(oldVector);
+            expect(graph.nodes.s1!.key).toBe(
+                helpers.computeSkillEmbeddingKey(generation, 'New text')
+            );
+            expect(stats).toMatchObject({ embedded: 0, superseded: 1, cursor: 's1' });
+        });
+
+        it('two live writes that finish out of order keep the newest text', async () => {
+            const helpers = await loadHelpers();
+            const generation = helpers.getSkillEmbeddingGeneration();
+            const graph = fakeGraph({ s1: { statement: 'First', description: 'd' } });
+
+            // Edit A stores "First"; edit B then commits "Second" and stores its vector before
+            // A's slower Bedrock call returns.
+            let releaseA: () => void = () => undefined;
+            const aGate = new Promise<void>(resolve => {
+                releaseA = resolve;
+            });
+            helpers.setSkillEmbeddingInvokeForTests((async (request: { body: string }) => {
+                const text = JSON.parse(request.body).singleEmbeddingParams.text.value as string;
+                if (text.startsWith('First')) await aGate;
+                return novaBody(unitVector(text.startsWith('First') ? 20 : 21));
+            }) as never);
+
+            const writeA = helpers.upsertNovaSkillEmbeddings(
+                [{ id: 's1', frameworkId: 'fw', statement: 'First', description: 'd' }],
+                graph.update
+            );
+            graph.nodes.s1!.statement = 'Second';
+            await helpers.upsertNovaSkillEmbeddings(
+                [{ id: 's1', frameworkId: 'fw', statement: 'Second', description: 'd' }],
+                graph.update
+            );
+            releaseA();
+            await writeA;
+
+            expect(graph.nodes.s1!.key).toBe(
+                helpers.computeSkillEmbeddingKey(generation, 'Second\nd')
+            );
+            expect(graph.nodes.s1!.vector![0]).toBeCloseTo(unitVector(21)[0]!, 9);
+        });
+
+        it('sends the raw source snapshot with every Nova write', async () => {
+            const helpers = await loadHelpers();
+            helpers.setSkillEmbeddingInvokeForTests(invoke as never);
+            const update = vi.fn(async (_update: SkillEmbeddingUpdate) => true);
+
+            await helpers.upsertNovaSkillEmbeddings(
+                [{ id: 's1', frameworkId: 'fw', statement: ' Python ', description: null }],
+                update
+            );
+
+            expect(update.mock.calls[0]![0]).toMatchObject({
+                source: { statement: ' Python ', description: '' },
+            });
+        });
+    });
+
+    // Review r4339891861: the lease must stay held (and be checked) while a page is processed.
+    describe('backfill lease during a page (fake clock)', () => {
+        const LOCK_KEY = 'skill-embeddings:backfill:lock:embedding_nova2_v1_0_d1024';
+
+        /** Redis double with real TTL semantics driven by a fake clock (milliseconds). */
+        const clockedRedis = () => {
+            const clock = { now: 0 };
+            const data = new Map<string, { value: string; expiresAt: number }>();
+            const live = (key: string) => {
+                const entry = data.get(key);
+                if (entry && entry.expiresAt <= clock.now) data.delete(key);
+                return data.get(key);
+            };
+            return {
+                clock,
+                holder: () => live(LOCK_KEY)?.value,
+                set: vi.fn(
+                    async (key: string, value: string, _ex: string, ttl: number, nx: string) => {
+                        if (nx === 'NX' && live(key)) return null;
+                        data.set(key, { value, expiresAt: clock.now + ttl * 1000 });
+                        return 'OK';
+                    }
+                ),
+                eval: vi.fn(
+                    async (
+                        script: string,
+                        _n: number,
+                        key: string,
+                        token: string,
+                        ttl?: string
+                    ) => {
+                        const entry = live(key);
+                        if (!entry || entry.value !== token) return 0;
+                        if (script.includes('DEL')) data.delete(key);
+                        else entry.expiresAt = clock.now + Number(ttl) * 1000;
+                        return 1;
+                    }
+                ),
+            };
+        };
+
+        const missing = (id: string): SkillEmbeddingCandidate => ({
+            id,
+            frameworkId: 'fw',
+            statement: `Skill ${id}`,
+            description: null,
+            code: null,
+            hasEmbedding: false,
+            embeddingKey: null,
+        });
+
+        const onePage = (count: number) => {
+            const records = Array.from({ length: count }, (_, i) =>
+                missing(`s${String(i).padStart(3, '0')}`)
+            );
+            return vi
+                .fn()
+                .mockResolvedValueOnce({ records, hasMore: false, cursor: null })
+                .mockResolvedValue({ records: [], hasMore: false, cursor: null });
+        };
+
+        it('keeps the 900s lease through a 100-skill page of 10s embeddings (1,000s)', async () => {
+            const helpers = await loadHelpers();
+            const redis = clockedRedis();
+            const lock = await helpers.acquireSkillEmbeddingBackfillLock(redis);
+            expect(lock).not.toBeNull();
+            const ourToken = redis.holder();
+
+            let rivalAcquired = false;
+            const writesWithoutLease: string[] = [];
+
+            const stats = await helpers.runSkillEmbeddingBackfill(
+                { pageSize: 100 },
+                {
+                    getCandidates: onePage(100),
+                    embedIndex: vi.fn(async () => {
+                        redis.clock.now += 10_000;
+                        // Another deploy tries to start its own backfill on every tick.
+                        if (await helpers.acquireSkillEmbeddingBackfillLock(redis)) {
+                            rivalAcquired = true;
+                        }
+                        return unitVector(30);
+                    }),
+                    update: vi.fn(async (u: SkillEmbeddingUpdate) => {
+                        if (redis.holder() !== ourToken) writesWithoutLease.push(u.skillId);
+                        return true;
+                    }),
+                    keepAlive: lock!.keepAlive,
+                    sleep: async ms => {
+                        redis.clock.now += ms;
+                    },
+                }
+            );
+
+            expect(redis.clock.now).toBe(1_000_000);
+            expect(rivalAcquired).toBe(false);
+            expect(writesWithoutLease).toEqual([]);
+            expect(stats).toMatchObject({ embedded: 100, cursor: 's099' });
+            expect(stats.stoppedReason).toBeUndefined();
+        });
+
+        it('renews across retry waits within one skill', async () => {
+            const helpers = await loadHelpers({ SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: '60' });
+            const redis = clockedRedis();
+            const lock = await helpers.acquireSkillEmbeddingBackfillLock(redis);
+            const ourToken = redis.holder();
+            const throttled = new helpers.SkillEmbeddingError('throttled', 429);
+            const writesWithoutLease: string[] = [];
+
+            const stats = await helpers.runSkillEmbeddingBackfill(
+                { maxRetries: 5 },
+                {
+                    getCandidates: onePage(1),
+                    embedIndex: vi
+                        .fn()
+                        .mockImplementationOnce(async () => {
+                            redis.clock.now += 15_000;
+                            throw throttled;
+                        })
+                        .mockImplementationOnce(async () => {
+                            redis.clock.now += 15_000;
+                            throw throttled;
+                        })
+                        .mockImplementation(async () => {
+                            redis.clock.now += 15_000;
+                            return unitVector(31);
+                        }),
+                    update: vi.fn(async (u: SkillEmbeddingUpdate) => {
+                        if (redis.holder() !== ourToken) writesWithoutLease.push(u.skillId);
+                        return true;
+                    }),
+                    keepAlive: lock!.keepAlive,
+                    // Each backoff wait is 40s; three 15s calls plus two waits = 125s > 60s TTL.
+                    sleep: async () => {
+                        redis.clock.now += 40_000;
+                    },
+                }
+            );
+
+            expect(redis.clock.now).toBe(125_000);
+            expect(writesWithoutLease).toEqual([]);
+            expect(redis.holder()).toBe(ourToken);
+            expect(stats).toMatchObject({ embedded: 1 });
+        });
+
+        it('aborts without writing once the lease is lost mid-page', async () => {
+            const helpers = await loadHelpers({ SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: '60' });
+            const redis = clockedRedis();
+            const lock = await helpers.acquireSkillEmbeddingBackfillLock(redis);
+            const update = vi.fn(async () => true);
+            const embedIndex = vi.fn(async () => {
+                // The third embedding hangs past the lease (e.g. a stalled event loop).
+                redis.clock.now += embedIndex.mock.calls.length === 3 ? 120_000 : 10_000;
+                return unitVector(32);
+            });
+
+            const stats = await helpers.runSkillEmbeddingBackfill(
+                {},
+                {
+                    getCandidates: onePage(5),
+                    embedIndex,
+                    update,
+                    keepAlive: lock!.keepAlive,
+                    sleep: async () => undefined,
+                }
+            );
+
+            expect(stats).toMatchObject({
+                embedded: 2,
+                stoppedReason: 'lock_lost',
+                cursor: 's001',
+            });
+            expect(update.mock.calls.map(call => (call as unknown[])[0])).toHaveLength(2);
+            expect(embedIndex).toHaveBeenCalledTimes(3);
         });
     });
 });

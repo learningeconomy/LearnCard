@@ -17,6 +17,7 @@ import {
     SKILL_EMBEDDING_SCHEME_VERSION,
     resolveSkillEmbeddingGeneration,
     toSkillEmbeddingSearchIndex,
+    toSkillEmbeddingSource,
 } from '../config/skillEmbedding';
 import type { SkillEmbeddingGeneration, SkillEmbeddingSearchIndex } from '../config/skillEmbedding';
 import {
@@ -382,6 +383,7 @@ export const upsertNovaSkillEmbeddings = async (
                 embedding,
                 embeddingKey: computeSkillEmbeddingKey(generation, item.text),
                 generation,
+                source: toSkillEmbeddingSource(item.skill),
             });
         }
     }
@@ -462,6 +464,8 @@ export type SkillEmbeddingBackfillStats = {
     scanned: number;
     alreadyCurrent: number;
     embedded: number;
+    /** Embedded, but the skill's text changed (or it was deleted) first, so nothing was written. */
+    superseded: number;
     failed: number;
     /** Set when the run stopped early (lock lost, throttled past retries, access denied, ...). */
     stoppedReason?: string;
@@ -473,7 +477,11 @@ export type SkillEmbeddingBackfillDeps = {
     getCandidates: typeof getSkillEmbeddingCandidates;
     embedIndex: (text: string) => Promise<number[]>;
     update: UpdateSkillEmbeddingFn;
-    /** Returns false when the distributed lock has been lost; the run then stops. */
+    /**
+     * Renews the distributed lease and returns false when it has been lost; the run then stops.
+     * Called before every Bedrock attempt (so retries and long pages keep the lease) and again
+     * right before every write (so a run that lost the lease never persists).
+     */
     keepAlive: () => Promise<boolean>;
     sleep: (ms: number) => Promise<void>;
 };
@@ -511,6 +519,7 @@ export const runSkillEmbeddingBackfill = async (
         scanned: 0,
         alreadyCurrent: 0,
         embedded: 0,
+        superseded: 0,
         failed: 0,
         cursor: options.cursor ?? null,
     };
@@ -551,16 +560,26 @@ export const runSkillEmbeddingBackfill = async (
             let attempt = 0;
 
             while (true) {
+                if (!(await deps.keepAlive())) return stop('lock_lost');
+
                 try {
                     const embedding = await deps.embedIndex(text);
-                    await deps.update({
+                    // Ownership check right before persisting: the embed (and any retry wait
+                    // before it) may have outlived the lease, and another runner may hold it now.
+                    if (!(await deps.keepAlive())) return stop('lock_lost');
+
+                    const written = await deps.update({
                         skillId: candidate.id,
                         frameworkId: candidate.frameworkId,
                         embedding,
                         embeddingKey: computeSkillEmbeddingKey(generation, text),
                         generation,
+                        source: toSkillEmbeddingSource(candidate),
                     });
-                    stats.embedded += 1;
+                    // Not written: the text changed after this page was read, so the live write
+                    // path owns the new vector (a later run re-embeds it if that write failed).
+                    if (written) stats.embedded += 1;
+                    else stats.superseded += 1;
                     break;
                 } catch (error) {
                     const code = isSkillEmbeddingError(error) ? error.code : 'failed';
@@ -660,7 +679,7 @@ let backfillStarted = false;
 
 /**
  * Startup backfill behind SKILL_EMBEDDING_BACKFILL_ON_STARTUP. One process at a time holds the
- * lock (renewed per page); every run skips skills already embedded with the current
+ * lock (renewed per page, before each Bedrock attempt and before each write); every run skips skills already embedded with the current
  * generation, so restarts and concurrent deploys resume instead of re-paying for work.
  */
 export const startSkillEmbeddingBackfill = async (): Promise<

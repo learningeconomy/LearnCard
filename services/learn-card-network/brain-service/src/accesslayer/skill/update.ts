@@ -4,8 +4,10 @@ import { neogma } from '@instance';
 import type { FlatSkillType } from 'types/skill';
 import {
     LEGACY_GOOGLE_SKILL_EMBEDDING_DIMENSION,
+    buildSkillEmbeddingUpdateParams,
     buildSkillEmbeddingUpdateQuery,
     type SkillEmbeddingGeneration,
+    type SkillEmbeddingSource,
 } from '../../config/skillEmbedding';
 
 export type UpdateSkillInput = Partial<
@@ -166,22 +168,21 @@ export type SkillEmbeddingUpdate = {
     /** sha256(identity + text); lets the backfill skip skills already embedded with this generation. */
     embeddingKey: string;
     generation: SkillEmbeddingGeneration;
+    /** Statement/description the vector was computed from; the write is skipped if they changed. */
+    source: SkillEmbeddingSource;
 };
 
-export const updateSkillEmbedding = async ({
-    skillId,
-    frameworkId,
-    embedding,
-    embeddingKey,
-    generation,
-}: SkillEmbeddingUpdate): Promise<boolean> => {
+/** Returns false when the skill is gone or its source changed since it was embedded. */
+export const updateSkillEmbedding = async (update: SkillEmbeddingUpdate): Promise<boolean> => {
+    const { frameworkId, embedding, generation } = update;
+
     if (embedding.length !== generation.dimension) {
         throw new Error('Skill embedding does not match the configured dimension');
     }
 
     const result = await neogma.queryRunner.run(
         buildSkillEmbeddingUpdateQuery(generation, Boolean(frameworkId)),
-        { frameworkId: frameworkId ?? null, skillId, embedding, embeddingKey }
+        buildSkillEmbeddingUpdateParams(update)
     );
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;

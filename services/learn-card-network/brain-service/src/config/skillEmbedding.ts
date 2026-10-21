@@ -90,7 +90,17 @@ export const resolveSkillEmbeddingGeneration = (input: {
 export const buildSkillEmbeddingVectorIndexQuery = (generation: SkillEmbeddingGeneration): string =>
     `CREATE VECTOR INDEX ${generation.indexName} IF NOT EXISTS FOR (s:Skill) ON (s.${generation.vectorProperty}) OPTIONS {indexConfig: {\`vector.dimensions\`: ${generation.dimension}, \`vector.similarity_function\`: 'cosine'}}`;
 
-/** Build the Cypher that writes one generation's vector and key (shared with the seed path). */
+/**
+ * Build the Cypher that writes one generation's vector and key (shared with the seed path).
+ *
+ * Compare-and-set on the source: the write lands only while the skill's statement and
+ * description still equal `$sourceStatement` / `$sourceDescription`, the values the vector was
+ * computed from (null is compared as ''). A backfill or live write that embedded text which has
+ * since been edited matches nothing and returns count 0, so it can never replace the newer
+ * text's vector and key. The throwaway property write takes the node's write lock first
+ * (Neo4j's documented lost-update idiom), so the source check and the SET are atomic against a
+ * concurrent skill update.
+ */
 export const buildSkillEmbeddingUpdateQuery = (
     generation: SkillEmbeddingGeneration,
     scopedToFramework: boolean
@@ -101,10 +111,45 @@ export const buildSkillEmbeddingUpdateQuery = (
 
     // Property names come from resolveSkillEmbeddingGeneration ([a-z0-9_] only).
     return `${match}
+             SET s._embeddingWriteLock = true
+             REMOVE s._embeddingWriteLock
+             WITH s
+             WHERE coalesce(s.statement, '') = $sourceStatement
+               AND coalesce(s.description, '') = $sourceDescription
              SET s.${generation.vectorProperty} = $embedding,
                  s.${generation.keyProperty} = $embeddingKey
              RETURN count(s) AS count`;
 };
+
+/** The source fields a Nova vector was computed from, as compared by the update query. */
+export type SkillEmbeddingSource = {
+    statement: string;
+    description: string;
+};
+
+export const toSkillEmbeddingSource = (skill: {
+    statement?: string | null;
+    description?: string | null;
+}): SkillEmbeddingSource => ({
+    statement: skill.statement ?? '',
+    description: skill.description ?? '',
+});
+
+/** Query parameters for buildSkillEmbeddingUpdateQuery. */
+export const buildSkillEmbeddingUpdateParams = (update: {
+    skillId: string;
+    frameworkId?: string;
+    embedding: number[];
+    embeddingKey: string;
+    source: SkillEmbeddingSource;
+}) => ({
+    frameworkId: update.frameworkId ?? null,
+    skillId: update.skillId,
+    embedding: update.embedding,
+    embeddingKey: update.embeddingKey,
+    sourceStatement: update.source.statement,
+    sourceDescription: update.source.description,
+});
 
 /** A vector index semantic search can query, with the vector size it accepts. */
 export type SkillEmbeddingSearchIndex = {
