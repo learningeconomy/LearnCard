@@ -18,8 +18,7 @@ const isoDaysAgo = (days: number): string => {
     return d.toISOString();
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-const record = (over: Partial<any> = {}) => ({
+const record = (over: Record<string, unknown> = {}) => ({
     id: 'a1',
     activityId: 'x1',
     eventType: 'CREATED',
@@ -242,6 +241,15 @@ describe('isHiddenActivity', () => {
         expect(isHiddenActivity('AI Sessions')).toBe(true);
         expect(isHiddenActivity('ai-topic')).toBe(true);
         expect(isHiddenActivity('Pay Rate')).toBe(true);
+    });
+    it.each([
+        ['resume', 'Resume'],
+        ['certificate', 'Certificate'],
+        ['transcript', 'Transcript'],
+        ['diploma', 'Diploma'],
+    ])('hides source uploads in %s without hiding issued %s credentials', (source, issued) => {
+        expect(isHiddenActivity(source)).toBe(true);
+        expect(isHiddenActivity(issued)).toBe(false);
     });
     it('shows normal and unknown categories', () => {
         expect(isHiddenActivity('Social Badge')).toBe(false);
