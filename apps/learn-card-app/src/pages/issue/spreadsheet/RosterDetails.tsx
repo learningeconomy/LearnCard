@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { MediaAttachments, type SimpleMediaAttachment } from '../components/MediaAttachments';
 import { IonIcon } from '@ionic/react';
@@ -20,10 +20,10 @@ import { humanizeVariable } from '../components/variableSubstitution';
 import { spreadsheetProblem } from './messages';
 import type { ColumnScopes } from './roster';
 import { RosterDateInput } from './RosterDateInput';
-import type { RowProblem } from './types';
+import type { RowFieldProblems, RowProblem } from './types';
 
 const INPUT =
-    'w-full min-w-[120px] py-3 px-4 border border-grayscale-300 rounded-xl text-base sm:text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:bg-grayscale-100';
+    'w-full min-w-[120px] py-3 px-4 border border-grayscale-300 rounded-xl text-base sm:text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:bg-grayscale-100 aria-[invalid=true]:border-red-500 aria-[invalid=true]:focus:border-red-500 aria-[invalid=true]:focus:ring-red-500';
 export interface RosterDetailsProps {
     recipients: Recipient[];
     attachments: Record<string, SimpleMediaAttachment[]>;
@@ -36,6 +36,7 @@ export interface RosterDetailsProps {
     values: Record<string, Record<string, string>>;
     evidence: Record<string, string>;
     problems: Record<string, RowProblem[]>;
+    fieldProblems?: Record<string, RowFieldProblems>;
     locked: (rowId: string) => boolean;
     canRemove?: (rowId: string) => boolean;
     disabled?: boolean;
@@ -104,6 +105,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
     const [query, setQuery] = useState('');
     const [onlyIssues, setOnlyIssues] = useState(false);
     const [editing, setEditing] = useState<{ id: string; attention: boolean }>();
+    const errorPrefix = useId();
     const { recipients, variables, scopes, shared, values, evidence, problems, disabled } = props;
     const issues = recipients.filter(row => problems[recipientKey(row)]?.length).length;
     const sorted = [...recipients]
@@ -150,122 +152,170 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
         },
     });
     const fieldLabel = (name: string): string => props.labels?.[name] ?? humanizeVariable(name);
+    const errorId = (rowId: string, field: string): string =>
+        `${errorPrefix}-${encodeURIComponent(JSON.stringify([rowId, field]))}`;
+    const errorMessage = (rowId: string, field: string, errors: RowProblem[]): React.ReactNode =>
+        errors.length ? (
+            <p
+                id={errorId(rowId, field)}
+                className="flex items-start gap-1.5 text-xs leading-relaxed text-red-700"
+                role="status"
+            >
+                <IonIcon icon={alertCircleOutline} className="mt-0.5 shrink-0" aria-hidden="true" />
+                {[...new Set(errors)].map(spreadsheetProblem).join(' · ')}
+            </p>
+        ) : null;
+    const errorAttributes = (rowId: string, field: string, errors: RowProblem[]) => ({
+        'aria-invalid': Boolean(errors.length),
+        'aria-describedby': errors.length ? errorId(rowId, field) : undefined,
+    });
+    const sharedProblems: Record<string, RowProblem[]> = Object.create(null);
+    for (const row of Object.values(props.fieldProblems ?? {})) {
+        for (const [name, errors] of Object.entries(row.variables)) {
+            sharedProblems[name] = [...new Set([...(sharedProblems[name] ?? []), ...errors])];
+        }
+    }
     const input = (recipient: Recipient, name: string): React.ReactNode => {
         const rowId = recipientKey(recipient);
+        const showValidation = props.locked(rowId) || scopes[name] === 'perRecipient';
+        // A shared value is corrected in the shared control, not in its disabled
+        // copies on every recipient. Keep the row's aggregate send blockers.
+        const errors = showValidation ? (props.fieldProblems?.[rowId]?.variables[name] ?? []) : [];
         const value =
             props.locked(rowId) || scopes[name] === 'perRecipient'
                 ? (values[rowId]?.[name] ?? '')
                 : (shared[name] ?? '');
         const fieldProps = {
+            ...errorAttributes(rowId, `variable:${name}`, errors),
             'aria-label': `${recipientDisplayName(recipient)} ${fieldLabel(name)}`,
             className: INPUT,
             value,
             disabled: disabled || props.locked(rowId) || scopes[name] !== 'perRecipient',
         };
-        return props.dateVariables?.includes(name) ? (
-            <RosterDateInput {...fieldProps} onChange={next => props.onChange(rowId, name, next)} />
-        ) : (
-            <input
-                {...fieldProps}
-                onChange={event => props.onChange(rowId, name, event.target.value)}
-            />
-        );
-    };
-    const identity = (recipient: Recipient): React.ReactNode => (
-        <div className="min-w-0 space-y-v3-2">
-            <div className="flex h-5 items-center gap-2">
-                <span
-                    title={recipientDisplayName(recipient)}
-                    className="min-w-0 truncate text-sm font-semibold leading-5 text-grayscale-900"
-                >
-                    {recipientDisplayName(recipient)}
-                </span>
-                {props.locked(recipientKey(recipient)) && (
-                    <IonIcon
-                        icon={lockClosedOutline}
-                        className="text-grayscale-500"
-                        aria-label={m['issueFlow.sheet.design.locked']()}
+        return (
+            <div className="min-w-0 space-y-v3-1.5">
+                {props.dateVariables?.includes(name) ? (
+                    <RosterDateInput
+                        {...fieldProps}
+                        showValidation={showValidation}
+                        onChange={next => props.onChange(rowId, name, next)}
+                    />
+                ) : (
+                    <input
+                        {...fieldProps}
+                        onChange={event => props.onChange(rowId, name, event.target.value)}
                     />
                 )}
+                {errorMessage(rowId, `variable:${name}`, errors)}
             </div>
-            {recipient.kind === 'email' ? (
+        );
+    };
+    const identity = (recipient: Recipient): React.ReactNode => {
+        const rowId = recipientKey(recipient);
+        const details = props.fieldProblems?.[rowId];
+        const identityErrors =
+            details?.recipient ??
+            problems[rowId]?.filter(problem => ['email', 'duplicate'].includes(problem)) ??
+            [];
+        const located = details
+            ? [
+                  ...details.recipient,
+                  ...details.evidence,
+                  ...Object.values(details.variables).flat(),
+              ]
+            : identityErrors;
+        const rowErrors = problems[rowId]?.filter(problem => !located.includes(problem)) ?? [];
+        return (
+            <div className="min-w-0 space-y-v3-2">
+                <div className="flex h-5 items-center gap-2">
+                    <span
+                        title={recipientDisplayName(recipient)}
+                        className="min-w-0 truncate text-sm font-semibold leading-5 text-grayscale-900"
+                    >
+                        {recipientDisplayName(recipient)}
+                    </span>
+                    {props.locked(recipientKey(recipient)) && (
+                        <IonIcon
+                            icon={lockClosedOutline}
+                            className="text-grayscale-500"
+                            aria-label={m['issueFlow.sheet.design.locked']()}
+                        />
+                    )}
+                </div>
+                {recipient.kind === 'email' ? (
+                    <input
+                        type="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        aria-label={m['issueFlow.sheet.emailFor']({
+                            name: recipientDisplayName(recipient),
+                        })}
+                        className={INPUT}
+                        {...errorAttributes(rowId, 'recipient', identityErrors)}
+                        value={recipient.email}
+                        disabled={disabled || props.locked(recipientKey(recipient))}
+                        onChange={event =>
+                            props.onRecipientsChange(
+                                recipients.map(row =>
+                                    row === recipient
+                                        ? { ...row, email: event.target.value.trim().toLowerCase() }
+                                        : row
+                                )
+                            )
+                        }
+                    />
+                ) : (
+                    <p className="break-all text-sm text-grayscale-600">@{recipient.profileId}</p>
+                )}
+                {errorMessage(rowId, 'recipient', identityErrors)}
+                {errorMessage(rowId, 'row', rowErrors)}
+            </div>
+        );
+    };
+    const evidenceInput = (recipient: Recipient): React.ReactNode => {
+        const rowId = recipientKey(recipient);
+        const errors = props.fieldProblems?.[rowId]?.evidence ?? [];
+        return (
+            <div className="space-y-v3-2">
                 <input
-                    type="email"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    aria-label={m['issueFlow.sheet.emailFor']({
+                    type="url"
+                    aria-label={m['issueFlow.sheet.design.additionalEvidenceFor']({
                         name: recipientDisplayName(recipient),
                     })}
+                    placeholder="https://"
+                    value={evidence[recipientKey(recipient)] ?? ''}
                     className={INPUT}
-                    aria-invalid={Boolean(problems[recipientKey(recipient)]?.includes('email'))}
-                    value={recipient.email}
+                    {...errorAttributes(rowId, 'evidence', errors)}
                     disabled={disabled || props.locked(recipientKey(recipient))}
                     onChange={event =>
-                        props.onRecipientsChange(
-                            recipients.map(row =>
-                                row === recipient
-                                    ? { ...row, email: event.target.value.trim().toLowerCase() }
-                                    : row
-                            )
-                        )
+                        props.onEvidenceChange(recipientKey(recipient), event.target.value)
                     }
                 />
-            ) : (
-                <p className="break-all text-sm text-grayscale-600">@{recipient.profileId}</p>
-            )}
-            {problems[recipientKey(recipient)]?.length > 0 && (
-                <p
-                    className="flex items-start gap-1.5 text-xs leading-relaxed text-red-700"
-                    role="status"
+                {errorMessage(rowId, 'evidence', errors)}
+                <button
+                    type="button"
+                    disabled={disabled || props.locked(recipientKey(recipient))}
+                    className="py-2 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 disabled:opacity-40"
+                    onClick={() =>
+                        newModal(
+                            <RowAttachments
+                                initial={props.attachments[recipientKey(recipient)] ?? []}
+                                onChange={attachments =>
+                                    props.onAttachmentsChange(recipientKey(recipient), attachments)
+                                }
+                                onClose={closeModal}
+                            />,
+                            {},
+                            { mobile: ModalTypes.Freeform, desktop: ModalTypes.Center }
+                        )
+                    }
                 >
-                    <IonIcon
-                        icon={alertCircleOutline}
-                        className="mt-0.5 shrink-0"
-                        aria-hidden="true"
-                    />
-                    {problems[recipientKey(recipient)]!.map(spreadsheetProblem).join(' · ')}
-                </p>
-            )}
-        </div>
-    );
-    const evidenceInput = (recipient: Recipient): React.ReactNode => (
-        <div className="space-y-v3-2">
-            <input
-                type="url"
-                aria-label={m['issueFlow.sheet.design.additionalEvidenceFor']({
-                    name: recipientDisplayName(recipient),
-                })}
-                placeholder="https://"
-                value={evidence[recipientKey(recipient)] ?? ''}
-                className={INPUT}
-                disabled={disabled || props.locked(recipientKey(recipient))}
-                onChange={event =>
-                    props.onEvidenceChange(recipientKey(recipient), event.target.value)
-                }
-            />
-            <button
-                type="button"
-                disabled={disabled || props.locked(recipientKey(recipient))}
-                className="py-2 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 disabled:opacity-40"
-                onClick={() =>
-                    newModal(
-                        <RowAttachments
-                            initial={props.attachments[recipientKey(recipient)] ?? []}
-                            onChange={attachments =>
-                                props.onAttachmentsChange(recipientKey(recipient), attachments)
-                            }
-                            onClose={closeModal}
-                        />,
-                        {},
-                        { mobile: ModalTypes.Freeform, desktop: ModalTypes.Center }
-                    )
-                }
-            >
-                {m['issueFlow.media.title']()} (
-                {props.attachments[recipientKey(recipient)]?.length ?? 0})
-            </button>
-        </div>
-    );
+                    {m['issueFlow.media.title']()} (
+                    {props.attachments[recipientKey(recipient)]?.length ?? 0})
+                </button>
+            </div>
+        );
+    };
     const remove = (recipient: Recipient): React.ReactNode => (
         <button
             type="button"
@@ -438,15 +488,27 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                         </option>
                                     </select>
                                     {scopes[name] !== 'perRecipient' && (
-                                        <input
-                                            aria-label={fieldLabel(name)}
-                                            className={INPUT}
-                                            value={shared[name] ?? ''}
-                                            disabled={disabled}
-                                            onChange={event =>
-                                                props.onSharedChange(name, event.target.value)
-                                            }
-                                        />
+                                        <>
+                                            <input
+                                                aria-label={fieldLabel(name)}
+                                                {...errorAttributes(
+                                                    'shared',
+                                                    `shared:${name}`,
+                                                    sharedProblems[name] ?? []
+                                                )}
+                                                className={INPUT}
+                                                value={shared[name] ?? ''}
+                                                disabled={disabled}
+                                                onChange={event =>
+                                                    props.onSharedChange(name, event.target.value)
+                                                }
+                                            />
+                                            {errorMessage(
+                                                'shared',
+                                                `shared:${name}`,
+                                                sharedProblems[name] ?? []
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             ))}

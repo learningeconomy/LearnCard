@@ -13,13 +13,26 @@ import {
 
 export const SPREADSHEET_LIMITS = {
     bytes: 10 * 1024 * 1024,
+    expandedBytes: 32 * 1024 * 1024,
+    archiveEntries: 1_000,
+    parseTimeoutMs: 20_000,
     rows: 10_000,
     columns: 200,
     cells: 2_000_000,
 };
 
 export type SpreadsheetErrorCode =
-    'file' | 'limit' | 'encoding' | 'bounds' | 'malformed' | 'emailColumn' | 'mapping' | 'run';
+    | 'file'
+    | 'limit'
+    | 'complexity'
+    | 'encoding'
+    | 'bounds'
+    | 'malformed'
+    | 'emailColumn'
+    | 'mapping'
+    | 'mappedColumnMissing'
+    | 'run'
+    | 'format';
 
 export class SpreadsheetError extends Error {
     constructor(
@@ -38,23 +51,37 @@ export const readSpreadsheetText = (text: string, name = 'spreadsheet.csv'): Spr
     if (text.includes('\uFFFD')) throw new SpreadsheetError('encoding');
     if (new TextEncoder().encode(text).length > SPREADSHEET_LIMITS.bytes)
         throw new SpreadsheetError('limit');
-    const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), {
+    const matrix: SpreadsheetCell[][] = [];
+    let failure: SpreadsheetError | undefined;
+    let cells = 0;
+    Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), {
         header: false,
         dynamicTyping: false,
         delimiter: name.toLowerCase().endsWith('.tsv') ? '\t' : '',
         delimitersToGuess: [',', '\t', ';'],
+        step: (result, parser) => {
+            cells += result.data.length;
+            if (result.errors.some(error => error.code === 'MissingQuotes'))
+                failure = new SpreadsheetError('malformed');
+            else if (
+                matrix.length >= SPREADSHEET_LIMITS.rows + 100 ||
+                result.data.length > SPREADSHEET_LIMITS.columns ||
+                cells > SPREADSHEET_LIMITS.cells
+            )
+                failure = new SpreadsheetError('limit');
+            if (failure) parser.abort();
+            else matrix.push(result.data.map(value => ({ text: value ?? '' })));
+        },
     });
-    if (parsed.errors.some(error => error.code === 'MissingQuotes'))
-        throw new SpreadsheetError('malformed');
-    const matrix = parsed.data.map(row => row.map(value => ({ text: value ?? '' })));
-    checkMatrixLimits(matrix);
+    if (failure) throw failure;
     return { name, sheets: { Sheet1: matrix } };
 };
 
 export const checkMatrixLimits = (matrix: SpreadsheetCell[][]): void => {
     if (
         matrix.length > SPREADSHEET_LIMITS.rows + 100 ||
-        matrix.some(row => row.length > SPREADSHEET_LIMITS.columns)
+        matrix.some(row => row.length > SPREADSHEET_LIMITS.columns) ||
+        matrix.reduce((sum, row) => sum + row.length, 0) > SPREADSHEET_LIMITS.cells
     )
         throw new SpreadsheetError('limit');
 };
@@ -62,8 +89,8 @@ export const checkMatrixLimits = (matrix: SpreadsheetCell[][]): void => {
 export const readSpreadsheetFile = async (file: File): Promise<SpreadsheetSource> => {
     if (file.size > SPREADSHEET_LIMITS.bytes) throw new SpreadsheetError('limit');
     if (/\.xlsx$/i.test(file.name)) {
-        const { readXlsx } = await import('./readXlsx');
-        return readXlsx(await file.arrayBuffer(), file.name);
+        const { readXlsxInWorker } = await import('./readXlsxInWorker');
+        return readXlsxInWorker(await file.arrayBuffer(), file.name);
     }
     if (!/\.(csv|tsv)$/i.test(file.name)) throw new SpreadsheetError('file');
     let text: string;
@@ -78,11 +105,17 @@ export const readSpreadsheetFile = async (file: File): Promise<SpreadsheetSource
 
 /** Multi-line cells are a roster candidate, never a hosted-credential URL. */
 export const looksLikeSpreadsheet = (text: string): boolean => {
-    const lines = text.trim().split(/\r?\n/);
+    if (text.trim().split(/\r?\n/).length < 2) return false;
+    const rows = Papa.parse<string[]>(text.trim().slice(0, 64_000), {
+        delimiter: '',
+        delimitersToGuess: [',', '\t', ';'],
+    }).data;
     return (
-        lines.length > 1 &&
-        (lines.some(line => line.includes('\t') || line.includes(',')) ||
-            lines.some(line => isValidRosterEmail(line)))
+        rows.some(row => row.some(isValidRosterEmail)) ||
+        (rows.length > 1 &&
+            rows[0]?.some(cell =>
+                /^(email|emailaddress|studentemail|recipientemail)$/.test(normalizeColumn(cell))
+            ))
     );
 };
 
@@ -95,6 +128,16 @@ const lastIndex = <T>(items: T[], predicate: (item: T) => boolean): number => {
 const blank = (row: SpreadsheetCell[]): boolean => row.every(cell => !cell.text.trim());
 const headerWords =
     /^(email|emailaddress|studentemail|recipientemail|recipient|name|fullname|firstname|lastname|score|grade|hours|credits|evidence|portfolio)$/;
+
+const isCanvasHeader = (row: SpreadsheetCell[]): boolean => {
+    const labels = new Set(row.map(cell => normalizeColumn(cell.text)));
+    return (
+        labels.has('id') &&
+        labels.has('section') &&
+        (labels.has('student') || (labels.has('firstname') && labels.has('lastname'))) &&
+        [...labels].some(label => /^sis.*id$/.test(label))
+    );
+};
 
 export const parseSpreadsheet = (
     source: SpreadsheetSource,
@@ -127,6 +170,7 @@ export const parseSpreadsheet = (
     const inferredHeader = lastIndex(
         matrix.slice(0, firstEmailRow < 0 ? 25 : firstEmailRow),
         row =>
+            isCanvasHeader(row) ||
             row.filter(cell => headerWords.test(normalizeColumn(cell.text))).length >= 2 ||
             (emailColumn !== undefined &&
                 /^(email|emailaddress|studentemail|recipientemail|recipient)$/.test(
@@ -142,7 +186,14 @@ export const parseSpreadsheet = (
     }));
     const named = (name: string): number =>
         columns.findIndex(column => normalizeColumn(column.label) === normalizeColumn(name));
-    const fullName = ['recipient name', 'name', 'full name', 'display name', 'student name']
+    const fullName = [
+        'recipient name',
+        'name',
+        'full name',
+        'display name',
+        'student name',
+        'student',
+    ]
         .map(named)
         .find(i => i >= 0);
     const firstName = ['first name', 'first'].map(named).find(i => i >= 0);
@@ -159,6 +210,11 @@ export const parseSpreadsheet = (
             const row = matrix[index]!;
             if (
                 blank(row) ||
+                (header &&
+                    isCanvasHeader(header) &&
+                    index === (headerRow ?? -1) + 1 &&
+                    /^points possible$/i.test(row[0]?.text.trim() ?? '') &&
+                    !isValidRosterEmail(row[emailColumn]?.text ?? '')) ||
                 (index === lastNonblank &&
                     !isValidRosterEmail(row[emailColumn]?.text ?? '') &&
                     row.some(cell => /^totals?$/i.test(cell.text.trim())))

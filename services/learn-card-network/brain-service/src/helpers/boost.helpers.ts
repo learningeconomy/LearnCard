@@ -1,5 +1,10 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { isEncrypted, isVC2Format } from '@learncard/helpers';
+import {
+    CredentialFieldError,
+    isEncrypted,
+    isVC2Format,
+    materializeCredentialFields,
+} from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import {
     VC,
@@ -356,7 +361,16 @@ export const prepareCredentialFromBoost = async (
         boostJsonString = renderBoostTemplate(boostJsonString, mergedTemplateData);
     }
 
-    const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+    let credential: UnsignedVC;
+    try {
+        credential = materializeCredentialFields(
+            parseRenderedTemplate<UnsignedVC>(boostJsonString)
+        ) as UnsignedVC;
+    } catch (error) {
+        if (error instanceof CredentialFieldError)
+            throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+        throw error;
+    }
 
     appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
 
