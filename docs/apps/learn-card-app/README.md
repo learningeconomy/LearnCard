@@ -88,6 +88,8 @@ Issuers can link their organization in **Developer Portal → Build → an issua
 
 Public previews are optional. Reopening Share without enabling a preview produces a link without preview metadata, but does not erase an already published preview or copies cached by social apps. LinkedIn's certification tile shows the organization's logo, not the credential image; the credential image belongs to the social preview.
 
+If the issuer's name cannot be loaded and is not included in the credential, public previews stay disabled rather than publishing an “Unknown” placeholder. The encrypted link remains available.
+
 Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the public preview record, and returns Open Graph metadata to social crawlers. Ordinary visitors continue to the app; unavailable previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
 
 ### Private Verifier History

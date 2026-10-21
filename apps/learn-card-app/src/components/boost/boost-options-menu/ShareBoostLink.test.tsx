@@ -406,4 +406,65 @@ describe('ShareBoostLink error recovery', () => {
             client.clear();
         }
     );
+
+    it('keeps private sharing available without publishing an unresolved issuer placeholder', async () => {
+        createLink.mockResolvedValue({ link: 'https://learncard.app/share-boost?uri=encrypted' });
+        getProfile.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+        const props = {
+            boost: { ...credential, issuer: 'did:web:network.example:users:school' },
+            categoryType: 'Achievement' as never,
+        };
+        const view = render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink {...props} />
+            </QueryClientProvider>
+        );
+        expect(await screen.findByRole('link', { name: 'Add to LinkedIn' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Copy Link' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Enable Public Preview' })).toBeDisabled();
+        expect(screen.getByText(/issuer details are unavailable/i)).toBeInTheDocument();
+        expect(createLink).toHaveBeenCalledOnce();
+
+        getProfile.mockReturnValue({ data: { displayName: 'Resolved school' }, isLoading: false });
+        view.rerender(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink {...props} />
+            </QueryClientProvider>
+        );
+        expect(screen.queryByText(/issuer details are unavailable/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Enable Public Preview' })).toBeEnabled();
+        client.clear();
+    });
+
+    it('waits for the issuer lookup before enabling LinkedIn so its organization ID is included', async () => {
+        createLink.mockResolvedValue({ link: 'https://learncard.app/share-boost?uri=encrypted' });
+        getProfile.mockReturnValue({ data: undefined, isLoading: true });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+        const props = {
+            boost: { ...credential, issuer: 'did:web:network.example:users:school' },
+            categoryType: 'Achievement' as never,
+        };
+        const view = render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink {...props} />
+            </QueryClientProvider>
+        );
+        expect(await screen.findByRole('button', { name: 'Copy Link' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Add to LinkedIn' })).toBeDisabled();
+        expect(screen.queryByRole('link', { name: 'Add to LinkedIn' })).not.toBeInTheDocument();
+
+        getProfile.mockReturnValue({
+            data: { displayName: 'School', linkedInOrganizationId: '12345' },
+            isLoading: false,
+        });
+        view.rerender(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink {...props} />
+            </QueryClientProvider>
+        );
+        const add = screen.getByRole('link', { name: 'Add to LinkedIn' });
+        expect(new URL(add.getAttribute('href')!).searchParams.get('organizationId')).toBe('12345');
+        client.clear();
+    });
 });

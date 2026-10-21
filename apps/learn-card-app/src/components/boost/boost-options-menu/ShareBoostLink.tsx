@@ -108,7 +108,6 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const achievementType = cred?.credentialSubject?.achievement?.achievementType;
     const emoji = cred?.display?.emoji;
 
-    let issuerName;
     let issueeName;
     let profileId;
 
@@ -136,15 +135,17 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         isError: myProfileError,
     } = useGetProfile();
 
-    if (isLCNetworkUrlIssuer) {
-        issuerName = profile
-            ? profile?.displayName
-            : isLoading
-              ? m['common.loading']()
-              : m['common.unknown']();
-    } else {
-        issuerName = getIssuerNameNonBoost(cred);
-    }
+    const issuerNameValue = isLCNetworkUrlIssuer
+        ? profile?.displayName || (typeof cred?.issuer === 'object' ? cred.issuer.name : undefined)
+        : getIssuerNameNonBoost(cred);
+    const previewIssuerName = typeof issuerNameValue === 'string' ? issuerNameValue.trim() : '';
+    const issuerName =
+        previewIssuerName ||
+        (isLCNetworkUrlIssuer
+            ? isLoading
+                ? m['common.loading']()
+                : m['common.unknown']()
+            : undefined);
 
     if (isLCNetworkUrlIssuee) {
         issueeName = myProfile
@@ -168,6 +169,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     );
 
     const generateShareLink = (publishPreview = includePublicPreview) => {
+        if (publishPreview && !previewIssuerName) return;
         const credentialUri = boostUri ?? sharedCredentialId;
 
         setHasLinkGenerationError(false);
@@ -187,7 +189,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                     ? {
                           publicPreview: {
                               name: (title?.trim() || 'Credential').slice(0, 160),
-                              issuer: (issuerName?.trim() || 'Unknown issuer').slice(0, 160),
+                              issuer: previewIssuerName.slice(0, 160),
                               ...(badgeThumbnail?.startsWith('https://') &&
                               badgeThumbnail.length <= 2048
                                   ? { image: badgeThumbnail }
@@ -481,14 +483,19 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         ? 'Public preview enabled. Only the credential name, issuer and image are public.'
                                         : 'Enable a public preview to show the credential name, issuer and image on social apps. Everything else stays encrypted.'}
                                 </p>
+                                {!isLoading && !previewIssuerName && (
+                                    <p
+                                        role="status"
+                                        className="mb-3 text-xs text-grayscale-600 leading-relaxed"
+                                    >
+                                        Issuer details are unavailable. You can still share the
+                                        encrypted link.
+                                    </p>
+                                )}
                                 {!includePublicPreview && (
                                     <button
                                         type="button"
-                                        disabled={
-                                            isLinkLoading ||
-                                            !shareLink ||
-                                            (Boolean(profileId) && isLoading)
-                                        }
+                                        disabled={isLinkLoading || !shareLink || !previewIssuerName}
                                         onClick={() => {
                                             setIncludePublicPreview(true);
                                             generateShareLink(true);
@@ -510,7 +517,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             </div>
                         )}
 
-                        {!isLinkLoading && shareLink && shareLink?.length > 0 && !hideLinkedIn ? (
+                        {!isLinkLoading &&
+                        shareLink &&
+                        shareLink.length > 0 &&
+                        !hideLinkedIn &&
+                        !(Boolean(profileId) && isLoading) ? (
                             <div className="w-full bg-white px-4 py-3">
                                 <a
                                     href={linkedInCertificationUrl}
