@@ -393,6 +393,8 @@ export const useWallet = () => {
             allowDuplicate: boolean;
             inboxDeliveryId: string;
             boostUri: string;
+            /** Batch callers synchronize once after all local saves are confirmed. */
+            deferContractSync: boolean;
         }> = {},
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
@@ -404,6 +406,7 @@ export const useWallet = () => {
             allowDuplicate,
             inboxDeliveryId,
             boostUri: sourceBoostUri,
+            deferContractSync,
         } = metadata;
         const _id =
             recordId ??
@@ -526,7 +529,7 @@ export const useWallet = () => {
                     queryKey: ['useGetCredentialCount', didWeb ?? '', category],
                 });
 
-                if (!skipLCNUser) {
+                if (!deferContractSync) {
                     stage = 'sync';
                     await syncCredentialToContracts({ record, category });
                 }
