@@ -70,7 +70,14 @@ The workflow also runs for non-draft PRs touching the covered surfaces, on an ep
 
 ### Build caching and timings
 
-The hosted workflow warms a dedicated local Buildx builder's `backend-dependencies`
+Normal PR verification and manual runs use the standard Docker build with timing reports.
+Docker caching is an opt-in manual experiment: select `use_docker_cache` in the dispatch UI,
+or run `gh workflow run verification.yml --ref <branch> -f use_docker_cache=true`.
+Current samples do not demonstrate a net speedup, so normal PRs skip cache warming,
+export and dedicated-builder cleanup. The related hosted E2E/build-cache investigation is
+[PR #1681](https://github.com/learningeconomy/LearnCard/pull/1681).
+
+When opted in, the hosted workflow warms a dedicated local Buildx builder's `backend-dependencies`
 stage from GitHub's layer cache, also accepting the E2E workflow's cache for that same stage.
 Only dependency layers are exported (`mode=min`), never changing source layers, database
 volumes, browser sessions or runtime evidence. Cache export failures are non-fatal; a miss
