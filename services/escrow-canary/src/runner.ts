@@ -1,4 +1,4 @@
-import { EscrowPinMismatchError } from '@learncard/sss-key-manager';
+import { ESCROW_PIN_MAX_ATTEMPTS, EscrowPinMismatchError } from '@learncard/sss-key-manager';
 import type { Config } from './config';
 import { refreshIdentity, RunnerAuthError } from './auth';
 import { accountForEvent, safeReason, type Emit, type Step, type MetricContext } from './metrics';
@@ -128,7 +128,7 @@ export const runCanary = async (
                     } catch (error) {
                         if (
                             error instanceof EscrowPinMismatchError &&
-                            error.attemptsRemaining === 9
+                            error.attemptsRemaining === ESCROW_PIN_MAX_ATTEMPTS - 1
                         )
                             return;
                         throw error;
