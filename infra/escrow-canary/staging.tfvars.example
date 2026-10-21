@@ -1,0 +1,16 @@
+environment           = "staging"
+monitoring_account_id = "000000000000"
+lca_api_url           = "https://REPLACE-staging-api.example.invalid/api"
+tenant_id             = "REPLACE-staging-tenant"
+firebase_api_key      = "REPLACE-staging-firebase-web-api-key"
+escrow_key_id         = "REPLACE-approved-key-id"
+authority_generation  = "REPLACE-approved-authority-generation"
+account_ids           = ["read-only", "pin-a", "pin-b"]
+alarm_email           = "REPLACE-oncall@example.invalid"
+measurements = [{
+  pcr0 = "REPLACE-96-lowercase-hex-from-staging-tenant"
+  pcr1 = "REPLACE-96-lowercase-hex-from-staging-tenant"
+  pcr2 = "REPLACE-96-lowercase-hex-from-staging-tenant"
+}]
+enabled               = false
+alarm_actions_enabled = false
