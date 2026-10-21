@@ -37,13 +37,16 @@ export const clearAllIndexedDB = async (strategy?: KeyDerivationStrategy): Promi
             { stopCredentialFactsLoaders },
             { disposeCredentialFacts },
             { resetInAppMessageEventSession },
+            { clearInAppMessageRequest },
         ] = await Promise.all([
             import('../in-app-messages/credentialFactsLoader'),
             import('../in-app-messages/credentialFactsStore'),
             import('../in-app-messages/inAppMessageEvents'),
+            import('../in-app-messages/deepLinkRequestStore'),
         ]);
         stopCredentialFactsLoaders();
         resetInAppMessageEventSession();
+        clearInAppMessageRequest();
         await disposeCredentialFacts();
     } catch {
         // A failed dynamic import must not prevent the general logout database sweep.

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { isSafeInAppMessagePath } from './inAppMessagePath';
+export { isSafeInAppMessagePath } from './inAppMessagePath';
 
 /**
  * In-App Messages — schema for the LaunchDarkly JSON flag that drives
@@ -153,12 +155,32 @@ export const capgoUpdateActionValidator = z
 /** Dismiss/close the message without any side effect. */
 export const dismissActionValidator = z.object({ type: z.literal('dismiss') }).passthrough();
 
+export const openAppActionValidator = z
+    .object({
+        type: z.literal('openApp'),
+        listingId: z.string().trim().min(1),
+        path: z
+            .string()
+            .refine(isSafeInAppMessagePath, 'A safe app-relative path is required')
+            .optional(),
+    })
+    .passthrough();
+
+export const openMessageActionValidator = z
+    .object({
+        type: z.literal('openMessage'),
+        messageId: z.string().trim().min(1),
+    })
+    .passthrough();
+
 export const inAppMessageActionTargetValidator = z.union([
     internalLinkActionValidator,
     externalLinkActionValidator,
     appStoreActionValidator,
     capgoUpdateActionValidator,
     dismissActionValidator,
+    openAppActionValidator,
+    openMessageActionValidator,
 ]);
 export type InAppMessageActionTarget = z.infer<typeof inAppMessageActionTargetValidator>;
 

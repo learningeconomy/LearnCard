@@ -1,8 +1,11 @@
-import { useCallback } from 'react';
+import { useCallback, useContext } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
 import type { InAppMessageActionTarget } from '@learncard/types';
+import { openAppActionValidator, openMessageActionValidator } from '@learncard/types';
+import { MessageNavigationContext } from './MessageNavigationContext';
+import { requestInAppMessage } from './deepLinkRequestStore';
 
 import { useLinksConfig } from '../config/TenantConfigProvider';
 import { openStoreLink } from './storeLinks';
@@ -14,10 +17,23 @@ export const useInAppMessageActions = (): {
 } => {
     const history = useHistory();
     const links = useLinksConfig();
+    const { openApp } = useContext(MessageNavigationContext);
 
     const runAction = useCallback(
         async (action: InAppMessageActionTarget): Promise<RunActionOutcome> => {
             switch (action.type) {
+                case 'openApp': {
+                    const parsed = openAppActionValidator.safeParse(action);
+                    if (!parsed.success || !openApp) return 'noop';
+                    openApp(parsed.data.listingId, parsed.data.path);
+                    return 'closed';
+                }
+                case 'openMessage': {
+                    const parsed = openMessageActionValidator.safeParse(action);
+                    if (!parsed.success) return 'noop';
+                    requestInAppMessage(parsed.data.messageId);
+                    return 'closed';
+                }
                 case 'internalLink':
                     history.push(action.path);
 
@@ -53,7 +69,7 @@ export const useInAppMessageActions = (): {
                     return 'closed';
             }
         },
-        [history, links]
+        [history, links, openApp]
     );
 
     return { runAction };

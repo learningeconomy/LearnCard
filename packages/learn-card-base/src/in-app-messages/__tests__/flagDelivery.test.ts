@@ -5,6 +5,18 @@ const legacy = { id: 'legacy', title: 'Legacy modal' };
 const story = { id: 'story', title: 'Story', presentation: 'story', steps: [{ title: 'First' }] };
 
 describe('versioned campaign delivery', () => {
+    it('requires V2 for new action types even in a legacy modal presentation', () => {
+        const message = {
+            ...legacy,
+            actions: [{ label: 'Next', action: { type: 'openMessage', messageId: 'next' } }],
+        };
+        expect(
+            readInAppMessagesFlags({ inAppMessages: { messages: [message] } }).flag.messages
+        ).toEqual([]);
+        expect(
+            readInAppMessagesFlags({ inAppMessagesV2: { messages: [message] } }).flag.messages
+        ).toHaveLength(1);
+    });
     it('preserves legacy campaigns when the V2 flag is absent', () => {
         expect(
             readInAppMessagesFlags({ inAppMessages: { messages: [legacy] } }).flag.messages.map(

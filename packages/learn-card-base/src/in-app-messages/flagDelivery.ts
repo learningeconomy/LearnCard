@@ -14,7 +14,12 @@ export const readInAppMessagesFlags = (
     );
     if (!legacy && flagKey !== LEGACY_IN_APP_MESSAGES_FLAG_KEY) return result;
     const rejected = result.flag.messages.filter(
-        message => message.presentation === 'story' || message.presentation === 'iframe'
+        message =>
+            message.presentation === 'story' ||
+            message.presentation === 'iframe' ||
+            message.actions.some(
+                ({ action }) => action.type === 'openApp' || action.type === 'openMessage'
+            )
     );
     return {
         flag: {

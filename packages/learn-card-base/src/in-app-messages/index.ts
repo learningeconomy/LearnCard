@@ -22,3 +22,5 @@ export * from './InAppMessageToast';
 export * from './InAppMessageHost';
 export * from './localizeMessage';
 export * from './presentationTypes';
+export * from './deepLinkRequestStore';
+export * from './InAppMessageDeepLinkRoute';

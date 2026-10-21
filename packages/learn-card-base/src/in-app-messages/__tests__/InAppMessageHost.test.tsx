@@ -12,6 +12,11 @@ import { iamDebug } from '../debug';
 import { getInAppMessageFatigueState } from '../fatigueStore';
 import { getRecentInAppMessageEvents, resetInAppMessageEventSession } from '../inAppMessageEvents';
 import { setInAppMessageOverride } from '../debugOverrideStore';
+import {
+    requestInAppMessage,
+    clearInAppMessageRequest,
+    getInAppMessageRequest,
+} from '../deepLinkRequestStore';
 import type { MessagePresentationProps, InAppMessagePresentationEvent } from '../presentationTypes';
 import { I18nProvider } from '../../i18n';
 import { ModalsProvider, useModalsContext } from '../../components/modals/ModalsContext';
@@ -83,6 +88,7 @@ vi.mock('framer-motion', async importOriginal => {
 
 describe('message host impressions', () => {
     beforeEach(() => {
+        clearInAppMessageRequest();
         localStorage.clear();
         resetInAppMessageDismissals();
         resetInAppMessageEventSession();
@@ -96,6 +102,69 @@ describe('message host impressions', () => {
         setInAppMessageOverride(null);
         vi.useRealTimers();
         vi.restoreAllMocks();
+    });
+
+    it('waits for the gate, bypasses targeting/trigger/seen/cap and localizes a requested message', async () => {
+        const onEvent = vi.fn();
+        const requested = inAppMessageValidator.parse({
+            id: 'direct',
+            title: 'Direct',
+            targeting: { role: ['never'] },
+            trigger: { event: 'credential.claimed' },
+            locales: { es: { title: 'Directo' } },
+        });
+        state.messages.push(requested);
+        requestInAppMessage('direct');
+        const view = render(
+            <I18nProvider locale="es" resolve={() => undefined}>
+                <InAppMessageHost onEvent={onEvent} />
+            </I18nProvider>
+        );
+        expect(screen.queryByText('Directo')).toBeNull();
+        expect(onEvent).not.toHaveBeenCalled();
+        state.gate = true;
+        view.rerender(
+            <I18nProvider locale="es" resolve={() => undefined}>
+                <InAppMessageHost onEvent={onEvent} />
+            </I18nProvider>
+        );
+        fireEvent.click(await screen.findByText('Directo'));
+        expect(onEvent.mock.calls.map(([event]) => [event.type, event.source])).toEqual([
+            ['shown', 'deepLink'],
+            ['dismissed', 'deepLink'],
+        ]);
+        expect(getMessageLastSeen('direct', 'alice')).toBeTruthy();
+        expect(getInAppMessageRequest()).toBeNull();
+        act(() => requestInAppMessage('direct'));
+        await screen.findByText('Directo');
+        await waitFor(() =>
+            expect(onEvent.mock.calls.filter(([event]) => event.type === 'shown')).toHaveLength(2)
+        );
+    });
+
+    it('expires an unknown request without clearing a newer known request', async () => {
+        vi.useFakeTimers();
+        requestInAppMessage('missing');
+        const view = render(<InAppMessageHost />);
+        await act(async () => vi.advanceTimersByTimeAsync(4999));
+        expect(getInAppMessageRequest()?.messageId).toBe('missing');
+        act(() => requestInAppMessage('test'));
+        await act(async () => vi.advanceTimersByTimeAsync(10000));
+        expect(getInAppMessageRequest()?.messageId).toBe('test');
+        act(() => requestInAppMessage('missing-again'));
+        await act(async () => vi.advanceTimersByTimeAsync(5000));
+        expect(getInAppMessageRequest()).toBeNull();
+        view.unmount();
+    });
+
+    it('drops pending direct requests on account change without dismissal events', async () => {
+        requestInAppMessage('test');
+        const onEvent = vi.fn();
+        const view = render(<InAppMessageHost onEvent={onEvent} />);
+        state.accountDid = 'bob';
+        view.rerender(<InAppMessageHost onEvent={onEvent} />);
+        expect(getInAppMessageRequest()).toBeNull();
+        expect(onEvent).not.toHaveBeenCalled();
     });
 
     it('removes a required iframe and its owned surface when the user closes a load error', async () => {
