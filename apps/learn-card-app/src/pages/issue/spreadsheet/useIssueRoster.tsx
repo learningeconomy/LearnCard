@@ -5,7 +5,13 @@ import {
     removeSpreadsheetMapping,
     replaceSpreadsheetTemplate,
 } from './columnMapping';
-import type { ColumnMapping, MappingTarget } from './types';
+import type {
+    ColumnMapping,
+    MappingTarget,
+    RowFieldProblems,
+    RowProblem,
+    RosterProblemField,
+} from './types';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -715,6 +721,22 @@ export const useIssueRoster = (options: RosterOptions) => {
             recipients.map(row => ({ ...row, rowId: row.rowId ?? crypto.randomUUID() }))
         );
     };
+    const fieldProblems: Record<string, RowFieldProblems> = Object.create(null);
+    const reportProblem = (rowId: string, problem: RowProblem, field: RosterProblemField): void => {
+        if (
+            locked(rowId) ||
+            (typeof field !== 'string' && !options.variables.includes(field.variable))
+        )
+            return;
+        const row = (fieldProblems[rowId] ??= {
+            recipient: [],
+            evidence: [],
+            variables: Object.create(null),
+        });
+        const list =
+            typeof field === 'string' ? row[field] : (row.variables[field.variable] ??= []);
+        if (!list.includes(problem)) list.push(problem);
+    };
     const allProblems = getRowProblems(
         options.recipients,
         options.variables,
@@ -722,7 +744,8 @@ export const useIssueRoster = (options: RosterOptions) => {
         options.shared,
         options.values,
         evidence,
-        formulaCells
+        formulaCells,
+        reportProblem
     );
     const problems = Object.fromEntries(
         options.recipients
@@ -734,7 +757,11 @@ export const useIssueRoster = (options: RosterOptions) => {
                     [
                         ...(allProblems[key] ?? []),
                         ...(options.template
-                            ? credentialRowProblems(options.template, valuesForRow(row))
+                            ? credentialRowProblems(
+                                  options.template,
+                                  valuesForRow(row),
+                                  (problem, variable) => reportProblem(key, problem, { variable })
+                              )
                             : []),
                     ],
                 ];
@@ -833,6 +860,7 @@ export const useIssueRoster = (options: RosterOptions) => {
         changeRecipients,
         valuesForRow,
         problems,
+        fieldProblems,
         hasProblems: Object.values(problems).some(value => value.length > 0),
         previewRecipient,
         previewIndex,

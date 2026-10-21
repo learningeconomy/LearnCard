@@ -12,6 +12,7 @@ import {
     normalizeEmail,
     type ParsedSpreadsheet,
     type RowProblem,
+    type RosterProblemField,
     type RosterDraft,
 } from './types';
 
@@ -45,6 +46,7 @@ export const effectiveRowValues = (
         ])
     );
 
+/** Keep aggregate send blockers and optionally report each affected input for inline correction. */
 export const getRowProblems = (
     recipients: Recipient[],
     variables: string[],
@@ -52,7 +54,8 @@ export const getRowProblems = (
     shared: Record<string, string>,
     perRow: RosterDraft['values'],
     evidence: Record<string, string>,
-    formulaCells: RosterDraft['formulaCells'] = {}
+    formulaCells: RosterDraft['formulaCells'] = {},
+    reportProblem?: (rowId: string, problem: RowProblem, field: RosterProblemField) => void
 ): Record<string, RowProblem[]> => {
     const counts = new Map<string, number>();
     for (const recipient of recipients) {
@@ -70,15 +73,18 @@ export const getRowProblems = (
                 recipient.kind === 'email'
                     ? `email:${normalizeEmail(recipient.email)}`
                     : `profile:${recipient.profileId}`;
-            if (recipient.kind === 'email' && !isValidRosterEmail(recipient.email))
+            if (recipient.kind === 'email' && !isValidRosterEmail(recipient.email)) {
                 problems.push('email');
-            if ((counts.get(identity) ?? 0) > 1) problems.push('duplicate');
-            if (
-                Object.values(
-                    effectiveRowValues(recipient, variables, scopes, shared, perRow)
-                ).some(value => !value.trim())
-            )
-                problems.push('required');
+                reportProblem?.(key, 'email', 'recipient');
+            }
+            if ((counts.get(identity) ?? 0) > 1) {
+                problems.push('duplicate');
+                reportProblem?.(key, 'duplicate', 'recipient');
+            }
+            const values = effectiveRowValues(recipient, variables, scopes, shared, perRow);
+            const missing = Object.entries(values).filter(([, value]) => !value.trim());
+            if (missing.length) problems.push('required');
+            for (const [variable] of missing) reportProblem?.(key, 'required', { variable });
             if (evidence[key]?.trim()) {
                 try {
                     const url = new URL(evidence[key]!.trim());
@@ -86,15 +92,18 @@ export const getRowProblems = (
                         /\s/.test(evidence[key]!.trim()) ||
                         !['http:', 'https:'].includes(url.protocol) ||
                         !url.hostname
-                    )
+                    ) {
                         problems.push('evidence');
+                        reportProblem?.(key, 'evidence', 'evidence');
+                    }
                 } catch {
                     problems.push('evidence');
+                    reportProblem?.(key, 'evidence', 'evidence');
                 }
             }
-            const values = effectiveRowValues(recipient, variables, scopes, shared, perRow);
-            if (
-                Object.entries(formulaCells[key] ?? {}).some(([name, raw]) =>
+            let formula = false;
+            for (const [name, raw] of Object.entries(formulaCells[key] ?? {})) {
+                if (
                     name === 'Evidence'
                         ? evidence[key] === raw
                         : name === 'Recipient Email'
@@ -102,9 +111,20 @@ export const getRowProblems = (
                           : variables.includes(name) &&
                             scopes[name] === 'perRecipient' &&
                             values[name] === raw
-                )
-            )
-                problems.push('formula');
+                ) {
+                    formula = true;
+                    reportProblem?.(
+                        key,
+                        'formula',
+                        name === 'Evidence'
+                            ? 'evidence'
+                            : name === 'Recipient Email'
+                              ? 'recipient'
+                              : { variable: name }
+                    );
+                }
+            }
+            if (formula) problems.push('formula');
             return [key, problems];
         })
     );

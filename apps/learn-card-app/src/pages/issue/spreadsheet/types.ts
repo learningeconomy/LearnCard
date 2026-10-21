@@ -47,6 +47,13 @@ export interface ParsedSpreadsheet {
 export type RowProblem =
     'email' | 'duplicate' | 'required' | 'evidence' | 'formula' | 'number' | 'date' | 'result';
 
+export type RosterProblemField = 'recipient' | 'evidence' | { variable: string };
+export interface RowFieldProblems {
+    recipient: RowProblem[];
+    evidence: RowProblem[];
+    variables: Record<string, RowProblem[]>;
+}
+
 export type MappingTarget =
     | 'description'
     | 'Percent'

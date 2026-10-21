@@ -1,5 +1,5 @@
 import canvasGradebook from './fixtures/canvas-gradebook.csv?raw';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { utils, write } from 'xlsx';
 import JSZip from 'jszip';
 import Papa from 'papaparse';
@@ -188,6 +188,28 @@ describe('spreadsheet parsing and editable roster', () => {
             first: ['duplicate'],
             second: ['duplicate'],
         });
+    });
+    it('locates every missing or unresolved cell without attributing it to the recipient email', () => {
+        const draft = makeRun(1).draft;
+        const report = vi.fn();
+        expect(
+            getRowProblems(
+                draft.recipients,
+                ['score', 'notes', 'other'],
+                { score: 'perRecipient', notes: 'perRecipient', other: 'perRecipient' },
+                {},
+                { 'row-0': { score: '#REF!', notes: '', other: '#DIV/0!' } },
+                { 'row-0': 'not-a-link' },
+                { 'row-0': { score: '#REF!', other: '#DIV/0!' } },
+                report
+            )
+        ).toEqual({ 'row-0': ['required', 'evidence', 'formula'] });
+        expect(report.mock.calls).toEqual([
+            ['row-0', 'required', { variable: 'notes' }],
+            ['row-0', 'evidence', 'evidence'],
+            ['row-0', 'formula', { variable: 'score' }],
+            ['row-0', 'formula', { variable: 'other' }],
+        ]);
     });
     it.each([
         { t: 'n', f: '1/0', expected: '', problems: ['required', 'formula'] },

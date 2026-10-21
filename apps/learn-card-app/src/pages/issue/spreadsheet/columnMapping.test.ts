@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import { mergeSpreadsheet, exportRosterCsv } from './roster';
 import {
@@ -58,6 +58,11 @@ describe('opt-in standard credential column mappings', () => {
         expect(
             getResultValidationError(state.template, { ...values, [percent]: '0x10' })
         ).toContain('numeric');
+        const report = vi.fn();
+        expect(
+            credentialRowProblems(state.template, { ...values, [percent]: '120' }, report)
+        ).toEqual(['result']);
+        expect(report.mock.calls).toEqual([['result', percent]]);
     });
     it('materializes zero credits, standard Evidence and awardedDate independently of validFrom', () => {
         let state = sample();
@@ -181,12 +186,21 @@ describe('opt-in standard credential column mappings', () => {
             options
         );
         const mappings = state.draft.mappings!;
+        const report = vi.fn();
         expect(
-            credentialRowProblems(state.template, {
-                [mappings[0].variable]: '12 hours',
-                [mappings[1].variable]: '2023-02-29',
-            })
+            credentialRowProblems(
+                state.template,
+                {
+                    [mappings[0].variable]: '12 hours',
+                    [mappings[1].variable]: '2023-02-29',
+                },
+                report
+            )
         ).toEqual(['number', 'date']);
+        expect(report.mock.calls).toEqual([
+            ['number', mappings[0].variable],
+            ['date', mappings[1].variable],
+        ]);
     });
     it('normalizes evidence cells and rejects whitespace within links while preserving static URNs', () => {
         const state = sample();

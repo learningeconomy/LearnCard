@@ -43,6 +43,119 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 describe('roster review workspace', () => {
+    it.each([1440, 390])(
+        'associates errors with their own fields and clears them on correction at %spx',
+        width => {
+            vi.stubGlobal('innerWidth', width);
+            const data: RosterDetailsProps = {
+                ...props(3),
+                variables: ['credits', 'completed', 'proof'],
+                dateVariables: ['completed'],
+                scopes: {
+                    credits: 'perRecipient',
+                    completed: 'perRecipient',
+                    proof: 'perRecipient',
+                },
+                values: {
+                    'row-0': {
+                        credits: 'not-a-number',
+                        completed: '2026-10-01',
+                        proof: 'https://proof.test/a',
+                    },
+                    'row-1': {
+                        credits: '1.5',
+                        completed: 'not-a-date',
+                        proof: 'https://proof.test/b',
+                    },
+                    'row-2': { credits: '1.5', completed: '2026-10-01', proof: 'not-a-link' },
+                },
+                problems: { 'row-0': ['number'], 'row-1': ['date'], 'row-2': ['evidence'] },
+                fieldProblems: {
+                    'row-0': { recipient: [], evidence: [], variables: { credits: ['number'] } },
+                    'row-1': { recipient: [], evidence: [], variables: { completed: ['date'] } },
+                    'row-2': { recipient: [], evidence: [], variables: { proof: ['evidence'] } },
+                },
+            };
+            const view = render(<RosterEditor {...data} onClose={vi.fn()} />);
+            const credit = screen.getByLabelText('Person0 Credits');
+            const date = screen.getByLabelText('Person1 Completed');
+            const evidence = screen.getByLabelText('Person2 Proof');
+            for (const field of [credit, date, evidence]) {
+                expect(field).toHaveAttribute('aria-invalid', 'true');
+                const message = document.getElementById(field.getAttribute('aria-describedby')!);
+                expect(message).toBeVisible();
+                expect(field.closest('td') ?? field.closest('label')).toContainElement(message);
+            }
+            expect(credit).toHaveAccessibleDescription(
+                'Use a number with a decimal point, without units.'
+            );
+            expect(date).toHaveAccessibleDescription(
+                'Use YYYY-MM-DD or a timestamp with a timezone.'
+            );
+            expect(evidence).toHaveAccessibleDescription(
+                'Enter a complete http or https evidence link.'
+            );
+            expect(screen.getByLabelText('Email for Person0')).toHaveAttribute(
+                'aria-invalid',
+                'false'
+            );
+            expect(screen.getByLabelText('Person0 Proof')).toHaveAttribute('aria-invalid', 'false');
+            fireEvent.change(credit, { target: { value: '1.5' } });
+            expect(data.onChange).toHaveBeenCalledWith('row-0', 'credits', '1.5');
+            view.rerender(
+                <RosterEditor
+                    {...data}
+                    problems={{}}
+                    fieldProblems={{}}
+                    values={Object.fromEntries(
+                        Object.keys(data.values).map(row => [
+                            row,
+                            {
+                                credits: '1.5',
+                                completed: '2026-10-01',
+                                proof: 'https://proof.test/ok',
+                            },
+                        ])
+                    )}
+                    onClose={vi.fn()}
+                />
+            );
+            for (const field of [credit, date, evidence]) {
+                expect(field).toHaveAttribute('aria-invalid', 'false');
+                expect(field).not.toHaveAttribute('aria-describedby');
+            }
+        }
+    );
+    it('marks an editable shared value and the additional evidence field separately', () => {
+        render(
+            <RosterEditor
+                {...props(1)}
+                variables={['credits']}
+                scopes={{ credits: 'shared' }}
+                shared={{ credits: '' }}
+                problems={{ 'row-0': ['required', 'evidence'] }}
+                fieldProblems={{
+                    'row-0': {
+                        recipient: [],
+                        evidence: ['evidence'],
+                        variables: { credits: ['required'] },
+                    },
+                }}
+                onClose={vi.fn()}
+            />
+        );
+        fireEvent.click(screen.getByText('Credential fields · 1'));
+        expect(screen.getByRole('textbox', { name: 'Credits' })).toHaveAttribute(
+            'aria-invalid',
+            'true'
+        );
+        expect(screen.getByLabelText('Person0 Credits')).toBeDisabled();
+        expect(screen.getByLabelText('Additional evidence for Person0')).toHaveAttribute(
+            'aria-invalid',
+            'true'
+        );
+        expect(screen.getByLabelText('Email for Person0')).toHaveAttribute('aria-invalid', 'false');
+    });
     it('keeps the issue page compact and connects the open editor to current parent props', () => {
         const data = props(250);
         const parent = render(<RosterDetails {...data} />);

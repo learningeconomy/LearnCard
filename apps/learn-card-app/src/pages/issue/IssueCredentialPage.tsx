@@ -965,6 +965,7 @@ const IssueCredentialPage: React.FC = () => {
                 )}
                 evidence={roster.evidence}
                 problems={roster.problems}
+                fieldProblems={roster.fieldProblems}
                 locked={roster.locked}
                 canRemove={roster.canRemove}
                 disabled={roster.busy}

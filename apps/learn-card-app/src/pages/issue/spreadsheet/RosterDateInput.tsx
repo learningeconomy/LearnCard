@@ -31,6 +31,8 @@ export const RosterDateInput: React.FC<{
     disabled?: boolean;
     className: string;
     'aria-label': string;
+    'aria-invalid'?: boolean;
+    'aria-describedby'?: string;
 }> = ({ value, onChange, ...inputProps }) => {
     const locale = useLocale();
     const date = parseRosterDate(value);
@@ -49,7 +51,7 @@ export const RosterDateInput: React.FC<{
                 {...inputProps}
                 type="date"
                 value={date?.toISOString().slice(0, 10) ?? ''}
-                aria-invalid={Boolean(value && !date)}
+                aria-invalid={inputProps['aria-invalid'] || Boolean(value && !date)}
                 onChange={event => {
                     const next = changeRosterDate(value, event.target.value);
                     if (next !== value) onChange(next);

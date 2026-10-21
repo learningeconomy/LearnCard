@@ -547,6 +547,77 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         { width: 1440, height: 1000 },
         { width: 390, height: 844 },
     ]) {
+        test(`highlights invalid mapped fields and clears them after correction at ${viewport.width}px`, async ({
+            page,
+        }, testInfo) => {
+            await page.setViewportSize(viewport);
+            test.setTimeout(180000);
+            await selectBadgeType(page);
+            await page.getByRole('button', { name: /specific people/i }).click();
+            await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+                name: 'field-errors.csv',
+                mimeType: 'text/csv',
+                buffer: Buffer.from(
+                    'Email,Name,Credits,Completed Date,Evidence\nada@example.test,Ada,not-a-number,2026-10-01,https://proof.test/ada\nbao@example.test,Bao,1.5,not-a-date,https://proof.test/bao\ncora@example.test,Cora,1.5,2026-10-01,not-a-link'
+                ),
+            });
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            for (const column of ['Credits', 'Completed Date', 'Evidence']) {
+                await page.getByRole('button', { name: `Include ${column}`, exact: true }).click();
+            }
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            const credits = page.getByRole('textbox', { name: 'Ada Credits', exact: true });
+            const date = page.getByLabel('Bao Completed Date', { exact: true });
+            const evidence = page.getByRole('textbox', { name: 'Cora Evidence', exact: true });
+            const email = page.getByRole('textbox', { name: 'Email for Ada', exact: true });
+            await expect(email).toHaveAttribute('aria-invalid', 'false');
+            for (const field of [credits, date, evidence]) {
+                await expect(field).toHaveAttribute('aria-invalid', 'true');
+                await expect(field).toHaveAttribute('aria-describedby', /.+/);
+            }
+            await expect(credits).toHaveAccessibleDescription(
+                'Use a number with a decimal point, without units.'
+            );
+            await expect(date).toHaveAccessibleDescription(
+                'Use YYYY-MM-DD or a timestamp with a timezone.'
+            );
+            await expect(evidence).toHaveAccessibleDescription(
+                'Enter a complete http or https evidence link.'
+            );
+            const normalBorder = await email.evaluate(
+                element => getComputedStyle(element).borderColor
+            );
+            await expect
+                .poll(() => credits.evaluate(element => getComputedStyle(element).borderColor))
+                .not.toBe(normalBorder);
+            await credits.scrollIntoViewIfNeeded();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('field-errors.png'),
+            });
+            await credits.fill('1.5');
+            await date.fill('2026-10-01');
+            await evidence.fill('https://proof.test/cora');
+            await page.getByRole('searchbox', { name: 'Search people', exact: true }).click();
+            for (const field of [credits, date, evidence]) {
+                await expect(field).toHaveAttribute('aria-invalid', 'false');
+                await expect(field).not.toHaveAttribute('aria-describedby');
+            }
+            await expect
+                .poll(() => credits.evaluate(element => getComputedStyle(element).borderColor))
+                .toBe(normalBorder);
+            await expect(
+                page.getByRole('button', { name: 'Needs attention · 0', exact: true })
+            ).toBeVisible();
+            await credits.scrollIntoViewIfNeeded();
+            await page.screenshot({
+                animations: 'disabled',
+                path: testInfo.outputPath('field-errors-corrected.png'),
+            });
+        });
+
         test(`maps imported columns through the workspace at ${viewport.width}px`, async ({
             page,
         }, testInfo) => {

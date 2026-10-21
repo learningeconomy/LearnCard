@@ -351,7 +351,8 @@ const resolveFieldValue = (
 const getSingleResultValidationError = (
     template: OBv3CredentialTemplate,
     variableValues: Record<string, string> | undefined,
-    index: number
+    index: number,
+    reportField?: (field: TemplateFieldValue) => void
 ): string | null => {
     const state = readResultState(template, index);
     const result = template.credentialSubject.result?.[index];
@@ -364,12 +365,15 @@ const getSingleResultValidationError = (
         const targetUrl = resolveFieldValue(alignment.targetUrl, variableValues);
 
         if (targetName === '' || targetUrl === '') {
+            if (targetName === '') reportField?.(alignment.targetName);
+            if (targetUrl === '') reportField?.(alignment.targetUrl);
             return msg(
                 'issueFlow.result.validation.alignmentNameUrl',
                 'Add a name and URL for each result alignment.'
             );
         }
         if (targetUrl !== undefined && !/^https?:\/\//i.test(targetUrl)) {
+            reportField?.(alignment.targetUrl);
             return msg(
                 'issueFlow.result.validation.alignmentUrl',
                 'Enter a valid URL for each result alignment.'
@@ -392,6 +396,9 @@ const getSingleResultValidationError = (
             const points = resolveFieldValue(level.points, variableValues);
 
             if (!level.id.trim() || name === '' || rubricLevel === '' || points === '') {
+                if (name === '' && level.name) reportField?.(level.name);
+                if (rubricLevel === '' && level.level) reportField?.(level.level);
+                if (points === '' && level.points) reportField?.(level.points);
                 return msg(
                     'issueFlow.result.validation.completeRubricLevel',
                     'Complete the id, name, level, and points for each rubric level.'
@@ -405,6 +412,7 @@ const getSingleResultValidationError = (
             }
             ids.add(level.id);
             if (points !== undefined && !Number.isFinite(Number(points))) {
+                if (level.points) reportField?.(level.points);
                 return msg(
                     'issueFlow.result.validation.numericRubricPoints',
                     'Enter numeric points for each rubric level.'
@@ -413,12 +421,14 @@ const getSingleResultValidationError = (
         }
         const achievedLevel = resolveFieldValue(state.achievedLevelField, variableValues);
         if (result && achievedLevel === '') {
+            if (state.achievedLevelField) reportField?.(state.achievedLevelField);
             return msg(
                 'issueFlow.result.validation.chooseAchievedLevel',
                 'Choose an achieved rubric level.'
             );
         }
         if (achievedLevel !== undefined && achievedLevel && !ids.has(achievedLevel)) {
+            if (state.achievedLevelField) reportField?.(state.achievedLevelField);
             return msg(
                 'issueFlow.result.validation.chooseDeclaredRubricLevel',
                 'Choose one of the declared rubric levels.'
@@ -462,12 +472,14 @@ const getSingleResultValidationError = (
     try {
         numericValue = parseCredentialNumber(value);
     } catch {
+        if (state.valueField) reportField?.(state.valueField);
         return msg('issueFlow.result.validation.numericResult', 'Enter a numeric result.');
     }
     if (
         (minimum !== undefined && numericValue < minimum) ||
         (maximum !== undefined && numericValue > maximum)
     ) {
+        if (state.valueField) reportField?.(state.valueField);
         if (minimum !== undefined && maximum !== undefined) {
             return msg(
                 'issueFlow.result.validation.resultRange',
@@ -492,19 +504,21 @@ const getSingleResultValidationError = (
     return null;
 };
 
-/** Validate every linked result, or the selected result in the field editor. */
+/** Validate every linked result, or a selected result; optionally identify its invalid fields. */
 export const getResultValidationError = (
     template: OBv3CredentialTemplate,
     values?: Record<string, string>,
-    index?: number
+    index?: number,
+    reportField?: (field: TemplateFieldValue) => void
 ): string | null => {
-    if (index !== undefined) return getSingleResultValidationError(template, values, index);
+    if (index !== undefined)
+        return getSingleResultValidationError(template, values, index, reportField);
     for (
         let current = 0;
         current < Math.max(1, template.credentialSubject.result?.length ?? 0);
         current++
     ) {
-        const error = getSingleResultValidationError(template, values, current);
+        const error = getSingleResultValidationError(template, values, current, reportField);
         if (error) return error;
     }
     return null;

@@ -71,6 +71,63 @@ describe('roster autosave and sending', () => {
         initWallet: vi.fn(),
         ensureSigningAuthority: vi.fn(),
     });
+    it('identifies each invalid credential field and clears its errors after correction', () => {
+        store.list.mockResolvedValue([]);
+        const run = makeRun();
+        run.template.credentialSubject.creditsEarned = dynamicField('credits');
+        run.template.awardedDate = dynamicField('completed');
+        run.template.credentialSubject.evidence = [
+            {
+                id: 'proof',
+                evidenceUrl: dynamicField('proof'),
+            },
+        ];
+        run.template = writeResult(run.template, {
+            resultType: 'Percent',
+            value: dynamicField('score'),
+        });
+        const options = {
+            ...emptyOptions(run),
+            recipients: run.draft.recipients,
+            variables: ['credits', 'completed', 'proof', 'score', 'notes'],
+            template: run.template,
+        };
+        const { result, rerender } = renderHook(
+            ({ shared }) => useIssueRoster({ ...options, shared }),
+            {
+                initialProps: {
+                    shared: {
+                        credits: 'bad',
+                        completed: 'not-a-date',
+                        proof: 'not-a-link',
+                        score: '120',
+                        notes: 'valid text',
+                    },
+                },
+            }
+        );
+        expect(result.current.fieldProblems['row-0']).toEqual({
+            recipient: [],
+            evidence: [],
+            variables: {
+                credits: ['number'],
+                completed: ['date'],
+                proof: ['evidence'],
+                score: ['result'],
+            },
+        });
+        rerender({
+            shared: {
+                credits: '1.5',
+                completed: '2026-10-01T00:00:00Z',
+                proof: 'https://proof.test/a',
+                score: '95',
+                notes: 'valid text',
+            },
+        });
+        expect(result.current.fieldProblems).toEqual({});
+        expect(result.current.hasProblems).toBe(false);
+    });
     it('hides a reminder durably without deleting uncertain recovery, and allows restoring it', async () => {
         const run = makeRun();
         run.outcomes = { 'row-0': { state: 'confirming' } };

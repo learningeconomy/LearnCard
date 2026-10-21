@@ -207,11 +207,16 @@ const fieldValue = (
     values: Record<string, string>
 ): string => (field?.isDynamic ? (values[field.variableName] ?? '') : (field?.value ?? ''));
 
+/** Validate typed values and retain their variable names for field-level error feedback. */
 export const credentialRowProblems = (
     template: OBv3CredentialTemplate,
-    values: Record<string, string>
+    values: Record<string, string>,
+    reportProblem?: (problem: RowProblem, variable: string) => void
 ): RowProblem[] => {
     const problems = new Set<RowProblem>();
+    const report = (problem: RowProblem, field: TemplateFieldValue | undefined): void => {
+        if (field?.isDynamic && !field.isSystem) reportProblem?.(problem, field.variableName);
+    };
     for (const field of [
         template.credentialSubject.creditsEarned,
         template.credentialSubject.achievement.creditsAvailable,
@@ -222,6 +227,7 @@ export const credentialRowProblems = (
                 parseCredentialNumber(value);
             } catch {
                 problems.add('number');
+                report('number', field);
             }
         }
     }
@@ -231,6 +237,7 @@ export const credentialRowProblems = (
             normalizeCredentialAwardDate(awarded);
         } catch {
             problems.add('date');
+            report('date', template.awardedDate);
         }
     }
     for (const item of template.credentialSubject.evidence ?? []) {
@@ -242,14 +249,24 @@ export const credentialRowProblems = (
                     /\s/.test(url) ||
                     (item.evidenceUrl?.isDynamic && raw !== url) ||
                     !['http:', 'https:', 'urn:'].includes(new URL(url).protocol)
-                )
+                ) {
                     problems.add('evidence');
+                    report('evidence', item.evidenceUrl);
+                }
             } catch {
                 problems.add('evidence');
+                report('evidence', item.evidenceUrl);
             }
         }
     }
-    if (getResultValidationError(template, values)) problems.add('result');
+    for (
+        let index = 0;
+        index < Math.max(1, template.credentialSubject.result?.length ?? 0);
+        index++
+    ) {
+        if (getResultValidationError(template, values, index, field => report('result', field)))
+            problems.add('result');
+    }
     return [...problems];
 };
 
