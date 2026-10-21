@@ -19,8 +19,8 @@ import init, {
     clearCache,
 } from './didkit/index';
 import {
-    getCredentialIssuerDocumentURIs,
     getDocumentMap,
+    getIssuanceDocumentURIs,
     getIssuerAuthorizationDocumentURIs,
     getVerificationMethodDocumentURIs,
 } from './helpers';
@@ -78,10 +78,12 @@ export const getDidKitPlugin = async (
                         JSON.stringify(options),
                         JSON.stringify(keypair),
                         JSON.stringify(
-                            await getDocumentMap(_learnCard, credential, allowRemoteContexts, [
-                                ...getCredentialIssuerDocumentURIs(credential),
-                                ...getVerificationMethodDocumentURIs(credential),
-                            ])
+                            await getDocumentMap(
+                                _learnCard,
+                                credential,
+                                allowRemoteContexts,
+                                getIssuanceDocumentURIs(credential, options)
+                            )
                         )
                     )
                 );

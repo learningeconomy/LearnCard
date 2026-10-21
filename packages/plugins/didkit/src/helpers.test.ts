@@ -1,5 +1,6 @@
 import {
     getCredentialIssuerDocumentURIs,
+    getIssuanceDocumentURIs,
     getIssuerAuthorizationDocumentURIs,
     getVerificationMethodDocumentURIs,
 } from './helpers';
@@ -34,5 +35,39 @@ describe('DIDKit verification document resolution', () => {
         expect(
             getIssuerAuthorizationDocumentURIs(credential, ['proof', 'issuerAuthorization'])
         ).toEqual(['https://issuer.example/identity']);
+    });
+
+    describe('issuance', () => {
+        const unsigned = { issuer: 'https://issuer.example/identity' };
+
+        it('resolves the requested verification method document before a proof exists', () => {
+            expect(
+                getIssuanceDocumentURIs(unsigned, {
+                    verificationMethod: 'https://issuer.example/keys#k',
+                })
+            ).toEqual(['https://issuer.example/identity', 'https://issuer.example/keys']);
+        });
+
+        it('does not repeat a document the issuer or an existing proof already names', () => {
+            expect(
+                getIssuanceDocumentURIs(credential, {
+                    verificationMethod: 'https://issuer.example/keys#another-key',
+                })
+            ).toEqual(['https://issuer.example/identity', 'https://issuer.example/keys']);
+            expect(
+                getIssuanceDocumentURIs(unsigned, {
+                    verificationMethod: 'https://issuer.example/identity#k',
+                })
+            ).toEqual(['https://issuer.example/identity']);
+        });
+
+        it('keeps current discovery when no HTTP(S) verification method is requested', () => {
+            expect(getIssuanceDocumentURIs(unsigned)).toEqual(['https://issuer.example/identity']);
+            expect(
+                getIssuanceDocumentURIs(unsigned, {
+                    verificationMethod: 'did:key:z6Mktest#z6Mktest',
+                })
+            ).toEqual(['https://issuer.example/identity']);
+        });
     });
 });

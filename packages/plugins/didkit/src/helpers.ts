@@ -31,33 +31,43 @@ export const getCredentialIssuerDocumentURIs = (credential: Record<string, any>)
         : [];
 };
 
+const getVerificationMethodDocumentURI = (verificationMethod: unknown): string[] => {
+    const id =
+        typeof verificationMethod === 'string'
+            ? verificationMethod
+            : (verificationMethod as { id?: unknown } | undefined)?.id;
+
+    if (typeof id !== 'string' || (!id.startsWith('https://') && !id.startsWith('http://'))) {
+        return [];
+    }
+
+    try {
+        const documentUri = new URL(id);
+        documentUri.hash = '';
+
+        return [documentUri.toString()];
+    } catch {
+        return [];
+    }
+};
+
 export const getVerificationMethodDocumentURIs = (credential: Record<string, any>): string[] => {
     const proofs = Array.isArray(credential.proof) ? credential.proof : [credential.proof];
 
-    return proofs.flatMap(proof => {
-        const verificationMethod =
-            typeof proof?.verificationMethod === 'string'
-                ? proof.verificationMethod
-                : proof?.verificationMethod?.id;
-
-        if (
-            typeof verificationMethod !== 'string' ||
-            (!verificationMethod.startsWith('https://') &&
-                !verificationMethod.startsWith('http://'))
-        ) {
-            return [];
-        }
-
-        try {
-            const documentUri = new URL(verificationMethod);
-            documentUri.hash = '';
-
-            return [documentUri.toString()];
-        } catch {
-            return [];
-        }
-    });
+    return proofs.flatMap(proof => getVerificationMethodDocumentURI(proof?.verificationMethod));
 };
+
+/** An unsigned credential has no proof yet, so the requested verification method is the key. */
+export const getIssuanceDocumentURIs = (
+    credential: Record<string, any>,
+    options: { verificationMethod?: string } = {}
+): string[] => [
+    ...new Set([
+        ...getCredentialIssuerDocumentURIs(credential),
+        ...getVerificationMethodDocumentURIs(credential),
+        ...getVerificationMethodDocumentURI(options.verificationMethod),
+    ]),
+];
 
 export const getIssuerAuthorizationDocumentURIs = (
     credential: Record<string, any>,
