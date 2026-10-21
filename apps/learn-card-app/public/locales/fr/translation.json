@@ -1199,7 +1199,9 @@
             "notDeveloper": "Vous n'êtes pas développeur ? ",
             "signInNormally": "Se connecter normalement",
             "securityWarning": "Gardez votre seed privé. Quiconque le possède contrôle ce compte.",
-            "pasteHint": "Collez-le dans le champ ci-dessous."
+            "pasteHint": "Collez-le dans le champ ci-dessous.",
+            "showSeed": "Afficher la seed",
+            "hideSeed": "Masquer la seed"
         },
         "loader": {
             "messages": {

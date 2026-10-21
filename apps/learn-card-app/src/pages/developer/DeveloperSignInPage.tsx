@@ -325,11 +325,15 @@ const DeveloperSignInPage: React.FC = () => {
                 </div>
 
                 <div className="mb-6">
-                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    <label
+                        htmlFor="developer-seed"
+                        className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                    >
                         {m['login.developerSignIn.seedLabel']()}
                     </label>
                     <div className="relative">
                         <input
+                            id="developer-seed"
                             ref={inputRef}
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="off"
@@ -343,11 +347,17 @@ const DeveloperSignInPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
+                            aria-label={
+                                showPassword
+                                    ? m['login.developerSignIn.hideSeed']()
+                                    : m['login.developerSignIn.showSeed']()
+                            }
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-600 p-1"
                         >
                             <IonIcon
                                 icon={showPassword ? eyeOffOutline : eyeOutline}
                                 className="text-xl"
+                                aria-hidden="true"
                             />
                         </button>
                     </div>
