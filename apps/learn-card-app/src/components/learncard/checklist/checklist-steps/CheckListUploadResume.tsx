@@ -226,6 +226,7 @@ export const CheckListUploadResume: React.FC = () => {
     };
 
     const handleReviewBack = () => {
+        setUploadOutcome(null);
         // Keep pending review in store so user can return to it via the checklist
         setShowReview(false);
     };
@@ -349,6 +350,7 @@ export const CheckListUploadResume: React.FC = () => {
                                 type="file"
                                 accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp"
                                 onChange={async e => {
+                                    setUploadOutcome(null);
                                     setLoaderDismissed(false);
                                     await getFile(e, UploadTypesEnum.Resume);
                                 }}

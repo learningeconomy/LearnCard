@@ -150,6 +150,8 @@ the save is confirmed.
 Review can be closed and reopened within the same app session. Selecting none still saves
 the original, but does not mean extraction found nothing. Saved counts include only confirmed
 selected credentials. Partial failures retain the review; retrying a save reuses confirmed writes.
+For résumés, going Back clears the save-error message without discarding the pending review.
+Starting another upload clears the previous error message immediately.
 
 Confirmed saves trigger one background sharing sync instead of waiting for sharing on every
 credential. Insights refresh only after that sync succeeds; a sharing failure does not
