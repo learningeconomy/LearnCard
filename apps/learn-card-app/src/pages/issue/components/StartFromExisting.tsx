@@ -1,3 +1,4 @@
+import type { IssueImportResult } from '../import/issueImport';
 import React from 'react';
 import { Wand2, Send } from 'lucide-react';
 
@@ -9,11 +10,10 @@ import {
 } from '../spreadsheet/SpreadsheetDialog';
 import { ImportSheet } from '../import/ImportSheet';
 import { ReuseExisting } from '../import/ReuseExisting';
-import type { NormalizedImport } from '../import/normalizeToObv3';
 import * as m from '../../../paraglide/messages.js';
 
 interface StartFromExistingProps {
-    onImport: (result: NormalizedImport) => void;
+    onImport: (result: IssueImportResult) => void | Promise<void>;
 }
 
 export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }) => {
@@ -28,9 +28,8 @@ export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }
                 : { mobile: ModalTypes.Freeform, desktop: ModalTypes.FullScreen }
         );
 
-    const handleUse = (result: NormalizedImport) => {
-        onImport(result);
-        closeModal();
+    const handleUse = async (result: IssueImportResult): Promise<void> => {
+        await onImport(result);
     };
 
     return (
@@ -51,7 +50,16 @@ export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }
             <button
                 type="button"
                 onClick={() =>
-                    open(<ReuseExisting onUse={handleUse} handleCloseModal={closeModal} />)
+                    open(
+                        <ReuseExisting
+                            onUse={result => {
+                                void handleUse({ kind: 'credential', value: result }).then(
+                                    closeModal
+                                );
+                            }}
+                            handleCloseModal={closeModal}
+                        />
+                    )
                 }
                 className="flex items-center gap-2 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
             >

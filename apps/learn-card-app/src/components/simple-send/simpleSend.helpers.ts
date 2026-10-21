@@ -1,6 +1,6 @@
 import base64url from 'base64url';
 import type { UnsignedVC, VC } from '@learncard/types';
-import { getDidWeb } from '@learncard/helpers';
+import { getDidWeb, materializeCredentialFields } from '@learncard/helpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { boostSupportsDynamicEvidence, getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
@@ -134,7 +134,7 @@ export const fillTemplateSystemVars = (
     if (!recipientDid && subject && typeof subject.id === 'string' && subject.id.includes('{{')) {
         delete subject.id;
     }
-    return filled as unknown as UnsignedVC;
+    return materializeCredentialFields(filled) as unknown as UnsignedVC;
 };
 
 export interface IssueViaBoostOptions {
