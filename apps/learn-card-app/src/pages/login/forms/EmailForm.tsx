@@ -467,13 +467,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 : 'rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus-visible:outline-hidden focus-visible:ring-0 focus-visible:border-transparent';
 
         const emailInputErrorClassName =
-            emailInputVariant === 'appStore'
-                ? emailError
-                    ? 'border-red-300'
-                    : 'border-grayscale-200'
-                : emailError
-                  ? 'login-input-email-error'
-                  : '';
+            emailInputVariant === 'appStore' ? 'border-grayscale-200' : '';
 
         activeStep = (
             <div
@@ -532,7 +526,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     onChange={e => setCode(e)}
                     className={`react-code-input ${smallVerificationInput ? 'small' : ''} ${
                         verificationCodeInputClassName ?? ''
-                    } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
+                    }`}
                 />
             </IonCol>
         );

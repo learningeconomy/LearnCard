@@ -350,9 +350,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         setPhone(value ?? '');
                         setError(null);
                     }}
-                    className={`login-phone-input ${phoneInputClassNameOverride ?? ''} ${
-                        errors?.phone || error ? 'login-phone-input-error' : ''
-                    }`}
+                    className={`login-phone-input ${phoneInputClassNameOverride ?? ''}`}
                 />
             </IonCol>
         );
@@ -390,7 +388,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                     onChange={e => setCode(e)}
                     className={`react-code-input ${smallVerificationInput ? 'small' : ''} ${
                         verificationCodeInputClassName ?? ''
-                    } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
+                    }`}
                 />
             </IonCol>
         );
