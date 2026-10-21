@@ -5,7 +5,7 @@ import type { TrpcMock, BrainOutputs } from './mocks/trpc';
 import { installNetwork } from './mocks/network';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
-import { utils, write } from 'xlsx';
+import { resolve } from 'node:path';
 import { zipSync } from 'fflate';
 
 const NAME_PLACEHOLDER = 'e.g. Web Development Fundamentals';
@@ -155,7 +155,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await expect(page.locator('textarea.font-mono')).toBeVisible({ timeout: 30_000 });
     });
 
-    test('rejects an excessive XLSX archive and then imports a normal workbook through the real browser worker', async ({
+    test('rejects an excessive XLSX archive and then imports a real Google Sheets export through the browser worker', async ({
         page,
     }) => {
         await selectBadgeType(page);
@@ -181,28 +181,18 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         ).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toHaveCount(0);
 
-        const workbook = utils.book_new();
-        utils.book_append_sheet(
-            workbook,
-            utils.aoa_to_sheet([
-                ['Email', 'Name'],
-                ['ada@test.com', 'Ada'],
-                ['bob@test.com', 'Bob'],
-            ]),
-            'People'
-        );
-        await page.getByTestId('issue-spreadsheet-file').setInputFiles({
-            name: 'people.xlsx',
-            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            buffer: Buffer.from(
-                write(workbook, { type: 'array', bookType: 'xlsx', compression: true })
-            ),
-        });
+        // The unchanged bytes were downloaded from Google Sheets, not generated
+        // by the same parser library that is being tested (see fixtures/README.md).
+        await page
+            .getByTestId('issue-spreadsheet-file')
+            .setInputFiles(
+                resolve('src/pages/issue/spreadsheet/fixtures/google-sheets-roster.xlsx')
+            );
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
         await page.getByRole('button', { name: 'Add People', exact: true }).click();
-        await expect(page.getByText('ada@test.com', { exact: true }).first()).toBeVisible();
-        await expect(page.getByText('bob@test.com', { exact: true }).first()).toBeVisible();
-        await expect(page.getByText('1 of 2 · Ada', { exact: true })).toBeVisible();
+        await expect(page.getByText('ada@example.test', { exact: true }).first()).toBeVisible();
+        await expect(page.getByText('bao@example.test', { exact: true }).first()).toBeVisible();
+        await expect(page.getByText('1 of 2 · Ada Rivera', { exact: true })).toBeVisible();
     });
 
     test('imports ten people, summarizes recipients, edits errors and restores the draft', async ({
