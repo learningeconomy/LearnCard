@@ -7,7 +7,10 @@ import {
     getEnclaveAttestationIdentity,
     getEscrowEnclave,
     isEscrowEnabled,
+    isEscrowRemoteMode,
 } from '../services/escrow-enclave';
+import { randomBytes } from 'crypto';
+import { EscrowUnavailableError } from '../services/escrow-enclave/types';
 
 const DEFAULT_REWRAP_BATCH_LIMIT = 200;
 
@@ -90,7 +93,46 @@ export const runEscrowBlobRewrap = async (
                 skippedPendingHold += 1;
                 continue;
             }
-            const { envelope } = await getEscrowEnclave().rewrapEscrowBlob({
+            const enclave = getEscrowEnclave();
+            if (isEscrowRemoteMode()) {
+                if (!enclave.getEnrollmentState || !blob.authorityGeneration)
+                    throw new EscrowUnavailableError();
+                const snapshot = await enclave.getEnrollmentState({
+                    expectedDid: userKey.primaryDid,
+                    nonce: randomBytes(32).toString('hex'),
+                });
+                const current = snapshot.state;
+                if (
+                    current.status !== 'active' ||
+                    !current.envelope ||
+                    current.authorityGeneration !== blob.authorityGeneration ||
+                    current.did !== userKey.primaryDid ||
+                    current.shareVersion !== blob.shareVersion ||
+                    current.enrollmentEpoch !== blob.enrollmentEpoch
+                )
+                    throw new EscrowUnavailableError();
+                if (current.envelope.keyId === attestation.keyId) {
+                    const stored = await rewrapEscrowBlobByAuthProvider(
+                        authProvider,
+                        blob,
+                        userKey.escrowPin,
+                        current.envelope,
+                        {
+                            enclaveKeyId: attestation.keyId,
+                            enclaveMode: attestation.mode,
+                            measurements: attestation.measurements,
+                        },
+                        {
+                            authorityGeneration: current.authorityGeneration,
+                            enrollmentVersion: current.enrollmentVersion,
+                            stateProof: snapshot.proof,
+                        }
+                    );
+                    if (stored) rewrapped += 1;
+                    continue;
+                }
+            }
+            const { envelope, authority } = await enclave.rewrapEscrowBlob({
                 envelope: blob.envelope,
                 expectedDid: userKey.primaryDid,
                 expectedShareVersion: blob.shareVersion,
@@ -105,7 +147,8 @@ export const runEscrowBlobRewrap = async (
                     enclaveKeyId: attestation.keyId,
                     enclaveMode: attestation.mode,
                     measurements: attestation.measurements,
-                }
+                },
+                authority
             );
             if (stored) rewrapped += 1;
             // else: lost the compare-and-swap race (a concurrent re-enroll,

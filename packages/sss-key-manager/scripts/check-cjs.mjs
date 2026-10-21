@@ -18,6 +18,11 @@ for (const nodeEnv of ['development', 'production']) {
         const sdk = require('@learncard/sss-key-manager');
         assert.equal(typeof sdk.createSSSStrategy, 'function');
         assert.equal(typeof sdk.verifyEnclaveAttestation, 'function');
+        const vector = require('./src/__fixtures__/escrow-enrollment-intent-v1.json');
+        assert.equal(Buffer.from(sdk.encodeEscrowEnrollmentIntent(vector.intent)).toString('hex'), vector.canonicalHex);
+        sdk.signEscrowEnrollmentIntent(vector.intent, vector.seedHex).then(signed => {
+            assert.equal(signed.signature, vector.signature);
+        }).catch(error => { console.error(error); process.exitCode = 1; });
     `,
         ],
         {

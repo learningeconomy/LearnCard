@@ -116,8 +116,8 @@ const BoostsPage: React.FC = () => {
                         showHardcodedBoostPacks
                     />,
                     {
-                        className: '!p-0',
-                        sectionClassName: '!p-0',
+                        className: 'p-0!',
+                        sectionClassName: 'p-0!',
                     }
                 );
             }}

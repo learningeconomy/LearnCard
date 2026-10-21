@@ -1,5 +1,40 @@
 # learn-card-base
 
+## 0.7.4
+
+### Patch Changes
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
+## 0.7.3
+
+### Patch Changes
+
+- [#1754](https://github.com/learningeconomy/LearnCard/pull/1754) [`7f68afd7f3bf30a07d42c18929ca90e1983825b7`](https://github.com/learningeconomy/LearnCard/commit/7f68afd7f3bf30a07d42c18929ca90e1983825b7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2284: perf(scouts): only look up troop ID status when the boost menu opens, and cache recipient lists
+
+## 0.7.2
+
+### Patch Changes
+
+- [#1712](https://github.com/learningeconomy/LearnCard/pull/1712) [`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c) Thanks [@goblincore](https://github.com/goblincore)! - Allow optional proof creation timestamps for the standardized ECDSA, EdDSA and BBS Data Integrity cryptosuites without rewriting signed payloads.
+
+    Handle one-shot CHAPI events safely across account changes, allow cancellation during exchanges, deduplicate exact reopened offers using account-scoped fingerprints of the full signed payload, and avoid retrying consumed acknowledgements or cancellations. Preserve distinct same-ID credential revisions and explain that partial saves remain after cancellation. Keep storage diagnostics useful without logging private credential payloads or counterparty messages.
+
+- [#1737](https://github.com/learningeconomy/LearnCard/pull/1737) [`ee6687b84f69802b3b512c65344510612b39a2a9`](https://github.com/learningeconomy/LearnCard/commit/ee6687b84f69802b3b512c65344510612b39a2a9) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Store consent-flow credentials in the wallet before accepting them, so a credential whose wallet store fails stays pending and is retried on the next sync instead of being lost. A pending credential that's already in the wallet is now accepted without being stored again. If acceptance is refused because the issuer revoked or suspended the credential, the wallet record the sync just created is rolled back so it never stays in the wallet. The sync records which wallet record it's about to write before writing it, and keeps that marker across reloads until the credential is accepted, so the rollback still works if the write's response was lost or the app restarted in between. If localStorage rejects a write or stops being readable, the markers keep working from memory for the rest of the session instead of being dropped.
+
+- [#1736](https://github.com/learningeconomy/LearnCard/pull/1736) [`58b7eeb1adde1a16d15ccaff9c85acf8e99b0168`](https://github.com/learningeconomy/LearnCard/commit/58b7eeb1adde1a16d15ccaff9c85acf8e99b0168) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Keep the consent-flow sync running after its first save, and stop one unreadable credential or one failed accept from blocking the rest of the sync. ScoutPass also re-syncs when the native app resumes.
+
+- [#1721](https://github.com/learningeconomy/LearnCard/pull/1721) [`dc780c9ebf94cecec66116da7faa8f2f9482d3c4`](https://github.com/learningeconomy/LearnCard/commit/dc780c9ebf94cecec66116da7faa8f2f9482d3c4) Thanks [@Custard7](https://github.com/Custard7)! - Fix crashes when a credential has a missing or unknown category. Category metadata lookups now fall back to Achievement.
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/helpers@1.6.3
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/learn-card-plugin@1.2.39
+    - @learncard/ler-rs-plugin@0.1.30
+    - @learncard/render-method-plugin@10.0.1
+    - @learncard/sss-key-manager@0.2.2
+
 ## 0.7.1
 
 ### Patch Changes

@@ -119,7 +119,7 @@ export const PassportActivityFeed: React.FC = () => {
             <h2 className="font-poppins text-[13px] tracking-[1px] text-grayscale-800 mb-[10px]">
                 {m['passport.activity.heading']().toLocaleUpperCase(getLocale())}
             </h2>
-            <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-sm px-[16px] pt-[16px] pb-[8px]">
+            <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-xs px-[16px] pt-[16px] pb-[8px]">
                 <div className="flex items-center gap-2 mb-4 relative">
                     <div className="relative flex-1">
                         <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-grayscale-500" />
@@ -129,7 +129,7 @@ export const PassportActivityFeed: React.FC = () => {
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             placeholder={m['passport.activity.searchPlaceholder']()}
-                            className="w-full rounded-[12px] bg-grayscale-100 py-[10px] pl-11 pr-4 font-poppins text-[14px] text-grayscale-800 placeholder:text-grayscale-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="w-full rounded-[12px] bg-grayscale-100 py-[10px] pl-11 pr-4 font-poppins text-[14px] text-grayscale-800 placeholder:text-grayscale-400 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                         />
                     </div>
                     <button
@@ -139,7 +139,7 @@ export const PassportActivityFeed: React.FC = () => {
                         aria-expanded={filterOpen}
                         aria-controls={filterPopoverId}
                         aria-haspopup="dialog"
-                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         <span className="text-grayscale-700">
                             {m['passport.activity.filter']()}

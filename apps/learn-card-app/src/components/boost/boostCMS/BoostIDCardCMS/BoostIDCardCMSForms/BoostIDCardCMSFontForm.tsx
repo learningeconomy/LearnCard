@@ -53,7 +53,7 @@ const BoostIDCardFontForm: React.FC<{
                     onChange={handleColorChange}
                 />
             </div>,
-            { className: '!bg-transparent !shadow-none' },
+            { className: 'bg-transparent! shadow-none!' },
             { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
         );
     };

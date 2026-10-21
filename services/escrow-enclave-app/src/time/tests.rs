@@ -297,6 +297,12 @@ impl RoughtimeTransport for QuorumTransport {
             if self.down.contains(&id) {
                 return std::future::pending().await;
             }
+            tokio::time::sleep(Duration::from_millis(match id {
+                "a" => 100,
+                "b" => 200,
+                _ => 300,
+            }))
+            .await;
             let protocol = Protocol::IetfDraft08;
             let msg = Message::parse(unframe(protocol, &request)?)?;
             let seed = match id {
@@ -317,7 +323,7 @@ impl RoughtimeTransport for QuorumTransport {
     }
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn two_of_three_outages_bad_signature_and_dissent() {
     for (down, bad_signature, disagree, expected) in [
         (vec!["c"], false, false, Ok(2)),
@@ -329,8 +335,8 @@ async fn two_of_three_outages_bad_signature_and_dissent() {
         ),
         (vec![], true, false, Ok(2)),
         (vec!["b"], true, false, Err(TimeError::InsufficientSources)),
-        (vec![], false, true, Err(TimeError::Disagreement)),
-        (vec![], false, false, Ok(3)),
+        (vec![], false, true, Ok(2)),
+        (vec![], false, false, Ok(2)),
     ] {
         let source = RoughtimeTimeSource::new(
             vec![
@@ -349,7 +355,86 @@ async fn two_of_three_outages_bad_signature_and_dissent() {
         .unwrap();
         let start = tokio::time::Instant::now();
         assert_eq!(source.now(None).await.map(|e| e.sources.len()), expected);
+        if expected.is_ok() {
+            assert!(start.elapsed() < Duration::from_millis(500));
+        }
         assert!(start.elapsed() < Duration::from_secs(3));
+    }
+}
+
+/// Real nonce/signature verification, two 100/200ms responders and one hang.
+pub(crate) fn one_unavailable_source() -> RoughtimeTimeSource {
+    RoughtimeTimeSource::new(
+        vec![
+            pin("a", Protocol::IetfDraft08, 1),
+            pin("b", Protocol::IetfDraft08, 2),
+            pin("c", Protocol::IetfDraft08, 3),
+        ],
+        Arc::new(QuorumTransport {
+            down: vec!["c"],
+            bad_signature: false,
+            disagree: false,
+        }),
+        2,
+        10_000,
+    )
+    .unwrap()
+}
+
+struct OrderedTransport([u64; 3]);
+impl RoughtimeTransport for OrderedTransport {
+    fn exchange<'a>(&'a self, id: &'a str, request: Vec<u8>) -> TimeFuture<'a, Vec<u8>> {
+        Box::pin(async move {
+            let index = usize::from(id.as_bytes()[0] - b'a');
+            tokio::time::sleep(Duration::from_millis(100 * (index as u64 + 1))).await;
+            let protocol = Protocol::IetfDraft08;
+            let msg = Message::parse(unframe(protocol, &request)?)?;
+            Ok(response(
+                protocol,
+                index as u8 + 1,
+                msg.get(b"NONC")?,
+                self.0[index],
+                2,
+                0,
+                1000,
+            ))
+        })
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn dissent_waits_for_consistent_quorum_and_floor_is_preserved() {
+    for (mids, floor, expected) in [
+        ([100, 120, 101], None, Ok((99_000, 102_000))),
+        ([100, 120, 140], None, Err(TimeError::Disagreement)),
+        ([100, 101, 120], Some(104_000), Err(TimeError::Rollback)),
+        ([100, 120, 121], Some(119_000), Ok((119_000, 122_000))),
+    ] {
+        let source = RoughtimeTimeSource::new(
+            vec![
+                pin("a", Protocol::IetfDraft08, 1),
+                pin("b", Protocol::IetfDraft08, 2),
+                pin("c", Protocol::IetfDraft08, 3),
+            ],
+            Arc::new(OrderedTransport(mids)),
+            2,
+            10_000,
+        )
+        .unwrap();
+        let start = Instant::now();
+        let result = source.now(floor).await;
+        assert_eq!(
+            result
+                .as_ref()
+                .map(|e| (e.interval.lo_ms, e.interval.hi_ms))
+                .map_err(|e| *e),
+            expected
+        );
+        if let Ok(e) = result {
+            assert_eq!(e.sources.len(), 2);
+            assert!(e.sources[0].server_id < e.sources[1].server_id);
+        }
+        assert_eq!(start.elapsed(), Duration::from_millis(300));
     }
 }
 

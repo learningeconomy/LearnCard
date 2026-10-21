@@ -111,6 +111,8 @@ fn services_with_previous(
             key_id: "key".into(),
             allow_first_boot: true,
             previous,
+            authority_credentials: None,
+            email_credentials: None,
         }),
     })
 }
@@ -123,6 +125,59 @@ fn connect(
         client,
         tokio::spawn(async move { services.serve(&mut host).await }),
     )
+}
+
+#[tokio::test]
+async fn boot_delivers_only_optional_opaque_credential_ciphertexts() {
+    let mut service = services(Arc::new(Memory::default()));
+    let boot = Arc::get_mut(&mut Arc::get_mut(&mut service).unwrap().boot).unwrap();
+    boot.authority_credentials = Some(Sealed(Mutex::new(Some(vec![1, 2, 3]))));
+    boot.email_credentials = Some(Sealed(Mutex::new(Some(vec![4, 5, 6]))));
+    let (mut stream, task) = connect(&service);
+    let response = parent::boot(&mut stream, "key").await.unwrap();
+    task.await.unwrap().unwrap();
+    assert_eq!(
+        response.authority_credential_ciphertext.as_deref(),
+        Some("AQID")
+    );
+    assert_eq!(
+        response.email_credential_ciphertext.as_deref(),
+        Some("BAUG")
+    );
+    // Only the existing temporary boot credential fields remain plaintext.
+    assert_eq!(response.access_key_id, "test-access");
+}
+
+#[tokio::test]
+async fn configured_credentials_never_use_first_boot_generation_or_oversize_delivery() {
+    for blob in [None, Some(Vec::new()), Some(vec![0; 6145])] {
+        let mut service = services(Arc::new(Memory::default()));
+        let boot = Arc::get_mut(&mut Arc::get_mut(&mut service).unwrap().boot).unwrap();
+        assert!(boot.allow_first_boot);
+        boot.authority_credentials = Some(Sealed(Mutex::new(blob)));
+        let (mut stream, task) = connect(&service);
+        assert!(parent::boot(&mut stream, "key").await.is_err());
+        assert!(task.await.unwrap().is_err());
+    }
+}
+
+#[tokio::test]
+async fn old_boot_shape_is_preserved_when_credential_delivery_is_unset() {
+    let service = services(Arc::new(Memory::default()));
+    let (mut stream, task) = connect(&service);
+    framing::write(&mut stream, br#"{"method":"boot","keyId":"key"}"#, 32768)
+        .await
+        .unwrap();
+    let response: serde_json::Value = serde_json::from_slice(
+        &framing::read(&mut stream, framing::MAX_FRAME)
+            .await
+            .unwrap(),
+    )
+    .unwrap();
+    task.await.unwrap().unwrap();
+    assert_eq!(response.as_object().unwrap().len(), 4);
+    assert!(response.get("authorityCredentialCiphertext").is_none());
+    assert!(response.get("emailCredentialCiphertext").is_none());
 }
 fn record(seq: u64, prev_hash: [u8; 32]) -> LedgerRecord {
     // Structural transport fixture; policy authentication is tested separately.

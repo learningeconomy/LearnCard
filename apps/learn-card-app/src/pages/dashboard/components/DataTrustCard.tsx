@@ -45,23 +45,23 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
     const statusText = isEmpty
         ? m['dashboard.dataTrust.emptyStatus']()
         : places === 1
-        ? m['dashboard.dataTrust.sharingWithOne']({ count: places })
-        : m['dashboard.dataTrust.sharingWithMany']({ count: places });
+          ? m['dashboard.dataTrust.sharingWithOne']({ count: places })
+          : m['dashboard.dataTrust.sharingWithMany']({ count: places });
 
     const detailText = isEmpty
         ? m['dashboard.dataTrust.emptyDetail']()
         : isLots
-        ? canWrite > 0
-            ? m['dashboard.dataTrust.detailReadWrite']({ read: canRead, write: canWrite })
-            : m['dashboard.dataTrust.detailReadOnly']({ read: canRead })
-        : m['dashboard.dataTrust.detailFew']();
+          ? canWrite > 0
+              ? m['dashboard.dataTrust.detailReadWrite']({ read: canRead, write: canWrite })
+              : m['dashboard.dataTrust.detailReadOnly']({ read: canRead })
+          : m['dashboard.dataTrust.detailFew']();
 
     return (
         <button
             type="button"
             onClick={onManage}
             aria-label={m['dashboard.dataTrust.manage']()}
-            className="group w-full text-left bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="group w-full text-left bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
         >
             <div className="flex items-start gap-4">
                 <span
@@ -93,7 +93,7 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
 
                 {!isEmpty && (
                     <div className="mt-3 flex items-center gap-2 flex-wrap">
-                        <div className="flex -space-x-2">
+                        <div className="flex -space-x-v3-2">
                             {shownProof.map(item => (
                                 <ProofAvatar key={item.uri} item={item} />
                             ))}

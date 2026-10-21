@@ -76,7 +76,36 @@ export {
 } from './escrow-crypto';
 
 export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+export {
+    encodeEscrowEnrollmentIntent,
+    signEscrowEnrollmentIntent,
+    getEscrowBlobIdentity,
+    ESCROW_ENROLLMENT_INTENT_DOMAIN,
+} from './escrow-enrollment-intent';
+export type {
+    EscrowEnrollmentIntent,
+    SignedEscrowEnrollmentIntent,
+} from './escrow-enrollment-intent.types';
 export { verifyEnclaveAttestation } from './escrow-attestation';
+export { EscrowEvidenceError } from './escrow-authority.types';
+export type { HistoricalEscrowEvidence } from './escrow-authority.types';
+export type { EscrowRecoveryExpectations } from '@learncard/types';
+export {
+    verifyEscrowAuthorityState,
+    verifyEscrowHoldState,
+    verifyEscrowCodeDelivery,
+    verifyEscrowEnrollmentCommit,
+    createEscrowEnrollmentIntent,
+    resolveEscrowEnrollmentAction,
+    violatesCarryContactRule,
+} from './escrow-authority';
+export type { EscrowEnrollmentActionInput } from './escrow-authority';
+export type {
+    VerifiedEnclaveIdentity,
+    EscrowAuthorityRecord,
+    EscrowAuthorityState,
+    VerifiedEscrowMutation,
+} from './escrow-authority.types';
 export { verifyNitroAttestationDocument, NitroAttestationError } from './escrow-nitro-attestation';
 export type { NitroAttestationReason } from './escrow-nitro-attestation';
 export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';

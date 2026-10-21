@@ -11,7 +11,7 @@ const AcademicClrCard: React.FC<{
     onViewDetails: () => void;
 }> = ({ model, onViewDetails }) => {
     return (
-        <div className="space-y-3 overflow-y-auto">
+        <div className="space-y-v3-3 overflow-y-auto">
             <ClrTranscriptHeader model={model} />
             <ClrTranscriptEvidenceList evidence={model.evidence} compact />
             <button

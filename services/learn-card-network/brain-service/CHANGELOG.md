@@ -1,5 +1,40 @@
 # @learncard/network-brain-service
 
+## 4.0.3
+
+### Patch Changes
+
+- [#1752](https://github.com/learningeconomy/LearnCard/pull/1752) [`cb54286a0d2bce596a3981f5e8c5f413d46493e4`](https://github.com/learningeconomy/LearnCard/commit/cb54286a0d2bce596a3981f5e8c5f413d46493e4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Look up boost recipient Profiles only for the page being returned, not for every send. Recipient counts no longer join a Profile per send either.
+
+- [#1749](https://github.com/learningeconomy/LearnCard/pull/1749) [`f7f37e3195f35a63f86fcbe44d2e314679f0924d`](https://github.com/learningeconomy/LearnCard/commit/f7f37e3195f35a63f86fcbe44d2e314679f0924d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add a relationship index on `CREDENTIAL_SENT.activityId`. Credential activity feeds and stats join each activity to its credential by this property; without the index every activity row scanned all `CREDENTIAL_SENT` relationships.
+
+- [#1751](https://github.com/learningeconomy/LearnCard/pull/1751) [`43bcd912c30b108bb4cee41691eedb87300cf8eb`](https://github.com/learningeconomy/LearnCard/commit/43bcd912c30b108bb4cee41691eedb87300cf8eb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Speed up `getFamilialBoosts` and `countFamilialBoosts`. The family is now expanded outward from the starting boost instead of label-scanning every `Boost` node and checking the parent/child patterns against each one, so cost scales with the size of the family rather than the size of the network. When the filter has an indexed field (`id`, `category` or `autoConnectRecipients`) that matches 16 boosts or fewer, those boosts are checked directly instead, so selective filters on wide or deep families stay fast too. Results are unchanged.
+
+- [#1750](https://github.com/learningeconomy/LearnCard/pull/1750) [`2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f`](https://github.com/learningeconomy/LearnCard/commit/2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Back `searchProfiles` with TEXT indexes instead of scanning every `Profile`. The search is now a `UNION` of two index-backed `CONTAINS` lookups: `profileId` (already stored lowercased) and a new normalized `displayNameLower` copy of `displayName` (new `profile_displayname_lower_text_idx`). The normalization is Cypher `toLower` with final sigma (ς) folded to σ, applied the same way on writes, the backfill and the search input, so a substring of a name always matches. Matching stays case-insensitive. New and updated profiles get `displayNameLower` on write; existing profiles need a one-time `bun run backfill:profile-search -- --yes` per environment, run once no instance of the previous build is still writing profiles, before they're findable by display name again. Search input is now matched literally (it used to be interpolated into a regex), and non-ASCII letters are now case-folded too.
+
+- [#1753](https://github.com/learningeconomy/LearnCard/pull/1753) [`a36ca5dbfc61276e5da533ee40c3d20d86026742`](https://github.com/learningeconomy/LearnCard/commit/a36ca5dbfc61276e5da533ee40c3d20d86026742) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Run the credential refresh constraints before the index setup on cold start instead of alongside it, and retry transient schema errors the same way the index setup does.
+
+## 4.0.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/credential-library@2.1.2
+    - @learncard/core@9.4.39
+    - @learncard/helpers@1.6.3
+    - @learncard/did-web-plugin@1.1.39
+    - @learncard/didkey-plugin@1.1.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/didkit-plugin-node@0.3.4
+    - @learncard/encryption-plugin@1.1.39
+    - @learncard/learn-card-plugin@1.2.39
+    - @learncard/vc-plugin@1.6.5
+    - @learncard/vc-templates-plugin@1.1.39
+    - @learncard/crypto-plugin@1.1.39
+    - @learncard/dynamic-loader-plugin@1.1.39
+    - @learncard/expiration-plugin@1.2.39
+
 ## 4.0.1
 
 ### Patch Changes

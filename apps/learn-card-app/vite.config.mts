@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
@@ -173,6 +174,7 @@ export default defineConfig(async ({ mode, command }) => {
 
     return {
         plugins: [
+            tailwindcss(),
             i18nImportGuard(),
             react(),
             svgr(),
@@ -195,6 +197,7 @@ export default defineConfig(async ({ mode, command }) => {
         ],
         build: {
             target: 'esnext',
+            cssTarget: ['chrome111', 'safari16.4', 'firefox128'],
             outDir: path.join(__dirname, 'build'),
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,
@@ -230,6 +233,10 @@ export default defineConfig(async ({ mode, command }) => {
                 'zod/v4',
                 '@learncard/sss-key-manager > shamir-secret-sharing',
                 '@learncard/sss-key-manager > hash-wasm',
+                // Escrow Nitro attestation (recovery) imports these at runtime.
+                '@learncard/sss-key-manager > reflect-metadata',
+                '@learncard/sss-key-manager > cborg',
+                '@learncard/sss-key-manager > @peculiar/x509',
                 '@learncard/sss-key-manager > @scure/bip39/wordlists/english',
                 '@learncard/react > react-barcode',
                 '@learncard/react > react-flip-toolkit',
@@ -238,6 +245,7 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/vpqr-plugin > @digitalbazaar/vpqr',
                 '@learncard/ethereum-plugin > ethers',
                 '@learncard/network-brain-client > @trpc/client',
+                '@learncard/lca-api-plugin > @learncard/lca-api-client > @trpc/client',
                 '@learncard/core > core-js/actual/promise',
                 '@learncard/core > abort-controller/dist/abort-controller.js',
                 '@learncard/core > isomorphic-webcrypto',

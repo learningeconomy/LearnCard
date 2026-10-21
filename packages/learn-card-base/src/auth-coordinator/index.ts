@@ -25,6 +25,7 @@ export {
 } from './AuthCoordinatorProvider';
 
 export { useAuthCoordinatorAutoSetup } from './useAuthCoordinatorAutoSetup';
+export { useIdleAuthCleanup } from './useIdleAuthCleanup';
 export type { AutoSetupConfig } from './useAuthCoordinatorAutoSetup';
 
 // Shared overlay components for coordinator states

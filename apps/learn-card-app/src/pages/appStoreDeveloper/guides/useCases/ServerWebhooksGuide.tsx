@@ -124,7 +124,7 @@ const ApiTokenStep: React.FC<{
     const hasActiveToken = activeGrants.length > 0;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.serverWebhooks.apiTokenStep.title']()}
@@ -141,11 +141,11 @@ const ApiTokenStep: React.FC<{
                     loading
                         ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusChecking']()
                         : hasActiveToken
-                        ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusReady']({
-                              count: activeGrants.length,
-                              context: activeGrants.length !== 1 ? 'plural' : '',
-                          })
-                        : m['developerPortal.guides.serverWebhooks.apiTokenStep.statusWarning']()
+                          ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusReady']({
+                                count: activeGrants.length,
+                                context: activeGrants.length !== 1 ? 'plural' : '',
+                            })
+                          : m['developerPortal.guides.serverWebhooks.apiTokenStep.statusWarning']()
                 }
                 description={
                     hasActiveToken
@@ -194,7 +194,7 @@ const ApiTokenStep: React.FC<{
 
             {/* Create form */}
             {showCreateForm && (
-                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-v3-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             {m[
@@ -209,7 +209,7 @@ const ApiTokenStep: React.FC<{
                             placeholder={m[
                                 'developerPortal.guides.serverWebhooks.apiTokenStep.tokenNamePlaceholder'
                             ]()}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
 
@@ -269,7 +269,7 @@ const WebhookEndpointStep: React.FC<{
     setWebhookUrl: (url: string) => void;
 }> = ({ onComplete, onBack, webhookUrl, setWebhookUrl }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.title']()}
@@ -292,7 +292,7 @@ const WebhookEndpointStep: React.FC<{
                     value={webhookUrl}
                     onChange={e => setWebhookUrl(e.target.value)}
                     placeholder="https://your-server.com/webhooks/learncard"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                 />
             </div>
 
@@ -383,7 +383,7 @@ def webhook():
                     ]()}
                 </h4>
 
-                <ul className="text-sm text-amber-700 space-y-1">
+                <ul className="text-sm text-amber-700 space-y-v3-1">
                     <li>
                         {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.reqHttps']()}
                     </li>
@@ -462,7 +462,7 @@ const HandleEventsStep: React.FC<{
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.serverWebhooks.handleEventsStep.title']()}
@@ -477,7 +477,7 @@ const HandleEventsStep: React.FC<{
             <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
                 {eventTypes.map(event => (
                     <div key={event.type} className="flex items-center gap-3 p-3">
-                        <code className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-mono">
+                        <code className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-sm font-mono">
                             {event.type}
                         </code>
 
@@ -596,7 +596,7 @@ const TestStep: React.FC<{
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.serverWebhooks.testStep.title']()}
@@ -613,7 +613,7 @@ const TestStep: React.FC<{
                     {m['developerPortal.guides.serverWebhooks.testStep.preflightTitle']()}
                 </h4>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <div className="flex items-center gap-2">
                         <CheckCircle2
                             className={`w-4 h-4 ${apiToken ? 'text-emerald-600' : 'text-gray-300'}`}
@@ -708,7 +708,7 @@ const TestStep: React.FC<{
             </div>
 
             {/* Success */}
-            <div className="p-6 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
+            <div className="p-6 bg-linear-to-br/srgb from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
                 <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Rocket className="w-8 h-8 text-emerald-600" />
                 </div>

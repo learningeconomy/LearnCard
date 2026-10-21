@@ -27,7 +27,7 @@ const CertificateCornerIcon: React.FC<CertificateCornerIconProps> = ({
             break;
         case 'bottom-left':
             iconPositionClassName = 'bottom-0 left-0';
-            cornerPositionClassName = 'top-0 right-0 rotate-[270deg]';
+            cornerPositionClassName = 'top-0 right-0 rotate-270';
             break;
         case 'bottom-right':
             iconPositionClassName = 'bottom-0 right-0';

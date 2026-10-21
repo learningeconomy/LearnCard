@@ -85,7 +85,7 @@ export const walletPageData: WalletPageItem[] = [
         shapeColor: 'text-teal-400 w-[100px] h-[100px]',
         WalletIcon: AiPathwaysIcon,
         IconWithShape: AiPathwaysIconWithShape,
-        iconStyles: 'h-[100px] w-[100px] !top-[45%]',
+        iconStyles: 'h-[100px] w-[100px] top-[45%]!',
         notificationIndicator: {
             borderColor: 'border-teal-300',
             backgroundColor: 'text-indigo-500',
@@ -221,7 +221,7 @@ export const walletPageData: WalletPageItem[] = [
         shapeColor: 'text-cyan-501 w-[90px] h-[90px]',
         WalletIcon: ExperiencesIcon,
         IconWithShape: ExperiencesIconWithShape,
-        iconStyles: 'h-[100px] w-[100px] !top-[47%]',
+        iconStyles: 'h-[100px] w-[100px] top-[47%]!',
         notificationIndicator: {
             borderColor: 'border-cyan-401',
             backgroundColor: 'text-yellow-200',

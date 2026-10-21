@@ -179,7 +179,7 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
 
     return (
         <div className="w-full max-w-[560px] mx-auto font-poppins py-8">
-            <div className="relative overflow-hidden bg-white rounded-[20px] border border-grayscale-200 shadow-sm p-8 text-center animate-fade-in-up">
+            <div className="relative overflow-hidden bg-white rounded-[20px] border border-grayscale-200 shadow-xs p-8 text-center animate-fade-in-up">
                 {celebrate && <Confetti />}
 
                 <img
@@ -191,7 +191,7 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
                 />
                 <h1 className="mt-5 text-xl font-semibold text-grayscale-900">{title}</h1>
                 <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">{body}</p>
-                <p className="mt-2 text-xs text-grayscale-500 break-words">
+                <p className="mt-2 text-xs text-grayscale-500 wrap-break-word">
                     {getLaunchSummary(
                         working.launch_type,
                         parseLaunchConfig(working.launch_config_json)

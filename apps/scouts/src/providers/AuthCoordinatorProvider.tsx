@@ -20,9 +20,6 @@ import React, {
 } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
-import { Web3Auth } from '@web3auth/single-factor-auth';
-import { CHAIN_NAMESPACES } from '@web3auth/base';
-import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
 import type { LCNProfile } from '@learncard/types';
 
@@ -30,10 +27,13 @@ import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
     useAuthCoordinator as useBaseAuthCoordinator,
     useAuthCoordinatorAutoSetup,
+    useIdleAuthCleanup,
     createWeb3AuthStrategy,
+    deriveWeb3AuthKey,
     registerKeyDerivationFactory,
     resolveKeyDerivation,
     resolveAuthProvider,
+    useAuthSessionProvider,
     SignInAdapterProvider,
     Overlay,
     ErrorOverlay,
@@ -300,6 +300,11 @@ registerKeyDerivationFactory('web3auth', () => {
         web3AuthNetwork: (w3a.network as string) ?? '',
         verifier: (w3a.verifierId as string) ?? '',
         chainConfig: w3a.rpcTarget ? { rpcTarget: w3a.rpcTarget as string } : undefined,
+        isSessionCurrent: async uid => {
+            const provider = resolveAuthProvider(getAuthConfig());
+            if (!provider) return false;
+            return (await provider.getCurrentUser())?.id === uid;
+        },
     });
 });
 
@@ -360,6 +365,7 @@ const AuthSessionManager: React.FC<{
     const coordinator = useBaseAuthCoordinator();
     const { presentToast } = useToast();
     const signInAdapter = useSignInAdapter();
+    const queryClient = useQueryClient();
     const authConfig = getAuthConfig();
     const locale = useLocale();
 
@@ -369,6 +375,8 @@ const AuthSessionManager: React.FC<{
     const [lcnProfileLoading, setLcnProfileLoading] = useState(false);
 
     const walletInitRef = useRef(false);
+    const walletInitGenerationRef = useRef(0);
+    const walletInitIdentityRef = useRef<string | null>(null);
 
     // Delay showing the stalled-migration overlay so the async Web3Auth
     // extraction has time to complete before we flash the "stalled" UI.
@@ -623,6 +631,8 @@ const AuthSessionManager: React.FC<{
 
     // --- Web3Auth key extraction for migration ---
     const migrationKeyFetchedRef = useRef(false);
+    const migrationCoordinatorRef = useRef(coordinator);
+    migrationCoordinatorRef.current = coordinator;
 
     useEffect(() => {
         if (coordinator.state.status !== 'needs_migration' || migrationKeyFetchedRef.current)
@@ -631,127 +641,50 @@ const AuthSessionManager: React.FC<{
 
         migrationKeyFetchedRef.current = true;
 
-        const extractAndInject = async () => {
+        const extractAndInject = async (): Promise<void> => {
             try {
                 const w3a = authConfig.providerConfig.web3Auth ?? {};
-                const w3aClientId = (w3a.clientId as string) ?? '';
-                const w3aNetwork = (w3a.network as string) ?? '';
-                const w3aVerifierId = (w3a.verifierId as string) ?? '';
-                const w3aRpcTarget = (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth';
-
-                emitAuthDebugEvent(
-                    'web3auth:migration_key',
-                    'Extracting Web3Auth key for migration',
-                    {
-                        data: {
-                            clientId: w3aClientId ? `${w3aClientId.slice(0, 8)}...` : '(empty)',
-                            network: w3aNetwork || '(empty)',
-                            verifier: w3aVerifierId || '(empty)',
-                        },
-                    }
-                );
-
-                const privateKeyProvider = new EthereumPrivateKeyProvider({
-                    config: {
-                        chainConfig: {
-                            chainNamespace: CHAIN_NAMESPACES.EIP155,
-                            chainId: '0x1',
-                            rpcTarget: w3aRpcTarget,
-                            displayName: 'Ethereum Mainnet',
-                            blockExplorerUrl: 'https://etherscan.io/',
-                            ticker: 'ETH',
-                            tickerName: 'Ethereum',
-                        },
-                    },
-                });
-
-                const web3auth = new Web3Auth({
-                    clientId: w3aClientId,
-                    web3AuthNetwork: w3aNetwork as 'sapphire_mainnet' | 'sapphire_devnet',
-                    privateKeyProvider,
-                    usePnPKey: true,
-                });
-
-                emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: calling init()...');
-                await web3auth.init();
-                emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: init() complete');
-
-                const liveUser = await authProvider?.getCurrentUser();
-
-                if (!liveUser) {
-                    emitAuthError(
-                        'web3auth:migration_key',
-                        'No live Firebase user available — aborting extraction'
-                    );
-                    return;
-                }
-
-                const token = await authProvider?.getIdToken(false);
-
+                // Preserve each app's existing token refresh policy, including
+                // native token retrieval through the provider abstraction.
+                const token = await authProvider.getIdToken(false);
                 if (!token) {
-                    emitAuthError(
-                        'web3auth:migration_key',
-                        'No Firebase ID token available — aborting extraction'
-                    );
+                    emitAuthError('web3auth:migration_key', 'No sign-in session available');
                     return;
                 }
 
-                emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: calling connect()...', {
-                    data: {
-                        verifier: w3aVerifierId,
-                        verifierId: liveUser.id,
-                        tokenLength: token.length,
+                emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
+                const privateKey = await deriveWeb3AuthKey(
+                    {
+                        clientId: (w3a.clientId as string) ?? '',
+                        web3AuthNetwork: (w3a.network as string) ?? '',
+                        verifier: (w3a.verifierId as string) ?? '',
+                        usePnPKey: true,
+                        chainConfig: {
+                            rpcTarget: (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth',
+                        },
+                        isSessionCurrent: async uid => {
+                            const provider = resolveAuthProvider(getAuthConfig());
+                            if (!provider) return false;
+                            return (await provider.getCurrentUser())?.id === uid;
+                        },
                     },
-                });
-                await web3auth.connect({
-                    verifier: w3aVerifierId,
-                    verifierId: liveUser.id,
-                    idToken: token,
-                });
-                emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: connect() complete');
-
-                const provider = web3auth.provider;
-
-                if (!provider) {
-                    emitAuthError(
-                        'web3auth:migration_key',
-                        'Web3Auth provider is null after connect — no key extracted'
-                    );
-                    return;
-                }
-
-                emitAuthDebugEvent(
-                    'web3auth:migration_key',
-                    'Requesting private key from Web3Auth provider...'
+                    token
                 );
-                const privateKey = (await provider.request({
-                    method: 'eth_private_key',
-                })) as string;
 
-                if (privateKey) {
-                    emitAuthSuccess(
-                        'web3auth:migration_key',
-                        'Web3Auth key extracted for migration'
-                    );
-                    coordinator.setMigrationData({ web3AuthKey: privateKey });
-                } else {
-                    emitAuthError(
-                        'web3auth:migration_key',
-                        'Web3Auth provider returned empty private key'
-                    );
-                }
-            } catch (e) {
-                const msg = e instanceof Error ? e.message : 'Unknown error';
-                emitAuthError(
-                    'web3auth:migration_key',
-                    `Failed to extract Web3Auth key: ${msg}`,
-                    e
-                );
+                // A sign-out or completed upgrade may occur while this tab waits.
+                const latestCoordinator = migrationCoordinatorRef.current;
+                if (latestCoordinator.state.status !== 'needs_migration') return;
+                emitAuthSuccess('web3auth:migration_key', 'Account upgrade key extracted');
+                latestCoordinator.setMigrationData({ web3AuthKey: privateKey });
+            } catch {
+                // Provider and Torus errors can embed credentials. Shared strategy
+                // diagnostics retain safe outcome metadata; never forward raw errors.
+                emitAuthError('web3auth:migration_key', 'Could not prepare account upgrade');
             }
         };
 
         extractAndInject();
-    }, [coordinator.state.status, authProvider, coordinator]);
+    }, [coordinator.state.status, authProvider, authConfig, coordinator]);
 
     useEffect(() => {
         if (coordinator.state.status !== 'needs_migration') {
@@ -776,6 +709,27 @@ const AuthSessionManager: React.FC<{
     });
 
     // --- Wallet initialization when coordinator reaches 'ready' ---
+    const walletAuthStateRef = useRef(coordinator.state);
+    useEffect(() => {
+        walletAuthStateRef.current = coordinator.state;
+        const identity = coordinator.state.status === 'ready' ? coordinator.state.privateKey : null;
+        if (walletInitIdentityRef.current !== identity) {
+            walletInitIdentityRef.current = identity;
+            // Invalidate pending work even if it has not published a wallet yet.
+            // Generation ownership also prevents an old failure resetting a new init.
+            walletInitGenerationRef.current += 1;
+            walletInitRef.current = false;
+        }
+    }, [coordinator.state]);
+    useEffect(
+        () => () => {
+            walletInitGenerationRef.current += 1;
+            walletInitRef.current = false;
+            walletInitIdentityRef.current = null;
+        },
+        []
+    );
+
     useEffect(() => {
         if (coordinator.state.status !== 'ready' || walletInitRef.current) return;
 
@@ -783,15 +737,26 @@ const AuthSessionManager: React.FC<{
         if (showEmailLinkGate) return;
 
         const { privateKey, did } = coordinator.state;
+        const generation = ++walletInitGenerationRef.current;
+        const isStale = (): boolean => {
+            const latest = walletAuthStateRef.current;
+            return (
+                walletInitGenerationRef.current !== generation ||
+                latest.status !== 'ready' ||
+                latest.privateKey !== privateKey
+            );
+        };
 
         walletInitRef.current = true;
 
         const initializeWallet = async () => {
             try {
                 const newWallet = await getBespokeLearnCard(privateKey);
+                if (isStale()) return;
 
                 if (!newWallet) {
                     log.error('Failed to initialize wallet from private key');
+                    walletInitRef.current = false;
                     return;
                 }
 
@@ -808,6 +773,7 @@ const AuthSessionManager: React.FC<{
                     }
                 }
 
+                if (isStale()) return;
                 const authUser =
                     coordinator.state.status === 'ready' ? coordinator.state.authUser : undefined;
 
@@ -826,6 +792,7 @@ const AuthSessionManager: React.FC<{
                 } catch (e) {
                     log.warn('Push token sync failed', e);
                 }
+                if (isStale()) return;
 
                 setWallet(newWallet);
                 walletModeStore.set.mode('full');
@@ -862,7 +829,7 @@ const AuthSessionManager: React.FC<{
                             status?.maskedRecoveryEmail
                         );
 
-                        if (readId !== recoveryMethodReadRef.current) return;
+                        if (isStale() || readId !== recoveryMethodReadRef.current) return;
                         setRecoveryMethodCount(userConfiguredCount);
 
                         // Show recovery setup modal only on public computers
@@ -878,7 +845,7 @@ const AuthSessionManager: React.FC<{
                 }
             } catch (e) {
                 log.error('Wallet initialization failed', e);
-                walletInitRef.current = false;
+                if (!isStale()) walletInitRef.current = false;
             }
         };
 
@@ -892,35 +859,37 @@ const AuthSessionManager: React.FC<{
             setLcnProfile(null);
             setRecoveryMethodCount(null);
             recoveryMethodReadRef.current += 1;
-            walletInitRef.current = false;
             walletModeStore.set.mode(null);
         }
     }, [coordinator.state.status, wallet]);
 
-    // --- Clear stale legacy stores when coordinator is idle ---
-    // After a public-computer session, the tab close destroys the Firebase
-    // session (browserSessionPersistence) and sessionStorage, but zustand
-    // stores may still have cached user data from localStorage. Detect and
-    // clean up this inconsistent state so the UI shows the login page.
-    useEffect(() => {
-        if (coordinator.state.status !== 'idle') return;
-        const authUser = authUserStore.get.currentUser();
-        if (!authUser?.id) return;
-
-        const timer = setTimeout(() => {
-            if (!signInAdapter.getCurrentUser()) {
-                authUserStore.set.setUser(null);
-                authStore.set.typeOfLogin(null);
-                currentUserStore.set.currentUser(null);
-                currentUserStore.set.currentUserPK(null);
-                currentUserStore.set.currentUserIsLoggedIn(false);
-                walletStore.set.wallet(null);
-                walletModeStore.set.mode(null);
-            }
-        }, 1500);
-
-        return () => clearTimeout(timer);
-    }, [coordinator.state.status]);
+    // A confirmed session loss clears account state in every open tab. Keep
+    // ordinary anonymous/seeded startup separate from that logout transition.
+    const hasLiveAuthUser = useCallback(
+        () => Boolean(signInAdapter.getCurrentUser()),
+        [signInAdapter]
+    );
+    const clearCachedAccount = useCallback(() => {
+        authUserStore.set.setUser(null);
+        authStore.set.typeOfLogin(null);
+        currentUserStore.set.currentUser(null);
+        currentUserStore.set.currentUserPK(null);
+        currentUserStore.set.currentUserIsLoggedIn(false);
+        walletStore.set.wallet(null);
+        walletModeStore.set.mode(null);
+        web3AuthStore.set.web3Auth(null);
+        web3AuthStore.set.provider(null);
+        unsetAuthToken();
+    }, []);
+    const clearAccountQueries = useCallback(() => queryClient.clear(), [queryClient]);
+    useIdleAuthCleanup({
+        status: coordinator.state.status,
+        hasEndedAuthSession: coordinator.hasEndedAuthSession ?? false,
+        hasStoredAuthUser: Boolean(authUserStore.get.currentUser()?.id),
+        hasLiveAuthUser,
+        clearCachedAccount,
+        clearAccountQueries,
+    });
 
     // --- LCN profile fetching when wallet is available ---
     const fetchLCNProfile = useCallback(async () => {
@@ -1217,12 +1186,12 @@ const AuthSessionManager: React.FC<{
             {/* ── Migration in-progress overlay ──────────────────── */}
             {showMigrationLoading && (
                 <Overlay>
-                    <div className="p-8 text-center space-y-5">
+                    <div className="p-8 text-center space-y-v3-5">
                         <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
                             <div className="w-7 h-7 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             <h2 className="text-xl font-semibold text-grayscale-900">
                                 {m['auth.upgradeAcct']()}
                             </h2>
@@ -1532,7 +1501,7 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
     }
 };
 
-export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProps> = ({
+const AuthCoordinatorSessionProvider: React.FC<ScoutsAuthCoordinatorProviderProps> = ({
     children,
 }) => {
     const authConfig = getAuthConfig();
@@ -1540,9 +1509,7 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
 
-    // Phase 2: authUserStore is written by SignInAdapterProvider's subscribe(),
-    // so we just read the generic store — no bridge needed.
-    const authUser = authUserStore.use.currentUser();
+    const authProvider = useAuthSessionProvider();
 
     // Ref for clearDB — useSQLiteStorage() returns a new function identity
     // on every render (not memoized), which would cascade through
@@ -1550,12 +1517,6 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     // infinite re-init loop. Using a ref keeps handleAppLogout stable.
     const clearDBRef = useRef(clearDB);
     clearDBRef.current = clearDB;
-
-    // Resolve auth provider from the registry (env-var driven via VITE_AUTH_PROVIDER)
-    const authProvider = useMemo(
-        () => (authUser ? resolveAuthProvider(authConfig) : null),
-        [authUser, authConfig.authProvider]
-    );
 
     // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
@@ -1649,23 +1610,29 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     }, [queryClient, keyDerivation]);
 
     return (
-        <SignInAdapterProvider>
-            <BaseAuthCoordinatorProvider
-                keyDerivation={keyDerivation}
-                authProvider={authProvider}
-                didFromPrivateKey={didFromPrivateKey}
-                signDidAuthVp={signDidAuthVp}
-                getCachedPrivateKey={getCachedPrivateKey}
-                onLogout={handleAppLogout}
-                onDebugEvent={handleDebugEvent}
-                legacyAccountThresholdMs={5 * 60 * 1000}
-                // Always enabled — switch backends via VITE_KEY_DERIVATION env var.
-                enabled={true}
-            >
-                <AuthSessionManager authProvider={authProvider}>{children}</AuthSessionManager>
-            </BaseAuthCoordinatorProvider>
-        </SignInAdapterProvider>
+        <BaseAuthCoordinatorProvider
+            keyDerivation={keyDerivation}
+            authProvider={authProvider}
+            didFromPrivateKey={didFromPrivateKey}
+            signDidAuthVp={signDidAuthVp}
+            getCachedPrivateKey={getCachedPrivateKey}
+            onLogout={handleAppLogout}
+            onDebugEvent={handleDebugEvent}
+            legacyAccountThresholdMs={5 * 60 * 1000}
+            // Always enabled — switch backends via VITE_KEY_DERIVATION env var.
+            enabled={true}
+        >
+            <AuthSessionManager authProvider={authProvider}>{children}</AuthSessionManager>
+        </BaseAuthCoordinatorProvider>
     );
 };
+
+export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProps> = ({
+    children,
+}) => (
+    <SignInAdapterProvider>
+        <AuthCoordinatorSessionProvider>{children}</AuthCoordinatorSessionProvider>
+    </SignInAdapterProvider>
+);
 
 export default AuthCoordinatorProvider;

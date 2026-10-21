@@ -29,7 +29,7 @@ const AdminToolsCLIOption: React.FC<AdminToolsCLIOptionProps> = ({ option }) => 
             <div className="bg-grayscale-50 rounded-lg p-4 border border-grayscale-200">
                 <h4 className="font-semibold text-grayscale-900 mb-2">Features:</h4>
 
-                <ul className="text-sm text-grayscale-700 space-y-1 list-disc list-inside">
+                <ul className="text-sm text-grayscale-700 space-y-v3-1 list-disc list-inside">
                     <li>Execute JavaScript with access to your LearnCard wallet</li>
                     <li>Test credential issuance, verification, and storage</li>
                     <li>Explore boost creation and network operations</li>

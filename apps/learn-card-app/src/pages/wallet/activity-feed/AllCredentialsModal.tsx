@@ -38,7 +38,7 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                     type="button"
                     onClick={onClose}
                     aria-label={m['common.close']()}
-                    className="w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <IonIcon icon={closeOutline} className="text-xl" />
                 </button>

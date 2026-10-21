@@ -27,7 +27,7 @@ export const ResumePreviewInfoChip: React.FC<{
                     onChange={event => onChange(detailKey, event.target.value)}
                     placeholder={placeholder}
                     aria-label={placeholder || detailKey}
-                    className="min-w-0 w-full flex-1 truncate bg-transparent border-none outline-none placeholder:text-grayscale-500 text-xs font-semibold text-grayscale-800 sm:min-w-[120px] sm:max-w-[260px]"
+                    className="min-w-0 w-full flex-1 truncate bg-transparent border-none outline-hidden placeholder:text-grayscale-500 text-xs font-semibold text-grayscale-800 sm:min-w-[120px] sm:max-w-[260px]"
                 />
             ) : detailKey === UserInfoEnum.LinkedIn ? (
                 <span className="min-w-0 w-full flex-1 truncate sm:max-w-[260px]">

@@ -186,7 +186,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                 return (
                     <li
                         key={id}
-                        className="w-full border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0"
+                        className="w-full border-b-grayscale-100 border-b-solid border-b-2 last:border-0"
                     >
                         <button
                             className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2"

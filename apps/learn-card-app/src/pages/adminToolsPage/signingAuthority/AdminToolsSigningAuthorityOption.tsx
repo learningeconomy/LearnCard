@@ -90,10 +90,10 @@ const AdminToolsSigningAuthorityOption: React.FC<{
                                     fetchSigningAuthorities={fetchSigningAuthorities}
                                 />,
                                 {
-                                    sectionClassName: '!max-w-[500px]',
+                                    sectionClassName: 'max-w-[500px]!',
                                     usePortal: true,
                                     hideButton: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 }
                             )
                         }

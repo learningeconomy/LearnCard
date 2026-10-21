@@ -34,7 +34,7 @@ const BoostIDCardCMSMembersForm: React.FC<{
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`rtl-mirror h-auto w-3 text-grayscale-800 ${
-                            showAbout ? 'rotate-[-90deg]' : 'rotate-180'
+                            showAbout ? '-rotate-90' : 'rotate-180'
                         }`}
                     />
                 </button>

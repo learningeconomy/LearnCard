@@ -9,13 +9,19 @@ import {
     findEscrowHoldsPendingStartNotification,
     releaseEscrowReminderClaim,
     recordEscrowStartNotificationAttempt,
+    recordEscrowHoldNotification,
+    computeEffectiveReleaseAfter,
 } from '@models';
 import { environment } from '@environment';
 import {
     cancelHoldInEnclave,
     logEscrowCancellationPending,
 } from '../services/escrow-enclave/cancellation';
-import { isEscrowEnabled, notifyEscrowHoldEvent } from '../services/escrow-enclave';
+import {
+    getEscrowEnclave,
+    isEscrowEnabled,
+    notifyEscrowHoldEvent,
+} from '../services/escrow-enclave';
 
 // Two queues of ten 3-second deliveries leave half the 120-second Lambda
 // budget for database work. Least-recently-attempted ordering prevents starvation.
@@ -148,12 +154,55 @@ export const runEscrowHoldReminders = async (
         }
     }
 
+    // P9.1 (attack C): `sendReleaseWarning` is defined only by the remote
+    // (nitro/authority) backend — software mode never produces a hold the
+    // enclave itself must warn about, since it has no confirmation step to
+    // have gated release behind in the first place.
+    const sendReleaseWarning = getEscrowEnclave().sendReleaseWarning;
     for (const candidate of candidates) {
         let claimed: Awaited<ReturnType<typeof claimEscrowHoldForReminder>> = null;
         try {
             // Lease before send; only successful delivery writes the sent marker.
             claimed = await claimEscrowHoldForReminder(candidate._id, now);
             if (!claimed) continue;
+
+            // P9.1 (attack C): an authority-mode Hold-policy hold's security
+            // channel is the enclave's own sealed-blob-sourced email, not this
+            // Mongo-recipient-sourced one, which an attacker who controls the
+            // suppressed-notification side of the threat model could silence
+            // or redirect. send-release-warning both notifies the real owner
+            // and records the timestamp release is independently gated on.
+            if (sendReleaseWarning && claimed.releasePolicy !== 'pin' && claimed.holdRecord) {
+                const { releaseWarningSentAtMs } = await sendReleaseWarning({
+                    holdId: claimed.holdRecord.hold.holdId,
+                    expectedDid: claimed.primaryDid,
+                });
+                // P2-a: the enclave call above is idempotent (a repeat never
+                // resends or moves its recorded timestamp), so persisting
+                // this acknowledgment AFTER it succeeds is safe to retry: if
+                // this write is lost (crash, Mongo failure), the hold stays
+                // selected next run, the enclave call is a no-op, and this
+                // write finally lands. Without it, every run re-called the
+                // enclave for every hold in the 24h window forever.
+                // [B]: also persist the effective availability from the
+                // authoritative confirmation/warning times — a late
+                // (catch-up) warning can push real availability later than
+                // the hold's existing stored `releaseAfter` estimate, which
+                // otherwise keeps advertising an already-passed deadline.
+                await recordEscrowHoldNotification(
+                    claimed._id,
+                    'reminder',
+                    claimed.confirmedAt
+                        ? computeEffectiveReleaseAfter({
+                              confirmedAtMs: claimed.confirmedAt.getTime(),
+                              holdDurationMs: claimed.holdRecord.holdDurationMs,
+                              releaseWarningSentAtMs,
+                          })
+                        : undefined
+                );
+                reminded += 1;
+                continue;
+            }
 
             const userKey = await findUserKeyByAuthProvider(
                 claimed.authProvider.type,

@@ -31,7 +31,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
         newModal(
             <CreateFrameworkModal />,
             {
-                sectionClassName: '!bg-transparent !shadow-none',
+                sectionClassName: 'bg-transparent! shadow-none!',
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
         );
@@ -41,7 +41,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
         newModal(
             <SelectFrameworkToManageModal />,
             {
-                sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+                sectionClassName: 'bg-transparent! shadow-none! overflow-visible!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -78,7 +78,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
                     </div>
 
                     {frameworksExist && (
-                        <div className="flex flex-col gap-[15px] border-t-[1px] border-violet-300 border-solid pt-[15px]">
+                        <div className="flex flex-col gap-[15px] border-t border-violet-300 border-solid pt-[15px]">
                             {frameworks.map((framework: ApiFrameworkInfo) => (
                                 <SkillsAdminPanelFramework
                                     key={framework.id}

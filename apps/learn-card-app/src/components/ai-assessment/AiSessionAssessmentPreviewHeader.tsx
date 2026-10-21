@@ -46,7 +46,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
 
     return (
         <div className="w-full rounded-t-[24px] rounded-b-[24px] overflow-hidden flex flex-col border-solid border-white border-[3px] mt-[var(--ion-safe-area-top,0px)]">
-            <div className="w-full flex items-center justify-center flex-col bg-opacity-70 rounded-t-[20px] backdrop-blur-[5px] bg-white">
+            <div className="w-full flex items-center justify-center flex-col  rounded-t-[20px] backdrop-blur-[5px] bg-white/70">
                 {!hideApp && (
                     <div className="w-full relative flex items-center justify-center flex-col pt-[25px] bg-white">
                         <div className="w-full flex flex-col items-center justify-center mb-[25px]">
@@ -81,7 +81,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
                             <div className="absolute bg-white min-w-[70px] min-h-[70px] max-w-[70px] max-h-[70px] rounded-full mb-6 shadow-soft-bottom top-[10px] overflow-hidden border-solid border-white border-[3px]">
                                 <ProfilePicture
                                     customContainerClass="flex w-[70px] h-[70px] items-center justify-center rounded-full overflow-hidden object-cover"
-                                    customImageClass="w-full h-full object-cover flex-shrink-0"
+                                    customImageClass="w-full h-full object-cover shrink-0"
                                     customSize={120}
                                 />
                             </div>

@@ -33,7 +33,7 @@ export const AiInsightsUserRequestsToast: React.FC<{
     const handleGetPermission = () => {
         newModal(
             <AiInsightsParentConsent targetProfile={contract?.owner as LCNProfile} />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };

@@ -104,7 +104,7 @@ const PermissionsBox: React.FC<PermissionsBoxProps> = ({
                         return (
                             <div
                                 key={index}
-                                className="flex flex-col gap-[5px] py-[10px] border-b-[1px] border-grayscale-200 border-solid last:border-b-0 w-full items-start"
+                                className="flex flex-col gap-[5px] py-[10px] border-b border-grayscale-200 border-solid last:border-b-0 w-full items-start"
                             >
                                 <span className="text-grayscale-900 font-notoSans text-[14px] font-[600]">
                                     {key}

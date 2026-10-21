@@ -258,7 +258,7 @@ const VCToShare: React.FC<{
                         </button>
                     </div>
                 ) : (
-                    <div className="mx-auto w-full max-w-2xl space-y-3 pb-6">
+                    <div className="mx-auto w-full max-w-2xl space-y-v3-3 pb-6">
                         {renderCredentialList}
                     </div>
                 )}
