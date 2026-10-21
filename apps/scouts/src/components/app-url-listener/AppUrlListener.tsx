@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
-import { PluginListenerHandle } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
@@ -22,6 +22,8 @@ export const AppUrlListener: React.FC = () => {
 
     useEffect(() => {
         let listener: PluginListenerHandle | null = null;
+        let disposed = false;
+        let receivedWarmLink = false;
 
         const handleUrlOpen = (event: URLOpenListenerEvent) => {
             try {
@@ -30,7 +32,7 @@ export const AppUrlListener: React.FC = () => {
                 for (const domain of deepLinkDomains) {
                     const domainUrl = new URL(domain);
 
-                    if (eventUrl.origin === domainUrl.origin) {
+                    if (eventUrl.protocol === 'https:' && eventUrl.origin === domainUrl.origin) {
                         const path = eventUrl.pathname + eventUrl.search + eventUrl.hash;
                         history.push(path);
                         return;
@@ -43,12 +45,24 @@ export const AppUrlListener: React.FC = () => {
 
         // Async setup with proper Promise handling
         const setupListener = async () => {
-            listener = await App.addListener('appUrlOpen', handleUrlOpen);
+            listener = await App.addListener('appUrlOpen', event => {
+                receivedWarmLink = true;
+                if (!disposed) handleUrlOpen(event);
+            });
+            if (disposed) {
+                await listener.remove();
+                return;
+            }
+            if (Capacitor.isNativePlatform()) {
+                const launch = await App.getLaunchUrl();
+                if (!disposed && !receivedWarmLink && launch) handleUrlOpen(launch);
+            }
         };
-        setupListener();
+        void setupListener().catch(() => log.warn('Unable to register app links'));
 
         // Cleanup function
         return () => {
+            disposed = true;
             if (listener) {
                 listener.remove();
             }

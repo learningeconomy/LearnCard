@@ -26,6 +26,7 @@ import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
 import useAppStore from './useAppStore';
+import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticStarRating';
@@ -70,12 +71,21 @@ interface AppListingParams {
 interface LocationState {
     listing?: ExtendedAppStoreListing;
     isPreview?: boolean;
+    embedUrl?: string;
+    appName?: string;
+    launchConfig?: Record<string, unknown>;
+    isInstalled?: boolean;
+    path?: string;
 }
 
 const AppListingPage: React.FC = () => {
     const { listingId } = useParams<AppListingParams>();
     const history = useHistory<LocationState>();
     const location = history.location;
+    const launchQuery = new URLSearchParams(location.search);
+    const launchRequested = launchQuery.get('launch') === '1';
+    const initialPath = launchQuery.get('path') ?? undefined;
+    const launchedRef = useRef<string | null>(null);
     const isLoggedIn = useIsLoggedIn();
     const { newModal, closeModal, replaceModal } = useModal();
     const { presentToast } = useToast();
@@ -245,6 +255,13 @@ const AppListingPage: React.FC = () => {
         try {
             await installMutation.mutateAsync(listing.listing_id);
 
+            if (launchRequested) {
+                // Installation may finish after the learner has left this listing.
+                if (history.location.key !== location.key) return;
+                await handleLaunch();
+                return;
+            }
+
             // Show success modal asking if user wants to open the app
             newModal(
                 <div className="p-6 text-center max-w-sm mx-auto">
@@ -287,6 +304,10 @@ const AppListingPage: React.FC = () => {
             );
         } catch (error) {
             log.error('Failed to install app:', error);
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -296,6 +317,8 @@ const AppListingPage: React.FC = () => {
         if (!listing) return;
 
         if (!isLoggedIn) {
+            if (launchRequested)
+                redirectStore.set.authRedirect(location.pathname + location.search);
             redirectStore.set.installIntent({
                 listingId,
                 appName: listing.display_name,
@@ -432,8 +455,28 @@ const AppListingPage: React.FC = () => {
         );
     };
 
-    const handleLaunch = async () => {
+    const proceedWithLaunch = async () => {
         if (!listing) return;
+
+        if (launchRequested) {
+            const key = `${listingId}:${location.search}`;
+            if (launchedRef.current === key) return;
+            if (
+                listing.launch_type !== 'EMBEDDED_IFRAME' ||
+                !buildEmbedUrlWithPath(launchConfig.url, initialPath, window.location.origin)
+            ) {
+                throw new Error('Invalid embedded app destination');
+            }
+            launchedRef.current = key;
+            history.replace(`/apps/${encodeURIComponent(listing.slug || listing.listing_id)}`, {
+                embedUrl: launchConfig.url,
+                appName: listing.display_name,
+                launchConfig,
+                isInstalled: true,
+                path: initialPath,
+            });
+            return;
+        }
 
         // For consent flow apps, redirect with did and delegate VP
         if (hasConsented && contract) {
@@ -531,6 +574,43 @@ const AppListingPage: React.FC = () => {
             window.open(launchConfig.url, '_blank');
         }
     };
+
+    const handleLaunch = async (): Promise<void> => {
+        setIsProcessing(true);
+        try {
+            await proceedWithLaunch();
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    // An installed listing is a transient entry page. Installation still requires consent.
+    useEffect(() => {
+        if (
+            !launchRequested ||
+            !isLoggedIn ||
+            isCheckingInstalled ||
+            !isInstalled ||
+            !listing ||
+            isOnboardingOpen
+        )
+            return;
+        void handleLaunch();
+    }, [
+        launchRequested,
+        listingId,
+        location.search,
+        isLoggedIn,
+        isCheckingInstalled,
+        isInstalled,
+        listing,
+        isOnboardingOpen,
+    ]);
 
     const launchType = listing?.launch_type as string;
     const canLaunch =
@@ -680,9 +760,14 @@ const AppListingPage: React.FC = () => {
                                             {canLaunch && (
                                                 <button
                                                     onClick={handleLaunch}
-                                                    className="flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+                                                    disabled={isProcessing}
+                                                    className="flex-1 sm:flex-none px-8 py-3 bg-grayscale-900 text-white rounded-[20px] font-semibold hover:opacity-90 disabled:opacity-40"
                                                 >
-                                                    {m['common.open']()}
+                                                    {isProcessing ? (
+                                                        <IonSpinner name="dots" />
+                                                    ) : (
+                                                        m['common.open']()
+                                                    )}
                                                 </button>
                                             )}
 

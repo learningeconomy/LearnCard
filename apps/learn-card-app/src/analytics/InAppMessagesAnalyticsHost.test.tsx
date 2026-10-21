@@ -1,4 +1,5 @@
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import type { InAppMessageHostProps, InAppMessagePresentationEvent } from 'learn-card-base';
@@ -21,7 +22,11 @@ afterEach(() => {
 });
 
 it('forwards only allowlisted metadata and excludes previews', () => {
-    render(<InAppMessagesAnalyticsHost />);
+    render(
+        <MemoryRouter>
+            <InAppMessagesAnalyticsHost />
+        </MemoryRouter>
+    );
     const event: InAppMessagePresentationEvent & { credential: string; url: string } = {
         type: 'action',
         messageId: 'intro',

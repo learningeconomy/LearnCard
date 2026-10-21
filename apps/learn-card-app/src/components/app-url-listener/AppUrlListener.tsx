@@ -2,7 +2,7 @@ import { enterSharePrivacy } from '../share-links/sharePrivacy';
 import React, { useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
-import { PluginListenerHandle } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
 import {
     isTenantHttpsUrl,
@@ -21,11 +21,17 @@ export const AppUrlListener: React.FC = () => {
 
     useEffect(() => {
         let listener: PluginListenerHandle | null = null;
+        let disposed = false;
+        let receivedWarmLink = false;
 
         const handleUrlOpen = (event: URLOpenListenerEvent) => {
             try {
                 const isOnTenantHttpsDomain = isTenantHttpsUrl(event.url, parserConfig);
                 const incoming = new URL(event.url);
+                if (isOnTenantHttpsDomain && /^\/m\/[^/]+\/?$/.test(incoming.pathname)) {
+                    history.push(incoming.pathname);
+                    return;
+                }
                 if (isOnTenantHttpsDomain && /^\/s(?:\/|$)/.test(incoming.pathname)) {
                     enterSharePrivacy();
                     history.push(incoming.pathname + incoming.hash);
@@ -77,11 +83,23 @@ export const AppUrlListener: React.FC = () => {
         };
 
         const setupListener = async () => {
-            listener = await App.addListener('appUrlOpen', handleUrlOpen);
+            listener = await App.addListener('appUrlOpen', event => {
+                receivedWarmLink = true;
+                if (!disposed) handleUrlOpen(event);
+            });
+            if (disposed) {
+                await listener.remove();
+                return;
+            }
+            if (Capacitor.isNativePlatform()) {
+                const launch = await App.getLaunchUrl();
+                if (!disposed && !receivedWarmLink && launch) handleUrlOpen(launch);
+            }
         };
-        setupListener();
+        void setupListener().catch(() => log.warn('Unable to register app links'));
 
         return () => {
+            disposed = true;
             if (listener) {
                 listener.remove();
             }
