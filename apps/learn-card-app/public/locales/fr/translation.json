@@ -1136,7 +1136,8 @@
                 "error": "Impossible de vérifier le code. Veuillez réessayer."
             },
             "error": {
-                "invalidEmail": "E-mail manquant ou invalide"
+                "invalidEmail": "E-mail manquant ou invalide",
+                "sendFailed": "Impossible d'envoyer le code. Veuillez réessayer."
             },
             "label": "E-mail"
         },
@@ -1145,7 +1146,14 @@
             "button": "Se connecter par SMS",
             "smsSent": "Un code de vérification a été envoyé",
             "error": {
-                "invalidPhone": "Le numéro de téléphone est requis !"
+                "invalidPhone": "Le numéro de téléphone est requis !",
+                "invalidPhoneNumber": "Veuillez saisir un numéro de téléphone valide.",
+                "invalidCode": "Code invalide ou expiré.",
+                "tooManyAttempts": "Trop de tentatives. Veuillez renvoyer le code.",
+                "tooManyRequests": "Trop de tentatives depuis ce numéro de téléphone. Pour votre sécurité, veuillez patienter 10 à 15 minutes avant de réessayer, ou connectez-vous par e-mail.",
+                "quotaExceeded": "Nous ne pouvons pas envoyer de SMS pour le moment. Veuillez réessayer plus tard ou vous connecter par e-mail.",
+                "network": "Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.",
+                "generic": "Une erreur s'est produite. Veuillez réessayer."
             }
         },
         "social": {

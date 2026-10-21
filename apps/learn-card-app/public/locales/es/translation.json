@@ -1136,7 +1136,8 @@
                 "error": "No se pudo verificar el código. Intenta de nuevo."
             },
             "error": {
-                "invalidEmail": "Correo faltante o inválido"
+                "invalidEmail": "Correo faltante o inválido",
+                "sendFailed": "No se pudo enviar el código. Inténtalo de nuevo."
             },
             "label": "Correo electrónico"
         },
@@ -1145,7 +1146,14 @@
             "button": "Iniciar sesión con SMS",
             "smsSent": "Se ha enviado un código de verificación",
             "error": {
-                "invalidPhone": "¡Se requiere teléfono!"
+                "invalidPhone": "¡Se requiere teléfono!",
+                "invalidPhoneNumber": "Introduce un número de teléfono válido.",
+                "invalidCode": "Código no válido o caducado.",
+                "tooManyAttempts": "Demasiados intentos. Vuelve a enviar el código.",
+                "tooManyRequests": "Demasiados intentos desde este número de teléfono. Por tu seguridad, espera de 10 a 15 minutos antes de volver a intentarlo o inicia sesión con tu correo electrónico.",
+                "quotaExceeded": "No podemos enviar un mensaje de texto en este momento. Inténtalo más tarde o inicia sesión con tu correo electrónico.",
+                "network": "Problema de conexión. Comprueba tu conexión a internet e inténtalo de nuevo.",
+                "generic": "Algo salió mal. Inténtalo de nuevo."
             }
         },
         "social": {
