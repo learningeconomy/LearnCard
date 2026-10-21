@@ -24,6 +24,16 @@ flowchart LR
     Results --> Retry[Retry definite failures]
 ```
 
+## File size and processing limits
+
+Spreadsheet files are parsed on your device. The original CSV, TSV, or XLSX file is not uploaded to the issuance server. Selected evidence links are referenced without fetching them during import.
+
+Imports allow at most 10 MiB of file data, 10,000 people, 200 columns, and 2,000,000 cells. CSV parsing stops when a row, column, or cell limit is reached. XLSX archives also allow at most 1,000 members and 32 MiB of actual expanded data across all members, including hidden sheets and embedded media. Declared ZIP sizes alone do not determine acceptance. Duplicate or ambiguous member paths are rejected.
+
+XLSX parsing runs in a separate browser worker. The app terminates the worker after 20 seconds, or when parsing succeeds or fails. If a workbook is too complex, remove unused sheets and media or split it into smaller files. These processing limits are not a fixed ceiling on the browser's total memory use.
+
+The issuance API separately enforces a 4 MiB JSON request limit and at most 100 items per batch. Accepted email batches use a durable queue and an issuer-specific hourly admission quota (10,000 items by default, configurable by the service operator). These limits do not replace deployment-level request-rate, connection, or aggregate-concurrency controls.
+
 ## Start with a spreadsheet
 
 You can also choose **Start from a link, file, or ID** before selecting a credential type. Upload a spreadsheet or paste its rows, review the recipient column, and choose **Add People**. The people and original cells remain available when choosing or changing the credential type.
