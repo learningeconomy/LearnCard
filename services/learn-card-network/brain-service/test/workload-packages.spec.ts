@@ -520,6 +520,25 @@ describe('workload planning', (): void => {
     it('hashes every review-bearing workload field and canonical config, not revision/time', async (): Promise<void> => {
         const workload = await resolveWorkloadPlan(member, config, bundle);
         const original = hash(workload);
+        const withReadiness: WorkloadPlan = {
+            ...workload,
+            endpoints: workload.endpoints.map((endpoint): WorkloadPlan['endpoints'][number] => ({
+                ...endpoint,
+                readiness: { path: '/' },
+            })),
+        };
+        expect(hash(withReadiness)).not.toBe(original);
+        expect(
+            hash({
+                ...withReadiness,
+                endpoints: withReadiness.endpoints.map(
+                    (endpoint): WorkloadPlan['endpoints'][number] => ({
+                        ...endpoint,
+                        readiness: { path: '/healthz' },
+                    })
+                ),
+            })
+        ).not.toBe(hash(withReadiness));
         const changes: WorkloadPlan[] = [
             { ...workload, profiles: ['core'] },
             {

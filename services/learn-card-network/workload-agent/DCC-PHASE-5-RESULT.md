@@ -1,5 +1,40 @@
 # DCC phase 5 result — BLOCKED, not READY
 
+## 5A proof — partial contract implementation, no deployment proof
+
+This follow-up adds optional endpoint `readiness.path` and `readiness.expectStatus`.
+The agent uses a bounded, unauthenticated GET, defaults the explicit readiness
+probe's expected status to 200, and preserves the advertised endpoint URL.
+Absent readiness, the existing endpoint-path/2xx behavior is unchanged. Brain's
+all-components/all-endpoints READY predicate is unchanged. Endpoint declarations
+remain in the hash-bound plan's `endpoints` field alongside `execution`; they were
+not moved into the execution block. Hash mutation coverage verifies that changing
+the readiness path changes the approval hash.
+
+Executed verification in this follow-up:
+
+- Types build: exit 0; **54 tests passed**.
+- Agent typecheck, lint and build: exit 0; **65 tests passed, 1 skipped**.
+  New cases cover advertised URL preservation, declared readiness, default 200,
+  custom status, fallback 204, invalid paths and invalid status values.
+- Brain typecheck: exit 0.
+- Requested integration selection: **3 files, 50 tests passed**.
+- ESLint on changed types and Brain test files: exit 0.
+- LSP error diagnostics: clean on all four changed TypeScript files.
+
+Execution limitations: the implementation worker timed out after five minutes
+without returning a result. This is a tooling limitation, not proof of a DCC
+runtime failure. `timeout` and `gtimeout` are unavailable on this host; verification
+commands instead used Python `subprocess.run(..., timeout=..., check=True)`.
+The independent five-agent review was not completed.
+
+**Not performed:** shared core package builder, bundle v1.2.0 publication, seed/prove
+scripts, compose allowlist changes, agent image/Brain stack rebuild, operator
+installation, smoke issuance, restart/idempotency checks, or seed-dev-all twice.
+There is no deployment ID, container evidence, issued proof, or secret-hash evidence
+from this follow-up. These are unfinished implementation phases, not established
+runtime blockers. No READY claim or production approval is made. No commit was made.
+
 ## 5A result
 
 Observed 2026-10-20. **BLOCKED before publication or installation; not READY.**

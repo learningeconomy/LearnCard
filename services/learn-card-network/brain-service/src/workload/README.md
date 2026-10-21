@@ -65,6 +65,14 @@ Completion alone never sets READY. Stale revisions return `CONFLICT`.
 
 ## Health and endpoint observations
 
+HTTP endpoints may declare `readiness: { path: '/', expectStatus: 200 }` separately
+from their advertised API `path`. The expected status defaults to 200; paths must
+start with `/` and contain neither `..` nor a query. These declarations flow into
+the hash-bound plan endpoints alongside the execution block. Agents perform a
+bounded unauthenticated GET against the readiness path, but report and bind the
+advertised API URL. Without readiness, agents retain the endpoint-path probe.
+This does not relax the requirement that every endpoint check pass before READY.
+
 Only component/endpoint IDs in the approved selected-profile plan are accepted.
 Duplicate or undeclared IDs return `BAD_REQUEST`. Addresses are opaque observations:
 only `http:`, `https:`, and `tcp:` with a hostname are accepted. There are no fixed

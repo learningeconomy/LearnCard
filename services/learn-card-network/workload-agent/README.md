@@ -165,7 +165,12 @@ TCP and EXEC argv checks run from the agent temporarily attached to the deployme
 network. Endpoint checks are separate from component checks. Probe caches respect
 component intervals; actual scheduling is bounded by polling and work duration.
 HTTP endpoints requiring tenant authentication return unhealthy unless the package
-declares an unauthenticated readiness URL; the agent never guesses credentials.
+declares an unauthenticated `readiness: { path: '/', expectStatus: 200 }` probe;
+`expectStatus` defaults to 200. The bounded GET uses that path without credentials,
+while observations and bindings retain the advertised endpoint `path` (for example,
+`/instance`). Without `readiness`, the existing endpoint-path probe and successful
+2xx status behavior are unchanged. Readiness declarations are part of the approved,
+hash-bound plan endpoints; the agent never guesses credentials.
 HTTPS keeps normal certificate validation (IP-hostname certificates can fail).
 
 RETIRE executes Compose `down` **without `-v`**, stopping/removing containers while

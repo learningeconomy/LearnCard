@@ -121,8 +121,11 @@ export const createHealthProbe = (run: Runner, agentContainer: string): HealthPr
                     (endpoint.protocol === 'tcp'
                         ? await tcpProbe(host, port, timeout)
                         : await httpProbe(
-                              `${endpoint.protocol}://${host}:${port}${endpoint.path}`,
-                              timeout
+                              `${endpoint.protocol}://${host}:${port}${endpoint.readiness?.path ?? endpoint.path}`,
+                              timeout,
+                              endpoint.readiness
+                                  ? (endpoint.readiness.expectStatus ?? 200)
+                                  : undefined
                           ));
                 endpoints.push({
                     id: endpoint.id,

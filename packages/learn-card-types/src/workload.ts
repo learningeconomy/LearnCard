@@ -393,6 +393,13 @@ export const WorkloadEndpointDeclarationValidator = z
         port: id,
         path: relativePath,
         protocol: z.enum(['http', 'https', 'tcp']),
+        readiness: z
+            .object({
+                path: relativePath.refine((value): boolean => !value.includes('..')),
+                expectStatus: z.number().int().min(100).max(599).optional(),
+            })
+            .strict()
+            .optional(),
         visibility: z.enum(['internal', 'ecosystem', 'public']),
         auth: z.enum(['none', 'tenant-token', 'mtls']),
         capability: CapabilityEnum.optional(),
