@@ -1,5 +1,96 @@
 # DCC phase 5 result — BLOCKED, not READY
 
+## 5A result
+
+Observed 2026-10-20. **BLOCKED before publication or installation; not READY.**
+Owner-directed scope is signing core only: issuer-coordinator + signing-service.
+`status-db` requires Mongo replica set (transactions) — pending phase 5B contract
+extension; not installable yet. `lcw-exchange` remains excluded because it requires
+the unpackaged transaction-service. Neither omission implies production readiness.
+
+### Core image hardening preflight
+
+Pulled the two linux/arm64 digest references in the resolved-images table below.
+Image inspection showed:
+
+- issuer-coordinator: no configured User (defaults to root), working directory
+  `/app`, entrypoint `docker-entrypoint.sh`, command `node server.js`.
+- signing-service: configured User `0`, working directory `/`, entrypoint
+  `/nodejs/bin/node`, command `app/server.js`.
+
+Both services ran successfully with explicit `--user 1000:1000 --read-only
+--cap-drop ALL --security-opt no-new-privileges`. Issuer additionally used only
+`--tmpfs /app/logs:rw,noexec,nosuid,size=16m`; signer needed no writable mount.
+The signer had `--network none`; issuer shared its network namespace for this
+isolated preflight. No host ports were published. This is not evidence of the
+agent's deployment-network path or a real Brain deployment.
+
+Environment mappings exercised: signer `PORT=4006`,
+`TENANT_DIDMETHOD_EDU=key`, `TENANT_SEED_EDU` (fresh process-local random seed,
+identity-multihash base58btc multibase); issuer `PORT=4005`,
+`SIGNING_SERVICE=127.0.0.1:4006`, `ENABLE_STATUS_SERVICE=false`,
+`TENANT_TOKEN_EDU` (fresh process-local random token). Both had
+`ENABLE_HTTPS_FOR_DEV=false` and `ENABLE_ACCESS_LOGGING=false`.
+Secrets were generated inside the startup process, never printed or persisted.
+Probe startup wrappers imported the images' real server entrypoints; they did not
+test the unmodified default command with agent-generated env files. Initial
+wrapper attempts failed on ESM imports / a nonexistent bnid encoder export;
+corrected wrappers used dynamic imports and direct base58btc encoding.
+
+Read-only HTTP probes, each with `AbortSignal.timeout(5000)`, observed:
+
+```text
+signer GET /healthz 200
+issuer GET /        200
+issuer GET /instance 404
+```
+
+### Blocking endpoint-readiness mismatch
+
+The requested credential-issuer endpoint must advertise `/instance`, but that is
+an API base, not a successful unauthenticated GET resource in this pinned image.
+`workload-agent/src/health.ts:113–131` independently probes **every** endpoint at
+its declared path, without authentication; `httpProbe` requires a successful
+HTTP status. Component health at `/` does not override this endpoint failure.
+Brain requires all declared endpoints healthy before READY (see
+`brain-service/src/workload/README.md:78–85`). The optional bundle member does not
+relax the workload's own READY requirements.
+
+`WorkloadEndpointDeclarationValidator` in `packages/learn-card-types/src/workload.ts`
+is strict and has no separate readiness-path declaration. Thus the exact requested
+`/instance` endpoint cannot become healthy through this agent as currently written,
+even with both components healthy. The README's suggestion to declare an
+unauthenticated readiness URL does not provide a separate readiness URL field.
+No 404-as-healthy exception, skipped endpoint probe, fabricated observation, or
+replacement of the requested API base with `/` was introduced.
+
+Next design decision: add an explicit, reviewed, hash-bound endpoint readiness
+path (preserving the advertised API base), carry it through planning/approval,
+and test that the agent probes it while recording `/instance`. Alternatively,
+approve a different endpoint contract. This is separate from the deferred Mongo
+replica-set extension; deferring Mongo alone does not resolve this blocker.
+
+### Scope and verification of this attempt
+
+- Existing stack preflight: agent, Brain, console/BFF, Redis and ElasticMQ running;
+  platform MongoDB and Neo4j healthy.
+- Docker calls were bounded to 10–20 seconds for inspect/run/exec/logs/cleanup and
+  120 seconds per image pull. Both pulls completed. Progress was reported between
+  preflight stages; no unbounded Docker/network wait was used.
+- Both `dcc-5a-*-probe` containers were stopped and removed successfully. Pulled
+  images remain cached. No existing stack service was restarted or rebuilt.
+- Only this evidence document was changed. No commit was made. No signed workload
+  or bundle 1.2.0 was published, no allowlist was changed, and no install was run.
+  There is no deployment ID, lifecycle transition, API-issued credential, or
+  restart/secret-hash idempotency evidence from this attempt.
+- Shared manifest, seed/prove scripts, bundle wiring and requested build/typecheck/
+  test/lint suites (including seed-dev-all twice) were **not performed**. Test count
+  for this attempt: **0**; the HTTP probes above are not automated-suite results.
+- Helper-agent launch failed with `UnknownError` before execution. No delegated
+  implementation or independent review result is claimed.
+- LEF sign-off, named support owners, managed institution did:web / ISSUES_AS,
+  production status publication, and retirement obligations remain OPEN.
+
 ## Follow-up implementation and runtime evidence (2026-10-20)
 
 Implemented numeric non-root `user`, bounded declared `tmpfs` (16 mounts maximum,
