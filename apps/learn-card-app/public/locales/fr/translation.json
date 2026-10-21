@@ -9361,6 +9361,7 @@
             "invalidEvidence": "Saisissez un lien de preuve complet en http ou https.",
             "formula": "Recalculez cette formule dans votre feuille et importez-la à nouveau.",
             "tooLarge": "Utilisez un fichier de moins de 10 Mo avec au maximum 10 000 personnes et 200 colonnes.",
+            "tooComplex": "Ce classeur est trop complexe à importer. Supprimez les feuilles inutilisées ou divisez-le en fichiers plus petits.",
             "storage": "La récupération n’a pas pu être enregistrée. Libérez de l’espace et réessayez.",
             "corrupt": "Cet envoi enregistré n’a pas pu être lu. Conservez la feuille et vérifiez les résultats avant de recommencer.",
             "contextChanged": "Votre compte ou réseau a changé. Revenez au compte d’origine pour continuer.",

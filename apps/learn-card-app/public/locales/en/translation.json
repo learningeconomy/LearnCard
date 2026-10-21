@@ -9412,6 +9412,7 @@
             "invalidEvidence": "Enter a complete http or https evidence link.",
             "formula": "Recalculate this formula in your spreadsheet and upload again.",
             "tooLarge": "Use a file under 10 MB with at most 10,000 people and 200 columns.",
+            "tooComplex": "This workbook is too complex to import. Remove unused sheets or split it into smaller files.",
             "storage": "Recovery could not be saved on this device. Free some space and try again.",
             "corrupt": "This saved run could not be read. Keep your spreadsheet and check sent results before starting again.",
             "contextChanged": "Your account or network changed. Return to the original account to resume.",

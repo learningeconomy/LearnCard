@@ -36,6 +36,8 @@ export const spreadsheetErrorMessage = (error: unknown): string => {
             return m['issueFlow.sheet.bounds']({
                 cell: error instanceof SpreadsheetError ? (error.cell ?? '') : '',
             });
+        case 'complexity':
+            return m['issueFlow.sheet.tooComplex']();
         case 'limit':
         case 'oversize':
             return m['issueFlow.sheet.tooLarge']();

@@ -13,6 +13,9 @@ import {
 
 export const SPREADSHEET_LIMITS = {
     bytes: 10 * 1024 * 1024,
+    expandedBytes: 32 * 1024 * 1024,
+    archiveEntries: 1_000,
+    parseTimeoutMs: 20_000,
     rows: 10_000,
     columns: 200,
     cells: 2_000_000,
@@ -21,6 +24,7 @@ export const SPREADSHEET_LIMITS = {
 export type SpreadsheetErrorCode =
     | 'file'
     | 'limit'
+    | 'complexity'
     | 'encoding'
     | 'bounds'
     | 'malformed'
@@ -46,23 +50,37 @@ export const readSpreadsheetText = (text: string, name = 'spreadsheet.csv'): Spr
     if (text.includes('\uFFFD')) throw new SpreadsheetError('encoding');
     if (new TextEncoder().encode(text).length > SPREADSHEET_LIMITS.bytes)
         throw new SpreadsheetError('limit');
-    const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), {
+    const matrix: SpreadsheetCell[][] = [];
+    let failure: SpreadsheetError | undefined;
+    let cells = 0;
+    Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), {
         header: false,
         dynamicTyping: false,
         delimiter: name.toLowerCase().endsWith('.tsv') ? '\t' : '',
         delimitersToGuess: [',', '\t', ';'],
+        step: (result, parser) => {
+            cells += result.data.length;
+            if (result.errors.some(error => error.code === 'MissingQuotes'))
+                failure = new SpreadsheetError('malformed');
+            else if (
+                matrix.length >= SPREADSHEET_LIMITS.rows + 100 ||
+                result.data.length > SPREADSHEET_LIMITS.columns ||
+                cells > SPREADSHEET_LIMITS.cells
+            )
+                failure = new SpreadsheetError('limit');
+            if (failure) parser.abort();
+            else matrix.push(result.data.map(value => ({ text: value ?? '' })));
+        },
     });
-    if (parsed.errors.some(error => error.code === 'MissingQuotes'))
-        throw new SpreadsheetError('malformed');
-    const matrix = parsed.data.map(row => row.map(value => ({ text: value ?? '' })));
-    checkMatrixLimits(matrix);
+    if (failure) throw failure;
     return { name, sheets: { Sheet1: matrix } };
 };
 
 export const checkMatrixLimits = (matrix: SpreadsheetCell[][]): void => {
     if (
         matrix.length > SPREADSHEET_LIMITS.rows + 100 ||
-        matrix.some(row => row.length > SPREADSHEET_LIMITS.columns)
+        matrix.some(row => row.length > SPREADSHEET_LIMITS.columns) ||
+        matrix.reduce((sum, row) => sum + row.length, 0) > SPREADSHEET_LIMITS.cells
     )
         throw new SpreadsheetError('limit');
 };
@@ -70,8 +88,8 @@ export const checkMatrixLimits = (matrix: SpreadsheetCell[][]): void => {
 export const readSpreadsheetFile = async (file: File): Promise<SpreadsheetSource> => {
     if (file.size > SPREADSHEET_LIMITS.bytes) throw new SpreadsheetError('limit');
     if (/\.xlsx$/i.test(file.name)) {
-        const { readXlsx } = await import('./readXlsx');
-        return readXlsx(await file.arrayBuffer(), file.name);
+        const { readXlsxInWorker } = await import('./readXlsxInWorker');
+        return readXlsxInWorker(await file.arrayBuffer(), file.name);
     }
     if (!/\.(csv|tsv)$/i.test(file.name)) throw new SpreadsheetError('file');
     let text: string;

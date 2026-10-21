@@ -5,6 +5,8 @@ import type { TrpcMock, BrainOutputs } from './mocks/trpc';
 import { installNetwork } from './mocks/network';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
+import { utils, write } from 'xlsx';
+import { zipSync } from 'fflate';
 
 const NAME_PLACEHOLDER = 'e.g. Web Development Fundamentals';
 
@@ -151,6 +153,54 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await selectBadgeType(page);
         await page.getByRole('button', { name: 'JSON', exact: true }).click({ timeout: 30_000 });
         await expect(page.locator('textarea.font-mono')).toBeVisible({ timeout: 30_000 });
+    });
+
+    test('rejects an excessive XLSX archive and then imports a normal workbook through the real browser worker', async ({
+        page,
+    }) => {
+        await selectBadgeType(page);
+        await page.getByRole('button', { name: /specific people/i }).click();
+        const archive = zipSync(
+            Object.fromEntries(
+                Array.from({ length: 1_001 }, (_, index) => [
+                    `unused-${index}.xml`,
+                    new Uint8Array(),
+                ])
+            )
+        );
+        await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+            name: 'too-many-parts.xlsx',
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            buffer: Buffer.from(archive),
+        });
+        await expect(
+            page.getByText(
+                'This workbook is too complex to import. Remove unused sheets or split it into smaller files.',
+                { exact: true }
+            )
+        ).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toHaveCount(0);
+
+        const workbook = utils.book_new();
+        utils.book_append_sheet(
+            workbook,
+            utils.aoa_to_sheet([
+                ['Email', 'Name'],
+                ['ada@test.com', 'Ada'],
+                ['bob@test.com', 'Bob'],
+            ]),
+            'People'
+        );
+        await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+            name: 'people.xlsx',
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            buffer: Buffer.from(
+                write(workbook, { type: 'array', bookType: 'xlsx', compression: true })
+            ),
+        });
+        await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
+        await page.getByRole('button', { name: 'Add People', exact: true }).click();
+        await expect(page.getByText('2 people · people.xlsx', { exact: true })).toBeVisible();
     });
 
     test('imports ten people, summarizes recipients, edits errors and restores the draft', async ({
