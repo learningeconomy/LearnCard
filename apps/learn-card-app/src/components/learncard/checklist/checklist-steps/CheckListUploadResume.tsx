@@ -63,6 +63,8 @@ export const CheckListUploadResume: React.FC = () => {
         retryFileExtraction,
         retryFileSave,
         isParsing,
+        isWaitingForCapacity,
+        cancelCapacityWait,
     } = useUploadFile(UploadTypesEnum.Resume);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
@@ -291,6 +293,8 @@ export const CheckListUploadResume: React.FC = () => {
                 <>
                     {isParsing && !isSaving && !loaderDismissed && (
                         <ChecklistLoader
+                            waitingForCapacity={isWaitingForCapacity}
+                            onCancelWait={cancelCapacityWait}
                             fileType={UploadTypesEnum.Resume}
                             onDismiss={() => setLoaderDismissed(true)}
                         />
@@ -339,10 +343,22 @@ export const CheckListUploadResume: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
-                                        {m[
-                                            'passport.buildMyLearnCard.managers.resume.processingBg'
-                                        ]()}
+                                        {isWaitingForCapacity
+                                            ? m[
+                                                  'passport.buildMyLearnCard.loader.waitingForCapacity'
+                                              ]()
+                                            : m[
+                                                  'passport.buildMyLearnCard.managers.resume.processingBg'
+                                              ]()}
                                     </p>
+                                    {isWaitingForCapacity && (
+                                        <button
+                                            onClick={cancelCapacityWait}
+                                            className="ml-auto text-xs text-grayscale-700 hover:text-grayscale-900"
+                                        >
+                                            {m['common.cancel']()}
+                                        </button>
+                                    )}
                                 </div>
                             )}
 

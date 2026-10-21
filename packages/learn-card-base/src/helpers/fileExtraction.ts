@@ -1,4 +1,5 @@
-import { aiPassportFetch } from './aiPassportAuth';
+import { aiPassportFetch, createAiPassportRequestScope } from './aiPassportAuth';
+import { isUploadCapacityRejection, waitForUploadCapacity } from './uploadCapacity';
 import { addActiveLocaleToUrl } from '../i18n';
 import { networkStore } from '../stores/NetworkStore';
 import { getDiagnosticCollectionContext, getLogger } from '../logging/logger';
@@ -36,6 +37,8 @@ const MESSAGES: Record<string, string> = {
     OWNER_OPERATION_UNAVAILABLE: 'We could not process this file right now. Please try again.',
     RESPONSE_INVALID: 'We received an incomplete result. Please try again.',
     NETWORK_FAILED: 'Connection issue. Please check your internet and try again.',
+    UPLOAD_BUSY: 'Uploads are still busy. Please try again shortly.',
+    UPLOAD_CANCELLED: 'Upload cancelled.',
 };
 
 export class FileExtractionError extends Error {
@@ -155,64 +158,101 @@ export const extractFileCredentials = async (input: {
     file: string;
     fileType: string;
     attempt?: FileExtractionAttempt;
+    waitSignal?: AbortSignal;
+    onWaiting?: (waiting: boolean) => void;
+    onAttempt?: (attempt: FileExtractionAttempt) => void;
 }): Promise<FileExtractionResponse> => {
     const fileType = FILE_KINDS.find(kind => kind === input.fileType);
     if (!fileType) throw new FileExtractionError('INPUT_INVALID');
-    const attempt = input.attempt ?? createFileExtractionAttempt();
+    let attempt = input.attempt ?? createFileExtractionAttempt();
     if (!FileExtractionAttemptValidator.safeParse(attempt).success) {
         throw new FileExtractionError('INPUT_INVALID');
     }
-    let response: Response;
+    let scope: ReturnType<typeof createAiPassportRequestScope>;
     try {
-        response = await aiPassportFetch(
-            addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/credentials/parse-file`),
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    file: input.file,
-                    fileType,
-                    diagnostics: { ...attempt, enabled: canRecordOperation(attempt) },
-                }),
-            },
-            input.did
-        );
+        scope = createAiPassportRequestScope(input.did);
     } catch {
-        recordExtraction(attempt, fileType, undefined, 'NETWORK_FAILED');
-        throw new FileExtractionError('NETWORK_FAILED');
+        throw new FileExtractionError('UPLOAD_CANCELLED');
     }
-
-    let body: unknown;
     try {
-        body = await response.json();
-    } catch {
-        recordExtraction(attempt, fileType, undefined, 'RESPONSE_INVALID', response.status);
-        throw new FileExtractionError('RESPONSE_INVALID', undefined, response.status);
-    }
-    const rawProcessing =
-        body && typeof body === 'object' && 'processing' in body ? body.processing : undefined;
-    const parsedProcessing = FileProcessingMetadataValidator.safeParse(rawProcessing);
-    const processing = parsedProcessing.success ? parsedProcessing.data : undefined;
-    const matchesRequest =
-        processing &&
-        processing.operationId === attempt.operationId &&
-        processing.attemptId === attempt.attemptId &&
-        processing.attempt === attempt.attempt &&
-        processing.fileType === fileType;
-    if (!response.ok) {
-        if (matchesRequest && processing.outcome === 'failed' && processing.stage !== 'complete') {
-            recordExtraction(attempt, fileType, processing, undefined, response.status);
-            throw new FileExtractionError(processing.code, processing, response.status);
+        let response: Response;
+        try {
+            response = await waitForUploadCapacity(
+                async retry => {
+                    if (retry) attempt = createFileExtractionAttempt(attempt);
+                    input.onAttempt?.(attempt);
+                    return aiPassportFetch(
+                        addActiveLocaleToUrl(
+                            `${networkStore.get.aiServiceUrl()}/credentials/parse-file`
+                        ),
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            signal: scope.signal,
+                            body: JSON.stringify({
+                                file: input.file,
+                                fileType,
+                                diagnostics: { ...attempt, enabled: canRecordOperation(attempt) },
+                            }),
+                        },
+                        input.did
+                    );
+                },
+                {
+                    signal: scope.signal,
+                    waitSignal: input.waitSignal,
+                    onWaiting: input.onWaiting,
+                    maxRetries: 100 - attempt.attempt,
+                }
+            );
+        } catch {
+            if (scope.signal.aborted || input.waitSignal?.aborted)
+                throw new FileExtractionError('UPLOAD_CANCELLED');
+            recordExtraction(attempt, fileType, undefined, 'NETWORK_FAILED');
+            throw new FileExtractionError('NETWORK_FAILED');
         }
-        const code = response.status === 403 ? 'CONSENT_DENIED' : 'RESPONSE_INVALID';
-        recordExtraction(attempt, fileType, undefined, code, response.status);
-        throw new FileExtractionError(code, undefined, response.status);
+
+        let body: unknown;
+        try {
+            body = await response.json();
+        } catch {
+            recordExtraction(attempt, fileType, undefined, 'RESPONSE_INVALID', response.status);
+            throw new FileExtractionError('RESPONSE_INVALID', undefined, response.status);
+        }
+        if (scope.signal.aborted) throw new FileExtractionError('UPLOAD_CANCELLED');
+        if (isUploadCapacityRejection(response.status, body))
+            throw new FileExtractionError('UPLOAD_BUSY', undefined, response.status);
+        const rawProcessing =
+            body && typeof body === 'object' && 'processing' in body ? body.processing : undefined;
+        const parsedProcessing = FileProcessingMetadataValidator.safeParse(rawProcessing);
+        const processing = parsedProcessing.success ? parsedProcessing.data : undefined;
+        const matchesRequest =
+            processing &&
+            processing.operationId === attempt.operationId &&
+            processing.attemptId === attempt.attemptId &&
+            processing.attempt === attempt.attempt &&
+            processing.fileType === fileType;
+        if (!response.ok) {
+            if (
+                matchesRequest &&
+                processing.outcome === 'failed' &&
+                processing.stage !== 'complete'
+            ) {
+                recordExtraction(attempt, fileType, processing, undefined, response.status);
+                throw new FileExtractionError(processing.code, processing, response.status);
+            }
+            const code = response.status === 403 ? 'CONSENT_DENIED' : 'RESPONSE_INVALID';
+            recordExtraction(attempt, fileType, undefined, code, response.status);
+            throw new FileExtractionError(code, undefined, response.status);
+        }
+        const parsed = FileExtractionResponseValidator.safeParse(body);
+        if (!parsed.success || !matchesRequest) {
+            recordExtraction(attempt, fileType, undefined, 'RESPONSE_INVALID', response.status);
+            throw new FileExtractionError('RESPONSE_INVALID', undefined, response.status);
+        }
+        recordExtraction(attempt, fileType, parsed.data.processing, undefined, response.status);
+        return parsed.data;
+    } finally {
+        scope.dispose();
     }
-    const parsed = FileExtractionResponseValidator.safeParse(body);
-    if (!parsed.success || !matchesRequest) {
-        recordExtraction(attempt, fileType, undefined, 'RESPONSE_INVALID', response.status);
-        throw new FileExtractionError('RESPONSE_INVALID', undefined, response.status);
-    }
-    recordExtraction(attempt, fileType, parsed.data.processing, undefined, response.status);
-    return parsed.data;
 };
