@@ -144,10 +144,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 () => {
                     setIsLoading(false);
                 },
-                (err: unknown) => {
-                    setIsLoading(false);
-                    setCodeError(classifyPhoneAuthError(err));
-                }
+                handleVerifyError
             );
         });
         const unsubscribeFailed = adapter.onPhoneVerificationFailed(error => {
