@@ -4,7 +4,7 @@ vi.mock('../../pages/wallet/activity-feed/activityFeed.helpers', () => ({
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ShareLink } from '@learncard/types';
 const mocks = vi.hoisted(() => ({
     wallet: {
@@ -38,6 +38,7 @@ const mocks = vi.hoisted(() => ({
     decrypt: vi.fn(),
     validate: vi.fn(),
     appBaseUrl: 'https://tenant.example',
+    inferredCategory: 'Achievement',
     route: { id: 'AAAAAAAAAAAAAAAAAAAAAA' },
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
@@ -76,7 +77,7 @@ vi.mock('../../theme/hooks/useTheme', () => ({
     useTheme: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
-    getDefaultCategoryForCredential: () => 'Achievement',
+    getDefaultCategoryForCredential: () => mocks.inferredCategory,
     unwrapBoostCredential: (credential: unknown) => credential,
     getImageUrlFromCredential: () => undefined,
 }));
@@ -105,6 +106,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.history.replace.mockReset();
     mocks.appBaseUrl = 'https://tenant.example';
+    mocks.inferredCategory = 'Achievement';
     mocks.route.id = 'AAAAAAAAAAAAAAAAAAAAAA';
     mocks.auth.loggedIn = false;
     sessionStorage.clear();
@@ -256,6 +258,29 @@ describe('create screen', () => {
         expect(await screen.findByRole('checkbox')).toBeChecked();
         expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
     });
+
+    it.each(['Achievement', undefined])(
+        'keeps the picker category in the preview with index category %s',
+        async category => {
+            mocks.inferredCategory = 'Social Badge';
+            mocks.wallet.index.LearnCloud.getPage.mockResolvedValue({
+                records: [{ uri: 'private:one', category }],
+                hasMore: false,
+            });
+            render(<ShareLinkCreate onDismiss={() => {}} />);
+            const checkbox = await screen.findByRole('checkbox');
+            const expectedCategory = category ?? 'Social Badge';
+            expect(checkbox.closest('label')).toHaveTextContent(expectedCategory);
+            fireEvent.click(checkbox);
+            fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+            fireEvent.change(screen.getByLabelText('Title'), {
+                target: { value: 'Learning highlights' },
+            });
+            fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+            const preview = await screen.findByTestId('share-link-preview');
+            expect(within(preview).getByText(expectedCategory, { exact: true })).toBeVisible();
+        }
+    );
 
     it('keeps Continue disabled without a selection', async () => {
         render(<ShareLinkCreate onDismiss={() => {}} />);

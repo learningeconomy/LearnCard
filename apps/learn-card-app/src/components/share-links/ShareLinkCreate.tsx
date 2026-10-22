@@ -927,6 +927,9 @@ export const ShareLinkCreate = ({
                                     editShare?.expiresAt ?? prepared.current.input.expiresAt ?? null
                                 }
                                 payload={prepared.current.payload}
+                                credentialCategories={selected.map(
+                                    uri => choices.find(choice => choice.uri === uri)?.category
+                                )}
                                 renderCredential={credential =>
                                     hasProtectedResumePdf(credential) ? (
                                         <ProtectedResumePreview credential={credential} />

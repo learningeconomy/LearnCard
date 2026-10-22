@@ -77,6 +77,8 @@ flowchart LR
 
 For browser application requests (CHAPI or VC-API), use the credential list to search and filter by category. **View selected** shows the entire selected batch, even when search hides some items. **Deselect all** clears the selection. Open **Review** to check or remove items before sending; returning to selection sends nothing. Suggested credentials remain editable.
 
+When creating a private link from **Privacy & Data**, the selection list and creation preview use your Passport categories, including manual changes. Credentials with no saved category use their original credential type. These category labels organize your account only: they do not change the signed credentials or travel with the link, so recipient labels continue to use the original credentials.
+
 ### Private Verifier History
 
 Click a verifier entry to expand the list of credential names recorded for that send. This uses the existing encrypted history; it does not fetch full credentials or show every claim sent.

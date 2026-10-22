@@ -9,15 +9,17 @@ import * as m from '../../paraglide/messages.js';
 import { credentialText, type ProofState } from './shareLinkFlow';
 
 /**
- * Display-only projection of the exact manifest that will be encrypted and
- * published. Explicit props keep it reusable by the recipient viewer without
- * coupling either surface to the other.
+ * Display-only projection of the manifest that will be encrypted and published.
+ * Owner previews may overlay local index categories without changing that manifest.
+ * Explicit props keep recipient rendering independent of the creation flow.
  *
  * `proofs` is optional and keyed by `credentialIndex`. A credential with no
  * entry never renders a badge, so the preview can never claim "verified".
  */
 export interface ShareLinkPreviewProps {
     payload: Pick<SharePayload, 'presentation' | 'selection' | 'endorsements'>;
+    /** Owner-only category overrides by presentation index; never serialized into the link. */
+    credentialCategories?: readonly (string | undefined)[];
     title: string;
     note?: string;
     sharerName?: string;
@@ -77,6 +79,7 @@ export const ProofBadge = ({ state }: { state: ProofState }) => (
 
 export const ShareLinkPreview = ({
     payload,
+    credentialCategories,
     title,
     note,
     sharerName,
@@ -189,6 +192,7 @@ export const ShareLinkPreview = ({
         <div className="space-y-v3-4">
             {payload.selection.map(({ credentialIndex }) => {
                 const credential = payload.presentation.verifiableCredential[credentialIndex];
+                const category = credentialCategories?.[credentialIndex];
                 const custom = renderCredential?.(
                     credential,
                     credentialIndex,
@@ -207,12 +211,15 @@ export const ShareLinkPreview = ({
                         className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-4 border border-grayscale-200"
                     >
                         <div className="flex items-center gap-4">
-                            <ShareCredentialThumbnail credential={credential} />
+                            <ShareCredentialThumbnail credential={credential} category={category} />
                             <div className="min-w-0 flex-1">
                                 <h2 className="wrap-break-word text-lg font-semibold text-grayscale-900">
                                     {text.name || m['shareLinks.credential']()}
                                 </h2>
-                                <ShareCredentialMetadata credential={credential} />
+                                <ShareCredentialMetadata
+                                    credential={credential}
+                                    category={category}
+                                />
                             </div>
                         </div>
                         {text.description && (
