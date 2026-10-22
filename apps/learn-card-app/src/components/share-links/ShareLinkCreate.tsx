@@ -225,6 +225,7 @@ export const ShareLinkCreate = ({
                     throw new Error('page');
                 records.push(
                     ...page.records.filter(record => {
+                        if (initialSelectedUri && record.uri === initialSelectedUri) return true;
                         if (record.id?.startsWith('__verifiable_data_')) return false;
                         if (isHiddenActivity(record.category)) return false;
                         if (
