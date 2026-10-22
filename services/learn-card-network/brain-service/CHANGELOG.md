@@ -1,5 +1,40 @@
 # @learncard/network-brain-service
 
+## 4.0.4
+
+### Patch Changes
+
+- [#1718](https://github.com/learningeconomy/LearnCard/pull/1718) [`d40cb07be34fbd7fcb078eadd84b0c0df97a937a`](https://github.com/learningeconomy/LearnCard/commit/d40cb07be34fbd7fcb078eadd84b0c0df97a937a) Thanks [@goblincore](https://github.com/goblincore)! - Import and edit spreadsheet recipients on the Issue page, issue through durable inbox batches, and recover interrupted runs from IndexedDB without resending successful or unconfirmed rows. Support standard Open Badges Evidence without requiring LearnCard extension contexts.
+
+    All sends to specific people now require local IndexedDB recovery and Web Locks, including picker-only profile sends. Signing out clears local recovery records for privacy; accepted server work can continue. Restore issue lifecycle analytics, add dismissible saved-run reminders and receipt-only delivery checks, and reject edits to submitted rows with a clear message. Import XLSX content without counting formatting-only trailing ranges against row limits.
+
+    Evidence attachments retain standard names and URLs but omit unsupported EvidenceFile, fileName, and fileType extensions in every issuance mode, including single sends. Changing credential type keeps recipient values for review instead of clearing imported data.
+
+- [#1735](https://github.com/learningeconomy/LearnCard/pull/1735) [`c742ccf1bc1d28bd347b1a5cf2a2c6d69ba1d910`](https://github.com/learningeconomy/LearnCard/commit/c742ccf1bc1d28bd347b1a5cf2a2c6d69ba1d910) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stamp the issuance date when issuing credentials from Boost templates (claim links, VC-API workflows, ConsentFlow autoboosts), so a stale or malformed template `issuanceDate`/`validFrom` no longer fails signing or back-dates new credentials. VC 2.0 credentials built from templates (including direct sends and inbox issuance) now get a fresh `validFrom` and drop any leftover `issuanceDate`, which DIDKit can't sign under the VC 2.0 context.
+
+- [#1720](https://github.com/learningeconomy/LearnCard/pull/1720) [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c) Thanks [@goblincore](https://github.com/goblincore)! - Import spreadsheets from the Issue import modal and choose column mappings for independent grades, numeric credits, standard Evidence, awarded dates, and description text. Preserve source cells across type changes, zero credits across editor round trips, and the original awarded date independently of issuance time. Use shared field materialization in previews, queued issuance, and local profile signing without modifying signed credentials.
+
+    The network plugin and brain-service now coerce declared OBv3/CLR credit fields to finite numbers and normalize awarded dates to UTC before signing. Blank credit and optional award-date fields are omitted; malformed nonblank fields are rejected (BAD_REQUEST in brain-service). Calendar days use midnight UTC, while timestamps require complete seconds and an explicit timezone. Offset spelling is normalized while preserving the instant; signed credentials are left unchanged.
+
+    Bound XLSX archive expansion and member counts before spreadsheet parsing, isolate workbook parsing in a browser worker with a deadline, and stop CSV parsing at its row/column/cell budgets. Retry cold concurrent API/worker schema creation through Neo4j managed write transactions.
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/helpers@1.7.0
+    - @learncard/credential-library@2.1.3
+    - @learncard/core@9.4.40
+    - @learncard/did-web-plugin@1.1.40
+    - @learncard/didkey-plugin@1.1.40
+    - @learncard/didkit-plugin@1.10.5
+    - @learncard/didkit-plugin-node@0.3.5
+    - @learncard/encryption-plugin@1.1.40
+    - @learncard/learn-card-plugin@1.2.40
+    - @learncard/vc-plugin@1.6.6
+    - @learncard/vc-templates-plugin@1.1.40
+    - @learncard/crypto-plugin@1.1.40
+    - @learncard/dynamic-loader-plugin@1.1.40
+    - @learncard/expiration-plugin@1.2.40
+
 ## 4.0.3
 
 ### Patch Changes
