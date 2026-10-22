@@ -1,6 +1,6 @@
 vi.mock('../../pages/wallet/activity-feed/activityFeed.helpers', () => ({
     getActivityFilters: () => [],
-    isHiddenActivity: () => false,
+    isHiddenActivity: (category?: string) => category === 'Resume',
 }));
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -264,6 +264,24 @@ describe('create screen', () => {
         render(<ShareLinkCreate initialSelectedUri="private:one" onDismiss={() => {}} />);
         expect(await screen.findByRole('checkbox')).toBeChecked();
         expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    });
+    it('keeps a hidden-category initial selection visible so it can be unselected', async () => {
+        mocks.wallet.index.LearnCloud.getPage.mockResolvedValue({
+            records: [
+                { uri: 'private:resume', title: 'Published resume', category: 'Resume' },
+                { uri: 'private:other-resume', title: 'Other resume', category: 'Resume' },
+                { uri: 'private:badge', title: 'Badge', category: 'Social Badge' },
+            ],
+            hasMore: false,
+        });
+        render(<ShareLinkCreate initialSelectedUri="private:resume" onDismiss={() => {}} />);
+        await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
+        const [pinned] = screen.getAllByRole('checkbox');
+        expect(pinned).toBeChecked();
+        await waitFor(() => expect(pinned).toBeEnabled());
+        fireEvent.click(pinned);
+        expect(pinned).not.toBeChecked();
+        expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     });
 
     it('keeps Continue disabled without a selection', async () => {
