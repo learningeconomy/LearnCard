@@ -10,8 +10,10 @@ import { AppStoreListing, AppStoreListingInstance } from './AppStoreListing';
 import { Boost, BoostInstance } from './Boost';
 import { Group, GroupInstance } from './Group';
 import { FlatEcosystemType } from 'types/ecosystem';
+import { ConsentFlowContract, ConsentFlowInstance } from './ConsentFlowContract';
 
 export type EcosystemRelationships = {
+    governsConsentContract: ModelRelatedNodesI<typeof ConsentFlowContract, ConsentFlowInstance>;
     childOf: ModelRelatedNodesI<typeof Ecosystem, EcosystemInstance>;
     memberOf: ModelRelatedNodesI<
         typeof Profile,
@@ -56,9 +58,14 @@ export const Ecosystem = ModelFactory<FlatEcosystemType, EcosystemRelationships>
             status: { type: 'string', enum: EcosystemStatusEnum.options, required: true },
             createdAt: { type: 'string', required: true },
             updatedAt: { type: 'string', required: true },
-        } as any,
+        },
         primaryKeyField: 'id',
         relationships: {
+            governsConsentContract: {
+                model: ConsentFlowContract,
+                direction: 'out',
+                name: 'GOVERNS_CONSENT_CONTRACT',
+            },
             childOf: { model: 'self', direction: 'out', name: 'CHILD_OF' },
             memberOf: {
                 model: Profile,

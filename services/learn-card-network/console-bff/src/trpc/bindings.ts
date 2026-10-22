@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import type {
     Binding,
+    BindingConsentPreflight,
     BindingEndpoint,
     ConsentDecisionRecord,
     ConsoleSurface,
@@ -12,6 +13,7 @@ import { authorizedCall, type BrainServiceTransport } from '../brain';
 import type { KeyManagementService, ManagedKeyRef } from '@kms';
 import { router, protectedProcedure, type ConsoleContext } from './trpc';
 import { toWorkloadDeploymentTarget, type EcosystemInstallTarget } from './workload-target';
+import { BindingConsentPreflightValidator } from '@learncard/types';
 
 type AuthedContext = Omit<ConsoleContext, 'session'> & {
     session: NonNullable<ConsoleContext['session']>;
@@ -95,6 +97,18 @@ const EndpointInput = z.object({
 }) satisfies z.ZodType<BindingEndpoint>;
 
 export const bindingsRouter = router({
+    // Source of truth: brain routes/install-intents.ts prepareBindingConsentPreflight.
+    // Forward only the binding identity; never accept caller-asserted consent facts.
+    prepareConsentPreflight: protectedProcedure
+        .input(z.object({ bindingId: z.string().min(1) }).strict())
+        .output(BindingConsentPreflightValidator)
+        .mutation(async ({ ctx, input }): Promise<BindingConsentPreflight> => {
+            const { mutate } = await makeCallers(ctx);
+            return mutate<BindingConsentPreflight>(
+                'installIntent.prepareBindingConsentPreflight',
+                input
+            );
+        }),
     list: protectedProcedure.input(EcosystemInput).query(async ({ ctx, input }) => {
         const { query } = await makeCallers(ctx);
 

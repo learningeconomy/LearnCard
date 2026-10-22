@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const ConsentPreflightAuditActionEnum = z.enum(['CONSENT_PREFLIGHT_RESOLVED']);
+
 export const WorkloadAuditActionEnum = z.enum([
     'WORKLOAD_APPLY_QUEUED',
     'WORKLOAD_READY',

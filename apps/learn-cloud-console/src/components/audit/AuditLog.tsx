@@ -38,6 +38,7 @@ const VERBS: Record<string, { verb: string; tone: Tone }> = {
     REVOKED: { verb: 'uninstalled', tone: 'destructive' },
     POLICY_SUSPENDED: { verb: 'suspended by policy:', tone: 'warning' },
     BINDING_PROPOSED: { verb: 'proposed binding', tone: 'neutral' },
+    CONSENT_PREFLIGHT_RESOLVED: { verb: 'checked binding consent readiness', tone: 'neutral' },
     BINDING_APPROVED: { verb: 'approved binding', tone: 'success' },
     BINDING_ACTIVATED: { verb: 'activated binding', tone: 'success' },
     BINDING_REVOKED: { verb: 'revoked binding', tone: 'destructive' },

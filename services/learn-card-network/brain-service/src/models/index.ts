@@ -22,6 +22,7 @@ import { Group } from './Group';
 import { Tenant } from './Tenant';
 import { InstallIntent } from './InstallIntent';
 import { Binding } from './Binding';
+import { BindingConsentPreflight } from './BindingConsentPreflight';
 import { IntegrationInstall } from './IntegrationInstall';
 import { ServiceAccount } from './ServiceAccount';
 import { ServiceAccountGrant } from './ServiceAccountGrant';
@@ -41,6 +42,7 @@ void CredentialActivity;
 void GroupAuditEvent;
 void InstallIntent;
 void Binding;
+void BindingConsentPreflight;
 void IntegrationInstall;
 void ServiceAccount;
 void ServiceAccountGrant;
@@ -279,6 +281,7 @@ const indexQueries = [
     'CREATE INDEX install_intent_status_revision_idx IF NOT EXISTS FOR (i:InstallIntent) ON (i.statusRevision)',
     'CREATE INDEX install_intent_policy_revision_idx IF NOT EXISTS FOR (i:InstallIntent) ON (i.policyRevision)',
     'CREATE CONSTRAINT binding_id_unique IF NOT EXISTS FOR (b:Binding) REQUIRE (b.bindingId) IS UNIQUE',
+    'CREATE CONSTRAINT binding_consent_preflight_id_unique IF NOT EXISTS FOR (p:BindingConsentPreflight) REQUIRE (p.preflightId) IS UNIQUE',
     'CREATE INDEX binding_ecosystem_idx IF NOT EXISTS FOR (b:Binding) ON (b.ecosystemId)',
     'CREATE INDEX binding_capability_idx IF NOT EXISTS FOR (b:Binding) ON (b.capability)',
     'CREATE INDEX binding_revision_idx IF NOT EXISTS FOR (b:Binding) ON (b.revision)',
@@ -389,6 +392,7 @@ export * from './GroupAuditEvent';
 export * from './Tenant';
 export * from './InstallIntent';
 export * from './Binding';
+export * from './BindingConsentPreflight';
 export * from './IntegrationInstall';
 export * from './ServiceAccount';
 export * from './ServiceAccountGrant';

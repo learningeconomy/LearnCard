@@ -47,6 +47,9 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
         label: 'ConsentFlowContract',
         schema: {
             id: { type: 'string', required: true },
+            educationOsGrant: { type: 'string', required: false },
+            educationOsGrantHash: { type: 'string', required: false },
+            educationOsGrantRevision: { type: 'string', required: false },
             name: { type: 'string', required: true },
             subtitle: { type: 'string', required: false },
             description: { type: 'string', required: false },

@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
     BindingProposalValidator,
+    BindingConsentPreflightValidator,
     BindingValidator,
     VersionedBundleManifestValidator,
     ConsoleSurfaceValidator,
@@ -55,6 +56,11 @@ import {
     revokeBinding as revokeBindingRecord,
 } from '@accesslayer/binding/write';
 import { listBindingsByEcosystem, readBindingById } from '@accesslayer/binding/read';
+import { prepareBindingConsentPreflight } from '@accesslayer/binding/consent-preflight';
+import {
+    acceptGovernanceConsentContract,
+    GovernanceConsentAcceptanceValidator,
+} from '@accesslayer/consentflowcontract/governance';
 import { getConsentDecisionRecordsForBinding } from '@accesslayer/consent-decision-record/store';
 import {
     listInstallTargetsByEcosystemId,
@@ -1398,6 +1404,27 @@ export const installIntentsRouter = t.router({
 
             return created;
         }),
+
+    prepareBindingConsentPreflight: profileRoute
+        .meta({ requiredScope: 'app-store:write' })
+        .input(z.object({ bindingId: z.string().min(1) }).strict())
+        .output(BindingConsentPreflightValidator)
+        .mutation(
+            async ({ ctx, input }): Promise<import('@learncard/types').BindingConsentPreflight> =>
+                prepareBindingConsentPreflight({
+                    bindingId: input.bindingId,
+                    actorProfileId: ctx.user.profile.profileId,
+                    actorDid: ctx.user.did,
+                })
+        ),
+
+    acceptGovernanceConsentContract: profileRoute
+        .meta({ requiredScope: 'app-store:write' })
+        .input(GovernanceConsentAcceptanceValidator)
+        .output(z.literal(true))
+        .mutation(async ({ ctx, input }): Promise<true> =>
+            acceptGovernanceConsentContract(input, ctx.user.profile.profileId)
+        ),
 
     approveBinding: profileRoute
         .meta({ requiredScope: 'app-store:write' })

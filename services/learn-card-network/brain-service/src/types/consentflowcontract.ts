@@ -24,6 +24,9 @@ type FlatConsentTerms = Partial<Record<`terms.${string}`, string | boolean | str
 
 export const DbContractValidator = z.object({
     id: z.string(),
+    educationOsGrant: z.string().optional(),
+    educationOsGrantHash: z.string().optional(),
+    educationOsGrantRevision: z.string().optional(),
     name: z.string(),
     subtitle: z.string().optional(),
     description: z.string().optional(),
@@ -64,6 +67,12 @@ export type FlatDbTransactionType = Omit<
     FlatReferral;
 
 export const DbTermsValidator = z.object({
+    educationOsGrant: z.string().optional(),
+    educationOsGrantHash: z.string().optional(),
+    educationOsGrantRevision: z.string().optional(),
+    educationOsAcceptedAt: z.string().optional(),
+    educationOsAcceptedRole: z.string().optional(),
+    educationOsAcceptedProfileId: z.string().optional(),
     smartResumeFingerprint: z.string().optional(),
     smartResumePublicationStatus: z.enum(['pending', 'sending', 'failed', 'succeeded']).optional(),
     smartResumeLeaseId: z.string().optional(),

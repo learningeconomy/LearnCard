@@ -21,6 +21,7 @@ process.env.DOMAIN_NAME ??= 'localhost%3A4000';
 const ROOT = 'eco_dev_root';
 const steps: string[][] = [
     ['seed:education-os', '--ecosystem', ROOT, '--role', 'OWNER'],
+    ['seed:dev-consent'],
     ['seed:dev-app'],
     ['seed:dev-integration'],
     [
