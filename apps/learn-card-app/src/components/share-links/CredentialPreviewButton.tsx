@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Eye } from 'lucide-react';
 import type { VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
@@ -15,6 +15,7 @@ interface CredentialPreviewModalProps {
     credential: VC;
     categoryType: BoostCategoryOptionsEnum;
     onClose: () => void;
+    sharedOriginal?: boolean;
 }
 
 /** Modal content that runs hooks only when the preview is opened. */
@@ -22,6 +23,7 @@ const CredentialPreviewModal: React.FC<CredentialPreviewModalProps> = ({
     credential,
     categoryType,
     onClose,
+    sharedOriginal = false,
 }) => {
     const {
         title,
@@ -64,24 +66,28 @@ const CredentialPreviewModal: React.FC<CredentialPreviewModalProps> = ({
         showEndorsementBadge: true,
     };
 
-    const PreviewComponent = isBoost ? BoostPreview : NonBoostPreview;
+    if (isBoost) return <BoostPreview {...previewProps} sharedOriginal={sharedOriginal} />;
 
-    return <PreviewComponent {...previewProps} />;
+    return <NonBoostPreview {...previewProps} />;
 };
 
 interface CredentialPreviewButtonProps {
     credential: VC;
     category?: string;
     className?: string;
+    /** Show the immutable shared snapshot instead of applying issuer edits. */
+    sharedOriginal?: boolean;
 }
 
 /** Reusable Eye button that opens a fullscreen credential preview modal. */
 export const CredentialPreviewButton: React.FC<CredentialPreviewButtonProps> = ({
     credential,
     category,
+    sharedOriginal = false,
     className = 'shrink-0 p-2 rounded-full text-grayscale-600 bg-transparent hover:bg-grayscale-200 hover:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-colors',
 }) => {
     const { newModal, closeModal } = useModal();
+    const isOpen = useRef(false);
 
     const categoryType =
         (category as BoostCategoryOptionsEnum) ||
@@ -91,16 +97,25 @@ export const CredentialPreviewButton: React.FC<CredentialPreviewButtonProps> = (
     const handleViewCredential = (event: React.MouseEvent) => {
         event.preventDefault();
         event.stopPropagation();
+        if (isOpen.current) return;
+        isOpen.current = true;
 
         newModal(
             <CredentialPreviewModal
                 credential={credential}
                 categoryType={categoryType}
-                onClose={() => closeModal()}
+                sharedOriginal={sharedOriginal}
+                onClose={() => {
+                    isOpen.current = false;
+                    closeModal();
+                }}
             />,
             {
                 className: '!bg-transparent',
                 hideButton: true,
+                onClose: () => {
+                    isOpen.current = false;
+                },
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
