@@ -37,6 +37,7 @@ import {
     generateShareContentKey,
     generateShareLinkId,
     validateShareManifest,
+    SHARE_CREDENTIAL_CATEGORIES_CONTEXT,
 } from 'learn-card-base/helpers/share-links';
 
 import {
@@ -281,8 +282,17 @@ const prepareEncryptedRevision = async (
         createdAt: string;
         ownerProfileId: string;
         refs: string[];
+        credentialCategories?: readonly (string | null)[];
     }
 ) => {
+    if (
+        options.credentialCategories !== undefined &&
+        options.credentialCategories.length !== options.refs.length
+    )
+        throw new Error('credential-categories');
+    const hasCredentialCategories =
+        options.credentialCategories?.some(category => category !== null && category !== '') ??
+        false;
     const profile = await wallet.invoke.getProfile();
     if (!profile || profile.profileId !== options.ownerProfileId) throw new Error('profile');
 
@@ -315,11 +325,17 @@ const prepareEncryptedRevision = async (
         : 'https://www.w3.org/2018/credentials/v1';
     const presentation = await wallet.invoke.issuePresentation(
         {
-            '@context': [presentationContext],
+            '@context': [
+                presentationContext,
+                ...(hasCredentialCategories ? [SHARE_CREDENTIAL_CATEGORIES_CONTEXT] : []),
+            ],
             type: ['VerifiablePresentation'],
             holder: ownerDid,
             verifiableCredential: credentials,
-        },
+            ...(hasCredentialCategories
+                ? { lcCredentialCategories: options.credentialCategories }
+                : {}),
+        } as UnsignedVP,
         { proofPurpose: 'authentication' }
     );
     const payload = buildShareManifest({
@@ -389,6 +405,7 @@ export const prepareShare = async (
         notifyOnView?: boolean;
         identity?: { id: string; key: string };
         attachment?: { id: string; chunkCount: number };
+        credentialCategories?: readonly (string | null)[];
     } = {}
 ): Promise<PreparedShare> => {
     const profile = await wallet.invoke.getProfile();
@@ -403,6 +420,7 @@ export const prepareShare = async (
         createdAt,
         ownerProfileId: profile.profileId,
         refs,
+        credentialCategories: options.credentialCategories,
     });
     const input = CreateShareLinkInputValidator.parse({
         id,
@@ -433,6 +451,7 @@ export const prepareShareUpdate = async (
     note: string,
     protection: Pick<UpdateShareLinkInput, 'passcode' | 'notifyOnView'> & {
         attachment?: { id: string; chunkCount: number };
+        credentialCategories?: readonly (string | null)[];
     } = {}
 ): Promise<PreparedShareUpdate> => {
     if (share.status !== 'active' || recovery.shareId !== share.id) throw new Error('inactive');
@@ -446,6 +465,7 @@ export const prepareShareUpdate = async (
         createdAt: recovery.createdAt,
         ownerProfileId: recovery.ownerProfileId,
         refs,
+        credentialCategories: protection.credentialCategories,
     });
     const input = UpdateShareLinkInputValidator.parse({
         id: share.id,

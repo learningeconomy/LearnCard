@@ -77,7 +77,9 @@ flowchart LR
 
 For browser application requests (CHAPI or VC-API), use the credential list to search and filter by category. **View selected** shows the entire selected batch, even when search hides some items. **Deselect all** clears the selection. Open **Review** to check or remove items before sending; returning to selection sends nothing. Suggested credentials remain editable.
 
-When creating a private link from **Privacy & Data**, the selection list and creation preview use your Passport categories, including manual changes. Credentials with no saved category use their original credential type. These category labels organize your account only: they do not change the signed credentials or travel with the link, so recipient labels continue to use the original credentials.
+When creating a private link from **Privacy & Data**, your Passport categories—including manual changes—are saved with the signed collection. The creation preview, **Your shared links** preview, and recipient view use that category snapshot. Credentials with no saved category use their original credential type. These labels describe the sender's organization; they do not change the original issuer-signed credentials. Older apps can still open the links but ignore the category snapshot.
+
+For a link created before category snapshots, open it under **Your shared links**, choose **Update contents** → **Choose credentials**, keep the same credentials selected, then continue through **Preview** and **Update private link**. This saves the current categories without changing the URL. Later category changes in your Passport also require updating the link; published snapshots do not change automatically.
 
 ### Private Verifier History
 

@@ -3,8 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { encodeBase64Url } from '@learncard/types';
 
 import {
+    SHARE_CREDENTIAL_CATEGORIES_CONTEXT,
     SHARE_MANIFEST_PROOF_VERIFICATION_PENDING,
     buildShareManifest,
+    decryptSharePayload,
+    encryptSharePayload,
+    getShareCredentialCategories,
     validateShareManifest,
     verifyShareManifestProofs,
 } from './index';
@@ -200,6 +204,67 @@ describe('recipient manifest construction and validation', () => {
 
         expect(result.ok).toBe(true);
         expect(input.selection).toEqual([{ credentialIndex: 0 }, { credentialIndex: 1 }]);
+    });
+
+    it('preserves signed categories and originals through encrypted manifest round trips', async () => {
+        const input = deepFreeze(baseInput());
+        const manifest = buildShareManifest({
+            ...input,
+            presentation: {
+                ...input.presentation,
+                '@context': [
+                    ...input.presentation['@context'],
+                    SHARE_CREDENTIAL_CATEGORIES_CONTEXT,
+                ],
+                lcCredentialCategories: ['Achievement', null],
+            },
+        });
+        const key = encodeBase64Url(new Uint8Array(32).fill(11));
+        const envelope = await encryptSharePayload({
+            shareId: SHARE_ID,
+            contentVersion: 4,
+            key,
+            payload: manifest,
+        });
+        const decoded = await decryptSharePayload({
+            shareId: SHARE_ID,
+            contentVersion: 4,
+            key,
+            envelope,
+        });
+        const result = validateShareManifest(decoded, { shareId: SHARE_ID, contentVersion: 4 });
+        expect(result.ok).toBe(true);
+        if (!result.ok) throw new Error(result.message);
+        expect(getShareCredentialCategories(result.manifest.presentation)).toEqual([
+            'Achievement',
+            null,
+        ]);
+        expect(result.manifest.presentation.verifiableCredential).toEqual(
+            input.presentation.verifiableCredential
+        );
+    });
+
+    it('ignores malformed optional categories without rejecting legacy or readable shares', () => {
+        const legacy = buildShareManifest(baseInput());
+        expect(getShareCredentialCategories(legacy.presentation)).toBeUndefined();
+        for (const metadata of [
+            {},
+            [],
+            [''],
+            ['x'.repeat(129)],
+            ['Achievement', null, null, 'ID'],
+            Array(251).fill(null),
+            ['Achievement', 3, null],
+        ]) {
+            const manifest = {
+                ...legacy,
+                presentation: { ...legacy.presentation, lcCredentialCategories: metadata },
+            };
+            expect(getShareCredentialCategories(manifest.presentation)).toBeUndefined();
+            expect(
+                validateShareManifest(manifest, { shareId: SHARE_ID, contentVersion: 4 }).ok
+            ).toBe(true);
+        }
     });
 
     it('exposes an explicit, injected proof-verification boundary', async () => {

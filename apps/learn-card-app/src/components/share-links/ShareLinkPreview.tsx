@@ -5,12 +5,13 @@ import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import type { SharePayload, VC } from '@learncard/types';
+import { getShareCredentialCategories } from 'learn-card-base/helpers/share-links';
 import * as m from '../../paraglide/messages.js';
 import { credentialText, type ProofState } from './shareLinkFlow';
 
 /**
- * Display-only projection of the manifest that will be encrypted and published.
- * Owner previews may overlay local index categories without changing that manifest.
+ * Display-only projection of the published manifest, including the holder's
+ * category snapshots. Legacy presentations without snapshots use credential inference.
  * Explicit props keep recipient rendering independent of the creation flow.
  *
  * `proofs` is optional and keyed by `credentialIndex`. A credential with no
@@ -18,8 +19,6 @@ import { credentialText, type ProofState } from './shareLinkFlow';
  */
 export interface ShareLinkPreviewProps {
     payload: Pick<SharePayload, 'presentation' | 'selection' | 'endorsements'>;
-    /** Owner-only category overrides by presentation index; never serialized into the link. */
-    credentialCategories?: readonly (string | undefined)[];
     title: string;
     note?: string;
     sharerName?: string;
@@ -79,7 +78,6 @@ export const ProofBadge = ({ state }: { state: ProofState }) => (
 
 export const ShareLinkPreview = ({
     payload,
-    credentialCategories,
     title,
     note,
     sharerName,
@@ -95,197 +93,209 @@ export const ShareLinkPreview = ({
     countLabel,
     className = '',
     renderCredential,
-}: ShareLinkPreviewProps) => (
-    <div className={`space-y-v3-5 ${className}`} data-testid="share-link-preview">
-        {heading && (
-            <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
-                {heading}
-            </p>
-        )}
-        <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-4 border border-grayscale-200">
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1 space-y-v3-3">
-                    {sharerName &&
-                        (showOriginal ? (
-                            <div className="flex items-center gap-3">
-                                <span
-                                    aria-hidden="true"
-                                    className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-lg font-semibold text-grayscale-900"
-                                >
-                                    {sharerName.trim().charAt(0).toUpperCase()}
-                                    {sharerAvatar && (
-                                        <img
-                                            key={sharerAvatar}
-                                            src={sharerAvatar}
-                                            alt=""
-                                            referrerPolicy="no-referrer"
-                                            className="absolute inset-0 h-full w-full object-cover"
-                                            onError={event => {
-                                                event.currentTarget.hidden = true;
-                                            }}
-                                        />
-                                    )}
-                                </span>
-                                <div className="min-w-0">
-                                    <p className="text-sm font-medium text-grayscale-900 wrap-break-word">
-                                        {sharerName}
-                                    </p>
-                                    <p className="text-xs text-grayscale-600">
-                                        {m['shareLinks.sharedWithYou']({
-                                            count: String(payload.selection.length),
-                                        })}
-                                    </p>
-                                    {sharedAt && (
-                                        <time
-                                            dateTime={sharedAt}
-                                            className="mt-1 block text-xs text-grayscale-500"
-                                        >
-                                            {new Date(sharedAt).toLocaleDateString(undefined, {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric',
-                                            })}
-                                        </time>
-                                    )}
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-xs text-grayscale-500">
-                                {m['shareLinks.sharedBy']({ name: sharerName })}
-                            </p>
-                        ))}
-                    <h1 className="wrap-break-word text-2xl font-semibold text-grayscale-900 md:text-3xl">
-                        {title}
-                    </h1>
-                </div>
-                {summaryIllustration && (
-                    <div className="shrink-0 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
-                        {summaryIllustration}
-                    </div>
-                )}
-            </div>
-            {note && (
-                <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
-                    {note}
+}: ShareLinkPreviewProps) => {
+    const credentialCategories = getShareCredentialCategories(payload.presentation);
+    return (
+        <div className={`space-y-v3-5 ${className}`} data-testid="share-link-preview">
+            {heading && (
+                <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
+                    {heading}
                 </p>
             )}
-            <div className="flex flex-wrap gap-3 text-xs text-grayscale-500">
-                <span>
-                    {countLabel ??
-                        (showOriginal ? m['shareLinks.sharedCount'] : m['shareLinks.selected'])({
-                            count: String(payload.selection.length),
-                        })}
-                </span>
-                {showExpiry &&
-                    (expiresAt ? (
-                        <span>
-                            {m['shareLinks.expires']({
-                                date: new Date(expiresAt).toLocaleDateString(),
-                            })}
-                        </span>
-                    ) : (
-                        <span>{m['shareLinks.neverExpires']()}</span>
-                    ))}
-            </div>
-            {summaryExtra}
-        </section>
-        <div className="space-y-v3-4">
-            {payload.selection.map(({ credentialIndex }) => {
-                const credential = payload.presentation.verifiableCredential[credentialIndex];
-                const category = credentialCategories?.[credentialIndex];
-                const custom = renderCredential?.(
-                    credential,
-                    credentialIndex,
-                    proofs?.[credentialIndex]
-                );
-                if (custom !== undefined)
-                    return <React.Fragment key={credentialIndex}>{custom}</React.Fragment>;
-                const text = credentialText(credential);
-                const endorsements = payload.endorsements.filter(
-                    item => item.targetCredentialIndex === credentialIndex
-                );
-                const proof = proofs?.[credentialIndex];
-                return (
-                    <article
-                        key={credentialIndex}
-                        className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-4 border border-grayscale-200"
-                    >
-                        <div className="flex items-center gap-4">
-                            <ShareCredentialThumbnail credential={credential} category={category} />
-                            <div className="min-w-0 flex-1">
-                                <h2 className="wrap-break-word text-lg font-semibold text-grayscale-900">
-                                    {text.name || m['shareLinks.credential']()}
-                                </h2>
-                                <ShareCredentialMetadata
+            <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-4 border border-grayscale-200">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1 space-y-v3-3">
+                        {sharerName &&
+                            (showOriginal ? (
+                                <div className="flex items-center gap-3">
+                                    <span
+                                        aria-hidden="true"
+                                        className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-lg font-semibold text-grayscale-900"
+                                    >
+                                        {sharerName.trim().charAt(0).toUpperCase()}
+                                        {sharerAvatar && (
+                                            <img
+                                                key={sharerAvatar}
+                                                src={sharerAvatar}
+                                                alt=""
+                                                referrerPolicy="no-referrer"
+                                                className="absolute inset-0 h-full w-full object-cover"
+                                                onError={event => {
+                                                    event.currentTarget.hidden = true;
+                                                }}
+                                            />
+                                        )}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-grayscale-900 wrap-break-word">
+                                            {sharerName}
+                                        </p>
+                                        <p className="text-xs text-grayscale-600">
+                                            {m['shareLinks.sharedWithYou']({
+                                                count: String(payload.selection.length),
+                                            })}
+                                        </p>
+                                        {sharedAt && (
+                                            <time
+                                                dateTime={sharedAt}
+                                                className="mt-1 block text-xs text-grayscale-500"
+                                            >
+                                                {new Date(sharedAt).toLocaleDateString(undefined, {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })}
+                                            </time>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-xs text-grayscale-500">
+                                    {m['shareLinks.sharedBy']({ name: sharerName })}
+                                </p>
+                            ))}
+                        <h1 className="wrap-break-word text-2xl font-semibold text-grayscale-900 md:text-3xl">
+                            {title}
+                        </h1>
+                    </div>
+                    {summaryIllustration && (
+                        <div className="shrink-0 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
+                            {summaryIllustration}
+                        </div>
+                    )}
+                </div>
+                {note && (
+                    <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
+                        {note}
+                    </p>
+                )}
+                <div className="flex flex-wrap gap-3 text-xs text-grayscale-500">
+                    <span>
+                        {countLabel ??
+                            (showOriginal ? m['shareLinks.sharedCount'] : m['shareLinks.selected'])(
+                                {
+                                    count: String(payload.selection.length),
+                                }
+                            )}
+                    </span>
+                    {showExpiry &&
+                        (expiresAt ? (
+                            <span>
+                                {m['shareLinks.expires']({
+                                    date: new Date(expiresAt).toLocaleDateString(),
+                                })}
+                            </span>
+                        ) : (
+                            <span>{m['shareLinks.neverExpires']()}</span>
+                        ))}
+                </div>
+                {summaryExtra}
+            </section>
+            <div className="space-y-v3-4">
+                {payload.selection.map(({ credentialIndex }) => {
+                    const credential = payload.presentation.verifiableCredential[credentialIndex];
+                    const category = credentialCategories?.[credentialIndex] ?? undefined;
+                    const custom = renderCredential?.(
+                        credential,
+                        credentialIndex,
+                        proofs?.[credentialIndex]
+                    );
+                    if (custom !== undefined)
+                        return <React.Fragment key={credentialIndex}>{custom}</React.Fragment>;
+                    const text = credentialText(credential);
+                    const endorsements = payload.endorsements.filter(
+                        item => item.targetCredentialIndex === credentialIndex
+                    );
+                    const proof = proofs?.[credentialIndex];
+                    return (
+                        <article
+                            key={credentialIndex}
+                            className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-4 border border-grayscale-200"
+                        >
+                            <div className="flex items-center gap-4">
+                                <ShareCredentialThumbnail
                                     credential={credential}
                                     category={category}
                                 />
+                                <div className="min-w-0 flex-1">
+                                    <h2 className="wrap-break-word text-lg font-semibold text-grayscale-900">
+                                        {text.name || m['shareLinks.credential']()}
+                                    </h2>
+                                    <ShareCredentialMetadata
+                                        credential={credential}
+                                        category={category}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        {text.description && (
-                            <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
-                                {text.description}
-                            </p>
-                        )}
-                        {proof && (
-                            <div aria-live="polite">
-                                <ProofBadge state={proof} />
-                            </div>
-                        )}
-                        {endorsements.length > 0 && (
-                            <div className="pt-4 border-t border-grayscale-100 space-y-v3-2">
-                                <h3 className="text-xs font-medium text-grayscale-700">
-                                    {m['shareLinks.endorsements']()}
-                                </h3>
-                                {endorsements.map(item => {
-                                    const endorsementText = credentialText(
-                                        payload.presentation.verifiableCredential[
-                                            item.credentialIndex
-                                        ]
-                                    );
-                                    const endorsementProof = proofs?.[item.credentialIndex];
-                                    return (
-                                        <div key={item.credentialIndex} className="space-y-v3-1">
-                                            {endorsementText.name && (
-                                                <p className="text-sm text-grayscale-700 wrap-break-word">
-                                                    {endorsementText.name}
-                                                </p>
-                                            )}
-                                            {endorsementProof && (
-                                                <ProofBadge state={endorsementProof} />
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                        {showOriginal && (
-                            <ShareCredentialVisual
-                                credential={credential}
-                                proof={proof}
-                                endorsements={endorsements.map(
-                                    item =>
-                                        payload.presentation.verifiableCredential[
-                                            item.credentialIndex
-                                        ]
-                                )}
-                            />
-                        )}
-                        {showOriginal && (
-                            <details className="text-xs text-grayscale-600">
-                                <summary className="cursor-pointer py-2">
-                                    {m['shareLinks.original']()}
-                                </summary>
-                                <pre className="mt-2 p-4 bg-grayscale-100 rounded-xl overflow-auto max-h-80 text-xs whitespace-pre-wrap break-all">
-                                    {JSON.stringify(credential, null, 2)}
-                                </pre>
-                            </details>
-                        )}
-                    </article>
-                );
-            })}
+                            {text.description && (
+                                <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
+                                    {text.description}
+                                </p>
+                            )}
+                            {proof && (
+                                <div aria-live="polite">
+                                    <ProofBadge state={proof} />
+                                </div>
+                            )}
+                            {endorsements.length > 0 && (
+                                <div className="pt-4 border-t border-grayscale-100 space-y-v3-2">
+                                    <h3 className="text-xs font-medium text-grayscale-700">
+                                        {m['shareLinks.endorsements']()}
+                                    </h3>
+                                    {endorsements.map(item => {
+                                        const endorsementText = credentialText(
+                                            payload.presentation.verifiableCredential[
+                                                item.credentialIndex
+                                            ]
+                                        );
+                                        const endorsementProof = proofs?.[item.credentialIndex];
+                                        return (
+                                            <div
+                                                key={item.credentialIndex}
+                                                className="space-y-v3-1"
+                                            >
+                                                {endorsementText.name && (
+                                                    <p className="text-sm text-grayscale-700 wrap-break-word">
+                                                        {endorsementText.name}
+                                                    </p>
+                                                )}
+                                                {endorsementProof && (
+                                                    <ProofBadge state={endorsementProof} />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            {showOriginal && (
+                                <ShareCredentialVisual
+                                    credential={credential}
+                                    category={category}
+                                    proof={proof}
+                                    endorsements={endorsements.map(
+                                        item =>
+                                            payload.presentation.verifiableCredential[
+                                                item.credentialIndex
+                                            ]
+                                    )}
+                                />
+                            )}
+                            {showOriginal && (
+                                <details className="text-xs text-grayscale-600">
+                                    <summary className="cursor-pointer py-2">
+                                        {m['shareLinks.original']()}
+                                    </summary>
+                                    <pre className="mt-2 p-4 bg-grayscale-100 rounded-xl overflow-auto max-h-80 text-xs whitespace-pre-wrap break-all">
+                                        {JSON.stringify(credential, null, 2)}
+                                    </pre>
+                                </details>
+                            )}
+                        </article>
+                    );
+                })}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default ShareLinkPreview;

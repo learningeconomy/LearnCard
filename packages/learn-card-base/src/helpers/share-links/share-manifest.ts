@@ -1,4 +1,5 @@
 import {
+    MAX_VP_MEMBERS,
     SHARE_LINK_PROTOCOL,
     SharePayloadValidator,
     classifyShareManifest,
@@ -21,6 +22,46 @@ import {
  * holder/issuer verification is a separate boundary (see
  * {@link ShareManifestProofVerifier}).
  */
+
+/** Inline context term for holder-signed per-credential category metadata. */
+export const SHARE_CREDENTIAL_CATEGORIES_CONTEXT = {
+    lcCredentialCategories: {
+        '@id': 'https://docs.learncard.com/schemas/presentations/share-link#credentialCategories',
+        '@type': '@json',
+    },
+} as const;
+
+/**
+ * Read optional category hints without making legacy or malformed shares
+ * unreadable. Entries align with the VP's credential array; null requests inference.
+ */
+export const getShareCredentialCategories = (
+    presentation: ShareManifestPresentation
+): readonly (string | null)[] | undefined => {
+    const metadata = (
+        presentation as ShareManifestPresentation & {
+            lcCredentialCategories?: unknown;
+        }
+    ).lcCredentialCategories;
+    if (
+        !Array.isArray(metadata) ||
+        metadata.length === 0 ||
+        metadata.length > MAX_VP_MEMBERS ||
+        metadata.length > presentation.verifiableCredential.length
+    ) {
+        return undefined;
+    }
+    if (
+        !metadata.every(
+            value =>
+                value === null ||
+                (typeof value === 'string' && value.length > 0 && value.length <= 128)
+        )
+    ) {
+        return undefined;
+    }
+    return metadata as (string | null)[];
+};
 
 export interface BuildShareManifestInput {
     shareId: string;

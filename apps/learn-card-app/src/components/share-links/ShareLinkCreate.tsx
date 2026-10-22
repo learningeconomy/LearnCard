@@ -324,6 +324,9 @@ export const ShareLinkCreate = ({
         try {
             if (!guardBase()) return;
             const wallet = shareWallet(await walletRef.current());
+            const credentialCategories = selected.map(
+                uri => choices.find(choice => choice.uri === uri)?.category || null
+            );
             prepared.current =
                 editShare && assetEdit
                     ? await prepareShareMetadataUpdate(
@@ -356,6 +359,7 @@ export const ShareLinkCreate = ({
                                         : {}
                                     : { passcode: null }),
                                 notifyOnView,
+                                credentialCategories,
                             }
                         )
                       : await prepareShare(
@@ -367,6 +371,7 @@ export const ShareLinkCreate = ({
                             {
                                 ...(passcodeEnabled ? { passcode } : {}),
                                 notifyOnView,
+                                credentialCategories,
                             }
                         );
             if (!alive.current) return;
@@ -927,9 +932,6 @@ export const ShareLinkCreate = ({
                                     editShare?.expiresAt ?? prepared.current.input.expiresAt ?? null
                                 }
                                 payload={prepared.current.payload}
-                                credentialCategories={selected.map(
-                                    uri => choices.find(choice => choice.uri === uri)?.category
-                                )}
                                 renderCredential={credential =>
                                     hasProtectedResumePdf(credential) ? (
                                         <ProtectedResumePreview credential={credential} />
