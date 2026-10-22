@@ -66,7 +66,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     if (!presentation) {
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px]">
-                <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 break-words">
+                <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 wrap-break-word">
                     {fallbackTitle}
                 </span>
             </div>
@@ -77,11 +77,11 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     if (layout !== 'academic') {
         return (
             <div
-                className="w-full space-y-2 px-2 text-center font-poppins"
+                className="w-full space-y-v3-2 px-2 text-center font-poppins"
                 data-clr-layout={layout}
             >
                 <p className="text-xs text-grayscale-600">{getClrLayoutLabel(layout)}</p>
-                <p className="break-words text-sm font-semibold text-grayscale-900">
+                <p className="wrap-break-word text-sm font-semibold text-grayscale-900">
                     {model.canonical.collection.name?.value ||
                         fallbackTitle ||
                         getClrLayoutLabel(layout)}
@@ -106,7 +106,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     if (inferredKind === 'unknown') {
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px]">
-                <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 break-words">
+                <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 wrap-break-word">
                     {model.header.title?.value || fallbackTitle}
                 </span>
             </div>
@@ -116,7 +116,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     if (inferredKind === 'transcript') {
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
-                <p className="mt-1 w-full max-w-full break-words text-center text-grayscale-900 text-[14px] font-notoSans font-semibold leading-[125%] line-clamp-2">
+                <p className="mt-1 w-full max-w-full wrap-break-word text-center text-grayscale-900 text-[14px] font-notoSans font-semibold leading-[125%] line-clamp-2">
                     Transcript
                 </p>
                 <div className="mt-2 flex items-center justify-center gap-3 flex-wrap">
@@ -158,7 +158,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
-                <p className="mt-2 w-full max-w-full break-words text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2">
+                <p className="mt-2 w-full max-w-full wrap-break-word text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2">
                     {courseName}
                 </p>
                 {grade && (
@@ -175,7 +175,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     return (
         <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
-            <p className="mt-2 w-full max-w-full break-words text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2">
+            <p className="mt-2 w-full max-w-full wrap-break-word text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2">
                 {degreeName}
             </p>
             {model.summary.explicitCompetencyCount > 0 && (

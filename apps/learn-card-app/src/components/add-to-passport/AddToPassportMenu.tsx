@@ -70,7 +70,7 @@ export const AddToPassportMenu: React.FC<{ className?: string }> = ({ className 
             <Suspense fallback={<PasteOrUploadClaimModalFallback />}>
                 <LazyPasteOrUploadClaimModal />
             </Suspense>,
-            { hideButton: true, sectionClassName: '!max-w-[500px]' },
+            { hideButton: true, sectionClassName: 'max-w-[500px]!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -79,7 +79,7 @@ export const AddToPassportMenu: React.FC<{ className?: string }> = ({ className 
         closeModal();
         newModal(
             <CheckListUploadRawVC />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };

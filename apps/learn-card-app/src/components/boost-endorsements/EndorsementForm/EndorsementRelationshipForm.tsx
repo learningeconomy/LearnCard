@@ -28,10 +28,10 @@ export const EndorsementRelationshipForm: React.FC<{
                 setEndorsement={setEndorsement}
             />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 usePortal: true,
                 hideButton: true,
-                portalClassName: '!max-w-[500px]',
+                portalClassName: 'max-w-[500px]!',
             }
         );
     };
@@ -46,7 +46,7 @@ export const EndorsementRelationshipForm: React.FC<{
 
             <button
                 onClick={openRelationshipSelector}
-                className="w-full rounded-full pl-[5px] pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-200 bg-grayscale-50"
+                className="w-full rounded-full pl-[5px] pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-200 bg-grayscale-50"
             >
                 <div className="flex items-center justify-start">
                     <div className="w-[40px] h-[40px] rounded-full mr-2 overflow-hidden flex items-center justify-center">

@@ -296,7 +296,7 @@ export const AiAssessmentContainer: React.FC<{
                 />
             )}
             <div
-                className={`h-[100vh] bg-transparent relative flex items-center flex-col justify-end ${
+                className={`h-screen bg-transparent relative flex items-center flex-col justify-end ${
                     isDesktop ? 'pb-[30px]' : ''
                 }`}
             >

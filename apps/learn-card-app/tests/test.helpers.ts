@@ -88,7 +88,14 @@ export const issueBadgeToSelf = async (page: Page, timeout = 60_000) => {
  */
 export const waitForAuthenticatedState = async (
     page: Page,
-    pathOrOptions: string | { path?: string; seed?: string; profileId?: string } = '/',
+    pathOrOptions:
+        | string
+        | {
+              path?: string;
+              seed?: string;
+              profileId?: string;
+              waitUntil?: 'load' | 'domcontentloaded';
+          } = '/',
     timeout = 30000
 ) => {
     // Parse options
@@ -98,11 +105,13 @@ export const waitForAuthenticatedState = async (
                   path: pathOrOptions,
                   seed: TEST_USER_SEED,
                   profileId: undefined as string | undefined,
+                  waitUntil: 'load' as const,
               }
             : {
                   path: pathOrOptions.path ?? '/',
                   seed: pathOrOptions.seed ?? TEST_USER_SEED,
                   profileId: pathOrOptions.profileId,
+                  waitUntil: pathOrOptions.waitUntil ?? 'load',
               };
 
     // Wait for the LCN gate's underlying profile lookup so `Add to LearnCard`
@@ -121,7 +130,7 @@ export const waitForAuthenticatedState = async (
     const seedUrl = options.profileId
         ? `/developer/sign-in?profileId=${encodeURIComponent(options.profileId)}`
         : '/developer/sign-in';
-    await page.goto(seedUrl);
+    await page.goto(seedUrl, { waitUntil: options.waitUntil });
 
     // Fill in the seed and submit. The page is state-aware: the primary button reads
     // "Sign in" when logged out, or "Sign out and switch" when a session already
@@ -131,7 +140,7 @@ export const waitForAuthenticatedState = async (
     await page.getByRole('textbox').fill(options.seed);
     await page.getByRole('button', { name: /^(Sign in|Sign out and switch)$/ }).click();
 
-    await page.waitForURL(/\/wallet/, { timeout });
+    await page.waitForURL(/\/wallet/, { timeout, waitUntil: options.waitUntil });
 
     if (options.profileId) {
         await joinNetworkIfNeeded(page, options.profileId);
@@ -141,6 +150,6 @@ export const waitForAuthenticatedState = async (
 
     // If a different path was requested, navigate there
     if (options.path !== '/' && options.path !== '/wallet') {
-        await page.goto(options.path);
+        await page.goto(options.path, { waitUntil: options.waitUntil });
     }
 };

@@ -20,8 +20,8 @@ const ExchangeRedirect: React.FC<ExchangeRedirectProps> = ({ redirectUrl }) => {
                 <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
                     <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                         {/* Header with icon */}
-                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-8 text-center">
-                            <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <div className="bg-linear-to-br/srgb from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+                            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-5">
                                 <Home className="w-8 h-8 text-white" />
                             </div>
 
@@ -36,14 +36,14 @@ const ExchangeRedirect: React.FC<ExchangeRedirectProps> = ({ redirectUrl }) => {
 
                         {/* Content */}
                         <div className="p-6">
-                            <div className="space-y-5 mb-6">
+                            <div className="space-y-v3-5 mb-6">
                                 <p className="text-grayscale-600 text-center text-sm leading-relaxed">
                                     {m['claim.redirect.description']()}
                                 </p>
                             </div>
 
                             {/* Action buttons */}
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <button
                                     onClick={handleRedirect}
                                     disabled={!redirectUrl}

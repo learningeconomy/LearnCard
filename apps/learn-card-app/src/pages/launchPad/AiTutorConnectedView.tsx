@@ -185,7 +185,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                     </button>
                 </li>
             </ul>,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
@@ -195,10 +195,10 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
         <div className="h-full w-full flex flex-col">
             {/* Header */}
             <div className="bg-white rounded-t-[24px] border-solid border-white border-[3px]">
-                <div className="w-full flex items-center justify-center flex-col bg-opacity-70 rounded-t-[20px] backdrop-blur-[5px] bg-white pt-6 pb-4">
+                <div className="w-full flex items-center justify-center flex-col  rounded-t-[20px] backdrop-blur-[5px] bg-white/70 pt-6 pb-4">
                     <div className="h-[100px] w-[100px] rounded-[20px] overflow-hidden">
                         <img
-                            className="w-full h-full object-cover bg-white rounded-[20px] overflow-hidden border-[1px] border-solid"
+                            className="w-full h-full object-cover bg-white rounded-[20px] overflow-hidden border border-solid"
                             alt={`${listing.display_name} logo`}
                             src={listing.icon_url}
                         />
@@ -234,7 +234,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                         <IonSpinner name="crescent" />
                     </div>
                 ) : existingTopics.length > 0 ? (
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    <div className="space-y-v3-2 max-h-[200px] overflow-y-auto">
                         {existingTopics
                             .slice(0, 5)
                             .map((topicCred: AnyCredential, index: number) => {
@@ -276,7 +276,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
             <div className="rounded-[20px] bg-white mt-4 w-full ion-padding">
                 <button
                     onClick={() => setStep('new')}
-                    className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-xl hover:from-violet-100 hover:to-indigo-100 transition-colors mb-3"
+                    className="w-full flex items-center gap-4 p-4 bg-linear-to-r/srgb from-violet-50 to-indigo-50 rounded-xl hover:from-violet-100 hover:to-indigo-100 transition-colors mb-3"
                 >
                     <div className="w-12 h-12 rounded-full bg-violet-500 flex items-center justify-center">
                         <Sparkles className="w-6 h-6 text-white" />
@@ -342,7 +342,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                         onChange={e => setNewTopic(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleNewTopic()}
                         placeholder="Enter your topic..."
-                        className="w-full px-4 py-3 pr-12 bg-grayscale-50 rounded-xl text-grayscale-900 placeholder-grayscale-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        className="w-full px-4 py-3 pr-12 bg-grayscale-50 rounded-xl text-grayscale-900 placeholder-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-violet-500"
                         autoFocus
                     />
 
@@ -391,7 +391,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                     </div>
                 </div>
 
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                <div className="space-y-v3-2 max-h-[400px] overflow-y-auto">
                     {existingTopics.map((topicCred: AnyCredential, index: number) => {
                         const topicName =
                             topicCred?.credentialSubject?.topic ||
@@ -416,7 +416,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
 
     return (
         <AiFeatureGate>
-            <div className="h-full w-full flex flex-col bg-gradient-to-b from-violet-500 to-indigo-600">
+            <div className="h-full w-full flex flex-col bg-linear-to-b/srgb from-violet-500 to-indigo-600">
                 <div className="flex-1 overflow-y-auto ion-padding pb-[100px]">
                     <div className="max-w-[600px] mx-auto">
                         {step === 'main' && renderMainView()}
@@ -428,7 +428,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                 {/* Footer */}
                 <IonFooter
                     mode="ios"
-                    className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]"
+                    className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
                 >
                     <div className="w-full flex items-center justify-center">
                         <div className="w-full flex items-center justify-between max-w-[600px] ion-padding gap-2">

@@ -338,10 +338,10 @@ if (result.credentialUri) {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {/* Template List */}
             {templates.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     {templates.map(template => (
                         <div
                             key={template.boostUri}
@@ -357,12 +357,12 @@ if (result.credentialUri) {
                             <div className="flex items-start gap-3">
                                 {/* Template Icon */}
                                 <div
-                                    className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden ${
                                         template.imageUrl
                                             ? ''
                                             : featureType === 'peer-badges'
-                                              ? 'bg-gradient-to-br from-violet-100 to-purple-100'
-                                              : 'bg-gradient-to-br from-emerald-100 to-cyan-100'
+                                              ? 'bg-linear-to-br/srgb from-violet-100 to-purple-100'
+                                              : 'bg-linear-to-br/srgb from-emerald-100 to-cyan-100'
                                     }`}
                                 >
                                     {template.imageUrl ? (
@@ -401,7 +401,7 @@ if (result.credentialUri) {
                                                         onChange={e =>
                                                             setTempAliasValue(e.target.value)
                                                         }
-                                                        className="px-2 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                        className="px-2 py-0.5 text-xs border border-emerald-300 rounded-sm focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
                                                         autoFocus
                                                         onKeyDown={e => {
                                                             if (e.key === 'Enter')
@@ -435,7 +435,7 @@ if (result.credentialUri) {
                                                             template.templateAlias || ''
                                                         );
                                                     }}
-                                                    className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700 hover:bg-gray-200 transition-colors"
+                                                    className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-sm text-xs text-gray-700 hover:bg-gray-200 transition-colors"
                                                 >
                                                     <code>
                                                         {template.templateAlias ||
@@ -459,7 +459,7 @@ if (result.credentialUri) {
                                                 {template.variables.map(v => (
                                                     <span
                                                         key={v}
-                                                        className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-mono"
+                                                        className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-sm text-xs font-mono"
                                                     >
                                                         {`{{${v}}}`}
                                                     </span>
@@ -469,7 +469,7 @@ if (result.credentialUri) {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex items-center gap-1 flex-shrink-0">
+                                <div className="flex items-center gap-1 shrink-0">
                                     {editable && (
                                         <button
                                             onClick={() => handleStartEdit(template)}
@@ -589,20 +589,20 @@ if (result.credentialUri) {
                             {saveError && (
                                 <div className="px-4 py-3 bg-red-50 border-t border-red-200">
                                     <div className="flex items-start gap-2">
-                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-red-800">
                                                 {m[
                                                     'developerPortal.components.templateListManager.failedToSave'
                                                 ]()}
                                             </p>
-                                            <p className="text-xs text-red-600 mt-1 break-words">
+                                            <p className="text-xs text-red-600 mt-1 wrap-break-word">
                                                 {saveError}
                                             </p>
                                         </div>
                                         <button
                                             onClick={() => setSaveError(null)}
-                                            className="text-red-400 hover:text-red-600 flex-shrink-0"
+                                            className="text-red-400 hover:text-red-600 shrink-0"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
@@ -610,11 +610,11 @@ if (result.credentialUri) {
                                 </div>
                             )}
 
-                            <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-2">
+                            <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-v3-2">
                                 {/* Validation errors near save button */}
                                 {structuralErrors.length > 0 && (
                                     <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                         <p className="text-xs text-red-700">
                                             {structuralErrors.map(e => e.message).join('. ')}
                                         </p>
@@ -624,7 +624,7 @@ if (result.credentialUri) {
                                 {builderValidationStatus === 'invalid' &&
                                     structuralErrors.length === 0 && (
                                         <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                                            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                             <p className="text-xs text-red-700">
                                                 {m[
                                                     'developerPortal.components.templateListManager.validationErrors'
@@ -708,7 +708,7 @@ if (result.credentialUri) {
 
             {/* Code Snippet */}
             {showCodeSnippets && templates.length > 0 && !showBuilder && (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {templates.length > 1 && (
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm text-gray-500">

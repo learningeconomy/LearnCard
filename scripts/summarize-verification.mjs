@@ -20,9 +20,58 @@ const catalog = new Map(
 const statuses = ['passed', 'failed', 'interrupted', 'running'];
 const outcome = value =>
     ['success', 'failure', 'cancelled', 'skipped'].includes(value) ? value : 'unknown';
+const phases = [
+    'preflight',
+    'build',
+    'prepare',
+    'compose',
+    'readiness',
+    'startup',
+    'catalog',
+    'teardown',
+];
+const duration = value =>
+    typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 86_400_000
+        ? Math.round(value)
+        : null;
+const featureDuration = result => {
+    if (result?.durationMs !== undefined) return duration(result.durationMs);
+    // Older reports already have timestamps. Only their numeric difference can leave the runner.
+    const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+    if (!iso.test(result?.startedAt) || !iso.test(result?.finishedAt)) return null;
+    return duration(Date.parse(result.finishedAt) - Date.parse(result.startedAt));
+};
+const readTimings = async path => {
+    let records;
+    try {
+        records = JSON.parse(await readFile(path, 'utf8'));
+    } catch (error) {
+        if (error.code === 'ENOENT' || error instanceof SyntaxError) return [];
+        throw error;
+    }
+    if (!Array.isArray(records)) return [];
+    return phases.flatMap(phase => {
+        const record = records.find(value => value?.phase === phase);
+        return record
+            ? [
+                  {
+                      phase,
+                      status: statuses.includes(record.status) ? record.status : 'unknown',
+                      durationMs: duration(record.durationMs),
+                  },
+              ]
+            : [];
+    });
+};
+const formatDuration = value => {
+    if (value === null) return '—';
+    const tenths = Math.round(value / 100);
+    return `${Math.floor(tenths / 600)}m ${((tenths % 600) / 10).toFixed(1)}s`;
+};
 const summary = {
     run: outcome(process.env.VERIFICATION_OUTCOME),
     teardown: outcome(process.env.TEARDOWN_OUTCOME),
+    startupTimings: await readTimings(join(directory, 'startup-timings.json')),
     reports: [],
 };
 let directories = [];
@@ -39,12 +88,17 @@ for (const entry of directories.sort((a, b) => a.name.localeCompare(b.name))) {
             await readFile(join(directory, 'runs', entry.name, 'report.json'), 'utf8')
         );
     } catch {
-        summary.reports.push({ status: 'unreadable', features: [] });
+        summary.reports.push({
+            status: 'unreadable',
+            timings: await readTimings(join(directory, 'runs', entry.name, 'timings.json')),
+            features: [],
+        });
         continue;
     }
     const results = Array.isArray(report.results) ? report.results : [];
     summary.reports.push({
         status: statuses.includes(report.status) ? report.status : 'unknown',
+        timings: await readTimings(join(directory, 'runs', entry.name, 'timings.json')),
         features: [...catalog].map(([feature, required]) => {
             const result = results.find(value => value?.feature === feature);
             return {
@@ -56,6 +110,7 @@ for (const entry of directories.sort((a, b) => a.name.localeCompare(b.name))) {
                         : []
                 ).size,
                 requiredEntries: required.length,
+                durationMs: featureDuration(result),
             };
         }),
     });
@@ -65,21 +120,29 @@ const lines = [
     '',
     `Catalog step: **${summary.run}**. Teardown step: **${summary.teardown}**.`,
     '',
-    'Only allowlisted statuses and coverage counts are retained; raw authentication evidence is not uploaded.',
+    'Only allowlisted statuses, coverage counts and numeric durations are retained; raw authentication evidence is not uploaded.',
     '',
 ];
 if (!summary.reports.length)
     lines.push('No catalog report was produced. Check the prerequisite step outcomes.');
+const timingTable = timings => {
+    if (!timings.length) return;
+    lines.push('| Phase | Status | Duration |', '| --- | --- | --- |');
+    for (const timing of timings)
+        lines.push(`| ${timing.phase} | ${timing.status} | ${formatDuration(timing.durationMs)} |`);
+    lines.push('');
+};
+if (summary.startupTimings.length) {
+    lines.push('## Startup breakdown', '');
+    timingTable(summary.startupTimings);
+}
 for (const [index, report] of summary.reports.entries()) {
-    lines.push(
-        `## Run ${index + 1}: ${report.status}`,
-        '',
-        '| Feature | Status | Entries |',
-        '| --- | --- | --- |'
-    );
+    lines.push(`## Run ${index + 1}: ${report.status}`, '');
+    timingTable(report.timings);
+    lines.push('| Feature | Status | Entries | Duration |', '| --- | --- | --- | --- |');
     for (const feature of report.features) {
         lines.push(
-            `| ${feature.feature} | ${feature.status} | ${feature.completedEntries}/${feature.requiredEntries} |`
+            `| ${feature.feature} | ${feature.status} | ${feature.completedEntries}/${feature.requiredEntries} | ${formatDuration(feature.durationMs)} |`
         );
     }
     lines.push('');

@@ -32,12 +32,12 @@ const LoginWelcomePanel: React.FC = () => {
         >
             {/* Decorative circles */}
             <div
-                className="absolute -top-[15%] -right-[10%] w-[50%] h-[50%] rounded-full opacity-10"
+                className="absolute top-[-15%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-10"
                 style={{ backgroundColor: accentColor }}
             />
 
             <div
-                className="absolute -bottom-[10%] -left-[8%] w-[40%] h-[40%] rounded-full opacity-10"
+                className="absolute bottom-[-10%] left-[-8%] w-[40%] h-[40%] rounded-full opacity-10"
                 style={{ backgroundColor: accentColor }}
             />
 
@@ -62,7 +62,7 @@ const LoginWelcomePanel: React.FC = () => {
                     />
                 )} */}
 
-                <h2 className="text-white text-3xl font-semibold mb-4 leading-snug drop-shadow-sm">
+                <h2 className="text-white text-3xl font-semibold mb-4 leading-snug drop-shadow-xs">
                     {m['login.welcome.heading']({ brand: brandingConfig.name })}
                 </h2>
 
@@ -75,7 +75,7 @@ const LoginWelcomePanel: React.FC = () => {
                     {['Credentials', 'Achievements', 'Skills'].map(label => (
                         <span
                             key={label}
-                            className="px-4 py-2 rounded-full text-sm font-medium text-white bg-black/10 backdrop-blur-sm"
+                            className="px-4 py-2 rounded-full text-sm font-medium text-white bg-black/10 backdrop-blur-xs"
                         >
                             {mDynamic(pillKeyMap[label] ?? label)}
                         </span>

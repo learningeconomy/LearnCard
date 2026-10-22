@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+- LC-2202: Add per-file extraction feedback, reviewed retry, and confirmed save counts for résumés, certificates, transcripts and diplomas. Empty results and files with no readable text no longer create placeholder “Raw Artifact” credentials, including in mixed batches and reopened reviews. Transient processing failures preserve accessible originals. Retry failed persistence without duplicating confirmed writes or replacing a newer saved résumé.
+- LC-2202: Remove a document and its upload feedback together immediately on deletion. Restore both if deletion fails, without replacing other files' outcomes.
+- LC-2202: Show extraction failures immediately with inline original-save progress instead of keeping the extraction overlay open during storage.
+- LC-2202: Consolidate upload success into a single document card with confirmed credential counts, filename-to-open, and delete. Move Update/Add More below saved documents and remove the separate success and Open/Download/Try Again boxes.
+- LC-2202: Tighten the gap before Add in the empty résumé upload state while preserving spacing below saved documents.
+- LC-2202: Hide uploaded original-document records from Recently Added and its full credential list without hiding extracted credentials or published résumés.
+- LC-2202: Finish selected-credential saving after confirmed storage instead of waiting for per-credential sharing. Synchronize consented sharing once in the background, then refresh insights.
+- LC-2202: Open empty/unreadable uploads from their feedback filename without creating a saved source credential. Preview supported extensions when a device supplies a missing/generic MIME type, without overriding explicit HTML/SVG types.
+- LC-2202: Leave saved documents unchanged while AI settings are loading or processing requests are rejected/incompatible. Preserve original-only uploads when AI is disabled, without model calls or futile extraction retries. Localize failure reasons.
+- LC-2202: Isolate unavailable originals without hiding valid or readable legacy documents. Keep unavailable records deletable, refresh saved documents without stale index results, and protect newer résumés from stale deletion.
+- LC-2202: Keep unexpected résumé processing errors visible outside credential review, and distinguish save errors without hiding the review or exposing internal error text.
+- LC-2202: Give each new extraction review independent draft identities so repeated service IDs cannot drop edits or associate credentials with another file. Preserve those identities across save retries.
+
+## 1.100.4
+
+### Patch Changes
+
+- [#1741](https://github.com/learningeconomy/LearnCard/pull/1741) [`b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229`](https://github.com/learningeconomy/LearnCard/commit/b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Persist saved profile changes before navigation without forcing profile refetches on every mount. Keep browser query-cache storage on localforage and native storage on SQLite across initialization and reload; native persistence failures never fall back to a stale second store. Revalidate installed apps after reload and apply nested tenant registry defaults correctly.
+
+    Add the disposable `lc verify` workflow with maintained user journeys, clean-checkout preparation, independently allocated service ports, confined local-service access, interruption-safe evidence, and ownership-checked crash recovery. Repair cold-start Vite loading, pin Astro's compatible Zod dependency, and load the example's CommonJS dependency correctly during server rendering. Build credential share links from the active tenant's configured host instead of the fixed development port.
+
+    Allow CLI schema/help loading before generated snippets exist; generate snippets atomically and load token snippets only when needed.
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
 ## 1.100.3
 
 ### Patch Changes

@@ -51,7 +51,7 @@ const OnboardingSlide: React.FC<OnboardingSlideProps> = ({
                 <span className="font-bold">{boldText}</span>{' '}
                 {age >= 13 && over13Text ? over13Text : regularText}
             </p>
-            <img className="!h-[400px] desktop:!h-[500px]" src={image} alt={imageAlt} />
+            <img className="h-[400px]! desktop:h-[500px]!" src={image} alt={imageAlt} />
         </div>
     );
 };

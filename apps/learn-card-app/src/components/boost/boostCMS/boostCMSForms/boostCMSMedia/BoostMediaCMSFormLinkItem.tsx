@@ -47,7 +47,7 @@ const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 />
             </div>,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
                 usePortal: true,
             }
@@ -68,7 +68,7 @@ const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
             >
                 <div className="flex items-center justify-start">
                     <LinkChain className={`text-${primaryColor} h-[50px] w-[50px] mr-1`} />
-                    <div className="flex items-start justify-center text-left ml-2 flex-col flex-grow">
+                    <div className="flex items-start justify-center text-left ml-2 flex-col grow">
                         <p className="text-grayscale-800 text-xs text-left line-clamp-1 break-all">
                             {media.title}
                         </p>
@@ -84,11 +84,11 @@ const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 <button
                     onClick={() => handleEdit()}
                     type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
+                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow-sm"
                 >
                     <Pencil className="h-[60%]" />
                 </button>
-                <div className="flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow">
+                <div className="flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow-sm">
                     <TrashBin
                         className="h-[25px] w-[25px] text-grayscale-800"
                         onClick={e => {

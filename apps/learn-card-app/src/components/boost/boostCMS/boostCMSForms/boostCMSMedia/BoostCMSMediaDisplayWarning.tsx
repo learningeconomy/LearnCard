@@ -10,7 +10,7 @@ export const BoostCMSMediaDisplayWarning: React.FC<{ handleShowMediaOptions: () 
     const { closeModal } = useModal();
     return (
         <div className="flex flex-col gap-[5px] items-center justify-center px-6 py-6">
-            <WarningIcon className="!h-[30px] !w-[30px] text-grayscale-800" />
+            <WarningIcon className="h-[30px]! w-[30px]! text-grayscale-800" />
             <h4 className="text-grayscale-800 w-full text-center font-semibold text-lg">
                 {m['boost.cms.media.attachmentRequired']()}
             </h4>

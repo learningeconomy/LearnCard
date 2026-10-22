@@ -157,7 +157,7 @@ export const JsonStudio: React.FC<JsonStudioProps> = ({
                 autoCapitalize="off"
                 autoCorrect="off"
                 rows={Math.min(Math.max(lineCount + 1, 12), 32)}
-                className={`w-full p-4 rounded-2xl bg-grayscale-900 text-grayscale-100 font-mono text-xs leading-relaxed resize-y focus:outline-none focus:ring-2 ${
+                className={`w-full p-4 rounded-2xl bg-grayscale-900 text-grayscale-100 font-mono text-xs leading-relaxed resize-y focus:outline-hidden focus:ring-2 ${
                     identity.status === 'invalid' ? 'focus:ring-red-500' : 'focus:ring-emerald-500'
                 }`}
             />

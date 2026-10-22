@@ -83,7 +83,7 @@ const BoostCMSIDAppearanceController: React.FC<{
                                     disabled={disabled}
                                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                                 />,
-                                { sectionClassName: '!max-w-[500px]', hideButton: true }
+                                { sectionClassName: 'max-w-[500px]!', hideButton: true }
                             );
                         }}
                         className="absolute bg-white h-[65px] w-12 z-15 right-[4px] top-[-40px] pt-[5px] rounded-tr-full rounded-tl-full flex items-start justify-center z-10"

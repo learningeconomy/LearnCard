@@ -45,13 +45,13 @@ export const ClrCollectionHeader = ({
             data-clr-header={layout}
             className={
                 military
-                    ? 'overflow-hidden rounded-[20px] border border-grayscale-300 bg-white shadow-sm'
-                    : 'space-y-4 rounded-[20px] border border-grayscale-200 bg-white p-6'
+                    ? 'overflow-hidden rounded-[20px] border border-grayscale-300 bg-white shadow-xs'
+                    : 'space-y-v3-4 rounded-[20px] border border-grayscale-200 bg-white p-6'
             }
         >
             <div className={military ? 'bg-grayscale-900 px-6 py-7 sm:px-8' : ''}>
                 <div className="flex min-w-0 flex-col items-start justify-between gap-3 sm:flex-row">
-                    <div className="min-w-0 flex-1 space-y-2">
+                    <div className="min-w-0 flex-1 space-y-v3-2">
                         <p
                             className={
                                 military
@@ -62,7 +62,7 @@ export const ClrCollectionHeader = ({
                             {getClrLayoutLabel(layout)}
                         </p>
                         <h2
-                            className={`break-words font-semibold ${
+                            className={`wrap-break-word font-semibold ${
                                 military
                                     ? 'text-2xl leading-tight text-white'
                                     : 'text-xl text-grayscale-900'
@@ -72,7 +72,7 @@ export const ClrCollectionHeader = ({
                         </h2>
                         {model.header.learnerName && (
                             <p
-                                className={`break-words text-sm ${
+                                className={`wrap-break-word text-sm ${
                                     military ? 'text-grayscale-200' : 'text-grayscale-700'
                                 }`}
                             >
@@ -84,7 +84,7 @@ export const ClrCollectionHeader = ({
                 </div>
                 {military && collection.description && (
                     <p
-                        className={`mt-5 border-t border-white/20 pt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-grayscale-100 ${
+                        className={`mt-5 border-t border-white/20 pt-4 whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-grayscale-100 ${
                             compact ? 'line-clamp-3' : ''
                         }`}
                     >
@@ -92,7 +92,7 @@ export const ClrCollectionHeader = ({
                     </p>
                 )}
             </div>
-            <div className={military ? 'space-y-5 p-6 sm:px-8' : 'space-y-4'}>
+            <div className={military ? 'space-y-v3-5 p-6 sm:px-8' : 'space-y-v3-4'}>
                 {collection.partial && (
                     <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                         {m['clrRenderer.partial']()}
@@ -100,7 +100,7 @@ export const ClrCollectionHeader = ({
                 )}
                 {!military && collection.description && (
                     <p
-                        className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-grayscale-600 ${
+                        className={`whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-grayscale-600 ${
                             compact ? 'line-clamp-3' : ''
                         }`}
                     >
@@ -112,7 +112,9 @@ export const ClrCollectionHeader = ({
                     dates.some(([, date]) => date)) && (
                     <div
                         className={
-                            military ? 'space-y-4 border-b border-grayscale-200 pb-5' : 'space-y-4'
+                            military
+                                ? 'space-y-v3-4 border-b border-grayscale-200 pb-5'
+                                : 'space-y-v3-4'
                         }
                     >
                         {publisherName && (
@@ -120,7 +122,7 @@ export const ClrCollectionHeader = ({
                                 <dt className="text-xs font-medium text-grayscale-700">
                                     {m['clrRenderer.publishedBy']()}
                                 </dt>
-                                <dd className="break-words text-sm font-medium text-grayscale-900 [overflow-wrap:anywhere]">
+                                <dd className="wrap-break-word text-sm font-medium text-grayscale-900 wrap-anywhere">
                                     {publisherName}
                                 </dd>
                             </dl>
@@ -162,7 +164,7 @@ export const ClrCollectionHeader = ({
                                     : 'rounded-full bg-grayscale-100 px-3 py-1 text-xs text-grayscale-700'
                             }
                         >
-                            <span className="min-w-0 break-words">
+                            <span className="min-w-0 wrap-break-word">
                                 {getClrSectionLabel(section.kind, layout)}
                             </span>
                             <span className={military ? 'font-semibold text-grayscale-900' : ''}>

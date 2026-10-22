@@ -87,7 +87,7 @@ const PathwayAiSessionModal: React.FC<PathwayAiSessionModalProps> = ({
                             rounded-2xl border border-emerald-100
                             bg-emerald-50 px-4 py-2.5
                             flex items-start gap-2
-                            shadow-sm
+                            shadow-xs
                             font-poppins
                         "
                     >

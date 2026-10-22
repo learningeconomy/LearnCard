@@ -54,7 +54,7 @@ const ClrCourseTable: React.FC<{
         });
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {groups.map(({ label, courses: gc }) => {
                 const isCollapsed = collapsed.has(label);
                 const termCredits = summarizeClrCredits(gc);
@@ -190,7 +190,7 @@ const ClrCourseTable: React.FC<{
                                             {/* Grade */}
                                             <div className="min-w-0 pl-2 flex justify-end items-center">
                                                 {results.length > 0 ? (
-                                                    <div className="min-w-0 space-y-2 pl-2">
+                                                    <div className="min-w-0 space-y-v3-2 pl-2">
                                                         {results.map((result, index) => {
                                                             const value = String(
                                                                 getResultDisplayValue(result)
@@ -205,7 +205,7 @@ const ClrCourseTable: React.FC<{
                                                                 <div
                                                                     key={`${result.resultDescriptionId?.value ?? 'result'}-${index}`}
                                                                 >
-                                                                    <p className="break-words text-right text-[10px] text-grayscale-500">
+                                                                    <p className="wrap-break-word text-right text-[10px] text-grayscale-500">
                                                                         {label}
                                                                     </p>
                                                                     <span

@@ -87,7 +87,7 @@ const ResumeShareLinkContent: React.FC<ResumeShareLinkProps> = ({
             className="sentry-block ph-no-capture flex h-full w-full items-center justify-center p-5 font-poppins"
             data-feedback-exclude
         >
-            <div className="w-full max-w-[400px] rounded-[20px] border border-grayscale-200 bg-white p-6 space-y-5">
+            <div className="w-full max-w-[400px] rounded-[20px] border border-grayscale-200 bg-white p-6 space-y-v3-5">
                 <div className="flex items-center justify-between gap-4">
                     <h1 className="text-xl font-semibold text-grayscale-900">
                         {m['common.share']()}

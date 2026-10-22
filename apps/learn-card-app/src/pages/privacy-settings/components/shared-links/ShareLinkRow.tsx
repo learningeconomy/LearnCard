@@ -42,7 +42,7 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
             <button
                 type="button"
                 onClick={() => onOpen(share)}
-                className="min-w-0 flex-1 py-3 ps-4 text-start after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-emerald-500 group-first:after:rounded-t-[20px] group-last:after:rounded-b-[20px]"
+                className="min-w-0 flex-1 py-3 ps-4 text-start after:absolute after:inset-0 after:content-[''] focus-visible:outline-hidden focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-emerald-500 group-first:after:rounded-t-[20px] group-last:after:rounded-b-[20px]"
             >
                 <span
                     className={`block truncate text-sm font-medium ${status === 'stopped' ? 'text-grayscale-600' : 'text-grayscale-900'}`}

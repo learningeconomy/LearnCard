@@ -32,7 +32,7 @@ export const AiAssessmentFooter: React.FC = () => {
 
     const getFooterClasses = () => {
         const baseClasses =
-            'w-full bg-white flex items-center justify-center ion-padding border-t-[1px] border-grayscale-100 transition-all duration-300 ease-in-out overflow-hidden';
+            'w-full bg-white flex items-center justify-center ion-padding border-t border-grayscale-100 transition-all duration-300 ease-in-out overflow-hidden';
 
         return isKeyboardOpen
             ? `${baseClasses} transform translate-y-full opacity-0`

@@ -15,7 +15,7 @@ import {
 import type { ListingData, ListingDetails, OptionalFormatField } from './listingForm';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const ADD_BUTTON_CLASS =
     'mt-3 flex items-center gap-1 text-sm font-medium text-grayscale-700 hover:text-grayscale-900 transition-colors';
@@ -57,13 +57,13 @@ export const ListingIdentityFields: React.FC<ListingIdentityFieldsProps> = ({
     nameRef,
     taglineRef,
 }) => (
-    <div className="space-y-5">
+    <div className="space-y-v3-5">
         <div
             ref={iconRef}
             tabIndex={-1}
             role="group"
             aria-labelledby="listing-icon-label"
-            className="outline-none"
+            className="outline-hidden"
         >
             <span id="listing-icon-label" className={LABEL_CLASS}>
                 App icon
@@ -124,7 +124,7 @@ export const ListingDetailsFields: React.FC<ListingDetailsFieldsProps> = ({
         onChange({ screenshots: details.screenshots.map((s, i) => (i === index ? url : s)) });
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-v3-5">
             <div>
                 <label htmlFor="listing-description" className={LABEL_CLASS}>
                     Description
@@ -226,12 +226,12 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
             </button>
 
             {(open || invalid.size > 0) && (
-                <div className="px-6 pb-6 pt-5 border-t border-grayscale-100 space-y-5">
+                <div className="px-6 pb-6 pt-5 border-t border-grayscale-100 space-y-v3-5">
                     <div role="group" aria-labelledby="listing-highlights-label">
                         <span id="listing-highlights-label" className={LABEL_CLASS}>
                             Highlights
                         </span>
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {details.highlights.map((highlight, index) => (
                                 <div key={index} className="flex gap-2">
                                     <input

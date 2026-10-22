@@ -1,8 +1,8 @@
 import React from 'react';
 
-const Calendar: React.FC<{ className?: string; version?: 'outline' | 'filled-top' }> = ({
+const Calendar: React.FC<{ className?: string; version?: 'outline-solid' | 'filled-top' }> = ({
     className = '',
-    version = 'outline',
+    version = 'outline-solid',
 }) => {
     if (version === 'filled-top') {
         return (

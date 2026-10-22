@@ -35,7 +35,7 @@ const SelectIssuerModal: React.FC<SelectIssuerModalProps> = ({ currentIssuer, se
                     return (
                         <button
                             key={index}
-                            className="flex gap-[10px] items-center py-[5px] px-[10px] border-[1px] border-grayscale-200 border-solid rounded-[15px]"
+                            className="flex gap-[10px] items-center py-[5px] px-[10px] border border-grayscale-200 border-solid rounded-[15px]"
                             onClick={() => {
                                 setNewIssuer(profile);
                                 closeModal();
@@ -47,7 +47,7 @@ const SelectIssuerModal: React.FC<SelectIssuerModalProps> = ({ currentIssuer, se
                                 customSize={120}
                                 user={profile}
                             />
-                            <span className="font-[500] text-[18px] line-clamp-1">
+                            <span className="font-medium text-[18px] line-clamp-1">
                                 {profile?.displayName}
                             </span>
                             {isSelected && (

@@ -96,7 +96,7 @@ export const RequirementEditor: React.FC<RequirementEditorProps> = ({
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <KindPicker value={value.kind} onChange={handleKindChange} />
 
             <div>
@@ -166,7 +166,7 @@ const KindPicker: React.FC<{
     );
 
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="requirement-kind">
                 Match this credential by
             </label>
@@ -339,7 +339,7 @@ const CompositeEditor: React.FC<CompositeEditorProps> = ({
             className={`
                 rounded-xl border border-grayscale-200
                 ${containerBg}
-                p-3 space-y-3
+                p-3 space-y-v3-3
                 border-l-4 border-l-emerald-300
             `}
         >
@@ -374,7 +374,7 @@ const CompositeEditor: React.FC<CompositeEditorProps> = ({
             </div>
 
             {/* Children */}
-            <ul className="space-y-2">
+            <ul className="space-y-v3-2">
                 {value.of.map((child, index) => (
                     <li
                         key={index}

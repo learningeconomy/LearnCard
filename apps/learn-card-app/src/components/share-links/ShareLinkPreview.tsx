@@ -95,15 +95,15 @@ export const ShareLinkPreview = ({
     className = '',
     renderCredential,
 }: ShareLinkPreviewProps) => (
-    <div className={`space-y-5 ${className}`} data-testid="share-link-preview">
+    <div className={`space-y-v3-5 ${className}`} data-testid="share-link-preview">
         {heading && (
             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                 {heading}
             </p>
         )}
-        <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-4 border border-grayscale-200">
+        <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-4 border border-grayscale-200">
             <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1 space-y-3">
+                <div className="min-w-0 flex-1 space-y-v3-3">
                     {sharerName &&
                         (showOriginal ? (
                             <div className="flex items-center gap-3">
@@ -126,7 +126,7 @@ export const ShareLinkPreview = ({
                                     )}
                                 </span>
                                 <div className="min-w-0">
-                                    <p className="text-sm font-medium text-grayscale-900 break-words">
+                                    <p className="text-sm font-medium text-grayscale-900 wrap-break-word">
                                         {sharerName}
                                     </p>
                                     <p className="text-xs text-grayscale-600">
@@ -153,7 +153,7 @@ export const ShareLinkPreview = ({
                                 {m['shareLinks.sharedBy']({ name: sharerName })}
                             </p>
                         ))}
-                    <h1 className="break-words text-2xl font-semibold text-grayscale-900 md:text-3xl">
+                    <h1 className="wrap-break-word text-2xl font-semibold text-grayscale-900 md:text-3xl">
                         {title}
                     </h1>
                 </div>
@@ -164,7 +164,7 @@ export const ShareLinkPreview = ({
                 )}
             </div>
             {note && (
-                <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap break-words">
+                <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
                     {note}
                 </p>
             )}
@@ -188,7 +188,7 @@ export const ShareLinkPreview = ({
             </div>
             {summaryExtra}
         </section>
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {payload.selection.map(({ credentialIndex }) => {
                 const credential = payload.presentation.verifiableCredential[credentialIndex];
                 const custom = renderCredential?.(
@@ -209,7 +209,7 @@ export const ShareLinkPreview = ({
                 return (
                     <article
                         key={credentialIndex}
-                        className="bg-white rounded-[20px] p-6 md:p-8 space-y-4 border border-grayscale-200"
+                        className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-4 border border-grayscale-200"
                     >
                         <div className="flex items-center gap-4">
                             <ShareCredentialThumbnail credential={credential} />
@@ -222,7 +222,7 @@ export const ShareLinkPreview = ({
                             <CredentialPreviewButton credential={credential} />
                         </div>
                         {text.description && (
-                            <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap break-words">
+                            <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
                                 {text.description}
                             </p>
                         )}
@@ -232,7 +232,7 @@ export const ShareLinkPreview = ({
                             </div>
                         )}
                         {endorsements.length > 0 && (
-                            <div className="pt-4 border-t border-grayscale-100 space-y-2">
+                            <div className="pt-4 border-t border-grayscale-100 space-y-v3-2">
                                 <h3 className="text-xs font-medium text-grayscale-700">
                                     {m['shareLinks.endorsements']()}
                                 </h3>
@@ -244,9 +244,9 @@ export const ShareLinkPreview = ({
                                     );
                                     const endorsementProof = proofs?.[item.credentialIndex];
                                     return (
-                                        <div key={item.credentialIndex} className="space-y-1">
+                                        <div key={item.credentialIndex} className="space-y-v3-1">
                                             {endorsementText.name && (
-                                                <p className="text-sm text-grayscale-700 break-words">
+                                                <p className="text-sm text-grayscale-700 wrap-break-word">
                                                     {endorsementText.name}
                                                 </p>
                                             )}

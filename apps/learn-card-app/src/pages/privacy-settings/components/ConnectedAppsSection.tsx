@@ -90,7 +90,7 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
                         value={query}
                         onChange={setQuery}
                         placeholder={m['dataShareCenter.connectedApps.searchPlaceholder']()}
-                        className="!bg-white border border-grayscale-300 rounded-[14px] shadow-[0_2px_10px_rgba(24,34,78,0.06)]"
+                        className="bg-white! border border-grayscale-300 rounded-[14px] shadow-[0_2px_10px_rgba(24,34,78,0.06)]"
                     />
                 </div>
             )}

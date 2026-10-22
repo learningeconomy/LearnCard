@@ -34,10 +34,10 @@ export const AdminToolsFamilySelectorButton: React.FC<{
                         selectedFamily={selectedFamily}
                         setSelectedFamily={setSelectedFamily}
                     />,
-                    { sectionClassName: '!max-w-[400px]' }
+                    { sectionClassName: 'max-w-[400px]!' }
                 )
             }
-            className="w-full rounded-full pl-[2px] pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-100 bg-grayscale-100 mt-4"
+            className="w-full rounded-full pl-[2px] pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-100 bg-grayscale-100 mt-4"
         >
             <div className="flex items-center justify-start">
                 <div className="w-[40px] h-[40px] rounded-full bg-grayscale-100 mr-2 overflow-hidden">

@@ -27,7 +27,7 @@ const AiPathwayCourseItem: React.FC<{ course: any }> = ({ course }) => {
         <div
             role="button"
             onClick={openCourseDetailsModal}
-            className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border-[1px] border-grayscale-200 rounded-xl cursor-pointer"
+            className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border border-grayscale-200 rounded-xl cursor-pointer"
         >
             <p className="text-indigo-500 font-normal text-sm line-clamp-1 font-notoSans uppercase text-left">
                 {occupationTags}

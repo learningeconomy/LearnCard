@@ -256,7 +256,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.testing.title']()}
@@ -268,7 +268,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
             {/* Info Banner */}
             <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                <TestTube2 className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                <TestTube2 className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-violet-800">
                     <p className="font-medium mb-1">
                         {m['developerPortal.dashboards.tabs.testing.sandboxTesting']()}
@@ -280,7 +280,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             {/* Warning if templates not saved */}
             {hasUnsavedTemplates && (
                 <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div className="text-sm text-amber-800">
                         <p className="font-medium">
                             {m['developerPortal.dashboards.tabs.testing.templatesNotSaved']()}
@@ -293,7 +293,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             )}
 
             {/* Template Selector */}
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <label className="block text-sm font-medium text-gray-700">
                     {m['developerPortal.dashboards.tabs.testing.selectTemplate']()}
                 </label>
@@ -357,11 +357,11 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                                     </div>
 
                                     {template.boostUri ? (
-                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-sm text-xs">
                                             {m['developerPortal.dashboards.tabs.testing.saved']()}
                                         </span>
                                     ) : (
-                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">
+                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-sm text-xs">
                                             {m['developerPortal.dashboards.tabs.testing.unsaved']()}
                                         </span>
                                     )}
@@ -388,7 +388,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
             {/* Template Data Preview */}
             {selectedTemplate && templateVariables.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div className="flex items-center gap-2">
                         <Zap className="w-4 h-4 text-violet-500" />
                         <label className="text-sm font-medium text-gray-700">
@@ -396,7 +396,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                         </label>
                     </div>
 
-                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-v3-2">
                         {templateVariables.map(varName => (
                             <div
                                 key={varName}
@@ -407,7 +407,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                                         .replace(/_/g, ' ')
                                         .replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                 </span>
-                                <code className="px-2 py-0.5 bg-white border border-gray-200 rounded text-xs text-gray-700">
+                                <code className="px-2 py-0.5 bg-white border border-gray-200 rounded-sm text-xs text-gray-700">
                                     {getSampleValue(varName)}
                                 </code>
                             </div>
@@ -417,7 +417,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             )}
 
             {/* Recipient Input */}
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <label className="block text-sm font-medium text-gray-700">
                     {m['developerPortal.dashboards.tabs.testing.testRecipient']()}
                 </label>
@@ -457,7 +457,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                                 value={testEmail}
                                 onChange={e => setTestEmail(e.target.value)}
                                 placeholder="your-email@example.com"
-                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             />
                         </div>
                         <p className="text-xs text-gray-500">
@@ -473,7 +473,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                                 value={testUserId}
                                 onChange={e => setTestUserId(e.target.value)}
                                 placeholder="profileId or did:..."
-                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             />
                         </div>
                         <p className="text-xs text-gray-500">
@@ -488,7 +488,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 <button
                     onClick={handleSendTest}
                     disabled={!canTest || !recipientValue.trim() || !selectedTemplate?.boostUri}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-linear-to-r/srgb from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     <Send className="w-5 h-5" />
                     {m['developerPortal.dashboards.tabs.testing.sendTestCredential']()}
@@ -505,9 +505,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             )}
 
             {testStatus === 'success' && testResult && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                         <div className="flex-1">
                             <p className="font-medium text-emerald-800">
                                 {m['developerPortal.dashboards.tabs.testing.testSent']()}
@@ -558,9 +558,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             )}
 
             {testStatus === 'error' && testResult && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                         <div className="flex-1">
                             <p className="font-medium text-red-800">
                                 {m['developerPortal.dashboards.tabs.testing.testFailed']()}
@@ -590,7 +590,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                     </span>
                 </div>
 
-                <ul className="text-sm text-gray-600 space-y-2">
+                <ul className="text-sm text-gray-600 space-y-v3-2">
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
                         <span>{m['developerPortal.dashboards.tabs.testing.tipOwnEmail']()}</span>

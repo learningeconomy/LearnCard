@@ -70,7 +70,7 @@ export const JoinNetworkPrompt: React.FC<{
     const openRejectPrompt = () => {
         newModal(
             <RejectNetworkPrompt handleCloseModal={closeModal} />,
-            { hideButton: true, sectionClassName: '!max-w-[400px]' },
+            { hideButton: true, sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -78,7 +78,7 @@ export const JoinNetworkPrompt: React.FC<{
     const openNotificationPrompt = () => {
         newModal(
             <PushNotificationsPrompt handleCloseModal={closeModal} />,
-            { hideButton: true, sectionClassName: '!max-w-[400px]' },
+            { hideButton: true, sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -231,7 +231,7 @@ export const JoinNetworkPrompt: React.FC<{
                 </div>
             </div>
             <div className="w-full flex items-center justify-center mt-6">
-                <div className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
+                <div className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                     {step === 1 ? (
                         <button
                             onClick={handleNextStep}

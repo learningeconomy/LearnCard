@@ -52,7 +52,7 @@ const ClrTranscriptRendererDemo = () => {
     return (
         <div className="bg-grayscale-10 h-full overflow-hidden font-poppins flex flex-col pt-[var(--ion-safe-area-top,0px)] pb-[var(--ion-safe-area-bottom,0px)]">
             {/* Controls header */}
-            <div className="px-4 pt-4 pb-3 space-y-3 bg-white border-b border-grayscale-200 shrink-0">
+            <div className="px-4 pt-4 pb-3 space-y-v3-3 bg-white border-b border-grayscale-200 shrink-0">
                 <div className="flex items-center justify-between">
                     <h1 className="text-base font-semibold text-grayscale-900">CLR Renderer</h1>
                     <span className="text-xs text-grayscale-400 font-mono">
@@ -191,7 +191,7 @@ const ClrTranscriptRendererDemo = () => {
                             aria-pressed={surface === s}
                             onClick={() => setSurface(s)}
                             className={`flex-1 py-[12px] rounded-full text-[14px] font-semibold font-poppins text-grayscale-900 transition-colors ${
-                                surface === s ? 'bg-white shadow-sm' : ''
+                                surface === s ? 'bg-white shadow-xs' : ''
                             }`}
                         >
                             {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -201,7 +201,7 @@ const ClrTranscriptRendererDemo = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-v3-4">
                 {surface === ClrTranscriptSurface.Card && (
                     <ClrTranscriptCard
                         model={currentModel}

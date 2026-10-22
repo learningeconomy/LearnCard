@@ -543,7 +543,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
             <img
                 src={appIcon}
                 alt={`${appName} icon`}
-                className="h-[56px] w-[56px] rounded-[14px] shadow-sm"
+                className="h-[56px] w-[56px] rounded-[14px] shadow-xs"
             />
 
             <h2 className="mt-4 text-lg font-semibold text-grayscale-900 text-center">{appName}</h2>
@@ -845,7 +845,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                                             autoCorrect="off"
                                                             spellCheck={false}
                                                             disabled={switchingChannel !== null}
-                                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:opacity-50"
+                                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:opacity-50"
                                                         />
                                                         <button
                                                             type="button"

@@ -13,3 +13,7 @@ github_oidc_provider_arn = null
 # Core storage CMK -> this input AND GitHub ESCROW_ARTIFACTS_KMS_KEY_ARN.
 # Replace before enabling (null is only for SSE-S3, not the current core bucket).
 publisher_storage_kms_key_arn = "arn:aws:kms:us-east-1:<ACCOUNT_ID>:key/<STORAGE_KEY_ID>"
+# Replace with the approved core authority_generation; include old generations
+# during overlap. Apply bootstrap selectors before creating a new core table.
+authority_generations = ["REPLACE_WITH_APPROVED_GENERATION"]
+# cloudtrail_retention_days = 365 # Shared default; COMPLIANCE is irreversible.
