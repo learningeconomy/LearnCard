@@ -8,7 +8,7 @@ const replace = vi.fn();
 let mockLocation = { search: '' };
 
 vi.mock('react-router-dom', async orig => {
-    const actual = await orig();
+    const actual = await orig<typeof import('react-router-dom')>();
     return { ...actual, useHistory: () => ({ push, replace }), useLocation: () => mockLocation };
 });
 
