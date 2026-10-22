@@ -440,15 +440,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
     // Define verification error at component level so it's accessible in return
     const verificationError = errors?.code?.[0] ?? codeError;
     const emailStepError = errors?.email?.[0] ?? sendError;
-    // "Too many attempts" sits below the button; every other error sits above it.
-    const isAttemptLimitError = isRateLimited && !errors?.code?.[0];
-    const errorAboveButton =
-        currentStep === EmailFormStepsEnum.email
-            ? emailStepError
-            : isAttemptLimitError
-              ? ''
-              : verificationError;
-    const errorAboveButtonId =
+    const activeError =
+        currentStep === EmailFormStepsEnum.email ? emailStepError : verificationError;
+    const activeErrorId =
         currentStep === EmailFormStepsEnum.email ? 'login-email-error' : 'login-email-code-error';
 
     let disabled = isLoading;
@@ -551,10 +545,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 )}
 
                 {activeStep}
-                {errorAboveButton && (
+                {activeError && (
                     <LoginErrorMessage
-                        id={errorAboveButtonId}
-                        message={errorAboveButton}
+                        id={activeErrorId}
+                        message={activeError}
                         className={currentStep === EmailFormStepsEnum.email ? 'mt-4' : 'mt-2.5'}
                     />
                 )}
@@ -575,13 +569,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     </button>
                 </div>
                 {currentStep === EmailFormStepsEnum.email && <AppStoreDownloadButtons />}
-                {currentStep === EmailFormStepsEnum.verification && isAttemptLimitError && (
-                    <LoginErrorMessage
-                        id="login-email-code-error"
-                        message={verificationError}
-                        className="mb-4"
-                    />
-                )}
                 {currentStep === EmailFormStepsEnum.verification && verificationEmail && (
                     <div className="flex items-center justify-center w-full">
                         <Countdown

@@ -129,7 +129,7 @@ describe('phone code attempts', () => {
         mocks.countdownDates.length = 0;
     });
 
-    it('shows invalid-code errors above Verify, then the 6th-attempt rate-limit below it', async () => {
+    it('shows invalid-code errors, then the 6th-attempt rate-limit, above Verify', async () => {
         mocks.verifyNative.mockImplementation(
             async (_code: string, _ok: () => void, onError: (err: string) => void) =>
                 onError('Firebase: Error (auth/invalid-verification-code).')
@@ -157,7 +157,7 @@ describe('phone code attempts', () => {
         expect(mocks.verifyNative).toHaveBeenCalledTimes(5);
         const alert = screen.getByRole('alert');
         expect(alert.textContent).toContain('Too many attempts');
-        expect(isAbove(verify, alert)).toBe(true);
+        expect(isAbove(alert, verify)).toBe(true);
         expect((verify as HTMLButtonElement).disabled).toBe(true);
         expect(new Set(mocks.countdownDates).size).toBe(1);
     });

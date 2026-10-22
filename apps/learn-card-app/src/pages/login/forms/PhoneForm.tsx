@@ -318,15 +318,9 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     const phoneErrorMessage = errors?.phone?.[0] ?? (error ? getPhoneAuthErrorMessage(error) : '');
     const verificationError =
         errors?.code?.[0] ?? (codeError ? getPhoneAuthErrorMessage(codeError) : '');
-    // "Too many attempts" sits below the button; every other error sits above it.
-    const isAttemptLimitError = !errors?.code?.[0] && codeError === 'tooManyAttempts';
-    const errorAboveButton =
-        currentStep === PhoneFormStepsEnum.phone
-            ? phoneErrorMessage
-            : isAttemptLimitError
-              ? ''
-              : verificationError;
-    const errorAboveButtonId =
+    const activeError =
+        currentStep === PhoneFormStepsEnum.phone ? phoneErrorMessage : verificationError;
+    const activeErrorId =
         currentStep === PhoneFormStepsEnum.phone ? 'login-phone-error' : 'login-phone-code-error';
 
     let disabled = isLoading;
@@ -404,10 +398,10 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 </IonCol>
             )}
             {activeStep}
-            {errorAboveButton && (
+            {activeError && (
                 <LoginErrorMessage
-                    id={errorAboveButtonId}
-                    message={errorAboveButton}
+                    id={activeErrorId}
+                    message={activeError}
                     className={currentStep === PhoneFormStepsEnum.phone ? 'mt-4' : 'mt-2.5'}
                 />
             )}
@@ -428,13 +422,6 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 </button>
             </div>
             {currentStep === PhoneFormStepsEnum.phone && <AppStoreDownloadButtons />}
-            {currentStep === PhoneFormStepsEnum.verification && isAttemptLimitError && (
-                <LoginErrorMessage
-                    id="login-phone-code-error"
-                    message={verificationError}
-                    className="mb-4"
-                />
-            )}
             {currentStep === PhoneFormStepsEnum.verification && (
                 <div className="flex items-center justify-center w-full">
                     <Countdown
