@@ -88,6 +88,12 @@ const credential = {
     type: ['VerifiableCredential'],
     credentialSubject: {},
 } as VC;
+const credentialProof = {
+    type: 'DataIntegrityProof',
+    cryptosuite: 'eddsa-jcs-2022',
+    proofPurpose: 'assertionMethod',
+    verificationMethod: 'did:key:issuer#key-1',
+};
 let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 
 beforeEach(async () => {
@@ -367,13 +373,13 @@ it('persists same-ID revisions and deduplicates only identical signed payload re
         ...credential,
         id: 'urn:uuid:revision-id',
         credentialSubject: { award: 'A' },
-        proof: { type: 'DataIntegrityProof', proofValue: 'proof-A' },
-    } as VC;
+        proof: { ...credentialProof, proofValue: 'proof-A' },
+    } satisfies VC;
     const revision = {
         ...first,
         credentialSubject: { award: 'B' },
         proof: { ...first.proof, proofValue: 'proof-B' },
-    } as VC;
+    } satisfies VC;
     const firstId = await getCredentialPayloadRecordId(first, 'did:key:recipient');
     const revisionId = await getCredentialPayloadRecordId(revision, 'did:key:recipient');
     const { storeAndAddVCToWallet } = useWallet();
@@ -396,32 +402,32 @@ it('scopes payload fingerprints to the account and includes signed extensions an
     const offered = {
         ...credential,
         id: 'same-id',
-        proof: { proofValue: 'A' },
+        proof: { ...credentialProof, proofValue: 'A' },
         extension: { field: 'private' },
-    } as VC;
+    } satisfies VC;
     const original = JSON.stringify(offered);
     const first = await getCredentialPayloadRecordId(offered, 'did:key:recipient');
     expect(
         await getCredentialPayloadRecordId(
             {
+                ...credential,
                 extension: offered.extension,
                 proof: offered.proof,
-                ...credential,
                 id: offered.id,
-            } as VC,
+            } satisfies VC,
             'did:key:recipient'
         )
     ).toBe(first);
     expect(await getCredentialPayloadRecordId(offered, 'did:key:other')).not.toBe(first);
     expect(
         await getCredentialPayloadRecordId(
-            { ...offered, proof: { proofValue: 'B' } } as VC,
+            { ...offered, proof: { ...offered.proof, proofValue: 'B' } } satisfies VC,
             'did:key:recipient'
         )
     ).not.toBe(first);
     expect(
         await getCredentialPayloadRecordId(
-            { ...offered, extension: { field: 'different' } } as VC,
+            { ...offered, extension: { field: 'different' } } satisfies VC,
             'did:key:recipient'
         )
     ).not.toBe(first);
