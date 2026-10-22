@@ -15,6 +15,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ProposeBindingDialog } from '../components/bindings/ProposeBindingDialog';
+import { ApproveBindingDialog } from '../components/bindings/ApproveBindingDialog';
 import { BindingConsentTrail } from '../components/bindings/BindingConsentTrail';
 import { trpc } from '../trpc';
 import { TRPCClientError } from '@trpc/client';
@@ -76,6 +77,7 @@ export function Bindings({ session }: { session: DashboardSession }) {
     const [stateFilter, setStateFilter] = useState<DisplayState | null>(null);
     const [capFilter, setCapFilter] = useState<string | null>(null);
     const [proposeOpen, setProposeOpen] = useState(false);
+    const [approveBinding, setApproveBinding] = useState<BindingRecord | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [busyId, setBusyId] = useState<string | null>(null);
@@ -144,21 +146,6 @@ export function Bindings({ session }: { session: DashboardSession }) {
         } finally {
             setBusyId(null);
         }
-    };
-
-    const approve = async (binding: BindingRecord): Promise<void> => {
-        const preflight = await trpc.bindings.prepareConsentPreflight.mutate({
-            bindingId: binding.bindingId,
-        });
-        if (!preflight.satisfied) {
-            throw new Error(preflight.missing.map(item => item.message).join(' '));
-        }
-        await trpc.bindings.approve.mutate({
-            bindingId: binding.bindingId,
-            expectedRevision: binding.revision,
-            preflightId: preflight.preflightId,
-            preflightHash: preflight.hash,
-        });
     };
 
     if (!ecosystemId) {
@@ -332,16 +319,16 @@ export function Bindings({ session }: { session: DashboardSession }) {
                                                 <Button
                                                     size="sm"
                                                     disabled={busy}
-                                                    onClick={() =>
-                                                        runMutation(b.bindingId, () => approve(b))
-                                                    }
+                                                    onClick={() => setApproveBinding(b)}
                                                 >
                                                     {busy ? (
                                                         <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
                                                     ) : (
                                                         <Check className="mr-1 h-3.5 w-3.5" />
                                                     )}
-                                                    {busy ? 'Verifying...' : 'Approve'}
+                                                    {state === 'suspended'
+                                                        ? 'Re-approve'
+                                                        : 'Approve'}
                                                 </Button>
                                                 <Button
                                                     size="sm"
@@ -423,6 +410,15 @@ export function Bindings({ session }: { session: DashboardSession }) {
                 targets={targets}
                 capabilities={CAPABILITIES}
                 onProposed={load}
+            />
+
+            <ApproveBindingDialog
+                open={!!approveBinding}
+                onOpenChange={open => !open && setApproveBinding(null)}
+                binding={approveBinding}
+                providerName={approveBinding ? endpointName(approveBinding.provider) : ''}
+                consumerName={approveBinding ? endpointName(approveBinding.consumer) : ''}
+                onApproved={load}
             />
         </div>
     );
