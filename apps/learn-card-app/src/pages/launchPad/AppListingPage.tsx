@@ -589,6 +589,9 @@ const AppListingPage: React.FC = () => {
         }
     };
 
+    const handleLaunchRef = useRef(handleLaunch);
+    handleLaunchRef.current = handleLaunch;
+
     // An installed listing is a transient entry page. Installation still requires consent.
     useEffect(() => {
         if (
@@ -600,7 +603,7 @@ const AppListingPage: React.FC = () => {
             isOnboardingOpen
         )
             return;
-        void handleLaunch();
+        void handleLaunchRef.current();
     }, [
         launchRequested,
         listingId,

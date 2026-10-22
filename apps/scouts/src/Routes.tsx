@@ -184,10 +184,6 @@ export const Routes: React.FC = () => {
                             component={BulkBoostImportPage}
                         />
 
-                        <SentryRoute path="/waitingsofa">
-                            <LoadingPage2 />
-                        </SentryRoute>
-
                         <SentryRoute path="/claim-credential/:uri">
                             <VCClaimModalController />
                         </SentryRoute>

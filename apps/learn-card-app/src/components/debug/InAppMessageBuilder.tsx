@@ -479,6 +479,7 @@ export const InAppMessageBuilder: React.FC<{
 
                         {a.type === 'openApp' && (
                             <input
+                                type="text"
                                 aria-label="App listing ID"
                                 value={a.listingId ?? ''}
                                 onChange={e => updateAction(i, { listingId: e.target.value })}
@@ -489,6 +490,7 @@ export const InAppMessageBuilder: React.FC<{
                         )}
                         {a.type === 'openMessage' && (
                             <input
+                                type="text"
                                 aria-label="Message ID"
                                 value={a.messageId ?? ''}
                                 onChange={e => updateAction(i, { messageId: e.target.value })}
