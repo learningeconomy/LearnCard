@@ -84,6 +84,18 @@ bundle mode: remote escrow without a bundle leaves almost no headroom under
 Lambda's 4 KB environment limit. When enabling escrow on a bundle stage, add its
 credentials to the bundle; GitHub fallback secrets are ignored there.
 
+### Campaign administration (brain-service)
+
+`CAMPAIGN_ADMIN_PROFILE_IDS` is an optional comma-separated authorization allowlist
+of network profile IDs. Configure it in the private runtime secrets bundle (or the
+local environment); do not put real administrator IDs in committed stage files.
+Whitespace is trimmed. An empty/unset value grants nobody campaign administration.
+In non-bundle Lambda deployments it is forwarded like `APP_STORE_ADMIN_PROFILE_IDS`.
+No administrators or production campaigns are enabled by this change.
+
+LC-2265 adds setup, audiences and engagement state only. Dispatch settings and queue
+configuration belong to LC-2266; this setting does not enable notification delivery.
+
 ## Quick Start
 
 ### Lambda runtime bundles

@@ -1,0 +1,166 @@
+# Campaigns: setup, audiences and engagement (LC-2265)
+
+This slice stores campaign definitions, server-selected audiences and shared engagement
+state. It does not deliver notifications or render messages. LC-2266 owns dispatch and
+`sendTestToMe`; LC-2267 owns app integration. It does not require the in-app messages V2
+branches: `message` uses the shared `InAppMessage` schema available in this checkout.
+
+## Administration and lifecycle
+
+Configure `CAMPAIGN_ADMIN_PROFILE_IDS` as a private, comma-separated profile allowlist.
+It is empty by default. Every management operation requires both an allowlisted profile
+and the `campaigns:admin` scope (or `*:*`). The authenticated `isAdmin` discovery query
+returns a boolean, like App Store administration; it exposes no campaigns or audiences.
+User queries need `campaigns:read`, and enrollment/events need `campaigns:write`.
+SDK API tokens also need `profiles:read` for the plugin's profile check.
+
+```ts
+// `client` is an authenticated brain-client; campaignAdmin is allowlisted.
+const campaign = await client.campaigns.create.mutate({
+    id: 'transcript-pilot-v1',
+    name: 'Transcript pilot',
+    channels: ['inApp'],
+    message: { title: 'Explore your next step', frequency: 'once' },
+});
+await client.campaigns.setStatus.mutate({ campaignId: campaign.id, status: 'live' });
+```
+
+IDs are immutable, lowercase `[a-z0-9-]{3,64}`, unique, and always replace `message.id`.
+Creation defaults to `draft`, `excludeMinors: true`, `selfEnroll: false`. Supported statuses
+are `draft`, `live`, `paused`, `archived`; archived campaigns cannot be edited or have
+audience members added. Admin deletion removes the campaign and its relationships.
+Use a new ID for a new campaign; deleting/reusing an ID cannot clear clients' local seen state.
+
+`channels` must contain `inApp`, `notify`, or both without duplicates. `notify` requires
+`notification: { title, body }`, but does not send anything in this slice. Dates are ISO
+timestamps normalized to UTC; `startsAt` is inclusive and `endsAt` is exclusive. If both
+exist, the end must follow the start. Partial updates preserve omitted fields; `null`
+clears optional notification/start/end fields. Updates replace `message` as a whole.
+
+## Audience sources
+
+Preview is read-only. Adding an audience merges distinct profiles and preserves the first
+membership's `addedAt` and `source`, including `selfEnrolled`. Both calls return
+`{ count }`: the number of eligible matching profiles, **not** the number of new edges.
+Overlapping or repeated additions therefore return their matched count without duplicating
+membership. These are snapshots, not subscriptions to later credential claims/revocations.
+
+```ts
+import type { CampaignAudienceSource } from '@learncard/types';
+
+const campaignId = 'transcript-pilot-v1';
+const sources: CampaignAudienceSource[] = [
+    { type: 'dids', dids: ['did:key:example'] },
+    { type: 'emails', emails: ['learner@example.org'] },
+    {
+        type: 'credentialsSentBy',
+        senderProfileId: 'university-transcripts',
+        metadata: { kind: 'transcript' },
+        since: '2026-01-01T00:00:00Z',
+        includePending: false,
+    },
+    {
+        type: 'credentialsSentBy',
+        listingId: 'university-transcript-app',
+        metadata: { kind: 'transcript' },
+        includePending: false,
+    },
+    { type: 'inboxClaims', issuerDid: 'did:key:issuer', since: '2026-01-01T00:00:00Z' },
+    {
+        type: 'boostRecipients',
+        boostUri: 'lc:network:network.example.org/trpc:boost:example',
+        includePending: false,
+    },
+];
+
+for (const source of sources) {
+    const preview = await client.campaigns.previewAudience.query({ campaignId, source });
+    // Review preview.count before adding. Counts can change if source data changes.
+    await client.campaigns.addAudience.mutate({ campaignId, source });
+}
+const page = await client.campaigns.pageAudience.query({ campaignId, limit: 100 });
+// Next request: { campaignId, limit: 100, cursor: page.cursor }, while page.hasMore.
+```
+
+- DID/email lists accept 1–1000 entries per call. DIDs match stored DIDs or this network's
+  `did:web:<domain>:users:<profileId>` alias. Emails are trimmed/lowercased and only verified
+  contact methods qualify; the profile's display email is not used.
+- `credentialsSentBy` requires exactly one sender profile or listing. All metadata entries
+  must match exactly on `CREDENTIAL_SENT.metadata.*`; `since` filters the send date.
+  Keys are validated and values are bound parameters, never interpolated into Cypher.
+- `inboxClaims` matches the stored issuer DID and filters the **claim** timestamp.
+- Boost URIs must identify a boost on this network. Credential sources exclude revoked
+  sends/receipts even with `includePending: true`. Unaccepted sends and pending receipts
+  only qualify when that option is true. Recipient matching uses each send's `to` profile.
+- Paging uses ascending profile IDs and reapplies the campaign's current minor policy.
+  `getStats().audience` counts stored membership, which may exceed currently eligible paging
+  results if the profile or campaign age policy changes.
+
+Issuers should use a **dedicated sending profile or listing** for transcripts and attach
+`metadata: { kind: 'transcript' }` when calling `sendCredential`. The server cannot inspect
+encrypted credential contents; a metadata label is not proof of CLR type or ownership.
+
+## Two-layer targeting and self-enrollment
+
+The server narrows the audience from visible metadata. In the later app-integration slice,
+the device must still confirm a rule such as issuer X **and** `vcTypes: ['ClrCredential']`
+on the same credential before displaying the campaign. This backend does not import the
+V2 targeting engine, evaluate those rules, or send decrypted credentials to the server.
+
+`getMyCampaigns` returns live, in-window, enabled `inApp` campaigns for audience members,
+plus eligible campaigns with `selfEnroll: true`, joined to the caller's engagement state.
+Discoverability is not enrollment: `recordEvent` is a no-op until membership exists.
+After a local match, the client can call `enroll({ campaignId })`. Enrollment requires a
+live, in-window, enabled `inApp` campaign with self-enrollment enabled and is idempotent.
+Known minors cannot self-enroll, even when the campaign has `excludeMinors: false`.
+
+**Privacy disclosure:** enrollment tells the server only that this profile matched a
+campaign. That membership can itself reveal sensitive information. Authors must write
+rules that reveal no more than needed. No credential content or targeting evidence is
+accepted by the enrollment/event endpoints, and campaign routes disable Sentry input capture.
+
+**Product/legal sign-off is still required for the age policy.** The implemented policy
+excludes `type: 'child'` and known under-18 DOBs when `excludeMinors` is enabled. Missing
+or empty DOB is included; this is not verified adult status. Nonempty non-date-format DOB
+fails closed. Age uses UTC calendar dates; a Feb 29 birthday reaches the cutoff on March 1
+in a non-leap year. No policy approval or production rollout is implied by this PR.
+
+## Engagement and SDK
+
+`recordEvent({ campaignId, event })` accepts `shown`, `clicked`, `dismissed`, `converted`.
+It returns `false` without state writes for nonmembers or age-ineligible profiles. It
+accepts delayed member events after pause/expiry so reports can arrive after presentation.
+`shown` sets `firstShownAt` once, updates `lastShownAt`, and increments `shownCount`.
+Other events store their latest timestamp. Per-profile transactional locking prevents
+duplicate state edges and lost increments under concurrent devices. Repeated requests
+are separate events, not transport-idempotent retries.
+
+Stats count distinct profiles, not impressions; `enrolled` counts memberships originally
+created by self-enrollment. `notified` is reserved for LC-2266 and is not client-writable.
+All user/discovery calls share a 60-call/profile/minute rate limit; admin operations do not.
+
+The network plugin exposes `learnCard.invoke.getMyCampaigns()`,
+`recordCampaignEvent(campaignId, event)`, `enrollInCampaign(campaignId)`, and the admin
+methods `campaignsIsAdmin`, `campaignsCreate`, `campaignsUpdate`, `campaignsGet`,
+`campaignsList`, `campaignsDelete`, `campaignsSetStatus`, `campaignsPreviewAudience`,
+`campaignsAddAudience`, `campaignsPageAudience`, `campaignsGetStats`. The brain-client
+derives these routes from `AppRouter`; there is no separate hand-written client schema.
+
+## Verification
+
+```bash
+cd services/learn-card-network/brain-service
+bun run test:campaigns
+```
+
+This starts a disposable Neo4j testcontainer, uses synthetic accounts/configuration, and
+does not read the developer's database. Docker is required. The suite covers all source
+types, permissions, injection rejection, minor rules, paging, lifecycle, enrollment and
+concurrent shared state. Schema tests live in `@learncard/types`; SDK forwarding tests
+live in `@learncard/network-plugin`. Hosted CI runs the Neo4j suite separately from the
+service's default unit suite. No app UI, notification delivery or device QA is claimed.
+
+The hosted Linux verification workflow also runs `test/verification/campaigns.ts` via
+`lc verify script` after the full catalog: real signed SDK calls prove non-admin denial
+and user isolation over HTTP. The default stack grants no admin access, so positive
+administration and graph mutations are covered by the dedicated Neo4j suite instead.

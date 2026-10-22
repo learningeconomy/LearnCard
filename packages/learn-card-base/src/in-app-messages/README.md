@@ -6,12 +6,12 @@ messages; each message carries its own **targeting predicate tree** that is eval
 so it can see things LaunchDarkly's own rules cannot — the Capacitor platform, the native binary
 version, and the live Capgo/OTA bundle version.
 
--   **Show a message** with title, body, and media (YouTube / image / GIF)
--   **Call-to-action buttons** — open an in-app feature, an external link, the app store, or run a Capgo update
--   **Dismissable or required** (blocking)
--   **Native-aware app-store links** — iOS → App Store, Android → Google Play, web → configured URL
--   **Capgo update with live progress** — check, download (with %), and reload onto the latest bundle
--   **Targeting** by platform, semver version (native / web / capgo), and profile role
+- **Show a message** with title, body, and media (YouTube / image / GIF)
+- **Call-to-action buttons** — open an in-app feature, an external link, the app store, or run a Capgo update
+- **Dismissable or required** (blocking)
+- **Native-aware app-store links** — iOS → App Store, Android → Google Play, web → configured URL
+- **Capgo update with live progress** — check, download (with %), and reload onto the latest bundle
+- **Targeting** by platform, semver version (native / web / capgo), and profile role
 
 ---
 
@@ -213,9 +213,9 @@ Combinators (nest arbitrarily):
 
 Version sources:
 
--   `native` — installed native binary version (`App.getInfo().version`)
--   `web` — web build's `package.json` version (`__APP_VERSION__`)
--   `capgo` — live Capgo/OTA bundle version (`CapacitorUpdater.current()`)
+- `native` — installed native binary version (`App.getInfo().version`)
+- `web` — web build's `package.json` version (`__APP_VERSION__`)
+- `capgo` — live Capgo/OTA bundle version (`CapacitorUpdater.current()`)
 
 > **Fails closed:** if a `version` source is unavailable (e.g. `capgo` on web) or the string can't
 > be parsed as semver, that predicate evaluates to `false` — the message simply won't show.
@@ -254,15 +254,15 @@ The Zod schema and inferred types live in `@learncard/types` (`inAppMessages.ts`
 To avoid interfering with login and other critical flows, the host will **not** present a message
 until the app is in a stable, safe state. A message only shows when **all** of these hold:
 
--   **Auth is settled** — `isAuthSettled(useAuthStatus())` is true (never during the boot/resume
-    window, which is what caused early flashes).
--   **The user is logged in** — `useIsLoggedIn()` (override with `requireAuth={false}`).
--   **Onboarding isn't open** — `useIsOnboardingOpen()` is false.
--   **Not on a critical route** — the current `location.pathname` isn't under a suppressed prefix
-    (`/login`, `/claim`, `/consent-flow`, `/waitingsofa`, `/connect`, `/invite`, `/share`, `/legal`,
-    `/hidden`, `/oid4vci`, `/oid4vp`, `/__/auth`, …).
--   **The state has settled for a moment** — the gate must stay open for `settleDelayMs` (default
-    1200ms) to ride out transient route flicker during navigation.
+- **Auth is settled** — `isAuthSettled(useAuthStatus())` is true (never during the boot/resume
+  window, which is what caused early flashes).
+- **The user is logged in** — `useIsLoggedIn()` (override with `requireAuth={false}`).
+- **Onboarding isn't open** — `useIsOnboardingOpen()` is false.
+- **Not on a critical route** — the current `location.pathname` isn't under a suppressed prefix
+  (`/login`, `/claim`, `/consent-flow`, `/waitingsofa`, `/connect`, `/invite`, `/share`, `/legal`,
+  `/hidden`, `/oid4vci`, `/oid4vp`, `/__/auth`, …).
+- **The state has settled for a moment** — the gate must stay open for `settleDelayMs` (default
+  1200ms) to ride out transient route flicker during navigation.
 
 A message's `frequency` impression is only consumed once it **actually** presents (post-gate), so a
 boot-time flash can no longer burn a `"once"` message.
@@ -323,8 +323,8 @@ __inAppMessages.clearForce(); // stop forcing / close the preview
 
 You can also enable it **without the console**:
 
--   URL query param: append `?iamDebug=1`
--   localStorage: set `lcb-in-app-messages-debug` to `"1"`
+- URL query param: append `?iamDebug=1`
+- localStorage: set `lcb-in-app-messages-debug` to `"1"`
 
 When enabled, every evaluation logs a `[in-app-messages] evaluated` entry (via the central
 `logger` + `console.info`) plus `shown` / `closed` / `capgo:*` lifecycle events.
@@ -384,6 +384,20 @@ in-app-messages/
 ├── InAppMessageHost.tsx      — mounts once per app; picks presentation, manages show/close
 └── __tests__/predicates.test.ts
 ```
+
+## Campaigns (server foundation)
+
+LC-2265 adds server-managed campaign definitions, metadata audiences and shared engagement
+state. It does **not** yet merge campaigns into this host, dispatch notifications, or require
+the in-app messages V2 stack. App integration follows in LC-2267; delivery follows in LC-2266.
+
+See the [campaign authoring guide](../../../../services/learn-card-network/brain-service/src/accesslayer/campaign/README.md)
+for each audience source, tRPC examples, SDK methods, lifecycle and privacy rules. The intended
+two-layer model is server selection (for example a dedicated transcript-sending profile with
+`metadata: { kind: 'transcript' }`) followed by device confirmation of issuer and CLR type on
+the same credential. Self-enrollment reveals campaign membership, not decrypted credential
+contents; authors must minimize what that membership reveals. The implemented age policy
+includes missing DOBs and still requires product/legal sign-off.
 
 ## Testing
 

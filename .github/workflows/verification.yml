@@ -138,6 +138,12 @@ jobs:
                   bun run --cwd apps/learn-card-app lc verify "${verify_args[@]}" \
                     > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
 
+            - name: Verify campaign SDK authorization boundaries
+              run: |
+                  bun run --cwd apps/learn-card-app lc verify script \
+                    services/learn-card-network/brain-service/test/verification/campaigns.ts --dir "$STACK_DIR" \
+                    > "$PRIVATE_LOG_DIR/campaigns.log" 2>&1
+
             # Public proof handoff: selected media and sanitized rendering data only.
             - name: Stage proof media
               if: ${{ always() }}
