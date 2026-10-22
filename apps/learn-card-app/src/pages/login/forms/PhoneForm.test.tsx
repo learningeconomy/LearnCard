@@ -159,6 +159,8 @@ describe('phone code attempts', () => {
         expect(alert.textContent).toContain('Too many attempts');
         expect(isAbove(alert, verify)).toBe(true);
         expect((verify as HTMLButtonElement).disabled).toBe(true);
+        await act(async () => fireEvent.click(verify));
+        expect(mocks.verifyNative).toHaveBeenCalledTimes(5);
         expect(new Set(mocks.countdownDates).size).toBe(1);
     });
 });
