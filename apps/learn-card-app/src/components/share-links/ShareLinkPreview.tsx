@@ -204,7 +204,8 @@ export const ShareLinkPreview = ({
                 );
                 const proof = proofs?.[credentialIndex];
 
-                const credentialTitle = text.name || getCredentialName(credential);
+                const credentialTitle =
+                    text.name || getCredentialName(credential) || m['shareLinks.credential']();
 
                 return (
                     <article
