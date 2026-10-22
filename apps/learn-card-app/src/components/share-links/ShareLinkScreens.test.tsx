@@ -1,5 +1,6 @@
 vi.mock('../../pages/wallet/activity-feed/activityFeed.helpers', () => ({
     getActivityFilters: () => [],
+    isHiddenActivity: () => false,
 }));
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -47,6 +48,7 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: async () => mocks.wallet }),
     ModalTypes: { FullScreen: 'fullscreen' },
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    useGetSelfAssignedSkillsBoost: () => ({ data: undefined }),
 }));
 vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
@@ -81,6 +83,7 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getImageUrlFromCredential: () => undefined,
     getCredentialName: (credential: { name?: string }) => credential?.name ?? 'Credential',
     isBoostCredential: () => false,
+    SELF_ASSIGNED_SKILLS_BOOST_NAME: 'Self-Assigned Skills',
 }));
 vi.mock('./sharePrivacy', () => ({
     enterSharePrivacy: vi.fn(),
