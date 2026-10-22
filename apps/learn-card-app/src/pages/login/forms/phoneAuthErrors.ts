@@ -9,6 +9,7 @@ export const RESEND_CODE_COOLDOWN_MS = 30000;
 export type PhoneAuthErrorKind =
     | 'invalidPhoneNumber'
     | 'invalidCode'
+    | 'codeExpired'
     | 'tooManyAttempts'
     | 'tooManyRequests'
     | 'quotaExceeded'
@@ -33,6 +34,8 @@ const toText = (error: unknown): string => {
 export const classifyPhoneAuthError = (error: unknown): PhoneAuthErrorKind => {
     const text = toText(error).toLowerCase();
 
+    // Order matters: native SDKs only give free-text messages, so narrower kinds are
+    // checked before broader substrings (e.g. expired before "verification code").
     if (!text) return 'generic';
     if (text.includes('phone verification cancelled')) return 'cancelled';
     if (
@@ -43,9 +46,9 @@ export const classifyPhoneAuthError = (error: unknown): PhoneAuthErrorKind => {
     ) {
         return 'tooManyRequests';
     }
-    if (text.includes('quota-exceeded') || text.includes('quota exceeded')) return 'quotaExceeded';
+    if (text.includes('quota')) return 'quotaExceeded';
+    if (text.includes('expired')) return 'codeExpired';
     if (
-        text.includes('expired') ||
         text.includes('invalid-verification-code') ||
         text.includes('missing-verification-code') ||
         text.includes('verification code') ||
@@ -71,6 +74,7 @@ export const getPhoneAuthErrorMessage = (kind: PhoneAuthErrorKind): string => {
         case 'invalidPhoneNumber':
             return m['login.phone.error.invalidPhoneNumber']();
         case 'invalidCode':
+        case 'codeExpired':
             return m['login.phone.error.invalidCode']();
         case 'tooManyAttempts':
             return m['login.phone.error.tooManyAttempts']();
