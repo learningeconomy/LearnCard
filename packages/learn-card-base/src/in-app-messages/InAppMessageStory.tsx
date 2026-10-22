@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { IonIcon } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
@@ -35,6 +35,10 @@ export const InAppMessageStory: React.FC<
     const setIndex = onStepChange ?? setLocalIndex;
     const pointer = useRef<{ x: number; y: number; time: number } | null>(null);
     const root = useRef<HTMLDivElement>(null);
+    const previousButton = useRef<HTMLButtonElement>(null);
+    const nextButton = useRef<HTMLButtonElement>(null);
+    const finalActions = useRef<HTMLDivElement>(null);
+    const focusToRecover = useRef<HTMLElement | null>(null);
     const isRtl = (): boolean =>
         Boolean(root.current && getComputedStyle(root.current).direction === 'rtl');
     const reducedMotion = useReducedMotion();
@@ -42,14 +46,41 @@ export const InAppMessageStory: React.FC<
     const steps = message.steps ?? [];
     const current = Math.min(index, Math.max(0, steps.length - 1));
     const step = steps[current];
-    const move = (delta: number): void =>
-        setIndex(Math.max(0, Math.min(steps.length - 1, current + delta)));
+    const move = (delta: number): void => {
+        const nextIndex = Math.max(0, Math.min(steps.length - 1, current + delta));
+        if (nextIndex === current) return;
+
+        const active = document.activeElement;
+        focusToRecover.current =
+            active instanceof HTMLElement && root.current?.contains(active) ? active : null;
+        setIndex(nextIndex);
+    };
+
+    useLayoutEffect(() => {
+        const previousFocus = focusToRecover.current;
+        focusToRecover.current = null;
+        if (!previousFocus) return;
+        if (previousFocus.isConnected && !previousFocus.closest('[hidden]')) return;
+
+        if (current === steps.length - 1) {
+            const action = finalActions.current?.querySelector<HTMLElement>(
+                'button:not(:disabled),a[href],[tabindex]:not([tabindex="-1"])'
+            );
+            if (action) {
+                action.focus();
+                return;
+            }
+        }
+
+        (nextButton.current ?? previousButton.current ?? root.current)?.focus();
+    }, [current, steps.length]);
     if (!step) return null;
 
     return (
         // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Delegates arrow keys from descendant controls; the container is not itself a widget.
         <div
             ref={root}
+            tabIndex={-1}
             className="w-full min-h-full flex flex-col font-poppins bg-white/80 text-grayscale-900"
             onKeyDown={event => {
                 if (
@@ -164,6 +195,7 @@ export const InAppMessageStory: React.FC<
             <footer className="p-6 space-y-3">
                 {current > 0 && (
                     <button
+                        ref={previousButton}
                         type="button"
                         onClick={() => move(-1)}
                         className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 w-full"
@@ -173,6 +205,7 @@ export const InAppMessageStory: React.FC<
                 )}
                 {current < steps.length - 1 && (
                     <button
+                        ref={nextButton}
                         type="button"
                         onClick={() => move(1)}
                         className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white w-full"
@@ -181,7 +214,7 @@ export const InAppMessageStory: React.FC<
                     </button>
                 )}
                 {/* Preserve in-flight actions while earlier screens are visible. */}
-                <div hidden={current !== steps.length - 1}>
+                <div ref={finalActions} hidden={current !== steps.length - 1}>
                     <MessageActions
                         actions={steps[steps.length - 1]?.actions ?? message.actions}
                         actionSource={

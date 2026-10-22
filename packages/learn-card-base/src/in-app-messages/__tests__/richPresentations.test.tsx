@@ -87,6 +87,23 @@ describe('story presentation', () => {
             stepIndex: 1,
         });
     });
+    it('moves focus to the final action and restores keyboard navigation when controls unmount', async () => {
+        render(<InAppMessageStory message={message} onClose={vi.fn()} />);
+        const next = screen.getByRole('button', { name: 'Next' });
+        next.focus();
+        expect(document.activeElement).toBe(next);
+
+        fireEvent.click(next);
+        await screen.findByText('Second');
+        const finish = screen.getByRole('button', { name: 'Finish' });
+        expect(document.activeElement).toBe(finish);
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('2');
+
+        fireEvent.keyDown(finish, { key: 'ArrowLeft' });
+        await screen.findByText('First');
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Next' }));
+        expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('1');
+    });
     it('uses screen actions instead of message actions and hides passive close when required', () => {
         const required = {
             ...message,
