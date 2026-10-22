@@ -49,12 +49,7 @@ import {
     createInstallIntentAuditEvent,
     getInstallIntentAuditEvents,
 } from '@accesslayer/install-intent/audit';
-import {
-    activateBinding as activateBindingRecord,
-    approveBinding as approveBindingRecord,
-    createBinding,
-    revokeBinding as revokeBindingRecord,
-} from '@accesslayer/binding/write';
+import { createBinding, revokeBinding as revokeBindingRecord } from '@accesslayer/binding/write';
 import { listBindingsByEcosystem, readBindingById } from '@accesslayer/binding/read';
 import { prepareBindingConsentPreflight } from '@accesslayer/binding/consent-preflight';
 import {
@@ -99,12 +94,10 @@ import {
     assertSupportedConsentTiers,
     buildPlanFromMaterialization,
     getIntegrationListingVersionScopes,
-    evaluateConsentPreflight,
     expandBundle,
     getInstallTargetTypeForListing,
     materializeBundlePlan,
     requireEcosystemRole,
-    requiresConsentPreflight,
 } from '@helpers/install-intent.helpers';
 import {
     assertListingAllowedByCatalogPolicy,
@@ -124,25 +117,10 @@ const PlanInstallIntentInputValidator = z.object({
     proposedBindings: z.array(BindingProposalValidator).default([]),
 });
 
-const ApprovalConsentPreflightInputValidator = z.object({
-    subjectProfileId: z.string(),
-    consentActor: z.object({
-        type: z.enum(['SUBJECT', 'GUARDIAN', 'INSTITUTIONAL_AUTHORITY']),
-        profileId: z.string(),
-        authorityReference: z.string().optional(),
-        authorityRevision: z.string().optional(),
-    }),
-    consentFlowContractId: z.string(),
-    consentTermsId: z.string(),
-    consentRevision: z.string(),
-    requestedScopes: z.array(z.string()).default([]),
-    ecosystemAuthorityScopes: z.array(z.string()).default([]),
-    consentApprovedScopes: z.array(z.string()).default([]),
-    requiredConsentTiers: z.array(z.string()).default([]),
-    activeConsentTiers: z.array(z.string()).default([]),
-    consentActive: z.boolean(),
-    policyRevision: z.string(),
-});
+import {
+    ApproveBindingInputValidator,
+    approveBindingWithPreflight,
+} from '@accesslayer/binding/approval';
 
 const ApproveInstallIntentInputValidator = z.object({
     intentId: z.string(),
@@ -230,11 +208,6 @@ const ProposeBindingInputValidator = z.object({
     capability: BindingValidator.shape.capability,
     provider: BindingValidator.shape.provider,
     consumer: BindingValidator.shape.consumer,
-});
-const ApproveBindingInputValidator = z.object({
-    bindingId: z.string(),
-    expectedRevision: z.number().int().nonnegative(),
-    consentPreflight: ApprovalConsentPreflightInputValidator.optional(),
 });
 const RevokeBindingInputValidator = z.object({
     bindingId: z.string(),
@@ -1439,59 +1412,8 @@ export const installIntentsRouter = t.router({
                 'ADMIN',
             ]);
 
-            if (requiresConsentPreflight(binding.capability)) {
-                if (!input.consentPreflight) {
-                    throw new TRPCError({
-                        code: 'FORBIDDEN',
-                        message: 'Subject-data bindings require consent preflight.',
-                    });
-                }
-
-                const result = await evaluateConsentPreflight({
-                    ecosystemId: binding.ecosystemId,
-                    bindingId: binding.bindingId,
-                    resourceId: binding.consumer.resourceId,
-                    ...input.consentPreflight,
-                });
-
-                if (!result.allowed) {
-                    throw new TRPCError({
-                        code: 'FORBIDDEN',
-                        message: 'Consent preflight rejected this binding approval.',
-                    });
-                }
-            }
-
             await assertBindingCapabilityVersionsCompatible(binding);
-
-            const approved = await approveBindingRecord(
-                binding.bindingId,
-                input.expectedRevision,
-                ctx.user.profile.profileId
-            );
-            const activated = await activateBindingRecord(approved.bindingId, approved.revision);
-
-            await createInstallIntentAuditEvent({
-                action: 'BINDING_APPROVED',
-                actorProfileId: ctx.user.profile.profileId,
-                actorDid: ctx.user.did,
-                ecosystemId: approved.ecosystemId,
-                bindingId: approved.bindingId,
-                beforeSummary: { status: binding.status, revision: binding.revision },
-                afterSummary: { status: approved.status, revision: approved.revision },
-            });
-
-            await createInstallIntentAuditEvent({
-                action: 'BINDING_ACTIVATED',
-                actorProfileId: ctx.user.profile.profileId,
-                actorDid: ctx.user.did,
-                ecosystemId: activated.ecosystemId,
-                bindingId: activated.bindingId,
-                beforeSummary: { status: approved.status, revision: approved.revision },
-                afterSummary: { status: activated.status, revision: activated.revision },
-            });
-
-            return activated;
+            return approveBindingWithPreflight(input, ctx.user.profile.profileId, ctx.user.did);
         }),
 
     revokeBinding: profileRoute

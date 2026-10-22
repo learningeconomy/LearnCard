@@ -24,6 +24,7 @@
         "seed:dev-wallets": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dev-wallets.ts",
         "seed:dev-all": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dev-all.ts",
         "seed:dev-consent": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dev-consent.ts",
+        "migrate:binding-preflight": "SKIP_DIDKIT_NAPI=true bun scripts/migrate-subject-bindings-to-preflight.ts",
         "seed:dcc-tools": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dcc-tools.ts",
         "seed:dcc-workload": "SKIP_DIDKIT_NAPI=true bun scripts/seed-dcc-workload.ts",
         "prove:dcc-workload": "bun scripts/prove-dcc-workload.ts",

@@ -346,7 +346,7 @@ describe('EducationOS Phase B foundations', () => {
         const binding = await createBinding({
             apiVersion: 'lc.binding/v1',
             ecosystemId: ecosystem.id,
-            capability: 'wallet-claim',
+            capability: 'registry-adapter',
             provider: {
                 resourceType: provider.targetType,
                 resourceId: provider.id,

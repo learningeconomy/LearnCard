@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import type { ManagedTransaction } from 'neo4j-driver';
 import { EducationOsConsentGrantValidator, type EducationOsConsentGrant } from '@learncard/types';
 import { neogma } from '@instance';
 import { hashEducationOsGrant } from '@helpers/consent-preflight-hash.helpers';
@@ -93,9 +94,10 @@ export type GovernedConsentEvidence = z.infer<typeof GovernedConsentEvidenceVali
 
 /** Only local governed contracts are candidates; multiply-governed contracts fail closed. */
 export const readGovernedConsentEvidence = async (
-    ecosystemId: string
+    ecosystemId: string,
+    runner: Pick<ManagedTransaction, 'run'> | typeof neogma.queryRunner = neogma.queryRunner
 ): Promise<GovernedConsentEvidence[]> => {
-    const result = await neogma.queryRunner.run(
+    const result = await runner.run(
         `MATCH (e:Ecosystem {id: $ecosystemId})-[g:GOVERNS_CONSENT_CONTRACT]->(c:ConsentFlowContract)
          MATCH (governor:Ecosystem)-[:GOVERNS_CONSENT_CONTRACT]->(c)
          WITH e, g, c, collect(DISTINCT governor.id) AS governingEcosystemIds

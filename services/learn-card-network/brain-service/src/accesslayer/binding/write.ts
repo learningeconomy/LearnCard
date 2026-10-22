@@ -61,6 +61,13 @@ export const approveBinding = async (
     approvedAt = new Date().toISOString()
 ): Promise<BindingRecordType> => {
     const existing = await requireBindingRecord(bindingId);
+    // Subject-data approvals must use the atomic snapshot/evidence boundary.
+    if (existing.capability !== 'registry-adapter') {
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'PREFLIGHT_STALE: PREFLIGHT_REQUIRED',
+        });
+    }
     assertExpectedRevision(existing, expectedRevision);
 
     if (existing.status !== 'PROPOSED') {

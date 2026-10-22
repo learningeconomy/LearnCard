@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import type { ManagedTransaction } from 'neo4j-driver';
 import {
     BINDING_CONSENT_REQUIREMENTS,
     BINDING_CONSENT_COLLECTION_PATHS,
@@ -13,7 +14,6 @@ import {
     type EducationOsConsentGrant,
 } from '@learncard/types';
 import { neogma } from '@instance';
-import { readInstallTargetInternal } from '@accesslayer/install-target/internal';
 import {
     readGovernedConsentEvidence,
     type GovernedConsentEvidence,
@@ -49,7 +49,10 @@ const missing = (code: BindingConsentPreflightReasonCode, message: string): Miss
 ];
 
 /** Resolve scope/tier requirements exclusively from server-owned approved plans. */
-const resolveRequirements = async (binding: BindingRecordType): Promise<Requirements> => {
+export const resolveRequirements = async (
+    binding: BindingRecordType,
+    runner: Pick<ManagedTransaction, 'run'> | typeof neogma.queryRunner = neogma.queryRunner
+): Promise<Requirements> => {
     const result: Requirements = {
         scopes: [],
         plans: [],
@@ -89,12 +92,24 @@ const resolveRequirements = async (binding: BindingRecordType): Promise<Requirem
             }
             continue;
         }
-        const target = await readInstallTargetInternal({
-            id: endpoint.resourceId,
-            targetType: endpoint.resourceType,
-        });
+        const targets = await runner.run(
+            `MATCH (t {id: $id, targetType: $targetType})
+             RETURN t.id AS id, t.targetType AS targetType, t.intentId AS intentId,
+                 t.ecosystemId AS ecosystemId`,
+            { id: endpoint.resourceId, targetType: endpoint.resourceType }
+        );
+        const target = targets.records[0]
+            ? z
+                  .object({
+                      id: z.string(),
+                      targetType: z.string(),
+                      intentId: z.string(),
+                      ecosystemId: z.string(),
+                  })
+                  .parse(targets.records[0].toObject())
+            : null;
         const stored = target
-            ? await neogma.queryRunner.run(
+            ? await runner.run(
                   `MATCH (i:InstallIntent {intentId: $intentId})
              RETURN i.ecosystemId AS ecosystemId, i.plan AS planJson, i.approval AS approvalJson`,
                   { intentId: target.intentId }
@@ -188,7 +203,7 @@ const parseGrant = (json: string | null): EducationOsConsentGrant | null => {
 const isExpired = (date: string | null, now: string): boolean =>
     date !== null && (!Number.isFinite(Date.parse(date)) || Date.parse(date) <= Date.parse(now));
 
-const evaluateEvidence = (
+export const evaluateEvidence = (
     binding: BindingRecordType,
     requirements: Requirements,
     row: GovernedConsentEvidence,

@@ -146,6 +146,21 @@ export function Bindings({ session }: { session: DashboardSession }) {
         }
     };
 
+    const approve = async (binding: BindingRecord): Promise<void> => {
+        const preflight = await trpc.bindings.prepareConsentPreflight.mutate({
+            bindingId: binding.bindingId,
+        });
+        if (!preflight.satisfied) {
+            throw new Error(preflight.missing.map(item => item.message).join(' '));
+        }
+        await trpc.bindings.approve.mutate({
+            bindingId: binding.bindingId,
+            expectedRevision: binding.revision,
+            preflightId: preflight.preflightId,
+            preflightHash: preflight.hash,
+        });
+    };
+
     if (!ecosystemId) {
         return <div className="p-6 text-muted-foreground">No ecosystem access.</div>;
     }
@@ -312,21 +327,21 @@ export function Bindings({ session }: { session: DashboardSession }) {
 
                                 {canManage && state !== 'revoked' && (
                                     <div className="flex shrink-0 flex-wrap gap-2">
-                                        {state === 'proposed' && (
+                                        {(state === 'proposed' || state === 'suspended') && (
                                             <>
                                                 <Button
                                                     size="sm"
                                                     disabled={busy}
                                                     onClick={() =>
-                                                        runMutation(b.bindingId, () =>
-                                                            trpc.bindings.approve.mutate({
-                                                                bindingId: b.bindingId,
-                                                                expectedRevision: b.revision,
-                                                            })
-                                                        )
+                                                        runMutation(b.bindingId, () => approve(b))
                                                     }
                                                 >
-                                                    <Check className="mr-1 h-3.5 w-3.5" /> Approve
+                                                    {busy ? (
+                                                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Check className="mr-1 h-3.5 w-3.5" />
+                                                    )}
+                                                    {busy ? 'Verifying...' : 'Approve'}
                                                 </Button>
                                                 <Button
                                                     size="sm"

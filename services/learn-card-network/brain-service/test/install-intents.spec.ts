@@ -604,59 +604,37 @@ describe('Install intents', () => {
             ownerClient.installIntent.approveBinding({
                 bindingId: proposed.bindingId,
                 expectedRevision: proposed.revision,
-                consentPreflight: {
-                    subjectProfileId: 'subject-1',
-                    consentActor: { type: 'SUBJECT', profileId: 'subject-1' },
-                    consentFlowContractId: 'contract-1',
-                    consentTermsId: 'terms-1',
-                    consentRevision: '1',
-                    requestedScopes: ['wallet:claim'],
-                    ecosystemAuthorityScopes: ['wallet:claim'],
-                    consentApprovedScopes: [],
-                    requiredConsentTiers: ['credential-body'],
-                    activeConsentTiers: [],
-                    consentActive: false,
-                    policyRevision: 'policy-1',
-                },
             })
-        ).rejects.toThrow(/Consent preflight rejected/i);
+        ).rejects.toThrow(/PREFLIGHT_STALE/i);
 
         const deniedRecords = await ownerClient.installIntent.getBindingConsentDecisionRecords({
             bindingId: proposed.bindingId,
         });
-        expect(deniedRecords).toHaveLength(1);
-        expect(deniedRecords[0]?.decision).toBe('DENY');
+        expect(deniedRecords).toHaveLength(0);
 
-        const approved = await ownerClient.installIntent.approveBinding({
+        const preflight = await ownerClient.installIntent.prepareBindingConsentPreflight({
+            bindingId: proposed.bindingId,
+        });
+        expect(preflight.satisfied).toBe(false);
+        await expect(
+            ownerClient.installIntent.approveBinding({
+                bindingId: proposed.bindingId,
+                expectedRevision: proposed.revision,
+                preflightId: preflight.preflightId,
+                preflightHash: preflight.hash,
+            })
+        ).rejects.toThrow(/PREFLIGHT_STALE/);
+        const revoked = await ownerClient.installIntent.revokeBinding({
             bindingId: proposed.bindingId,
             expectedRevision: proposed.revision,
-            consentPreflight: {
-                subjectProfileId: 'subject-1',
-                consentActor: { type: 'SUBJECT', profileId: 'subject-1' },
-                consentFlowContractId: 'contract-1',
-                consentTermsId: 'terms-1',
-                consentRevision: '2',
-                requestedScopes: ['wallet:claim'],
-                ecosystemAuthorityScopes: ['wallet:claim'],
-                consentApprovedScopes: ['wallet:claim'],
-                requiredConsentTiers: ['credential-body'],
-                activeConsentTiers: ['credential-body'],
-                consentActive: true,
-                policyRevision: 'policy-2',
-            },
-        });
-        const revoked = await ownerClient.installIntent.revokeBinding({
-            bindingId: approved.bindingId,
-            expectedRevision: approved.revision,
         });
 
-        expect(approved.status).toBe('ACTIVE');
         expect(revoked.status).toBe('REVOKED');
 
         await expect(
             ownerClient.installIntent.revokeBinding({
-                bindingId: approved.bindingId,
-                expectedRevision: approved.revision,
+                bindingId: proposed.bindingId,
+                expectedRevision: proposed.revision,
             })
         ).rejects.toThrow(/stale/i);
     });

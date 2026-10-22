@@ -321,7 +321,7 @@ describe('Capability conformance harness', () => {
                     bindingId: proposed.bindingId,
                     expectedRevision: proposed.revision,
                 })
-            ).rejects.toThrow(/Subject-data bindings require consent preflight/i);
+            ).rejects.toThrow(/PREFLIGHT_STALE/i);
         },
         CAPABILITY_CASE_TIMEOUT_MS
     );
@@ -346,30 +346,24 @@ describe('Capability conformance harness', () => {
     );
 
     it.each(subjectDataCapabilities)(
-        'approves subject-data capability %s with satisfying consent preflight',
+        'rejects caller-asserted consent for subject-data capability %s',
         async capability => {
             const { proposed } = await proposeBindingForCapability(capability);
-            const approved = await ownerClient.installIntent.approveBinding({
-                bindingId: proposed.bindingId,
-                expectedRevision: proposed.revision,
-                consentPreflight: buildConsentPreflight(),
-            });
+            await expect(
+                Reflect.apply(ownerClient.installIntent.approveBinding, ownerClient.installIntent, [
+                    {
+                        bindingId: proposed.bindingId,
+                        expectedRevision: proposed.revision,
+                        consentPreflight: buildConsentPreflight(),
+                    },
+                ])
+            ).rejects.toThrow(/Unrecognized key/i);
             const decisionRecords =
                 await ownerClient.installIntent.getBindingConsentDecisionRecords({
                     bindingId: proposed.bindingId,
                 });
 
-            expect(BindingValidator.parse(approved)).toMatchObject({
-                capability,
-                status: 'ACTIVE',
-                approvedBy: 'owner',
-            });
-            expect(decisionRecords).toHaveLength(1);
-            expect(decisionRecords[0]).toMatchObject({
-                bindingId: proposed.bindingId,
-                decision: 'ALLOW',
-                consentTiers: [supportedConsentTier],
-            });
+            expect(decisionRecords).toHaveLength(0);
         },
         CAPABILITY_CASE_TIMEOUT_MS
     );

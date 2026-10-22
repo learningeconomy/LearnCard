@@ -140,10 +140,17 @@ export const bindingsRouter = router({
 
     approve: protectedProcedure
         .input(
-            z.object({
-                bindingId: z.string().min(1),
-                expectedRevision: z.number().int().nonnegative(),
-            })
+            z
+                .object({
+                    bindingId: z.string().min(1),
+                    expectedRevision: z.number().int().nonnegative(),
+                    preflightId: z.string().min(1).optional(),
+                    preflightHash: z
+                        .string()
+                        .regex(/^[a-f0-9]{64}$/)
+                        .optional(),
+                })
+                .strict()
         )
         .mutation(async ({ ctx, input }) => {
             const { mutate } = await makeCallers(ctx);
