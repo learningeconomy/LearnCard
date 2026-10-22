@@ -16,6 +16,17 @@ describe('buildEmbedUrlWithPath', () => {
         expect(url.searchParams.get('lc_host_override')).toBe('https://host.test');
         expect(url.hash).toBe('#part');
     });
+    it('preserves repeated query parameters from the requested page', () => {
+        const result = buildEmbedUrlWithPath(
+            'https://partner.test/app?tag=base&tenant=one',
+            '/search?tag=alpha&tag=beta&filter=one&filter=two',
+            'https://host.test'
+        );
+        const url = new URL(result!);
+        expect(url.searchParams.getAll('tag')).toEqual(['alpha', 'beta']);
+        expect(url.searchParams.getAll('filter')).toEqual(['one', 'two']);
+        expect(url.searchParams.get('tenant')).toBe('one');
+    });
     it.each([
         '//evil.test',
         '/%2fhost',

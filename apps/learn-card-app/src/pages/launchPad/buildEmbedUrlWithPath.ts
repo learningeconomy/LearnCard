@@ -16,7 +16,14 @@ export const buildEmbedUrlWithPath = (
             const page = new URL(path, origin);
             if (page.origin !== origin) return null;
             base.pathname = base.pathname.replace(/\/$/, '') + page.pathname;
-            page.searchParams.forEach((value, key) => base.searchParams.set(key, value));
+            const replacedKeys = new Set<string>();
+            page.searchParams.forEach((value, key) => {
+                if (!replacedKeys.has(key)) {
+                    base.searchParams.delete(key);
+                    replacedKeys.add(key);
+                }
+                base.searchParams.append(key, value);
+            });
             base.hash = page.hash;
         }
         base.searchParams.set('lc_host_override', hostOrigin);

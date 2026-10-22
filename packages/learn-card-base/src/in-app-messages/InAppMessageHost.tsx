@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { useLDClient } from 'launchdarkly-react-client-sdk';
 import type { InAppMessage } from '@learncard/types';
 
 import { useInAppMessages } from './useInAppMessages';
@@ -47,6 +48,25 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
     const request = useInAppMessageRequest();
+    const launchDarklyClient = useLDClient();
+    const [initializedLaunchDarklyClient, setInitializedLaunchDarklyClient] =
+        useState<typeof launchDarklyClient>();
+    useEffect(() => {
+        let canceled = false;
+
+        launchDarklyClient
+            ?.waitForInitialization()
+            .then(() => {
+                if (!canceled) setInitializedLaunchDarklyClient(launchDarklyClient);
+            })
+            .catch(() => undefined);
+
+        return () => {
+            canceled = true;
+        };
+    }, [launchDarklyClient]);
+    const flagDeliveryReady =
+        Boolean(launchDarklyClient) && initializedLaunchDarklyClient === launchDarklyClient;
     const previousAccount = useRef(credentialFacts.accountDid);
     useEffect(() => {
         if (previousAccount.current && previousAccount.current !== credentialFacts.accountDid) {
@@ -63,13 +83,13 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
           )
         : undefined;
     useEffect(() => {
-        if (!request || requestedMessage) return;
+        if (!request || requestedMessage || !flagDeliveryReady) return;
         const timer = setTimeout(
             () => clearInAppMessageRequest(request.token),
             Math.max(0, request.requestedAt + 5000 - Date.now())
         );
         return () => clearTimeout(timer);
-    }, [request, requestedMessage]);
+    }, [flagDeliveryReady, request, requestedMessage]);
     const [opening, setOpening] = useState({
         accountDid: credentialFacts.accountDid,
         ready: false,

@@ -21,17 +21,33 @@ import type { MessagePresentationProps, InAppMessagePresentationEvent } from '..
 import { I18nProvider } from '../../i18n';
 import { ModalsProvider, useModalsContext } from '../../components/modals/ModalsContext';
 
-const state = vi.hoisted(() => ({
-    native: false,
-    gate: false,
-    messages: [] as InAppMessage[],
-    accountDid: 'alice' as string | null,
-}));
+const launchDarkly = vi.hoisted(() => {
+    const state = {
+        native: false,
+        gate: false,
+        messages: [] as InAppMessage[],
+        accountDid: 'alice' as string | null,
+        flagDeliveryReady: true,
+        flagDeliveryResolvers: [] as Array<() => void>,
+    };
+
+    return {
+        state,
+        client: {
+            waitForInitialization: (): Promise<void> =>
+                state.flagDeliveryReady
+                    ? Promise.resolve()
+                    : new Promise(resolve => state.flagDeliveryResolvers.push(resolve)),
+        },
+    };
+});
+const { state } = launchDarkly;
 
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => state.native } }));
 
 vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ inAppMessagesV2: { messages: state.messages } }),
+    useLDClient: () => launchDarkly.client,
 }));
 vi.mock('../useRuntimeContext', () => ({
     useInAppMessageRuntimeContext: () => ({
@@ -95,6 +111,8 @@ describe('message host impressions', () => {
         state.gate = false;
         state.native = false;
         state.accountDid = 'alice';
+        state.flagDeliveryReady = true;
+        state.flagDeliveryResolvers = [];
         state.messages = [inAppMessageValidator.parse({ id: 'test', title: 'Claim complete' })];
     });
     afterEach(() => {
@@ -155,6 +173,28 @@ describe('message host impressions', () => {
         await act(async () => vi.advanceTimersByTimeAsync(5000));
         expect(getInAppMessageRequest()).toBeNull();
         view.unmount();
+    });
+
+    it('keeps a known request pending while delayed flags finish loading', async () => {
+        vi.useFakeTimers();
+        state.flagDeliveryReady = false;
+        state.messages = [];
+        requestInAppMessage('delayed');
+        const view = render(<InAppMessageHost />);
+
+        await act(async () => vi.advanceTimersByTimeAsync(10_000));
+        expect(getInAppMessageRequest()?.messageId).toBe('delayed');
+
+        state.messages = [inAppMessageValidator.parse({ id: 'delayed', title: 'Delayed' })];
+        state.flagDeliveryReady = true;
+        await act(async () => {
+            state.flagDeliveryResolvers.splice(0).forEach(resolve => resolve());
+            state.gate = true;
+            view.rerender(<InAppMessageHost />);
+            await Promise.resolve();
+        });
+
+        expect(screen.getByText('Delayed')).toBeTruthy();
     });
 
     it('drops pending direct requests on account change without dismissal events', async () => {
