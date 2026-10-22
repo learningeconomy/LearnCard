@@ -244,7 +244,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
         emit('shown');
     }, [accountDid, active, isOverride, isDeepLink, request, emit]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!active || (active.presentation !== 'story' && active.presentation !== 'iframe'))
             onShown();
     }, [active, onShown]);
