@@ -7,6 +7,8 @@ import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
 import { resolve } from 'path';
 import { zipSync } from 'fflate';
+import en from '../public/locales/en/translation.json';
+import ar from '../public/locales/ar/translation.json';
 
 const NAME_PLACEHOLDER = 'e.g. Web Development Fundamentals';
 
@@ -740,7 +742,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             test.setTimeout(180000);
             await page
                 .getByRole('button', {
-                    name: 'Start from a link, file, or spreadsheet',
+                    name: 'Import a credential or spreadsheet',
                     exact: true,
                 })
                 .click();
@@ -893,18 +895,96 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         });
     }
 
+    for (const { width, locale, catalog } of [
+        { width: 1440, locale: 'en', catalog: en },
+        { width: 390, locale: 'en', catalog: en },
+        { width: 390, locale: 'ar', catalog: ar },
+    ]) {
+        test(`presents separate file and paste import choices at ${width}px (${locale})`, async ({
+            page,
+        }, testInfo) => {
+            test.setTimeout(180_000);
+            await page.setViewportSize({ width, height: 900 });
+            if (locale !== 'en') {
+                await page.evaluate(lang => localStorage.setItem('i18n.language', lang), locale);
+                await page.reload();
+            }
+            const copy = catalog.issueFlow;
+            await page.getByRole('button', { name: copy.startFromLink, exact: true }).click();
+            const entry = page.locator('.issue-import-dialog');
+            const upload = page.getByRole('region', { name: copy.importOptions.uploadTitle });
+            const paste = page.getByRole('region', { name: copy.importOptions.pasteTitle });
+            await expect(upload.getByRole('button', { name: copy.uploadFile })).toBeVisible();
+            await expect(paste.getByLabel(copy.importOptions.contentLabel)).toBeVisible();
+            await expect(paste.getByRole('button', { name: copy.bringItIn })).toBeDisabled();
+            await expect(page.locator('html')).toHaveAttribute(
+                'dir',
+                locale === 'ar' ? 'rtl' : 'ltr'
+            );
+            const entryBox = await entry.boundingBox();
+            expect(entryBox!.width).toBeLessThanOrEqual(width === 1440 ? 840 : width);
+            if (width === 1440) expect(entryBox!.height).toBeLessThan(800);
+            await page.screenshot({
+                path: testInfo.outputPath('import-choices.png'),
+                animations: 'disabled',
+            });
+            await paste.getByText(copy.importOptions.examplesTitle, { exact: true }).click();
+            await expect(
+                paste.getByText(copy.importOptions.exampleRowsBody, { exact: true })
+            ).toBeVisible();
+            await paste.getByRole('button', { name: copy.bringItIn }).scrollIntoViewIfNeeded();
+            await page.screenshot({
+                path: testInfo.outputPath('paste-guidance.png'),
+                animations: 'disabled',
+            });
+            const fileInput = page.getByTestId('issue-import-file');
+            // The actual file input is independent of pasted content. Invalid JSON
+            // is contained in the upload card; selecting a CSV afterward recovers.
+            await fileInput.setInputFiles({
+                name: 'invalid.json',
+                mimeType: 'application/json',
+                buffer: Buffer.from('{invalid'),
+            });
+            await expect(upload.getByRole('alert')).toBeVisible();
+            await expect(paste.getByLabel(copy.importOptions.contentLabel)).toHaveAttribute(
+                'aria-invalid',
+                'false'
+            );
+            await fileInput.setInputFiles({
+                name: 'people.csv',
+                mimeType: 'text/csv',
+                buffer: Buffer.from('Email,Name\nada@example.test,Ada\nbao@example.test,Bao'),
+            });
+            await expect(
+                page.getByRole('heading', { name: copy.sheet.review, exact: true })
+            ).toBeVisible();
+            if (width === 1440) {
+                const review = await page
+                    .locator('#center-modal.issue-spreadsheet-dialog > section')
+                    .boundingBox();
+                expect(review!.width).toBeGreaterThan(entryBox!.width);
+            }
+            await page.screenshot({
+                path: testInfo.outputPath('spreadsheet-review.png'),
+                animations: 'disabled',
+            });
+            await page.getByRole('button', { name: copy.sheet.addPeople, exact: true }).click();
+            await expect(entry).toHaveCount(0);
+        });
+    }
+
     test('imports URL-first pasted rows through the import modal without treating them as a link', async ({
         page,
     }) => {
         await page
-            .getByRole('button', { name: 'Start from a link, file, or spreadsheet', exact: true })
+            .getByRole('button', { name: 'Import a credential or spreadsheet', exact: true })
             .click();
         await page
             .locator('textarea')
             .fill(
                 'https://proof.test/ada\tada@test.com\tAda\nhttps://proof.test/bob\tbob@test.com\tBob'
             );
-        await page.getByRole('button', { name: /Bring it in/i }).click();
+        await page.getByRole('button', { name: /Review content/i }).click();
         await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
         await page.getByRole('button', { name: 'Add People', exact: true }).click();
         await page.getByRole('button', { name: 'Review people', exact: true }).click();
