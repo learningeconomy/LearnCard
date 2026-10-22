@@ -66,7 +66,6 @@ type EmailFormProps = {
     smallVerificationInput?: boolean;
     emailInputClassName?: string;
     emailInputVariant?: 'default' | 'appStore';
-    emailErrorPlacement?: 'inline' | 'below';
     startOverClassNameOverride?: string;
     resendCodeButtonClassNameOverride?: string;
     verificationCodeInputClassName?: string;
@@ -85,7 +84,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
     smallVerificationInput = false,
     emailInputClassName,
     emailInputVariant = 'default',
-    emailErrorPlacement = 'inline',
     startOverClassNameOverride,
     resendCodeButtonClassNameOverride,
     verificationCodeInputClassName,
@@ -457,18 +455,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         const emailInputBaseClassName =
             emailInputVariant === 'appStore'
-                ? 'w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500'
+                ? 'w-full px-4 py-3 bg-grayscale-100 border border-grayscale-200 rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500'
                 : 'rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus-visible:outline-hidden focus-visible:ring-0 focus-visible:border-transparent';
 
-        const emailInputErrorClassName =
-            emailInputVariant === 'appStore' ? 'border-grayscale-200' : '';
-
         activeStep = (
-            <div
-                className={`w-full ${
-                    emailErrorPlacement === 'below' ? 'flex flex-col' : 'flex items-center'
-                } justify-center`}
-            >
+            <div className="w-full flex items-center justify-center">
                 <label htmlFor="login-email" className="sr-only">
                     {m['login.email.label']()}
                 </label>
@@ -476,7 +467,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     id="login-email"
                     aria-invalid={Boolean(emailError)}
                     aria-describedby={emailErrorId}
-                    className={`${emailInputBaseClassName} ${resolvedEmailInputClassName} ${emailInputErrorClassName}`}
+                    className={`${emailInputBaseClassName} ${resolvedEmailInputClassName}`}
                     placeholder={m['login.email.placeholder']()}
                     onChange={e => {
                         setEmail(e.target.value);
