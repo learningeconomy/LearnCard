@@ -312,6 +312,42 @@ describe('boost payload storage', () => {
             expect(credential).not.toHaveProperty('issuanceDate');
         });
 
+        it.each([
+            { credentialSubject: { creditsEarned: 'not a number' } },
+            { awardedDate: 'bad-date' },
+        ])('reports invalid standard fields as BAD_REQUEST', async fields => {
+            await expect(
+                prepareCredentialFromBoost(
+                    boostWith({
+                        '@context': V2,
+                        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                        proof: undefined,
+                        ...fields,
+                    }),
+                    `lc:network:network.example/boost:${BOOST_ID}`,
+                    options.domain
+                )
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
+        it.each(['', '  '])(
+            'omits blank awardedDate after template substitution %j',
+            async completed => {
+                const credential = await prepareCredentialFromBoost(
+                    boostWith({
+                        '@context': V2,
+                        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                        proof: undefined,
+                        awardedDate: '{{completed}}',
+                    }),
+                    `lc:network:network.example/boost:${BOOST_ID}`,
+                    options.domain,
+                    { templateData: { completed } }
+                );
+                expect(credential).not.toHaveProperty('awardedDate');
+            }
+        );
+
         describe('stampIssuanceDate', () => {
             const NOW = '2026-10-18T05:00:00.000Z';
 

@@ -1,5 +1,10 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { isEncrypted, isVC2Format } from '@learncard/helpers';
+import {
+    CredentialFieldError,
+    isEncrypted,
+    isVC2Format,
+    materializeCredentialFields,
+} from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import {
     VC,
@@ -356,7 +361,16 @@ export const prepareCredentialFromBoost = async (
         boostJsonString = renderBoostTemplate(boostJsonString, mergedTemplateData);
     }
 
-    const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+    let credential: UnsignedVC;
+    try {
+        credential = materializeCredentialFields(
+            parseRenderedTemplate<UnsignedVC>(boostJsonString)
+        ) as UnsignedVC;
+    } catch (error) {
+        if (error instanceof CredentialFieldError)
+            throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+        throw error;
+    }
 
     appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
 
@@ -451,7 +465,16 @@ export const appendTemplateEvidenceToCredential = (
     // EvidenceFile subterms — otherwise the signer fails later with an opaque
     // JSON-LD key-expansion error. Surface a clear message instead so the
     // caller can prompt the user to republish the boost.
-    if (!credentialContextSupportsDynamicEvidence(credential)) {
+    const usesEvidenceExtensions = normalizedTemplateEvidence.some(item => {
+        if (!item || typeof item !== 'object') return false;
+        const evidence = item as Record<string, unknown>;
+        const types = Array.isArray(evidence.type) ? evidence.type : [evidence.type];
+        return (
+            types.includes('EvidenceFile') ||
+            ['fileName', 'fileType', 'fileSize'].some(key => key in evidence)
+        );
+    });
+    if (usesEvidenceExtensions && !credentialContextSupportsDynamicEvidence(credential)) {
         throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message:

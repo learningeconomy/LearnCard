@@ -1,4 +1,5 @@
 import { CredentialCategoryEnum } from 'learn-card-base';
+import { FILE_KINDS } from 'learn-card-base/types/file-extraction';
 import * as m from '../../../paraglide/messages.js';
 import { getLocale } from '../../../paraglide/runtime.js';
 
@@ -138,7 +139,11 @@ export const HIDDEN_ACTIVITY_CATEGORIES: ReadonlySet<CredentialCategoryEnum> = n
     CredentialCategoryEnum.aiAssessment,
 ]);
 
+// Upload categories are lowercase; published credentials such as "Resume" remain visible.
+const ORIGINAL_DOCUMENT_CATEGORIES = new Set<string>(FILE_KINDS);
+
 export const isHiddenActivity = (category?: string): boolean => {
+    if (category && ORIGINAL_DOCUMENT_CATEGORIES.has(category)) return true;
     const matched = matchActivityCategory(category);
     return matched !== undefined && HIDDEN_ACTIVITY_CATEGORIES.has(matched);
 };
