@@ -32,6 +32,9 @@ on:
 env:
     UPTIMEROBOT_GROUP_ID: ${{ inputs.group_id || '15487' }}
 
+permissions:
+    contents: read
+
 jobs:
     health-check:
         name: UpTime Health Check

@@ -5,8 +5,9 @@ tenants, stage by stage. It is operator-facing, not implementation documentation
 see `packages/learn-card-base/src/config/escrowRollout.ts` for the code.
 
 Before production infrastructure bring-up, complete [PRODUCTION.md](./PRODUCTION.md).
-Its authority Object Lock archiver/outbox gate is a **production launch blocker**;
-preparing infrastructure or passing offline Terraform tests does not close it.
+The authority Object Lock archiver/outbox is **deferred to a pre-50% rollout gate**,
+not a launch blocker, unless security rejects R-AUTHORITY-ROLLBACK. Preparing
+infrastructure or passing offline Terraform tests does not close any live gate.
 
 ## What this controls (and what it doesn't)
 
@@ -71,6 +72,16 @@ literally cannot complete without it).
 
 ## Key Rotation
 
+Before initial launch, apply the escrow-account CloudTrail trail in bootstrap,
+update both management-account guardrails, then apply core monitoring. Verify
+`get-trail-status` reports logging/delivery, a denied SSO authority-table write
+pages, and the next image-roll `PutKeyPolicy` fires `EscrowKmsGovernanceChange`.
+See [bootstrap order](PRODUCTION.md#ordered-bootstrap-and-verification) and
+[operator drills](STAGING.md#cloudtrail-trail-and-alarm-drills--operator-only).
+These governance alarms were previously inert: the account had no enabled trail.
+Security must explicitly accept **R-AUTHORITY-ROLLBACK** before any launch without
+the archiver. This does not waive the existing functional, soak or D10 gates.
+
 Key rotation must be rehearsed on staging before being performed in production. See [STAGING.md](./STAGING.md#11-key-rotation-rehearsal) and [SECURITY.md](./SECURITY.md#key-rotation-procedure).
 
 ## Computing an allowlist hash for an internal tester
@@ -113,6 +124,18 @@ was previously in the bucket falls out of it just because the percent went
 up.
 
 ## Go/no-go criteria per stage
+
+**Before stage 4 (50%):** ship and security-approve
+[AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md), including independent immutable
+history, reconciliation, rollback/purge drills and independent alarm delivery.
+Remain at 10% or below until this gate closes. Security rejection of
+R-AUTHORITY-ROLLBACK moves this requirement earlier, including before launch.
+This is an operator gate, not a newly implemented automatic percentage limit.
+
+At every stage, require zero unexplained `AuthorityGovernance:unexpected_write`,
+`AuthorityGovernance:denied_write` or `EscrowCloudTrailTamper` alerts. Planned
+drills must have recorded outcomes. Confirm trail delivery and monitor SNS/DLQ
+health; absence of alerts alone is not evidence of coverage.
 
 Tied to the P7.1 `escrow-ledger-monitor` alarms
 (`infra/escrow-enclave/monitor.tf`, dashboard `<prefix>-ledger-monitor`,

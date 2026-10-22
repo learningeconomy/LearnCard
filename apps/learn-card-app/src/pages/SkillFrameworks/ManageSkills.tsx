@@ -4,7 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-skills');
 
-import { useModal, ModalTypes, useWallet, useGetSkillFrameworkById } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useWallet,
+    useGetSkillFrameworkById,
+    generateIconsInBatches,
+} from 'learn-card-base';
 
 import { IonFooter, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
@@ -253,7 +259,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                 if (names.length === 0) return framework;
 
                 const wallet = await initWallet();
-                const iconMap = await wallet.invoke.generateSkillIcons(names);
+                const iconMap = await generateIconsInBatches(names, batch =>
+                    wallet.invoke.generateSkillIcons(batch)
+                );
                 const skillsWithIcons = applyIcons(framework.skills, iconMap) ?? framework.skills;
 
                 return { ...framework, skills: skillsWithIcons };

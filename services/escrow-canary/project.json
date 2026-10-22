@@ -1,0 +1,20 @@
+{
+    "name": "escrow-canary",
+    "projectType": "application",
+    "sourceRoot": "services/escrow-canary/src",
+    "targets": {
+        "build": {
+            "executor": "nx:run-commands",
+            "options": { "command": "bun run build", "cwd": "services/escrow-canary" },
+            "outputs": ["{projectRoot}/dist"]
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": { "command": "bun run test", "cwd": "services/escrow-canary" }
+        },
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": { "command": "bun run typecheck", "cwd": "services/escrow-canary" }
+        }
+    }
+}

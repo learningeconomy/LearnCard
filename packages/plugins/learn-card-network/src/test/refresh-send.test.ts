@@ -560,6 +560,41 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(client.credentialRefresh.sendRefreshableCredential.mutate).not.toHaveBeenCalled();
     });
 
+    it('materializes standard spreadsheet fields before ordinary local profile signing', async () => {
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                ],
+                type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                awardedDate: '{{award_date}}',
+                credentialSubject: {
+                    id: 'did:example:subject',
+                    creditsEarned: '{{credits}}',
+                    result: [{ type: ['Result'], value: '{{grade}}' }],
+                },
+            }),
+        });
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+        await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            templateUri: 'did:web:network.example:boost:1',
+            templateData: { credits: '0', grade: 'A-', award_date: '2024-02-29' },
+        });
+        const signed = learnCard.invoke.issueCredential.mock.calls[0][0];
+        expect(signed.credentialSubject).toMatchObject({
+            creditsEarned: 0,
+            result: [{ value: 'A-' }],
+        });
+        expect(signed.awardedDate).toBe('2024-02-29T00:00:00.000Z');
+        expect(signed.validFrom).not.toBe(signed.awardedDate);
+        expect(signed.type).not.toContain('BoostCredential');
+    });
+
     it('keeps absent-refresh sends on their existing local branch with no allocation', async () => {
         const client = getMockClient();
         const learnCard = getMockIssuingLearnCard();

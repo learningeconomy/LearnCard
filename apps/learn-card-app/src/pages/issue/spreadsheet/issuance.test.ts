@@ -175,6 +175,37 @@ describe('durable roster issuance', () => {
         expect(api.submit).not.toHaveBeenCalled();
         expect(api.wait).not.toHaveBeenCalled();
     });
+    it.each(['ready', 'failed', 'confirming'] as const)(
+        'validates later results before sending a %s row, including after reconciliation',
+        async state => {
+            let run = makeRun();
+            run.templateUri = 'template';
+            run.template = writeResult(run.template, {
+                resultType: 'RawScore',
+                value: dynamicField('score'),
+            });
+            run.template = writeResult(
+                run.template,
+                { resultType: 'Percent', value: dynamicField('percent') },
+                1
+            );
+            run.scopes = { score: 'perRecipient', percent: 'perRecipient' };
+            run.draft.values = { 'row-0': { score: '10', percent: '101' } };
+            if (state === 'confirming') {
+                run = addSubmissionAttempts(run);
+                run.attempts[0].batchId = 'existing';
+            }
+            run.outcomes['row-0'] = { state };
+            const api = transport();
+            vi.mocked(api.wait).mockResolvedValue(statusFor('existing', 1, [0]));
+            await expect(
+                executeIssuance(run, api, { ...options(run), retryFailed: state !== 'ready' })
+            ).rejects.toThrow('mapping');
+            expect(api.submit).not.toHaveBeenCalled();
+            expect(api.sendProfile).not.toHaveBeenCalled();
+            expect(api.wait).toHaveBeenCalledTimes(state === 'confirming' ? 1 : 0);
+        }
+    );
     it('chunks by encoded tRPC wire size, including escaped text', () => {
         const run = makeRun(2);
         run.templateUri = 'template';
