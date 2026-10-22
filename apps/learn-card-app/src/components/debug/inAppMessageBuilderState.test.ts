@@ -103,6 +103,9 @@ describe('message builder credential round-trip', () => {
         expect(restored.iframe).toEqual(message.iframe);
         expect(restored.locales).toEqual(message.locales);
     });
+    it.each(IN_APP_MESSAGE_TEMPLATES)('keeps the $key template schema-valid', template => {
+        expect(inAppMessageValidator.safeParse(template.json).success).toBe(true);
+    });
     it('keeps invalid locale JSON invalid rather than silently dropping it', () => {
         expect(
             inAppMessageValidator.safeParse(buildDraftJson({ ...initialState, localesJson: '{' }))

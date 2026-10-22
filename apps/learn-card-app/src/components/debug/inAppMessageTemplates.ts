@@ -274,6 +274,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                     style: 'primary',
                     action: { type: 'appStore' },
                 },
+                { label: 'Close', style: 'dismiss', action: { type: 'dismiss' } },
             ],
             targeting: {
                 all: [
@@ -346,7 +347,10 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
             presentation: 'modal',
             title: 'Update required',
             body: 'We need to apply an important fix before you continue. This only takes a moment.',
-            actions: [{ label: 'Update now', style: 'primary', action: { type: 'capgoUpdate' } }],
+            actions: [
+                { label: 'Update now', style: 'primary', action: { type: 'capgoUpdate' } },
+                { label: 'Close', style: 'dismiss', action: { type: 'dismiss' } },
+            ],
             targeting: {
                 all: [
                     { platform: ['ios', 'android'] },

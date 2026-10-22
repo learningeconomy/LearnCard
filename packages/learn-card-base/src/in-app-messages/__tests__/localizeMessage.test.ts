@@ -11,14 +11,12 @@ describe('message localization', () => {
             presentation: 'story',
             steps: [{ title: 'Step', body: 'Step body' }, { title: 'Second' }],
             actions: [{ label: 'Base action', action: { type: 'dismiss' } }],
-            iframe: { url: 'https://example.com/base' },
             locales: {
                 es: {
                     title: 'Español',
                     body: 'Cuerpo',
                     steps: [{ title: 'Paso', body: 'Cuerpo del paso' }],
                     actionLabels: ['Listo'],
-                    iframeUrl: 'https://example.com/es',
                 },
                 'es-MX': {
                     title: 'México',
@@ -34,10 +32,26 @@ describe('message localization', () => {
             body: 'Cuerpo',
             actions: [{ label: 'Listo' }],
             steps: [{ title: 'Paso México', body: 'Cuerpo del paso' }, { title: 'Second' }],
-            iframe: { url: 'https://example.com/es' },
         });
         expect(localizeMessage(message, 'fr').title).toBe('Base');
         expect(message).toEqual(original);
+    });
+    it('localizes iframe URLs with language fallback', () => {
+        const message = inAppMessageValidator.parse({
+            id: 'iframe',
+            title: 'Base',
+            presentation: 'iframe',
+            iframe: { url: 'https://example.com/base' },
+            locales: {
+                es: { iframeUrl: 'https://example.com/es' },
+                'es-MX': { title: 'México' },
+            },
+        });
+
+        expect(localizeMessage(message, 'ES_mx')).toMatchObject({
+            title: 'México',
+            iframe: { url: 'https://example.com/es' },
+        });
     });
     it('preserves intentionally empty translated strings', () => {
         const message = inAppMessageValidator.parse({

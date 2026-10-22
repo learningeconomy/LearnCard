@@ -22,6 +22,7 @@ const Harness: React.FC<{ required?: boolean }> = ({ required = false }) => {
         presentation: 'story',
         dismissible: !required,
         steps: [{ title }],
+        actions: [{ label: 'Continue', action: { type: 'dismiss' } }],
     });
     return (
         <>

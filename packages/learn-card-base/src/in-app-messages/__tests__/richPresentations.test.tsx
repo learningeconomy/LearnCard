@@ -275,8 +275,7 @@ describe('action completion', () => {
                 id: 'store',
                 title: 'Update available',
                 presentation,
-                dismissible: false,
-                steps: [{ title: 'Update' }],
+                ...(presentation === 'story' ? { steps: [{ title: 'Update' }] } : {}),
                 actions: [{ label: 'Open store', action: { type: 'appStore' } }],
             });
             const onClose = vi.fn();
@@ -309,7 +308,7 @@ describe('action completion', () => {
                 id: 'failure',
                 title: 'Try opening',
                 presentation,
-                steps: [{ title: 'Final' }],
+                ...(presentation === 'story' ? { steps: [{ title: 'Final' }] } : {}),
                 actions: [
                     { label: 'Open', action: { type: 'externalLink', url: 'https://example.com' } },
                 ],
@@ -451,6 +450,28 @@ describe('iframe lifecycle', () => {
             expect(onClose).toHaveBeenCalledExactlyOnceWith('dismissed');
         }
     );
+    it('times out a required iframe at the maximum configured duration', () => {
+        vi.useFakeTimers();
+        render(
+            <InAppMessageIframe
+                message={inAppMessageValidator.parse({
+                    ...message,
+                    dismissible: false,
+                    iframe: { ...message.iframe!, loadTimeoutMs: 30000 },
+                })}
+                onClose={vi.fn()}
+            />
+        );
+
+        expect(screen.getByRole('status')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+        act(() => vi.advanceTimersByTime(29999));
+        expect(screen.getByRole('status')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+        act(() => vi.advanceTimersByTime(1));
+        expect(screen.getByRole('alert')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
+    });
     it('does not run or report undeclared bridge navigation', async () => {
         const onClose = vi.fn();
         const onAction = vi.fn();

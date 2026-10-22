@@ -112,6 +112,11 @@ resolves per-platform from tenant `links` config; add per-message overrides if y
                 "iosUrl": "https://apps.apple.com/app/id1508141215",
                 "androidUrl": "https://play.google.com/store/apps/details?id=com.learncard.app"
             }
+        },
+        {
+            "label": "Close",
+            "style": "dismiss",
+            "action": { "type": "dismiss" }
         }
     ],
     "targeting": {
@@ -184,7 +189,11 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 | `dismiss`      | —                                   | Closes the message                                                        |
 
 `closeOnComplete` (default `true`) closes the message after the action runs. `capgoUpdate` never
-auto-closes — it swaps into an inline progress state instead.
+auto-closes — it swaps into an inline progress state instead. `appStore` can no-op when no URL is
+available for the current platform. Required modals must therefore include at least one action that
+reliably closes the message: `dismiss`, `internalLink`, or `externalLink`, with
+`closeOnComplete` left enabled. A later `openMessage` action has the same closing behavior;
+host-dependent `openApp` does not qualify because it can no-op in an unsupported app.
 
 ### Frequency
 
@@ -467,9 +476,12 @@ loaded only for dev/debug-enabled builds; normal production builds omit it.
 
 ## Stories, embedded pages, and translations (LC-2263)
 
-`presentation` also accepts `story` and `iframe`. Existing modal/banner/toast payloads are unchanged.
-Targeting and triggers still run before presentation; both new formats use the existing blocking
-fatigue rules. Deploy supporting clients before enabling campaigns that use these values.
+`presentation` also accepts `story` and `iframe`. Modal/banner/toast rendering is unchanged; required
+modals now reject configurations without a guaranteed closing action. Targeting and triggers still
+run before presentation; both new formats use the existing blocking fatigue rules. Deploy supporting
+clients before enabling campaigns that use these values.
+Presentation fields are exclusive: only stories may define `steps`, and only iframes may define
+`iframe`. Mixed payloads are rejected per message while valid sibling campaigns remain available.
 
 ### Rollout compatibility
 
@@ -530,6 +542,9 @@ media and controls do not advance the story. Required stories should provide a c
 Final-screen action state remains mounted across navigation and responsive modal replacement. The
 same portal container moves between the mobile and desktop surfaces, preserving update progress and
 operation ownership when a learner navigates back, rotates a device, or resizes split view.
+An explicit final-screen `actions: []` still overrides message-level actions, but it is invalid when
+the story is required. Required stories need a guaranteed closing action in their effective final
+action list; optional stories may rely on the host close control.
 
 `locales` supports `title`, `body`, `actionLabels`, `steps` (title/body/actionLabels), and `iframeUrl`. Each field
 falls back independently: exact locale, language, original. Arrays are positional and never add
@@ -569,6 +584,10 @@ a valid `ready` message. Required frames (`dismissible:false`) require the valid
 to remove the skeleton and cancel the timeout; **load does not prove the remote page succeeded**. The remote server must allow
 embedding through its CSP `frame-ancestors` / X-Frame-Options policy. These restrictions cannot be
 bypassed by the app. Retry mounts a new frame; old listeners and completions are discarded.
+`loadTimeoutMs` defaults to 10 seconds and accepts positive integer values through 30 seconds. Values
+above that limit are rejected rather than silently clamped, isolating an outdated campaign instead
+of changing its authored behavior. A required frame that never becomes ready reaches the error state
+within that bound, where the app-owned Close action is always available.
 For dismissible frames, a blocked/error-page load can still end the loading state and cancel the
 timer, leaving a blank but closable surface. Cross-origin content cannot be inspected to detect this.
 Use a required bridge-enabled frame with no `ready` handshake to verify blocked-page timeout/retry;

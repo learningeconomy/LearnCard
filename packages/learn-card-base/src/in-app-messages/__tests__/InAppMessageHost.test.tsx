@@ -310,6 +310,7 @@ describe('message host impressions', () => {
                 id: 'required',
                 title: 'Required action',
                 dismissible: false,
+                actions: [{ label: 'Continue', action: { type: 'dismiss' } }],
             });
             state.messages = [required];
             const { rerender } = render(<InAppMessageHost />);

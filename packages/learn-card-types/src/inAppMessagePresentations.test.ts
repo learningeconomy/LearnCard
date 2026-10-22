@@ -48,7 +48,7 @@ describe('rich message schema', () => {
             }).success
         ).toBe(false);
     });
-    it('requires iframe configuration and defaults its timeout', () => {
+    it('requires iframe configuration and bounds its timeout', () => {
         expect(
             inAppMessageValidator.safeParse({ id: 'frame', title: 'Hello', presentation: 'iframe' })
                 .success
@@ -61,7 +61,190 @@ describe('rich message schema', () => {
                 iframe: { url: 'https://example.com' },
             }).iframe?.loadTimeoutMs
         ).toBe(10000);
+
+        expect(
+            inAppMessageValidator.parse({
+                id: 'frame',
+                title: 'Hello',
+                presentation: 'iframe',
+                iframe: { url: 'https://example.com', loadTimeoutMs: 30000 },
+            }).iframe?.loadTimeoutMs
+        ).toBe(30000);
+
+        for (const loadTimeoutMs of [0, -1, 1.5, 30001, Number.NaN, Number.POSITIVE_INFINITY]) {
+            expect(
+                inAppMessageValidator.safeParse({
+                    id: 'frame',
+                    title: 'Hello',
+                    presentation: 'iframe',
+                    iframe: { url: 'https://example.com', loadTimeoutMs },
+                }).success
+            ).toBe(false);
+        }
     });
+    it.each([
+        ['modal', { steps: [{ title: 'Unused' }] }],
+        ['modal', { iframe: { url: 'https://example.com' } }],
+        ['banner', { steps: [] }],
+        ['toast', { iframe: { url: 'https://example.com' } }],
+        ['story', { steps: [{ title: 'Story' }], iframe: { url: 'https://example.com' } }],
+        ['iframe', { iframe: { url: 'https://example.com' }, steps: [] }],
+    ])('rejects %s messages with incompatible presentation fields', (presentation, fields) => {
+        expect(
+            inAppMessageValidator.safeParse({
+                id: 'mixed',
+                title: 'Mixed',
+                presentation,
+                ...fields,
+            }).success
+        ).toBe(false);
+    });
+    it('preserves modal defaults while rejecting mixed default-modal fields', () => {
+        expect(inAppMessageValidator.parse({ id: 'old', title: 'Hello' }).presentation).toBe(
+            'modal'
+        );
+        expect(
+            inAppMessageValidator.safeParse({
+                id: 'mixed-default',
+                title: 'Hello',
+                steps: [{ title: 'Unused' }],
+                iframe: { url: 'https://example.com' },
+            }).success
+        ).toBe(false);
+    });
+    it.each([
+        ['missing message actions', {}],
+        ['empty message actions', { actions: [] }],
+        [
+            'closeOnComplete false',
+            {
+                actions: [
+                    {
+                        label: 'Stay here',
+                        action: { type: 'dismiss' },
+                        closeOnComplete: false,
+                    },
+                ],
+            },
+        ],
+        ['a Capgo action', { actions: [{ label: 'Update', action: { type: 'capgoUpdate' } }] }],
+        [
+            'an app-store action that can no-op',
+            { actions: [{ label: 'Store', action: { type: 'appStore' } }] },
+        ],
+    ])('rejects required modals with %s', (_label, fields) => {
+        expect(
+            inAppMessageValidator.safeParse({
+                id: 'required-modal',
+                title: 'Required',
+                dismissible: false,
+                ...fields,
+            }).success
+        ).toBe(false);
+    });
+    it.each([
+        { label: 'Done', action: { type: 'dismiss' } },
+        { label: 'Continue', action: { type: 'internalLink', path: '/wallet' } },
+        { label: 'Learn more', action: { type: 'externalLink', url: 'https://example.com' } },
+    ])('accepts required modals with a guaranteed closing action: $action.type', action => {
+        expect(
+            inAppMessageValidator.safeParse({
+                id: 'required-modal',
+                title: 'Required',
+                dismissible: false,
+                actions: [action],
+            }).success
+        ).toBe(true);
+    });
+    it('validates the effective final-screen actions for required stories', () => {
+        const requiredStory = {
+            id: 'required-story',
+            title: 'Required',
+            presentation: 'story',
+            dismissible: false,
+        } as const;
+
+        for (const draft of [
+            { ...requiredStory, steps: [{ title: 'Final' }] },
+            { ...requiredStory, actions: [], steps: [{ title: 'Final' }] },
+            {
+                ...requiredStory,
+                actions: [{ label: 'Fallback', action: { type: 'dismiss' } }],
+                steps: [{ title: 'Final', actions: [] }],
+            },
+            {
+                ...requiredStory,
+                steps: [
+                    {
+                        title: 'Final',
+                        actions: [
+                            {
+                                label: 'Stay here',
+                                action: { type: 'dismiss' },
+                                closeOnComplete: false,
+                            },
+                        ],
+                    },
+                ],
+            },
+            {
+                ...requiredStory,
+                steps: [
+                    {
+                        title: 'Final',
+                        actions: [{ label: 'Update', action: { type: 'capgoUpdate' } }],
+                    },
+                ],
+            },
+        ]) {
+            expect(inAppMessageValidator.safeParse(draft).success).toBe(false);
+        }
+
+        expect(
+            inAppMessageValidator.safeParse({
+                ...requiredStory,
+                actions: [{ label: 'Done', action: { type: 'dismiss' } }],
+                steps: [{ title: 'Final' }],
+            }).success
+        ).toBe(true);
+        expect(
+            inAppMessageValidator.safeParse({
+                ...requiredStory,
+                actions: [],
+                steps: [
+                    {
+                        title: 'Final',
+                        actions: [
+                            {
+                                label: 'Continue',
+                                action: { type: 'internalLink', path: '/wallet' },
+                            },
+                        ],
+                    },
+                ],
+            }).success
+        ).toBe(true);
+    });
+    it.each(['modal', 'story'] as const)(
+        'allows dismissible %s messages without closing actions',
+        presentation => {
+            expect(
+                inAppMessageValidator.safeParse({
+                    id: `optional-${presentation}`,
+                    title: 'Optional',
+                    presentation,
+                    actions: [
+                        {
+                            label: 'Stay here',
+                            action: { type: 'dismiss' },
+                            closeOnComplete: false,
+                        },
+                    ],
+                    ...(presentation === 'story' ? { steps: [{ title: 'Final' }] } : {}),
+                }).success
+            ).toBe(true);
+        }
+    );
     it.each([
         { actions: [] },
         { actions: [{ label: 'Open', action: { type: 'internalLink', path: '/home' } }] },

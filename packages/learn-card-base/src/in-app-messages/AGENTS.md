@@ -73,6 +73,9 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
   Keep payloads allowlisted and exclude overrides from app analytics.
 - Story actions are final-screen-only; reject earlier overrides and keep the builder editor restricted.
   Localize overrides through `locales[locale].steps[index].actionLabels`; preserve positional fallbacks.
+- Required modals and stories need an effective action that the shared runner can actually close.
+  Respect `closeOnComplete`; do not count Capgo, environment-dependent store actions, or host-specific
+  app navigation as guaranteed exits. Required story overrides are evaluated on the final screen.
 - Mirror arrow, swipe, and tap navigation using the rendered direction, including language switches.
 - Emit actions after successful completion, excluding no-ops/failures. Include `actionSource` alongside
   authored action indexes; bridge actions have no index/source. Capgo completion can be lost on reload.
