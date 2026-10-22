@@ -13,6 +13,12 @@ export const spreadsheetProblem = (problem: RowProblem): string => {
             return m['issueFlow.sheet.required']();
         case 'evidence':
             return m['issueFlow.sheet.invalidEvidence']();
+        case 'number':
+            return m['issueFlow.sheet.invalidNumber']();
+        case 'date':
+            return m['issueFlow.sheet.invalidDate']();
+        case 'result':
+            return m['issueFlow.sheet.invalidResult']();
         case 'formula':
             return m['issueFlow.sheet.formula']();
     }
@@ -30,6 +36,8 @@ export const spreadsheetErrorMessage = (error: unknown): string => {
             return m['issueFlow.sheet.bounds']({
                 cell: error instanceof SpreadsheetError ? (error.cell ?? '') : '',
             });
+        case 'complexity':
+            return m['issueFlow.sheet.tooComplex']();
         case 'limit':
         case 'oversize':
             return m['issueFlow.sheet.tooLarge']();
@@ -47,6 +55,10 @@ export const spreadsheetErrorMessage = (error: unknown): string => {
             return m['issueFlow.sheet.lockedRows']();
         case 'emailColumn':
             return m['issueFlow.sheet.chooseEmail']();
+        case 'format':
+            return m['issueFlow.sheet.numberFormatConflict']();
+        case 'mappedColumnMissing':
+            return m['issueFlow.sheet.mappedColumnMissing']();
         case 'mapping':
             return m['issueFlow.sheet.mapping']();
         case 'run':
