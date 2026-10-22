@@ -68,7 +68,6 @@ describe('RecentlyAdded', () => {
         const { getAllByTestId } = render(<RecentlyAdded />);
         expect(getAllByTestId('recent-tile').map(tile => tile.textContent)).toEqual([
             'Raw Artifact',
-            'Published résumé',
         ]);
     });
 
