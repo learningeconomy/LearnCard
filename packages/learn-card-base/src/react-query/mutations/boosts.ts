@@ -213,9 +213,6 @@ export const useShareBoostMutation = () => {
                 randomSeed: randomKey,
                 uri: publishedVpUri,
                 type: 'shared-credentials',
-                ...(extantCredentialIndex?.publicPreviewId
-                    ? { publicPreviewId: extantCredentialIndex.publicPreviewId }
-                    : {}),
             };
             await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>(newIndex);
             const link = buildCredentialShareUrl(baseUrl, shareRouteName, {

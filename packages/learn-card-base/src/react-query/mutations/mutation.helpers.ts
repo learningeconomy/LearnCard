@@ -62,7 +62,7 @@ export const sharedCredentialIndexMatchesCredential = async (
         : false;
 };
 
-/** Prefer an existing preview reference when endorsements require a fresh presentation. */
+/** Prefer an already published matching presentation for ordinary re-shares. */
 export const findMatchingSharedCredentialIndex = async <
     RecordType extends SharedCredentialIndexReference,
 >(
@@ -84,7 +84,7 @@ export const findMatchingSharedCredentialIndex = async <
     return fallback;
 };
 
-/** Refresh an opted-in preview; roll back only new records if indexing fails. */
+/** Refresh the same presentation, recreate a missing preview, and roll back failed new references. */
 export const publishSharePreview = async (
     link: string,
     metadata: CredentialSharePreview | undefined,
@@ -97,12 +97,19 @@ export const publishSharePreview = async (
     const url = new URL(link);
     const shareUri = url.searchParams.get('uri');
     if (!shareUri) throw new Error('Share link is missing presentation URI');
-    const previewId = await publish({
-        ...metadata,
-        shareUri,
-        ...(publicPreviewId ? { id: publicPreviewId } : {}),
-    });
-    if (!publicPreviewId) {
+    let previewId: string;
+    try {
+        previewId = await publish({
+            ...metadata,
+            shareUri,
+            ...(publicPreviewId ? { id: publicPreviewId } : {}),
+        });
+    } catch (error) {
+        const code = (error as { data?: { code?: unknown } } | null | undefined)?.data?.code;
+        if (!publicPreviewId || code !== 'NOT_FOUND') throw error;
+        previewId = await publish({ ...metadata, shareUri });
+    }
+    if (previewId !== publicPreviewId) {
         try {
             const updated = await saveReference(previewId);
             if (!updated) throw new Error('Unable to save public preview reference');

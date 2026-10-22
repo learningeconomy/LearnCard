@@ -36,7 +36,7 @@ export const credentialSharePreviewsRouter = t.router({
         .output(Id)
         .mutation(async ({ ctx, input }) => {
             const id = await createCredentialSharePreview(ctx.user.profile.profileId, input);
-            if (!id) throw new TRPCError({ code: 'CONFLICT' });
+            if (!id) throw new TRPCError({ code: 'NOT_FOUND' });
             return id;
         }),
     delete: profileRoute

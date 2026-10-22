@@ -7,11 +7,13 @@ import type {
     PublishCredentialSharePreview,
 } from '@learncard/types';
 
+// shareUri is a client-supplied match key, not proof of presentation ownership or issuer claims.
 export const createCredentialSharePreview = async (
     ownerProfileId: string,
     input: PublishCredentialSharePreview
 ): Promise<string | null> => {
     const id = input.id ?? randomUUID();
+    const now = new Date().toISOString();
     const params = {
         id,
         ownerProfileId,
@@ -19,12 +21,13 @@ export const createCredentialSharePreview = async (
         issuer: input.issuer,
         shareUri: input.shareUri,
         image: input.image ?? null,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
     };
     const result = input.id
         ? await neogma.queryRunner.run(
-              `MATCH (owner:Profile {profileId: $ownerProfileId})-[:PUBLISHED_CREDENTIAL_SHARE_PREVIEW]->(preview:CredentialSharePreview {id: $id})
-               SET preview.name = $name, preview.issuer = $issuer, preview.shareUri = $shareUri, preview.image = $image
+              `MATCH (owner:Profile {profileId: $ownerProfileId})-[:PUBLISHED_CREDENTIAL_SHARE_PREVIEW]->(preview:CredentialSharePreview {id: $id, shareUri: $shareUri})
+               SET preview.name = $name, preview.issuer = $issuer, preview.image = $image, preview.updatedAt = $updatedAt
                RETURN preview.id AS id`,
               params
           )
@@ -32,7 +35,7 @@ export const createCredentialSharePreview = async (
               `MATCH (owner:Profile {profileId: $ownerProfileId})
                CREATE (preview:CredentialSharePreview {
                    id: $id, name: $name, issuer: $issuer, shareUri: $shareUri,
-                   image: $image, createdAt: $createdAt
+                   image: $image, createdAt: $createdAt, updatedAt: $updatedAt
                })
                CREATE (owner)-[:PUBLISHED_CREDENTIAL_SHARE_PREVIEW]->(preview)
                RETURN preview.id AS id`,

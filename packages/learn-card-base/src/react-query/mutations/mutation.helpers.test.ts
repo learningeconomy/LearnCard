@@ -47,6 +47,56 @@ describe('public share preview lifecycle', () => {
         expect(publish).not.toHaveBeenCalled();
     });
 
+    it('replaces a deleted preview and persists the replacement before returning its link', async () => {
+        const publicRecords = new Set<string>();
+        let privateReference = 'deleted';
+        const result = await publishSharePreview(
+            linkFor('original-presentation'),
+            { name: 'Name', issuer: 'Issuer' },
+            privateReference,
+            async input => {
+                if (input.id) {
+                    throw Object.assign(new Error('Missing preview'), {
+                        data: { code: 'NOT_FOUND' },
+                    });
+                }
+                publicRecords.add('replacement');
+                return 'replacement';
+            },
+            async id => {
+                privateReference = id;
+                return 1;
+            },
+            async id => publicRecords.delete(id)
+        );
+        expect(privateReference).toBe('replacement');
+        expect(new URL(result).searchParams.get('preview')).toBe(privateReference);
+        expect(publicRecords).toEqual(new Set([privateReference]));
+    });
+
+    it('removes a replacement preview if its private reference cannot be saved', async () => {
+        const publicRecords = new Set<string>();
+        await expect(
+            publishSharePreview(
+                linkFor('original-presentation'),
+                { name: 'Name', issuer: 'Issuer' },
+                'deleted',
+                async input => {
+                    if (input.id) {
+                        throw Object.assign(new Error('Missing preview'), {
+                            data: { code: 'NOT_FOUND' },
+                        });
+                    }
+                    publicRecords.add('replacement');
+                    return 'replacement';
+                },
+                async () => 0,
+                async id => publicRecords.delete(id)
+            )
+        ).rejects.toThrow('Unable to save public preview reference');
+        expect(publicRecords).toEqual(new Set());
+    });
+
     it.each([0, 'throw'] as const)(
         'rolls back a newly-created node when index write fails (%s)',
         async failure => {
@@ -79,7 +129,7 @@ describe('public share preview lifecycle', () => {
         }
     );
 
-    it('does not delete an existing preview when its refresh fails', async () => {
+    it('does not replace or delete an existing preview after a permission failure', async () => {
         const records: Record<string, { shareUri: string }> = {
             owned: { shareUri: 'old-uri' },
         };
@@ -92,8 +142,14 @@ describe('public share preview lifecycle', () => {
                 linkFor('rebound-uri'),
                 { name: 'Name', issuer: 'Issuer' },
                 'owned',
-                async () => {
-                    throw new Error('refresh failed');
+                async input => {
+                    if (input.id) {
+                        throw Object.assign(new Error('refresh failed'), {
+                            data: { code: 'FORBIDDEN' },
+                        });
+                    }
+                    records['unexpected'] = { shareUri: input.shareUri };
+                    return 'unexpected';
                 },
                 async () => 1,
                 remove

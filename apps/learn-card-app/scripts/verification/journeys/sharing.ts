@@ -14,7 +14,8 @@ export const sharingFeature: FeatureDefinition = {
     entries: [
         'share-menu-copy',
         'share-public-preview-isolation',
-        'share-endorsed-preview-reuse',
+        'share-deleted-preview-recovery',
+        'share-endorsed-preview-stability',
         'share-anonymous-view',
     ],
     run: async context => {
@@ -23,6 +24,38 @@ export const sharingFeature: FeatureDefinition = {
         await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], {
             origin: context.baseUrl,
         });
+        const publishPreview = async (credentialTitle: string): Promise<URL> => {
+            await page.goto('/socialBadges', { waitUntil: 'domcontentloaded' });
+            const badge = page.getByText(credentialTitle, { exact: true }).first();
+            await expect(badge).toBeVisible({ timeout: UI_TIMEOUT });
+            await badge.click();
+            await page
+                .getByRole('dialog')
+                .getByRole('button', { name: 'More options', exact: true })
+                .click();
+            await page.getByRole('button', { name: 'Share', exact: true }).click();
+            const enable = page.getByRole('button', { name: 'Enable Public Preview', exact: true });
+            await expect(enable).toBeEnabled({ timeout: UI_TIMEOUT });
+            await enable.click();
+            const post = page.getByRole('link', { name: 'Post to LinkedIn', exact: true });
+            await expect(post).toHaveAttribute('href', /preview%3D/i, { timeout: UI_TIMEOUT });
+            const link = new URL(
+                new URL((await post.getAttribute('href'))!).searchParams.get('url')!
+            );
+            // Leave bearer-link UI before the step's automatic "after" screenshot.
+            await page.goto('/wallet');
+            await expect(
+                page.getByRole('button', { name: 'Open profile', exact: true })
+            ).toBeVisible();
+            return link;
+        };
+        const readPreview = (link: URL, uri = link.searchParams.get('uri')!): Promise<Response> => {
+            const endpoint = new URL(
+                `${context.stack.brainApi}/credential-share-previews/${link.searchParams.get('preview')}`
+            );
+            endpoint.searchParams.set('shareUri', uri);
+            return fetch(endpoint);
+        };
         const issuer = await context.step(page, 'sharing-create-earned-credential', async () => {
             await issueSelfBadge(page, title);
             return readIssuer(await openStoredBadge(page, title));
@@ -54,7 +87,7 @@ export const sharingFeature: FeatureDefinition = {
             ).toBeVisible();
             return url;
         });
-        await context.step(page, 'share-public-preview-isolation', async () => {
+        const publicLink = await context.step(page, 'share-public-preview-isolation', async () => {
             const wallet = await context.sdk(context.actors.learner);
             const unrelatedIndex = {
                 type: 'shared-credentials',
@@ -69,32 +102,35 @@ export const sharingFeature: FeatureDefinition = {
             });
             expect(before).toMatchObject({ ...unrelatedIndex, _id: expect.any(String) });
             const unrelatedId = before._id;
-            await openStoredBadge(page, title);
-            await page
-                .getByRole('dialog')
-                .getByRole('button', { name: 'More options', exact: true })
-                .click();
-            await page.getByRole('button', { name: 'Share', exact: true }).click();
-            const enable = page.getByRole('button', { name: 'Enable Public Preview', exact: true });
-            await expect(enable).toBeEnabled({ timeout: UI_TIMEOUT });
-            await enable.click();
-            const post = page.getByRole('link', { name: 'Post to LinkedIn', exact: true });
-            await expect(post).toHaveAttribute('href', /preview%3D/i, { timeout: UI_TIMEOUT });
-            const composer = new URL((await post.getAttribute('href'))!);
-            const shared = new URL(composer.searchParams.get('url')!);
-            // Leave bearer-link UI before recording or asserting storage invariants.
-            await page.goto('/wallet');
-            const target = new URL(
-                `${context.stack.brainApi}/credential-share-previews/${shared.searchParams.get('preview')}`
-            );
-            target.searchParams.set('shareUri', shared.searchParams.get('uri')!);
-            const response = await fetch(target);
+            const shared = await publishPreview(title);
+            const response = await readPreview(shared);
             expect(response.status).toBe(200);
             expect((await response.json()).name).toBe(title);
             const [after] = await wallet.invoke.learnCloudRead({ _id: unrelatedId });
             expect(after).toEqual(before);
+            return shared;
         });
-        await context.step(page, 'share-endorsed-preview-reuse', async () => {
+        await context.step(page, 'share-deleted-preview-recovery', async () => {
+            const wallet = await context.sdk(context.actors.learner);
+            const deletedId = publicLink.searchParams.get('preview')!;
+            const [before] = await wallet.invoke.learnCloudRead({
+                randomSeed: publicLink.searchParams.get('seed')!,
+            });
+            expect(before.publicPreviewId).toBe(deletedId);
+            expect(await wallet.invoke.deleteCredentialSharePreview(deletedId)).toBe(true);
+            expect((await readPreview(publicLink)).status).toBe(404);
+            const replacement = await publishPreview(title);
+            const replacementId = replacement.searchParams.get('preview')!;
+            expect(replacementId).not.toBe(deletedId);
+            expect(replacement.searchParams.get('uri')).toBe(publicLink.searchParams.get('uri'));
+            const current = await readPreview(replacement);
+            expect(current.status).toBe(200);
+            expect((await current.json()).name).toBe(title);
+            const [after] = await wallet.invoke.learnCloudRead({ _id: before._id });
+            expect(after).toEqual({ ...before, publicPreviewId: replacementId });
+            expect((await readPreview(publicLink)).status).toBe(404);
+        });
+        await context.step(page, 'share-endorsed-preview-stability', async () => {
             const wallet = await context.sdk(context.actors.learner);
             const endorser = await context.sdk(context.actors.recipient);
             const endorsedTitle = `Verify endorsed ${randomBytes(4).toString('hex')}`;
@@ -134,47 +170,20 @@ export const sharingFeature: FeatureDefinition = {
                 originalCredentialId: credentialId,
                 visibility: 'public',
             });
-            const publish = async () => {
-                await page.goto('/socialBadges', { waitUntil: 'domcontentloaded' });
-                const badge = page.getByText(endorsedTitle, { exact: true }).first();
-                await expect(badge).toBeVisible({ timeout: UI_TIMEOUT });
-                await badge.click();
-                await page
-                    .getByRole('dialog')
-                    .getByRole('button', { name: 'More options', exact: true })
-                    .click();
-                await page.getByRole('button', { name: 'Share', exact: true }).click();
-                const enable = page.getByRole('button', {
-                    name: 'Enable Public Preview',
-                    exact: true,
-                });
-                await expect(enable).toBeEnabled({ timeout: UI_TIMEOUT });
-                await enable.click();
-                const post = page.getByRole('link', { name: 'Post to LinkedIn', exact: true });
-                await expect(post).toHaveAttribute('href', /preview%3D/i, { timeout: UI_TIMEOUT });
-                const link = new URL(
-                    new URL((await post.getAttribute('href'))!).searchParams.get('url')!
-                );
-                await page.goto('/wallet');
-                return link;
-            };
-            const first = await publish();
-            const second = await publish();
+            const first = await publishPreview(endorsedTitle);
+            const second = await publishPreview(endorsedTitle);
             expect(second.searchParams.get('uri')).not.toBe(first.searchParams.get('uri'));
-            expect(second.searchParams.get('preview')).toBe(first.searchParams.get('preview'));
-            const endpoint = new URL(
-                `${context.stack.brainApi}/credential-share-previews/${second.searchParams.get('preview')}`
-            );
-            endpoint.searchParams.set('shareUri', first.searchParams.get('uri')!);
-            expect((await fetch(endpoint)).status).toBe(404);
-            endpoint.searchParams.set('shareUri', second.searchParams.get('uri')!);
-            const current = await fetch(endpoint);
-            expect(current.status).toBe(200);
-            expect((await current.json()).name).toBe(endorsedTitle);
+            expect(second.searchParams.get('preview')).not.toBe(first.searchParams.get('preview'));
+            for (const link of [first, second]) {
+                const response = await readPreview(link);
+                expect(response.status).toBe(200);
+                expect((await response.json()).name).toBe(endorsedTitle);
+            }
+            expect((await readPreview(second, first.searchParams.get('uri')!)).status).toBe(404);
             const graph = await context.inspect.neo4j(
                 `MATCH (:Profile {profileId: '${context.actors.learner.profileId}'})-[:PUBLISHED_CREDENTIAL_SHARE_PREVIEW]->(preview:CredentialSharePreview) RETURN count(preview) AS n`
             );
-            expect(graph).toMatch(/^n\n2$/m);
+            expect(graph).toMatch(/^n\n3$/m);
         });
         // Share links are always https://{tenant host}. The local stack has no TLS, so open the
         // identical host, path, and query over http. Nothing else about the copied link changes.

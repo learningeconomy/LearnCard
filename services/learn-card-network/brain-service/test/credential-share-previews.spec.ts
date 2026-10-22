@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 const owner = { profileId: 'owner-1', did: 'did:key:owner', displayName: 'Owner' };
 const storage = vi.hoisted(() => ({
     create: vi.fn(
-        async (ownerId: string, preview: { id?: string }) =>
+        async (ownerId: string, preview: { id?: string }): Promise<string | null> =>
             preview.id ?? '5b58ff0c-bb55-4f25-a2a5-b4de3778c649'
     ),
     get: vi.fn(async (_id: string, _shareUri: string) => null as unknown),
@@ -57,6 +57,32 @@ describe('credential share previews route', () => {
         await expect(
             caller(authenticated).publish({ ...preview, credential: { id: 'private' } } as never)
         ).rejects.toBeInstanceOf(TRPCError);
+    });
+
+    it('rejects unauthenticated deletion', async () => {
+        await expect(caller().delete({ id })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    });
+
+    it('reports missing refreshes with the machine-readable recovery code', async () => {
+        storage.create.mockResolvedValueOnce(null);
+        await expect(
+            caller(authenticated).publish({ id, name: 'Badge', issuer: 'Issuer', shareUri })
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('fails closed if storage returns non-public fields', async () => {
+        storage.get.mockResolvedValueOnce({
+            name: 'Badge',
+            issuer: 'Issuer',
+            seed: 'must-never-be-returned',
+            shareUri,
+            ownerProfileId: owner.profileId,
+            createdAt: new Date(0).toISOString(),
+            updatedAt: new Date(0).toISOString(),
+        });
+        await expect(caller().get({ id, shareUri })).rejects.toMatchObject({
+            code: 'INTERNAL_SERVER_ERROR',
+        });
     });
 
     it('requires both public lookup keys and reports missing previews', async () => {

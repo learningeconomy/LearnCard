@@ -149,6 +149,15 @@ export const sdkFeature: FeatureDefinition = {
             expect(await (await readPreview(id, shareUri)).json()).toEqual(metadata);
             expect((await readPreview(id)).status).toBe(400);
             expect((await readPreview(id, 'urn:encrypted:another')).status).toBe(404);
+            const unauthenticatedDelete = await fetch(
+                `${context.stack.brainApi}/credential-share-previews/${id}/delete`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}',
+                }
+            );
+            expect(unauthenticatedDelete.status).toBe(401);
 
             await expect(
                 recipientLc.invoke.publishCredentialSharePreview({
@@ -157,30 +166,44 @@ export const sdkFeature: FeatureDefinition = {
                     issuer: 'Another issuer',
                     shareUri,
                 })
-            ).rejects.toThrow();
+            ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
             expect(await recipientLc.invoke.deleteCredentialSharePreview(id)).toBe(false);
             expect(await (await readPreview(id, shareUri)).json()).toEqual(metadata);
-            const auditQuery = `MATCH (:Profile {profileId: '${context.actors.learner.profileId}'})-[:PUBLISHED_CREDENTIAL_SHARE_PREVIEW]->(p:CredentialSharePreview {id: '${id}'}) RETURN p.createdAt AS createdAt`;
+            const auditMatch = `MATCH (:Profile {profileId: '${context.actors.learner.profileId}'})-[:PUBLISHED_CREDENTIAL_SHARE_PREVIEW]->(p:CredentialSharePreview {id: '${id}'})`;
+            const auditQuery = `${auditMatch} RETURN p.createdAt AS createdAt`;
+            const modifiedQuery = `${auditMatch} RETURN p.updatedAt AS updatedAt`;
             const originalAudit = await context.inspect.neo4j(auditQuery);
             expect(originalAudit).toMatch(/\d{4}-\d{2}-\d{2}T/);
+            const originalModified = await context.inspect.neo4j(modifiedQuery);
+            expect(originalModified).toMatch(/\d{4}-\d{2}-\d{2}T/);
 
-            const updatedUri = `urn:encrypted:${randomUUID()}`;
+            const otherUri = `urn:encrypted:${randomUUID()}`;
+            await expect(
+                publisher.invoke.publishCredentialSharePreview({
+                    id,
+                    name: 'Must not replace the original card',
+                    issuer: metadata.issuer,
+                    shareUri: otherUri,
+                })
+            ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+            expect(await (await readPreview(id, shareUri)).json()).toEqual(metadata);
+            expect((await readPreview(id, otherUri)).status).toBe(404);
             expect(
                 await publisher.invoke.publishCredentialSharePreview({
                     id,
                     name: 'Updated preview',
                     issuer: metadata.issuer,
-                    shareUri: updatedUri,
+                    shareUri,
                 })
             ).toBe(id);
-            expect((await readPreview(id, shareUri)).status).toBe(404);
-            expect(await (await readPreview(id, updatedUri)).json()).toEqual({
+            expect(await (await readPreview(id, shareUri)).json()).toEqual({
                 name: 'Updated preview',
                 issuer: metadata.issuer,
             });
             expect(await context.inspect.neo4j(auditQuery)).toBe(originalAudit);
+            expect(await context.inspect.neo4j(modifiedQuery)).not.toBe(originalModified);
             expect(await publisher.invoke.deleteCredentialSharePreview(id)).toBe(true);
-            expect((await readPreview(id, updatedUri)).status).toBe(404);
+            expect((await readPreview(id, shareUri)).status).toBe(404);
 
             const ownedIds = await Promise.all(
                 [0, 1].map(() =>
@@ -198,6 +221,9 @@ export const sdkFeature: FeatureDefinition = {
             observations.sharePreviews = {
                 ownershipEnforced: true,
                 uriBindingEnforced: true,
+                presentationBindingImmutable: true,
+                modifiedTimeRecorded: true,
+                unauthenticatedDeleteRejected: true,
                 refreshedWithoutImage: true,
                 ownerAndProfileDeletion: true,
             };

@@ -216,7 +216,8 @@ export type LearnCardNetworkPluginDependentMethods = {
 export type LearnCardNetworkPluginMethods = {
     /**
      * Publish opted-in, publisher-supplied metadata bound to an encrypted presentation URI.
-     * Provide an owned preview ID to refresh it. This does not verify the credential or issuer.
+     * Provide an owned preview ID and the same URI to refresh it; its URI cannot be rebound.
+     * A missing or mismatched refresh returns NOT_FOUND. This does not verify the credential or issuer.
      * Returns an opaque UUID; public lookup also requires the matching share URI.
      */
     publishCredentialSharePreview: (preview: PublishCredentialSharePreview) => Promise<string>;
