@@ -24,6 +24,15 @@ flowchart LR
     Results --> Retry[Retry definite failures]
 ```
 
+## Import a credential or spreadsheet
+
+Choose **Import a credential or spreadsheet** on the Issue page. The dialog has two separate options:
+
+- **Upload a file:** choose or drop a CSV, TSV, XLSX spreadsheet or a credential JSON file. The file opens for review immediately.
+- **Paste a link or data:** paste a direct credential link, complete credential JSON, or copied spreadsheet rows containing email addresses, then choose **Review content**. Expand **What can I paste?** for examples; Credential Engine links and record IDs are also supported.
+
+You review the content before adding it. The opening dialog stays compact on desktop; a spreadsheet opens in the larger review workspace. Both layouts scroll within the shared modal on smaller screens.
+
 ## File size and processing limits
 
 Spreadsheet files are parsed on your device. The original CSV, TSV, or XLSX file is not uploaded to the issuance server. Selected evidence links are referenced without fetching them during import.
