@@ -1,3 +1,4 @@
+import type { IssueImportResult } from '../import/issueImport';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 
@@ -14,12 +15,8 @@ import TransP from '../../../i18n/TransP';
 import { isPlausibleRecipient } from './recipientValidation';
 import { RecipientPicker } from './RecipientPicker';
 import { RecipientMode, Recipient, LinkOptions } from './recipientTypes';
-import {
-    MediaAttachments,
-    type SimpleMediaAttachment,
-    type SimpleMediaType,
-} from './MediaAttachments';
-import { mediaToEvidenceTemplates } from './mediaEvidence';
+import { MediaAttachments, type SimpleMediaAttachment } from './MediaAttachments';
+import { mediaToEvidenceTemplates, evidenceToMediaAttachments } from './mediaEvidence';
 import { SkillsSection } from './SkillsSection';
 import { AlignmentsShowcase } from './AlignmentsShowcase';
 import { TypePicker } from './TypePicker';
@@ -29,7 +26,6 @@ import { TemplatableField } from './TemplatableField';
 import type { SpreadsheetView } from '../spreadsheet/viewTypes';
 import type { CredentialTypeEntry } from './credentialTypeCatalog';
 import type { ResolvedSkill } from './skillAlignment';
-import type { NormalizedImport } from '../import/normalizeToObv3';
 import type { SelectedSkill } from '../../skills/skillTypes';
 import { staticField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type {
@@ -195,7 +191,7 @@ interface IssuePaletteProps {
     template: OBv3CredentialTemplate | null;
     onSelectType: (entry: CredentialTypeEntry) => void;
     onChangeTemplate: (template: OBv3CredentialTemplate) => void;
-    onImport: (result: NormalizedImport) => void;
+    onImport: (result: IssueImportResult) => void | Promise<void>;
     recipientMode: RecipientMode;
     recipients: Recipient[];
     linkOptions: LinkOptions;
@@ -287,14 +283,9 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     const nameInvalid = nameTouched && !ach?.name?.isDynamic && !name.trim();
     const hasImage = Boolean(ach?.image?.value);
 
-    const mediaAttachments: SimpleMediaAttachment[] = (template?.credentialSubject?.evidence ?? [])
-        .filter(e => e.evidenceUrl?.value)
-        .map(e => ({
-            id: e.id,
-            type: (e.genre?.value as SimpleMediaType) || 'link',
-            url: e.evidenceUrl?.value ?? '',
-            title: e.name?.value ?? '',
-        }));
+    const mediaAttachments = evidenceToMediaAttachments(
+        template?.credentialSubject?.evidence ?? []
+    );
 
     const handleMediaChange = useCallback(
         (next: SimpleMediaAttachment[]) => {
@@ -303,7 +294,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                 ...template,
                 credentialSubject: {
                     ...template.credentialSubject,
-                    evidence: mediaToEvidenceTemplates(next),
+                    evidence: mediaToEvidenceTemplates(next, template.credentialSubject.evidence),
                 },
             });
         },

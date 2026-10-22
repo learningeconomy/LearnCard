@@ -234,6 +234,7 @@ export const AchievementSubjectValidator = z
 export type AchievementSubject = z.infer<typeof AchievementSubjectValidator>;
 
 export const UnsignedAchievementCredentialValidator = UnsignedVCValidator.extend({
+    awardedDate: z.string().optional(),
     name: z.string().optional(),
     description: z.string().optional(),
     image: ImageValidator.optional(),

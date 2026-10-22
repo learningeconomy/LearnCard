@@ -12,6 +12,9 @@ on:
                 required: true
                 default: 'changeset-release/main'
 
+permissions:
+    contents: read
+
 jobs:
     deployment-tools:
         name: Deployment recovery tools

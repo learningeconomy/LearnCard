@@ -2,12 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-diplomas');
 
-import TrashBin from '../../../svgs/TrashBin';
-import DocIcon from 'learn-card-base/svgs/DocIcon';
 import ChecklistLoader from '../loader/ChecklistLoader';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import CheckListItemSkeleton from './CheckListItemSkeleton';
 import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
+import CheckListCredentialReviewStep from './CheckListCredentialReviewStep';
+import { getWalletCategory } from './AchievementTypeSelectorModal';
+import { getField } from './credentialEditFields';
+import { UploadFileOutcomePanel } from './UploadFileOutcomePanel';
+import { UploadFileOutcomeList } from './UploadFileOutcomeList';
+import { UploadedOriginalDocument } from './UploadedOriginalDocument';
 
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
@@ -21,54 +25,147 @@ import {
     UploadTypesEnum,
 } from 'learn-card-base';
 
-import { useTheme } from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
 import type { LCR } from 'learn-card-base/types/credential-records';
+import { readUploadedDocument } from './uploadedDocument.helpers';
+import { FileUploadPersistenceError } from '../../../../hooks/uploadFile.types';
+import type { UnsignedVC } from '@learncard/types';
 
 export type DiplomaType = {
     id: string;
+    uri: string;
+    artifactId: string;
     fileName: string;
     fileSize: string;
     fileType: string;
     type: string;
-};
-
-type DiplomaCredential = {
-    recordId: string;
-    rawArtifact?: {
-        fileName?: string;
-        fileSize?: string;
-        fileType?: string;
-    };
+    data: string;
+    unavailable?: boolean;
 };
 
 export const CheckListDiplomas: React.FC = () => {
     const { initWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { getFiles, isUploading, isSaving, parseFiles, base64Datas, rawArtifactCredentials } =
-        useUploadFile(UploadTypesEnum.Diploma);
+    const {
+        getFiles,
+        isUploading,
+        isSaving,
+        isParsing,
+        fetchParsedCredentialsFromFiles,
+        storeSelectedCredentials,
+        parsedCredentials,
+        setParsedCredentials,
+        base64Datas,
+        rawArtifactCredentials,
+        fileUploadOutcomes,
+        clearFileUploadOutcome,
+        retryFileExtraction,
+        retryFileSave,
+    } = useUploadFile(UploadTypesEnum.Diploma);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
-
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const [diplomas, setDiplomas] = useState<DiplomaType[]>([]);
 
+    const [showReview, setShowReview] = useState(false);
+    const [isSavingSelected, setIsSavingSelected] = useState(false);
+    const busy = isSaving || isParsing || isSavingSelected;
+    const [reviewError, setReviewError] = useState<string | null>(null);
+    const processFiles = async () => {
+        const vcs = await fetchParsedCredentialsFromFiles(UploadTypesEnum.Diploma);
+        const needed = new Set(vcs.map(entry => entry.artifactId).filter(Boolean));
+        const sources = rawArtifactCredentials.filter(source => needed.has(source.id));
+        if (vcs.length) {
+            const [first, ...rest] = sources;
+            if (!first) {
+                await handleSetDiploma();
+                return;
+            }
+            checklistStore.set.setPendingReview('diploma', {
+                credentials: vcs,
+                rawArtifact: first,
+                additionalRawArtifacts: rest,
+            });
+            setShowReview(true);
+        } else {
+            await handleSetDiploma();
+        }
+    };
+    const handleReviewConfirm = async (selectedVcs: UnsignedVC[]) => {
+        setIsSavingSelected(true);
+        setReviewError(null);
+        const pending = checklistStore.get.pendingReview().diploma;
+        const first = pending?.rawArtifact ?? rawArtifactCredentials[0];
+        const rest = pending?.additionalRawArtifacts ?? rawArtifactCredentials.slice(1);
+        try {
+            if (!first) throw new Error('Document unavailable');
+            await storeSelectedCredentials(selectedVcs, first, UploadTypesEnum.Diploma, rest);
+            checklistStore.set.setPendingReview('diploma', null);
+            setShowReview(false);
+            await handleSetDiploma();
+        } catch (error) {
+            setReviewError(
+                error instanceof FileUploadPersistenceError
+                    ? error.message
+                    : m['passport.buildMyLearnCard.managers.saveOutcomeError']()
+            );
+        } finally {
+            setIsSavingSelected(false);
+        }
+    };
+    const handleEditCredential = (index: number, editedVc: UnsignedVC) => {
+        setParsedCredentials(previous => {
+            const type = getField(editedVc, 'credentialSubject.achievement.achievementType');
+            const category = getWalletCategory(type);
+            const updated = previous.map((entry, i) =>
+                i === index
+                    ? {
+                          ...entry,
+                          vc: editedVc,
+                          metadata: {
+                              ...entry.metadata,
+                              name:
+                                  getField(editedVc, 'credentialSubject.achievement.name') ||
+                                  entry.metadata?.name,
+                              ...(category ? { category } : {}),
+                          },
+                      }
+                    : entry
+            );
+            const pending = checklistStore.get.pendingReview().diploma;
+            if (pending)
+                checklistStore.set.setPendingReview('diploma', {
+                    ...pending,
+                    credentials: updated,
+                });
+            return updated;
+        });
+    };
+
+    const pendingReview = checklistStore.useTracked.pendingReview().diploma;
     useEffect(() => {
-        handleSetDiploma();
+        if (pendingReview?.credentials.length) {
+            setParsedCredentials(pendingReview.credentials);
+            setShowReview(true);
+        }
+    }, [pendingReview]);
+    useEffect(() => {
+        void handleSetDiploma();
     }, []);
 
     useEffect(() => {
-        if (base64Datas?.length > 0 && rawArtifactCredentials?.length > 0) {
-            parseFiles(UploadTypesEnum.Diploma).finally(() => {
-                handleSetDiploma();
-            });
+        if (base64Datas.length && rawArtifactCredentials.length) {
+            void processFiles().catch(() =>
+                presentToast(m['passport.buildMyLearnCard.managers.toastGenericError'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                })
+            );
         }
     }, [base64Datas, rawArtifactCredentials]);
 
@@ -77,9 +174,10 @@ export const CheckListDiplomas: React.FC = () => {
             setIsLoading(true);
             const wallet = await initWallet();
 
-            const records = await wallet.index.LearnCloud.get({
-                category: UploadTypesEnum.Diploma,
-            });
+            const records = await wallet.index.LearnCloud.get(
+                { category: UploadTypesEnum.Diploma },
+                { cache: 'skip-cache' }
+            );
 
             const recordUris =
                 records?.map(({ uri, id }: { uri: string; id: string }) => ({ uri, id })) ?? [];
@@ -90,28 +188,20 @@ export const CheckListDiplomas: React.FC = () => {
                 return;
             }
 
-            const diplomaCredentials: DiplomaCredential[] = await Promise.all(
-                recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
-                    return {
-                        ...(await wallet.read.get(uri)),
-                        recordId: id,
-                    };
-                })
+            const documents = await Promise.all(
+                recordUris.map(record =>
+                    readUploadedDocument(
+                        record,
+                        uri => wallet.read.get(uri),
+                        UploadTypesEnum.Diploma
+                    )
+                )
             );
-
-            const _diplomas = diplomaCredentials.map(({ recordId, rawArtifact }) => ({
-                id: recordId,
-                fileName: rawArtifact?.fileName ?? '',
-                fileSize: rawArtifact?.fileSize ?? '',
-                fileType: rawArtifact?.fileType ?? '',
-                type: UploadTypesEnum.Diploma,
-            }));
-
-            setDiplomas(_diplomas);
+            setDiplomas(documents);
             setIsLoading(false);
-        } catch (error) {
+        } catch {
             setIsLoading(false);
-            log.error('handleSetDiploma::error', error);
+            log.error('file.list.failed');
         }
     };
 
@@ -121,12 +211,13 @@ export const CheckListDiplomas: React.FC = () => {
 
         // Optimistic synchronous UI update
         setDiplomas(prev => prev.filter(diploma => diploma?.id !== id));
+        const restoreOutcome = clearFileUploadOutcome(deleted.artifactId);
 
         // Fire-and-forget background work
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({ id });
+                const record = await wallet.index.LearnCloud.get({ id }, { cache: 'skip-cache' });
                 const targetRecord = record?.[0] as unknown as LCR | undefined;
 
                 if (!targetRecord) return;
@@ -137,6 +228,7 @@ export const CheckListDiplomas: React.FC = () => {
                 log.error('handleDeleteDiploma::error', error);
                 // Re-insert only the failed item so concurrent deletions aren't clobbered
                 setDiplomas(prev => (prev.some(d => d?.id === id) ? prev : [...prev, deleted]));
+                restoreOutcome();
                 presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
                     title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,
@@ -169,76 +261,102 @@ export const CheckListDiplomas: React.FC = () => {
             ? m['passport.buildMyLearnCard.managers.addMore']()
             : m['passport.buildMyLearnCard.managers.addButton']();
     buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
-    const buttonIcon = <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />;
+    const buttonIcon = <UploadIcon className="w-[25px] h-[26px] mr-2" />;
 
     return (
         <>
-            {(isSaving || checklistStore.get.isParsing().diploma) && (
-                <ChecklistLoader fileType={UploadTypesEnum.Diploma} />
-            )}
-            <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
-                <div className="flex flex-col items-start justify-center py-2 w-full">
-                    <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                        {m['passport.buildMyLearnCard.managers.diplomas.title']()}
-                    </h4>
-                    <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                        {m['passport.buildMyLearnCard.managers.diplomas.description']()}
-                    </p>
-
-                    <input
-                        multiple
-                        type="file"
-                        accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
-                        onChange={async e => {
-                            await getFiles(e, UploadTypesEnum.Diploma);
-                        }}
-                        ref={fileInputRef}
-                        style={{ display: 'none' }}
+            {showReview ? (
+                <>
+                    {reviewError && <UploadFileOutcomePanel message={reviewError} />}
+                    <CheckListCredentialReviewStep
+                        credentials={parsedCredentials}
+                        fileType={UploadTypesEnum.Diploma}
+                        onConfirm={handleReviewConfirm}
+                        onBack={() => setShowReview(false)}
+                        isLoading={isSavingSelected}
+                        onEditCredential={handleEditCredential}
                     />
+                </>
+            ) : (
+                <>
+                    {isParsing && !isSaving && (
+                        <ChecklistLoader fileType={UploadTypesEnum.Diploma} />
+                    )}
+                    <div className="w-full rounded-[20px] bg-white p-6 mt-4 font-poppins shadow-button-bottom">
+                        <div className="flex flex-col items-start justify-center py-2 w-full">
+                            <h4 className="text-xl font-semibold text-grayscale-900 text-left mb-2">
+                                {m['passport.buildMyLearnCard.managers.diplomas.title']()}
+                            </h4>
+                            <p className="text-sm text-grayscale-600 text-left mb-4">
+                                {m['passport.buildMyLearnCard.managers.diplomas.description']()}
+                            </p>
+                            <UploadFileOutcomeList
+                                outcomes={fileUploadOutcomes}
+                                fileType={UploadTypesEnum.Diploma}
+                                retryExtraction={retryFileExtraction}
+                                retrySave={retryFileSave}
+                                onExtracted={credentials => {
+                                    setParsedCredentials(credentials);
+                                    setShowReview(true);
+                                }}
+                                onSettled={() => void handleSetDiploma()}
+                                disabled={busy}
+                            />
 
-                    <button
-                        disabled={isUploading || isLoading}
-                        onClick={triggerFileInput}
-                        className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-${primaryColor} text-white`}
-                    >
-                        {buttonIcon}
-                        {buttonText}
-                    </button>
-                </div>
+                            <input
+                                multiple
+                                type="file"
+                                accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
+                                onChange={async e => {
+                                    await getFiles(e, UploadTypesEnum.Diploma);
+                                }}
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                            />
+                        </div>
 
-                {isLoading && <CheckListItemSkeleton />}
+                        {isLoading && <CheckListItemSkeleton />}
 
-                {!isLoading &&
-                    diplomas?.length > 0 &&
-                    diplomas?.map?.((diploma: DiplomaType) => {
-                        return (
-                            <div
-                                key={diploma?.id}
-                                className="flex items-center justify-between w-full mt-4 relative pb-4"
-                            >
-                                <div className="flex items-center justify-start">
-                                    <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
-                                    <div className="flex items-start justify-center text-left flex-col pr-4">
-                                        <p className="text-grayscale-800 text-sm font-semibold text-left line-clamp-2">
-                                            {diploma?.fileName}
-                                        </p>
-                                        <p className="w-full text-xs text-grayscale-600">
-                                            {diploma?.fileType} • {diploma?.fileSize}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => confirmDelete(diploma?.id)}
-                                    className="bg-white overflow-hidden rounded-full shadow-bottom p-2 min-h-[35px] min-w-[35px]"
-                                >
-                                    <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
-                                </button>
+                        {!isLoading && diplomas.length > 0 && (
+                            <div className="w-full space-y-3">
+                                {diplomas.map(diploma => (
+                                    <UploadedOriginalDocument
+                                        key={diploma.id}
+                                        fileName={diploma.fileName}
+                                        fileType={diploma.fileType}
+                                        fileSize={diploma.fileSize}
+                                        data={diploma.data}
+                                        unavailable={diploma.unavailable}
+                                        addedCredentialCount={
+                                            fileUploadOutcomes.find(
+                                                item =>
+                                                    item.artifact.id === diploma.artifactId &&
+                                                    item.status === 'stored'
+                                            )?.storedCount
+                                        }
+                                        onDelete={() => confirmDelete(diploma.id)}
+                                        disabled={busy}
+                                    />
+                                ))}
                             </div>
-                        );
-                    })}
-            </div>
-            <CheckListManagerFooter loading={isSaving || checklistStore.get.isParsing().diploma} />
+                        )}
+                        <button
+                            type="button"
+                            disabled={isUploading || isLoading || busy}
+                            onClick={triggerFileInput}
+                            className={`mt-6 w-full flex min-h-[48px] rounded-[20px] items-center justify-center py-3 px-4 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                diplomas.length
+                                    ? 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                    : 'bg-grayscale-900 text-white hover:opacity-90'
+                            }`}
+                        >
+                            {buttonIcon}
+                            {buttonText}
+                        </button>
+                    </div>
+                    <CheckListManagerFooter loading={isSaving || isParsing} />
+                </>
+            )}
         </>
     );
 };

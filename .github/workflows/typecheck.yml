@@ -10,6 +10,9 @@ concurrency:
     group: typecheck-${{ github.head_ref || github.ref }}
     cancel-in-progress: true
 
+permissions:
+    contents: read
+
 jobs:
     typecheck-ratchet:
         name: Typecheck ratchet
