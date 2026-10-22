@@ -29,6 +29,9 @@ jobs:
             - name: Test recovery validation, manifest diagnostics, and registry retries
               run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs
 
+            - name: Test shared native registry readiness gate
+              run: node --test scripts/wait-for-didkit-registry.test.mjs
+
     Test:
         runs-on: ubuntu-latest
         environment: ci-tests
