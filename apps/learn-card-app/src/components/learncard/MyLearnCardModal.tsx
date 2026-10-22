@@ -60,6 +60,7 @@ import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 import { FeedbackSettingsRows } from '../../feedback/reporting/FeedbackSettingsRows';
+import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 
 type MyLearnCardModalProps = {
     branding: BrandingEnum;
@@ -226,6 +227,18 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             }
         );
+
+        if (currentLCNUser?.role === LearnCardRolesEnum.developer) {
+            rows.push({
+                title: m['launchpad.becomeAnApp.developerProgram'](),
+                Icon: BlocksIcon,
+                caretText: '',
+                onClick: () => {
+                    closeModal();
+                    history.push('/app-store/developer');
+                },
+            });
+        }
     }
 
     if (!hideEdit) {
