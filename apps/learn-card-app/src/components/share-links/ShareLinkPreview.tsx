@@ -219,7 +219,7 @@ export const ShareLinkPreview = ({
                                 </h2>
                                 <ShareCredentialMetadata credential={credential} />
                             </div>
-                            <CredentialPreviewButton credential={credential} />
+                            <CredentialPreviewButton credential={credential} sharedOriginal />
                         </div>
                         {text.description && (
                             <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap wrap-break-word">
