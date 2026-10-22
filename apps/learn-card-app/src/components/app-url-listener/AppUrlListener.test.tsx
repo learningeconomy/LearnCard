@@ -62,3 +62,20 @@ it('accepts warm tenant links, rejects other origins and ignores callbacks after
     state.listener?.({ url: 'https://tenant.example/m/late' });
     expect(history.location.pathname).toBe('/m/welcome');
 });
+
+it.each(['guide/intro', 'discount%off', 'literal%2Fvalue'])(
+    'preserves the encoded message ID %s for the shared route decoder',
+    async messageId => {
+        const path = `/m/${encodeURIComponent(messageId)}/`;
+        state.launch = { url: `https://tenant.example${path}` };
+        const history = createMemoryHistory();
+        render(
+            <Router history={history}>
+                <AppUrlListener />
+            </Router>
+        );
+        await waitFor(() => expect(history.location.pathname).toBe(path));
+        act(() => state.listener?.({ url: `https://tenant.example${path}` }));
+        expect(history.location.pathname).toBe(path);
+    }
+);

@@ -9,6 +9,7 @@ import {
     lazyWithRetry,
     ChunkBoundary,
     InAppMessageDeepLinkRoute,
+    getInAppMessageEntryPath,
 } from 'learn-card-base';
 
 import { createBrowserHistory } from 'history';
@@ -93,7 +94,7 @@ const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
         <Redirect
             to={
                 rest.path === '/m/:messageId'
-                    ? `/login?redirectTo=${encodeURIComponent(location.pathname)}`
+                    ? `/login?redirectTo=${encodeURIComponent(getInAppMessageEntryPath(location.pathname))}`
                     : '/login'
             }
         />

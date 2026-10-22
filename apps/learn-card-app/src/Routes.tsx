@@ -9,6 +9,7 @@ import {
     lazyWithRetry,
     ChunkBoundary,
     InAppMessageDeepLinkRoute,
+    getInAppMessageEntryPath,
 } from 'learn-card-base';
 
 import { usePathwaysEnabled } from './pages/pathways/hooks/usePathwaysEnabled';
@@ -184,7 +185,7 @@ const PrivateRoute = ({
         <Redirect
             to={
                 rest.path === '/m/:messageId'
-                    ? `/login?redirectTo=${encodeURIComponent(location.pathname)}`
+                    ? `/login?redirectTo=${encodeURIComponent(getInAppMessageEntryPath(location.pathname))}`
                     : rest.path === '/notifications'
                       ? '/login?redirectTo=%2Fnotifications'
                       : '/login'

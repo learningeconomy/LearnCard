@@ -734,6 +734,12 @@ and the initial launch URL. The tracked iOS association files already allow `*`;
 Deployed association files, tenant domains/signing certificates, and actual OS handoff still need
 device verification; repository configuration alone does not prove cold/warm native entry.
 
+Message links accept an optional trailing slash. Login replaces its handoff entry, so Back after
+dismissal cannot reopen the message. Encode IDs with `encodeURIComponent` for shareable links;
+when passing that encoded pathname to history@4's `push`/`replace`, wrap it in `encodeURI` to
+preserve escapes through the history library's decoding. The entry route decodes the original
+URL component once, preserving literal percent signs, encoded-looking IDs, and slashes within IDs.
+
 Requests take precedence over ordinary campaigns once the presentation gate opens. They bypass
 targeting, triggers, previous impressions, session-close suppression and fatigue eligibility, but
 still require an enabled, valid, platform-supported message. They use the same localization path,

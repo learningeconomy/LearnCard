@@ -223,7 +223,9 @@ const MessageRow: React.FC<{
                         <button
                             type="button"
                             className="text-xs text-emerald-400"
-                            onClick={() => history.push(`/m/${encodeURIComponent(diagnostic.id)}`)}
+                            onClick={() =>
+                                history.push(encodeURI(`/m/${encodeURIComponent(diagnostic.id)}`))
+                            }
                         >
                             Test deep link
                         </button>

@@ -29,7 +29,7 @@ export const AppUrlListener: React.FC = () => {
                 const isOnTenantHttpsDomain = isTenantHttpsUrl(event.url, parserConfig);
                 const incoming = new URL(event.url);
                 if (isOnTenantHttpsDomain && /^\/m\/[^/]+\/?$/.test(incoming.pathname)) {
-                    history.push(incoming.pathname);
+                    history.push(encodeURI(incoming.pathname));
                     return;
                 }
                 if (isOnTenantHttpsDomain && /^\/s(?:\/|$)/.test(incoming.pathname)) {

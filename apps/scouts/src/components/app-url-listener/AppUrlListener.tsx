@@ -33,6 +33,10 @@ export const AppUrlListener: React.FC = () => {
                     const domainUrl = new URL(domain);
 
                     if (eventUrl.protocol === 'https:' && eventUrl.origin === domainUrl.origin) {
+                        if (/^\/m\/[^/]+\/?$/.test(eventUrl.pathname)) {
+                            history.push(encodeURI(eventUrl.pathname));
+                            return;
+                        }
                         const path = eventUrl.pathname + eventUrl.search + eventUrl.hash;
                         history.push(path);
                         return;
