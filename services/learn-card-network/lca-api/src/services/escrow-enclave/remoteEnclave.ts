@@ -1,4 +1,5 @@
 import { Agent } from 'node:https';
+import { Agent as HttpAgent, ClientRequest } from 'node:http';
 import axios from 'axios';
 import { z } from 'zod';
 import {
@@ -150,15 +151,57 @@ export interface RemoteEnclaveTransport {
 
 /** With `caPem`, the connection trusts only that CA (system roots are not consulted). */
 export const createHttpTransport = (caPem?: string): RemoteEnclaveTransport => {
-    const httpsAgent = caPem ? new Agent({ ca: caPem, keepAlive: true }) : undefined;
+    // The host enforces a 60s absolute connection lifetime, even for busy sockets.
+    // Do not retain sockets across Lambda freezes (or use Node's global pool).
+    const httpsAgent = new Agent({ ...(caPem ? { ca: caPem } : {}), keepAlive: false });
+    const httpAgent = new HttpAgent({ keepAlive: false });
     return {
         post: async (url, body, config) => {
-            const response = await axios.post(url, body, {
-                ...config,
-                httpsAgent,
-                validateStatus: () => true,
-            });
-            return { status: response.status, data: response.data };
+            const path = new URL(url).pathname;
+            const safeRead = ['/v1/attest', '/v1/enrollment-state', '/v1/hold-state'].includes(
+                path
+            );
+            const deadline = performance.now() + config.timeout;
+            const controller = new AbortController();
+            // One wall-clock budget covers connection setup and BOTH attempts.
+            const timer = setTimeout(() => controller.abort(), config.timeout);
+            try {
+                for (let attempt = 0; ; attempt += 1) {
+                    try {
+                        const response = await axios.post(url, body, {
+                            ...config,
+                            timeout: Math.max(1, Math.ceil(deadline - performance.now())),
+                            signal: controller.signal,
+                            httpsAgent,
+                            httpAgent,
+                            // Keep the native ClientRequest observable; never redirect a vault POST.
+                            maxRedirects: 0,
+                            validateStatus: () => true,
+                        });
+                        return { status: response.status, data: response.data };
+                    } catch (error) {
+                        const code = axios.isAxiosError(error) ? error.code : undefined;
+                        if (
+                            attempt !== 0 ||
+                            !safeRead ||
+                            (code !== 'ECONNRESET' && code !== 'EPIPE') ||
+                            !axios.isAxiosError(error) ||
+                            error.response ||
+                            !(error.request instanceof ClientRequest) ||
+                            error.request.socket?.bytesRead !== 0 ||
+                            controller.signal.aborted ||
+                            performance.now() >= deadline
+                        )
+                            throw error;
+                        // No response does NOT prove the server did not execute the request.
+                        // Never replay mutations: holds, PIN attempts, delivery and enrollment
+                        // may already be committed. Only the three read paths above are safe.
+                        console.warn('[LCA escrow] retrying enclave read', { code });
+                    }
+                }
+            } finally {
+                clearTimeout(timer);
+            }
         },
     };
 };
