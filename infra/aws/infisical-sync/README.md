@@ -17,16 +17,20 @@ requires `sts:ExternalId` to equal the Infisical **project ID**, which blocks th
 confused-deputy problem: the shared Infisical account cannot assume this role for
 any project other than the one whose ID it presents.
 
-The attached inline policy allows exactly:
+The root creates one role per service stage: `<name>-dev` (dev bundles) and
+`<name>` (production bundles; the original name, so existing production syncs are
+unaffected). Use a separate Infisical AWS connection for each, so a staging sync
+can never import or overwrite a production bundle. Each role's inline policy
+allows exactly:
 
 - `secretsmanager:ListSecrets` and `secretsmanager:BatchGetSecretValue` on `*`.
   These two actions do not support resource-level scoping; `ListSecrets` exposes
   no secret values.
 - `secretsmanager:GetSecretValue`, `CreateSecret`, `UpdateSecret`,
   `PutSecretValue`, `DescribeSecret`, `TagResource`, and `UntagResource`, scoped
-  to this account's secrets named `lca-api/*/runtime-secrets-*`,
-  `brain-service/*/runtime-secrets-*`, and
-  `learn-cloud-service/*/runtime-secrets-*` in each region listed in
+  to this account's secrets named `lca-api/<stage>/runtime-secrets-*`,
+  `brain-service/<stage>/runtime-secrets-*`, and
+  `learn-cloud-service/<stage>/runtime-secrets-*` (its own stage only) in each region listed in
   `secret_regions` (LearnCard `us-east-1`, ScoutPass `eu-west-1`).
 
 ## Disable Secret Deletion
@@ -54,9 +58,9 @@ compromise of the shared Infisical account destroy production runtime secrets.
 
 ## Outputs
 
-| Output                    | Meaning                                                                |
-| ------------------------- | ---------------------------------------------------------------------- |
-| `infisical_sync_role_arn` | Role ARN to paste into the Infisical AWS Secrets Manager sync settings |
+| Output                     | Meaning                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `infisical_sync_role_arns` | Map of service stage (`dev`, `production`) to the role ARN for that stage's Infisical AWS connection |
 
 ## Offline checks and references
 

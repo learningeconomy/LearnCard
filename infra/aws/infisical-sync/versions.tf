@@ -41,10 +41,19 @@ locals {
   # us-east-1, ScoutPass eu-west-1); account-wide listing is a separate,
   # value-less statement. IAM is global, so one role serves every region.
   secret_name_prefixes = ["lca-api", "brain-service", "learn-cloud-service"]
-  managed_secret_arns = flatten([
-    for region in var.secret_regions : [
-      for prefix in local.secret_name_prefixes :
-      "arn:${local.partition}:secretsmanager:${region}:${local.account_id}:secret:${prefix}/*/runtime-secrets-*"
-    ]
-  ])
+  # One role per service stage, so a sync on the staging connection can never
+  # read or overwrite a production bundle. The production role keeps the original
+  # name so existing production syncs are unaffected.
+  stage_role_names = {
+    dev        = "${local.name}-dev"
+    production = local.name
+  }
+  managed_secret_arns = {
+    for stage in keys(local.stage_role_names) : stage => flatten([
+      for region in var.secret_regions : [
+        for prefix in local.secret_name_prefixes :
+        "arn:${local.partition}:secretsmanager:${region}:${local.account_id}:secret:${prefix}/${stage}/runtime-secrets-*"
+      ]
+    ])
+  }
 }

@@ -302,7 +302,25 @@ Runtime bundles live in a dedicated Infisical project, **LearnCard Runtime**,
 separate from the hand-organized LearnCard and ScoutPass projects that
 `pull-env.sh` reads. Its project ID (shown in the project's settings; supply it as
 `TF_VAR_infisical_project_id`, never commit it) is the `sts:ExternalId` the sync
-role trusts, so one project-level AWS connection serves both tenants.
+roles trust.
+
+There is one sync role, and one project-level AWS connection, per **service
+stage**, each limited by IAM to that stage's bundles in both regions:
+
+| AWS connection                      | Role                                      | May write                              |
+| ----------------------------------- | ----------------------------------------- | -------------------------------------- |
+| `learncard-aws-runtime-secrets-dev` | `learncard-infisical-sync-production-dev` | `<service>/dev/runtime-secrets`        |
+| `learncard-aws-runtime-secrets`     | `learncard-infisical-sync-production`     | `<service>/production/runtime-secrets` |
+
+Syncs from the `staging` environment use the dev connection; syncs from `prod`
+use the production connection. A staging sync therefore cannot read (import) or
+overwrite a production bundle, whatever folder or initial behavior it is given.
+
+Within a stage, tenants are separated by region, not IAM: either connection can
+reach both LearnCard (us-east-1) and ScoutPass (eu-west-1) bundles for its stage.
+Creating or editing syncs and connections is therefore limited to the project's
+admins; keep project membership to the people who run deploys, and grant others
+read-only roles scoped to folders if they need access.
 
 Create one Many-To-One auto-sync integration per `(tenant, service, stage)`,
 each mapping an Infisical source folder to a single AWS secret: six for
@@ -333,7 +351,8 @@ Folder → AWS secret mapping:
 | `/scouts/cloud-service/runtime`             | `learn-cloud-service/<stage>/runtime-secrets` | `eu-west-1` |
 
 ScoutPass reuses the same secret names because its services deploy to the same
-stage names in a different region; the region keeps the two tenants apart.
+stage names in a different region; the region (plus admin-only sync creation)
+keeps the two tenants apart.
 
 These folders already exist in `staging` and `prod`; the project's `dev`
 environment is unused. They are dedicated sync sources, separate from the CLI

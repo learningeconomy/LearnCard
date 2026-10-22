@@ -1,10 +1,12 @@
 data "aws_iam_policy_document" "state_key" {
   # Key administration stays delegated to IAM (including PutKeyPolicy), so the key
-  # can never become unmanageable. Cryptographic use is deliberately excluded here.
+  # can never become unmanageable. Cryptographic use and CreateGrant are excluded;
+  # an IAM admin could still rewrite this policy, but the bucket policy denies them
+  # the state objects.
   statement {
     sid = "KeyAdministrationViaIam"
     actions = [
-      "kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*",
+      "kms:CreateAlias", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*",
       "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*",
       "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion",
       "kms:CancelKeyDeletion", "kms:RotateKeyOnDemand",
@@ -169,6 +171,22 @@ data "aws_iam_policy_document" "state" {
       test     = "StringNotEqualsIfExists"
       variable = "s3:x-amz-server-side-encryption"
       values   = ["aws:kms"]
+    }
+  }
+
+  statement {
+    sid       = "DenyOtherKmsKeys"
+    effect    = "Deny"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.state.arn}/*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "StringNotEqualsIfExists"
+      variable = "s3:x-amz-server-side-encryption-aws-kms-key-id"
+      values   = [aws_kms_key.state.arn]
     }
   }
 }

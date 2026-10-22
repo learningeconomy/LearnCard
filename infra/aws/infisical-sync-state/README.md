@@ -12,8 +12,9 @@ Terraform >= 1.10; AWS provider `~> 6.0`. Applied in `206533012615`, us-east-1.
 - A customer-managed KMS key (rotation enabled, 30-day deletion window) and alias
   `alias/learncard-infisical-sync-tfstate`. Its key policy leaves key
   administration (including `PutKeyPolicy`) delegated to IAM, but allows
-  encrypt/decrypt only for `admin_principal_arn_patterns` and only via S3, so a
-  broad IAM KMS grant elsewhere in the account cannot read state.
+  encrypt/decrypt only for `admin_principal_arn_patterns` and only via S3, and
+  excludes `CreateGrant`. An IAM admin with `kms:PutKeyPolicy` could still rewrite
+  the key policy, but the bucket policy denies them the state objects.
 - Bucket `learncard-infisical-sync-tfstate-<account>-<region>` with:
     - versioning, superseded versions expired after `noncurrent_version_retention_days`
       (default 90), incomplete multipart uploads aborted after 7 days;
@@ -21,8 +22,8 @@ Terraform >= 1.10; AWS provider `~> 6.0`. Applied in `206533012615`, us-east-1.
     - all public access blocked and `BucketOwnerEnforced` (ACLs disabled);
     - a bucket policy that denies non-TLS requests, denies every principal not
       matching `admin_principal_arn_patterns`, and denies writes that explicitly
-      request encryption other than `aws:kms` (writes without an SSE header get the
-      bucket's default KMS encryption).
+      request encryption other than `aws:kms` or name a KMS key other than this one
+      (writes without an SSE header get the bucket's default KMS encryption).
 
 Locking uses S3-native lock files (`use_lockfile = true`); there is no DynamoDB
 table. Both the key and bucket have `prevent_destroy`.
@@ -72,8 +73,9 @@ terraform init \
   -backend-config="kms_key_id=$KMS"
 ```
 
-Always pass `kms_key_id`: without it the S3 backend requests SSE-S3, which the
-bucket policy rejects.
+Always pass `kms_key_id` as the key's full ARN: without it the S3 backend requests
+SSE-S3, and an alias or bare key ID doesn't match the pinned ARN; the bucket policy
+rejects both.
 
 ## Inputs
 
