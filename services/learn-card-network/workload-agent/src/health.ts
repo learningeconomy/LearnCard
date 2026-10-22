@@ -76,6 +76,14 @@ export const createHealthProbe = (run: Runner, agentContainer: string): HealthPr
                 );
             const healthyById = new Map<string, boolean>();
             for (const component of dependencyOrder(spec.components)) {
+                if (component.lifecycle?.kind === 'init') {
+                    const completed = deployment.completedInits?.has(component.id) === true;
+                    healthyById.set(component.id, completed);
+                    components.push({ id: component.id, healthy: false, kind: 'init', completed });
+                    continue;
+                }
+                const healthcheck = component.healthcheck;
+                if (!healthcheck) throw new AgentError('SPEC_INVALID');
                 // Probing a dependent before its dependencies are healthy can crash upstream
                 // services (DCC issuer-coordinator's GET / fails hard while the signer is down).
                 if (component.dependsOn.some((id): boolean => healthyById.get(id) !== true)) {
@@ -83,36 +91,50 @@ export const createHealthProbe = (run: Runner, agentContainer: string): HealthPr
                     components.push({ id: component.id, healthy: false });
                     continue;
                 }
-                const key = `${operation.deploymentId}:${operation.specRevision}:${component.id}`;
+                const key = `${operation.deploymentId}:${operation.specRevision}:${deployment.attempt ?? 'legacy'}:${component.id}`;
                 const cached = cache.get(key);
-                if (cached && Date.now() - cached.at < component.healthcheck.intervalMs) {
+                if (cached && Date.now() - cached.at < healthcheck.intervalMs) {
                     if (cached.ip) ips.set(component.id, cached.ip);
                     healthyById.set(component.id, cached.healthy);
                     components.push({ id: component.id, healthy: cached.healthy });
                     continue;
                 }
                 let healthy = false;
-                const timeout = Math.min(component.healthcheck.timeoutMs, budget());
+                const timeout = Math.min(healthcheck.timeoutMs, budget());
                 const name = componentName(operation.deploymentId, component.id);
                 try {
                     const data = z
-                        .object({ running: z.boolean(), revision: z.string(), ip: z.ipv4() })
+                        .object({
+                            running: z.boolean(),
+                            revision: z.string(),
+                            ip: z.ipv4(),
+                            deployment: z.string().optional(),
+                            component: z.string().optional(),
+                            attempt: z.string().optional(),
+                        })
                         .parse(
                             JSON.parse(
                                 await run(
                                     [
                                         'inspect',
                                         '--format',
-                                        `{"running":{{.State.Running}},"revision":{{json (index .Config.Labels "org.learncard.workload.revision")}},"ip":{{json (index .NetworkSettings.Networks "${network}").IPAddress}}}`,
+                                        `{"running":{{.State.Running}},"revision":{{json (index .Config.Labels "org.learncard.workload.revision")}},"deployment":{{json (index .Config.Labels "org.learncard.workload.deployment")}},"component":{{json (index .Config.Labels "org.learncard.workload.component")}},"attempt":{{json (index .Config.Labels "org.learncard.workload.attempt")}},"ip":{{json (index .NetworkSettings.Networks "${network}").IPAddress}}}`,
                                         name,
                                     ],
                                     Math.min(5000, budget())
                                 )
                             )
                         );
-                    if (data.running && data.revision === String(operation.specRevision)) {
+                    if (
+                        data.running &&
+                        data.revision === String(operation.specRevision) &&
+                        (!deployment.attempt ||
+                            (data.deployment === operation.deploymentId &&
+                                data.component === component.id &&
+                                data.attempt === deployment.attempt))
+                    ) {
                         ips.set(component.id, data.ip);
-                        const check = component.healthcheck;
+                        const check = healthcheck;
                         if (check.kind === 'exec') {
                             await run(['exec', name, ...check.argv], timeout);
                             healthy = true;
@@ -147,7 +169,7 @@ export const createHealthProbe = (run: Runner, agentContainer: string): HealthPr
                 const timeout = Math.min(2000, budget());
                 const healthy =
                     !!host &&
-                    (endpoint.protocol === 'tcp'
+                    (endpoint.protocol === 'tcp' || endpoint.protocol === 'mongodb'
                         ? await tcpProbe(host, port, timeout)
                         : await httpProbe(
                               `${endpoint.protocol}://${host}:${port}${endpoint.readiness?.path ?? endpoint.path}`,

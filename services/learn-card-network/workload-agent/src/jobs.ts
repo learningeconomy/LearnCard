@@ -24,8 +24,26 @@ export class Jobs {
         }
     }
     async recover(): Promise<void> {
-        for (const deployment of await this.driver.recover())
-            this.active.set(deployment.operation.deploymentId, deployment);
+        for (const deployment of await this.driver.recover()) {
+            if (
+                deployment.spec.components.some(
+                    (component): boolean => component.lifecycle?.kind === 'init'
+                )
+            ) {
+                try {
+                    if (!this.brain.recover)
+                        throw new AgentError('RECOVERY_AUTHORIZATION_REQUIRED');
+                    await this.execute(
+                        await this.brain.recover(
+                            deployment.operation.deploymentId,
+                            deployment.operation.specRevision
+                        )
+                    );
+                } catch (error) {
+                    this.log.error(error);
+                }
+            } else this.active.set(deployment.operation.deploymentId, deployment);
+        }
     }
     async execute(discovered: Operation): Promise<void> {
         await this.serialized(discovered.deploymentId, async (): Promise<void> => {
@@ -74,7 +92,9 @@ export class Jobs {
                     budget();
                     await this.brain.observe(lease, observation);
                     if (
-                        observation.components.every((c): boolean => c.healthy) &&
+                        observation.components.every((c): boolean =>
+                            c.kind === 'init' ? c.completed === true : c.healthy
+                        ) &&
                         observation.endpoints.every((e): boolean => e.healthy)
                     )
                         break;
@@ -82,6 +102,7 @@ export class Jobs {
                     if (
                         deployment.spec.components.some(
                             (c): boolean =>
+                                !!c.healthcheck &&
                                 elapsed >= c.healthcheck.startupDeadlineMs &&
                                 !observation.components.some(
                                     (seen): boolean => seen.id === c.id && seen.healthy
@@ -90,13 +111,15 @@ export class Jobs {
                         elapsed >=
                             Math.max(
                                 ...deployment.spec.components.map(
-                                    (c): number => c.healthcheck.startupDeadlineMs
+                                    (c): number => c.healthcheck?.startupDeadlineMs ?? 1000
                                 )
                             )
                     )
                         throw new AgentError('HEALTH_STARTUP_FAILED');
                     const interval = Math.min(
-                        ...deployment.spec.components.map((c): number => c.healthcheck.intervalMs)
+                        ...deployment.spec.components.map(
+                            (c): number => c.healthcheck?.intervalMs ?? 1000
+                        )
                     );
                     if (budget() < interval + 1000) throw new AgentError('LEASE_BUDGET_EXCEEDED');
                     await new Promise<void>((resolve): void => {

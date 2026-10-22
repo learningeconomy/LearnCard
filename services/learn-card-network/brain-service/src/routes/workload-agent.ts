@@ -6,6 +6,7 @@ import { openRoute, t } from '@routes';
 import {
     claimWorkloadOperation,
     listPendingWorkloadOperations,
+    queueWorkloadRecovery,
 } from '@accesslayer/workload-deployment/store';
 import {
     reportWorkloadObservation,
@@ -38,6 +39,17 @@ const agentRoute = openRoute.use(async ({ ctx, next }) => {
 const lease = z.object({ operationId: z.string().max(512), leaseToken: z.string().uuid() });
 
 export const workloadAgentRouter = t.router({
+    queueWorkloadRecovery: agentRoute
+        .input(
+            z.object({
+                deploymentId: z.string().min(1).max(512),
+                revision: z.number().int().nonnegative(),
+            })
+        )
+        .output(WorkloadOperationValidator)
+        .mutation(async ({ input }): Promise<WorkloadOperation> =>
+            queueWorkloadRecovery(input.deploymentId, input.revision)
+        ),
     listPendingWorkloadOperations: agentRoute
         .input(z.object({ limit: z.number().int().min(1).max(100).default(50) }))
         .output(z.array(WorkloadOperationValidator))

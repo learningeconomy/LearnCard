@@ -226,3 +226,148 @@ export const buildDccCoreWorkloadPackage = (
         retirementPlan: 'OPEN retain assertion keys; disable issuance',
     },
 });
+
+export const DCC_MONGO_IMAGE =
+    'docker.io/library/mongo@sha256:6128e405456dfe502c06fdc1541d70c1a5a416db30dec473dbb2d670b707dec9';
+export const DCC_STATUS_SERVICE_IMAGE =
+    'docker.io/digitalcredentials/status-service-db@sha256:a62f2a1707430adea61bba01521012d46d49ab0e6c8fc50cc188e7451b51e8a8';
+
+/** Fixed program, never interpolated; the sole address input is a declared endpoint. */
+export const DCC_MONGO_INIT_SCRIPT = [
+    'const host = process.env.MONGO_HOSTPORT;',
+    'if (!host || !/^[a-z0-9-]+:[0-9]+$/.test(host)) throw new Error("Invalid Mongo host");',
+    'db = new Mongo("mongodb://" + host + "/?directConnection=true").getDB("admin");',
+    'try { rs.status(); } catch (error) { if (error.code !== 94 && error.codeName !== "NotYetInitialized") throw error; const result = rs.initiate({_id:"rs0",members:[{_id:0,host}]}); if (result.ok !== 1) throw new Error("Initiation failed"); }',
+    'const config = rs.conf(); if (config._id !== "rs0" || config.members.length !== 1 || config.members[0].host !== host) throw new Error("Unexpected replica set configuration");',
+    'const deadline = Date.now() + 110000; while (Date.now() < deadline) { const hello = db.adminCommand({hello:1}); if (hello.setName === "rs0" && hello.isWritablePrimary === true) quit(0); sleep(250); } throw new Error("PRIMARY deadline exceeded");',
+].join(' ');
+
+/** Separate development package; the immutable proven core builder is unchanged. */
+export const buildDccStatusWorkloadPackage = (
+    publisherDid: string
+): Omit<WorkloadPackage, 'signature'> => {
+    const core = structuredClone(buildDccCoreWorkloadPackage(publisherDid));
+    const issuer = core.components.find(
+        (component): boolean => component.id === 'issuer-coordinator'
+    )!;
+    issuer.dependsOn.push('status-service-db');
+    issuer.env = issuer.env.filter((entry): boolean => entry.name !== 'ENABLE_STATUS_SERVICE');
+    issuer.env.push(
+        { name: 'ENABLE_STATUS_SERVICE', source: { kind: 'literal', value: 'true' } },
+        {
+            name: 'STATUS_SERVICE',
+            source: { kind: 'endpoint', endpointId: 'status-service', part: 'hostport' },
+        }
+    );
+    const check = { timeoutMs: 2000, intervalMs: 1000, startupDeadlineMs: 120000 };
+    core.components.push(
+        {
+            id: 'mongo',
+            image: DCC_MONGO_IMAGE,
+            platform: 'linux/arm64',
+            user: '999:999',
+            command: ['mongod', '--replSet', 'rs0', '--bind_ip_all'],
+            tmpfs: [{ path: '/tmp', sizeMiB: 64 }],
+            ports: [{ name: 'mongo', containerPort: 27017, protocol: 'tcp' }],
+            healthcheck: { kind: 'tcp', port: 'mongo', ...check },
+            dependsOn: [],
+            resources: { cpuMillis: 500, memoryMiB: 512, pids: 128 },
+            volumes: [
+                { name: 'mongo-db', mountPath: '/data/db', persistent: true },
+                { name: 'mongo-config', mountPath: '/data/configdb', persistent: true },
+            ],
+            env: [],
+        },
+        {
+            id: 'mongo-init',
+            image: DCC_MONGO_IMAGE,
+            platform: 'linux/arm64',
+            user: '999:999',
+            lifecycle: { kind: 'init', timeoutMs: 120000 },
+            command: ['mongosh', '--nodb', '--quiet', '--eval', DCC_MONGO_INIT_SCRIPT],
+            tmpfs: [{ path: '/tmp', sizeMiB: 64 }],
+            ports: [],
+            volumes: [],
+            dependsOn: ['mongo'],
+            resources: { cpuMillis: 250, memoryMiB: 256, pids: 64 },
+            env: [
+                {
+                    name: 'MONGO_HOSTPORT',
+                    source: { kind: 'endpoint', endpointId: 'mongo', part: 'hostport' },
+                },
+                { name: 'HOME', source: { kind: 'literal', value: '/tmp' } },
+            ],
+        },
+        {
+            id: 'status-service-db',
+            image: DCC_STATUS_SERVICE_IMAGE,
+            platform: 'linux/arm64',
+            user: '1000:1000',
+            tmpfs: [
+                { path: '/app/logs', sizeMiB: 16 },
+                { path: '/tmp', sizeMiB: 64 },
+            ],
+            ports: [{ name: 'service', containerPort: 4008, protocol: 'tcp' }],
+            healthcheck: { kind: 'http', port: 'service', path: '/', ...check },
+            dependsOn: ['mongo-init'],
+            resources: { cpuMillis: 500, memoryMiB: 512, pids: 128 },
+            volumes: [],
+            env: [
+                { name: 'CRED_STATUS_SERVICE', source: { kind: 'literal', value: 'mongodb' } },
+                // status-service-db defaults ENABLE_HTTPS_FOR_DEV to true and then reads a dev
+                // certificate the image does not ship; it serves plain HTTP on the private network.
+                { name: 'ENABLE_HTTPS_FOR_DEV', source: { kind: 'literal', value: 'false' } },
+                {
+                    name: 'CRED_STATUS_DB_URL',
+                    source: { kind: 'endpoint', endpointId: 'mongo', part: 'url' },
+                },
+                { name: 'CRED_STATUS_DID_SEED', source: { kind: 'secret', name: 'status-seed' } },
+                {
+                    name: 'STATUS_CRED_SITE_ORIGIN',
+                    source: { kind: 'literal', value: 'https://status.example.invalid' },
+                },
+                { name: 'PORT', source: { kind: 'literal', value: '4008' } },
+            ],
+        }
+    );
+    core.secretRefs.push({
+        name: 'status-seed',
+        purpose: 'Development status signing seed',
+        consumers: ['status-service-db'],
+        required: true,
+        provisioning: { kind: 'generate', format: 'ed25519-seed-multibase', bytes: 32 },
+    });
+    core.endpoints.push(
+        {
+            id: 'mongo',
+            component: 'mongo',
+            port: 'mongo',
+            path: '/credentialStatus',
+            protocol: 'mongodb',
+            query: { replicaSet: 'rs0', directConnection: true },
+            visibility: 'internal',
+            auth: 'none',
+            purpose: 'status-database',
+            preserveOnRetirement: true,
+        },
+        {
+            id: 'status-service',
+            component: 'status-service-db',
+            port: 'service',
+            path: '/',
+            protocol: 'http',
+            visibility: 'internal',
+            auth: 'none',
+            purpose: 'status-service',
+            preserveOnRetirement: false,
+        }
+    );
+    core.id = 'org.dcc.issuer-status';
+    core.version = '1.0.1';
+    core.profiles[0]!.components = core.components.map((component): string => component.id);
+    core.sizing[0]!.resources = { cpuMillis: 2000, memoryMiB: 2048, pids: 512 };
+    core.artifacts.module.rendererVersion = '2.0.0';
+    const hash = createHash('sha256').update(JSON.stringify(core.components)).digest('hex');
+    core.artifacts.module.ref = { uri: `https://example.invalid/sha256/${hash}`, sha256: hash };
+    return core;
+};

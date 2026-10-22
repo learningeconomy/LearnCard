@@ -3,9 +3,11 @@ import {
     WorkloadPackageValidator,
     WorkloadConfigSchemaValidator,
     validateWorkloadConfig,
+    WorkloadCommandValidator,
 } from './workload';
 import { BundleManifestValidator, VersionedBundleManifestValidator } from './education-os';
 import { buildDccIssuerWorkloadPackage } from '../../../services/learn-card-network/brain-service/test/fixtures/workload/dcc-issuer';
+import { buildDccStatusWorkloadPackage } from '../../../services/learn-card-network/brain-service/scripts/fixtures/dcc-workload';
 
 const fixture = (): ReturnType<typeof buildDccIssuerWorkloadPackage> & {
     signature: { alg: string; sig: string; verificationMethod: string };
@@ -15,6 +17,121 @@ const fixture = (): ReturnType<typeof buildDccIssuerWorkloadPackage> & {
 });
 
 describe('workload contracts', (): void => {
+    const statusFixture = (): ReturnType<typeof fixture> => ({
+        ...buildDccStatusWorkloadPackage('did:key:fixture'),
+        signature: fixture().signature,
+    });
+    it('accepts the separate status workload without changing the core package', (): void => {
+        expect(WorkloadPackageValidator.safeParse(statusFixture()).success).toBe(true);
+    });
+    it.each([
+        { command: undefined },
+        { user: undefined },
+        { user: '0:999' },
+        { healthcheck: undefined },
+        {
+            healthcheck: {
+                kind: 'exec',
+                argv: ['true'],
+                timeoutMs: 1000,
+                intervalMs: 1000,
+                startupDeadlineMs: 1000,
+            },
+        },
+        { ports: [{ name: 'bad', containerPort: 80, protocol: 'tcp' }] },
+        { volumes: [{ name: 'bad', mountPath: '/tmp', persistent: true }] },
+        { volumes: [{ name: 'bad', mountPath: '/tmp', persistent: false }] },
+        { lifecycle: { kind: 'init', timeoutMs: 999 } },
+        { lifecycle: { kind: 'init', timeoutMs: 900001 } },
+        { lifecycle: { kind: 'init', timeoutMs: 1000, restart: true } },
+    ])('rejects invalid init policy %#', (changes): void => {
+        const manifest = statusFixture();
+        Object.assign(
+            manifest.components.find((component): boolean => component.id === 'mongo-init')!,
+            changes
+        );
+        expect(WorkloadPackageValidator.safeParse(manifest).success).toBe(false);
+    });
+    it.each([
+        { visibility: 'public' },
+        { auth: 'tenant-token' },
+        { query: undefined },
+        { query: { replicaSet: 'rs0', directConnection: false } },
+        { query: { replicaSet: 'rs0', directConnection: true, password: 'no' } },
+        { query: { replicaSet: '-rs0', directConnection: true } },
+        { path: '/db?password=no' },
+        { path: '/db/collection' },
+        { readiness: { path: '/' } },
+        { capability: 'credential-issuer' },
+        { protocol: 'tcp' },
+    ])('rejects invalid MongoDB policy %#', (changes): void => {
+        const manifest = statusFixture();
+        Object.assign(
+            manifest.endpoints.find((endpoint): boolean => endpoint.id === 'mongo')!,
+            changes
+        );
+        expect(WorkloadPackageValidator.safeParse(manifest).success).toBe(false);
+    });
+    it('rejects cycles through init and mixed MongoDB exposure', (): void => {
+        const manifest = statusFixture();
+        manifest.components.find((component): boolean => component.id === 'mongo')!.dependsOn = [
+            'mongo-init',
+        ];
+        expect(WorkloadPackageValidator.safeParse(manifest).success).toBe(false);
+        const exposed = statusFixture();
+        exposed.endpoints.push({
+            ...exposed.endpoints[0]!,
+            id: 'mongo-public',
+            component: 'mongo',
+            port: 'mongo',
+        });
+        expect(WorkloadPackageValidator.safeParse(exposed).success).toBe(false);
+    });
+    it('accepts literal ordered argv and enforces an explicit non-root user', (): void => {
+        const command = ['mongod', '--replSet', 'rs0', '--bind_ip_all'];
+        expect(WorkloadCommandValidator.parse(command)).toEqual(command);
+        const manifest = fixture();
+        Object.assign(manifest.components[0]!, { command, user: '999:999' });
+        expect(WorkloadPackageValidator.safeParse(manifest).success).toBe(true);
+        delete manifest.components[0]!.user;
+        expect(WorkloadPackageValidator.safeParse(manifest).success).toBe(false);
+    });
+    it.each([
+        [],
+        ['-mongod'],
+        ['mongod --replSet rs0'],
+        ['a'.repeat(257)],
+        ['node', 'a'.repeat(4097)],
+        ['node', 'a\n'],
+        ['node', '\u0000'],
+        ['node', '\u007f'],
+        ['node', '\u0085'],
+        Array.from({ length: 65 }, (): string => 'x'),
+        ['node', ...Array.from({ length: 4 }, (): string => 'x'.repeat(4096))],
+    ])('rejects invalid argv %#', (...argv): void => {
+        expect(WorkloadCommandValidator.safeParse(argv).success).toBe(false);
+    });
+    it('accepts exact argv size limits and preserves literal metacharacters', (): void => {
+        expect(
+            WorkloadCommandValidator.safeParse([
+                'x',
+                'a'.repeat(4096),
+                'a'.repeat(4096),
+                'a'.repeat(4096),
+                'a'.repeat(4095),
+            ]).success
+        ).toBe(true);
+        expect(
+            WorkloadCommandValidator.safeParse(Array.from({ length: 64 }, (): string => 'x'))
+                .success
+        ).toBe(true);
+        expect(WorkloadCommandValidator.parse(['node', '$HOME; $(id)', '${literal}', ''])).toEqual([
+            'node',
+            '$HOME; $(id)',
+            '${literal}',
+            '',
+        ]);
+    });
     it('bounds schema recursion, config strings and pattern execution', (): void => {
         const schema = {
             type: 'object',

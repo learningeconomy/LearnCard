@@ -16,7 +16,18 @@ export type WorkloadLifecycle = z.infer<typeof WorkloadLifecycleValidator>;
 export const WorkloadObservationValidator = z
     .object({
         observedRevision: z.number().int().nonnegative(),
-        components: z.array(z.object({ id: z.string(), healthy: z.boolean() }).strict()).max(256),
+        components: z
+            .array(
+                z
+                    .object({
+                        id: z.string(),
+                        healthy: z.boolean(),
+                        kind: z.enum(['service', 'init']).optional(),
+                        completed: z.boolean().optional(),
+                    })
+                    .strict()
+            )
+            .max(256),
         endpoints: z
             .array(
                 z

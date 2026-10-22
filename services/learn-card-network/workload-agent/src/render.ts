@@ -44,6 +44,19 @@ export const parseSpec = (json: string, config: AgentConfig): Spec => {
             .map((s): string => s.trim())
             .filter(Boolean);
         const ids = new Set(execution.components.map((c): string => c.id));
+        const visiting = new Set<string>();
+        const visited = new Set<string>();
+        const visit = (id: string): void => {
+            if (visiting.has(id)) throw new AgentError('SPEC_INVALID');
+            if (visited.has(id)) return;
+            const component = execution.components.find((c): boolean => c.id === id);
+            if (!component) throw new AgentError('SPEC_INVALID');
+            visiting.add(id);
+            component.dependsOn.forEach(visit);
+            visiting.delete(id);
+            visited.add(id);
+        };
+        ids.forEach(visit);
         if (ids.size !== execution.components.length || ids.size !== plan.components.length)
             throw new AgentError('SPEC_INVALID');
         for (const component of execution.components) {
@@ -108,6 +121,13 @@ export const parseSpec = (json: string, config: AgentConfig): Spec => {
                 (c): boolean => c.id === endpoint.component
             );
             if (
+                component?.lifecycle?.kind === 'init' ||
+                (endpoint.protocol === 'mongodb' &&
+                    endpoints.some(
+                        (other): boolean =>
+                            other.component === endpoint.component &&
+                            other.visibility !== 'internal'
+                    )) ||
                 !component?.ports.some(
                     (p): boolean => p.name === endpoint.port && p.protocol === 'tcp'
                 )
@@ -139,7 +159,10 @@ export const endpointUrl = (
     const published = endpoint.visibility !== 'internal' && ports;
     // The Compose service name, not container_name: container names embed the deployment id
     // and exceed the 63-char DNS label limit, so in-container resolvers reject them.
-    return `${endpoint.protocol}://${published ? '127.0.0.1' : safeName(component.id)}:${published ? ports[portKey(component.id, port.name)] : port.containerPort}${endpoint.path}`;
+    const url = `${endpoint.protocol}://${published ? '127.0.0.1' : safeName(component.id)}:${published ? ports[portKey(component.id, port.name)] : port.containerPort}${endpoint.path}`;
+    return endpoint.protocol === 'mongodb'
+        ? `${url}?directConnection=true&replicaSet=${encodeURIComponent(endpoint.query!.replicaSet)}`
+        : url;
 };
 
 export interface Rendered {
@@ -153,7 +176,8 @@ export const render = (
     deployment: string,
     revision: number,
     config: AgentConfig,
-    ports: Record<string, number>
+    ports: Record<string, number>,
+    attempt?: string
 ): Rendered => {
     const project = projectName(deployment);
     const services: Record<string, unknown> = {};
@@ -217,18 +241,20 @@ export const render = (
         services[safeName(component.id)] = {
             image: component.image,
             platform: component.platform,
+            ...(component.command === undefined ? {} : { command: component.command }),
             ...(component.user === undefined ? {} : { user: component.user }),
             container_name: componentName(deployment, component.id),
             labels: {
                 'org.learncard.workload.deployment': deployment,
                 'org.learncard.workload.revision': String(revision),
                 'org.learncard.workload.component': component.id,
+                ...(attempt ? { 'org.learncard.workload.attempt': attempt } : {}),
             },
             // Docker cannot publish ports from an internal network, so only components with
             // ecosystem/public endpoints also join a non-internal `edge` network (loopback-bound).
             networks: published.length ? ['private', 'edge'] : ['private'],
             depends_on: component.dependsOn.map(safeName),
-            restart: 'on-failure:5',
+            restart: component.lifecycle?.kind === 'init' ? 'no' : 'on-failure:5',
             ports: published,
             volumes: mounts,
             ...(tmpfs.length ? { tmpfs } : {}),

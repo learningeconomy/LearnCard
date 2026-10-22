@@ -34,7 +34,7 @@ services:
             # (issuer-coordinator 1.0.0, signing-service 1.2.0). Entries containing
             # "@sha256:" must match a component's image exactly — see the allow-list
             # check in services/learn-card-network/workload-agent/src/render.ts.
-            WORKLOAD_IMAGE_ALLOWLIST: ${WORKLOAD_IMAGE_ALLOWLIST:-docker.io/digitalcredentials/issuer-coordinator@sha256:ecc5cd955fdf0587b0959482fb7b701d1ec7bd44ee411ceb9b9d5721c518dbfa,docker.io/digitalcredentials/signing-service@sha256:446bed585c34417968cb28f52b3618295d84009de19f8b7aec37faadde07d141}
+            WORKLOAD_IMAGE_ALLOWLIST: ${WORKLOAD_IMAGE_ALLOWLIST:-docker.io/digitalcredentials/issuer-coordinator@sha256:ecc5cd955fdf0587b0959482fb7b701d1ec7bd44ee411ceb9b9d5721c518dbfa,docker.io/digitalcredentials/signing-service@sha256:446bed585c34417968cb28f52b3618295d84009de19f8b7aec37faadde07d141,docker.io/library/mongo@sha256:6128e405456dfe502c06fdc1541d70c1a5a416db30dec473dbb2d670b707dec9,docker.io/digitalcredentials/status-service-db@sha256:a62f2a1707430adea61bba01521012d46d49ab0e6c8fc50cc188e7451b51e8a8}
             # Ceilings must stay >= the DCC core sizing sum (cpu 750m / mem 768MiB /
             # pids 192 from dcc-workload.ts); current defaults already clear that bar.
             WORKLOAD_MAX_CPU_MILLIS: ${WORKLOAD_MAX_CPU_MILLIS:-2000}

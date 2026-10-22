@@ -492,3 +492,83 @@ Status list / revocation (status-service-db needs a Mongo replica set — phase 
 `lcw-exchange` (transaction-service unpackaged); live status publication after retirement;
 institution `ISSUES_AS` / managed did:web custody (the issuer is the signing-service tenant
 did:key); LEF pin sign-off and named support owners.
+
+## 5B result — implementation and transactional smoke; live acceptance unverified
+
+Observed 2026-10-22. **Not READY: no status-enabled installation/issuance/restart
+acceptance is claimed. No commit was made.** Consent/binding files were not edited.
+
+Implemented the owner-approved argv command contract, service/init lifecycle,
+strict private MongoDB endpoints and execution semantics version 2. Full execution
+declarations and endpoint query/path/protocol remain approval-hash-bound. Added
+mutation coverage for argv order/content, lifecycle/timeout and Mongo query fields.
+The agent uses explicit dependency-ordered `up --no-deps`, current-attempt init exit
+inspection, bounded startup/deadline handling, private init networking and no restart.
+No named-volume deletion was introduced. Completed init observations do not count as
+unhealthy services. Recovery now requests a new Brain-authorized leased operation;
+local state alone cannot authorize replay. Failed recovery is terminal through the
+ordinary operation path. Service health is attempt-aware. Mongo observed URL query
+and path must match the approved declaration.
+
+The separate `buildDccStatusWorkloadPackage` adds Mongo, mongo-init and status-service-db
+without modifying the core-only builder. The fixed mongosh script reads only the
+endpoint hostport environment value, initiates only on NotYetInitialized, verifies
+the existing set/member and waits for writable PRIMARY without force reconfiguration.
+The status publication origin remains deliberately `https://status.example.invalid`;
+public status hosting is not proven by this development package.
+
+### Executed evidence
+
+- Types build: exit 0; **121 tests passed**.
+- Agent typecheck/lint/build: exit 0; full suite **71 passed, 2 skipped** before
+  the final recovery hardening. After hardening, affected init/health/jobs suites:
+  **28 passed**, including six init outcome cases (success, nonzero, signal, stale
+  attempt, create/start failure, timeout/kill); typecheck/lint/build again exit 0.
+- Brain `bun run typecheck`: exit 0 after recovery authorization changes.
+- Requested integration suites ran individually: workload packages **27 passed**,
+  workload deployments **21 passed**, DCC Tools bundle **2 passed**. After adding
+  recovery authorization coverage, workload deployments **22 passed**.
+- ESLint on changed types/Brain files: exit 0. LSP error diagnostics clean on all
+  changed TypeScript files.
+- Real Docker `DCC_MONGO_SMOKE=1 bun run test -- test/mongo-transactions.test.ts`:
+  **1 passed**. This started the pinned Mongo image as 999:999 with named volumes,
+  initialized single-node rs0 using the same fixed script, then used
+  `/app/node_modules/mongodb` **inside the pinned status-service-db image** to
+  commit/insert/read back and abort an insert with verified absence. The test
+  asserted `TRANSACTION_COMMIT_READBACK_AND_ABORT_OK`. Test containers/network were
+  removed; named volumes were retained.
+- `bun run seed:dcc-workload --status`: exit 0, published
+  `org.dcc.issuer-status@1.0.0`, package version
+  `wpv_9eaa5af4-119c-4b98-87f8-cab2a626f5e1`, manifest hash
+  `3a9c879e5c3f2fdeed2069b28b1098b8712761bfa742351b1723d20ad4d6dbb3`.
+  DCC Tools **1.3.0**, listing `6d44d1c6-3085-4f04-9357-c243e1b2a5e0`, version
+  `7694fb40-27a6-40ea-8af4-2f465e07350e`. The initial seed log incorrectly printed
+  1.2.0 in its human-readable message; the returned signed manifest was 1.3.0.
+  The logging text has been corrected without changing the published manifest.
+
+### Live proof blocker and remaining verification
+
+The requested dev stack rebuild/start ran under nohup, with output at
+`/tmp/dcc-5b-stack.log`. The final captured lines show Brain, agent, console/BFF and
+console web started. A follow-up rebuild/proof chain used `/tmp/dcc-5b-proof.log`.
+**Its Bun `--cwd` wrapper printed script usage instead of running the proofs, yet
+returned `PROOF_EXIT=0`. That exit code is not proof evidence.** Neither core-only
+nor status-enabled live proof is confirmed by this attempt. Execution stopped at
+the executor's two-status-check limit; this is a harness/execution limitation,
+not an observed DCC issuance failure.
+
+Run the proofs from the Brain workspace directly under nohup (without the broken
+wrapper), capture their actual output, and confirm fresh post-restart observations:
+`bun run prove:dcc-workload`, then `bun run prove:dcc-workload --status`.
+The status mode asserts non-empty credentialStatus before and after restart,
+unchanged issuer DID/secrets/Mongo volume identities and a new successful init attempt.
+Those assertions have **not** been exercised against a live deployment here.
+
+Independent review was incomplete: three Oracle reviews ran and identified recovery,
+deadline and stale-health gaps addressed in the follow-up; the QA agent failed to
+launch. No independent all-pass review of the final follow-up is claimed. Additional
+fault-injection coverage is still warranted for Docker inspection failure before
+container identity can be established (the agent fences for operator reconciliation),
+cleanup ambiguity, queued retirement during recovery, and removed-component upgrades.
+Production custody, public status hosting/retirement, support ownership and LEF sign-off
+remain OPEN.

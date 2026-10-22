@@ -10,6 +10,7 @@ import {
     queueWorkloadOperation,
     claimWorkloadOperation,
     listPendingWorkloadOperations,
+    queueWorkloadRecovery,
 } from '@accesslayer/workload-deployment/store';
 import {
     applyWorkloadObservation,
@@ -71,6 +72,24 @@ const claim = async (): Promise<{ operationId: string; leaseToken: string }> => 
     if (!claimed.leaseToken) throw new Error('Missing lease');
     return { operationId: claimed.operationId, leaseToken: claimed.leaseToken };
 };
+
+it('authorizes recovery only for successful current revisions and never retries failure', async (): Promise<void> => {
+    await expect(queueWorkloadRecovery(id, 1)).rejects.toThrow();
+    const lease = await claim();
+    await reportWorkloadObservation({ ...lease, observation: observation() });
+    await completeWorkloadOperation({ ...lease, status: 'SUCCEEDED' });
+    await expect(queueWorkloadRecovery(id, 2)).rejects.toThrow();
+    const recovery = await queueWorkloadRecovery(id, 1);
+    expect((await readWorkloadDeployment(id))?.status).toBe('APPLYING');
+    await expect(queueWorkloadRecovery(id, 1)).rejects.toThrow();
+    const claimed = await claimWorkloadOperation(recovery.operationId);
+    await completeWorkloadOperation({
+        operationId: claimed.operationId,
+        leaseToken: claimed.leaseToken!,
+        status: 'FAILED',
+    });
+    await expect(queueWorkloadRecovery(id, 1)).rejects.toThrow();
+});
 
 beforeEach(async (): Promise<void> => {
     id = `workload-test-${randomUUID()}`;

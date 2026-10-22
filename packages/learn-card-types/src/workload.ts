@@ -72,6 +72,33 @@ export const WorkloadEnvSourceValidator = z.discriminatedUnion('kind', [
 ]);
 export type WorkloadEnvSource = z.infer<typeof WorkloadEnvSourceValidator>;
 
+/** Image CMD override only; arguments remain literal and ordered. */
+export const WorkloadCommandValidator = z
+    .array(
+        z
+            .string()
+            .max(4096)
+            .refine(
+                (value): boolean =>
+                    !Array.from(value).some((character): boolean => {
+                        const code = character.charCodeAt(0);
+                        return code <= 31 || (code >= 127 && code <= 159);
+                    }),
+                'Command arguments must not contain control characters.'
+            )
+    )
+    .min(1)
+    .max(64)
+    .refine(
+        (argv): boolean =>
+            /^[A-Za-z0-9_./-]{1,256}$/.test(argv[0] ?? '') && !argv[0]?.startsWith('-'),
+        'Command executable must be a safe argv[0].'
+    )
+    .refine(
+        (argv): boolean => argv.reduce((total, arg): number => total + arg.length, 0) <= 16384,
+        'Command arguments exceed the total character budget.'
+    );
+
 export const WorkloadComponentValidator = z
     .object({
         id,
@@ -83,6 +110,18 @@ export const WorkloadComponentValidator = z
                 'Images must use a fully qualified registry/repository@sha256 digest.'
             ),
         platform,
+        command: WorkloadCommandValidator.optional(),
+        lifecycle: z
+            .discriminatedUnion('kind', [
+                z.object({ kind: z.literal('service') }).strict(),
+                z
+                    .object({
+                        kind: z.literal('init'),
+                        timeoutMs: z.number().int().min(1000).max(900000),
+                    })
+                    .strict(),
+            ])
+            .optional(),
         user: z
             .string()
             .regex(/^\d{1,10}(:\d{1,10})?$/)
@@ -110,7 +149,7 @@ export const WorkloadComponentValidator = z
                     .strict()
             )
             .max(128),
-        healthcheck: WorkloadHealthcheckValidator,
+        healthcheck: WorkloadHealthcheckValidator.optional(),
         dependsOn: z.array(id).max(256),
         resources: WorkloadResourcesValidator,
         volumes: z
@@ -129,7 +168,37 @@ export const WorkloadComponentValidator = z
             )
             .max(256),
     })
-    .strict();
+    .strict()
+    .superRefine((component, ctx): void => {
+        if (
+            (component.command !== undefined || component.lifecycle?.kind === 'init') &&
+            component.user === undefined
+        )
+            ctx.addIssue({
+                code: 'custom',
+                path: ['user'],
+                message: 'Command requires an explicit non-root numeric user.',
+            });
+        if (component.lifecycle?.kind === 'init') {
+            if (
+                !component.command ||
+                hasOwn(component, 'healthcheck') ||
+                component.ports.length ||
+                component.volumes.length
+            )
+                ctx.addIssue({
+                    code: 'custom',
+                    message:
+                        'Init requires command and forbids healthcheck, ports and volumes; use tmpfs for temporary storage.',
+                });
+        } else if (!component.healthcheck) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['healthcheck'],
+                message: 'Service requires a healthcheck.',
+            });
+        }
+    });
 export type WorkloadComponent = z.infer<typeof WorkloadComponentValidator>;
 
 export const WorkloadProfileValidator = z
@@ -392,7 +461,14 @@ export const WorkloadEndpointDeclarationValidator = z
         component: id,
         port: id,
         path: relativePath,
-        protocol: z.enum(['http', 'https', 'tcp']),
+        protocol: z.enum(['http', 'https', 'tcp', 'mongodb']),
+        query: z
+            .object({
+                replicaSet: z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,62}$/),
+                directConnection: z.literal(true),
+            })
+            .strict()
+            .optional(),
         readiness: z
             .object({
                 path: relativePath.refine((value): boolean => !value.includes('..')),
@@ -406,7 +482,30 @@ export const WorkloadEndpointDeclarationValidator = z
         purpose: text,
         preserveOnRetirement: z.boolean(),
     })
-    .strict();
+    .strict()
+    .superRefine((endpoint, ctx): void => {
+        if (endpoint.protocol === 'mongodb') {
+            if (
+                endpoint.visibility !== 'internal' ||
+                endpoint.auth !== 'none' ||
+                !endpoint.query ||
+                hasOwn(endpoint, 'readiness') ||
+                hasOwn(endpoint, 'capability') ||
+                !/^\/(?:[A-Za-z0-9_-]{1,63})?$/.test(endpoint.path)
+            )
+                ctx.addIssue({
+                    code: 'custom',
+                    message:
+                        'MongoDB endpoints require internal visibility, no auth, structured query and database path; readiness and capability are forbidden.',
+                });
+        } else if (hasOwn(endpoint, 'query')) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['query'],
+                message: 'Query is only supported for MongoDB endpoints.',
+            });
+        }
+    });
 export type WorkloadEndpointDeclaration = z.infer<typeof WorkloadEndpointDeclarationValidator>;
 
 export const WorkloadCapabilityDeclarationValidator = z
@@ -554,7 +653,7 @@ export const validateWorkloadReferences = (
             ['components', index, 'volumes']
         );
         resolve(component.dependsOn, components, ['components', index, 'dependsOn']);
-        if (component.healthcheck.kind !== 'exec')
+        if (component.healthcheck && component.healthcheck.kind !== 'exec')
             resolve([component.healthcheck.port], ports, [
                 'components',
                 index,
@@ -589,6 +688,16 @@ export const validateWorkloadReferences = (
         const component = manifest.components.find(
             (entry): boolean => entry.id === endpoint.component
         );
+        if (component?.lifecycle?.kind === 'init')
+            issue(['endpoints', index], 'Endpoints cannot reference init components');
+        if (
+            endpoint.protocol === 'mongodb' &&
+            manifest.endpoints.some(
+                (other): boolean =>
+                    other.component === endpoint.component && other.visibility !== 'internal'
+            )
+        )
+            issue(['endpoints', index], 'MongoDB components cannot expose non-internal endpoints');
         resolve([endpoint.port], new Set(component?.ports.map((port): string => port.name)), [
             'endpoints',
             index,

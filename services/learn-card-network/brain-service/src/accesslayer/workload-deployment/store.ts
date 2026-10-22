@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { ManagedTransaction } from 'neo4j-driver';
 import { TRPCError } from '@trpc/server';
-import { WorkloadPlanValidator, type WorkloadPlan } from '@learncard/types';
+import {
+    WorkloadComponentValidator,
+    WorkloadPlanValidator,
+    type WorkloadPlan,
+} from '@learncard/types';
 import { neogma } from '@instance';
 import { WorkloadDeploymentValidator, type WorkloadDeploymentType } from 'types/install-target';
 import { WorkloadOperationValidator, type WorkloadOperation } from 'types/workload-lifecycle';
@@ -196,12 +200,37 @@ export const claimWorkloadOperation = async (operationId: string): Promise<Workl
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Workload operation not found.' });
     return workloadTransaction(async (tx): Promise<WorkloadOperation> => {
         const deployment = await lockWorkloadDeployment(tx, operation.deploymentId);
+        if (
+            operation.operationId.includes(':RECOVER:') &&
+            (deployment.desiredRevision !== operation.specRevision ||
+                deployment.status !== 'APPLYING' ||
+                deployment.operationRef !== operationId)
+        )
+            throw new TRPCError({ code: 'CONFLICT', message: 'Recovery authorization is stale.' });
         if (deployment.driver !== 'local-compose')
             throw new TRPCError({
                 code: 'CONFLICT',
                 message: 'Operation belongs to another driver.',
             });
         const now = new Date().toISOString();
+        const plan = WorkloadPlanValidator.parse(JSON.parse(operation.approvedSpec));
+        const components = plan.execution
+            ? WorkloadComponentValidator.array().max(256).parse(plan.execution.components)
+            : [];
+        const leaseMs = components.some(
+            (component): boolean => component.lifecycle?.kind === 'init'
+        )
+            ? 60000 +
+              components.reduce(
+                  (total, component): number =>
+                      total +
+                      40000 +
+                      (component.lifecycle?.kind === 'init'
+                          ? component.lifecycle.timeoutMs
+                          : component.healthcheck!.startupDeadlineMs),
+                  0
+              )
+            : 60000;
         const result = await tx.run(
             `MATCH (o:WorkloadOperation {operationId: $operationId})
              WHERE (o.status = 'QUEUED' OR (o.status = 'CLAIMED' AND o.leaseExpiresAt <= $now))
@@ -219,7 +248,7 @@ export const claimWorkloadOperation = async (operationId: string): Promise<Workl
                 revision: deployment.desiredRevision,
                 now,
                 token: randomUUID(),
-                expires: new Date(Date.now() + 60_000).toISOString(),
+                expires: new Date(Date.now() + leaseMs).toISOString(),
             }
         );
         if (!result.records[0])
@@ -227,6 +256,55 @@ export const claimWorkloadOperation = async (operationId: string): Promise<Workl
         return WorkloadOperationValidator.parse(result.records[0].get('o'));
     });
 };
+
+/** Recovery is a new leased operation, never permission to replay local state. */
+export const queueWorkloadRecovery = async (
+    deploymentId: string,
+    revision: number
+): Promise<WorkloadOperation> =>
+    workloadTransaction(async (tx): Promise<WorkloadOperation> => {
+        const deployment = await lockWorkloadDeployment(tx, deploymentId);
+        if (
+            !['READY', 'DEGRADED'].includes(deployment.status) ||
+            deployment.driver !== 'local-compose' ||
+            deployment.desiredRevision !== revision ||
+            deployment.lastAppliedRevision !== revision ||
+            !deployment.approvedSpec
+        )
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Deployment is not eligible for recovery.',
+            });
+        const previous = await tx.run(
+            `MATCH (o:WorkloadOperation {operationId: $id}) WHERE o.status = 'SUCCEEDED' RETURN o.operationId AS id`,
+            { id: deployment.operationRef }
+        );
+        const pending = await tx.run(
+            `MATCH (o:WorkloadOperation {deploymentId: $id}) WHERE o.status IN ['QUEUED', 'CLAIMED'] RETURN o.operationId AS id LIMIT 1`,
+            { id: deploymentId }
+        );
+        if (!previous.records.length || pending.records.length)
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Recovery requires a completed current operation.',
+            });
+        const operation: WorkloadOperation = {
+            operationId: `${deploymentId}:${revision}:RECOVER:${randomUUID()}`,
+            deploymentId,
+            action: 'UPGRADE',
+            specRevision: revision,
+            status: 'QUEUED',
+            attempts: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            approvedSpec: deployment.approvedSpec,
+        };
+        await tx.run(
+            `CREATE (o:WorkloadOperation) SET o = $operation WITH o MATCH (d:WorkloadDeployment {id: $id}) SET d.operationRef = o.operationId, d.status = 'APPLYING'`,
+            { operation, id: deploymentId }
+        );
+        return operation;
+    });
 
 export const assertWorkloadLease = async (
     tx: ManagedTransaction,

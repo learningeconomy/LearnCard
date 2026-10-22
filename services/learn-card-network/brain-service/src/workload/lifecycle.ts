@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { WorkloadPlanValidator } from '@learncard/types';
+import { WorkloadEndpointDeclarationValidator, WorkloadPlanValidator } from '@learncard/types';
 import { createInstallIntentAuditEvent } from '@accesslayer/install-intent/audit';
 import {
     assertWorkloadLease,
@@ -80,9 +80,36 @@ export const validateWorkloadEndpoints = async (
                     message: 'Invalid workload endpoint URL.',
                 });
             }
+            if (declaration.protocol === 'mongodb') {
+                const declared = WorkloadEndpointDeclarationValidator.parse(declaration);
+                if (
+                    url.protocol !== 'mongodb:' ||
+                    url.username ||
+                    url.password ||
+                    url.hash ||
+                    url.pathname !== declared.path ||
+                    [...url.searchParams].length !== 2 ||
+                    url.searchParams.getAll('directConnection').length !== 1 ||
+                    url.searchParams.get('directConnection') !== 'true' ||
+                    url.searchParams.getAll('replicaSet').length !== 1 ||
+                    url.searchParams.get('replicaSet') !== declared.query?.replicaSet
+                )
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'MongoDB observation differs from the approved endpoint.',
+                    });
+            }
             url.username = '';
             url.password = '';
-            if (!['http:', 'https:', 'tcp:'].includes(url.protocol) || !url.hostname)
+            if (
+                (!['http:', 'https:', 'tcp:'].includes(url.protocol) &&
+                    !(
+                        url.protocol === 'mongodb:' &&
+                        declaration.protocol === 'mongodb' &&
+                        declaration.visibility === 'internal'
+                    )) ||
+                !url.hostname
+            )
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Unsupported workload endpoint scheme.',
@@ -167,9 +194,21 @@ export const applyWorkloadObservation = async (
         const spec = WorkloadPlanValidator.parse(JSON.parse(deployment.approvedSpec ?? '{}'));
         const healthy =
             spec.components.every((entry): boolean =>
-                validated.components.some(
-                    (value): boolean => value.id === entry.id && value.healthy
-                )
+                validated.components.some((value): boolean => {
+                    const component = spec.execution?.components.find(
+                        (candidate): boolean => candidate.id === entry.id
+                    );
+                    const lifecycle = component?.lifecycle;
+                    const init =
+                        lifecycle !== null &&
+                        typeof lifecycle === 'object' &&
+                        'kind' in lifecycle &&
+                        lifecycle.kind === 'init';
+                    return (
+                        value.id === entry.id &&
+                        (init ? value.kind === 'init' && value.completed === true : value.healthy)
+                    );
+                })
             ) &&
             spec.endpoints.every((entry): boolean =>
                 validated.endpoints.some((value): boolean => value.id === entry.id && value.healthy)

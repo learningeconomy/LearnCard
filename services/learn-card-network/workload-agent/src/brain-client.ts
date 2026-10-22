@@ -31,6 +31,8 @@ export const createBrainClient = (config: AgentConfig): BrainClient => {
         }
     };
     return {
+        recover: async (deploymentId: string, revision: number): Promise<Operation> =>
+            operationSchema.parse(await call('queueWorkloadRecovery', { deploymentId, revision })),
         list: async (): Promise<Operation[]> =>
             operationSchema
                 .array()

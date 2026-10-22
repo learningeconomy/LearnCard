@@ -15,7 +15,7 @@ export const operationSchema = z.object({
 export type Operation = z.infer<typeof operationSchema>;
 export interface Observation {
     observedRevision: number;
-    components: { id: string; healthy: boolean }[];
+    components: { id: string; healthy: boolean; kind?: 'service' | 'init'; completed?: boolean }[];
     endpoints: { id: string; url: string; healthy: boolean }[];
     failed?: boolean;
 }
@@ -24,6 +24,7 @@ export interface Lease {
     leaseToken: string;
 }
 export interface BrainClient {
+    recover?(deploymentId: string, revision: number): Promise<Operation>;
     list(): Promise<Operation[]>;
     claim(operationId: string): Promise<Operation>;
     observe(lease: Lease, observation: Observation): Promise<void>;

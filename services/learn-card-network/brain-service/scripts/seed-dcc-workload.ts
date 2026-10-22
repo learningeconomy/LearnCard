@@ -11,7 +11,10 @@
 import * as dotenv from 'dotenv';
 import { pathToFileURL } from 'node:url';
 import type { BundleManifestV11, CatalogReadinessGate, WorkloadPackage } from '@learncard/types';
-import { buildDccCoreWorkloadPackage } from './fixtures/dcc-workload';
+import {
+    buildDccCoreWorkloadPackage,
+    buildDccStatusWorkloadPackage,
+} from './fixtures/dcc-workload';
 import { DCC_READINESS } from './fixtures/dcc-tools';
 import { seedDccTools } from './seed-dcc-tools';
 
@@ -24,7 +27,8 @@ const STATUS_LIST_GATE: CatalogReadinessGate = {
 
 export const seedDccWorkload = async (
     curatorSeed = 'a'.repeat(64),
-    publisherSeed = process.env.DCC_DEV_PUBLISHER_SEED ?? 'b'.repeat(64)
+    publisherSeed = process.env.DCC_DEV_PUBLISHER_SEED ?? 'b'.repeat(64),
+    status = false
 ): Promise<{
     workload: { packageId: string; packageVersionId: string; manifestHash: string };
     bundle: { listingId: string; versionId: string; manifest: BundleManifestV11 };
@@ -48,7 +52,10 @@ export const seedDccWorkload = async (
 
     const curatorDid = (await getLearnCard(curatorSeed)).id.did();
     environment.WORKLOAD_CURATOR_DIDS = curatorDid;
-    const draft = buildDccCoreWorkloadPackage(curatorDid);
+    const draft = status
+        ? buildDccStatusWorkloadPackage(curatorDid)
+        : buildDccCoreWorkloadPackage(curatorDid);
+    const bundleRelease = status ? '1.3.1' : '1.2.0';
     const signedPackage = await signManifestWithDidKey<WorkloadPackage>(draft, curatorSeed);
 
     const existingPackageVersion = await neogma.queryRunner.run(
@@ -74,7 +81,7 @@ export const seedDccWorkload = async (
     const unsignedBundle: Omit<BundleManifestV11, 'signature'> = {
         apiVersion: 'lc.bundle/v1.1',
         id: dccTools.bundle.manifest.id,
-        version: '1.2.0',
+        version: bundleRelease,
         publisherDid,
         contains: [
             {
@@ -113,14 +120,14 @@ export const seedDccWorkload = async (
 
     const existingBundleVersion = (
         await readListingVersionsForListing(dccTools.bundle.listingId)
-    ).find((version): boolean => version.version === '1.2.0');
+    ).find((version): boolean => version.version === bundleRelease);
     if (existingBundleVersion && existingBundleVersion.manifest_hash !== bundleHash) {
-        throw new Error('Immutable dcc-tools@1.2.0 differs; bump the fixture version.');
+        throw new Error(`Immutable dcc-tools@${bundleRelease} differs; bump the fixture version.`);
     }
     const bundleVersion =
         existingBundleVersion ??
         (await createListingVersion(dccTools.bundle.listingId, {
-            version: '1.2.0',
+            version: bundleRelease,
             status: 'LISTED',
             manifest_json: JSON.stringify(signedBundle),
             review_snapshot_json: JSON.stringify({
@@ -134,8 +141,8 @@ export const seedDccWorkload = async (
     await assertSignedListingVersionOrThrow('BUNDLE', bundleVersion);
     console.log(
         existingBundleVersion
-            ? 'DCC Tools bundle 1.2.0 already published (idempotent no-op).'
-            : 'DCC Tools bundle 1.2.0 newly published.',
+            ? `DCC Tools bundle ${bundleRelease} already published (idempotent no-op).`
+            : `DCC Tools bundle ${bundleRelease} newly published.`,
         { listingId: dccTools.bundle.listingId, versionId: bundleVersion.version_id }
     );
 
@@ -160,11 +167,12 @@ const main = async (): Promise<void> => {
     process.env.NEO4J_PASSWORD ??= 'this-is-the-password';
     process.env.DOMAIN_NAME ??= 'localhost%3A4000';
     try {
-        const result = await seedDccWorkload();
-        console.log(
-            'DCC core workload seeded (no deployment; readiness gates remain open):',
-            result
+        const result = await seedDccWorkload(
+            undefined,
+            undefined,
+            process.argv.includes('--status')
         );
+        console.log('DCC workload seeded (no deployment; readiness gates remain open):', result);
     } finally {
         const { neogma } = await import('../src/instance');
         await neogma.driver.close();

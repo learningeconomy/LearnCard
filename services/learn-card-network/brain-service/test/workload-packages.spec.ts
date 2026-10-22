@@ -520,6 +520,58 @@ describe('workload planning', (): void => {
     it('hashes every review-bearing workload field and canonical config, not revision/time', async (): Promise<void> => {
         const workload = await resolveWorkloadPlan(member, config, bundle);
         const original = hash(workload);
+        expect(workload.executionSemanticsVersion).toBe(2);
+        expect(hash({ ...workload, executionSemanticsVersion: undefined })).not.toBe(original);
+        const withCommand = (command: string[]): WorkloadPlan => ({
+            ...workload,
+            execution: {
+                ...workload.execution!,
+                components: workload.execution!.components.map(
+                    (component): Record<string, unknown> => ({
+                        ...component,
+                        user: '999:999',
+                        command,
+                    })
+                ),
+            },
+        });
+        const commanded = hash(withCommand(['mongod', '--replSet', 'rs0']));
+        expect(commanded).not.toBe(original);
+        expect(hash(withCommand(['mongod', 'rs0', '--replSet']))).not.toBe(commanded);
+        expect(hash(withCommand(['mongod', '--replSet', 'rs1']))).not.toBe(commanded);
+        const mutations: Record<string, unknown>[] = [
+            { lifecycle: { kind: 'service' } },
+            { lifecycle: { kind: 'init', timeoutMs: 1000 } },
+            { lifecycle: { kind: 'init', timeoutMs: 2000 } },
+        ];
+        const lifecycleHashes = mutations.map((mutation): string =>
+            hash({
+                ...workload,
+                execution: {
+                    ...workload.execution!,
+                    components: workload.execution!.components.map(
+                        (component): Record<string, unknown> => ({ ...component, ...mutation })
+                    ),
+                },
+            })
+        );
+        expect(new Set([original, ...lifecycleHashes]).size).toBe(4);
+        const endpointHashes = [
+            { protocol: 'mongodb' },
+            { path: '/other' },
+            { query: { replicaSet: 'rs0', directConnection: true } },
+            { query: { replicaSet: 'rs1', directConnection: true } },
+            { query: { replicaSet: 'rs0', directConnection: false } },
+        ].map((mutation): string =>
+            hash({
+                ...workload,
+                endpoints: workload.endpoints.map((endpoint): Record<string, unknown> => ({
+                    ...endpoint,
+                    ...mutation,
+                })),
+            })
+        );
+        expect(new Set([original, ...endpointHashes]).size).toBe(6);
         const withReadiness: WorkloadPlan = {
             ...workload,
             endpoints: workload.endpoints.map((endpoint): WorkloadPlan['endpoints'][number] => ({

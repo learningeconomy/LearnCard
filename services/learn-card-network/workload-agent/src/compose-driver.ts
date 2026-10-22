@@ -1,11 +1,22 @@
 import { execFile } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { promisify } from 'node:util';
 import { open, readdir, rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import type { AgentConfig } from './config';
 import { AgentError, type Redactor } from './redact';
-import { initialPort, parseSpec, portKey, projectName, render, type Spec } from './render';
+import {
+    componentName,
+    initialPort,
+    parseSpec,
+    portKey,
+    projectName,
+    render,
+    safeName,
+    type Spec,
+} from './render';
+import { createHealthProbe, dependencyOrder, type HealthProbe } from './health';
 import { privateDirectory, provisionSecrets, readPrivate } from './secrets';
 import { operationSchema, type Operation, type Runner } from './types';
 
@@ -31,9 +42,12 @@ export interface Deployment {
     operation: Operation;
     spec: Spec;
     ports: Record<string, number>;
+    attempt?: string;
+    completedInits?: Set<string>;
 }
 const stateSchema = z.object({
     operation: operationSchema,
+    attempt: z.string().optional(),
     ports: z.record(z.string(), z.number().int().min(20000).max(49999)),
 });
 export interface Driver {
@@ -48,7 +62,8 @@ export class ComposeDriver implements Driver {
     constructor(
         private readonly config: AgentConfig,
         private readonly redactor: Redactor,
-        public readonly run: Runner = runDocker
+        public readonly run: Runner = runDocker,
+        private readonly healthProbe?: HealthProbe
     ) {}
     private file(id: string): string {
         return join(this.config.WORKLOAD_SECRETS_DIR, projectName(id), 'compose.yaml');
@@ -161,33 +176,191 @@ export class ComposeDriver implements Driver {
             this.redactor
         );
         const ports = await this.ports(spec, operation.deploymentId);
+        const attempt = randomUUID();
         const rendered = render(
             spec,
             operation.deploymentId,
             operation.specRevision,
             this.config,
-            ports
+            ports,
+            attempt
         );
         await this.save(this.file(operation.deploymentId), rendered.yaml);
-        return { operation, spec, ports };
+        return { operation, spec, ports, attempt, completedInits: new Set<string>() };
     }
     async apply(deployment: Deployment, budget: () => number): Promise<void> {
-        await this.mutate(
-            deployment.operation.deploymentId,
-            [
-                'compose',
-                '-p',
-                projectName(deployment.operation.deploymentId),
-                '-f',
-                this.file(deployment.operation.deploymentId),
-                'up',
-                '-d',
-                '--remove-orphans',
-                '--pull',
-                'never',
-            ],
-            Math.min(20000, budget())
+        const probe =
+            this.healthProbe ?? createHealthProbe(this.run, this.config.WORKLOAD_AGENT_CONTAINER);
+        deployment.completedInits = new Set<string>();
+        const hasInit = deployment.spec.components.some(
+            (c): boolean => c.lifecycle?.kind === 'init'
         );
+        if (hasInit) {
+            // Previously running dependents must not keep serving during a new init attempt.
+            for (const component of [...dependencyOrder(deployment.spec.components)].reverse()) {
+                if (component.dependsOn.length === 0) continue;
+                await this.mutate(
+                    deployment.operation.deploymentId,
+                    [
+                        'compose',
+                        '-p',
+                        projectName(deployment.operation.deploymentId),
+                        '-f',
+                        this.file(deployment.operation.deploymentId),
+                        'stop',
+                        '--timeout',
+                        '5',
+                        safeName(component.id),
+                    ],
+                    Math.min(10000, budget())
+                );
+            }
+        }
+        const started = new Set<string>();
+        for (const component of dependencyOrder(deployment.spec.components)) {
+            const init = component.lifecycle?.kind === 'init';
+            const deadline =
+                Date.now() +
+                (component.lifecycle?.kind === 'init'
+                    ? component.lifecycle.timeoutMs
+                    : component.healthcheck!.startupDeadlineMs);
+            try {
+                await this.mutate(
+                    deployment.operation.deploymentId,
+                    [
+                        'compose',
+                        '-p',
+                        projectName(deployment.operation.deploymentId),
+                        '-f',
+                        this.file(deployment.operation.deploymentId),
+                        'up',
+                        '-d',
+                        '--no-deps',
+                        '--remove-orphans',
+                        '--pull',
+                        'never',
+                        ...(init ? ['--force-recreate'] : []),
+                        safeName(component.id),
+                    ],
+                    Math.min(20000, budget(), Math.max(1, deadline - Date.now()))
+                );
+            } catch (error) {
+                if (init) throw new AgentError('INIT_START_FAILED');
+                throw error;
+            }
+            started.add(component.id);
+            if (init) {
+                let containerId: string | undefined;
+                let exited = false;
+                try {
+                    while (true) {
+                        if (Date.now() >= deadline) {
+                            throw new AgentError('INIT_TIMEOUT');
+                        }
+                        const state = z
+                            .object({
+                                Id: z.string().regex(/^[a-f0-9]{64}$/),
+                                State: z.object({
+                                    Status: z.string(),
+                                    ExitCode: z.number().int(),
+                                    OOMKilled: z.boolean(),
+                                }),
+                                Config: z.object({ Labels: z.record(z.string(), z.string()) }),
+                            })
+                            .array()
+                            .parse(
+                                JSON.parse(
+                                    await this.run(
+                                        [
+                                            'inspect',
+                                            componentName(
+                                                deployment.operation.deploymentId,
+                                                component.id
+                                            ),
+                                        ],
+                                        Math.min(5000, budget(), Math.max(1, deadline - Date.now()))
+                                    )
+                                )
+                            )[0];
+                        const labels = state?.Config.Labels;
+                        if (
+                            !state ||
+                            labels?.['org.learncard.workload.deployment'] !==
+                                deployment.operation.deploymentId ||
+                            labels['org.learncard.workload.revision'] !==
+                                String(deployment.operation.specRevision) ||
+                            !deployment.attempt ||
+                            labels['org.learncard.workload.component'] !== component.id ||
+                            labels['org.learncard.workload.attempt'] !== deployment.attempt
+                        )
+                            throw new AgentError('INIT_START_FAILED');
+                        containerId = state.Id;
+                        exited = state.State.Status === 'exited' || state.State.Status === 'dead';
+                        if (Date.now() >= deadline) throw new AgentError('INIT_TIMEOUT');
+                        if (state.State.Status === 'exited' || state.State.Status === 'dead') {
+                            if (
+                                state.State.Status !== 'exited' ||
+                                state.State.ExitCode !== 0 ||
+                                state.State.OOMKilled
+                            )
+                                throw new AgentError('INIT_FAILED');
+                            deployment.completedInits?.add(component.id);
+                            break;
+                        }
+                        if (budget() < 2000) {
+                            throw new AgentError('INIT_TIMEOUT');
+                        }
+                        await new Promise<void>((resolve): void => {
+                            setTimeout(resolve, 250);
+                        });
+                    }
+                } catch (error) {
+                    if (!exited) {
+                        // Cleanup uses the reserved disconnect/completion budget, not budget().
+                        // Never kill a replacement container by name after validating an ID.
+                        if (containerId) {
+                            await this.mutate(
+                                deployment.operation.deploymentId,
+                                ['kill', containerId],
+                                5000
+                            );
+                        } else {
+                            await this.save(
+                                this.marker(deployment.operation.deploymentId),
+                                'Init identity unresolved; operator reconciliation required.'
+                            );
+                        }
+                    }
+                    if (error instanceof AgentError && error.code === 'LEASE_BUDGET_EXCEEDED')
+                        throw new AgentError('INIT_TIMEOUT');
+                    throw error;
+                }
+            } else {
+                const partial: Deployment = {
+                    ...deployment,
+                    spec: {
+                        ...deployment.spec,
+                        components: deployment.spec.components.filter((c): boolean =>
+                            started.has(c.id)
+                        ),
+                        endpoints: [],
+                    },
+                };
+                while (true) {
+                    const observation = await probe(partial, budget);
+                    if (
+                        observation.components.every(
+                            (c): boolean => c.healthy || c.completed === true
+                        )
+                    )
+                        break;
+                    if (Date.now() >= deadline) throw new AgentError('HEALTH_STARTUP_FAILED');
+                    await new Promise<void>((resolve): void => {
+                        setTimeout(resolve, Math.min(1000, component.healthcheck!.intervalMs));
+                    });
+                }
+            }
+        }
     }
     async retire(operation: Operation, budget: () => number): Promise<void> {
         await this.assertResolved(operation.deploymentId);
@@ -232,6 +405,7 @@ export class ComposeDriver implements Driver {
                     leaseExpiresAt: undefined,
                 },
                 ports: deployment.ports,
+                attempt: deployment.attempt,
             })
         );
     }
@@ -272,7 +446,13 @@ export class ComposeDriver implements Driver {
                     continue;
                 await this.assertResolved(state.operation.deploymentId);
                 const spec = parseSpec(state.operation.approvedSpec, this.config);
-                result.push({ ...state, spec });
+                const deployment: Deployment = {
+                    ...state,
+                    spec,
+                    attempt: state.attempt,
+                    completedInits: new Set<string>(),
+                };
+                result.push(deployment);
             } catch {
                 this.redactor.log('RECOVERY_STATE_REJECTED');
             }

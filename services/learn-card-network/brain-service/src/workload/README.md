@@ -1,5 +1,33 @@
 # Workload agent contract (phase 3)
 
+## Execution semantics version 2
+
+Plans bind `executionSemanticsVersion: 2` alongside full ordered command argv,
+component lifecycle/init timeout, and endpoint protocol/path/structured query.
+The approval hash preserves array order. Selected-profile dependencies must be
+closed; package and agent validation reject cycles including init components.
+
+Command overrides image CMD only, never entrypoint. Commands and init require an
+explicit numeric non-root user. Init is a bounded one-shot job, with command required
+and healthcheck/ports/volumes/endpoints forbidden (tmpfs is allowed). A service still
+requires its healthcheck. Observation components may include `kind` and `completed`:
+an approved init requires `kind: 'init', completed: true`; a service cannot substitute
+completion for health. READY still requires every selected component and endpoint.
+
+Internal MongoDB endpoints use a strict replica-set/direct-connection query, no
+credentials/readiness/capability, and a database-only path. Brain validates observed
+MongoDB protocol, path and exact query against the approved declaration. It never
+dereferences the URL. Host/port/hostport environment mappings remain query-free.
+
+Authenticated `queueWorkloadRecovery({deploymentId, revision})` locks the deployment
+and only queues recovery after the current operation succeeded, with matching desired
+and last-applied revisions and no pending operation. It moves the deployment back to
+APPLYING; the agent claims a fresh UPGRADE operation before any recovery mutation.
+Failed, retiring, retired and stale revisions cannot authorize a recovery replay.
+Init-bearing claims use a finite plan-derived lease covering declared sequential
+startup/init deadlines, per-component Docker overhead and cleanup; ordinary claims
+retain the existing 60-second lease. Reclaimed abandoned operations fail closed.
+
 Brain persists desired state and observations. It does not run Docker, fetch observed
 URLs, or create an agent process. `QueuedAgentDeployer` publishes operation IDs on
 Redis channel `workload-operations` as a best-effort wake-up hint. Neo4j operations,

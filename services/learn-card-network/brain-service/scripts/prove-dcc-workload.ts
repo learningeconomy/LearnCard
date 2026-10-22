@@ -12,6 +12,8 @@ import { InstallIntentRecordValidator } from '../src/types/install-intent';
 import { WorkloadDeploymentValidator } from '../src/types/install-target';
 
 const origin = 'http://localhost:5173';
+const statusMode = process.argv.includes('--status');
+const packageId = statusMode ? 'org.dcc.issuer-status' : 'org.dcc.issuer-core';
 const run = promisify(execFile);
 const secrets = new Set<string>();
 let cookie = '';
@@ -101,7 +103,7 @@ const snapshot = async (deployment: Deployment): Promise<string> => {
         '--filter',
         `label=org.learncard.workload.deployment=${deployment.id}`,
         '--format',
-        '{{.Names}} {{.ID}}',
+        statusMode ? '{{.Names}}' : '{{.Names}} {{.ID}}',
     ]);
     return JSON.stringify({
         deploymentId: deployment.id,
@@ -109,7 +111,11 @@ const snapshot = async (deployment: Deployment): Promise<string> => {
         secretHashes: hashes,
     });
 };
-const poll = async (ecosystemId: string, intentId: string): Promise<Deployment> => {
+const poll = async (
+    ecosystemId: string,
+    intentId: string,
+    checkedAfter = 0
+): Promise<Deployment> => {
     const deadline = Date.now() + 12 * 60_000;
     while (Date.now() < deadline) {
         const intent = InstallIntentRecordValidator.parse(
@@ -121,9 +127,7 @@ const poll = async (ecosystemId: string, intentId: string): Promise<Deployment> 
         const deployments = targets.map(target => WorkloadDeploymentValidator.safeParse(target));
         const deployment = deployments
             .flatMap(result => (result.success ? [result.data] : []))
-            .find(
-                target => target.intentId === intentId && target.packageId === 'org.dcc.issuer-core'
-            );
+            .find(target => target.intentId === intentId && target.packageId === packageId);
         log(
             `intent=${intentId} phase=${intent.status?.phase} workload=${deployment?.status ?? 'PENDING'} deployment=${deployment?.id ?? '-'} failureCode=${deployment?.failureCode ?? '-'}`
         );
@@ -140,7 +144,8 @@ const poll = async (ecosystemId: string, intentId: string): Promise<Deployment> 
                 log(`${name}\n${redact(await docker(['logs', '--tail', '40', name]))}`);
             throw new Error(`Workload FAILED: ${deployment.failureCode ?? 'unknown'}`);
         }
-        if (deployment?.status === 'READY') return deployment;
+        if (deployment?.status === 'READY' && Date.parse(deployment.checkedAt ?? '') > checkedAfter)
+            return deployment;
         await new Promise(resolve => setTimeout(resolve, 5000));
     }
     throw new Error('Workload did not reach READY within 12 minutes');
@@ -161,7 +166,7 @@ const waitForRetirement = async (ecosystemId: string, intentId: string): Promise
     }
     throw new Error('Failed workload did not retire within 5 minutes');
 };
-const smoke = async (deployment: Deployment): Promise<void> => {
+const smoke = async (deployment: Deployment): Promise<string> => {
     const endpoints = endpointsSchema.parse(JSON.parse(deployment.endpointsObserved ?? '[]'));
     log(`endpoints=${JSON.stringify(endpoints)}`);
     const issuer = endpoints.find(endpoint => endpoint.id === 'issuer' && endpoint.healthy);
@@ -208,6 +213,7 @@ const smoke = async (deployment: Deployment): Promise<void> => {
     const credential = z
         .object({
             issuer: z.union([z.string(), z.object({ id: z.string() })]),
+            credentialStatus: z.unknown().optional(),
             proof: z.union([
                 z.object({ type: z.string() }),
                 z.array(z.object({ type: z.string() })).nonempty(),
@@ -218,6 +224,62 @@ const smoke = async (deployment: Deployment): Promise<void> => {
     if (!did.startsWith('did:key:')) throw new Error('Issuer is not did:key');
     const proof = Array.isArray(credential.proof) ? credential.proof[0] : credential.proof;
     log(`SMOKE issuer=${did} proofType=${proof.type}`);
+    if (
+        statusMode &&
+        (!credential.credentialStatus ||
+            typeof credential.credentialStatus !== 'object' ||
+            Object.keys(credential.credentialStatus).length === 0)
+    )
+        throw new Error('Signed credential has no non-empty credentialStatus');
+    if (statusMode) log('STATUS credentialStatus present');
+    return did;
+};
+const statusState = async (
+    deployment: Deployment
+): Promise<{ attempt: string; volumes: string }> => {
+    const names = await docker([
+        'ps',
+        '-a',
+        '--filter',
+        `label=org.learncard.workload.deployment=${deployment.id}`,
+        '--format',
+        '{{.Names}}',
+    ]);
+    const containers = z
+        .array(
+            z.object({
+                State: z.object({ Status: z.string(), ExitCode: z.number() }),
+                Config: z.object({ Labels: z.record(z.string(), z.string()) }),
+                Mounts: z.array(z.object({ Type: z.string(), Name: z.string().optional() })),
+            })
+        )
+        .parse(JSON.parse(await docker(['inspect', ...names.split('\n').filter(Boolean)])));
+    const init = containers.find(
+        (container): boolean =>
+            container.Config.Labels['org.learncard.workload.component'] === 'mongo-init'
+    );
+    if (!init || init.State.Status !== 'exited' || init.State.ExitCode !== 0)
+        throw new Error('Current init has not succeeded');
+    const attempt = init.Config.Labels['org.learncard.workload.attempt'];
+    if (!attempt) throw new Error('Init attempt label missing');
+    const mongo = containers.find(
+        (container): boolean =>
+            container.Config.Labels['org.learncard.workload.component'] === 'mongo'
+    );
+    const volumes = mongo?.Mounts.flatMap((mount): string[] =>
+        mount.Type === 'volume' && mount.Name ? [mount.Name] : []
+    ).sort();
+    if (!volumes || volumes.length !== 2) throw new Error('Mongo volumes missing');
+    return {
+        attempt,
+        volumes: await docker([
+            'volume',
+            'inspect',
+            '--format',
+            '{{.Name}} {{.CreatedAt}}',
+            ...volumes,
+        ]),
+    };
 };
 const main = async (): Promise<void> => {
     await login();
@@ -246,7 +308,8 @@ const main = async (): Promise<void> => {
         .object({ versions: z.array(z.object({ version: z.string(), version_id: z.string() })) })
         .parse(await rpc('catalog.get', { listingId }));
     const versionId = detail.versions.find(
-        version => version.version === (process.env.DCC_BUNDLE_VERSION ?? '1.2.0')
+        version =>
+            version.version === (process.env.DCC_BUNDLE_VERSION ?? (statusMode ? '1.3.1' : '1.2.0'))
     )?.version_id;
     if (!versionId) throw new Error('Requested bundle version not published');
     const members = z
@@ -298,7 +361,7 @@ const main = async (): Promise<void> => {
         );
     // The signed v1.2.0 member selects core; do not invent an unsigned profile override.
     const workload = intent.plan.targets?.find(
-        target => target.workload?.packageId === 'org.dcc.issuer-core'
+        target => target.workload?.packageId === packageId
     )?.workload;
     if (!workload || workload.profiles.join(',') !== 'core')
         throw new Error('Expected core workload missing from review');
@@ -329,15 +392,32 @@ const main = async (): Promise<void> => {
     let deployment = await poll(ecosystemId, intent.intentId);
     const before = await snapshot(deployment);
     log(`SNAPSHOT ${before}`);
-    if (process.argv.includes('--restart')) {
-        await docker(['restart', 'lcn-workload-agent', 'lcn-brain-service']);
+    const issuerBefore = await smoke(deployment);
+    const statusBefore = statusMode ? await statusState(deployment) : undefined;
+    if (process.argv.includes('--restart') || statusMode) {
+        const restartedAt = Date.now();
+        await docker(['restart', 'lcn-brain-service']);
+        await new Promise<void>((resolve): void => {
+            setTimeout(resolve, 10000);
+        });
+        await docker(['restart', 'lcn-workload-agent']);
         await new Promise(resolve => setTimeout(resolve, 30_000));
-        deployment = await poll(ecosystemId, intent.intentId);
+        deployment = await poll(ecosystemId, intent.intentId, restartedAt);
         const after = await snapshot(deployment);
         log(`AFTER_RESTART ${after}`);
         if (before !== after)
             throw new Error('Restart changed deployment, containers or secret hashes');
         log('IDEMPOTENCY restart unchanged');
+        if (statusBefore) {
+            const afterState = await statusState(deployment);
+            if (afterState.attempt === statusBefore.attempt)
+                throw new Error('Init did not rerun after restart');
+            if (afterState.volumes !== statusBefore.volumes)
+                throw new Error('Mongo volumes changed');
+            log(
+                `RECOVERY init succeeded with new attempt=${afterState.attempt}; Mongo volumes preserved`
+            );
+        }
     }
     log(
         await docker([
@@ -348,8 +428,10 @@ const main = async (): Promise<void> => {
             '{{.Names}} {{.Status}} {{.Ports}}',
         ])
     );
-    await smoke(deployment);
-    log('PROOF READY (local signing core only; production gates remain OPEN)');
+    if ((await smoke(deployment)) !== issuerBefore) throw new Error('Issuer DID changed');
+    log(
+        `PROOF READY (local ${statusMode ? 'status-enabled' : 'signing core'} only; production gates remain OPEN)`
+    );
 };
 main().catch((error: unknown): void => {
     log(`BLOCKED ${redact(error instanceof Error ? error.message : 'Unknown error')}`);

@@ -1,5 +1,52 @@
 # Local workload agent (ADR-009, phase 4)
 
+## Command, init and MongoDB execution (5B)
+
+`command` is an ordered argv-only image CMD override, never an entrypoint override.
+The renderer does not insert a shell or expand templates. The final YAML dollar
+escape runs exactly once. Commands require an explicit non-root numeric `user`.
+The contract bounds argv to 1–64 arguments, 4096 characters per argument and 16384
+total, rejects control characters, and restricts the executable to a safe path/name.
+
+`lifecycle: {kind: 'init', timeoutMs: 1000..900000}` requires command and forbids
+healthchecks, ports, volume declarations and endpoints. Declared tmpfs is allowed.
+Init runs on the private network with `restart: 'no'`. Services retain healthchecks.
+The agent independently validates declarations and dependency cycles, then starts
+each dependency-ready component with `up -d --no-deps`, removing obsolete containers
+without deleting volumes. Existing dependents stop before a new init attempt.
+
+Init success requires actual exit zero, no OOM, and matching deployment, revision,
+component and attempt labels. Nonzero/signal exits are `INIT_FAILED`, deadlines are
+`INIT_TIMEOUT`, and create/start failures are `INIT_START_FAILED`. Ambiguous Docker
+mutations retain the operator-reconciliation interlock. Output is bounded and raw
+Docker errors are withheld. A verified running init is killed by container ID on
+failure using reserved cleanup time; an unresolvable identity is fenced, never guessed.
+
+Recovery does not mutate from local state. Brain must authorize a fresh operation
+for a successfully applied current revision, with no retirement or pending operation.
+The normal claim/apply/observe/complete path then reruns init with a fresh attempt.
+Failure is terminal, reported to Brain, and is not automatically retried.
+
+MongoDB endpoints require internal visibility, auth `none`, a database-only path and
+strict query `{directConnection: true, replicaSet: 'rs0'}`. They cannot have readiness
+or capability declarations, or share a component with non-internal endpoints.
+URLs use `mongodb://<service>:<port>/<db>?directConnection=true&replicaSet=<set>`;
+host/port/hostport mappings exclude the query. Mongo endpoint readiness is TCP;
+transaction readiness is established by the separate init and transactional smoke.
+
+Development status package commands (Brain workspace):
+
+```sh
+bun run seed:dcc-workload --status
+bun run prove:dcc-workload --status
+```
+
+This publishes `org.dcc.issuer-status@1.0.0` through DCC Tools 1.3.0; the core-only
+builder and bundle 1.2.0 remain available. Public status publication remains OPEN
+(`status.example.invalid` is deliberately not a production origin). Opt-in Docker
+transaction smoke, from this workspace: `DCC_MONGO_SMOKE=1 bun run test -- test/mongo-transactions.test.ts`.
+It uses the Mongo driver inside the pinned status image and retains named test volumes.
+
 **Development only. Docker socket access is daemon-host authority, not a production
 isolation boundary.** Brain never receives the socket. This is not the DCC digest
 seed, the console UI, a production driver, or production issuer custody.

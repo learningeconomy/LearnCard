@@ -1,10 +1,99 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { config, plan, secret } from './fixtures';
-import { componentName, parseSpec, projectName, render, safeName } from '../src/render';
+import {
+    componentName,
+    endpointUrl,
+    parseSpec,
+    projectName,
+    render,
+    safeName,
+} from '../src/render';
 import { loadConfig } from '../src/config';
 
 describe('restricted renderer', (): void => {
+    it('renders structured private MongoDB URLs without leaking query into hostport', (): void => {
+        const p = plan();
+        Object.assign(p.endpoints[0]!, {
+            protocol: 'mongodb',
+            path: '/status',
+            visibility: 'internal',
+            auth: 'none',
+            query: { replicaSet: 'rs0', directConnection: true },
+        });
+        delete p.endpoints[0]!.capability;
+        delete p.endpoints[0]!.readiness;
+        p.execution!.components[0]!.env = [
+            {
+                name: 'MONGO_HOST',
+                source: { kind: 'endpoint', endpointId: 'web', part: 'hostport' },
+            },
+        ];
+        const spec = parseSpec(JSON.stringify(p), config());
+        expect(endpointUrl(spec, 'id', 'web')).toBe(
+            `mongodb://${safeName('web')}:5678/status?directConnection=true&replicaSet=rs0`
+        );
+        const service = parse(render(spec, 'id', 1, config(), {}).yaml).services[safeName('web')];
+        expect(service.environment.MONGO_HOST).toBe(`${safeName('web')}:5678`);
+        expect(service.networks).toEqual(['private']);
+        p.endpoints.push({
+            ...p.endpoints[0]!,
+            id: 'exposed',
+            protocol: 'tcp',
+            visibility: 'public',
+        });
+        delete p.endpoints[1]!.query;
+        expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow('SPEC_INVALID');
+    });
+    it('rejects dependency cycles independently of publication', (): void => {
+        const p = plan();
+        p.execution!.components[0]!.dependsOn = ['web'];
+        expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow('SPEC_INVALID');
+    });
+    it('renders init with no restart, private network and literal command', (): void => {
+        const p = plan();
+        const component = p.execution!.components[0]!;
+        Object.assign(component, {
+            user: '999:999',
+            command: ['node', '-e', 'process.exit(0)'],
+            lifecycle: { kind: 'init', timeoutMs: 1000 },
+            ports: [],
+            volumes: [],
+        });
+        delete component.healthcheck;
+        p.endpoints = [];
+        const service = parse(
+            render(parseSpec(JSON.stringify(p), config()), 'id', 1, config(), {}, 'attempt-1').yaml
+        ).services[safeName('web')];
+        expect(service.restart).toBe('no');
+        expect(service.networks).toEqual(['private']);
+        expect(service.labels['org.learncard.workload.attempt']).toBe('attempt-1');
+    });
+    it('renders literal CMD argv with exactly one Compose dollar escape and no entrypoint', (): void => {
+        const p = plan();
+        Object.assign(p.execution!.components[0]!, {
+            user: '999:999',
+            command: ['node', '-e', 'process.stdout.write("$HOME ${literal} $$")'],
+        });
+        const service = parse(
+            render(parseSpec(JSON.stringify(p), config()), 'id', 1, config(), {}).yaml
+        ).services[safeName('web')];
+        expect(service.command).toEqual([
+            'node',
+            '-e',
+            'process.stdout.write("$$HOME $${literal} $$$$")',
+        ]);
+        expect(service).not.toHaveProperty('entrypoint');
+        delete p.execution!.components[0]!.user;
+        expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow('SPEC_INVALID');
+    });
+    it('rejects invalid command argv independently at the agent boundary', (): void => {
+        for (const command of ['mongod --replSet rs0', ['-mongod'], ['node', '\n']]) {
+            const p = plan();
+            Object.assign(p.execution!.components[0]!, { user: '999:999', command });
+            expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow('SPEC_INVALID');
+        }
+    });
     it('renders only declared users and tmpfs and resolves private hostport', (): void => {
         const p = plan();
         const original = parse(
