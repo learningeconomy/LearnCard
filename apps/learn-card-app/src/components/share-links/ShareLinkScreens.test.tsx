@@ -88,6 +88,10 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
 vi.mock('./sharePrivacy', () => ({
     enterSharePrivacy: vi.fn(),
 }));
+vi.mock('./CredentialPreviewButton', () => ({
+    CredentialPreviewButton: () => null,
+    default: () => null,
+}));
 vi.mock('learn-card-base/helpers/share-links', () => ({
     isShareLinkError: () => false,
     decryptSharePayload: (...args: unknown[]) => mocks.decrypt(...args),
