@@ -75,3 +75,5 @@ Please make sure to update tests as appropriate.
 ## License
 
 MIT © [Learning Economy Foundation](https://www.learningeconomy.io/)
+
+<!-- bot auth test -->
