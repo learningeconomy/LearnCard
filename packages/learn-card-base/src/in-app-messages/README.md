@@ -415,8 +415,11 @@ You can also enable it **without the console**:
 - URL query param: append `?iamDebug=1`
 - localStorage: set `lcb-in-app-messages-debug` to `"1"`
 
-When enabled, every evaluation logs a `[in-app-messages] evaluated` entry (via the central
-`logger` + `console.info`) plus `shown` / `closed` / `capgo:*` lifecycle events.
+When enabled, flag updates log a `[in-app-messages] flag:delivery` entry showing the requested and
+selected flag keys, whether the legacy fallback was used, value shapes, raw message count, accepted
+message IDs, and validation errors. Every evaluation also logs `[in-app-messages] evaluated` (via
+the central `logger` + `console.info`) plus `shown` / `closed` / `capgo:*` lifecycle events. Flag
+contents, message copy, URLs, and credential data are not logged.
 
 **Programmatic access** (exported from `learn-card-base`):
 
