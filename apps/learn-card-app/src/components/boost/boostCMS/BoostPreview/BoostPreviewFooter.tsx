@@ -13,6 +13,7 @@ export const BoostPreviewFooter: React.FC<{
     selectedVCType: string;
     showSaveAndQuitButton?: boolean;
     isSaveLoading?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
     handleSaveAndQuit?: (goBack?: boolean) => {};
     showIssueButton?: boolean;
     handleSubmit?: () => void;

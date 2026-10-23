@@ -328,7 +328,8 @@ export class ConsentFlowPage {
                 // We don't know what order they're gonna be in so try each permutation one by one
                 const permutations = getPermutations(readPersonalFields);
                 let foundMatch = false;
-                let errors: any[] = [];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
+                const errors: any[] = [];
 
                 for (const permutation of permutations) {
                     const expectedText = `view your ${joinWithAnd(permutation)}`;

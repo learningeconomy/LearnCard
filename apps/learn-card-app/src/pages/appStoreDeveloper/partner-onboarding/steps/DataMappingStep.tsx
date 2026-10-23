@@ -502,6 +502,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
             }
 
             // Build fields array from dynamic variables or use existing
+            // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
             let updatedFields = template.fields || [];
 
             if (dynamicVars.length > 0) {
@@ -1408,7 +1409,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 apiKeyPreview: project.apiKey.slice(0, 12) + '...',
                                             }}
                                             components={[
+                                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                                 <code className="bg-amber-100 px-1 rounded-sm" />,
+                                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                                 <code className="bg-amber-100 px-1 rounded-sm ml-1 font-mono" />,
                                             ]}
                                         />
@@ -1732,7 +1735,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 apiKeyPreview: project.apiKey.slice(0, 12) + '...',
                                             }}
                                             components={[
+                                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                                 <code className="bg-amber-100 px-1 rounded-sm" />,
+                                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                                 <code className="bg-amber-100 px-1 rounded-sm ml-1 font-mono" />,
                                             ]}
                                         />
@@ -2151,7 +2156,6 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="grid gap-3">
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center shrink-0">
-                                {/* eslint-disable-next-line i18next/no-literal-string */}
                                 <span
                                     className="text-xs font-bold text-cyan-700"
                                     aria-hidden="true"
@@ -2173,7 +2177,6 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center shrink-0">
-                                {/* eslint-disable-next-line i18next/no-literal-string */}
                                 <span
                                     className="text-xs font-bold text-cyan-700"
                                     aria-hidden="true"
@@ -2193,7 +2196,6 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center shrink-0">
-                                {/* eslint-disable-next-line i18next/no-literal-string */}
                                 <span
                                     className="text-xs font-bold text-cyan-700"
                                     aria-hidden="true"
@@ -2466,6 +2468,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                       ](),
                                         }}
                                         components={[
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code className="bg-emerald-100 px-1 rounded-sm" />,
                                         ]}
                                     />
@@ -2550,6 +2553,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <p className="text-xs text-blue-800">
                             <TransP
                                 m={m['developerPortal.onboarding.dataMapping.howToMapInstructions']}
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 components={[<strong />]}
                             />
                         </p>
@@ -2725,6 +2729,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             'developerPortal.onboarding.dataMapping.templateDataPreviewDesc'
                                         ]
                                     }
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     components={[<code className="bg-gray-100 px-1 rounded-sm" />]}
                                 />
                             </p>

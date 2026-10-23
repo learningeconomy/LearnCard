@@ -10,6 +10,7 @@ export const LearnCardIDCMSColorPicker: React.FC<{
     title: string;
     _color: string | undefined;
     updateFieldKey: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     handleSetState: (key: string, value: any) => void;
 }> = ({ title, _color, updateFieldKey, handleSetState }) => {
     const { newModal, closeModal } = useModal();

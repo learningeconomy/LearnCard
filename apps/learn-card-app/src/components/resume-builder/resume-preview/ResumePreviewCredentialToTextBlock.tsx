@@ -85,6 +85,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const metadataFields = fields.filter(field => field.type === 'metadata');
     const lastMetadataField = metadataFields[metadataFields.length - 1];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const info = vc ? getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false }) : null;
     const selectedStartDate = credentialStartDates?.[uri] ?? '';
     const selectedEndDate = credentialEndDates?.[uri] ?? '';
@@ -169,6 +170,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
 
         const categoryType = (getDefaultCategoryForCredential(unwrapBoostCredential(vc), {
             skipValidation: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         }) || section) as any;
         const previewProps = {
             credential: vc,

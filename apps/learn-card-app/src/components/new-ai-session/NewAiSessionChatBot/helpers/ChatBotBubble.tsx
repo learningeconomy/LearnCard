@@ -38,6 +38,7 @@ export const ChatBotBubbleAnswer: React.FC<{
     const animationDelay = `${index * 150}ms`;
 
     let image = null;
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let app: { name?: string; img?: string } | null | undefined = null;
 
     // Fetch installed apps to look up app store listings

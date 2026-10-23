@@ -61,6 +61,7 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
         const storageKey = `lcEmbed:v1:${publishableKey || 'anon'}`;
         try {
             localStorage.removeItem(storageKey);
+            // eslint-disable-next-line no-empty -- existing intentionally empty block
         } catch {}
 
         try {

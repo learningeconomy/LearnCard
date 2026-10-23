@@ -6,6 +6,7 @@ import { NOTIFICATION_TYPES } from './NotificationCardContainer';
 // (View Request / Accept via AiInsightsNotification), so they are not grouped.
 export const isGroupableConsentFlowNotification = (notification: NotificationType): boolean =>
     notification?.type === NOTIFICATION_TYPES.CONSENT_FLOW_TRANSACTION &&
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     !(notification?.data as any)?.metadata?.type;
 
 // The backend sends no structured contractUri for sync transactions, so the
@@ -62,6 +63,7 @@ export const buildNotificationListItems = (
 };
 
 export const getTransactionDate = (notification: NotificationType): string =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     (notification?.data as any)?.transaction?.date ?? notification?.sent;
 
 export const getActionLabel = (notification: NotificationType): string => {

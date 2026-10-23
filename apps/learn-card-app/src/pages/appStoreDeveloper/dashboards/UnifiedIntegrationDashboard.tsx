@@ -251,6 +251,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const [authGrants, setAuthGrants] = useState<AuthGrant[]>([]);
     const [templates, setTemplates] = useState<CredentialTemplate[]>([]);
     const [branding, setBranding] = useState<BrandingConfig | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [contracts, setContracts] = useState<any[]>([]);
 
     const [stats, setStats] = useState<DashboardStats>({
@@ -377,6 +378,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
                 // Extract basic template info from paginated response (no additional API calls needed)
                 const basicTemplates: CredentialTemplate[] = (boostsResult?.records || []).map(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     (boost: any) => ({
                         id: boost.uri,
                         boostUri: boost.uri,
@@ -394,6 +396,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 // Count contracts configured for this integration (from guide state)
                 let activeContractsCount = 0;
                 if (config.showContracts) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     const guideState = integration?.guideState as any;
                     const gsConfig = guideState?.config || {};
 
@@ -426,6 +429,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 let connectionCount = 0;
                 if (config.showConnections && integration.guideType === 'consent-flow') {
                     try {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         const guideState = integration?.guideState as any;
                         const contractUri = guideState?.config?.consentFlowConfig?.contractUri;
                         if (contractUri) {

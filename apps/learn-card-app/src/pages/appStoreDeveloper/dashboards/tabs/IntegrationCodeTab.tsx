@@ -896,7 +896,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             key: integration.publishableKey.slice(0, 12) + '...',
                                         }}
                                         components={[
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code className="bg-amber-100 px-1 rounded-sm" />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code className="bg-amber-100 px-1 rounded-sm ml-1 font-mono" />,
                                         ]}
                                     />
@@ -1231,6 +1233,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 ]
                                             }
                                             components={[
+                                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                                 <span className="text-cyan-600 font-medium" />,
                                             ]}
                                         />

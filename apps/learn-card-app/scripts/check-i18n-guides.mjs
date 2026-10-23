@@ -27,10 +27,9 @@ const strict = process.argv.includes('--strict');
 // Scope: positional args (paths relative to the app root — files or dirs).
 // Default = the developer guides dir (backward compatible).
 const posArgs = process.argv.slice(2).filter(a => !a.startsWith('--'));
-const SCOPES = (posArgs.length
-    ? posArgs
-    : ['src/pages/appStoreDeveloper/guides']
-).map(p => join(APP_ROOT, p));
+const SCOPES = (posArgs.length ? posArgs : ['src/pages/appStoreDeveloper/guides']).map(p =>
+    join(APP_ROOT, p)
+);
 
 const walk = path => {
     if (!statSync(path).isDirectory()) return /\.tsx$/.test(path) ? [path] : [];
@@ -47,7 +46,7 @@ const stripCode = src =>
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
-const JSX_TEXT = />\s*([A-Za-z][A-Za-z0-9 ,.'!?:&/()\-]{2,})\s*</g;
+const JSX_TEXT = />\s*([A-Za-z][A-Za-z0-9 ,.'!?:&/()-]{2,})\s*</g;
 const UI_PROP = /(?:title|label|placeholder|description|alt|aria-label)\s*=\s*"([A-Z][^"]{3,})"/g;
 
 const scan = file => {
@@ -80,7 +79,8 @@ if (asJson) {
     console.log(`\n⚠ i18n guides: ~${total} likely-untranslated UI string(s) (heuristic):\n`);
     for (const [f, hits] of Object.entries(report)) {
         console.log(`  ${f}  (${hits.length})`);
-        for (const h of hits.slice(0, 8)) console.log(`      ${h.length > 72 ? h.slice(0, 69) + '…' : h}`);
+        for (const h of hits.slice(0, 8))
+            console.log(`      ${h.length > 72 ? h.slice(0, 69) + '…' : h}`);
         if (hits.length > 8) console.log(`      … +${hits.length - 8} more`);
     }
     console.log('');

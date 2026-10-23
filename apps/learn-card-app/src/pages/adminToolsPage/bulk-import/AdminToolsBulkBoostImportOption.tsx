@@ -61,7 +61,7 @@ export const extractFilename = (path: string): string => {
     if (!path) return '';
 
     // Extract filename from URL or path
-    const parts = path.split(/[\/\\]/);
+    const parts = path.split(/[/\\]/);
     return parts[parts.length - 1];
 };
 
@@ -100,6 +100,7 @@ export type BadgeDataRow = {
     [DataKeys.skills]: string[]; // e.g. [ "Durable - Adaptability - Flexibility", "Durable - Lifelong Learning - Critical Thinking"]
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const deleteFromMapByIndex = (map: Map<number, any>, index: number) => {
     const iterator = map.keys(); // Get an iterator over the keys
     let keyToDelete;
@@ -113,6 +114,7 @@ export const deleteFromMapByIndex = (map: Map<number, any>, index: number) => {
     }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const deleteIndexAndReindex = (map: Map<number, any>, idx: number) => {
     const entries = [...map.entries()].sort(([a], [b]) => a - b);
     entries.splice(idx, 1); // drop the idx-th row
@@ -456,6 +458,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         });
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const csvRowToState = async (csvRow: any) => {
         const category = mapCategoryToBoostEnum(csvRow[DataKeys.category]);
         const defaultBadgeThumb = boostCategoryMetadata[category].CategoryImage;
@@ -544,6 +547,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handlePreview = async (csvRow: any) => {
         const state = await csvRowToState(csvRow);
 

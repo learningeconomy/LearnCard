@@ -164,14 +164,17 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const _isClr = isClrCredential(credential);
     const linkedCredentialCount = _isClr ? getClrLinkedCredentialCounts(credential) : 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const clrAchievements: any[] =
         _isClr && Array.isArray(credential?.credentialSubject?.achievement)
             ? credential.credentialSubject.achievement
             : [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const clrAssociations: any[] =
         _isClr && Array.isArray(credential?.credentialSubject?.association)
             ? credential.credentialSubject.association
             : [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const clrDisplayType = (credential as any)?.display?.displayType;
 
     const customLinkedCredentialsComponent =
@@ -199,6 +202,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     // A credential that fails verification because it's revoked can't be claimed
     // (the backend rejects acceptCredential with "Credential has been revoked").
     const isRevoked = vcVerifications.some(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (v: any) =>
             v?.status !== 'Success' &&
             /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)

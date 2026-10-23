@@ -9,6 +9,7 @@ import { mockDidKitWasmForContext } from '../route.helpers';
 export const test = base.extend<{ context: BrowserContext }>({
     context: async ({ context }, use) => {
         await mockDidKitWasmForContext(context);
+        // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
         await use(context);
     },
 });
