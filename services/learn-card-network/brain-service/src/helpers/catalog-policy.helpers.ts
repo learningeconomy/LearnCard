@@ -45,10 +45,36 @@ export const getCatalogPolicySnapshot = async (
     });
 };
 
-export const getCatalogPolicyRevision = async (ecosystemId: string): Promise<string> => {
-    const policy = await getCatalogPolicySnapshot(ecosystemId);
+export type CatalogPolicyLevel = {
+    ecosystemId: string;
+    policy: CatalogPolicySnapshot;
+};
 
-    return computeStableHash(policy);
+/** Policies along the ecosystem path, root first; descendants may restrict, never widen. */
+export const getCatalogPolicyLevels = async (
+    ecosystemId: string
+): Promise<CatalogPolicyLevel[]> => {
+    const ecosystem = await getEcosystemById(ecosystemId);
+
+    if (!ecosystem) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Ecosystem not found' });
+    }
+
+    const pathIds = ecosystem.pathIds.length > 0 ? ecosystem.pathIds : [ecosystemId];
+
+    return Promise.all(
+        pathIds.map(async id => ({ ecosystemId: id, policy: await getCatalogPolicySnapshot(id) }))
+    );
+};
+
+export const getCatalogPolicyRevision = async (ecosystemId: string): Promise<string> => {
+    const levels = await getCatalogPolicyLevels(ecosystemId);
+
+    // A root keeps its single-snapshot hash so existing intents stay valid; nested ecosystems
+    // hash every level so an ancestor's change invalidates descendant approvals.
+    if (levels.length === 1) return computeStableHash(levels[0]!.policy);
+
+    return computeStableHash(levels);
 };
 
 export const isListingEndorsedForEcosystem = async (
@@ -64,18 +90,29 @@ export const isListingEndorsedForEcosystem = async (
     return Boolean(result.records[0]?.get('endorsed'));
 };
 
+const isListingAllowedAtLevel = async (
+    level: CatalogPolicyLevel,
+    listingId: string
+): Promise<boolean> => {
+    if (level.policy.allowedListings && !level.policy.allowedListings.includes(listingId)) {
+        return false;
+    }
+
+    if (level.policy.requireEndorsement) {
+        return isListingEndorsedForEcosystem(level.ecosystemId, listingId);
+    }
+
+    return true;
+};
+
 export const isListingAllowedByCatalogPolicy = async (
     ecosystemId: string,
     listingId: string
 ): Promise<boolean> => {
-    const policy = await getCatalogPolicySnapshot(ecosystemId);
+    const levels = await getCatalogPolicyLevels(ecosystemId);
 
-    if (policy.allowedListings && !policy.allowedListings.includes(listingId)) {
-        return false;
-    }
-
-    if (policy.requireEndorsement) {
-        return isListingEndorsedForEcosystem(ecosystemId, listingId);
+    for (const level of levels) {
+        if (!(await isListingAllowedAtLevel(level, listingId))) return false;
     }
 
     return true;
@@ -99,22 +136,18 @@ export const filterListingsByCatalogPolicy = async (
     ecosystemId: string,
     listings: AppStoreListingType[]
 ): Promise<AppStoreListingType[]> => {
-    const policy = await getCatalogPolicySnapshot(ecosystemId);
-    const allowedListingSet = policy.allowedListings ? new Set(policy.allowedListings) : undefined;
-    const scopedListings = allowedListingSet
-        ? listings.filter(listing => allowedListingSet.has(listing.listing_id))
-        : listings;
+    const levels = await getCatalogPolicyLevels(ecosystemId);
+    const entries = await Promise.all(
+        listings.map(async listing => {
+            for (const level of levels) {
+                if (!(await isListingAllowedAtLevel(level, listing.listing_id))) {
+                    return { listing, allowed: false };
+                }
+            }
 
-    if (!policy.requireEndorsement) {
-        return scopedListings;
-    }
-
-    const visibilityEntries = await Promise.all(
-        scopedListings.map(async listing => ({
-            listing,
-            endorsed: await isListingEndorsedForEcosystem(ecosystemId, listing.listing_id),
-        }))
+            return { listing, allowed: true };
+        })
     );
 
-    return visibilityEntries.filter(entry => entry.endorsed).map(entry => entry.listing);
+    return entries.filter(entry => entry.allowed).map(entry => entry.listing);
 };
