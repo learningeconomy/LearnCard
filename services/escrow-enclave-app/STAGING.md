@@ -140,6 +140,10 @@ Apply order for the **existing staging account**, from the repository root:
   `trail_tamper`'s pattern matched only on named `requestParameters`. Fixed in
   `trail-monitor.tf` to also match denied calls via `errorCode`; **this drill
   must be re-run after that fix is applied** to confirm the page actually fires.
+  In the same drill, attempt an SSO `PutBucketPolicy` on the CloudTrail log
+  bucket: it must be denied and page `EscrowCloudTrailTamper`. Record whether
+  the denied event keeps `requestParameters.bucketName`. Denied calls on the
+  audit, artifacts and tfstate buckets also page under this rule, by design.
 
 The trail is multi-region; EventBridge rules are regional. These new rules cover
 the home-region trail/log bucket and authority table. Existing forwarding covers

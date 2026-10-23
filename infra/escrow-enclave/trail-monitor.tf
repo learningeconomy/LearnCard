@@ -8,8 +8,9 @@
 # attempt -- exactly the case most worth alerting on. Fix: every branch has a
 # sibling keyed on `errorCode` (prefix "AccessDenied", same convention as
 # authority-monitor.tf's `denied_write`) instead of requestParameters. This
-# account has exactly one trail and two buckets (storage.tf), so dropping the
-# resource-name constraint only for denied calls just widens scope to "any
+# account has exactly one trail and four buckets (audit and artifacts in
+# storage.tf; the CloudTrail log and tfstate buckets in bootstrap), so dropping
+# the resource-name constraint only for denied calls just widens scope to "any
 # denied call to these APIs in this account" -- an accepted false-positive
 # tradeoff here (alerting > missing a real tamper attempt). Successful calls
 # still require naming this trail/bucket.
@@ -40,9 +41,10 @@ resource "aws_cloudwatch_event_rule" "trail_tamper" {
         eventName         = ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "PutBucketLifecycle", "PutBucketLifecycleConfiguration", "PutBucketVersioning", "PutBucketEncryption", "PutBucketReplication", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"],
         requestParameters = { bucketName = ["learncard-escrow-cloudtrail-${var.environment}-${data.aws_caller_identity.current.account_id}"] }
       } },
-      # Denied S3 tamper attempts: same null-requestParameters flaw. Two
-      # buckets total in this account (storage.tf), so the same single-
-      # account false-positive tradeoff applies as the CloudTrail branch.
+      # Denied S3 tamper attempts. The null-requestParameters behavior was
+      # observed for CloudTrail; S3's denied-call shape is verified by drill 3
+      # (STAGING.md). Denied calls on any of the four buckets in this account
+      # page as trail tamper -- the same accepted false-positive tradeoff.
       { source = ["aws.s3"], detail = {
         eventSource = ["s3.amazonaws.com"],
         eventName   = ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "PutBucketLifecycle", "PutBucketLifecycleConfiguration", "PutBucketVersioning", "PutBucketEncryption", "PutBucketReplication", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"],
