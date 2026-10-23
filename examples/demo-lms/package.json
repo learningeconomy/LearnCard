@@ -1,0 +1,13 @@
+{
+    "name": "demo-lms",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "start": "bun src/server.ts",
+        "test": "bun test"
+    },
+    "dependencies": {
+        "jose": "^5.9.6"
+    }
+}
