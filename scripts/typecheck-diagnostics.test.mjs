@@ -235,3 +235,16 @@ const fs = require('node:fs'); const file = process.argv.find(a => a.startsWith(
         rmSync(directory, { recursive: true, force: true });
     }
 });
+
+test('an incomplete head is explained even though it has no valid count to compare', () => {
+    const compared = compareReports(
+        report(result([], { raised: false, count: null, incomplete: 'killed by SIGKILL' })),
+        undefined
+    );
+    assert.equal(compared.length, 1);
+    assert.equal(compared[0].added, null);
+    const formatted = formatComparison(compared);
+    assert.match(formatted.markdown, /Head typecheck did not finish/);
+    assert.match(formatted.markdown, /not completed/);
+    assert.deepEqual(formatted.annotations, []);
+});

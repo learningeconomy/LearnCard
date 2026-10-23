@@ -100,16 +100,18 @@ export const addedDiagnostics = (head, base) => {
 
 export const compareReports = (head, base) =>
     head.results
-        .filter(r => r.raised)
+        .filter(r => r.raised || r.incomplete)
         .map(current => {
             const previous = base?.results.find(r => r.name === current.name);
-            const reason = !previous
-                ? 'No completed base report for this project.'
-                : previous.incomplete
-                  ? `Base typecheck did not finish: ${previous.incomplete}`
-                  : previous.configErrors || current.configErrors
-                    ? 'Compiler configuration errors prevented complete semantic checking.'
-                    : null;
+            const reason = current.incomplete
+                ? `Head typecheck did not finish: ${current.incomplete}`
+                : !previous
+                  ? 'No completed base report for this project.'
+                  : previous.incomplete
+                    ? `Base typecheck did not finish: ${previous.incomplete}`
+                    : previous.configErrors || current.configErrors
+                      ? 'Compiler configuration errors prevented complete semantic checking.'
+                      : null;
             return {
                 name: current.name,
                 count: current.count,
@@ -144,7 +146,7 @@ export const formatComparison = comparisons => {
         lines.push(
             `### ${md(project.name)}`,
             '',
-            `Head: **${project.count}** · allowance: **${project.allowance}** · base: **${project.baseCount ?? 'unavailable'}**`,
+            `Head: **${project.count ?? 'not completed'}** · allowance: **${project.allowance}** · base: **${project.baseCount ?? 'unavailable'}**`,
             ''
         );
         if (project.unavailable) {
