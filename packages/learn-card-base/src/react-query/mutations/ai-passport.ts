@@ -176,6 +176,9 @@ export const useUploadFileMutation = () => {
             file: string;
             fileType: UploadTypesEnum;
             attempt?: FileExtractionAttempt;
+            waitSignal?: AbortSignal;
+            onWaiting?: (waiting: boolean) => void;
+            onAttempt?: (attempt: FileExtractionAttempt) => void;
         }) => extractFileCredentials(input),
     });
 };

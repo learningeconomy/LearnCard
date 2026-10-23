@@ -111,6 +111,13 @@ If your account changes after an OID4VP send completes, the success screen says 
 Open **Build My LearnCard**, then choose Resume, Certificates, Transcripts or Diplomas.
 Select a supported file. Review any extracted credentials and choose which ones to save.
 
+If uploads are busy, the app shows **Waiting for a turn…** and automatically tries again
+for up to two minutes, respecting the service's retry delay. Select **Cancel** or close the
+upload step to stop waiting. Closing the app stops retries; there is no background queue.
+If capacity remains unavailable, the file stays unsaved and you can try again shortly.
+Only requests explicitly rejected before processing are retried automatically.
+Once extraction has started, the existing **Notify me when it's ready** behavior still applies.
+
 ```mermaid
 flowchart LR
     A[Choose document] --> B{Extraction result}

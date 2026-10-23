@@ -52,6 +52,8 @@ export const CheckListDiplomas: React.FC = () => {
         isUploading,
         isSaving,
         isParsing,
+        isWaitingForCapacity,
+        cancelCapacityWait,
         fetchParsedCredentialsFromFiles,
         storeSelectedCredentials,
         parsedCredentials,
@@ -280,7 +282,11 @@ export const CheckListDiplomas: React.FC = () => {
             ) : (
                 <>
                     {isParsing && !isSaving && (
-                        <ChecklistLoader fileType={UploadTypesEnum.Diploma} />
+                        <ChecklistLoader
+                            waitingForCapacity={isWaitingForCapacity}
+                            onCancelWait={cancelCapacityWait}
+                            fileType={UploadTypesEnum.Diploma}
+                        />
                     )}
                     <div className="w-full rounded-[20px] bg-white p-6 mt-4 font-poppins shadow-button-bottom">
                         <div className="flex flex-col items-start justify-center py-2 w-full">

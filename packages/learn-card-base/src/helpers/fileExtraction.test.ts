@@ -10,7 +10,13 @@ import {
 import type { FileExtractionAttempt } from './fileExtraction';
 
 const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }));
-vi.mock('./aiPassportAuth', () => ({ aiPassportFetch: fetchMock }));
+vi.mock('./aiPassportAuth', () => ({
+    aiPassportFetch: fetchMock,
+    createAiPassportRequestScope: () => ({
+        signal: new AbortController().signal,
+        dispose: () => {},
+    }),
+}));
 vi.mock('../i18n', () => ({ addActiveLocaleToUrl: (url: string) => url }));
 vi.mock('../stores/NetworkStore', () => ({
     networkStore: { get: { aiServiceUrl: () => 'https://synthetic.invalid' } },
@@ -58,6 +64,88 @@ beforeEach(() => {
 });
 
 describe('file extraction outcomes', () => {
+    it('automatically retries admission with the same operation and a fresh correlated attempt', async () => {
+        vi.useFakeTimers();
+        try {
+            const attempt = createFileExtractionAttempt();
+            const waiting = vi.fn();
+            const onAttempt = vi.fn();
+            fetchMock.mockResolvedValueOnce(
+                Response.json(
+                    { code: 'upload_capacity_exceeded' },
+                    { status: 503, headers: { 'Retry-After': '0' } }
+                )
+            );
+            fetchMock.mockImplementationOnce(async (_url, options) => {
+                const request = JSON.parse(options.body);
+                return Response.json({ vcs: [], processing: metadata(request.diagnostics) });
+            });
+            const pending = extractFileCredentials({
+                ...input(attempt),
+                onWaiting: waiting,
+                onAttempt,
+            });
+            await vi.runAllTimersAsync();
+            expect((await pending).processing.outcome).toBe('empty');
+            const first = JSON.parse(fetchMock.mock.calls[0][1].body).diagnostics;
+            const second = JSON.parse(fetchMock.mock.calls[1][1].body).diagnostics;
+            expect(second.operationId).toBe(first.operationId);
+            expect(second.attemptId).not.toBe(first.attemptId);
+            expect(second.attempt).toBe(first.attempt + 1);
+            expect(onAttempt).toHaveBeenCalledTimes(2);
+            expect(onAttempt).toHaveBeenLastCalledWith({
+                operationId: second.operationId,
+                attemptId: second.attemptId,
+                attempt: second.attempt,
+            });
+            expect(waiting).toHaveBeenCalledWith(true);
+            expect(waiting).toHaveBeenLastCalledWith(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('reports capacity exhaustion distinctly without retrying past the attempt limit', async () => {
+        const attempt = { ...createFileExtractionAttempt(), attempt: 100 };
+        respond({ code: 'upload_capacity_exceeded' }, 503);
+        await expect(extractFileCredentials(input(attempt))).rejects.toMatchObject({
+            code: 'UPLOAD_BUSY',
+            statusCode: 503,
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('records capacity deadline exhaustion with the final attempt and HTTP status', async () => {
+        vi.useFakeTimers();
+        try {
+            const attempt = createFileExtractionAttempt();
+            respond({ code: 'upload_capacity_exceeded' }, 503);
+            const pending = expect(extractFileCredentials(input(attempt))).rejects.toMatchObject({
+                code: 'UPLOAD_BUSY',
+                statusCode: 503,
+            });
+            await vi.runAllTimersAsync();
+            await pending;
+            const finalAttempt = JSON.parse(fetchMock.mock.calls.at(-1)![1].body).diagnostics;
+            expect(
+                getDiagnosticLogs().filter(entry => entry.message === 'file.extraction.completed')
+            ).toMatchObject([
+                {
+                    data: {
+                        operationId: attempt.operationId,
+                        attemptId: finalAttempt.attemptId,
+                        attempt: finalAttempt.attempt,
+                        code: 'UPLOAD_BUSY',
+                        statusCode: 503,
+                        outcome: 'failed',
+                    },
+                },
+            ]);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('accepts genuine empty output and returns validated credentials for nonempty output', async () => {
         const attempt = createFileExtractionAttempt();
         respond({ vcs: [], processing: metadata(attempt) });

@@ -52,6 +52,8 @@ export const CheckListTranscripts: React.FC = () => {
         isUploading,
         isSaving,
         isParsing,
+        isWaitingForCapacity,
+        cancelCapacityWait,
         fetchParsedCredentialsFromFiles,
         storeSelectedCredentials,
         parsedCredentials,
@@ -286,6 +288,8 @@ export const CheckListTranscripts: React.FC = () => {
                 <>
                     {isParsing && !isSaving && !loaderDismissed && (
                         <ChecklistLoader
+                            waitingForCapacity={isWaitingForCapacity}
+                            onCancelWait={cancelCapacityWait}
                             fileType={UploadTypesEnum.Transcript}
                             onDismiss={() => setLoaderDismissed(true)}
                         />
