@@ -78,8 +78,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
                         if (isCapgoTarget) {
                             if (capgo.status === 'error') {
                                 return (
-                                    <div key={index} className="space-y-3">
-                                        <div className="p-3.5 bg-red-50/80 backdrop-blur border border-red-100 rounded-[20px] flex items-start gap-2.5 text-left">
+                                    <div key={index} className="space-y-v3-3">
+                                        <div className="p-3.5 bg-red-50/80 backdrop-blur-sm border border-red-100 rounded-[20px] flex items-start gap-2.5 text-left">
                                             <IonIcon
                                                 icon={alertCircleOutline}
                                                 className="text-red-400 text-lg mt-0.5 shrink-0"
@@ -100,8 +100,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
 
                             if (capgo.status === 'uptodate') {
                                 return (
-                                    <div key={index} className="space-y-3">
-                                        <div className="p-3.5 bg-emerald-50/80 backdrop-blur border border-emerald-100 rounded-[20px] flex items-start gap-2.5 text-left">
+                                    <div key={index} className="space-y-v3-3">
+                                        <div className="p-3.5 bg-emerald-50/80 backdrop-blur-sm border border-emerald-100 rounded-[20px] flex items-start gap-2.5 text-left">
                                             <IonIcon
                                                 icon={checkmarkCircleOutline}
                                                 className="text-emerald-500 text-lg mt-0.5 shrink-0"
@@ -132,7 +132,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
                             return (
                                 <div
                                     key={index}
-                                    className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm flex flex-col gap-2 overflow-hidden relative shadow-sm"
+                                    className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm flex flex-col gap-2 overflow-hidden relative shadow-xs"
                                 >
                                     <div className="flex items-center justify-center gap-2 relative z-10">
                                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -172,11 +172,11 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
 
                         if (action.style === 'primary') {
                             buttonClass +=
-                                'bg-grayscale-900 text-white hover:opacity-90 active:scale-[0.98] shadow-sm';
+                                'bg-grayscale-900 text-white hover:opacity-90 active:scale-[0.98] shadow-xs';
                             spinnerClass += 'border-white/30 border-t-white';
                         } else if (action.style === 'positive') {
                             buttonClass +=
-                                'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98] shadow-sm';
+                                'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98] shadow-xs';
                             spinnerClass += 'border-white/30 border-t-white';
                         } else if (action.style === 'secondary') {
                             buttonClass +=

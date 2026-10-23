@@ -94,8 +94,8 @@ describe('message host impressions', () => {
     afterEach(() => {
         cleanup();
         setInAppMessageOverride(null);
-        vi.restoreAllMocks();
         vi.useRealTimers();
+        vi.restoreAllMocks();
     });
 
     it('removes a required iframe and its owned surface when the user closes a load error', async () => {
@@ -335,7 +335,8 @@ describe('message host impressions', () => {
             const now = vi.spyOn(Date, 'now').mockReturnValue(firstShown);
             vi.mocked(iamDebug).mockClear();
             state.gate = true;
-            render(<InAppMessageHost />);
+            const onEvent = vi.fn();
+            render(<InAppMessageHost onEvent={onEvent} />);
             await waitFor(() => expect(screen.getByText('Claim complete')).toBeTruthy());
             const fatigue = getInAppMessageFatigueState('alice');
             expect(fatigue).toEqual({
@@ -366,6 +367,11 @@ describe('message host impressions', () => {
                 ['shown', expect.objectContaining({ override: true })],
                 ['shown', expect.objectContaining({ override: true })],
             ]);
+            expect(
+                onEvent.mock.calls
+                    .filter(([event]) => event.type === 'shown')
+                    .map(([event]) => event.source)
+            ).toEqual(['flag', 'override', 'override']);
             fireEvent.click(screen.getByText('Claim complete'));
             expect(screen.queryByText('Claim complete')).toBeNull();
         }
