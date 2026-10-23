@@ -383,6 +383,25 @@ const safeParseJsonRecord = (value?: string): Record<string, unknown> | undefine
     }
 };
 
+/** The consent tiers an integration's signed manifest declares; the plan must surface them. */
+export const getIntegrationListingVersionConsentTiers = (
+    version: ListingVersionType
+): SupportedConsentTier[] => {
+    const manifest = safeParseJsonRecord(version.manifest_json);
+    const declared: unknown = manifest?.consentRequirements ?? [];
+
+    if (!Array.isArray(declared) || declared.some(tier => typeof tier !== 'string')) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `ListingVersion ${version.version_id} has invalid consent requirements.`,
+        });
+    }
+
+    return assertSupportedConsentTiers(
+        uniqueSortedStrings(declared.filter((tier): tier is string => typeof tier === 'string'))
+    );
+};
+
 export const getIntegrationListingVersionScopes = (version: ListingVersionType): string[] => {
     const manifest = safeParseJsonRecord(version.manifest_json);
     const result = IntegrationScopeRequestValidator.array().safeParse(manifest?.scopes ?? []);

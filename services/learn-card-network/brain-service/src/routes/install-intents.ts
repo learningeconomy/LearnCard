@@ -93,6 +93,7 @@ import {
     assertEntitlementsSatisfied,
     assertSupportedConsentTiers,
     buildPlanFromMaterialization,
+    getIntegrationListingVersionConsentTiers,
     getIntegrationListingVersionScopes,
     expandBundle,
     getInstallTargetTypeForListing,
@@ -255,6 +256,7 @@ const buildSingletonSpec = (
     requestedConfig: Record<string, unknown>,
     proposedBindings: BindingProposal[],
     scopes: string[],
+    consentTiers: InstallIntentSpec['consentTiers'],
     additionalTargets: InstallIntentSpec['targets'] = []
 ): InstallIntentSpec => ({
     apiVersion: 'lc.install-spec/v1',
@@ -264,7 +266,7 @@ const buildSingletonSpec = (
             listingId,
             versionId,
             scopes,
-            consentTiers: [],
+            consentTiers,
             declarationId: 'root',
             config: requestedConfig,
             entitlementRequirements: [],
@@ -274,7 +276,7 @@ const buildSingletonSpec = (
     bindings: proposedBindings,
     pinnedVersionIds: [versionId],
     scopes,
-    consentTiers: [],
+    consentTiers,
     config: requestedConfig,
     entitlementRequirements: [],
 });
@@ -492,6 +494,7 @@ const buildSpecForIntent = async (input: {
             input.requestedConfig,
             bindEcosystem(input.ecosystemId, input.proposedBindings),
             listing.kind === 'INTEGRATION' ? getIntegrationListingVersionScopes(version) : [],
+            listing.kind === 'INTEGRATION' ? getIntegrationListingVersionConsentTiers(version) : [],
             subscriptionTargets
         ),
         infrastructureEffects: [
@@ -679,6 +682,20 @@ export const installIntentsRouter = t.router({
 
             const consentTiers = assertSupportedConsentTiers(input.consentTiers);
             const spec = await buildApprovedSpec(intent);
+            const specTiers = [
+                ...new Set(spec.targets.flatMap(target => target.consentTiers)),
+            ].sort();
+
+            // The approver reviewed the plan's tiers; a spec that now requires different tiers
+            // (e.g. a plan rendered before manifest tiers were surfaced) must be re-planned.
+            if (
+                JSON.stringify(specTiers) !== JSON.stringify([...intent.plan.consentTiers].sort())
+            ) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Consent tiers changed since the plan was rendered; re-plan required.',
+                });
+            }
 
             for (const target of spec.targets) {
                 // Package eligibility was rechecked by resolveWorkloadPlan, independently of catalog policy.
