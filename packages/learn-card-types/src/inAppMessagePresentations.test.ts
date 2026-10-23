@@ -241,6 +241,27 @@ describe('rich message schema', () => {
             }).success
         ).toBe(true);
     });
+    it('requires a closing navigation action for required stories', () => {
+        const draft = {
+            id: 'required-navigation',
+            title: 'Continue',
+            presentation: 'story',
+            dismissible: false,
+            steps: [{ title: 'Final' }],
+        };
+        for (const [action, closeOnComplete, expected] of [
+            [{ type: 'openMessage', messageId: 'next' }, true, true],
+            [{ type: 'openMessage', messageId: 'next' }, false, false],
+            [{ type: 'openApp', listingId: 'app' }, true, false],
+        ] as const) {
+            expect(
+                inAppMessageValidator.safeParse({
+                    ...draft,
+                    actions: [{ label: 'Continue', action, closeOnComplete }],
+                }).success
+            ).toBe(expected);
+        }
+    });
     it.each(['modal', 'story'] as const)(
         'allows dismissible %s messages without closing actions',
         presentation => {

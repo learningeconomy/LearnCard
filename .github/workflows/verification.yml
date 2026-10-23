@@ -163,7 +163,8 @@ jobs:
                   if [[ "$USE_DOCKER_CACHE" == 'true' ]]; then
                     verify_args+=(--docker-builder lc-verification)
                   fi
-                  bun run --cwd apps/learn-card-app lc verify "${verify_args[@]}" > "$PRIVATE_LOG_DIR/startup.jsonl" 2> "$PRIVATE_LOG_DIR/startup.log"
+                  bun run --cwd apps/learn-card-app lc verify "${verify_args[@]}" \
+                    > "$PRIVATE_LOG_DIR/startup.jsonl" 2> "$PRIVATE_LOG_DIR/startup.log"
                   bun run --cwd apps/learn-card-app lc verify script "$GITHUB_WORKSPACE/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir "$STACK_DIR" --video > "$PRIVATE_LOG_DIR/message-navigation.log" 2>&1
                   bun run --cwd apps/learn-card-app lc verify run all --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
 
