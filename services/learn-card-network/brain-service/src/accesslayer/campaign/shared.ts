@@ -5,12 +5,12 @@ import type { ManagedTransaction } from 'neo4j-driver';
 import { neogma } from '@instance';
 import { traceDb } from '@tracing';
 
-export const adultProfilePredicate = `coalesce(p.type, '') <> 'child'
-    AND (p.dob IS NULL OR p.dob = '' OR (
-        p.dob =~ '[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'
-        AND p.dob <= $adultCutoff
-    ))`;
-export const campaignAgePredicate = `(c.excludeMinors = false OR (${adultProfilePredicate}))`;
+const knownBirthdayPredicate = `p.dob IS NOT NULL
+    AND p.dob =~ '[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'`;
+export const adultProfilePredicate = `${knownBirthdayPredicate}
+    AND coalesce(p.type, '') <> 'child' AND p.dob <= $adultCutoff`;
+export const campaignAgePredicate = `(${knownBirthdayPredicate}
+    AND (c.excludeMinors = false OR (${adultProfilePredicate})))`;
 export const liveCampaignPredicate = `c.status = 'live'
     AND (c.startsAt IS NULL OR c.startsAt <= $now)
     AND (c.endsAt IS NULL OR c.endsAt > $now)`;

@@ -112,7 +112,8 @@ plus eligible campaigns with `selfEnroll: true`, joined to the caller's engageme
 Discoverability is not enrollment: `recordEvent` is a no-op until membership exists.
 After a local match, the client can call `enroll({ campaignId })`. Enrollment requires a
 live, in-window, enabled `inApp` campaign with self-enrollment enabled and is idempotent.
-Known minors cannot self-enroll, even when the campaign has `excludeMinors: false`.
+Only profiles with a known adult birthday can self-enroll, even when the campaign has
+`excludeMinors: false`.
 
 **Privacy disclosure:** enrollment tells the server only that this profile matched a
 campaign. That membership can itself reveal sensitive information. Authors must write
@@ -120,9 +121,9 @@ rules that reveal no more than needed. No credential content or targeting eviden
 accepted by the enrollment/event endpoints, and campaign routes disable Sentry input capture.
 
 **Product/legal sign-off is still required for the age policy.** The implemented policy
-excludes `type: 'child'` and known under-18 DOBs when `excludeMinors` is enabled. Missing
-or empty DOB is included; this is not verified adult status. Nonempty non-date-format DOB
-fails closed. Age uses UTC calendar dates; a Feb 29 birthday reaches the cutoff on March 1
+excludes missing, empty, and non-date-format birthdays from every audience, including when
+`excludeMinors: false`. It also excludes `type: 'child'` and known under-18 birthdays when
+`excludeMinors` is enabled. Age uses UTC calendar dates; a Feb 29 birthday reaches the cutoff on March 1
 in a non-leap year. No policy approval or production rollout is implied by this PR.
 
 ## Engagement and SDK

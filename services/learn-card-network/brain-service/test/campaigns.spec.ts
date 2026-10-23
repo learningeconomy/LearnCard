@@ -207,6 +207,7 @@ describe('campaign audiences', () => {
             type: 'dids',
             dids: [
                 did('learner'),
+                did('other'),
                 `did:web:${domain}:users:learner`,
                 did('minor'),
                 did('child'),
@@ -233,12 +234,51 @@ describe('campaign audiences', () => {
         });
         expect(
             await admin.pageAudience({ campaignId: 'pilot-clr', cursor: page.cursor })
-        ).toMatchObject({ hasMore: false, records: [{ profileId: 'unknown-dob' }] });
+        ).toMatchObject({ hasMore: false, records: [{ profileId: 'other' }] });
         await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: false } });
         expect(await admin.addAudience(inputs)).toEqual({ count: 4 });
         await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: true } });
         expect((await admin.pageAudience({ campaignId: 'pilot-clr' })).records).toHaveLength(2);
     });
+
+    it.each([null, '', 'unknown'])(
+        'excludes unavailable birthdays (%s) from targeting, discovery, enrollment and events',
+        async dob => {
+            await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: 'unknown-dob'}) SET p.dob = $dob`,
+                { dob }
+            );
+            const unknown = caller('unknown-dob');
+            for (const excludeMinors of [true, false]) {
+                const campaignId = `birthday-${excludeMinors}`;
+                await admin.create(
+                    draft({ id: campaignId, status: 'live', selfEnroll: true, excludeMinors })
+                );
+                const input = {
+                    campaignId,
+                    source: { type: 'dids' as const, dids: [did('unknown-dob')] },
+                };
+                expect(await admin.previewAudience(input)).toEqual({ count: 0 });
+                expect(await admin.addAudience(input)).toEqual({ count: 0 });
+                expect(await unknown.getMyCampaigns()).toEqual([]);
+                await expect(unknown.enroll({ campaignId })).rejects.toMatchObject({
+                    code: 'FORBIDDEN',
+                });
+                expect((await admin.getStats({ campaignId })).audience).toBe(0);
+
+                // Existing membership must not bypass a missing birthday at read/event time.
+                await neogma.queryRunner.run(
+                    `MATCH (p:Profile {profileId: 'unknown-dob'}), (c:Campaign {id: $campaignId})
+                     CREATE (p)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+                    { campaignId }
+                );
+                expect((await admin.pageAudience({ campaignId })).records).toEqual([]);
+                expect(await unknown.getMyCampaigns()).toEqual([]);
+                expect(await unknown.recordEvent({ campaignId, event: 'shown' })).toBe(false);
+                expect((await admin.getStats({ campaignId })).shown).toBe(0);
+            }
+        }
+    );
 
     it('matches the exact sender/listing, metadata and since; excludes pending and revoked by default', async () => {
         await admin.create(draft());
