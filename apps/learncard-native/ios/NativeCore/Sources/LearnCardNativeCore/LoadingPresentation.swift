@@ -1,8 +1,8 @@
 import Foundation
 import CoreGraphics
 
-/// Artwork can occupy only the visible space above the scroll content. The
-/// control and viewport come from UIKit; no refresh height or inset is assumed.
+/// Fill the entire visible gap above scroll content, including elastic pulls
+/// taller than the native control. Its height only determines the reveal fade.
 public struct RefreshReveal: Equatable, Sendable {
     public let frame: CGRect
     public let opacity: Double
@@ -13,9 +13,9 @@ public struct RefreshReveal: Equatable, Sendable {
                viewport.minX, viewport.minY, viewport.width, viewport.height].allSatisfy(\.isFinite) else {
             frame = .zero; opacity = 0; return
         }
-        let aboveContent = CGRect(x: control.minX, y: control.minY, width: control.width,
-                                  height: max(0, contentTop - control.minY))
-        let exposed = control.intersection(viewport).intersection(aboveContent)
+        let aboveContent = CGRect(x: control.minX, y: viewport.minY, width: control.width,
+                                  height: max(0, contentTop - viewport.minY))
+        let exposed = viewport.intersection(aboveContent)
         guard !exposed.isNull, !exposed.isEmpty else { frame = .zero; opacity = 0; return }
         frame = exposed
         let progress = min(1, max(0, exposed.height / control.height))

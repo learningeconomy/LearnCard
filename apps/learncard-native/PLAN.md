@@ -12,7 +12,7 @@ This remains a later design task; the next learner feature stays safe self-asses
 
 ## Refresh reveal and shared inline feedback — October 23
 
-- [x] Clip the sky to the actual visible gap above scroll content and fade with exposed height; retain native gesture/insets/lifetime and existing sky scenes.
+- [x] Fill the entire elastic gap above scroll content, including deep pulls, then follow native release into the compact strip. Fade with exposed height and keep characters/clouds at the resting-strip size; retain native gesture/insets/lifetime and existing sky scenes.
 - [x] Share a compact three-tile wave across indeterminate SwiftUI loaders, with horizontal contextual labels, compact image/button variants and still accessibility feedback. Keep real fractional progress as a linear bar.
 - [x] Put career availability rechecks in the existing action slot and remove duplicate search loading feedback.
 - [x] Select a simulator type supported by the chosen runtime after the Xcode update, including the Duo-only iOS 27.1 runtime.

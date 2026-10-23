@@ -92,6 +92,8 @@ Use an 8-point minor spacing rhythm (4/8/12/16/24); 20-point outer insets and 14
 
 The assembled painted mark and shared 32-point bold LearnCard wordmark are the main brand lockup. Below them, the greeting or operation title uses system title3 medium in secondary ink, followed by body-sized status copy. Do not place a large bold Welcome back headline beneath an equally bold brand name. The running view scales with Dynamic Type and remains scrollable; static launch retains the same brand lockup. No launch timing or motion change is implied by typography.
 
+The pull-to-refresh sky is an elastic background: it fills the entire unobscured gap above the content and follows native release back into the compact loading strip. Size characters/clouds from the native resting strip, reposition them through extra sky, and keep navigation bars/content outside the artwork bounds. Do not cap coverage while the page keeps moving or vertically stretch illustration assets. Native scrolling owns the gesture, settling and completion.
+
 Indeterminate in-app feedback uses the shared three-tile wave and horizontal contextual labels. It is separate from the logo and full-width refresh sky. Keep mini/image targets compact, preserve real fractional progress as a linear bar, and use still feedback for Reduce Motion/VoiceOver. Rechecks with cached content should use an existing action/status slot rather than inserting a new row that shifts the form. See [loading behavior](../LOADING_FEEDBACK.md).
 
 ### Language previews

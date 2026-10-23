@@ -40,6 +40,24 @@ final class LoadingPresentationTests: XCTestCase {
                                   viewport: CGRect(x: 15, y: 30, width: 200, height: 500), contentTop: 40)
         XCTAssertEqual(value.frame, CGRect(x: 15, y: 30, width: 200, height: 10))
     }
+    func testDeepPullFillsAllExposedSpaceBeyondTheNativeControl() {
+        let control = CGRect(x: 0, y: -60, width: 402, height: 60)
+        let value = RefreshReveal(control: control,
+            viewport: CGRect(x: 0, y: -240, width: 402, height: 800), contentTop: 0)
+        XCTAssertEqual(value.frame, CGRect(x: 0, y: -240, width: 402, height: 240))
+        XCTAssertEqual(value.opacity, 1)
+        XCTAssertEqual(value.frame.maxY, 0)
+    }
+    func testElasticReleaseTracksContentBackToTheNativeStripWithoutAHeightJump() {
+        let control = CGRect(x: 8, y: -60, width: 375, height: 60)
+        for height in stride(from: 240.0, through: 0, by: -1) {
+            let value = RefreshReveal(control: control,
+                viewport: CGRect(x: 0, y: -height, width: 390, height: 700), contentTop: 0)
+            XCTAssertEqual(value.frame.height, height, accuracy: 0.0001)
+            XCTAssertLessThanOrEqual(value.frame.maxY, 0)
+            if height >= 60 { XCTAssertEqual(value.opacity, 1) }
+        }
+    }
     func testTileWaveStaysSmallAndHasStaggeredMotion() {
         for index in 0..<3 {
             for tick in 0..<200 {

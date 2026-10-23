@@ -120,7 +120,9 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
                 let clipping = UIView()
                 clipping.backgroundColor = .clear; clipping.clipsToBounds = true
                 clipping.isUserInteractionEnabled = false
-                clipping.addSubview(host); next.addSubview(clipping)
+                // A scroll sibling can cover the whole elastic gap even when
+                // UIKit clips its smaller refresh control during overscroll.
+                clipping.addSubview(host); scroll.addSubview(clipping)
                 clippingView = clipping
                 self.host = host
             }
@@ -137,18 +139,21 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
             if busy && !wasRefreshing { began = .now; pausedElapsed = 0 }
             if !busy && wasRefreshing { pausedElapsed = max(0, Date.now.timeIntervalSince(began)) }
             wasRefreshing = busy
-            let reveal = RefreshReveal(control: next.bounds,
-                viewport: scroll.convert(scroll.bounds, to: next),
-                contentTop: Double(anchor?.convert(CGPoint.zero, to: next).y ?? next.bounds.minY))
+            let reveal = RefreshReveal(control: next.convert(next.bounds, to: scroll),
+                // Navigation bars can cover part of a scroll view's bounds.
+                // Use safeAreaInsets, not adjustedContentInset: UIKit adds the
+                // refresh inset to the latter while work is running.
+                viewport: scroll.bounds.inset(by: scroll.safeAreaInsets),
+                contentTop: Double(anchor?.convert(CGPoint.zero, to: scroll).y ?? scroll.bounds.minY))
             let shown = configuration.active && cycle.scene != nil && reveal.opacity > 0 && (busy || pull > 0.5)
             let updateArtwork = shown || host?.isHidden == false
             host?.isHidden = !shown
-            // The native control may extend under the content during release.
-            // Clip to the actual exposed gap without moving content or changing
-            // UIKit's insets. Keep the drawing's full size as the aperture opens.
+            // Track the entire gap with native scrolling, including the spring
+            // back to the smaller loading strip. Never paint over the content.
             clippingView?.frame = reveal.frame
             clippingView?.alpha = reveal.opacity
-            host?.frame = next.bounds.offsetBy(dx: -reveal.frame.minX, dy: -reveal.frame.minY)
+            host?.frame = CGRect(origin: .zero, size: CGSize(width: reveal.frame.width,
+                height: max(next.bounds.height, reveal.frame.height)))
             if updateArtwork { host?.configuration = contentConfiguration(moving: shown && busy && !configuration.reduced) }
             if !busy && !scroll.isDragging && pull <= 0.5 { cycle.end() }
         }
@@ -156,8 +161,10 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
             let scene = cycle.scene
             let began = self.began
             let pausedElapsed = configuration.reduced ? 0 : self.pausedElapsed
+            let artworkHeight = control?.bounds.height
             return UIHostingConfiguration {
-                RefreshSkyView(sky: scene?.sky ?? .morning, cameo: scene?.cameo ?? .none, began: began, moving: moving, pausedElapsed: pausedElapsed)
+                RefreshSkyView(sky: scene?.sky ?? .morning, cameo: scene?.cameo ?? .none, began: began,
+                    moving: moving, pausedElapsed: pausedElapsed, artworkHeight: artworkHeight)
             }.margins(.all, 0)
         }
         private func removeArtwork() {

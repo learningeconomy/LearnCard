@@ -9,15 +9,19 @@ struct RefreshSkyView: View {
     let began: Date
     let moving: Bool
     var pausedElapsed: TimeInterval = 0
+    /// The native resting strip sets object sizes; extra sky changes positions
+    /// and background coverage, never stretches the visitor/cloud artwork.
+    var artworkHeight: CGFloat? = nil
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !moving)) { tick in
             let elapsed = moving ? max(0, tick.date.timeIntervalSince(began)) : pausedElapsed
             Canvas { context, size in
                 guard size.width > 0, size.height > 0 else { return }
-                drawSky(context: &context, size: size, elapsed: elapsed)
+                let unitHeight = artworkHeight ?? size.height
+                drawSky(context: &context, size: size, unitHeight: unitHeight, elapsed: elapsed)
                 let pose = SkyMotion.pose(elapsed: elapsed, animated: true)
-                let scale = min(size.height * 0.88, 76)
+                let scale = min(unitHeight * 0.88, 76)
                 drawVisitor(context: context, size: size, pose: pose, scale: scale)
                 if cameo == .twoCows {
                     drawVisitor(context: context, size: size,
@@ -29,7 +33,7 @@ struct RefreshSkyView: View {
             .accessibilityHidden(true)
     }
 
-    private func drawSky(context: inout GraphicsContext, size: CGSize, elapsed: Double) {
+    private func drawSky(context: inout GraphicsContext, size: CGSize, unitHeight: CGFloat, elapsed: Double) {
         let w = size.width, h = size.height
         let fill: Color = switch sky {
         case .morning: Palette.skyMorning
@@ -41,7 +45,7 @@ struct RefreshSkyView: View {
         if sky == .night {
             SkyAtmosphere.night(context: &context, size: size, elapsed: elapsed)
             let moon = skyPoint(x: 0.84, y: 0.35, size: size, elapsed: elapsed, strength: 0.75)
-            let r = min(14, h * 0.19), x = moon.x, y = moon.y
+            let r = min(14, unitHeight * 0.19), x = moon.x, y = moon.y
             context.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
             context.fill(Path(ellipseIn: CGRect(x: x - r * 0.28, y: y - r * 1.24, width: r * 2, height: r * 2)), with: .color(fill))
             return
@@ -53,16 +57,16 @@ struct RefreshSkyView: View {
         var distant = context; distant.opacity = 0.55
         if sky == .afternoon {
             let sun = skyPoint(x: 0.3, y: 0.26, size: size, elapsed: elapsed, strength: 0.6)
-            let r = h * 0.12
+            let r = unitHeight * 0.12
             context.fill(Path(ellipseIn: CGRect(x: sun.x - r, y: sun.y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
         }
-        cloud(context: &distant, x: far.x, y: far.y, unit: h * 0.3)
+        cloud(context: &distant, x: far.x, y: far.y, unit: unitHeight * 0.3)
         if sky != .dusk {
-            cloud(context: &distant, x: low.x, y: low.y, unit: h * 0.26)
+            cloud(context: &distant, x: low.x, y: low.y, unit: unitHeight * 0.26)
             SkyAtmosphere.distantBirds(context: &context, size: size, elapsed: elapsed)
         }
         if sky == .morning {
-            let r = min(11, h * 0.15), point = skyPoint(x: 0.4, y: 0.4, size: size, elapsed: elapsed, strength: 0.75)
+            let r = min(11, unitHeight * 0.15), point = skyPoint(x: 0.4, y: 0.4, size: size, elapsed: elapsed, strength: 0.75)
             context.fill(Path(ellipseIn: CGRect(x: point.x - r, y: point.y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
             for angle in [-2.5, -1.6, -0.65, 0.12] {
                 var ray = Path()
@@ -72,7 +76,7 @@ struct RefreshSkyView: View {
             }
         }
         if sky == .dusk {
-            let r = min(19, h * 0.27)
+            let r = min(19, unitHeight * 0.27)
             let sun = skyPoint(x: 0.42, y: 0.87, size: size, elapsed: elapsed, strength: 0.75)
             context.fill(Path(ellipseIn: CGRect(x: sun.x - r, y: sun.y - r, width: r * 2, height: r * 2)), with: .color(Palette.portfolioCard))
             var horizon = Path()
@@ -88,8 +92,8 @@ struct RefreshSkyView: View {
         }
         let left = skyPoint(x: 0.1, y: 0.73, size: size, elapsed: elapsed)
         let right = skyPoint(x: 0.84, y: sky == .dusk ? 0.27 : 0.75, size: size, elapsed: elapsed, strength: 0.85)
-        cloud(context: &context, x: left.x, y: left.y, unit: h * 0.6)
-        cloud(context: &context, x: right.x, y: right.y, unit: h * 0.44)
+        cloud(context: &context, x: left.x, y: left.y, unit: unitHeight * 0.6)
+        cloud(context: &context, x: right.x, y: right.y, unit: unitHeight * 0.44)
     }
 
     private func skyPoint(x: CGFloat, y: CGFloat, size: CGSize, elapsed: Double, strength: CGFloat = 1) -> CGPoint {
