@@ -8,16 +8,25 @@
 #   - Dynamic Caddyfile regenerated after each deploy/teardown
 #
 # Usage:
-#   ./deploy-preview.sh <PR_NUMBER> <BRANCH_NAME> [BASE_DOMAIN]
+#   ./deploy-preview.sh <PR_NUMBER> <BRANCH_NAME> [BASE_DOMAIN] [HEAD_SHA]
+#
+# HEAD_SHA pins the deploy to one commit (preview.yml passes the SHA its gate
+# looked up). Without it, the script deploys the tip of origin/<BRANCH_NAME>.
 #
 # Example:
-#   ./deploy-preview.sh 456 feature/my-feature preview.learncard.com
+#   ./deploy-preview.sh 456 feature/my-feature preview.learncard.com 0123abcd...
 # =============================================================================
 set -euo pipefail
 
 PR_NUMBER="${1:?Usage: deploy-preview.sh <PR_NUMBER> <BRANCH_NAME> [BASE_DOMAIN]}"
 BRANCH_NAME="${2:?Usage: deploy-preview.sh <PR_NUMBER> <BRANCH_NAME> [BASE_DOMAIN]}"
 BASE_DOMAIN="${3:-preview.learncard.ai}"
+HEAD_SHA="${4:-}"
+
+if [ -n "$HEAD_SHA" ] && ! echo "$HEAD_SHA" | grep -qE '^[0-9a-f]{40}$'; then
+    echo "ERROR: HEAD_SHA must be a 40-character lowercase hex commit SHA, got: ${HEAD_SHA}" >&2
+    exit 1
+fi
 
 PREVIEW_DOMAIN="pr-${PR_NUMBER}.${BASE_DOMAIN}"
 PROJECT_NAME="pr-${PR_NUMBER}"
@@ -30,6 +39,7 @@ SCRIPT_DIR="$REPO_DIR/preview/scripts"
 echo "=== Deploying Preview: ${PREVIEW_DOMAIN} ==="
 echo "  PR:     #${PR_NUMBER}"
 echo "  Branch: ${BRANCH_NAME}"
+echo "  Commit: ${HEAD_SHA:-tip of origin/${BRANCH_NAME}}"
 echo "  Domain: ${PREVIEW_DOMAIN}"
 
 # --- Ensure shared infrastructure exists (outside the lock) ---
@@ -99,8 +109,14 @@ else
     echo "Warning: Cleanup script is empty or missing, skipping cron installation"
 fi
 
-git checkout "$BRANCH_NAME" || git checkout "origin/$BRANCH_NAME" --detach
-git reset --hard "origin/$BRANCH_NAME"
+if [ -n "$HEAD_SHA" ]; then
+    # Deploy exactly the commit that triggered this run, even if the branch moved since.
+    git fetch origin "$HEAD_SHA"
+    git checkout --detach "$HEAD_SHA"
+else
+    git checkout "$BRANCH_NAME" || git checkout "origin/$BRANCH_NAME" --detach
+    git reset --hard "origin/$BRANCH_NAME"
+fi
 
 # --- Generate compose override for DID resolution + optional env overrides ---
 # The PR branch may not have the DOMAIN_NAME fix, so we generate an
