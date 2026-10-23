@@ -190,10 +190,10 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 
 `closeOnComplete` (default `true`) closes the message after the action runs. `capgoUpdate` never
 auto-closes — it swaps into an inline progress state instead. `appStore` can no-op when no URL is
-available for the current platform. Required modals must therefore include at least one action that
-reliably closes the message: `dismiss`, `internalLink`, or `externalLink`, with
-`closeOnComplete` left enabled. A later `openMessage` action has the same closing behavior;
-host-dependent `openApp` does not qualify because it can no-op in an unsupported app.
+available for the current platform. Legacy required modals remain valid, including force-update
+campaigns with only `appStore` or `capgoUpdate`. Authors should provide a closing action when
+appropriate: `dismiss`, `internalLink`, `externalLink`, or `openMessage`, with `closeOnComplete`
+left enabled. Host-dependent `openApp` can no-op in an unsupported app.
 
 ### Frequency
 
@@ -476,8 +476,8 @@ loaded only for dev/debug-enabled builds; normal production builds omit it.
 
 ## Stories, embedded pages, and translations (LC-2263)
 
-`presentation` also accepts `story` and `iframe`. Modal/banner/toast rendering is unchanged; required
-modals now reject configurations without a guaranteed closing action. Targeting and triggers still
+`presentation` also accepts `story` and `iframe`. Modal/banner/toast rendering and legacy required
+modal validation are unchanged. Targeting and triggers still
 run before presentation; both new formats use the existing blocking fatigue rules. Deploy supporting
 clients before enabling campaigns that use these values.
 Presentation fields are exclusive: only stories may define `steps`, and only iframes may define

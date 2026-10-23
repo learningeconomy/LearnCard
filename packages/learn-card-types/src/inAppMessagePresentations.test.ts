@@ -132,7 +132,7 @@ describe('rich message schema', () => {
             'an app-store action that can no-op',
             { actions: [{ label: 'Store', action: { type: 'appStore' } }] },
         ],
-    ])('rejects required modals with %s', (_label, fields) => {
+    ])('preserves legacy required modals with %s', (_label, fields) => {
         expect(
             inAppMessageValidator.safeParse({
                 id: 'required-modal',
@@ -140,7 +140,7 @@ describe('rich message schema', () => {
                 dismissible: false,
                 ...fields,
             }).success
-        ).toBe(false);
+        ).toBe(true);
     });
     it.each([
         { label: 'Done', action: { type: 'dismiss' } },
@@ -155,6 +155,22 @@ describe('rich message schema', () => {
                 actions: [action],
             }).success
         ).toBe(true);
+    });
+    it.each(['appStore', 'capgoUpdate'])('retains legacy force-update campaigns: %s', type => {
+        const result = parseInAppMessagesFlagWithErrors({
+            messages: [
+                {
+                    id: 'force-update',
+                    title: 'Update required',
+                    presentation: 'modal',
+                    dismissible: false,
+                    actions: [{ label: 'Update', action: { type } }],
+                },
+            ],
+        });
+        expect(result.invalid).toEqual([]);
+        expect(result.flag.messages).toHaveLength(1);
+        expect(result.flag.messages[0]?.actions[0]?.action.type).toBe(type);
     });
     it('validates the effective final-screen actions for required stories', () => {
         const requiredStory = {

@@ -418,6 +418,47 @@ describe('iframe lifecycle', () => {
             )
         );
     };
+    it.each(['load', 'ready'])('keeps a loaded frame ready after flag re-parsing (%s)', event => {
+        vi.useFakeTimers();
+        const current = { ...message, dismissible: event === 'load' };
+        const onClose = vi.fn();
+        const { rerender } = render(<InAppMessageIframe message={current} onClose={onClose} />);
+        const frame = screen.getByTitle('Embedded') as HTMLIFrameElement;
+        if (event === 'load') fireEvent.load(frame);
+        else send(frame, 'ready');
+
+        rerender(
+            <InAppMessageIframe message={inAppMessageValidator.parse(current)} onClose={onClose} />
+        );
+        act(() => vi.advanceTimersByTime(101));
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(frame.getAttribute('aria-hidden')).toBe('false');
+        expect(screen.getByTitle('Embedded')).toBe(frame);
+    });
+    it('applies changed navigation permissions without restarting a ready frame', async () => {
+        vi.useFakeTimers();
+        const onClose = vi.fn();
+        const { rerender } = render(<InAppMessageIframe message={message} onClose={onClose} />);
+        const frame = screen.getByTitle('Embedded') as HTMLIFrameElement;
+        send(frame, 'ready');
+        rerender(
+            <InAppMessageIframe
+                message={inAppMessageValidator.parse({
+                    ...message,
+                    iframe: { ...message.iframe, allowedInternalPaths: ['/passport'] },
+                })}
+                onClose={onClose}
+            />
+        );
+        send(frame, 'runAction', { type: 'internalLink', path: '/wallet' });
+        expect(mocks.runAction).not.toHaveBeenCalled();
+        await act(async () =>
+            send(frame, 'runAction', { type: 'internalLink', path: '/passport' })
+        );
+        expect(mocks.runAction).toHaveBeenCalledWith({ type: 'internalLink', path: '/passport' });
+        act(() => vi.advanceTimersByTime(101));
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
     it('accepts ready and rejects another origin', () => {
         render(<InAppMessageIframe message={message} onClose={vi.fn()} />);
         const frame = screen.getByTitle('Embedded') as HTMLIFrameElement;

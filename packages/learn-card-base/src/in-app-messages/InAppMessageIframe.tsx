@@ -30,6 +30,10 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
         callbacks.current = { onClose, onAction, runAction };
     }, [onClose, onAction, runAction]);
     const config = message.iframe;
+    const allowedInternalPaths = useRef(config?.allowedInternalPaths);
+    useLayoutEffect(() => {
+        allowedInternalPaths.current = config?.allowedInternalPaths;
+    }, [config?.allowedInternalPaths]);
 
     useEffect(() => {
         if (!config || !separateOrigin) return;
@@ -53,7 +57,7 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
                 event,
                 frame.current?.contentWindow ?? null,
                 config.url,
-                config.allowedInternalPaths
+                allowedInternalPaths.current
             );
             if (!data) return;
             if (data.event === 'ready') {
@@ -96,13 +100,7 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
             window.removeEventListener('message', receive);
             window.removeEventListener('offline', fail);
         };
-    }, [
-        config?.url,
-        config?.loadTimeoutMs,
-        config?.allowedInternalPaths,
-        message.dismissible,
-        separateOrigin,
-    ]);
+    }, [config?.url, config?.loadTimeoutMs, message.dismissible, separateOrigin]);
 
     if (!config) return null;
     return (

@@ -400,16 +400,6 @@ export const inAppMessageValidator = z
             }
         }
 
-        if (!message.dismissible && message.presentation === 'modal') {
-            if (!hasGuaranteedClosingAction(message.actions)) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ['actions'],
-                    message: 'Required modals need at least one action that closes the message',
-                });
-            }
-        }
-
         if (!message.dismissible && message.presentation === 'story' && message.steps?.length) {
             const finalStepIndex = message.steps.length - 1;
             const finalStepActions = message.steps[finalStepIndex]?.actions;
