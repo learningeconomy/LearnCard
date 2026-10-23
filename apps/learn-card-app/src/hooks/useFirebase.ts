@@ -87,10 +87,9 @@ const getAuthErrorDetails = (error: unknown): AuthErrorDetails => {
     };
 };
 
-const getClassifiableAuthError = (error: unknown): string | number | undefined => {
-    const code = getErrorCode(error);
-    if (typeof code === 'string') return code;
-    return getAuthErrorDetails(error).message ?? code;
+const getClassifiableAuthError = (error: unknown): string | undefined => {
+    const { code, message } = getAuthErrorDetails(error);
+    return [code, message].filter(Boolean).join(' ') || undefined;
 };
 
 const getSocialLoginCancellationReason = (
