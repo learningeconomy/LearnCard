@@ -65,7 +65,7 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 - Iframe bridge input is untrusted: validate window, origin, envelope, and safe target before running
   actions. No Capgo or identity APIs. Internal destinations must exactly match the campaign's
   `iframe.allowedInternalPaths` (default deny), including query/fragment. Required frames ignore
-  bridge close/dismiss requests; their host-owned Close button becomes available on error.
+  bridge close/dismiss requests; their host-owned Close button becomes available on error or after 30 seconds, including after ready.
 - Iframe campaigns are web-only: enforce `presentationSupport` in selection, host (including overrides),
   and renderer. Native subframes can bypass the JS allowlist through Capacitor handlers; the HTML
   sandbox is not native isolation. Do not enable native embedding without a verified native boundary.

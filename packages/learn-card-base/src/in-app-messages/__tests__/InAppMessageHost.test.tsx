@@ -15,6 +15,7 @@ import { setInAppMessageOverride } from '../debugOverrideStore';
 import type { MessagePresentationProps, InAppMessagePresentationEvent } from '../presentationTypes';
 import { I18nProvider } from '../../i18n';
 import { ModalsProvider, useModalsContext } from '../../components/modals/ModalsContext';
+import { useModal } from '../../components/modals/useModal';
 
 const state = vi.hoisted(() => ({
     native: false,
@@ -96,6 +97,49 @@ describe('message host impressions', () => {
         setInAppMessageOverride(null);
         vi.useRealTimers();
         vi.restoreAllMocks();
+    });
+
+    it('continues to the next campaign after another feature closes the modal stack', async () => {
+        state.gate = true;
+        state.messages = ['First campaign', 'Second campaign'].map((title, index) =>
+            inAppMessageValidator.parse({
+                id: `stack-${index}`,
+                title,
+                priority: 2 - index,
+                presentation: 'story',
+                bypassFatigue: true,
+                steps: [{ title }],
+                actions: [{ label: 'Done', action: { type: 'dismiss' } }],
+            })
+        );
+        const Stack = () => {
+            const { modals } = useModalsContext();
+            const { closeAllModals } = useModal();
+            return (
+                <>
+                    <button onClick={closeAllModals}>Close stack</button>
+                    {modals
+                        .filter(modal => modal.open)
+                        .map(modal => (
+                            <section key={modal.id}>{modal.component}</section>
+                        ))}
+                </>
+            );
+        };
+        const onEvent = vi.fn();
+        render(
+            <ModalsProvider>
+                <InAppMessageHost onEvent={onEvent} />
+                <Stack />
+            </ModalsProvider>
+        );
+        await screen.findByRole('heading', { name: 'First campaign' });
+        fireEvent.click(screen.getByText('Close stack'));
+        await screen.findByRole('heading', { name: 'Second campaign' });
+        expect(onEvent.mock.calls.map(([event]) => [event.type, event.messageId])).toEqual([
+            ['shown', 'stack-0'],
+            ['shown', 'stack-1'],
+        ]);
     });
 
     it('removes a required iframe and its owned surface when the user closes a load error', async () => {

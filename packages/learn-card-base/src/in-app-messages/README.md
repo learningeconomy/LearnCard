@@ -161,20 +161,20 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 
 ### Message
 
-| Field          | Type                                                    | Default   | Notes                                                         |
-| -------------- | ------------------------------------------------------- | --------- | ------------------------------------------------------------- |
-| `id`           | `string`                                                | —         | Stable key; used to persist dismissal / frequency state       |
-| `priority`     | `number`                                                | `0`       | Highest matching message wins                                 |
-| `dismissible`  | `boolean`                                               | `true`    | `false` = required/blocking; iframe errors still offer Close  |
-| `frequency`    | `"once" \| "session" \| "always" \| {…}`                | `"once"`  | See [Frequency](#frequency)                                   |
-| `presentation` | `"modal" \| "banner" \| "toast" \| "story" \| "iframe"` | `"modal"` | Stories require `steps`; iframes require `iframe.url`         |
-| `media`        | `{ type, url, aspect?, alt? }`                          | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`     |
-| `emoji`        | `string`                                                | —         | Hero glyph shown when `media` is not set (modal/banner/toast) |
-| `title`        | `string`                                                | —         | Required                                                      |
-| `body`         | `string`                                                | —         | Optional                                                      |
-| `actions`      | `Action[]`                                              | `[]`      | See [Actions](#actions)                                       |
-| `targeting`    | `Predicate`                                             | —         | Omitted → matches everyone                                    |
-| `enabled`      | `boolean`                                               | `true`    | Set `false` to disable without removing from the flag         |
+| Field          | Type                                                    | Default   | Notes                                                                         |
+| -------------- | ------------------------------------------------------- | --------- | ----------------------------------------------------------------------------- |
+| `id`           | `string`                                                | —         | Stable key; used to persist dismissal / frequency state                       |
+| `priority`     | `number`                                                | `0`       | Highest matching message wins                                                 |
+| `dismissible`  | `boolean`                                               | `true`    | `false` = required/blocking; iframes offer Close on error or after 30 seconds |
+| `frequency`    | `"once" \| "session" \| "always" \| {…}`                | `"once"`  | See [Frequency](#frequency)                                                   |
+| `presentation` | `"modal" \| "banner" \| "toast" \| "story" \| "iframe"` | `"modal"` | Stories require `steps`; iframes require `iframe.url`                         |
+| `media`        | `{ type, url, aspect?, alt? }`                          | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`                     |
+| `emoji`        | `string`                                                | —         | Hero glyph shown when `media` is not set (modal/banner/toast)                 |
+| `title`        | `string`                                                | —         | Required                                                                      |
+| `body`         | `string`                                                | —         | Optional                                                                      |
+| `actions`      | `Action[]`                                              | `[]`      | See [Actions](#actions)                                                       |
+| `targeting`    | `Predicate`                                             | —         | Omitted → matches everyone                                                    |
+| `enabled`      | `boolean`                                               | `true`    | Set `false` to disable without removing from the flag                         |
 
 ### Actions
 
@@ -726,3 +726,9 @@ in-app-messages/
 cd packages/learn-card-base
 bunx vitest run src/in-app-messages/__tests__/predicates.test.ts
 ```
+
+Required iframe campaigns always gain a host-owned Close button after 30 seconds from presentation,
+even after a successful ready handshake. Errors expose Close immediately. The embedded page cannot
+invoke this escape through bridge close/dismiss events. If another feature removes a campaign's
+modal stack, dismissible campaigns release the host after exit cleanup without a user-dismissal
+analytics event; required campaigns restore the same content and in-flight action state.

@@ -435,6 +435,25 @@ describe('iframe lifecycle', () => {
         expect(frame.getAttribute('aria-hidden')).toBe('false');
         expect(screen.getByTitle('Embedded')).toBe(frame);
     });
+    it('provides a host-owned escape after thirty seconds even when a required frame is ready', () => {
+        vi.useFakeTimers();
+        const onClose = vi.fn();
+        render(
+            <InAppMessageIframe message={{ ...message, dismissible: false }} onClose={onClose} />
+        );
+        const frame = screen.getByTitle('Embedded') as HTMLIFrameElement;
+        send(frame, 'ready');
+        act(() => vi.advanceTimersByTime(29_999));
+        expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+        expect(screen.queryByRole('alert')).toBeNull();
+        act(() => vi.advanceTimersByTime(1));
+        expect(frame.getAttribute('aria-hidden')).toBe('false');
+        send(frame, 'close');
+        send(frame, 'runAction', { type: 'dismiss' });
+        expect(onClose).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        expect(onClose).toHaveBeenCalledWith('dismissed');
+    });
     it('applies changed navigation permissions without restarting a ready frame', async () => {
         vi.useFakeTimers();
         const onClose = vi.fn();
