@@ -65,9 +65,19 @@ export const WorkloadEnvSourceValidator = z.discriminatedUnion('kind', [
         .object({
             kind: z.literal('endpoint'),
             endpointId: id,
-            part: z.enum(['url', 'host', 'port', 'hostport']),
+            part: z.enum(['url', 'host', 'port', 'hostport', 'origin']),
+            /**
+             * `private` (default): the in-network service address. `published`: the
+             * platform-assigned externally reachable address of an ecosystem/public HTTP(S)
+             * endpoint. Packages never supply the address; the agent resolves it at render.
+             */
+            address: z.enum(['private', 'published']).optional(),
         })
-        .strict(),
+        .strict()
+        .refine(
+            (source): boolean => source.address === 'published' || source.part !== 'origin',
+            'The origin part is only available for published addresses.'
+        ),
     z.object({ kind: z.literal('literal'), value: literal }).strict(),
 ]);
 export type WorkloadEnvSource = z.infer<typeof WorkloadEnvSourceValidator>;
@@ -670,7 +680,19 @@ export const validateWorkloadReferences = (
                 if (secret && !secret.consumers.includes(component.id))
                     issue(path, 'Component is not a declared secret consumer');
             }
-            if (source.kind === 'endpoint') resolve([source.endpointId], endpoints, path);
+            if (source.kind === 'endpoint') {
+                resolve([source.endpointId], endpoints, path);
+                const target = manifest.endpoints.find(
+                    (entry): boolean => entry.id === source.endpointId
+                );
+                if (
+                    source.address === 'published' &&
+                    target &&
+                    (target.visibility === 'internal' ||
+                        (target.protocol !== 'http' && target.protocol !== 'https'))
+                )
+                    issue(path, 'Published addresses require an ecosystem/public HTTP(S) endpoint');
+            }
             if (source.kind === 'config' && !configExists(source.path))
                 issue(path, 'Unknown config path');
         });
