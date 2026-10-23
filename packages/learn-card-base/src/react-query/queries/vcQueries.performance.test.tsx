@@ -10,23 +10,28 @@ const host = vi.hoisted(() => ({
     wallet: null as BespokeLearnCard | null,
     switchedDid: undefined as string | undefined,
     init: vi.fn(),
+    record: vi.fn(),
 }));
 vi.mock('learn-card-base', async () => ({
     useWallet: () => ({ initWallet: host.init }),
     switchedProfileStore: { use: { switchedDid: () => host.switchedDid } },
     CredentialCategoryEnum: (await import('../../types/boostAndCredentialMetadata'))
         .CredentialCategoryEnum,
-    categoryMetadata: {},
+    categoryMetadata: (await import('../../types/boostAndCredentialMetadata')).categoryMetadata,
     newCredsStore: {},
     credentialWithEditsHelper: (vc: VC) => vc,
 }));
 vi.mock('../../stores/walletStore', () => ({
     walletStore: { use: { wallet: () => host.wallet } },
+    switchedProfileStore: { get: { switchedDid: () => host.switchedDid } },
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getIssuanceDate: (vc: VC) => vc.issuanceDate,
 }));
-vi.mock('learn-card-base/hooks/useWallet', () => ({ getCategoryForCredential: vi.fn() }));
+vi.mock('learn-card-base/hooks/useWallet', () => ({
+    getCategoryForCredential: vi.fn(),
+    default: () => ({ initWallet: host.init }),
+}));
 vi.mock('../mutations/syncConsentFlow', () => ({
     useSyncConsentContractsMutation: vi.fn(),
     useAcceptAndStoreCredentialsMutation: vi.fn(),
@@ -35,17 +40,21 @@ vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
     getOrFetchConsentedContracts: vi.fn(),
 }));
 vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
-    getOrFetchCredentialRecordForBoost: vi.fn(),
+    getOrFetchCredentialRecordForBoost: host.record,
 }));
 vi.mock('learn-card-base/helpers/backfills', () => ({ useBackfillBoostUris: vi.fn() }));
 import {
     useGetResolvedCredential,
+    getOrFetchResolvedCredential,
     useGetResolvedCredentials,
     useResolveManyCredentials,
     useGetCredentials,
     useGetCredentialsForSkills,
     useGetCredentialsPaginated,
+    useGetSummaryInfo,
 } from './vcQueries';
+import { useGetEnrichedSession, useGetEnrichedTopicsList } from './aiPassport-queries';
+import { categoryMetadata, CredentialCategoryEnum } from '../../types/boostAndCredentialMetadata';
 
 const vc = {
     type: ['VerifiableCredential'],
@@ -264,4 +273,189 @@ it('resumes same-account cached reads after reader re-initialization without re-
     expect(result.current.many.data).toEqual([vc]);
     expect(read).toHaveBeenCalledTimes(1);
     expect(host.init).not.toHaveBeenCalled();
+});
+
+describe('imperative credential compatibility', () => {
+    it('skips empty URIs without initializing or reading an account', async () => {
+        const { read } = makeWallet();
+        await expect(getOrFetchResolvedCredential('', host.init, client)).resolves.toBeUndefined();
+        expect(host.init).not.toHaveBeenCalled();
+        expect(read).not.toHaveBeenCalled();
+    });
+
+    it('returns undefined for a missing document and can recover on a later call', async () => {
+        const { read } = makeWallet();
+        read.mockResolvedValueOnce(undefined);
+        await expect(
+            getOrFetchResolvedCredential('uri', host.init, client)
+        ).resolves.toBeUndefined();
+        await expect(getOrFetchResolvedCredential('uri', host.init, client)).resolves.toEqual(vc);
+        expect(read).toHaveBeenCalledTimes(2);
+    });
+
+    it('shares pending and fresh documents with mounted readers', async () => {
+        const { read } = makeWallet();
+        let resolve!: (value: VC) => void;
+        read.mockImplementation(
+            () =>
+                new Promise<VC>(r => {
+                    resolve = r;
+                })
+        );
+        const { result } = renderHook(() => useGetResolvedCredential('uri'), { wrapper });
+        const pending = getOrFetchResolvedCredential('uri', host.init, client);
+        resolve(vc);
+        await expect(pending).resolves.toEqual(vc);
+        await waitFor(() => expect(result.current.data).toEqual(vc));
+        await expect(getOrFetchResolvedCredential('uri', host.init, client)).resolves.toEqual(vc);
+        expect(read).toHaveBeenCalledTimes(1);
+    });
+
+    it('still propagates transport and initialization failures', async () => {
+        const { read } = makeWallet();
+        read.mockRejectedValue(new Error('offline'));
+        await expect(getOrFetchResolvedCredential('uri', host.init, client)).rejects.toThrow(
+            'offline'
+        );
+        host.init.mockRejectedValue(new Error('not signed in'));
+        await expect(getOrFetchResolvedCredential('uri', host.init, client)).rejects.toThrow(
+            'not signed in'
+        );
+    });
+});
+
+it.each(['missing', 'unreadable'] as const)(
+    'rechecks a partial multi-credential result after a %s read, reusing healthy documents',
+    async failure => {
+        const { read } = makeWallet();
+        read.mockImplementation(async uri => {
+            if (uri === 'bad') {
+                if (failure === 'unreadable') throw new Error('offline');
+                return undefined;
+            }
+            return vc;
+        });
+        const first = renderHook(() => useResolveManyCredentials(['uri', 'bad']), { wrapper });
+        await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
+        expect(first.result.current.data).toEqual([vc, undefined]);
+        first.unmount();
+        read.mockResolvedValue(vc);
+        const second = renderHook(() => useResolveManyCredentials(['uri', 'bad']), { wrapper });
+        await waitFor(() => expect(second.result.current.data).toEqual([vc, vc]));
+        expect(read.mock.calls.filter(([uri]) => uri === 'uri')).toHaveLength(1);
+        expect(read.mock.calls.filter(([uri]) => uri === 'bad')).toHaveLength(2);
+    }
+);
+
+it('backfills missing credentials without rejecting the batch or retrying completed records', async () => {
+    const { read } = makeWallet();
+    read.mockImplementation(async uri =>
+        uri === 'missing' ? undefined : { ...vc, boostId: 'boost' }
+    );
+    const update = vi.fn().mockResolvedValue(true);
+    host.wallet!.index.LearnCloud.update = update;
+    const { useBackfillBoostUris } =
+        await vi.importActual<typeof import('../../helpers/backfills')>('../../helpers/backfills');
+    const { result } = renderHook(useBackfillBoostUris, { wrapper });
+    await expect(
+        result.current([
+            { id: 'a', uri: 'missing' },
+            { id: 'b', uri: 'healthy' },
+        ] as never)
+    ).resolves.toEqual([true, true]);
+    expect(update).toHaveBeenCalledWith('a', { __v: 1 });
+    expect(update).toHaveBeenCalledWith('b', { __v: 1, boostUri: 'boost' });
+    await result.current([{ id: 'a', uri: 'missing', __v: 1 }] as never);
+    expect(read).toHaveBeenCalledTimes(2);
+});
+
+it.each([true, false])(
+    'keeps healthy AI sessions when other records/VCs are missing (topic record: %s)',
+    async topicRecordExists => {
+        const { read } = makeWallet();
+        read.mockImplementation(async uri =>
+            uri === 'topic-vc' ? { ...vc, boostId: 'topic' } : uri === 'healthy-vc' ? vc : undefined
+        );
+        host.record.mockImplementation(async uri =>
+            uri === 'topic'
+                ? topicRecordExists
+                    ? { uri: 'topic-vc' }
+                    : null
+                : uri === 'no-record'
+                  ? null
+                  : { uri: uri + '-vc' }
+        );
+        const getBoost = vi.fn(async uri => {
+            if (!uri) throw new Error('Missing boost URI');
+            return { uri };
+        });
+        const getBoostChildren = vi.fn(async uri => {
+            if (!uri) throw new Error('Missing boost URI');
+            return { records: [{ uri: 'healthy' }, { uri: 'no-record' }, { uri: 'deleted' }] };
+        });
+        host.wallet!.invoke = { getBoost, getBoostChildren } as never;
+        const { result } = renderHook(() => useGetEnrichedSession('topic'), { wrapper });
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(result.current.data?.sessions.map(session => session.vc)).toEqual([
+            vc,
+            undefined,
+            undefined,
+        ]);
+        expect(getBoostChildren.mock.calls[0][0]).toBe('topic');
+        expect(read.mock.calls.some(([uri]) => !uri)).toBe(false);
+    }
+);
+
+it('keeps healthy AI topics when another topic VC is missing, without querying an empty boost URI', async () => {
+    const { read } = makeWallet();
+    read.mockImplementation(async uri =>
+        uri === 'missing' ? undefined : { ...vc, boostId: 'topic' }
+    );
+    const getBoost = vi.fn(async uri => {
+        if (!uri) throw new Error('Missing boost URI');
+        return { uri };
+    });
+    const getBoostChildren = vi.fn(async uri => {
+        if (!uri) throw new Error('Missing boost URI');
+        return { records: [] };
+    });
+    host.wallet!.invoke = { getBoost, getBoostChildren } as never;
+    const { result } = renderHook(
+        () => useGetEnrichedTopicsList([{ uri: 'missing' }, { uri: 'healthy' }] as never),
+        { wrapper }
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toHaveLength(2);
+    expect(result.current.data?.[0].topicVc).toBeUndefined();
+    expect(result.current.data?.[1].topicVc).toMatchObject({ boostId: 'topic' });
+    expect(getBoost).toHaveBeenCalledExactlyOnceWith('topic');
+});
+
+it('keeps summary information when optional topic and assessment credentials are missing', async () => {
+    const { read } = makeWallet();
+    const summary = { ...vc, boostId: 'summary' };
+    read.mockImplementation(async uri => (uri === 'summary-vc' ? summary : undefined));
+    host.record.mockImplementation(async uri => ({ uri: uri + '-vc' }));
+    const getBoost = vi.fn().mockResolvedValue({ uri: 'summary' });
+    const getFamilialBoosts = vi.fn().mockResolvedValue({
+        records: [
+            {
+                uri: 'topic',
+                category:
+                    categoryMetadata[CredentialCategoryEnum.aiTopic].contractCredentialTypeOverride,
+            },
+            {
+                uri: 'assessment',
+                category:
+                    categoryMetadata[CredentialCategoryEnum.aiAssessment]
+                        .contractCredentialTypeOverride,
+            },
+        ],
+    });
+    host.wallet!.invoke = { getBoost, getFamilialBoosts } as never;
+    const { result } = renderHook(() => useGetSummaryInfo('summary-vc'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.summaryVc).toEqual(summary);
+    expect(result.current.data?.topicVc).toBeUndefined();
+    expect(result.current.data?.assessmentVc).toBeUndefined();
 });

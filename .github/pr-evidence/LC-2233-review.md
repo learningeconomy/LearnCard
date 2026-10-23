@@ -31,12 +31,13 @@ The test compares all issuer metadata and asserts zero additional requests on a
 fresh repeat. Both paths use identical fixture responses for 16 distinct issuers;
 the baseline exercises the installed registry client, not a second deployed app.
 
-The focused suite currently runs **48 passing tests** covering shared credential
+The focused suite currently runs **60 passing tests** covering shared credential
 reads, account isolation, invalidation, failure recovery, consent writes and partial
 failures, real DIDKit signature preservation, registry freshness, and overlapping
 profile reads. It also checks missing/unreadable records in every list variant,
 URI-position preservation, missing-data retry suppression and later recovery,
-configured transport retries, unsupported registry types, and reader re-initialization. The profile group selects only its two relevant cases; other cases
+configured transport retries, unsupported registry types, reader re-initialization,
+imperative optional-document compatibility, AI/backfill consumers, and partial-result recovery. The profile group selects only its two relevant cases; other cases
 in that file are intentionally unselected. This is not a whole-package test run or
 a typecheck. A nonzero exit means the reviewer check failed; missing dependencies,
 test failures, missing reports and unexpectedly empty selections are not successes.
@@ -81,6 +82,13 @@ contains the live observations, retry timings and limitations. Raw HARs contain
 private account/request data and are not committed. The earlier audit is in
 [`LC-2233.md`](LC-2233.md); its October 21 full-suite/build evidence belongs to
 the older head named there, not automatically to a later commit.
+
+## Registry trust boundary
+
+Issuer registry labels preserve the upstream client's informational behavior. OIDF
+JWT payloads are decoded without signature verification; this PR does not add
+federation-chain validation. The real DIDKit tests verify credential signatures,
+which is a separate property from authenticating registry metadata.
 
 ## What this command does not replace
 

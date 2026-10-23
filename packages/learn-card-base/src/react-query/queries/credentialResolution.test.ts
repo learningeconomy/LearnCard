@@ -135,3 +135,19 @@ it.each([false, 1, (failureCount: number) => failureCount < 1])(
         }
     }
 );
+
+it('matches fetchQuery’s no-retry default when the client has no retry setting', async () => {
+    const client = new QueryClient();
+    clients.push(client);
+    const rawRead = vi.fn().mockRejectedValue(new Error('offline'));
+    await expect(client.fetchQuery({ queryKey: ['baseline'], queryFn: rawRead })).rejects.toThrow(
+        'offline'
+    );
+    const { wallet, read } = makeWallet(
+        'account-a',
+        vi.fn().mockRejectedValue(new Error('offline'))
+    );
+    await expect(fetchResolvedCredential(client, wallet, 'uri')).rejects.toThrow('offline');
+    expect(rawRead).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledTimes(1);
+});

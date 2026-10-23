@@ -33,6 +33,7 @@ import {
     fetchResolvedCredential,
     tryFetchResolvedCredential,
     resolvedCredentialQueryOptions,
+    UnresolvableCredentialError,
 } from './credentialResolution';
 const log = getLogger('vc-queries');
 
@@ -63,7 +64,16 @@ export const getOrFetchResolvedCredential = async (
     uri: string,
     initWallet: () => Promise<BespokeLearnCard>,
     queryClient: QueryClient
-) => fetchResolvedCredential(queryClient, await initWallet(), uri);
+): Promise<VC | undefined> => {
+    if (!uri) return undefined;
+    try {
+        return await fetchResolvedCredential(queryClient, await initWallet(), uri);
+    } catch (error) {
+        // Preserve the optional-document contract without hiding transport/auth failures.
+        if (error instanceof UnresolvableCredentialError) return undefined;
+        throw error;
+    }
+};
 
 export const useResolveManyCredentials = (uris: string[] | undefined, enabled = true) => {
     const wallet = useCredentialReader();
@@ -76,7 +86,9 @@ export const useResolveManyCredentials = (uris: string[] | undefined, enabled = 
                 uris.map(uri => tryFetchResolvedCredential(queryClient, wallet, uri))
             );
         },
-        staleTime: 1000 * 60 * 60 * 24 * 7,
+        // Recheck partial results on the next mount; keep successful raw documents shared.
+        staleTime: query =>
+            query.state.data?.some(credential => !credential) ? 0 : 1000 * 60 * 60 * 24 * 7,
         enabled: enabled && Boolean(wallet && uris?.length),
     });
 };

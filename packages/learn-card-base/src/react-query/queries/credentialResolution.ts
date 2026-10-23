@@ -24,7 +24,8 @@ export const resolvedCredentialQueryOptions = (
     queryOptions({
         queryKey: resolvedCredentialQueryKey(uri, wallet?.id.did() ?? ''),
         queryFn: async (): Promise<VC> => {
-            if (!wallet || !uri) throw new Error('Credential reader is not ready');
+            if (!wallet) throw new Error('Credential reader is not ready');
+            if (!uri) throw new Error('Credential URI is missing');
             const credential = (await wallet.read.get(uri)) as VC | undefined;
             if (!credential) throw new UnresolvableCredentialError();
             return credential;
@@ -51,6 +52,7 @@ export const fetchResolvedCredential = (
         resolvedCredentialQueryOptions(
             wallet,
             uri,
+            // Imperative fetchQuery defaults to no retries; mounted observers default to three.
             queryClient.getDefaultOptions().queries?.retry ?? false
         )
     );
