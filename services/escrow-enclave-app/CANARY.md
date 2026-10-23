@@ -1,6 +1,6 @@
 # Escrow recovery canary and monitoring
 
-**Status:** Proposed (2026-10-15). Not implemented.
+**Status:** Tiers 1–2 runner and monitoring-account infrastructure implemented for staging setup; not deployed or live-verified. See the [staging operator runbook](../escrow-canary/README.md). Phase 1 has reason-count metrics; escrow-account supporting alarms/probes remain follow-up. Tiers 3+ remain proposed.
 **Depends on:** the enrollment-authority stack (#1703 → #1706 → #1710 → #1714).
 **Prerequisites:** The production tenant (`apps/learn-card-app/environments/learncard/config.json`) must move to SSS key derivation with the escrow attestation config before the canary (and any escrow rollout) can run; the PCR gate references `auth.sss.escrowEnclaveMeasurements` once it exists.
 **Paths:** `app/` = `services/escrow-enclave-app/`, `api/` = `services/learn-card-network/lca-api/`,
