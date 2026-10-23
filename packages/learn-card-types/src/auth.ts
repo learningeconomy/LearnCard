@@ -560,7 +560,10 @@ export interface KeyDerivationStrategy<
         providerType: AuthProviderType;
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
-        options?: EscrowEnrollmentOptions;
+        options?: EscrowEnrollmentOptions & {
+            /** Clear the retired PIN when repairing enrollment after identity recovery. */
+            clearPin?: boolean;
+        };
     }): Promise<
         | { enrolled: false; reason: 'disabled' | 'opted-out' }
         | { enrolled: true; changed: false }

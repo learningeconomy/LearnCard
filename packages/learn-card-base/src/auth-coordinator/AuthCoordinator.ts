@@ -104,7 +104,7 @@ export class AuthCoordinator {
     private recoveryGeneration = 0;
     private escrowRecoveryInFlight = false;
     private escrowStatusGeneration = 0;
-    private recoveredEscrowAccount?: { did: string; userId: string };
+    private recoveredEscrowAccount?: { did: string; userId: string; clearPin: true };
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
@@ -331,7 +331,6 @@ export class AuthCoordinator {
                 const recovered = this.recoveredEscrowAccount;
                 const repairingRecovery =
                     recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
-                this.recoveredEscrowAccount = undefined;
                 const gate = repairingRecovery
                     ? { allowed: true }
                     : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
@@ -342,13 +341,27 @@ export class AuthCoordinator {
                                   ...credentials,
                                   privateKey: ready.privateKey,
                                   signDidAuthVp,
-                                  options: this.recoveryContactOptions(ready),
+                                  options: repairingRecovery
+                                      ? {
+                                            ...this.recoveryContactOptions(ready),
+                                            clearPin: recovered.clearPin,
+                                        }
+                                      : this.recoveryContactOptions(ready),
                               })
                             : undefined
                     ).catch(err => {
                         enrollmentVerificationFailed = true;
                         log.warn('escrow.enrollment.failed', err);
                     });
+                    // Keep the scoped intent through transient failures for the next refresh.
+                    if (
+                        repairingRecovery &&
+                        enrollmentResult?.enrolled &&
+                        isCurrentAccount() &&
+                        this.recoveredEscrowAccount === recovered
+                    ) {
+                        this.recoveredEscrowAccount = undefined;
+                    }
                     if (
                         enrollmentResult &&
                         !enrollmentResult.enrolled &&
@@ -572,6 +585,11 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
+        const recovered = this.recoveredEscrowAccount;
+        const supersedesRecovery =
+            recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
+        // An explicit new PIN supersedes recovery's intent to clear the retired PIN.
+        if (supersedesRecovery) this.recoveredEscrowAccount = undefined;
         this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
         try {
             await this.runEscrowOperation(async () =>
@@ -583,6 +601,14 @@ export class AuthCoordinator {
                     options: this.recoveryContactOptions(ready),
                 })
             );
+        } catch (err) {
+            if (
+                supersedesRecovery &&
+                generation === this.escrowStatusGeneration &&
+                !this.recoveredEscrowAccount
+            )
+                this.recoveredEscrowAccount = recovered;
+            throw err;
         } finally {
             await this.refreshEscrowPinStatus(ready, generation);
         }
@@ -835,7 +861,11 @@ export class AuthCoordinator {
                     signDidAuthVp: this.config.signDidAuthVp,
                     options: this.recoveryContactOptions({ authUser }),
                 });
-                this.recoveredEscrowAccount = { did: result.did, userId: authUser.id };
+                this.recoveredEscrowAccount = {
+                    did: result.did,
+                    userId: authUser.id,
+                    clearPin: true,
+                };
 
                 // Rebinding can require fresh recovery enrollment. Honor older servers that
                 // report active, but do not skip enrollment if the status refresh fails.
@@ -1317,7 +1347,8 @@ export class AuthCoordinator {
                 throw new Error('This recovery request was cancelled.');
             }
 
-            if (isEscrow) this.recoveredEscrowAccount = { did, userId: authUser.id };
+            if (isEscrow)
+                this.recoveredEscrowAccount = { did, userId: authUser.id, clearPin: true };
             this.setState({
                 status: 'ready',
                 authUser,

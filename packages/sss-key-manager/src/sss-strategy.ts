@@ -1421,10 +1421,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
     };
 
-    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<void> => {
-        if (!config.escrow?.enabled) return;
+    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<boolean> => {
+        if (!config.escrow?.enabled) return false;
         try {
             await enrollEscrow(...args);
+            return true;
         } catch (err) {
             // A reporting callback must not turn a successful rotation into a failure.
             try {
@@ -1433,6 +1434,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             } catch {
                 console.warn('SSS: escrow error reporting failed');
             }
+            return false;
         }
     };
 
@@ -1443,7 +1445,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         forceRotate = false,
         allowDisabledEnrollment = false
     ): Promise<EscrowEnrollmentResult> => {
-        let clearPinForEnrollment = forceRotate;
+        let clearPinForEnrollment = forceRotate || params.options?.clearPin === true;
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
         const pin = params.options?.pin;
         const recoveryEmail = params.options?.recoveryEmail ?? '';
@@ -1519,7 +1521,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
         try {
             if (
-                !clearPinForEnrollment &&
+                !forceRotate &&
                 pin === undefined &&
                 unenrolledRotation &&
                 unenrolledRotation.shareVersion === status.shareVersion &&
@@ -1536,7 +1538,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     params.signDidAuthVp,
                     undefined,
                     undefined,
-                    retry.clearPin,
+                    clearPinForEnrollment || retry.clearPin,
                     storage.assertCurrent,
                     recoveryEmail,
                     recoveryLanguage
@@ -3471,7 +3473,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 })
             );
 
-            await tryEnrollEscrow(
+            const enrolled = await tryEnrollEscrow(
                 params.token,
                 params.providerType,
                 pending.privateKey,
@@ -3488,6 +3490,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             );
             if (activeStorageId !== storageId || storageGeneration !== generation) {
                 throw new Error('This recovery request was cancelled.');
+            }
+            if (!enrolled) {
+                unenrolledRotation = {
+                    shares,
+                    shareVersion,
+                    primaryDid: pending.primaryDid,
+                    clearPin: true,
+                };
             }
             return { privateKey: pending.privateKey, did: pending.primaryDid };
         },

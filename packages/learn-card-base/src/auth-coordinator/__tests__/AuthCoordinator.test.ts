@@ -650,6 +650,67 @@ describe('AuthCoordinator', () => {
         });
 
         describe('staged rollout gate (isEscrowEnrollmentAllowed)', () => {
+            it('supersedes a failed recovery clear-PIN repair when a new PIN is set', async () => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockRejectedValue(new Error('Temporary outage'));
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const { coordinator, keyDerivation } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
+                        completeIdentityRecovery: vi.fn().mockResolvedValue({
+                            privateKey: 'recovered-pk',
+                            did: 'did:key:z123',
+                        }),
+                        ensureEscrowEnrollment,
+                        setEscrowPin: vi.fn().mockResolvedValue(undefined),
+                    },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                coordinator.finishIdentityRecovery();
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                await coordinator.setEscrowPin('135790');
+                vi.mocked(keyDerivation.hasPendingIdentityRecovery!).mockReturnValue(false);
+                vi.mocked(keyDerivation.hasLocalKey).mockResolvedValue(true);
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalled());
+                expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+            });
+            it('retries failed clear-PIN recovery repair on the next refresh', async () => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockRejectedValueOnce(new Error('Temporary enrollment outage'))
+                    .mockResolvedValue({ enrolled: true, changed: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const { coordinator, keyDerivation } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
+                        completeIdentityRecovery: vi.fn().mockResolvedValue({
+                            privateKey: 'recovered-pk',
+                            did: 'did:key:z123',
+                        }),
+                        ensureEscrowEnrollment,
+                    },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                coordinator.finishIdentityRecovery();
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                vi.mocked(keyDerivation.hasPendingIdentityRecovery!).mockReturnValue(false);
+                vi.mocked(keyDerivation.hasLocalKey).mockResolvedValue(true);
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(2));
+                for (const [params] of ensureEscrowEnrollment.mock.calls) {
+                    expect(params.options).toMatchObject({ clearPin: true });
+                }
+                expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalled());
+                expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(2);
+            });
             it.each(['initialize', 'escrow', 'escrow-pin'] as const)(
                 'repairs a recovered account outside rollout via %s, then consumes the exemption',
                 async path => {
@@ -703,6 +764,11 @@ describe('AuthCoordinator', () => {
                         })
                     );
                     expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+                    expect(ensureEscrowEnrollment).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            options: expect.objectContaining({ clearPin: true }),
+                        })
+                    );
                     expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
 
                     getEscrowEnrollmentState.mockResolvedValue({ state: 'not-enrolled' });
