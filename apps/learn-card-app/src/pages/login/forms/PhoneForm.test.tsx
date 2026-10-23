@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     sent: undefined as (() => void) | undefined,
     failed: undefined as ((error: unknown) => void) | undefined,
+    completed: undefined as ((code?: string) => void) | undefined,
+    autoLogin: vi.fn(),
     send: vi.fn().mockResolvedValue({ verificationId: 'opaque' }),
     verifyNative: vi.fn(),
     countdownDates: [] as number[],
@@ -13,7 +15,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }));
 vi.mock('../../../hooks/useFirebase', () => ({
-    useFirebase: () => ({ verifySmsAuthCodeOnNative: mocks.verifyNative }),
+    useFirebase: () => ({
+        verifySmsAuthCodeOnNative: mocks.verifyNative,
+        loginAfterAutoVerifiedSMS: mocks.autoLogin,
+    }),
 }));
 vi.mock('../../../theme/hooks/useTheme', () => ({
     useTheme: () => ({ theme: { colors: { defaults: {} } } }),
@@ -28,7 +33,12 @@ vi.mock('learn-card-base', () => {
                 mocks.sent = undefined;
             };
         },
-        onPhoneVerificationCompleted: () => vi.fn(),
+        onPhoneVerificationCompleted: (callback: (code?: string) => void) => {
+            mocks.completed = callback;
+            return () => {
+                mocks.completed = undefined;
+            };
+        },
         onPhoneVerificationFailed: (callback: (error: unknown) => void) => {
             mocks.failed = callback;
             return () => {
@@ -119,6 +129,21 @@ describe('native phone verification failure', () => {
         const alert = screen.getByRole('alert');
         expect(alert.textContent).toContain('Wait 10-15 minutes');
         expect(isAbove(alert, sendButton)).toBe(true);
+    });
+
+    it('locks Verify when auto-verification is rate limited', () => {
+        mocks.autoLogin.mockImplementationOnce(
+            (_code: string, _ok: () => void, onError: (err: string) => void) =>
+                onError('auth/too-many-requests')
+        );
+        render(<PhoneForm showSocialLogins setShowSocialLogins={vi.fn()} />);
+        fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '+15555550123' } });
+        act(() => mocks.sent?.());
+        act(() => mocks.completed?.('123456'));
+        expect(screen.getByRole('alert').textContent).toContain('Wait 10-15 minutes');
+        expect((screen.getByRole('button', { name: 'Verify' }) as HTMLButtonElement).disabled).toBe(
+            true
+        );
     });
 });
 
