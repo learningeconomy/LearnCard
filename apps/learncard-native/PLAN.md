@@ -1,5 +1,15 @@
 # LearnCard native client plan
 
+## Queued: dedicated iPhone Duo layout — October 23
+
+The user requested a future Duo design pass. Treat this as an adaptive learner layout, with mockups before implementation; the current simulator compatibility checks do not complete this design work.
+
+- [ ] Explore Home/deck, Passport list/detail, Apps and onboarding/form compositions using the Duo simulator’s available space, rather than simply enlarging phone layouts. Consider list/detail panes where they help.
+- [ ] Review navigation, sheets, refresh artwork, readable content widths and system-reserved areas across supported sizes/orientations. Preserve a coherent compact-phone experience.
+- [ ] Validate the proposed layouts with actual native captures, keyboard use, large text, RTL and Reduce Motion before adopting them.
+
+This remains a later design task; the next learner feature stays safe self-assessed skills.
+
 ## Refresh reveal and shared inline feedback — October 23
 
 - [x] Clip the sky to the actual visible gap above scroll content and fade with exposed height; retain native gesture/insets/lifetime and existing sky scenes.
