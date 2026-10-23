@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_referral import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner
 from typing import Optional, Set
@@ -34,9 +35,10 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInner(BaseModel)
     status: StrictStr
     contract: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract
     terms: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms
+    referral: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral] = None
     transactions: List[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner]
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["termsUri", "status", "contract", "terms", "transactions"]
+    __properties: ClassVar[List[str]] = ["termsUri", "status", "contract", "terms", "referral", "transactions"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -92,6 +94,9 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInner(BaseModel)
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of referral
+        if self.referral:
+            _dict['referral'] = self.referral.to_dict()
         # override the default output from pydantic by calling `to_dict()` of each item in transactions (list)
         _items = []
         if self.transactions:
@@ -124,6 +129,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInner(BaseModel)
             "status": obj.get("status"),
             "contract": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "terms": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "referral": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral.from_dict(obj["referral"]) if obj.get("referral") is not None else None,
             "transactions": [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner.from_dict(_item) for _item in obj["transactions"]] if obj.get("transactions") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

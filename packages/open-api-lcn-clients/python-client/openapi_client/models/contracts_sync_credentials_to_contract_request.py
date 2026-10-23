@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,8 +29,9 @@ class ContractsSyncCredentialsToContractRequest(BaseModel):
     ContractsSyncCredentialsToContractRequest
     """ # noqa: E501
     terms_uri: Optional[StrictStr] = Field(alias="termsUri")
+    audience_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=None, alias="audienceVersion")
     categories: Dict[str, List[StrictStr]]
-    __properties: ClassVar[List[str]] = ["termsUri", "categories"]
+    __properties: ClassVar[List[str]] = ["termsUri", "audienceVersion", "categories"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -88,6 +90,7 @@ class ContractsSyncCredentialsToContractRequest(BaseModel):
 
         _values = {
             "termsUri": obj.get("termsUri"),
+            "audienceVersion": obj.get("audienceVersion"),
             "categories": obj.get("categories")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

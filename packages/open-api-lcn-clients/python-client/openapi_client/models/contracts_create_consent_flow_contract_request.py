@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner import ContractsCreateConsentFlowContractRequestAutoboostsInner
 from openapi_client.models.contracts_create_consent_flow_contract_request_contract import ContractsCreateConsentFlowContractRequestContract
 from typing import Optional, Set
@@ -41,7 +42,8 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     autoboosts: Optional[List[ContractsCreateConsentFlowContractRequestAutoboostsInner]] = None
     writers: Optional[List[StrictStr]] = None
-    __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "image", "expiresAt", "autoboosts", "writers"]
+    recipients: Optional[Annotated[List[Optional[StrictStr]], Field(max_length=50)]] = None
+    __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "image", "expiresAt", "autoboosts", "writers", "recipients"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -159,7 +161,8 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
             "image": obj.get("image"),
             "expiresAt": obj.get("expiresAt"),
             "autoboosts": [ContractsCreateConsentFlowContractRequestAutoboostsInner.from_dict(_item) for _item in obj["autoboosts"]] if obj.get("autoboosts") is not None else None,
-            "writers": obj.get("writers")
+            "writers": obj.get("writers"),
+            "recipients": obj.get("recipients")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
