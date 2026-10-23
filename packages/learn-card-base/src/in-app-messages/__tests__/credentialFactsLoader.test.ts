@@ -21,6 +21,25 @@ describe('credential facts backfill', () => {
         vi.resetModules();
     });
 
+    it('excludes staged consent-flow credentials from cached facts and index backfill until accepted', async () => {
+        const { createCredentialFactsLoader } = await import('../credentialFactsLoader');
+        const { addCredentialSummary, loadCredentialFacts } =
+            await import('../credentialFactsStore');
+        const { setConsentFlowRecordMarker, clearConsentFlowRecordMarker } =
+            await import('../../react-query/mutations/consentFlowRecordMarkers');
+        await addCredentialSummary(did, 'lc:0', vc);
+        setConsentFlowRecordMarker(did, 'lc:0', 'staged-record');
+        const loader = createCredentialFactsLoader(did);
+        const source = sourceFor(1);
+        await loader.refresh(source);
+        expect(source.read).not.toHaveBeenCalled();
+        expect(loader.getSnapshot()).toMatchObject({ summaries: [], total: 0, complete: true });
+        expect(await loadCredentialFacts(did)).toEqual([]);
+        clearConsentFlowRecordMarker(did, 'lc:0');
+        await loader.refresh(source, true);
+        expect(loader.getSnapshot().summaries).toEqual([expect.objectContaining({ uri: 'lc:0' })]);
+    });
+
     it('limits concurrent reads to four and stops at 200, then completes in a later session', async () => {
         const { createCredentialFactsLoader } = await import('../credentialFactsLoader');
         const store = await import('../credentialFactsStore');

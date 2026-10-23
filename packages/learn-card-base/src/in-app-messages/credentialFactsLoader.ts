@@ -1,3 +1,4 @@
+import { getConsentFlowRecordMarker } from '../react-query/mutations/consentFlowRecordMarkers';
 import type { CredentialSummary } from './credentialFacts';
 import { trySummarizeCredential } from './credentialFacts';
 import {
@@ -159,13 +160,19 @@ export const createCredentialFactsLoader = (did: string): CredentialFactsLoader 
         const active = (): boolean => refreshGeneration === generation && source.isActive();
         const run = async (): Promise<RefreshOutcome> => {
             try {
-                const cached = await loadCredentialFacts(did);
+                const cached = (await loadCredentialFacts(did)).filter(
+                    fact => !getConsentFlowRecordMarker(did, fact.uri)
+                );
                 if (!active()) return 'canceled';
                 publish({ ...snapshot, summaries: cached, complete: false });
                 const indexWriteGeneration = getCredentialFactsWriteGeneration();
                 const records = await source.list();
                 if (!active()) return 'canceled';
-                const unique = new Map(records.map(record => [record.uri, record]));
+                const unique = new Map(
+                    records
+                        .filter(record => !getConsentFlowRecordMarker(did, record.uri))
+                        .map(record => [record.uri, record])
+                );
                 const uris = new Set([...unique.keys(), ...claimed.keys()]);
                 await removeMissingCredentialFacts(did, uris, indexWriteGeneration);
                 if (!active()) return 'canceled';

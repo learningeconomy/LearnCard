@@ -33,6 +33,33 @@ describe('in-app message credential schema', () => {
         expect(parseInAppMessagesFlag(raw)).toEqual(parsed.flag);
     });
 
+    it.each([null, 'bad', [], { maxBlockingPerSession: -1 }, { blockingCooldownHours: 'bad' }])(
+        'defaults malformed settings while preserving required updates: %j',
+        settings => {
+            const result = parseInAppMessagesFlagWithErrors({
+                settings,
+                messages: [
+                    {
+                        id: 'update',
+                        title: 'Update required',
+                        dismissible: false,
+                        actions: [{ label: 'Update', action: { type: 'appStore' } }],
+                    },
+                    { id: 'invalid', title: 'Invalid', targeting: { credential: { issuers: [] } } },
+                ],
+            });
+            expect(result.flag.messages.map(message => message.id)).toEqual(['update']);
+            expect(result.flag.settings).toEqual({
+                maxBlockingPerSession: 1,
+                blockingCooldownHours: 48,
+            });
+            expect(result.invalid).toEqual([
+                { error: expect.stringMatching(/^settings:/) },
+                expect.objectContaining({ id: 'invalid' }),
+            ]);
+        }
+    );
+
     it('rejects trigger matches with unknown fields, empty lists, or no conditions', () => {
         for (const raw of [
             {},

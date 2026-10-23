@@ -320,7 +320,7 @@ const rollBackIndexedRecord = async (
  */
 export const useAcceptAndStoreCredentialsMutation = () => {
     const acceptCredential = useAcceptCredentialMutation();
-    const { addVCtoWallet, initWallet } = useWallet();
+    const { addVCtoWallet, initWallet, recordAcceptedCredentialClaim } = useWallet();
     const queryClient = useQueryClient();
 
     return useMutation<
@@ -358,6 +358,7 @@ export const useAcceptAndStoreCredentialsMutation = () => {
                             uri,
                             contractUri: r.contractUri,
                             skipSync: true,
+                            deferClaim: true,
                         });
                     }
 
@@ -375,6 +376,7 @@ export const useAcceptAndStoreCredentialsMutation = () => {
                         throw new LifecycleRejectedError(rejection, Boolean(recordId));
                     }
                     clearConsentFlowRecordMarker(profileDid, uri);
+                    void recordAcceptedCredentialClaim(learnCard, uri);
                 })
             );
 

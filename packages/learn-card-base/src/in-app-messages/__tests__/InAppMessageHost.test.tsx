@@ -20,7 +20,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('launchdarkly-react-client-sdk', () => ({
-    useFlags: () => ({ inAppMessages: { messages: state.messages } }),
+    useFlags: () => ({ inAppMessagesV2: { messages: state.messages } }),
 }));
 vi.mock('../useRuntimeContext', () => ({
     useInAppMessageRuntimeContext: () => ({

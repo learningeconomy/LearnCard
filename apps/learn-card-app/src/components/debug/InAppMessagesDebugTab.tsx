@@ -921,7 +921,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                 {report.diagnostics.length === 0 ? (
                     <p className="text-[10px] text-gray-600 italic py-2">
                         {'No messages in the '}
-                        <code className="text-cyan-400">inAppMessages</code>
+                        <code className="text-cyan-400">inAppMessagesV2</code>
                         {' LaunchDarkly flag (or context not ready yet).'}
                     </p>
                 ) : (
