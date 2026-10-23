@@ -180,7 +180,12 @@ const fs = require('node:fs'); const file = process.argv.find(a => a.startsWith(
             spawnSync(process.execPath, args, {
                 cwd: headDirectory,
                 encoding: 'utf8',
-                env: { ...process.env, GITHUB_STEP_SUMMARY: summary, GITHUB_ACTIONS: 'true' },
+                env: {
+                    ...process.env,
+                    GITHUB_STEP_SUMMARY: summary,
+                    GITHUB_OUTPUT: join(directory, 'outputs.txt'),
+                    GITHUB_ACTIONS: 'true',
+                },
             });
         const checked = run(['scripts/typecheck-ratchet.mjs', `--report=${headFile}`]);
         assert.equal(checked.status, 1, checked.stderr);
@@ -231,6 +236,7 @@ const fs = require('node:fs'); const file = process.argv.find(a => a.startsWith(
         const selected = run(['scripts/typecheck-diagnostics.mjs', 'select', headFile]);
         assert.equal(selected.status, 0);
         assert.match(selected.stdout, /1 project/);
+        assert.equal(readFileSync(join(directory, 'outputs.txt'), 'utf8'), 'needed=true\n');
     } finally {
         rmSync(directory, { recursive: true, force: true });
     }
