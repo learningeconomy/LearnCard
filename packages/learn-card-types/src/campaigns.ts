@@ -33,7 +33,10 @@ const campaignDefinition = z
     .strict();
 
 const validDefinition = (
-    value: { channels: string[]; notification?: unknown; startsAt?: string; endsAt?: string },
+    value: Pick<
+        z.output<typeof campaignDefinition>,
+        'channels' | 'notification' | 'startsAt' | 'endsAt'
+    >,
     ctx: z.RefinementCtx
 ): void => {
     if (value.channels.includes('notify') && !value.notification) {

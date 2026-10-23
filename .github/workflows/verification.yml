@@ -131,7 +131,8 @@ jobs:
               env:
                   USE_DOCKER_CACHE: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
               run: |
-                  verify_args=(run all --fresh --json --dir "$STACK_DIR")
+                  # The campaign proof borrows this owned stack in the next step.
+                  verify_args=(run all --fresh --keep --json --dir "$STACK_DIR")
                   if [[ "$USE_DOCKER_CACHE" == 'true' ]]; then
                     verify_args+=(--docker-builder lc-verification)
                   fi
