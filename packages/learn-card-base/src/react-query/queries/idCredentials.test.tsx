@@ -98,8 +98,17 @@ beforeAll(async () => {
             subject: did,
             boostName: 'World Scouting',
             achievementType: 'ext:GlobalID',
-            display: { displayType: 'id' },
-            boostID: { idDescription: 'World Scouting membership' },
+            display: {
+                displayType: 'id',
+                emoji: {
+                    activeSkinTone: '',
+                    unified: '',
+                    unifiedWithoutSkinTone: '',
+                    names: [],
+                    imageUrl: '',
+                },
+            },
+            boostID: { idDescription: 'World Scouting membership', repeatIdBackgroundImage: false },
         },
         crypto
     );

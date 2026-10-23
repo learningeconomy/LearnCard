@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi, type Mock } from 'vitest';
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
 import { knownDIDRegistryQueryOptions, ISSUER_REGISTRY_STALE_TIME } from './issuerRegistry';
 const list = 'https://registries.learncard.com/known-did-registries.json';
@@ -9,7 +9,7 @@ const jwt = (metadata: object) =>
     `e30.${Buffer.from(JSON.stringify({ metadata })).toString('base64url')}.x`;
 let client: QueryClient;
 let failure: boolean;
-let fetchMock: ReturnType<typeof vi.fn>;
+let fetchMock: Mock<(url: string) => Promise<Response>>;
 beforeEach(() => {
     client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     failure = false;
