@@ -23,6 +23,12 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
         navigator.onLine && separateOrigin ? 'loading' : 'error'
     );
     const [running, setRunning] = useState(false);
+    const [escapeAvailable, setEscapeAvailable] = useState(false);
+    useEffect(() => {
+        if (message.dismissible) return;
+        const timer = setTimeout(() => setEscapeAvailable(true), 30_000);
+        return () => clearTimeout(timer);
+    }, [message.dismissible]);
     const busy = useRef(false);
     const { runAction } = useInAppMessageActions();
     const callbacks = useRef({ onClose, onAction, runAction });
@@ -107,7 +113,7 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
         <div className="flex flex-col h-full min-h-0 w-full bg-white font-poppins">
             <header className="flex items-center justify-between gap-3 p-4 text-grayscale-900">
                 <h2 className="text-xl font-semibold">{config.title ?? message.title}</h2>
-                {(message.dismissible || status === 'error') && (
+                {(message.dismissible || status === 'error' || escapeAvailable) && (
                     <button
                         type="button"
                         aria-label={t('common.close')}

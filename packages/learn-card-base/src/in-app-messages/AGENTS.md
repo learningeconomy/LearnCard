@@ -1,6 +1,6 @@
 # In-App Messages — Agent Guide
 
-Feature: a LaunchDarkly JSON flag (`inAppMessagesV2`) that drives conditional, targeted user prompts
+Feature: a LaunchDarkly JSON flag (`inAppMessagesV2`, with legacy `inAppMessages` fallback) that drives conditional, targeted user prompts
 in `learn-card-app` and `scouts`. Targeting is evaluated **on-device** (platform / semver /
 role / credential facts / recent events), the flag value is just the payload. Read `README.md` in this folder for the authored-flag
 reference; this file is for making **code** changes safely.
@@ -28,6 +28,8 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 
 ## Golden rules
 
+- **Versioned delivery.** Credential targeting and all triggers belong in `inAppMessagesV2`.
+  Keep `inAppMessages` parseable by released clients; payload version numbers do not isolate it.
 - **Schema first.** Any new field/action/predicate starts in `@learncard/types/inAppMessages.ts`,
   then flows through `predicates.ts` (if it affects matching) and the UI. Keep `.passthrough()` /
   safe defaults for additive fields. New enum members are NOT safe on older clients; see rollout rules below.
@@ -49,7 +51,9 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
   batches of four, and the 200-read session budget. Only explicit debug backfill bypasses the budget.
   Stop stale account work before publishing; logout clears both persisted and in-memory facts/events.
 - **Claim ordering.** Successful claim helpers add the summary before emitting `credential.claimed`.
-  Bookkeeping failure must not fail a claim. No event for a failed index write.
+  Bookkeeping failure must not fail a claim. No event for a failed index write or unaccepted
+  consent-flow credential. Defer claim recording during consent sync and exclude ownership-marker
+  entries from backfill until acceptance succeeds.
 
 ## How to extend
 
@@ -65,7 +69,7 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 - Iframe bridge input is untrusted: validate window, origin, envelope, and safe target before running
   actions. No Capgo or identity APIs. Internal destinations must exactly match the campaign's
   `iframe.allowedInternalPaths` (default deny), including query/fragment. Required frames ignore
-  bridge close/dismiss requests; their host-owned Close button becomes available on error.
+  bridge close/dismiss requests; their host-owned Close button becomes available on error or after 30 seconds, including after ready.
 - Iframe campaigns are web-only: enforce `presentationSupport` in selection, host (including overrides),
   and renderer. Native subframes can bypass the JS allowlist through Capacitor handlers; the HTML
   sandbox is not native isolation. Do not enable native embedding without a verified native boundary.

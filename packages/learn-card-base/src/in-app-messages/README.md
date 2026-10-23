@@ -23,6 +23,17 @@ The host is already mounted in both apps (`FullApp.tsx`), so **you don't write a
 just author the flag value in LaunchDarkly. Create a client-readable JSON flag named **`inAppMessagesV2`** and paste
 a value like:
 
+Keep `inAppMessages` compatible with older released clients: platform, role, and version targeting
+only, with no triggers or credential predicates. Publish credential-targeted and triggered messages
+under `inAppMessagesV2`. A numeric payload version does not protect old clients: they do not skip
+unknown versions. Move any such development campaigns to V2 before rollout.
+
+New clients use only V2 when it is present. Copy any legacy campaigns needed by new clients to V2,
+preserving their IDs. If V2 is absent, new clients fall back to legacy-compatible messages from
+`inAppMessages`; an explicitly empty, disabled, or malformed V2 value does not reactivate that feed.
+New rules placed in the legacy feed are rejected with a debug diagnostic. This client change does
+not edit live LaunchDarkly configuration.
+
 ```json
 {
     "version": 1,
@@ -161,20 +172,20 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 
 ### Message
 
-| Field          | Type                                                    | Default   | Notes                                                         |
-| -------------- | ------------------------------------------------------- | --------- | ------------------------------------------------------------- |
-| `id`           | `string`                                                | —         | Stable key; used to persist dismissal / frequency state       |
-| `priority`     | `number`                                                | `0`       | Highest matching message wins                                 |
-| `dismissible`  | `boolean`                                               | `true`    | `false` = required/blocking; iframe errors still offer Close  |
-| `frequency`    | `"once" \| "session" \| "always" \| {…}`                | `"once"`  | See [Frequency](#frequency)                                   |
-| `presentation` | `"modal" \| "banner" \| "toast" \| "story" \| "iframe"` | `"modal"` | Stories require `steps`; iframes require `iframe.url`         |
-| `media`        | `{ type, url, aspect?, alt? }`                          | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`     |
-| `emoji`        | `string`                                                | —         | Hero glyph shown when `media` is not set (modal/banner/toast) |
-| `title`        | `string`                                                | —         | Required                                                      |
-| `body`         | `string`                                                | —         | Optional                                                      |
-| `actions`      | `Action[]`                                              | `[]`      | See [Actions](#actions)                                       |
-| `targeting`    | `Predicate`                                             | —         | Omitted → matches everyone                                    |
-| `enabled`      | `boolean`                                               | `true`    | Set `false` to disable without removing from the flag         |
+| Field          | Type                                                    | Default   | Notes                                                                         |
+| -------------- | ------------------------------------------------------- | --------- | ----------------------------------------------------------------------------- |
+| `id`           | `string`                                                | —         | Stable key; used to persist dismissal / frequency state                       |
+| `priority`     | `number`                                                | `0`       | Highest matching message wins                                                 |
+| `dismissible`  | `boolean`                                               | `true`    | `false` = required/blocking; iframes offer Close on error or after 30 seconds |
+| `frequency`    | `"once" \| "session" \| "always" \| {…}`                | `"once"`  | See [Frequency](#frequency)                                                   |
+| `presentation` | `"modal" \| "banner" \| "toast" \| "story" \| "iframe"` | `"modal"` | Stories require `steps`; iframes require `iframe.url`                         |
+| `media`        | `{ type, url, aspect?, alt? }`                          | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`                     |
+| `emoji`        | `string`                                                | —         | Hero glyph shown when `media` is not set (modal/banner/toast)                 |
+| `title`        | `string`                                                | —         | Required                                                                      |
+| `body`         | `string`                                                | —         | Optional                                                                      |
+| `actions`      | `Action[]`                                              | `[]`      | See [Actions](#actions)                                                       |
+| `targeting`    | `Predicate`                                             | —         | Omitted → matches everyone                                                    |
+| `enabled`      | `boolean`                                               | `true`    | Set `false` to disable without removing from the flag                         |
 
 ### Actions
 
@@ -267,7 +278,8 @@ Certified Boost wrappers are unwrapped before matching. Age uses `validFrom`, fa
 ### Triggers and blocking fatigue
 
 Messages may add `trigger: { event, where?, windowMinutes? }`, where `event` is
-`credential.claimed` or `app.opened`. Claim events are emitted only after the credential is stored;
+`credential.claimed` or `app.opened`. Claim events are emitted only after the credential is stored
+and any consent-flow acceptance succeeds;
 `where` evaluates against that claimed credential's local summary. Events remain in memory for 30
 minutes (at most 50 events) and are never persisted. The trigger window defaults to 10 minutes.
 Facts are saved before emitting the claim event, but this bookkeeping runs in the background so
@@ -282,6 +294,8 @@ The flag may add `settings: { maxBlockingPerSession, blockingCooldownHours }` (d
 Limits are recorded only when a real message presents, never while waiting for the gate or during
 a forced preview. The visible message stays mounted after consuming its own impression/cap.
 Resetting seen state also resets fatigue. Session counts and persisted cooldowns are account-scoped.
+Invalid settings fall back to those defaults and appear as a
+`settings` error in the debug report; valid messages still render.
 
 ### Credential-facts privacy and lifecycle
 
@@ -810,3 +824,13 @@ in-app-messages/
 cd packages/learn-card-base
 bunx vitest run src/in-app-messages/__tests__/predicates.test.ts
 ```
+
+Required iframe campaigns always gain a host-owned Close button after 30 seconds from presentation,
+even after a successful ready handshake. Errors expose Close immediately. The embedded page cannot
+invoke this escape through bridge close/dismiss events. If another feature removes a campaign's
+modal stack, dismissible campaigns release the host after exit cleanup without a user-dismissal
+analytics event; required campaigns restore the same content and in-flight action state.
+
+Staged consent-flow index entries are excluded from credential-fact backfill until acceptance is
+final. Failed, revoked, or suspended acceptance cannot emit a claim event or count a provisional
+credential as owned. Successful acceptance updates facts before emitting the claim event.

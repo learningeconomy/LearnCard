@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useModal } from '../components/modals/useModal';
-import { ModalTypes } from '../components/modals/types/Modals';
+import { ModalTypes, type ModalInstanceToken } from '../components/modals/types/Modals';
+import { useModalsContext } from '../components/modals/ModalsContext';
 import type { MessagePresentationProps } from './presentationTypes';
 import { InAppMessageStory } from './InAppMessageStory';
 import { InAppMessageIframe } from './InAppMessageIframe';
@@ -48,6 +49,10 @@ export const InAppMessageSurface: React.FC<
     }
 > = props => {
     const { newModalWithToken, forceCloseModalByToken } = useModal();
+    const { modals } = useModalsContext();
+    const [ownedToken, setOwnedToken] = useState<ModalInstanceToken | null>(null);
+    const [surfaceRevision, setSurfaceRevision] = useState(0);
+    const handledToken = useRef<ModalInstanceToken | null>(null);
     const [target] = useState(() => {
         const container = document.createElement('div');
         container.className = 'w-full h-full min-h-0';
@@ -86,8 +91,21 @@ export const InAppMessageSurface: React.FC<
                 mobile: ModalTypes.FullScreen,
             }
         );
+        setOwnedToken(token);
         return () => forceCloseModalByToken(token);
-    }, [newModalWithToken, forceCloseModalByToken, attach]);
+    }, [newModalWithToken, forceCloseModalByToken, attach, surfaceRevision]);
+
+    useEffect(() => {
+        if (!ownedToken || handledToken.current === ownedToken) return;
+        const instance = modals.find(
+            modal => modal.id === ownedToken.id && modal.generation === ownedToken.generation
+        );
+        // Wait for exit cleanup before opening another campaign into a bulk-clearing stack.
+        if (instance) return;
+        handledToken.current = ownedToken;
+        if (latest.current.message.dismissible) latest.current.onClose('expired');
+        else setSurfaceRevision(value => value + 1);
+    }, [modals, ownedToken]);
 
     return attached
         ? createPortal(<Mounted onShown={props.onShown}>{props.children}</Mounted>, target)

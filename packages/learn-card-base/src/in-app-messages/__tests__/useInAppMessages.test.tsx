@@ -68,7 +68,7 @@ describe('message evaluation lifecycle', () => {
     it('waits at most five seconds, then allows positive partial matches but vetoes incomplete negation', () => {
         const credential = { credential: { issuers: ['did:example:pilot'] } };
         state.flags = {
-            inAppMessages: {
+            inAppMessagesV2: {
                 messages: [
                     {
                         id: 'negative',
@@ -97,7 +97,7 @@ describe('message evaluation lifecycle', () => {
         state.facts.complete = true;
         state.facts.summaries = [];
         state.flags = {
-            inAppMessages: {
+            inAppMessagesV2: {
                 messages: [
                     {
                         id: 'claim',
@@ -128,7 +128,7 @@ describe('message evaluation lifecycle', () => {
 
     it('does not turn a future event into the current clock', () => {
         state.flags = {
-            inAppMessages: {
+            inAppMessagesV2: {
                 messages: [{ id: 'open', title: 'Opened', trigger: { event: 'app.opened' } }],
             },
         };
@@ -143,7 +143,7 @@ describe('message evaluation lifecycle', () => {
     });
 
     it('can force credential facts for debug tooling without a credential-aware flag', () => {
-        state.flags = { inAppMessages: { messages: [] } };
+        state.flags = { inAppMessagesV2: { messages: [] } };
         state.facts.summaries = [];
         state.facts.complete = true;
 

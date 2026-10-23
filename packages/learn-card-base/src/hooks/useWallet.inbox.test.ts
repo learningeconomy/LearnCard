@@ -435,3 +435,20 @@ it('scopes payload fingerprints to the account and includes signed extensions an
     expect(first).toMatch(/^chapi:sha256:[a-f0-9]{64}$/);
     expect(first).not.toContain('private');
 });
+
+it('defers facts and claim events until staged acceptance is finalized', async () => {
+    const wallet = useWallet();
+    await wallet.addVCtoWallet({ uri: 'pending-uri', skipSync: true, deferClaim: true });
+    expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([]);
+    expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([]);
+    await wallet.recordAcceptedCredentialClaim(await wallet.initWallet(), 'pending-uri');
+    expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([
+        expect.objectContaining({ uri: 'pending-uri' }),
+    ]);
+    expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([
+        expect.objectContaining({
+            event: 'credential.claimed',
+            credential: expect.objectContaining({ uri: 'pending-uri' }),
+        }),
+    ]);
+});

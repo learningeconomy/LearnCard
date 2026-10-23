@@ -354,6 +354,21 @@ export const useWallet = () => {
         }
     };
 
+    /** Publish facts/events only after a staged consent-flow credential has been accepted. */
+    const recordAcceptedCredentialClaim = async (
+        wallet: BespokeLearnCard,
+        uri: string
+    ): Promise<void> => {
+        try {
+            const vc = await wallet.read.get(uri);
+            if (!vc) return;
+            const category = await getCategoryForCredential(vc as VC, wallet);
+            await recordCredentialClaim(wallet, uri, vc as VC, category);
+        } catch {
+            // Claim bookkeeping must not fail a completed acceptance.
+        }
+    };
+
     const resolveCredential = async (uri: string) => {
         if (!uri) throw new Error('URI is required');
 
@@ -603,10 +618,19 @@ export const useWallet = () => {
 
     // Adds a VC to wallet given a URI
     const addVCtoWallet = async (
-        input: AddVCInput & { skipSync?: boolean },
+        input: AddVCInput & { skipSync?: boolean; deferClaim?: boolean },
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud'
     ) => {
-        const { uri, id, title, imgUrl, contractUri, boostUri: sourceBoostUri, skipSync } = input;
+        const {
+            uri,
+            id,
+            title,
+            imgUrl,
+            contractUri,
+            boostUri: sourceBoostUri,
+            skipSync,
+            deferClaim,
+        } = input;
         let _id = id;
         if (!uri) throw new Error('No uri was provided, uri required');
 
@@ -647,7 +671,7 @@ export const useWallet = () => {
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (result) {
-                void recordCredentialClaim(wallet, uri, vc as VC, category);
+                if (!deferClaim) void recordCredentialClaim(wallet, uri, vc as VC, category);
                 await queryClient.cancelQueries({
                     queryKey: ['useGetCredentialList', didWeb ?? '', category],
                 });
@@ -921,6 +945,7 @@ export const useWallet = () => {
 
     return {
         initWallet: getWallet,
+        recordAcceptedCredentialClaim,
         installChapi,
         getVCFromWallet,
         getVCsFromWallet,
