@@ -523,7 +523,9 @@ jobs:
                   # POSTMARK_FROM_EMAIL, MESSAGEBIRD_ORIGINATOR, CLIENT_APP_DOMAIN_NAME,
                   # the SHARE_LINK_MAINTENANCE_* trust/maintenance values, OIDC_TRUSTED_ISSUERS,
                   # OIDC_EXPECTED_AUDIENCE, CREDENTIAL_REFRESH_ENABLED / _NOTIFICATION_WINDOW_HOURS,
-                  # SKILL_EMBEDDING_GOOGLE_MODEL) is checked in under config/, not passed here.
+                  # SKILL_EMBEDDING_BEDROCK_* / SKILL_EMBEDDING_DIMENSION / SKILL_EMBEDDING_GOOGLE_MODEL)
+                  # is checked in under config/, not passed here. Nova skill embeddings use the Lambda
+                  # role (SigV4); the Google key below serves the legacy read path (LC-2206).
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
                   CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
                   # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
