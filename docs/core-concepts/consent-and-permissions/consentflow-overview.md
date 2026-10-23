@@ -109,7 +109,7 @@ For example, `read.personal.name: { required: false }` requests an optional name
 
 Methods, all via `learnCard.invoke`:
 
-- `createContract({ contract, name, description?, image?, expiresAt?, redirectUrl?, reasonForAccessing?, needsGuardianConsent?, autoboosts?, writers? })` → contract URI
+- `createContract({ contract, name, description?, image?, expiresAt?, redirectUrl?, reasonForAccessing?, needsGuardianConsent?, autoboosts?, writers?, recipients? })` → contract URI
 - `getContract(contractUri)`, `getContracts(options?)`, `deleteContract(contractUri)`
 
 `redirectUrl` is where LearnCard sends the user after they consent (a `returnTo` query parameter overrides it per link). `reasonForAccessing` is shown to the user. `needsGuardianConsent: true` makes this a [GameFlow](gameflow-overview.md) contract: minors need a guardian's approval before they can consent.
@@ -125,9 +125,9 @@ Terms are a user's concrete response to a contract. Their shape differs from the
 
 The consenting user manages this record:
 
-- `consentToContract(contractUri, { terms, expiresAt?, oneTime? })` → `{ termsUri, redirectUrl? }`
+- `consentToContract(contractUri, { terms, expiresAt?, oneTime?, audienceVersion? })` → `{ termsUri, redirectUrl? }`
 - `getConsentedContracts(options?)` — everything this user has consented to
-- `updateContractTerms(termsUri, { terms, expiresAt?, oneTime? })`
+- `updateContractTerms(termsUri, { terms, expiresAt?, oneTime?, audienceVersion? })`
 - `withdrawConsent(termsUri)` — note: the **terms** URI, not the contract URI
 
 Terms are `live`, `stale`, or `withdrawn`. The one call **you** make before touching a user's data or issuing to them is `verifyConsent(contractUri, profileId)` — it returns `true` only while terms are live and neither the contract nor the terms have expired. Having a terms record on file is not the same as having permission now.
@@ -151,3 +151,63 @@ if (result.granted) {
 ```
 
 Here `learnCard` is the Partner Connect client, not the network SDK. You can also pass a contract URI explicitly: `requestConsent(contractUri)`. Calling it with no argument and no contract on the listing fails with a "no contract configured" error.
+
+## Reading consented data
+
+Contract owners and current recipients can query shared data with `getConsentFlowData(contractUri)`, `getConsentFlowDataForDid(did)`, and `getAllConsentFlowData()`.
+
+### Access boundaries
+
+Each data query checks consent before pagination. Withdrawn or expired consent returns no shared data. A category must have `sharing: true`, an unexpired `shareUntil` when provided, and selected credential URIs. Disabling a category hides its saved URIs. Personal fields are limited to the fields in the user's terms. Filters apply to this permitted data rather than hidden, expired, or disabled categories.
+
+Explicit one-time consent (`oneTime: true`) retains a readable snapshot until withdrawal or expiry. Its stored status is `stale`, and it cannot authorize ongoing credential synchronization. Other stale terms are excluded.
+
+### Contract recipients
+
+The owner is always in the data audience. The owner can configure up to 50 additional recipients by profile ID or profile DID when creating a contract, or with `addContractRecipient` before anyone first consents. `getContract` returns public recipient profiles, their encryption DIDs, and `audienceVersion`.
+
+```typescript
+const contractUri = await learnCard.invoke.createContract({
+    contract: contractDefinition,
+    name: 'Partner referral',
+    recipients: ['partner-profile-id'],
+});
+const details = await learnCard.invoke.getContract(contractUri);
+// Display details.owner and details.recipients before asking the user to consent.
+```
+
+Recipients can use the three data query methods above. Recipient status does not grant permission to administer a contract, retrieve all terms or transaction history, or write credentials. Writers still need explicit writer authorization and the user's write permissions.
+
+After first consent, the audience can only shrink. `removeContractRecipient(contractUri, recipient)` immediately ends that recipient's API read access and increments the audience version. Additions remain frozen even if all users withdraw; create a new contract and obtain new consent for an expanded audience. Removing a recipient cannot recall plaintext or ciphertext already obtained.
+
+### Encryption and audience acknowledgement
+
+For consent, term updates, and credential synchronization, fetch current contract details and send the returned `audienceVersion`. The server rejects a missing or outdated acknowledgement once the audience has changed. An unchanged legacy owner-only contract accepts calls without this field. Audience versions record changes monotonically: adding and then removing a recipient before first consent still requires the current version, even when only the owner remains. Such a contract also requires interactive audience review rather than automatic consent.
+
+Encrypt each shared credential for the full current audience: the owner plus all current recipients. Cache encrypted copies by the complete normalized recipient set. An owner-only copy cannot serve a larger audience; after a removal, new copies must exclude that recipient. The shared LearnCard app helpers perform audience review, encryption, and acknowledgement together. Applications using the SDK directly must implement those steps themselves.
+
+```typescript
+const details = await learnCard.invoke.getContract(contractUri);
+const audience = [
+    ...new Set([details.owner.did, ...(details.recipients ?? []).map(profile => profile.did)]),
+];
+// After displaying and receiving approval for this audience:
+const sharedUri = await learnCard.store.LearnCloud.uploadEncrypted(credential, {
+    recipients: audience,
+});
+// Include sharedUri in terms.read.credentials.categories[category].shared.
+await learnCard.invoke.consentToContract(contractUri, {
+    terms,
+    audienceVersion: details.audienceVersion ?? 0,
+});
+```
+
+The API enforces current read permissions and audience acknowledgement. It does not decrypt and inspect an application's encrypted payload; the application is responsible for encrypting for the disclosed audience.
+
+### Conflicts and external connections
+
+A `CONFLICT` response does not mean consent succeeded. Only the explicit "You've already consented to this contract" response identifies an existing consent. If the audience or consent changed, refresh the contract and ask the user to review it again before retrying. Do not install an app, show a success message, or redirect after a rejected decision.
+
+The SmartResume integration saves consent and checks the current audience before uploading selected information. If the upload fails, consent remains saved and the connection request returns an error. Retry with the same terms, recipient token, expiry, one-time setting, and audience version to finish the upload. A completed retry reuses its saved redirect, and simultaneous retries cannot start separate uploads. Changes to the audience or saved terms require another review. If a process stops mid-upload, its upload reservation expires after two minutes so the connection can be retried; an interrupted external request may already have reached SmartResume.
+
+The legacy `anonymize` data-query filter checks whether that field exists in the saved read terms: `true` selects records where it is present (including an explicitly stored `false`), `false` selects records where it is absent, and omitting it applies no filter.

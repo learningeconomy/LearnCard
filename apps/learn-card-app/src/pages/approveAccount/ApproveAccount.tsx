@@ -93,7 +93,7 @@ const ApproveAccount: React.FC = () => {
             <IonContent
                 fullscreen
                 color="emerald-700"
-                className="flex flex-col flex-grow bg-emerald-700"
+                className="flex flex-col grow bg-emerald-700"
             >
                 <div className="h-full w-full flex flex-col items-center justify-center px-6 text-center text-white">
                     <div className="flex flex-col items-center justify-center w-full mb-6">

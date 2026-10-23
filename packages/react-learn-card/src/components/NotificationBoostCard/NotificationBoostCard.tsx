@@ -98,7 +98,7 @@ export const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
                     {showIssuerInfo && (
                         <div className="notification-card-issuer-info flex items-center mt-[10px]">
-                            <div className="profile-thumb-img border-[2px] border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]">
+                            <div className="profile-thumb-img border-2 border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]">
                                 <UserProfilePicture
                                     customContainerClass={`h-full w-full object-cover text-xl ${
                                         !issuerInfo?.image ? 'pt-[3px]' : ''
@@ -128,7 +128,7 @@ export const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
                         <button
                             onClick={handleCancelClick}
-                            className={`rounded-[24px] flex items-center justify-center  h-[42px] w-[42px] shadow-bottom bg-white font-semibold mr-2 p-[0px] tracking-wide ${viewButtonStyles}`}
+                            className={`rounded-[24px] flex items-center justify-center  h-[42px] w-[42px] shadow-bottom bg-white font-semibold mr-2 p-0 tracking-wide ${viewButtonStyles}`}
                             role="button"
                             name="notification-view-button"
                         >

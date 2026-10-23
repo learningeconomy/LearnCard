@@ -134,7 +134,7 @@ const AchievementTypeSelectorModal: React.FC<AchievementTypeSelectorModalProps> 
                             'passport.buildMyLearnCard.achievementModal.searchPlaceholder'
                         ]()}
                         onIonInput={e => setQuery(e.detail.value ?? '')}
-                        className="bg-grayscale-100 text-grayscale-800 rounded-[12px] !py-[5px] font-normal text-base !pl-[15px]"
+                        className="bg-grayscale-100 text-grayscale-800 rounded-[12px] py-[5px]! font-normal text-base pl-[15px]!"
                     />
                 </div>
                 <div className="px-2 pb-4 overflow-y-auto flex-1">

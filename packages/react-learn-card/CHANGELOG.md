@@ -1,5 +1,74 @@
 # @welibraryos/react-learn-card
 
+## 3.0.0
+
+### Major Changes
+
+- [#1743](https://github.com/learningeconomy/LearnCard/pull/1743) [`7ff06628cd51fdb19ab66db335284fec143d249c`](https://github.com/learningeconomy/LearnCard/commit/7ff06628cd51fdb19ab66db335284fec143d249c) Thanks [@goblincore](https://github.com/goblincore)! - Migrate styles to Tailwind 4.3. The published React styles now require Safari/iOS 16.4+, Chrome/Edge/Android WebView 111+, or Firefox 128+; this raises the supported browser floor and requires a major release of `@learncard/react`.
+
+    Keep importing `dist/main.css` for card styles and optionally `dist/base.css` for the global reset. Card palette and font utilities retain literal values rather than inheriting host Tailwind tokens. Existing global utility class names remain subject to the normal stylesheet cascade. See the package README for migration and native release requirements.
+
+### Patch Changes
+
+- Updated dependencies [[`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/helpers@1.7.0
+    - @learncard/init@2.5.5
+
+## 2.12.11
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/helpers@1.6.3
+    - @learncard/init@2.5.4
+
+## 2.12.10
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.3
+
+## 2.12.9
+
+### Patch Changes
+
+- [#1638](https://github.com/learningeconomy/LearnCard/pull/1638) [`aaeca3dad4a899a4ce7e96009ba211b4c27af7a2`](https://github.com/learningeconomy/LearnCard/commit/aaeca3dad4a899a4ce7e96009ba211b4c27af7a2) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2111] Add Qualifications across LearnCard navigation, credential organization, issuance, sharing, and resumes. Reclassify eligible automatic categories while preserving explicit choices, default qualifications to certificate displays, and keep expired credentials visible and shareable. Add illustrated test credentials and viewer support for preserving their expiration dates.
+
+    Fix Boost notification render loops by reusing URI-keyed cached Boost details.
+
+    Preserve indexed categories in sharing and classify preselected credentials once, reusing cached Boost lookups when index metadata is unavailable.
+
+    Give Qualifications a distinct navigation identity so it does not reuse another menu item's React key.
+
+    Retry truncated category scans on the next session and refresh open sharing lists after reclassification.
+
+    Keep available credentials selectable when another indexed credential cannot be loaded.
+
+    Replace Qualifications trophy placeholders with the supplied Figma SVG artwork across wallet tiles, navigation, selectors, activity filters, credential corners, and image fallbacks. Keep Colorful and Formal variants independent and preserve the existing Formal empty-state fallback.
+
+    Use an orange Qualifications palette across Passport tiles, category pages, Boost previews, notifications, and certificate displays. Match the existing section shades with orange-300 tiles and tabs, orange-400 headers, orange-200 page backgrounds, and orange-500 count badges with dark text. Keep Neutral Mode surfaces neutral while using the supplied Colorful Solid Color Qualifications icon in both Passport layouts.
+
+    Fix About Qualifications to display Qualifications artwork and explain professional credentials instead of falling back to Skills. Select descriptor content by category rather than the translated title, add the description in every supported language, and present the modal through the shared inset-owning surface.
+
+    Use white Passport category-card backgrounds in Neutral Mode for both tile and list views. Preserve the existing Colorful category backgrounds and icons.
+
+    Recognize French Qualification and Qualifications labels as legitimate cognates in the untranslated-value guard, and normalize the changed-file formatting required by CI. Resolve existing Boost helper lint errors without changing credential updates, template ordering, recipient filtering, query parameters, or image selection.
+
+- Updated dependencies []:
+    - @learncard/helpers@1.6.2
+    - @learncard/init@2.5.2
+
+## 2.12.8
+
+### Patch Changes
+
+- [#1614](https://github.com/learningeconomy/LearnCard/pull/1614) [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2191] Replace Demo School with standards-pure sample personas, including plain OBv3 ConsentFlow issuance without proprietary `boostId` fields.
+
+- Updated dependencies [[`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb)]:
+    - @learncard/helpers@1.6.1
+    - @learncard/init@2.5.1
+
 ## 2.12.7
 
 ### Patch Changes

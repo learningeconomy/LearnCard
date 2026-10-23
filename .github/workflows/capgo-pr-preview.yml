@@ -66,6 +66,61 @@ jobs:
                       });
                       const headSha = pr.head.sha;
 
+                      // Fork heads are attacker-controlled and can change after
+                      // review; never build them with this workflow's secrets.
+                      const baseRepo = `${context.repo.owner}/${context.repo.repo}`;
+                      if (pr.head.repo?.full_name !== baseRepo) {
+                          const headRepo = pr.head.repo?.full_name ?? 'a deleted fork';
+                          const message = `Refusing to build PR #${prNumber}: head is from ${headRepo}, not ${baseRepo}. Push the branch to ${baseRepo} to preview it.`;
+
+                          // The rocket reaction has already gone out, so tell the
+                          // commenter why nothing will be built.
+                          const marker = '<!-- capgo-pr-preview -->';
+                          const body = [
+                              marker,
+                              '## 📲 Capgo PR Preview',
+                              '',
+                              '| Status | Details |',
+                              '|--------|---------|',
+                              '| **State** | 🚫 Refused |',
+                              '',
+                              `Previews only build branches in \`${baseRepo}\`. This PR's head is from \`${headRepo}\`, so it was not built.`,
+                              '',
+                              `Push the branch to \`${baseRepo}\` and open a PR from there to get a preview.`,
+                              '',
+                              `_Refused at ${new Date().toISOString()}_`,
+                          ].join('\n');
+
+                          try {
+                              const { data: comments } = await github.rest.issues.listComments({
+                                  owner: context.repo.owner,
+                                  repo: context.repo.repo,
+                                  issue_number: prNumber,
+                              });
+                              const existing = comments.find(c => (c.body ?? '').includes(marker));
+                              if (existing) {
+                                  await github.rest.issues.updateComment({
+                                      owner: context.repo.owner,
+                                      repo: context.repo.repo,
+                                      comment_id: existing.id,
+                                      body,
+                                  });
+                              } else {
+                                  await github.rest.issues.createComment({
+                                      owner: context.repo.owner,
+                                      repo: context.repo.repo,
+                                      issue_number: prNumber,
+                                      body,
+                                  });
+                              }
+                          } catch (e) {
+                              core.warning(`Could not post refusal comment: ${e.message}`);
+                          }
+
+                          core.setFailed(message);
+                          return;
+                      }
+
                       core.setOutput('pr_number', String(prNumber));
                       core.setOutput('head_sha', headSha);
                       core.setOutput('head_ref', pr.head.ref);
@@ -80,7 +135,7 @@ jobs:
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.3.14
+                  bun-version: 1.4.2
             - name: Compute bundle version
               id: version
               run: |

@@ -146,7 +146,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                         <h3 className="text-sm font-semibold text-grayscale-900 mb-4">
                             {m['settings.notifications.prompt.about']()}
                         </h3>
-                        <ul className="space-y-3">
+                        <ul className="space-y-v3-3">
                             <li className="flex items-start gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                                 <span className="text-[15px] text-grayscale-700 leading-relaxed">

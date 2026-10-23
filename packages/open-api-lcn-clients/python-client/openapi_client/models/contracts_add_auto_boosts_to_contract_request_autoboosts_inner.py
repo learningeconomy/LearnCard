@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List
 from openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority import ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsAddAutoBoostsToContractRequestAutoboostsInner(BaseModel):
     """
@@ -32,7 +33,8 @@ class ContractsAddAutoBoostsToContractRequestAutoboostsInner(BaseModel):
     __properties: ClassVar[List[str]] = ["boostUri", "signingAuthority"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class ContractsAddAutoBoostsToContractRequestAutoboostsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -84,10 +85,12 @@ class ContractsAddAutoBoostsToContractRequestAutoboostsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "boostUri": obj.get("boostUri"),
             "signingAuthority": ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

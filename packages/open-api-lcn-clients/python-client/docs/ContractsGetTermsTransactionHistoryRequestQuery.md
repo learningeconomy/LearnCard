@@ -1,15 +1,14 @@
 # ContractsGetTermsTransactionHistoryRequestQuery
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**terms** | [**ContractsGetTermsTransactionHistoryRequestQueryTerms**](ContractsGetTermsTransactionHistoryRequestQueryTerms.md) |  | [optional] 
-**action** | [**ContractsGetTermsTransactionHistoryRequestQueryAction**](ContractsGetTermsTransactionHistoryRequestQueryAction.md) |  | [optional] 
-**var_date** | [**ContractsGetTermsTransactionHistoryRequestQueryDate**](ContractsGetTermsTransactionHistoryRequestQueryDate.md) |  | [optional] 
-**expires_at** | [**ContractsGetTermsTransactionHistoryRequestQueryExpiresAt**](ContractsGetTermsTransactionHistoryRequestQueryExpiresAt.md) |  | [optional] 
-**one_time** | **bool** |  | [optional] 
+| Name           | Type                                                                                                                        | Description | Notes      |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **terms**      | [**ContractsGetTermsTransactionHistoryRequestQueryTerms**](ContractsGetTermsTransactionHistoryRequestQueryTerms.md)         |             | [optional] |
+| **action**     | [**ContractsGetTermsTransactionHistoryRequestQueryAction**](ContractsGetTermsTransactionHistoryRequestQueryAction.md)       |             | [optional] |
+| **var_date**   | [**ContractsGetTermsTransactionHistoryRequestQueryDate**](ContractsGetTermsTransactionHistoryRequestQueryDate.md)           |             | [optional] |
+| **expires_at** | [**ContractsGetTermsTransactionHistoryRequestQueryExpiresAt**](ContractsGetTermsTransactionHistoryRequestQueryExpiresAt.md) |             | [optional] |
+| **one_time**   | **bool**                                                                                                                    |             | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ contracts_get_terms_transaction_history_request_query_dict = contracts_get_terms
 # create an instance of ContractsGetTermsTransactionHistoryRequestQuery from a dict
 contracts_get_terms_transaction_history_request_query_from_dict = ContractsGetTermsTransactionHistoryRequestQuery.from_dict(contracts_get_terms_transaction_history_request_query_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

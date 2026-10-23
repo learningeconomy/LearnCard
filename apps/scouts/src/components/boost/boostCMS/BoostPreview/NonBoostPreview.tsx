@@ -3,15 +3,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import { IonContent, IonFooter, IonPage, IonRow, IonToolbar } from '@ionic/react';
+import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
-import * as m from '../../../../paraglide/messages.js';
 import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
-import X from 'learn-card-base/svgs/X';
-import FatArrow from 'learn-card-base/svgs/FatArrow';
 
 type IssueHistory = {
     id?: string | number;
@@ -22,7 +19,7 @@ type IssueHistory = {
 
 type NonBoostPreviewProps = {
     credential: VC;
-    verificationItems: VerificationItem[];
+    verificationItems?: VerificationItem[];
     categoryType: BoostCategoryOptionsEnum;
     customThumbComponent: React.ReactNode;
     customBodyCardComponent: React.ReactNode;
@@ -43,6 +40,7 @@ type NonBoostPreviewProps = {
     onDotsClick?: () => void;
     qrCodeOnClick?: () => void;
     hideQRCode?: boolean;
+    handleShareBoost?: () => void;
     unknownVerifierTitle?: string;
 };
 
@@ -70,6 +68,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     onDotsClick,
     qrCodeOnClick,
     hideQRCode,
+    handleShareBoost,
 }) => {
     const { initWallet } = useWallet();
     const issuerDid =
@@ -120,7 +119,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                     className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         shouldUseHostCardPadding ? 'px-1' : ''
                     } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
-                        isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''
+                        isID ? 'px-0! mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''
                     }`}
                 >
                     <section className={`w-full ${shouldUseHostCardPadding ? 'px-6' : ''}`}>
@@ -144,7 +143,6 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             enableLightbox
                             titleOverride={titleOverride}
                             handleClose={isCertificate ? handleCloseModal : undefined}
-                            onDotsClick={onDotsClick}
                             hideNavButtons
                             isFrontOverride={isFront}
                             setIsFrontOverride={setIsFront}
@@ -157,33 +155,17 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
             </IonContent>
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center p-[15px] ion-no-border absolute bottom-0"
+                className="w-full flex justify-center items-center p-[0px] m-[0px] ion-no-border absolute bottom-0"
             >
-                <IonToolbar color="transparent" mode="ios">
-                    <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
-                        <button
-                            className="bg-grayscale-900 text-[24px] tracking-[.75px] text-white py-[15px] px-[20px] rounded-[20px] flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
-                            onClick={() => setIsFront(!isFront)}
-                        >
-                            {isFront ? (
-                                <>
-                                    {m['common.details']()} <FatArrow direction="right" />
-                                </>
-                            ) : (
-                                <>
-                                    <FatArrow direction="left" /> {m['common.back']()}
-                                </>
-                            )}
-                        </button>
-
-                        <button
-                            onClick={handleCloseModal}
-                            className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
-                        >
-                            <X className="text-black w-[30px]" />
-                        </button>
-                    </IonRow>
-                </IonToolbar>
+                <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
+                    <BoostFooter
+                        handleX={handleCloseModal}
+                        handleDetails={isFront ? () => setIsFront(false) : undefined}
+                        handleBack={!isFront ? () => setIsFront(true) : undefined}
+                        handleShare={handleShareBoost}
+                        handleDotMenu={onDotsClick}
+                    />
+                </IonRow>
             </IonFooter>
         </IonPage>
     );

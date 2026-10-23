@@ -1,12 +1,11 @@
 # ContactMethodsAddContactMethodRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**value** | **str** |  | 
-**type** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **value** | **str** |             |
+| **type**  | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contact_methods_add_contact_method_request_dict = contact_methods_add_contact_me
 # create an instance of ContactMethodsAddContactMethodRequest from a dict
 contact_methods_add_contact_method_request_from_dict = ContactMethodsAddContactMethodRequest.from_dict(contact_methods_add_contact_method_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

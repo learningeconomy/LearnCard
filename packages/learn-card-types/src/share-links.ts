@@ -592,6 +592,8 @@ export const ShareLinkValidator = z.object({
     version: safeVersion,
     contentVersion: safeVersion,
     status: ShareLinkStatusValidator,
+    attachmentId: z.string().uuid().nullable().optional(),
+    attachmentChunkCount: z.number().int().min(1).max(16).nullable().optional(),
     contentState: ShareContentStateValidator,
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
@@ -618,6 +620,74 @@ export type ShareLink = z.infer<typeof ShareLinkValidator>;
 
 const clientRequestId = z.string().uuid();
 
+/** Opaque, version-bound descriptor; PDF bytes and keys never reach Brain metadata. */
+export const ShareLinkAttachmentValidator = z
+    .object({
+        id: z.string().uuid(),
+        chunkCount: z.number().int().min(1).max(16),
+    })
+    .strict();
+export type ShareLinkAttachment = z.infer<typeof ShareLinkAttachmentValidator>;
+
+const attachmentChunkKey = {
+    id: ShareLinkIdValidator,
+    contentVersion: safeVersion,
+    attachmentId: z.string().uuid(),
+    chunkIndex: z.number().int().min(0).max(15),
+};
+export const ShareLinkAttachmentChunkEnvelopeValidator = ShareEnvelopeValidator.refine(
+    value => (decodedBase64UrlByteLength(value.ct) ?? Infinity) <= 256 * 1024 + SHARE_TAG_BYTES
+);
+export const PutShareLinkAttachmentChunkInputValidator = z
+    .object({
+        ...attachmentChunkKey,
+        chunkCount: z.number().int().min(1).max(16),
+        envelope: ShareLinkAttachmentChunkEnvelopeValidator,
+        ownerEncryptedRecovery: ShareOwnerRecoveryValidator,
+    })
+    .strict()
+    .refine(value => value.chunkIndex < value.chunkCount);
+export type PutShareLinkAttachmentChunkInput = z.infer<
+    typeof PutShareLinkAttachmentChunkInputValidator
+>;
+export const GetShareLinkAttachmentChunkInputValidator = z
+    .object({
+        ...attachmentChunkKey,
+        passcode: z.string().min(4).max(64).optional(),
+        accessToken: z.string().min(1).max(2048).optional(),
+    })
+    .strict();
+export type GetShareLinkAttachmentChunkInput = z.infer<
+    typeof GetShareLinkAttachmentChunkInputValidator
+>;
+export const ShareLinkAttachmentChunkOutputValidator = z
+    .object({
+        ...attachmentChunkKey,
+        envelope: ShareLinkAttachmentChunkEnvelopeValidator,
+        accessToken: z.string().min(1).max(2048).optional(),
+    })
+    .strict();
+export type ShareLinkAttachmentChunkOutput = z.infer<
+    typeof ShareLinkAttachmentChunkOutputValidator
+>;
+export const DeleteShareLinkAttachmentChunksInputValidator = z
+    .object({
+        id: ShareLinkIdValidator,
+        contentVersion: safeVersion,
+        attachmentId: z.string().uuid(),
+        chunkCount: z.number().int().min(1).max(16),
+    })
+    .strict();
+export type DeleteShareLinkAttachmentChunksInput = z.infer<
+    typeof DeleteShareLinkAttachmentChunksInputValidator
+>;
+export const PutShareLinkAttachmentChunkOutputValidator = z
+    .object({ ok: z.literal(true) })
+    .strict();
+export const DeleteShareLinkAttachmentChunksOutputValidator = z
+    .object({ ok: z.boolean() })
+    .strict();
+
 export const CreateShareLinkInputValidator = z
     .object({
         id: ShareLinkIdValidator,
@@ -631,6 +701,7 @@ export const CreateShareLinkInputValidator = z
         contentVersion: z.literal(1),
         envelope: ShareEnvelopeValidator,
         ownerEncryptedRecovery: ShareOwnerRecoveryValidator,
+        attachment: ShareLinkAttachmentValidator.optional(),
     })
     .strict();
 export type CreateShareLinkInput = z.infer<typeof CreateShareLinkInputValidator>;
@@ -655,6 +726,7 @@ export const UpdateShareLinkInputValidator = z
         selectedCount: z.number().int().min(1).max(MAX_SELECTED_CREDENTIALS).optional(),
         envelope: ShareEnvelopeValidator.optional(),
         ownerEncryptedRecovery: ShareOwnerRecoveryValidator.optional(),
+        attachment: ShareLinkAttachmentValidator.optional(),
     })
     .strict()
     .superRefine((value, ctx) => {
@@ -671,6 +743,9 @@ export const UpdateShareLinkInputValidator = z
                 message:
                     'content replacement requires contentVersion, selectedCount, envelope and ownerEncryptedRecovery together',
             });
+        }
+        if (value.attachment !== undefined && provided !== 4) {
+            ctx.addIssue({ code: 'custom', message: 'attachment requires a content replacement' });
         }
     });
 export type UpdateShareLinkInput = z.infer<typeof UpdateShareLinkInputValidator>;

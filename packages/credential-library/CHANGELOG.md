@@ -1,5 +1,88 @@
 # @learncard/credential-library
 
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/sd-jwt-vc-plugin@0.2.18
+
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/sd-jwt-vc-plugin@0.2.17
+
+## 2.1.1
+
+### Patch Changes
+
+- [#1708](https://github.com/learningeconomy/LearnCard/pull/1708) [`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638) Thanks [@gerardopar](https://github.com/gerardopar)! - Add a shared CLR renderer with academic, military, and neutral fallback layouts, reusable record sections, and a comprehensive military fixture.
+
+    Collection layout selection is intentionally conservative: course counts, credits,
+    and terms alone no longer select academic. Without an academic title, explicit GPA
+    or degree evidence is required in a collection whose children all have compatible
+    academic types; untyped children, certificates, licenses, and memberships fall back
+    to the general view. Explicit academic titles retain the academic view. Military
+    record titles include Joint Services Transcript, AARTS, CCAF Transcript, and service
+    branch record titles. No classification is derived from issuer names or child text.
+
+## 2.1.0
+
+### Minor Changes
+
+- [#1653](https://github.com/learningeconomy/LearnCard/pull/1653) [`23c30e68ca4fc5feb70ab3a5660aae71e486d63e`](https://github.com/learningeconomy/LearnCard/commit/23c30e68ca4fc5feb70ab3a5660aae71e486d63e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add seven unsigned examples covering RubricScore, teaching scope, French text,
+  mixed result branches, administrative claims, and a mixed-role CLR portfolio.
+
+### Patch Changes
+
+- [#1638](https://github.com/learningeconomy/LearnCard/pull/1638) [`aaeca3dad4a899a4ce7e96009ba211b4c27af7a2`](https://github.com/learningeconomy/LearnCard/commit/aaeca3dad4a899a4ce7e96009ba211b4c27af7a2) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2111] Add Qualifications across LearnCard navigation, credential organization, issuance, sharing, and resumes. Reclassify eligible automatic categories while preserving explicit choices, default qualifications to certificate displays, and keep expired credentials visible and shareable. Add illustrated test credentials and viewer support for preserving their expiration dates.
+
+    Fix Boost notification render loops by reusing URI-keyed cached Boost details.
+
+    Preserve indexed categories in sharing and classify preselected credentials once, reusing cached Boost lookups when index metadata is unavailable.
+
+    Give Qualifications a distinct navigation identity so it does not reuse another menu item's React key.
+
+    Retry truncated category scans on the next session and refresh open sharing lists after reclassification.
+
+    Keep available credentials selectable when another indexed credential cannot be loaded.
+
+    Replace Qualifications trophy placeholders with the supplied Figma SVG artwork across wallet tiles, navigation, selectors, activity filters, credential corners, and image fallbacks. Keep Colorful and Formal variants independent and preserve the existing Formal empty-state fallback.
+
+    Use an orange Qualifications palette across Passport tiles, category pages, Boost previews, notifications, and certificate displays. Match the existing section shades with orange-300 tiles and tabs, orange-400 headers, orange-200 page backgrounds, and orange-500 count badges with dark text. Keep Neutral Mode surfaces neutral while using the supplied Colorful Solid Color Qualifications icon in both Passport layouts.
+
+    Fix About Qualifications to display Qualifications artwork and explain professional credentials instead of falling back to Skills. Select descriptor content by category rather than the translated title, add the description in every supported language, and present the modal through the shared inset-owning surface.
+
+    Use white Passport category-card backgrounds in Neutral Mode for both tile and list views. Preserve the existing Colorful category backgrounds and icons.
+
+    Recognize French Qualification and Qualifications labels as legitimate cognates in the untranslated-value guard, and normalize the changed-file formatting required by CI. Resolve existing Boost helper lint errors without changing credential updates, template ordering, recipient filtering, query parameters, or image selection.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012)]:
+    - @learncard/types@5.23.0
+    - @learncard/sd-jwt-vc-plugin@0.2.16
+
+## 2.0.5
+
+### Patch Changes
+
+- [#1620](https://github.com/learningeconomy/LearnCard/pull/1620) [`2ebda517e9468476f22d3ae3b4ebddf67e8aca78`](https://github.com/learningeconomy/LearnCard/commit/2ebda517e9468476f22d3ae3b4ebddf67e8aca78) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-1696] Render CLR result scales and achievement relationships.
+
+- [#1610](https://github.com/learningeconomy/LearnCard/pull/1610) [`0e9dd47f4451d776ad1787d0a35dbd54141b9fe3`](https://github.com/learningeconomy/LearnCard/commit/0e9dd47f4451d776ad1787d0a35dbd54141b9fe3) Thanks [@gerardopar](https://github.com/gerardopar)! - Add synthetic unsigned CLR fixtures for employment, training providers, military
+  training, professional organizations, licensing/regulatory records, and mixed
+  career collections. Register and export the fixtures, document their display
+  coverage and signing boundaries, and add reference-integrity and field-coverage
+  tests without changing the renderer or existing fixtures.
+
+- [#1614](https://github.com/learningeconomy/LearnCard/pull/1614) [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2191] Replace Demo School with standards-pure sample personas, including plain OBv3 ConsentFlow issuance without proprietary `boostId` fields.
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f)]:
+    - @learncard/types@5.22.0
+    - @learncard/sd-jwt-vc-plugin@0.2.15
+
 ## 2.0.4
 
 ### Patch Changes

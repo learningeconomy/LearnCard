@@ -38,7 +38,14 @@ export type {
     GuardianEmailOtpData,
     GuardianRejectedCredentialData,
     CredentialUpdatedData,
+    AccountSignInChangedData,
+    EscrowHoldStartedData,
+    EscrowHoldReminderData,
+    EscrowHoldReleasedData,
+    EscrowHoldCancelledData,
+    EscrowPinLockedData,
 } from './render';
+export type { EscrowHoldCancelledReason } from './templates/escrow-hold-cancelled';
 
 // SMS rendering
 export { renderSms } from './sms';

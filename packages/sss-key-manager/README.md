@@ -15,6 +15,7 @@ This package provides a secure, self-hosted alternative to Web3Auth Single Facto
     - Password-based (Argon2id KDF)
     - Passkey/WebAuthn PRF (coming soon)
     - Backup file export/import
+    - Enclave escrow recovery with a seven-day waiting period (explicit attestation policy required)
 - **Migration**: Seamless migration from Web3Auth SFA
 
 ## Installation
@@ -25,75 +26,22 @@ bun add @learncard/sss-key-manager
 
 ## Usage
 
-### Basic Setup
+### AuthCoordinator Setup
 
 ```typescript
-import { createSSSKeyManager } from '@learncard/sss-key-manager';
+import { createSSSStrategy } from '@learncard/sss-key-manager';
 
-const keyManager = createSSSKeyManager({
+const keyDerivation = createSSSStrategy({
     serverUrl: 'https://your-lca-api.com',
-    authProvider: {
-        getIdToken: async () => firebaseUser.getIdToken(),
-        getCurrentUser: async () => ({
-            id: firebaseUser.uid,
-            email: firebaseUser.email,
-            providerType: 'firebase',
-        }),
-        getProviderType: () => 'firebase',
-        signOut: async () => firebaseAuth.signOut(),
-    },
 });
 ```
 
-### New User Setup
+Use this strategy with LearnCard's `AuthCoordinator`, which obtains a fresh DID challenge for every
+protected write.
 
-```typescript
-// Generate new key and split into shares
-const privateKey = await keyManager.setupNewKey();
-console.log('DID:', deriveDid(privateKey));
-```
-
-### Returning User
-
-```typescript
-// Reconstruct key from device + server shares
-const privateKey = await keyManager.connect();
-```
-
-### Migration from Web3Auth
-
-```typescript
-// Extract key from Web3Auth and migrate to SSS
-const web3AuthPrivateKey = await web3Auth.provider.request({ method: 'eth_private_key' });
-await keyManager.migrate(web3AuthPrivateKey);
-```
-
-### Recovery
-
-```typescript
-// Add password recovery
-await keyManager.addRecoveryMethod({
-    type: 'password',
-    password: userPassword,
-});
-
-// Recover with password
-const privateKey = await keyManager.recover({
-    type: 'password',
-    password: userPassword,
-});
-
-// Export backup file
-const backup = await keyManager.exportBackup(backupPassword);
-downloadFile('wallet.lcbackup', JSON.stringify(backup));
-
-// Import backup file
-const privateKey = await keyManager.recover({
-    type: 'backup',
-    fileContents: backupFileJson,
-    password: backupPassword,
-});
-```
+> `createSSSKeyManager` and `SSSApiClient` are deprecated compatibility exports. Their legacy write
+> methods fail closed because they cannot satisfy the hardened DID-challenge routes. Migrate callers
+> to `createSSSStrategy`.
 
 ## Architecture
 
@@ -115,6 +63,19 @@ const privateKey = await keyManager.recover({
 
 ## Security Model
 
+### Nitro attestation trust policy
+
+Nitro enrollment verifies a nonce-bound COSE ES384 document, the certificate chain against a
+pinned root DER SHA-256 (AWS Nitro Root G1 by default), and one complete PCR0/1/2 tuple.
+Configure `pinnedMeasurements: [{ pcr0, pcr1, pcr2, imageSha384? }]` with 48-byte hex PCRs.
+Legacy `{ imageSha384 }` entries remain type-compatible but **never match**; they cannot authorize
+enrollment. `rootCertificateSha256` is an explicit trust-anchor override (test roots must never be
+used in production). `maxAgeMs` defaults to 300000; future timestamps allow at most 60 seconds skew.
+The escrow P-256 SPKI comes only from signed `user_data`, not the NSM `public_key` used for KMS.
+`verifyEnclaveAttestation(attestation, policy, nonce)` requires the expected 32-byte nonce in Nitro
+mode. The strategy sends a fresh hex nonce on each attestation GET; software mode ignores the nonce
+and continues to require a pinned public key.
+
 - **Device Share**: Encrypted with non-extractable AES-GCM key stored in IndexedDB
 - **Auth Share**: Server-side envelope encryption (DEK + KMS-encrypted DEK)
 - **Recovery Share**: Password-based uses Argon2id KDF with secure parameters
@@ -131,41 +92,10 @@ The package is designed to work with any authentication provider:
 
 ## API Reference
 
-### `createSSSKeyManager(config)`
+### `createSSSStrategy(config)`
 
-Creates a new SSS Key Manager instance.
-
-### `keyManager.connect()`
-
-Reconstructs the private key from device and auth shares.
-
-### `keyManager.setupNewKey()`
-
-Generates a new private key and splits it into shares.
-
-### `keyManager.setupWithKey(privateKey, primaryDid?)`
-
-Sets up SSS with an existing private key (used for migration).
-
-### `keyManager.migrate(privateKey)`
-
-Migrates from Web3Auth to SSS, preserving the existing key.
-
-### `keyManager.addRecoveryMethod(method)`
-
-Adds a recovery method (password, passkey, or backup).
-
-### `keyManager.recover(method)`
-
-Recovers the private key using a recovery method.
-
-### `keyManager.exportBackup(password)`
-
-Exports an encrypted backup file.
-
-### `keyManager.getSecurityLevel()`
-
-Returns the current security level based on configured recovery methods.
+Creates the SSS key-derivation strategy used by `AuthCoordinator` for setup, migration, recovery,
+and DID-authorized server writes.
 
 ## Four shares
 

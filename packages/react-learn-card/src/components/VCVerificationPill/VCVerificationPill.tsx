@@ -45,7 +45,7 @@ export const ValidationStateIndicator: React.FC<VerifiableStateIndicatorProps> =
 
     return (
         <div className={`relative rounded-full w-[30px] h-[30px] ${bgColor}`}>
-            <div className="relative w-[100%] h-[100%] flex items-center justify-center rounded-[50%] bg-white rounded-full overflow-hidden">
+            <div className="relative w-full h-full flex items-center justify-center rounded-[50%] bg-white rounded-full overflow-hidden">
                 <img
                     className="h-full w-full object-contain p-1"
                     src={source ?? ''}

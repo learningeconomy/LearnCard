@@ -543,7 +543,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
                             <IonList
                                 lines="none"
-                                className="flex flex-col items-center justify-center w-[100%]"
+                                className="flex flex-col items-center justify-center w-full"
                             >
                                 {recipients?.map((recipient, index) => {
                                     return (

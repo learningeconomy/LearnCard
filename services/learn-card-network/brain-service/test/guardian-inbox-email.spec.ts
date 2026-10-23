@@ -317,6 +317,7 @@ describe('guardian-gated inbox recipient email', () => {
 
         const childSend = sendTo(RECIPIENT.value);
         expect(childSend?.templateId).toBe('universal-inbox-claim');
+        expect(childSend?.templateModel.claimUrl).toBe(CLAIM_URL);
         expect(childSend?.templateModel.emailClaimUrl).toBe(CLAIM_URL);
         expect(childSend?.templateModel.claimToken).toBe('claim-token-sentinel');
         expect(mocks.createEmailSentRelationship).toHaveBeenCalledTimes(1);

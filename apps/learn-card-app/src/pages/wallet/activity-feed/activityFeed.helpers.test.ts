@@ -18,7 +18,7 @@ const isoDaysAgo = (days: number): string => {
     return d.toISOString();
 };
 
-const record = (over: Partial<any> = {}) => ({
+const record = (over: Record<string, unknown> = {}) => ({
     id: 'a1',
     activityId: 'x1',
     eventType: 'CREATED',
@@ -36,12 +36,18 @@ describe('resolveActivityCategory', () => {
     it('maps an enum key string to the enum', () => {
         expect(resolveActivityCategory('socialBadge')).toBe(CredentialCategoryEnum.socialBadge);
         expect(resolveActivityCategory('achievement')).toBe(CredentialCategoryEnum.achievement);
+        expect(resolveActivityCategory('qualifications')).toBe(
+            CredentialCategoryEnum.qualifications
+        );
     });
     it('maps the enum display value (how boosts persist category) to the enum', () => {
         expect(resolveActivityCategory('Social Badge')).toBe(CredentialCategoryEnum.socialBadge);
         expect(resolveActivityCategory('Achievement')).toBe(CredentialCategoryEnum.achievement);
         expect(resolveActivityCategory('ID')).toBe(CredentialCategoryEnum.id);
         expect(resolveActivityCategory('Work History')).toBe(CredentialCategoryEnum.workHistory);
+        expect(resolveActivityCategory('Qualifications')).toBe(
+            CredentialCategoryEnum.qualifications
+        );
     });
     it('falls back to socialBadge for unknown/missing', () => {
         expect(resolveActivityCategory(undefined)).toBe(CredentialCategoryEnum.socialBadge);
@@ -235,6 +241,15 @@ describe('isHiddenActivity', () => {
         expect(isHiddenActivity('AI Sessions')).toBe(true);
         expect(isHiddenActivity('ai-topic')).toBe(true);
         expect(isHiddenActivity('Pay Rate')).toBe(true);
+    });
+    it.each([
+        ['resume', 'Resume'],
+        ['certificate', 'Certificate'],
+        ['transcript', 'Transcript'],
+        ['diploma', 'Diploma'],
+    ])('hides source uploads in %s without hiding issued %s credentials', (source, issued) => {
+        expect(isHiddenActivity(source)).toBe(true);
+        expect(isHiddenActivity(issued)).toBe(false);
     });
     it('shows normal and unknown categories', () => {
         expect(isHiddenActivity('Social Badge')).toBe(false);

@@ -1,5 +1,18 @@
-import { describe, expect, it } from 'vitest';
-import { parseLcaApiEnvironment } from './environment';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isEscrowReleaseKillSwitchEnabled, parseLcaApiEnvironment } from './environment';
+
+afterEach(() => vi.unstubAllEnvs());
+
+describe('live escrow release kill switch', () => {
+    it.each(['1', 'true'])('blocks releases for %s', value => {
+        vi.stubEnv('ESCROW_RELEASE_KILL_SWITCH', value);
+        expect(isEscrowReleaseKillSwitchEnabled()).toBe(true);
+    });
+    it.each(['0', 'false', ''])('allows releases for %s', value => {
+        vi.stubEnv('ESCROW_RELEASE_KILL_SWITCH', value);
+        expect(isEscrowReleaseKillSwitchEnabled()).toBe(false);
+    });
+});
 
 const production = {
     NODE_ENV: 'production',
@@ -110,6 +123,36 @@ describe('signing-authority seed environment', () => {
                 NODE_ENV: 'test',
                 SA_SEED_ENCRYPT_WRITES: 'false',
                 SA_SEED_ALLOW_LEGACY_READ: 'true',
+            })
+        ).not.toThrow();
+    });
+});
+
+describe('Keycloak startup configuration', () => {
+    it.each([undefined, '', '   ', ' , , '])('rejects missing audiences: %s', audiences => {
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: 'https://identity.example/realms/learncard',
+                KEYCLOAK_AUDIENCES: audiences,
+            })
+        ).toThrow(/KEYCLOAK_AUDIENCES/);
+    });
+    it('allows disabled Keycloak and valid issuer/audience configuration', () => {
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: ' , ',
+            })
+        ).not.toThrow();
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: 'https://identity.example/realms/learncard',
+                KEYCLOAK_AUDIENCES: ' , learncard-app, ',
             })
         ).not.toThrow();
     });

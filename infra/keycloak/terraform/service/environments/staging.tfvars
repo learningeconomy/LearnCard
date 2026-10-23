@@ -1,0 +1,16 @@
+environment          = "staging"
+expected_account_id  = "281762601323"
+aws_region           = "us-east-1"
+task_cpu             = 1024
+task_memory          = 2048
+desired_count        = 1
+min_task_count       = 1
+max_task_count       = 2
+db_min_capacity      = 0.5
+db_max_capacity      = 4
+db_instance_count    = 1
+db_pool_size         = 10
+db_connection_budget = 100
+waf_block_mode       = false
+enable_aws_backup    = false
+alarm_emails         = ["jackson@learningeconomy.io"]

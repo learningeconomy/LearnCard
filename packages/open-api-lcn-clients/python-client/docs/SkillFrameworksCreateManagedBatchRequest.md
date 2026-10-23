@@ -1,11 +1,10 @@
 # SkillFrameworksCreateManagedBatchRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**frameworks** | [**List[SkillFrameworksCreateManagedBatchRequestFrameworksInner]**](SkillFrameworksCreateManagedBatchRequestFrameworksInner.md) |  | 
+| Name           | Type                                                                                                                            | Description | Notes |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **frameworks** | [**List[SkillFrameworksCreateManagedBatchRequestFrameworksInner]**](SkillFrameworksCreateManagedBatchRequestFrameworksInner.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skill_frameworks_create_managed_batch_request_dict = skill_frameworks_create_man
 # create an instance of SkillFrameworksCreateManagedBatchRequest from a dict
 skill_frameworks_create_managed_batch_request_from_dict = SkillFrameworksCreateManagedBatchRequest.from_dict(skill_frameworks_create_managed_batch_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

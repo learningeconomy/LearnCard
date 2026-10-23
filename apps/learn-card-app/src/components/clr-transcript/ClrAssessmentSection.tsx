@@ -3,10 +3,10 @@ import React from 'react';
 import { ChevronRight, Target } from 'lucide-react';
 
 import { ClrRubricProgress } from './ClrRubricScale';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import { summarizeAssessment } from './clr.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { summarizeAssessment } from 'learn-card-base/helpers/credentials/clr/helpers';
 
-import type { AssessmentDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { AssessmentDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrAssessmentSection: React.FC<{
     assessments: AssessmentDisplayModel[];
@@ -16,7 +16,7 @@ const ClrAssessmentSection: React.FC<{
     if (assessments.length === 0) return null;
 
     return (
-        <div id="assessments" className="space-y-3 scroll-mt-6">
+        <div id="assessments" className="space-y-v3-3 scroll-mt-6">
             <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2 mb-4">
                 <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
                     Assessments

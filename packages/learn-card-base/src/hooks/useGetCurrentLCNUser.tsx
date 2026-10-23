@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { auth } from '../stores/nanoStores/authStore';
 
-import { useIsLoggedIn, useCurrentUser, switchedProfileStore } from 'learn-card-base';
+import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 
 import { useGetProfile } from 'learn-card-base';
@@ -9,21 +9,18 @@ import { useGetProfile } from 'learn-card-base';
 export const useGetCurrentLCNUser = () => {
     const currentUser = useCurrentUser();
     const isLoggedIn = useIsLoggedIn();
-    const hasParentSwitchedProfiles = switchedProfileStore.use.isSwitchedProfile();
 
     const { data: profile, error, isLoading, refetch } = useGetProfile();
 
     useEffect(() => {
-        if (!profile || !currentUser || !isLoggedIn || hasParentSwitchedProfiles) return;
+        if (!profile || !currentUser || !isLoggedIn) return;
 
         const lcnDisplayName = profile.displayName?.trim();
         const lcnImage = profile.image?.trim();
 
-        // Only sync to currentUserStore when the LCN profile actually has data
-        // for the field. Sparse / brand-new LCN profiles return empty strings
-        // for displayName/image, and writing those back here used to wipe the
-        // auth-provider-supplied name/profileImage out of currentUserStore —
-        // degrading UserProfilePicture's fallback chain to a literal '#'.
+        // The wallet's profile query is keyed by the switched DID, so its
+        // identity also restores the selected organization after a page reload.
+        // The auth coordinator initially populates name/image as empty strings.
         if (lcnDisplayName || lcnImage) {
             currentUserStore.set.updateCurrentUserNameAndImage(
                 lcnDisplayName || currentUser.name || '',
@@ -34,10 +31,10 @@ export const useGetCurrentLCNUser = () => {
         if (profile.did) {
             auth.set({ did: profile.did });
         }
-    }, [profile, isLoggedIn, currentUser, hasParentSwitchedProfiles]);
+    }, [profile, isLoggedIn, currentUser]);
 
     return {
-        currentLCNUser: error ? null : profile ?? null,
+        currentLCNUser: error ? null : (profile ?? null),
         refetch,
         currentLCNUserLoading: isLoading,
     };

@@ -8,7 +8,11 @@ import { expect, it, vi } from 'vitest';
 const { coordinatorProps } = vi.hoisted(() => ({ coordinatorProps: vi.fn() }));
 
 vi.mock('@tanstack/react-query', () => ({
-    QueryClient: class QueryClient {},
+    QueryClient: class QueryClient {
+        getQueryCache() {
+            return { subscribe: vi.fn(() => vi.fn()) };
+        }
+    },
     onlineManager: { setEventListener: vi.fn() },
 }));
 
@@ -34,6 +38,17 @@ vi.mock('learn-card-base/components/modals/ModalAccessibilityManager', () => ({
 vi.mock('history', () => ({ createBrowserHistory: vi.fn(() => ({})) }));
 
 vi.mock('learn-card-base', () => ({
+    networkStore: {
+        get: {
+            networkUrl: () => 'https://network.example.test/trpc',
+            networkApiUrl: () => 'https://network.example.test/api',
+            cloudUrl: () => 'https://cloud.example.test/trpc',
+            xapiUrl: () => 'https://cloud.example.test/xapi',
+        },
+    },
+    isLikelyTransportError: vi.fn(() => false),
+    observeConnectionQuality: vi.fn(() => ({ disconnect: vi.fn() })),
+    CONNECTIVITY_PROBE_PATH: '/connectivity.txt',
     connectivityStore: {
         get: { status: () => 'online' },
         store: { subscribe: vi.fn(() => vi.fn()) },
@@ -69,6 +84,15 @@ vi.mock('./components/qrcode-scanner-listener/QRCodeScannerListener', () => ({
     default: () => null,
 }));
 vi.mock('./components/network-listener/NetworkListener', () => ({ default: () => null }));
+// Keep this app-shell test isolated from the native adapter and tenant/theme imports.
+vi.mock('./components/network-listener/connectivity', () => ({
+    getAppConnectivityMonitor: vi.fn(() => ({
+        getState: () => ({ foreground: true }),
+        subscribe: vi.fn(() => vi.fn()),
+        reportSample: vi.fn(),
+    })),
+    requestConnectivityCheck: vi.fn(),
+}));
 vi.mock('./components/credential-sync-listener/CredentialSyncListener', () => ({
     default: () => null,
 }));

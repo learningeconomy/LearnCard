@@ -5,12 +5,14 @@ import type { VC } from '@learncard/types';
 
 import ClaimFromRequest from './ClaimFromRequest';
 import type { InboxClaimOutcome } from './exchange.types';
+import type { DisclosureAttempt } from '../../helpers/verifier-history/history';
 
 const mocks = vi.hoisted(() => ({
     fetch: vi.fn(),
     push: vi.fn(),
     replace: vi.fn(),
     search: { value: '' },
+    disclosure: { value: undefined as DisclosureAttempt | undefined },
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -132,7 +134,23 @@ vi.mock('../../paraglide/messages.js', () => ({
 
 vi.mock('./ExchangeLoading', () => ({ default: () => <div>Exchange loading</div> }));
 vi.mock('./ExchangePresentationRequest', () => ({
-    default: () => <div>Presentation request</div>,
+    default: ({
+        onSubmit,
+    }: {
+        onSubmit: (body: unknown, count?: number, history?: DisclosureAttempt) => void;
+    }) => (
+        <button
+            onClick={() =>
+                onSubmit(
+                    { verifiablePresentation: { holder: 'did:key:holder' } },
+                    undefined,
+                    mocks.disclosure.value
+                )
+            }
+        >
+            present-credentials
+        </button>
+    ),
 }));
 vi.mock('./ExchangeRedirect', () => ({ default: () => <div>Redirect</div> }));
 vi.mock('./ExchangeInitiate', () => ({ default: () => <div>Initiate</div> }));
@@ -202,6 +220,7 @@ describe('ClaimFromRequest inbox claim outcomes', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         setUrl(inboxUrl);
+        mocks.disclosure.value = undefined;
         vi.stubGlobal('fetch', mocks.fetch);
     });
 
@@ -346,6 +365,29 @@ describe('ClaimFromRequest inbox claim outcomes', () => {
         fireEvent.click(screen.getByRole('button', { name: 'accept' }));
 
         await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/achievements'));
+    });
+
+    it('records a successful disclosure without confusing history with guardian retry options', async () => {
+        setUrl(genericUrl);
+        const finish = vi.fn().mockResolvedValue('saved');
+        mocks.disclosure.value = { finish, isCurrent: () => true } as unknown as DisclosureAttempt;
+        mocks.fetch
+            .mockResolvedValueOnce(
+                jsonResponse({
+                    verifiablePresentationRequest: {
+                        query: [{ type: 'QueryByExample' }],
+                        challenge: 'disclosure-challenge',
+                        domain: 'localhost',
+                    },
+                })
+            )
+            .mockResolvedValueOnce(jsonResponse({}));
+
+        render(<ClaimFromRequest />);
+        fireEvent.click(await screen.findByRole('button', { name: 'present-credentials' }));
+
+        await waitFor(() => expect(finish).toHaveBeenCalledWith('sent'));
+        expect(mocks.fetch).toHaveBeenCalledTimes(2);
     });
 
     it('never renders raw server error text that could contain names or emails', async () => {

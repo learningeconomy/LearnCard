@@ -3,7 +3,7 @@ import React from 'react';
 import { Target, ExternalLink } from 'lucide-react';
 
 import { SkillCompetencyCard, isSkillCompetencyAlignment } from 'learn-card-base';
-import type { AlignmentDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { AlignmentDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 /**
  * Renders a record's `achievement.alignment[]` entries — the CLR/OB mechanism for tying
@@ -16,14 +16,14 @@ const ClrAlignmentList: React.FC<{
     if (alignments.length === 0) return null;
 
     return (
-        <div className="bg-white border border-grayscale-200 rounded-2xl p-4 space-y-3">
+        <div className="bg-white border border-grayscale-200 rounded-2xl p-4 space-y-v3-3">
             <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-grayscale-500" />
                 <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
                     {title}
                 </p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 {alignments.map((alignment, index) => {
                     const name =
                         alignment.targetName?.value ??
@@ -51,7 +51,7 @@ const ClrAlignmentList: React.FC<{
                     return (
                         <div
                             key={`${name}-${index}`}
-                            className="rounded-xl border border-grayscale-200 bg-grayscale-50 px-3.5 py-3 space-y-1"
+                            className="rounded-xl border border-grayscale-200 bg-grayscale-50 px-3.5 py-3 space-y-v3-1"
                         >
                             <div className="flex items-start justify-between gap-2">
                                 <p className="text-sm font-semibold text-grayscale-900 leading-snug">

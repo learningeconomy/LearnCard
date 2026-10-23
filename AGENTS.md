@@ -234,6 +234,12 @@ Before shipping any new modal, overlay, or form:
 9. **Contrast**: Text readable on its background (test on white AND colored backgrounds)
 10. **Animation**: Use `animate-fade-in-up` for overlay entrance, `transition-colors` / `transition-opacity` for interactions
 
+## Verifying Your Work
+
+Use focused unit/mock tests and small scripts or a reusable browser in the edit loop. Near PR readiness, prove cross-surface or network-touching changes with the matching `lc verify` journey; run the full catalog before marking that work ready. This is a Linux-only owned-stack gate, not a requirement to rebuild the world after every edit. macOS/Windows developers can use the secret-free hosted Linux workflow `.github/workflows/verification.yml` or a disposable Linux sandbox. Read `.agents/skills/verify-learncard/SKILL.md` for setup, per-directory ports/dev coexistence, safe worker coordination, and honest coverage gaps. Never claim verification you did not run.
+
+Finish agent tasks with the draft-PR proof contract in [ship-with-proof](.agents/skills/ship-with-proof/SKILL.md).
+
 ## Monorepo Structure
 
 The project uses Bun workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory
@@ -348,9 +354,13 @@ the DIDKit plugin, and return from `pkg` with `cd ..` (compatible with fish):
 
 ```bash
 cd lib/didkit/lib/web
-wasm-pack build --target=web && cd pkg && wasm-opt -Oz -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
+wasm-pack build --target=web && cd pkg && wasm-opt -Oz --enable-mutable-globals --enable-nontrapping-float-to-int --enable-bulk-memory --enable-sign-ext --enable-reference-types --enable-multivalue -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
 bun --cwd ../../../../packages/plugins/didkit run build
 ```
+
+Pass the explicit `--enable-*` feature flags to `wasm-opt`, matching
+`packages/plugins/didkit/scripts/build-wasm-from-submodules.sh`. Stripped DIDKit release builds
+have no `target_features` section, so a plain `wasm-opt -Oz` fails validation.
 
 The bridge and LearnCard CLI load
 `@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm`, so the final plugin build is
@@ -1411,3 +1421,12 @@ Field names are matched **case-insensitively as substrings**, so variants are ca
 ### ESLint
 
 `no-console: 'warn'` is enabled for `apps/learn-card-app/src/**` and `apps/scouts/src/**` via the root `.eslintrc.js` overrides block. Remaining call sites surface as warnings until migrated.
+
+## Connectivity monitor (LC-2182)
+
+- `packages/learn-card-base/src/connectivity/` owns reachability and advisory quality; the app adapter in `apps/learn-card-app/src/components/network-listener/connectivity.ts` owns platform lifecycle wiring. Never gate authentication or queries on quality; only confirmed `offline` blocks network behavior. `unknown` stays permissive, including manual account recovery.
+- Native probes target the remote HTTPS tenant domain, never the bundled WebView origin. Before native release, deploy `/connectivity.txt` with the exact marker `learncard-connectivity-v1`, `Cache-Control: no-store`, and `Access-Control-Allow-Origin: *` to every tenant host. Verify the asset from a native origin; fetch cannot distinguish missing CORS headers from network loss. Redirects/HTTP errors/wrong content remain inconclusive.
+- A single probe timeout stays permissive; two consecutive timeouts confirm offline. Successful/inconclusive probes and new lifecycle or positive transport evidence reset that streak. Explicit transport failures still confirm offline immediately.
+- Offline probes retry with capped backoff. Inconclusive results stop after three attempts until a hint, focus/resume, or manual check. Verified online has no periodic network polling; a local timer expires quality evidence. Background pauses checks and recovery clears offline-era quality evidence.
+- Resource Timing samples need a visible successful HTTP status: a zero status is ambiguous (transport failure or missing Timing-Allow-Origin), so skip it rather than declaring success or failure. Engines without `responseStatus` contribute no passive timing evidence: counting only slow entries biases quality toward poor. Probes and explicit transport errors still contribute.
+- Quality measures total request latency, including server work; it is advisory, not a bandwidth measurement. The observer supports path exclusions; add exclusions only for known long-running endpoints with product evidence rather than treating server time as proven network slowness.

@@ -1,10 +1,14 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { connectivityStore } from 'learn-card-base';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { connectivityStore, networkStore } from 'learn-card-base';
+import {
+    isLikelyTransportError,
+    observeConnectionQuality,
+    CONNECTIVITY_PROBE_PATH,
+} from 'learn-card-base';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
@@ -15,8 +19,6 @@ import {
     QRCodeScannerOverlay,
     ModalsProvider,
     useSQLiteInitWeb,
-    sqliteStore,
-    ensureReactQueryTableExists,
     getLogger,
     InAppMessageHost,
     ConnectionPromptCoordinator,
@@ -26,6 +28,10 @@ import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import {
+    getAppConnectivityMonitor,
+    requestConnectivityCheck,
+} from './components/network-listener/connectivity';
 import CredentialSyncListener from './components/credential-sync-listener/CredentialSyncListener';
 import CredentialRefreshListener from './components/credential-refresh-listener/CredentialRefreshListener';
 import NotificationToastListener from './components/notification-toast-listener/NotificationToastListener';
@@ -55,8 +61,8 @@ import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServ
 import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import { FeedbackProvider } from './feedback/reporting';
-import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+import { persister } from './helpers/queryPersistence';
 
 const log = getLogger('cache');
 
@@ -81,109 +87,66 @@ onlineManager.setEventListener(setOnline => {
     return unsubscribe;
 });
 
-const persister = createAsyncStoragePersister({
-    storage: {
-        getItem: async key => {
-            try {
-                const db = sqliteStore.get.db();
+// --- Advisory transport-error evidence (LC-2182) -------------------------
+//
+// React Query cache errors that pass a deliberately NARROW transport
+// classification (see `isLikelyTransportError` — browser fetch failures only;
+// NEVER 401/403/4xx/5xx, cancellations, or arbitrary application errors) feed
+// instability evidence into the quality policy and trigger a rate-limited,
+// coalesced reachability probe. `queryCache.subscribe` is additive — existing
+// cache callbacks are preserved. A successful probe says nothing about
+// brain-service health; classification stays conservative on purpose.
+const TRANSPORT_SAMPLE_MIN_INTERVAL_MS = 2_000; // dedupe React Query retry bursts
+const TRANSPORT_PROBE_MIN_INTERVAL_MS = 10_000; // rate-limit the reachability probe
+let lastTransportSampleAt = 0;
+let lastTransportProbeAt = 0;
 
-                if (!db) return localforage.getItem(key);
+// TanStack Query v5: `client.queryCache` was removed — `getQueryCache()` is
+// the accessor, and its typed `subscribe` keeps existing cache callbacks
+// intact (purely additive).
+client.getQueryCache().subscribe(event => {
+    if (event.type !== 'updated' || event.action.type !== 'error') return;
+    if (!isLikelyTransportError(event.action.error)) return;
 
-                await ensureReactQueryTableExists(db);
+    const monitor = getAppConnectivityMonitor();
+    if (!monitor.getState().foreground || (typeof document !== 'undefined' && document.hidden)) {
+        return;
+    }
+    const now = Date.now();
+    if (now - lastTransportSampleAt >= TRANSPORT_SAMPLE_MIN_INTERVAL_MS) {
+        lastTransportSampleAt = now;
+        monitor.reportSample({ at: now, ok: false });
+    }
 
-                // Check if DB is already open before opening
-                const isOpen = await db.isDBOpen();
-                if (!isOpen.result) {
-                    await db.open();
-                }
-
-                const result = await db.query(`SELECT cache FROM reactQuery WHERE id="${key}";`);
-
-                // Only close if we opened it
-                if (!isOpen.result) {
-                    await db.close();
-                }
-
-                if (result.values?.length === 0) return;
-
-                return result.values![0].cache;
-            } catch (error) {
-                log.error('Error getting from cache', error, { key });
-                // Fallback to localforage on error
-                return localforage.getItem(key);
-            }
-        },
-        setItem: async (key, value) => {
-            try {
-                const db = sqliteStore.get.db();
-
-                if (!db) return localforage.setItem(key, value);
-
-                await ensureReactQueryTableExists(db);
-
-                // Check if DB is already open before opening
-                const isOpen = await db.isDBOpen();
-                if (!isOpen.result) {
-                    await db.open();
-                }
-
-                await db.executeSet([
-                    {
-                        statement:
-                            'INSERT INTO reactQuery (id, cache) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET cache=excluded.cache;',
-                        values: [key, value],
-                    },
-                ]);
-
-                // Only close if we opened it
-                if (!isOpen.result) {
-                    await db.close();
-                }
-            } catch (error) {
-                log.error('Error setting in cache', error, { key });
-                // Fallback to localforage on error
-                try {
-                    return localforage.setItem(key, value);
-                } catch (fallbackError) {
-                    log.error('Fallback cache error', fallbackError);
-                }
-            }
-        },
-        removeItem: async key => {
-            try {
-                const db = sqliteStore.get.db();
-
-                if (!db) {
-                    await localforage.removeItem(key);
-                    return;
-                }
-
-                await ensureReactQueryTableExists(db);
-
-                // Check if DB is already open before opening
-                const isOpen = await db.isDBOpen();
-                if (!isOpen.result) {
-                    await db.open();
-                }
-
-                await db.execute(`DELETE FROM reactQuery WHERE id="${key}";`);
-
-                // Only close if we opened it
-                if (!isOpen.result) {
-                    await db.close();
-                }
-            } catch (error) {
-                log.error('Error removing from cache', error, { key });
-                // Fallback to localforage on error
-                try {
-                    await localforage.removeItem(key);
-                } catch (fallbackError) {
-                    log.error('Fallback cache removal error', fallbackError);
-                }
-            }
-        },
-    },
+    // No probes from the background, and never more than one per interval.
+    if (now - lastTransportProbeAt < TRANSPORT_PROBE_MIN_INTERVAL_MS) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    lastTransportProbeAt = now;
+    void requestConnectivityCheck().catch(() => undefined);
 });
+
+/**
+ * Passive quality evidence from REAL requests: Resource Timing for the
+ * configured first-party API origins (brain service + LearnCloud). Adds no
+ * traffic, patches nothing; unsupported engines get a safe no-op. Native
+ * webview support must be manually verified on device.
+ */
+const firstPartyApiOrigins = (): string[] => {
+    const origins = new Set<string>();
+    for (const url of [
+        networkStore.get.networkUrl(),
+        networkStore.get.networkApiUrl(),
+        networkStore.get.cloudUrl(),
+        networkStore.get.xapiUrl(),
+    ]) {
+        try {
+            origins.add(new URL(url).origin);
+        } catch {
+            // Skip malformed entries; store values are tenant-config driven.
+        }
+    }
+    return [...origins];
+};
 
 const ThemeInitializer: React.FC = () => {
     useInitializeTheme();
@@ -197,6 +160,41 @@ const FullApp: React.FC = () => {
     const showScannerOverlay = QRCodeScannerStore.useTracked.showScanner();
     const scannerMode = QRCodeScannerStore.useTracked.mode();
     const isRecipientScanner = scannerMode === 'recipient';
+
+    // Passive first-party latency evidence for the advisory slow/unstable
+    // warning. The reachability probe itself is excluded (it is monitored
+    // directly); only completed, non-HTTP-error, foreground entries count.
+    // Foreground transitions are pushed to the observer so requests that
+    // STARTED before the current foreground stretch (i.e. spanning a
+    // background period) are excluded instead of faking slow samples.
+    useEffect(() => {
+        // Tenant bootstrap finishes before mount. Runtime dev endpoint switches
+        // require a reload to refresh these advisory observation origins.
+        const origins = firstPartyApiOrigins();
+        if (origins.length === 0) return;
+
+        const monitor = getAppConnectivityMonitor();
+        const observer = observeConnectionQuality({
+            origins,
+            excludePathnames: [CONNECTIVITY_PROBE_PATH],
+            isForeground: () =>
+                monitor.getState().foreground &&
+                (typeof document === 'undefined' || !document.hidden),
+            onForegroundChange: listener => {
+                let foreground = monitor.getState().foreground;
+                return monitor.subscribe(snapshot => {
+                    if (snapshot.foreground === foreground) return;
+                    foreground = snapshot.foreground;
+                    listener(foreground);
+                });
+            },
+            onSample: sample => {
+                getAppConnectivityMonitor().reportSample(sample);
+            },
+        });
+
+        return () => observer?.disconnect();
+    }, []);
 
     return (
         <PersistQueryClientProvider

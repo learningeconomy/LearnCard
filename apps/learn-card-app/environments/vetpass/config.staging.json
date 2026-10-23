@@ -1,4 +1,5 @@
 {
+    "stage": "staging",
     "domain": "staging.vetpass.app",
     "apis": {
         "brainService": "https://staging.network.learncard.com/trpc",

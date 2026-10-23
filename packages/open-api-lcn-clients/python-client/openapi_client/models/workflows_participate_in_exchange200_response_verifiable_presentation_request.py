@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(BaseModel):
     """
@@ -34,7 +35,8 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
     __properties: ClassVar[List[str]] = ["query", "challenge", "domain"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -78,8 +79,7 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
         _items = []
         if self.query:
             for _item_query in self.query:
-                if _item_query:
-                    _items.append(_item_query.to_dict())
+                _items.append(_item_query.to_dict() if _item_query is not None else None)
             _dict['query'] = _items
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
@@ -107,11 +107,13 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "query": [WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner.from_dict(_item) for _item in obj["query"]] if obj.get("query") is not None else None,
             "challenge": obj.get("challenge"),
             "domain": obj.get("domain")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

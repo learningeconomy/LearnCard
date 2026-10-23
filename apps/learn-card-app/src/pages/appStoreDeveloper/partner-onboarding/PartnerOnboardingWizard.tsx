@@ -116,7 +116,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
                         </button>
 
                         {index < steps.length - 1 && (
-                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                            <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
                         )}
                     </React.Fragment>
                 );

@@ -90,7 +90,7 @@ console.log('contract:', contractUri);
 
 <!-- /snippet -->
 
-Each entry names a **template** and the **signing authority** that will sign it. Because the network signs on your behalf, you must have a signing authority — the same one `send()` uses is fine. See [Who Signs Your Credentials?](../../how-to-guides/create-signing-authority.md)
+Each entry names a **template** and the **signing authority** that will sign it. When creating a contract, repeated entries for the same template and signer are collapsed into one configuration. Conflicting signers for the same template are rejected rather than issuing it twice. Because the network signs on your behalf, you must have a signing authority — the same one `send()` uses is fine. See [Who Signs Your Credentials?](../../how-to-guides/create-signing-authority.md)
 
 Requirements:
 

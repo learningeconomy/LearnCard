@@ -19,11 +19,12 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.contracts_get_consent_flow_contract200_response import ContractsGetConsentFlowContract200Response
-from openapi_client.models.contracts_get_consented_contracts200_response_records_inner_terms import ContractsGetConsentedContracts200ResponseRecordsInnerTerms
+from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
     """
@@ -31,10 +32,10 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
     """ # noqa: E501
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    terms: ContractsGetConsentedContracts200ResponseRecordsInnerTerms
+    terms: StorageResolve200ResponseAnyOf1
     contract: ContractsGetConsentFlowContract200Response
     uri: Optional[StrictStr]
-    consenter: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+    consenter: BoostGetBoostRecipients200ResponseInnerToAnyOf3
     status: StrictStr
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "contract", "uri", "consenter", "status"]
@@ -47,7 +48,8 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -59,8 +61,7 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -106,6 +107,11 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         if self.expires_at is None and "expires_at" in self.model_fields_set:
             _dict['expiresAt'] = None
 
+        # set to None if one_time (nullable) is None
+        # and model_fields_set contains the field
+        if self.one_time is None and "one_time" in self.model_fields_set:
+            _dict['oneTime'] = None
+
         # set to None if uri (nullable) is None
         # and model_fields_set contains the field
         if self.uri is None and "uri" in self.model_fields_set:
@@ -122,15 +128,17 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
-            "terms": ContractsGetConsentedContracts200ResponseRecordsInnerTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "contract": ContractsGetConsentFlowContract200Response.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "uri": obj.get("uri"),
-            "consenter": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(obj["consenter"]) if obj.get("consenter") is not None else None,
+            "consenter": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["consenter"]) if obj.get("consenter") is not None else None,
             "status": obj.get("status")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

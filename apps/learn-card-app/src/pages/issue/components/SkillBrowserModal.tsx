@@ -64,7 +64,7 @@ const FrameworkSearchResults: React.FC<{
     const results = dedupeByName((data?.records ?? []).map(semanticRecordToNode));
 
     return (
-        <section className="space-y-2">
+        <section className="space-y-v3-2">
             <h3 className="text-xs font-medium text-grayscale-500">{framework.name}</h3>
             {isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-grayscale-500 py-1">
@@ -190,7 +190,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                         placeholder={m['skills.search.searchPlaceholder']()}
-                        className="w-full py-3 pl-10 pr-10 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                        className="w-full py-3 pl-10 pr-10 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                     {query && (
                         <button
@@ -205,7 +205,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                 </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-v3-5">
                 {hasQuery
                     ? frameworks.map(framework => (
                           <FrameworkSearchResults
@@ -222,7 +222,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                           );
                           if (nodes.length === 0) return null;
                           return (
-                              <div key={framework.frameworkId} className="space-y-2">
+                              <div key={framework.frameworkId} className="space-y-v3-2">
                                   <p className="text-xs font-medium text-grayscale-500">
                                       {framework.name}
                                   </p>

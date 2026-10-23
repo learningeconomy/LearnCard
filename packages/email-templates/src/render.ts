@@ -41,6 +41,18 @@ import {
     getEmailVerificationSubject,
     CredentialUpdated,
     getCredentialUpdatedSubject,
+    AccountSignInChanged,
+    getAccountSignInChangedSubject,
+    EscrowHoldStarted,
+    getEscrowHoldStartedSubject,
+    EscrowHoldReminder,
+    getEscrowHoldReminderSubject,
+    EscrowHoldReleased,
+    getEscrowHoldReleasedSubject,
+    EscrowHoldCancelled,
+    getEscrowHoldCancelledSubject,
+    EscrowPinLocked,
+    getEscrowPinLockedSubject,
 } from './templates';
 
 import type {
@@ -56,6 +68,13 @@ import type {
     GuardianRejectedCredentialProps,
     EmailVerificationProps,
     CredentialUpdatedProps,
+    AccountSignInChangedProps,
+    EscrowHoldStartedProps,
+    EscrowHoldReminderProps,
+    EscrowHoldReleasedProps,
+    EscrowHoldCancelledProps,
+    EscrowHoldCancelledReason,
+    EscrowPinLockedProps,
 } from './templates';
 
 // ---------------------------------------------------------------------------
@@ -152,6 +171,25 @@ export interface TemplateDataMap {
 
     /** brain-service: managed credential refresh update notice (LC-2198) */
     'credential-updated': CredentialUpdatedData;
+    /** lca-api: lost-login identity rebind security notification */
+    'account-sign-in-changed': AccountSignInChangedData;
+
+    // -- Recovery hold lifecycle (nitro-escrow-enclave) ----------------------
+
+    /** lca-api: recovery hold started — includes a cancel link */
+    'escrow-hold-started': EscrowHoldStartedData;
+
+    /** lca-api: recovery hold reminder (T-24h) — includes a cancel link */
+    'escrow-hold-reminder': EscrowHoldReminderData;
+
+    /** lca-api: recovery hold completed and access was restored */
+    'escrow-hold-released': EscrowHoldReleasedData;
+
+    /** lca-api: recovery hold cancelled (user, superseded, PIN lock, or failure) */
+    'escrow-hold-cancelled': EscrowHoldCancelledData;
+
+    /** lca-api: recovery PIN locked after too many failed attempts */
+    'escrow-pin-locked': EscrowPinLockedData;
 }
 
 export type TemplateId = keyof TemplateDataMap;
@@ -190,6 +228,7 @@ export interface AccountApprovedData {
 
 export interface RecoveryKeyData {
     recoveryKey: string;
+    confirmationCode: string;
 }
 
 export interface EndorsementRequestData {
@@ -233,6 +272,36 @@ export interface CredentialUpdatedData {
     issuer?: { name?: string; logoUrl?: string };
     /** Bounded credential display title. Omitted when unavailable. */
     credential?: { name?: string };
+}
+
+export type AccountSignInChangedData = Record<string, never>;
+
+export interface EscrowHoldStartedData {
+    requestedAt: string;
+    releaseAfter: string;
+    cancelUrl: string;
+    deviceHint?: string;
+}
+
+export interface EscrowHoldReminderData {
+    releaseAfter: string;
+    cancelUrl: string;
+}
+
+export interface EscrowHoldReleasedData {
+    completedAt: string;
+    supportUrl?: string;
+}
+
+export interface EscrowHoldCancelledData {
+    cancelledAt: string;
+    reason?: EscrowHoldCancelledReason;
+}
+
+export interface EscrowPinLockedData {
+    lockedAt: string;
+    releaseAfter?: string;
+    cancelUrl?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -439,6 +508,65 @@ function buildElement(
             return {
                 element: React.createElement(CredentialUpdated, props),
                 subject: getCredentialUpdatedSubject(branding, locale),
+            };
+        }
+
+        case 'account-sign-in-changed': {
+            const props: AccountSignInChangedProps = { branding, locale };
+
+            return {
+                element: React.createElement(AccountSignInChanged, props),
+                subject: getAccountSignInChangedSubject(branding, locale),
+            };
+        }
+
+        case 'escrow-hold-started': {
+            const d = data as EscrowHoldStartedData;
+            const props: EscrowHoldStartedProps = { branding, ...d, locale };
+
+            return {
+                element: React.createElement(EscrowHoldStarted, props),
+                subject: getEscrowHoldStartedSubject(branding, locale),
+            };
+        }
+
+        case 'escrow-hold-reminder': {
+            const d = data as EscrowHoldReminderData;
+            const props: EscrowHoldReminderProps = { branding, ...d, locale };
+
+            return {
+                element: React.createElement(EscrowHoldReminder, props),
+                subject: getEscrowHoldReminderSubject(branding, locale),
+            };
+        }
+
+        case 'escrow-hold-released': {
+            const d = data as EscrowHoldReleasedData;
+            const props: EscrowHoldReleasedProps = { branding, ...d, locale };
+
+            return {
+                element: React.createElement(EscrowHoldReleased, props),
+                subject: getEscrowHoldReleasedSubject(branding, locale),
+            };
+        }
+
+        case 'escrow-hold-cancelled': {
+            const d = data as EscrowHoldCancelledData;
+            const props: EscrowHoldCancelledProps = { branding, ...d, locale };
+
+            return {
+                element: React.createElement(EscrowHoldCancelled, props),
+                subject: getEscrowHoldCancelledSubject(branding, locale),
+            };
+        }
+
+        case 'escrow-pin-locked': {
+            const d = data as EscrowPinLockedData;
+            const props: EscrowPinLockedProps = { branding, ...d, locale };
+
+            return {
+                element: React.createElement(EscrowPinLocked, props),
+                subject: getEscrowPinLockedSubject(branding, locale),
             };
         }
 

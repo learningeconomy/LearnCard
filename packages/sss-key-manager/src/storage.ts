@@ -70,11 +70,10 @@ async function getOrCreateMasterKey(): Promise<CryptoKey> {
 
             if (existing) return existing;
 
-            const key = await crypto.subtle.generateKey(
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['encrypt', 'decrypt']
-            );
+            const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
+                'encrypt',
+                'decrypt',
+            ]);
 
             await tx(db, KEYS_STORE, 'readwrite', s => s.put(key, 'master-key'));
 
@@ -145,7 +144,10 @@ async function decryptShare(payload: EncryptedPayload, id: string): Promise<stri
     return new TextDecoder().decode(plainBuffer);
 }
 
-export async function storeDeviceShare(share: string, id: string = DEFAULT_DEVICE_SHARE_ID): Promise<void> {
+export async function storeDeviceShare(
+    share: string,
+    id: string = DEFAULT_DEVICE_SHARE_ID
+): Promise<void> {
     const db = await openDB();
 
     try {
@@ -160,7 +162,10 @@ export async function storeDeviceShare(share: string, id: string = DEFAULT_DEVIC
  * Store the share version alongside a device share.
  * Stored as a separate key `{id}:version` to avoid changing the encryption format.
  */
-export async function storeShareVersion(version: number, id: string = DEFAULT_DEVICE_SHARE_ID): Promise<void> {
+export async function storeShareVersion(
+    version: number,
+    id: string = DEFAULT_DEVICE_SHARE_ID
+): Promise<void> {
     const db = await openDB();
 
     try {
@@ -174,7 +179,9 @@ export async function storeShareVersion(version: number, id: string = DEFAULT_DE
  * Retrieve the share version for a device share.
  * Returns null if no version is stored (legacy shares).
  */
-export async function getShareVersion(id: string = DEFAULT_DEVICE_SHARE_ID): Promise<number | null> {
+export async function getShareVersion(
+    id: string = DEFAULT_DEVICE_SHARE_ID
+): Promise<number | null> {
     const db = await openDB();
 
     try {
@@ -192,9 +199,7 @@ export async function getDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): Prom
     const db = await openDB();
 
     try {
-        const raw = await tx<unknown>(db, SHARES_STORE, 'readonly', s =>
-            s.get(id)
-        );
+        const raw = await tx<unknown>(db, SHARES_STORE, 'readonly', s => s.get(id));
 
         if (raw == null) {
             return null;
@@ -288,7 +293,9 @@ export async function listAllDeviceShares(): Promise<DeviceShareEntry[]> {
                     // Orphaned entry — value exists but can't be decrypted.
                     // Auto-clean it (and its companion :version key) to prevent
                     // phantom "(decrypt failed)" entries from accumulating.
-                    console.warn(`SSS Storage: removing orphaned entry that failed to decrypt: ${id}`);
+                    console.warn(
+                        `SSS Storage: removing orphaned entry that failed to decrypt: ${id}`
+                    );
                     await deleteDeviceShare(id);
                     continue;
                 }
@@ -321,8 +328,10 @@ const SESSION_PREFIX = 'sss:';
 
 export function isPublicComputerMode(): boolean {
     try {
-        return typeof sessionStorage !== 'undefined' &&
-            sessionStorage.getItem('lc-session-mode') === 'public';
+        return (
+            typeof sessionStorage !== 'undefined' &&
+            sessionStorage.getItem('lc-session-mode') === 'public'
+        );
     } catch {
         return false;
     }
@@ -340,7 +349,10 @@ export function setPublicComputerMode(enabled: boolean): void {
     }
 }
 
-async function sessionStoreDeviceShare(share: string, id: string = DEFAULT_DEVICE_SHARE_ID): Promise<void> {
+async function sessionStoreDeviceShare(
+    share: string,
+    id: string = DEFAULT_DEVICE_SHARE_ID
+): Promise<void> {
     sessionStorage.setItem(`${SESSION_PREFIX}${id}`, share);
 }
 
@@ -357,11 +369,16 @@ async function sessionDeleteDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): P
     sessionStorage.removeItem(`${SESSION_PREFIX}${id}:version`);
 }
 
-async function sessionStoreShareVersion(version: number, id: string = DEFAULT_DEVICE_SHARE_ID): Promise<void> {
+async function sessionStoreShareVersion(
+    version: number,
+    id: string = DEFAULT_DEVICE_SHARE_ID
+): Promise<void> {
     sessionStorage.setItem(`${SESSION_PREFIX}${id}:version`, String(version));
 }
 
-async function sessionGetShareVersion(id: string = DEFAULT_DEVICE_SHARE_ID): Promise<number | null> {
+async function sessionGetShareVersion(
+    id: string = DEFAULT_DEVICE_SHARE_ID
+): Promise<number | null> {
     const raw = sessionStorage.getItem(`${SESSION_PREFIX}${id}:version`);
 
     return raw !== null ? Number(raw) : null;
@@ -400,19 +417,16 @@ export function createAdaptiveStorage() {
                 : storeDeviceShare(share, id),
 
         getDeviceShare: (id?: string) =>
-            isPublicComputerMode()
-                ? sessionGetDeviceShare(id)
-                : getDeviceShare(id),
+            isPublicComputerMode() ? sessionGetDeviceShare(id) : getDeviceShare(id),
 
         hasDeviceShare: (id?: string) =>
-            isPublicComputerMode()
-                ? sessionHasDeviceShare(id)
-                : hasDeviceShare(id),
+            isPublicComputerMode() ? sessionHasDeviceShare(id) : hasDeviceShare(id),
 
         clearAllShares: (id?: string) =>
-            isPublicComputerMode()
-                ? sessionClearAllShares(id)
-                : clearAllShares(id),
+            isPublicComputerMode() ? sessionClearAllShares(id) : clearAllShares(id),
+
+        deleteDeviceShare: (id?: string) =>
+            isPublicComputerMode() ? sessionDeleteDeviceShare(id) : deleteDeviceShare(id),
 
         storeShareVersion: (version: number, id?: string) =>
             isPublicComputerMode()
@@ -420,9 +434,7 @@ export function createAdaptiveStorage() {
                 : storeShareVersion(version, id),
 
         getShareVersion: (id?: string) =>
-            isPublicComputerMode()
-                ? sessionGetShareVersion(id)
-                : getShareVersion(id),
+            isPublicComputerMode() ? sessionGetShareVersion(id) : getShareVersion(id),
     };
 }
 

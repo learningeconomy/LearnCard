@@ -46,7 +46,7 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
     return (
         <>
             <div className="w-full flex flex-col justify-center items-center gap-[20px] bg-white rounded-[24px] px-[20px] py-[30px] shadow-box-bottom">
-                <div className="flex flex-col gap-[15px] border-b-[1px] border-solid border-grayscale-200 pb-[20px] w-full">
+                <div className="flex flex-col gap-[15px] border-b border-solid border-grayscale-200 pb-[20px] w-full">
                     <ConsentFlowHeader contractDetails={contractDetails} app={app} />
 
                     <div className="flex flex-col">
@@ -62,7 +62,8 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
                 <div className="flex flex-col gap-[10px] items-center">
                     <UserProfilePicture
                         user={parentUser}
-                        customContainerClass="h-[60px] w-[60px]"
+                        customContainerClass="h-[60px] w-[60px] overflow-hidden"
+                        customImageClass="h-full w-full object-cover"
                     />
                     <div>
                         <p className="text-grayscale-900 font-poppins text-[20px] leading-[130%] tracking-[-0.25px] text-center">

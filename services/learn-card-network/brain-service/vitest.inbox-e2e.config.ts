@@ -12,6 +12,9 @@ export default createVitestConfig(serviceIntegrationPreset, {
             'test/inbox-security.e2e.ts',
             'test/inbox-batch.spec.ts',
             'test/atomic-counter.e2e.ts',
+            'test/credential-storage.neo4j.spec.ts',
+            'test/inbox.spec.ts',
+            'test/inbox-claim-guardian.spec.ts',
         ],
         alias: { '@instance': require.resolve('./test/helpers/mock-instance.ts') },
         env: {
@@ -22,6 +25,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
             SEED: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
             TRACE_CONSOLE: 'false',
             SKIP_DIDKIT_NAPI: 'true',
+            CREDENTIAL_REFRESH_ENABLED: 'true',
         },
     },
 });

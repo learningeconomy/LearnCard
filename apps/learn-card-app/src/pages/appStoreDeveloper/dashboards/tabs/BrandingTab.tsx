@@ -236,7 +236,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-800">
@@ -267,7 +267,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
             </div>
 
             {/* Profile Image */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center">
                         <ImageIcon className="w-5 h-5 text-pink-600" />
@@ -328,7 +328,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
             </div>
 
             {/* Profile Info */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                         <User className="w-5 h-5 text-emerald-600" />
@@ -344,7 +344,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             {m['developerPortal.dashboards.tabs.branding.displayName']()}{' '}
@@ -359,7 +359,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 setIsDirty(true);
                             }}
                             placeholder="e.g., AARP Skills Builder"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                         />
                     </div>
 
@@ -378,7 +378,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             placeholder={m[
                                 'developerPortal.dashboards.tabs.branding.shortBioPlaceholder'
                             ]()}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                         />
                     </div>
 
@@ -397,14 +397,14 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 'developerPortal.dashboards.tabs.branding.fullBioPlaceholder'
                             ]()}
                             rows={3}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden resize-none"
                         />
                     </div>
                 </div>
             </div>
 
             {/* Card Colors */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
                         <Palette className="w-5 h-5 text-violet-600" />
@@ -458,7 +458,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                     }));
                                     setIsDirty(true);
                                 }}
-                                className="w-10 h-10 rounded cursor-pointer"
+                                className="w-10 h-10 rounded-sm cursor-pointer"
                             />
 
                             <input
@@ -489,7 +489,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                     setDisplay(prev => ({ ...prev, accentColor: e.target.value }));
                                     setIsDirty(true);
                                 }}
-                                className="w-10 h-10 rounded cursor-pointer"
+                                className="w-10 h-10 rounded-sm cursor-pointer"
                             />
 
                             <input
@@ -507,7 +507,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
             </div>
 
             {/* Card Background Image */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
                         <CreditCard className="w-5 h-5 text-cyan-600" />

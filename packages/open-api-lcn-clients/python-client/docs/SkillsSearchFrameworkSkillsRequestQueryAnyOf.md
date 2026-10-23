@@ -1,11 +1,10 @@
 # SkillsSearchFrameworkSkillsRequestQueryAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**var_or** | [**List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOf1]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOf1.md) |  | 
+| Name       | Type                                                                                                                      | Description | Notes |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **var_or** | [**List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOf1]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOf1.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skills_search_framework_skills_request_query_any_of_dict = skills_search_framewo
 # create an instance of SkillsSearchFrameworkSkillsRequestQueryAnyOf from a dict
 skills_search_framework_skills_request_query_any_of_from_dict = SkillsSearchFrameworkSkillsRequestQueryAnyOf.from_dict(skills_search_framework_skills_request_query_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

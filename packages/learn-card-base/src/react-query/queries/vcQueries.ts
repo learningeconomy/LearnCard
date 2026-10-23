@@ -1,4 +1,3 @@
-import async from 'async';
 import { useEffect, useRef } from 'react';
 import {
     useQuery,
@@ -356,6 +355,7 @@ export const useTotalBoostCounts = () => {
 export type VC_WITH_URI = {
     vc: VC;
     uri?: string;
+    category?: CredentialCategory;
 };
 
 // Returns a list of resolved credentials
@@ -610,14 +610,17 @@ export const useGetCredentialsPaginated = (
 
                 const resolvedCredentials = (
                     await Promise.all(
-                        credentialsList?.records?.map(async record => {
-                            const vc = (await wallet.read.get(record?.uri)) as VC;
-                            const uri = record?.uri;
+                        credentialsList?.records?.map(
+                            async (record): Promise<VC_WITH_URI | undefined> => {
+                                const vc = (await wallet.read.get(record?.uri)) as VC | undefined;
+                                if (!vc) return undefined;
+                                const uri = record?.uri;
 
-                            return { vc, uri };
-                        })
+                                return { vc, uri, category: record.category };
+                            }
+                        )
                     )
-                ).filter(Boolean);
+                ).filter((entry): entry is VC_WITH_URI => Boolean(entry));
 
                 return resolvedCredentials.sort((a, b) => {
                     const aDate = getIssuanceDate(a.vc) ?? '';
@@ -765,63 +768,7 @@ export const useGetCurrentUserTroopIdsResolved = (
     });
 };
 
-// query to get all earned IDs
-export const useGetIDs = () => {
-    const { initWallet } = useWallet();
-    const switchedDid = switchedProfileStore.use.switchedDid();
-
-    return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetIDs', switchedDid ?? ''],
-        queryFn: async () => {
-            try {
-                const wallet = await initWallet();
-
-                // get all creds by categories
-                const [globalAdminIds, nationalNetworkAdminIds, troopLeaderIds, scoutIds] =
-                    await Promise.all([
-                        await wallet.index.LearnCloud.get({
-                            category: CredentialCategoryEnum.globalAdminId,
-                        }),
-                        await wallet.index.LearnCloud.get({
-                            category: CredentialCategoryEnum.nationalNetworkAdminId,
-                        }),
-                        await wallet.index.LearnCloud.get({
-                            category: CredentialCategoryEnum.troopLeaderId,
-                        }),
-                        await wallet.index.LearnCloud.get({
-                            category: CredentialCategoryEnum.scoutId,
-                        }),
-                    ]);
-
-                // combine all creds
-                const credentialsList = [
-                    ...globalAdminIds,
-                    ...nationalNetworkAdminIds,
-                    ...troopLeaderIds,
-                    ...scoutIds,
-                ];
-                // resolve all creds
-                const resolvedCredentials = (
-                    await Promise.all(
-                        credentialsList.map(async record => {
-                            const resolvedVC = await wallet.read.get(record.uri);
-                            return { ...resolvedVC, uri: record?.uri };
-                        })
-                    )
-                ).filter(Boolean) as VC[];
-
-                return resolvedCredentials.sort((a, b) => {
-                    const aDate = getIssuanceDate(a) ?? '';
-                    const bDate = getIssuanceDate(b) ?? '';
-
-                    return bDate.localeCompare(aDate);
-                });
-            } catch (error) {
-                return Promise.reject(new Error(error));
-            }
-        },
-    });
-};
+export { useGetIDs } from './idCredentials';
 
 export const useSyncConsentFlow = (enabled = true) => {
     const { initWallet } = useWallet();
@@ -865,12 +812,25 @@ export const useSyncConsentFlow = (enabled = true) => {
             // Resolve credentials and group by category using mapped display names
             // Note: getCategoryForCredential handles boost detection, resolves boost category,
             // maps raw categories to UI/contract display names, and falls back safely.
+            // Read each credential independently. fetchQuery rejects when read.get returns
+            // undefined (decrypt/validation/network failure), and one bad credential must
+            // not block the rest of the sync.
             const resolvedList = await Promise.all(
                 allRecords.map(async ({ credentialUri }) => {
-                    const vc = await queryClient.fetchQuery({
-                        queryKey: ['useGetResolvedCredential', credentialUri],
-                        queryFn: () => learnCard.read.get(credentialUri) as Promise<VC>,
-                    });
+                    let vc: VC;
+                    try {
+                        vc = await queryClient.fetchQuery({
+                            queryKey: ['useGetResolvedCredential', credentialUri],
+                            queryFn: () => learnCard.read.get(credentialUri) as Promise<VC>,
+                        });
+                    } catch (e) {
+                        log.warn(
+                            'Skipping consent flow credential that could not be read',
+                            credentialUri,
+                            e
+                        );
+                        return null;
+                    }
 
                     let category: CredentialCategory = 'Achievement';
                     try {
@@ -884,7 +844,14 @@ export const useSyncConsentFlow = (enabled = true) => {
 
                     return { credentialUri, category };
                 })
+            ).then(list =>
+                list.filter(
+                    (item): item is { credentialUri: string; category: CredentialCategory } =>
+                        Boolean(item)
+                )
             );
+            const readableUris = new Set(resolvedList.map(({ credentialUri }) => credentialUri));
+            const readableRecords = allRecords.filter(r => readableUris.has(r.credentialUri));
 
             const recordsByCategory = resolvedList.reduce<
                 Partial<Record<CredentialCategory, string[]>>
@@ -900,7 +867,7 @@ export const useSyncConsentFlow = (enabled = true) => {
 
             const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
 
-            if (!processingPromiseRef.current && allRecords.length > 0) {
+            if (!processingPromiseRef.current && readableRecords.length > 0) {
                 processingPromiseRef.current = (async () => {
                     try {
                         // Invariant: this queryFn can refetch on mount/focus, but the
@@ -909,7 +876,7 @@ export const useSyncConsentFlow = (enabled = true) => {
                         // this in-flight promise guard together if this flow is refactored.
                         // First, atomically claim any unclaimed credentials
                         const claimedRecords: ConsentRecord[] = [];
-                        for (const record of allRecords) {
+                        for (const record of readableRecords) {
                             if (!globalProcessedCredentials.has(record.credentialUri)) {
                                 globalProcessedCredentials.add(record.credentialUri);
                                 claimedRecords.push(record);
@@ -920,31 +887,46 @@ export const useSyncConsentFlow = (enabled = true) => {
                             return;
                         }
 
-                        const filteredRecords = await async.filter<ConsentRecord>(
-                            claimedRecords,
-                            async record => {
+                        // A pending credential that's already indexed was stored by an earlier
+                        // sync whose accept failed, so it only needs accepting now.
+                        const filteredRecords = await Promise.all(
+                            claimedRecords.map(async record => {
                                 const existingRecord = await learnCard.index.LearnCloud.get({
                                     uri: record.credentialUri,
                                 });
-                                return existingRecord.length === 0;
-                            }
+                                return existingRecord.length > 0
+                                    ? { ...record, alreadyStored: true }
+                                    : record;
+                            })
                         );
 
-                        if (filteredRecords.length === 0) {
-                            // Release claimed credentials that don't need processing
-                            claimedRecords.forEach(record => {
-                                globalProcessedCredentials.delete(record.credentialUri);
-                            });
-                            return;
-                        }
-
                         try {
-                            await acceptAndStore.mutateAsync({
+                            const { failed, rejected } = await acceptAndStore.mutateAsync({
                                 allRecords: filteredRecords,
                             });
 
+                            // Release failed credentials so the next sync can retry them, and
+                            // don't share them to contracts. The mutation stores before it
+                            // accepts, so a failed credential is still pending on the server and
+                            // the next sync sees it again: a failed store gets stored then, and a
+                            // failed accept gets accepted then (it's already indexed).
+                            // Revoked/suspended credentials stay claimed for this session: the
+                            // server keeps listing them as pending, and retrying would just
+                            // store and roll them back again on every focus.
+                            const failedUris = new Set(failed.map(r => r.credentialUri));
+                            failedUris.forEach(uri => globalProcessedCredentials.delete(uri));
+                            const skippedUris = new Set([
+                                ...failedUris,
+                                ...rejected.map(r => r.credentialUri),
+                            ]);
+
                             await syncContracts.mutateAsync({
-                                recordsByCategory,
+                                recordsByCategory: Object.fromEntries(
+                                    Object.entries(recordsByCategory).map(([category, uris]) => [
+                                        category,
+                                        uris?.filter(uri => !skippedUris.has(uri)),
+                                    ])
+                                ) as Partial<Record<CredentialCategory, string[]>>,
                                 allContracts: allContracts.map(c => ({
                                     contract: c.contract,
                                     terms: c.terms,
@@ -977,7 +959,10 @@ export const useSyncConsentFlow = (enabled = true) => {
         },
         staleTime: 0,
         refetchOnWindowFocus: true,
-        enabled: enabled && syncContracts.isIdle && acceptAndStore.isIdle,
+        // Don't gate on mutation idle state: mutations never return to idle, so that
+        // disabled the sync for the rest of the session after the first save. Overlapping
+        // runs are prevented by processingPromiseRef and globalProcessedCredentials above.
+        enabled,
     });
 
     return query;

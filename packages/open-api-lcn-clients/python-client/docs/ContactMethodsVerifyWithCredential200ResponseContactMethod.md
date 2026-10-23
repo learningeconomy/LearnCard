@@ -1,17 +1,16 @@
 # ContactMethodsVerifyWithCredential200ResponseContactMethod
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**value** | **str** |  | 
-**id** | **str** |  | 
-**is_verified** | **bool** |  | 
-**verified_at** | **str** |  | [optional] 
-**is_primary** | **bool** |  | 
-**created_at** | **str** |  | 
+| Name            | Type     | Description | Notes      |
+| --------------- | -------- | ----------- | ---------- |
+| **type**        | **str**  |             |
+| **value**       | **str**  |             |
+| **id**          | **str**  |             |
+| **is_verified** | **bool** |             |
+| **verified_at** | **str**  |             | [optional] |
+| **is_primary**  | **bool** |             |
+| **created_at**  | **str**  |             |
 
 ## Example
 
@@ -30,6 +29,5 @@ contact_methods_verify_with_credential200_response_contact_method_dict = contact
 # create an instance of ContactMethodsVerifyWithCredential200ResponseContactMethod from a dict
 contact_methods_verify_with_credential200_response_contact_method_from_dict = ContactMethodsVerifyWithCredential200ResponseContactMethod.from_dict(contact_methods_verify_with_credential200_response_contact_method_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

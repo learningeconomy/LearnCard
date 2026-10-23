@@ -80,6 +80,7 @@ jobs:
         timeout-minutes: 60
         env:
             E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/browser
+            E2E_HOST_BROWSER_BUILD: 'true'
             E2E_TEST_FILES: ${{ github.event.inputs.test_files || 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts' }}
         steps:
             - name: Checkout tested revision
@@ -131,8 +132,17 @@ jobs:
             - name: Prepare runner storage
               run: bash scripts/e2e-hosted/prepare-storage.sh
 
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3
+              with:
+                  # Hosted VMs are discarded after the job; retain cleanup on persistent runners.
+                  cleanup: ${{ runner.environment != 'github-hosted' }}
 
             - name: Expose GitHub Actions cache runtime
               uses: crazy-max/ghaction-github-runtime@v3
@@ -144,6 +154,8 @@ jobs:
 
             - name: Setup Bun and dependencies
               uses: ./.github/actions/setup
+              with:
+                  save-cache: 'false'
 
             - name: Run Playwright and accessibility suites
               run: bash scripts/e2e-hosted/run-browser.sh
@@ -235,8 +247,17 @@ jobs:
             - name: Prepare runner storage
               run: bash scripts/e2e-hosted/prepare-storage.sh
 
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3
+              with:
+                  # Hosted VMs are discarded after the job; retain cleanup on persistent runners.
+                  cleanup: ${{ runner.environment != 'github-hosted' }}
 
             - name: Expose GitHub Actions cache runtime
               uses: crazy-max/ghaction-github-runtime@v3
@@ -248,6 +269,9 @@ jobs:
 
             - name: Setup Bun and dependencies
               uses: ./.github/actions/setup
+              with:
+                  # One writer per E2E run avoids sibling jobs compressing the same cache.
+                  save-cache: ${{ matrix.shard == 1 }}
 
             - name: Run tests/e2e
               run: bash scripts/e2e-hosted/run-service.sh

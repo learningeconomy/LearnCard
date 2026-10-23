@@ -1,5 +1,65 @@
 # @learncard/sss-key-manager
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+
+## 0.2.1
+
+### Patch Changes
+
+- [#1621](https://github.com/learningeconomy/LearnCard/pull/1621) [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5) Thanks [@Custard7](https://github.com/Custard7)! - Add Nitro attestation verification and stale re-enrollment support for escrow recovery.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012)]:
+    - @learncard/types@5.23.0
+
+## 0.2.0
+
+### Minor Changes
+
+- [#1565](https://github.com/learningeconomy/LearnCard/pull/1565) [`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd) Thanks [@Custard7](https://github.com/Custard7)! - Escrow PIN fast release: an optional PIN release policy on the existing escrow-recovery substrate.
+
+    - The escrow recovery share now supports a second release policy alongside the 7-day hold: `pin`. A user who sets an optional 6-12 digit PIN can recover immediately by presenting it, instead of waiting for the hold. Custodianship is unchanged — this adds a release policy on the already-sealed blob, not a second custodial share.
+    - PIN verifier lives inside the enclave-sealed envelope (`EscrowBlobPlaintext.pinVerifier`); a leaked DB alone yields nothing to brute force. Client derives the proof with Argon2id and the enclave constant-time compares.
+    - 10 lifetime failed attempts locks the PIN (`EscrowPinLockedError`); the 7-day hold path is always available as a fallback. Setting/changing a PIN rotates the escrow share.
+    - Carry the sealed PIN verifier across share rotations while preserving its salt and attempt counters; explicit removal and unavailable carry still enroll without a PIN.
+    - New app UI: recovery PIN setup overlay after first setup (skippable), a Recovery PIN row in recovery settings (set/change/remove), and a PIN-first step in the recovery flow with fallback to the existing hold.
+
+- [#1529](https://github.com/learningeconomy/LearnCard/pull/1529) [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f) Thanks [@Custard7](https://github.com/Custard7)! - SSS prod hardening: confirmed recovery enrollment, lost-login identity rebind, and an isolated email relay.
+
+    - Recovery methods now carry `confirmedAt` and must be proven before they count (email confirmation code, phrase challenge words, backup re-decrypt, passkey round trip). New SSS accounts are `active` immediately; web3auth migrations stay `provisional` until a method is confirmed.
+    - New recovery-session flow lets a user whose sign-in identity is gone recover via a verified personal email and bind a new sign-in.
+    - Email recovery shares are encrypted on the client to an isolated relay's public key; `lca-api` never sees plaintext. Provider tokens move from query strings to the `X-Auth-Token` header.
+    - Sensitive key routes require a single-use DID challenge; key records are keyed by immutable provider ID.
+    - `recovery-key` email template now requires `confirmationCode`.
+    - Auth-share initialization requires the provider uniqueness index before inserting, preventing competing first writes from creating duplicate accounts. Existing records with missing or BSON-null auth material retain atomic update protection.
+    - Automatic stale-key cleanup preserves unresolved pending shares for delayed commits; explicit device forgetting still removes them. Custom SSS storage adapters now implement `deleteDeviceShare(id?)` to remove only the selected share and its version.
+
+### Patch Changes
+
+- [#1559](https://github.com/learningeconomy/LearnCard/pull/1559) [`f7b54c45cf495e14cc7b2824653c8f0a63b61660`](https://github.com/learningeconomy/LearnCard/commit/f7b54c45cf495e14cc7b2824653c8f0a63b61660) Thanks [@Custard7](https://github.com/Custard7)! - Escrow recovery client hardening.
+
+    - `logout()` / `forgetDevice()` wait at most 10s for in-flight escrow writes; escrow, DID-challenge and auth-share requests carry a 30s abort timeout so a stalled socket can no longer block session end.
+    - Share rotations are serialized behind a single lock (`withRotationLock`) and concurrent enrollment repairs share one rotation; a failed escrow enrollment POST is retried with the same shares instead of burning another share version.
+    - Pending 7-day recovery requests use the same device-secret storage as the SSS device share (`createDeviceShareStorage`: encrypted SQLite on native Capacitor, adaptive IndexedDB/sessionStorage on web). New optional `clearPendingEscrowRecovery` coordinator hook lets apps wipe it on forget-device.
+    - Email-link completion rotates through `atomicUpdateShares` instead of separate device/server writes.
+    - Recovery UI: "Keep this page open until your account is restored." hint while finishing a hold; automatic-recovery card shows contextual turning on/off copy and "Not turned on" instead of a static "Setting up...".
+
+- [#1636](https://github.com/learningeconomy/LearnCard/pull/1636) [`dab95a1313b10f0339a4284cb5dcdc2f459dcdd5`](https://github.com/learningeconomy/LearnCard/commit/dab95a1313b10f0339a4284cb5dcdc2f459dcdd5) Thanks [@Custard7](https://github.com/Custard7)! - Fix lca-api deploys failing on Lambda's 4KB environment limit: escrow variables are now attached only to the trpc/api functions, omitted when unset, and enclave settings are gated on `ESCROW_ENCLAVE_MODE`. SSS client errors now include the HTTP status code (HTTP/2 responses have an empty `statusText`).
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f)]:
+    - @learncard/types@5.22.0
+
 ## 0.1.24
 
 ### Patch Changes

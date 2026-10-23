@@ -1,11 +1,10 @@
 # ContactMethodsCreateContactMethodSession200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**session_jwt** | **str** |  | 
+| Name            | Type    | Description | Notes |
+| --------------- | ------- | ----------- | ----- |
+| **session_jwt** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ contact_methods_create_contact_method_session200_response_dict = contact_methods
 # create an instance of ContactMethodsCreateContactMethodSession200Response from a dict
 contact_methods_create_contact_method_session200_response_from_dict = ContactMethodsCreateContactMethodSession200Response.from_dict(contact_methods_create_contact_method_session200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

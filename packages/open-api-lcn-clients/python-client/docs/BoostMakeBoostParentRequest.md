@@ -1,12 +1,11 @@
 # BoostMakeBoostParentRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**parent_uri** | **str** |  | 
-**child_uri** | **str** |  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **parent_uri** | **str** |             |
+| **child_uri**  | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_make_boost_parent_request_dict = boost_make_boost_parent_request_instance.
 # create an instance of BoostMakeBoostParentRequest from a dict
 boost_make_boost_parent_request_from_dict = BoostMakeBoostParentRequest.from_dict(boost_make_boost_parent_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

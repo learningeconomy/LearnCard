@@ -12,7 +12,6 @@ import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOp
 // Registers the Firebase provider initializer before bootstrapTenantConfig() runs it.
 import './auth/firebaseProviderInit';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
-import { environment } from './config/environment';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
 
@@ -58,19 +57,13 @@ installInsetSimulator();
         }
     }
 
-    // Disable LaunchDarkly logging. In local development, bootstrap draft assistant
-    // flags on so the page and debug tooling are available before LD has remote values.
+    // DEV access to assistant routes/debug tools is handled by their consumers.
+    // An object bootstrap here makes the React SDK prefer those defaults over
+    // already-fetched flags, losing flags on fast initialization/page reloads.
     const ldOptions = {
         options: {
             logger: basicLogger({ level: 'none' }),
-            ...(environment.DEV
-                ? {
-                      bootstrap: {
-                          enableLearnCardAssistant: true,
-                          enableLearnCardAssistantDebug: true,
-                      },
-                  }
-                : {}),
+            diagnosticOptOut: true,
         },
     };
 

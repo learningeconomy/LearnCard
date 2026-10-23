@@ -39,7 +39,7 @@ class TestBoostGetConnectedBoostRecipientsRequest(unittest.TestCase):
                 cursor = '',
                 sort = '',
                 include_unaccepted_boosts = True,
-                query = openapi_client.models.boost_get_paginated_boost_recipients_request_query.boost_getPaginatedBoostRecipients_request_query(
+                query = openapi_client.models.boost_get_connected_boost_recipients_request_query.boost_getConnectedBoostRecipients_request_query(
                     profile_id = null, 
                     display_name = null, 
                     short_bio = null, 

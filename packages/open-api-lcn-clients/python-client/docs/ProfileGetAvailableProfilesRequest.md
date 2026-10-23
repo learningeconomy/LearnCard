@@ -1,14 +1,13 @@
 # ProfileGetAvailableProfilesRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**query** | [**BoostGetPaginatedBoostRecipientsRequestQuery**](BoostGetPaginatedBoostRecipientsRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                                                | Description | Notes                      |
+| ---------- | --------------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **float**                                                                                           |             | [optional] [default to 25] |
+| **cursor** | **str**                                                                                             |             | [optional]                 |
+| **sort**   | **str**                                                                                             |             | [optional]                 |
+| **query**  | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |             | [optional]                 |
 
 ## Example
 
@@ -27,6 +26,5 @@ profile_get_available_profiles_request_dict = profile_get_available_profiles_req
 # create an instance of ProfileGetAvailableProfilesRequest from a dict
 profile_get_available_profiles_request_from_dict = ProfileGetAvailableProfilesRequest.from_dict(profile_get_available_profiles_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

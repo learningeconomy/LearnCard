@@ -28,8 +28,10 @@ The holder continuity export includes:
 - The primary DID document and locally derivable DID variants.
 - W3C Verifiable Credential and Verifiable Presentation payloads exactly as resolved from the holder's wallet index.
 - Encrypted LearnCloud index metadata, including URI, record ID, category, and title where available.
-- ConsentFlow contracts, terms, statuses, and transaction history returned by the authenticated holder export metadata route.
+- ConsentFlow contracts, including their current public recipients and audience version, plus terms, statuses, and transaction history returned by the authenticated holder export metadata route.
 - Status-list credential snapshots when the status URL is publicly fetchable during export.
+
+Contract audiences describe the configuration at export time. They do not reconstruct which recipients were present at each historical consent or transaction.
 
 The export preserves issuer-signed JSON. It does not normalize proofs or rewrite credential contents.
 

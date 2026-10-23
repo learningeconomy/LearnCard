@@ -38,6 +38,7 @@ const ShareCredentialCards: React.FC<ShareCredentialCardsProps> = ({
         [VC_TYPE.SKILL]: 'Skill',
         [VC_TYPE.WORK]: 'Work History',
         [VC_TYPE.SOCIAL_BADGE]: 'Social Badge',
+        [VC_TYPE.QUALIFICATIONS]: 'Qualification',
     };
     const vcColor: { [vcType in VcType]: string } = {
         [VC_TYPE.COURSE]: 'emerald-600',
@@ -46,6 +47,7 @@ const ShareCredentialCards: React.FC<ShareCredentialCardsProps> = ({
         [VC_TYPE.SKILL]: 'indigo-400',
         [VC_TYPE.WORK]: 'rose-600',
         [VC_TYPE.SOCIAL_BADGE]: 'cyan-300',
+        [VC_TYPE.QUALIFICATIONS]: 'emerald-600',
     };
 
     const getTitle = (type: VcType) => {

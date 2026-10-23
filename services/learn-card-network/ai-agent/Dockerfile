@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM oven/bun:1.3.14 AS build
+FROM oven/bun:1.4.2 AS build
 
 ENV NODE_ENV=production \
     SKIP_DIDKIT_NAPI=1
@@ -17,7 +17,7 @@ RUN bun build services/learn-card-network/ai-agent/scripts/runtime-did-auth-smok
     --outfile=services/learn-card-network/ai-agent/dist/runtime-did-auth-smoke.js \
     --external='@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
 
-FROM oven/bun:1.3.14-alpine
+FROM oven/bun:1.4.2-alpine
 
 RUN apk upgrade --no-cache
 
@@ -38,8 +38,10 @@ COPY --chown=bun:bun --chmod=0444 --from=build /app/packages/plugins/didkit/src/
 EXPOSE 3000
 
 USER bun
-RUN --mount=from=build,source=/app/services/learn-card-network/ai-agent/dist/runtime-did-auth-smoke.js,target=/tmp/runtime-did-auth-smoke.js,ro \
-    bun --conditions=development /tmp/runtime-did-auth-smoke.js
+# Resolve the smoke's external WASM from the same node_modules as index.js.
+# A /tmp entrypoint can resolve a registry package instead of our copied artifact.
+RUN --mount=from=build,source=/app/services/learn-card-network/ai-agent/dist/runtime-did-auth-smoke.js,target=/app/runtime-did-auth-smoke.js,ro \
+    bun --no-install --conditions=development /app/runtime-did-auth-smoke.js
 
 
-CMD ["bun", "--conditions=development", "index.js"]
+CMD ["bun", "--no-install", "--conditions=development", "index.js"]

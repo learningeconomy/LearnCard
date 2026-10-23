@@ -1,11 +1,10 @@
 # ErrorBADREQUESTIssuesInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**message** | **str** |  | 
+| Name        | Type    | Description | Notes |
+| ----------- | ------- | ----------- | ----- |
+| **message** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ error_badrequest_issues_inner_dict = error_badrequest_issues_inner_instance.to_d
 # create an instance of ErrorBADREQUESTIssuesInner from a dict
 error_badrequest_issues_inner_from_dict = ErrorBADREQUESTIssuesInner.from_dict(error_badrequest_issues_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

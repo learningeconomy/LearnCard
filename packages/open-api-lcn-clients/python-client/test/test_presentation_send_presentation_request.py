@@ -35,7 +35,10 @@ class TestPresentationSendPresentationRequest(unittest.TestCase):
         model = PresentationSendPresentationRequest()
         if include_optional:
             return PresentationSendPresentationRequest(
-                presentation = None
+                presentation = None,
+                metadata = {
+                    'key' : null
+                    }
             )
         else:
             return PresentationSendPresentationRequest(

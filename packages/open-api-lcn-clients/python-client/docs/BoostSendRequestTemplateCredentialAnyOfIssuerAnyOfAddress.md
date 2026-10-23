@@ -1,19 +1,18 @@
 # BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md) |  | 
-**address_country** | **str** |  | [optional] 
-**address_country_code** | **str** |  | [optional] 
-**address_region** | **str** |  | [optional] 
-**address_locality** | **str** |  | [optional] 
-**street_address** | **str** |  | [optional] 
-**post_office_box_number** | **str** |  | [optional] 
-**postal_code** | **str** |  | [optional] 
-**geo** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddressGeo**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddressGeo.md) |  | [optional] 
+| Name                       | Type                                                                                                                                | Description | Notes      |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **type**                   | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md)     |             |
+| **address_country**        | **str**                                                                                                                             |             | [optional] |
+| **address_country_code**   | **str**                                                                                                                             |             | [optional] |
+| **address_region**         | **str**                                                                                                                             |             | [optional] |
+| **address_locality**       | **str**                                                                                                                             |             | [optional] |
+| **street_address**         | **str**                                                                                                                             |             | [optional] |
+| **post_office_box_number** | **str**                                                                                                                             |             | [optional] |
+| **postal_code**            | **str**                                                                                                                             |             | [optional] |
+| **geo**                    | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddressGeo**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddressGeo.md) |             | [optional] |
 
 ## Example
 
@@ -32,6 +31,5 @@ boost_send_request_template_credential_any_of_issuer_any_of_address_dict = boost
 # create an instance of BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress from a dict
 boost_send_request_template_credential_any_of_issuer_any_of_address_from_dict = BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress.from_dict(boost_send_request_template_credential_any_of_issuer_any_of_address_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,15 +1,14 @@
 # ContractsGetConsentedDataForContractRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**uri** | **str** |  | 
-**query** | [**ContractsGetConsentedDataForContractRequestQuery**](ContractsGetConsentedDataForContractRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                                                        | Description | Notes                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **float**                                                                                                   |             | [optional] [default to 25] |
+| **cursor** | **str**                                                                                                     |             | [optional]                 |
+| **sort**   | **str**                                                                                                     |             | [optional]                 |
+| **uri**    | **str**                                                                                                     |             |
+| **query**  | [**ContractsGetConsentedDataForContractRequestQuery**](ContractsGetConsentedDataForContractRequestQuery.md) |             | [optional]                 |
 
 ## Example
 
@@ -28,6 +27,5 @@ contracts_get_consented_data_for_contract_request_dict = contracts_get_consented
 # create an instance of ContractsGetConsentedDataForContractRequest from a dict
 contracts_get_consented_data_for_contract_request_from_dict = ContractsGetConsentedDataForContractRequest.from_dict(contracts_get_consented_data_for_contract_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -20,9 +20,9 @@ const ReviewEditor: React.FC<{
     value: Extract<Policy, { kind: 'review' }>;
     onChange: (next: Policy) => void;
 }> = ({ value, onChange }) => (
-    <div className="space-y-3">
+    <div className="space-y-v3-3">
         <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="policy-review-due">
                     First review
                 </label>
@@ -46,7 +46,7 @@ const ReviewEditor: React.FC<{
                 />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="policy-review-stability">
                     Starting strength
                 </label>

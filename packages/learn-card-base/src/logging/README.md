@@ -15,6 +15,8 @@ const log = getLogger('my-feature');
 > ```ts
 > import { getLogger } from 'learn-card-base/src/logging/logger';
 > ```
+>
+> Logger initialization must not require built SDK artifacts. Operational extraction schemas live in `types/file-extraction.ts`; SDK-backed credential validators live in `types/file-extraction-credentials.ts` and are not runtime logging dependencies.
 
 ```ts
 const log = getLogger('my-feature');
@@ -131,24 +133,19 @@ log.warn('UID mismatch', { expected, got });
 
 ---
 
-## PII scrubbing
+## PII and secret scrubbing
 
-Field names are matched **case-insensitively as substrings**, so common variants are caught automatically:
+Field names are matched **case-insensitively as substrings**. PII and secrets have different policies:
 
-| Keyword matched | Examples scrubbed                                          |
-| --------------- | ---------------------------------------------------------- |
-| `email`         | `email`, `userEmail`, `emailAddress`, `contactEmail`       |
-| `phone`         | `phone`, `phoneNumber`, `mobilePhone`                      |
-| `name`          | `name`, `firstName`, `lastName`, `displayName`, `fullName` |
-| `did`           | `did` (exact match only — too short for safe substring)    |
-| `seed`          | `seed`                                                     |
-| `password`      | `password`, `hashedPassword`                               |
-| `privatekey`    | `privateKey`, `privatekey`                                 |
-| `accesstoken`   | `accessToken`, `accesstoken`                               |
-| `idtoken`       | `idToken`, `idtoken`                                       |
-| `token`         | `token`, `bearerToken`, `authToken`, `refreshToken`        |
+- **PII** (`email`, `phone`, `name`, and exact key `did`) is scrubbed by default. Internal debug tooling may opt out with `allowPii: true`.
+- **Secrets** are always scrubbed. `allowPii` can never expose them.
 
-Scrubbing is **recursive** — nested objects and arrays are walked automatically, with a depth cap of 10 and cycle detection. Any string **value** starting with `Bearer ` (case-insensitive) is also scrubbed regardless of key name.
+| Class      | Keywords / examples                                                                             | `allowPii` behavior |
+| ---------- | ----------------------------------------------------------------------------------------------- | ------------------- |
+| **PII**    | `email`, `phone`, `name`; exact key `did`                                                       | May be bypassed     |
+| **Secret** | `seed`, `password`, `privateKey`, any `token`, any `share`, `recoveryKey`, `mnemonic`, `phrase` | Never bypassed      |
+
+Scrubbing is **recursive** — nested objects and arrays are walked automatically, with a depth cap of 10 and cycle detection. Positional strings, metadata string values, and `Error.message` are also scanned for obvious secret shapes: JWTs, `Bearer <token>`, hex blobs of at least 32 characters, and base64url blobs of at least 40 characters. Matching content is replaced with `[REDACTED]`; the first positional log message remains intact unless it contains one of those shapes.
 
 ```ts
 // Top-level field
@@ -166,6 +163,10 @@ log.error('lookup failed', { userEmail: 'user@example.com', code: 404 });
 // Bypass scrubbing for internal debug tooling only
 log.warn('debug identity', { email: 'user@example.com', allowPii: true });
 // Sentry extra → { email: 'user@example.com' }  (allowPii itself is stripped)
+
+// Secret fields remain protected even with allowPii
+log.warn('debug identity', { seed: '...', allowPii: true });
+// Sentry extra → { seed: '[scrubbed]' }
 ```
 
 > Never use `allowPii: true` in production code paths.
@@ -175,6 +176,33 @@ log.warn('debug identity', { email: 'user@example.com', allowPii: true });
 ## Privacy gate
 
 When `bugReportsEnabled` is `false` (user opted out), **no events reach Sentry**. Console output is unaffected. The gate is wired automatically — `useSentryIdentify` calls `configureLoggerContext({ bugReportsEnabled })` whenever user preferences change.
+
+### File extraction diagnostics (LC-2202)
+
+`helpers/fileExtraction.ts` validates `/credentials/parse-file` responses before treating a result
+as empty or successful. Processing failures use application-owned codes and friendly copy, never
+the server's arbitrary error text. Extraction and persistence are separate operational events.
+
+These events require both bug-report opt-in and the authenticated-adult diagnostic collection gate.
+They capture the active profile at operation start and suppress settlement events after a profile
+switch or opt-out. Requests explicitly send that eligibility signal to AI Passport; a retry keeps
+its random operation ID and receives a fresh attempt ID.
+
+The feedback buffer accepts only the dedicated `file.extraction.completed` and
+`file.persistence.completed` schemas: bounded stage/outcome/code, counts, duration, file-kind/size
+bucket, operational UUIDs and audited version/model identifiers. It never retains filenames, file
+bytes, credentials, extracted text, provider messages or arbitrary fields. Unrecognized model
+identifiers become `unknown` in diagnostics. Other event sanitization stays unchanged.
+
+Client info events remain breadcrumbs plus the memory-only feedback buffer, not a new analytics
+store. AI Passport emits gated terminal operational logs; configure access and retention in the
+deployment's existing logging service. Nothing attaches an uploaded source artifact to feedback
+or authorizes its collection for investigation.
+
+Document persistence and attachment-opening catches log fixed events, not credentials, raw
+SDK errors or filenames. A bounded, memory-only attempt cache keeps correlation through manager
+close/reopen; a new app session starts a new operation. If an earlier operation's diagnostic
+owner is unknown or evicted, its retry stays opted out rather than rebinding to another profile.
 
 ---
 

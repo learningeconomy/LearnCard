@@ -1,13 +1,12 @@
 # BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md) |  | 
-**identifier** | **str** |  | 
-**identifier_type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.md) |  | 
+| Name                | Type                                                                                                                                                                                | Description | Notes |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **type**            | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md)                                                     |             |
+| **identifier**      | **str**                                                                                                                                                                             |             |
+| **identifier_type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_get_boost200_response_boost_issuer_any_of_other_identifier_inner_dict = bo
 # create an instance of BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner from a dict
 boost_get_boost200_response_boost_issuer_any_of_other_identifier_inner_from_dict = BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner.from_dict(boost_get_boost200_response_boost_issuer_any_of_other_identifier_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

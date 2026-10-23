@@ -1,16 +1,17 @@
 import cloneDeep from 'lodash/cloneDeep';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
+import { getIDsQueryKey } from '../queries/idCredentials';
 import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
     CredentialCategoryEnum,
-    getBaseUrl,
     getCategoryForCredential,
     queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
+    useTenantBaseUrl,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -59,6 +60,7 @@ export const baseBoostShareRouteName = 'share-boost';
 /* creates a VP that wraps a boost, returns a published vp and a sharable link*/
 export const useShareBoostMutation = () => {
     const { initWallet } = useWallet();
+    const tenantBaseUrl = useTenantBaseUrl();
 
     return useMutation({
         mutationFn: async ({
@@ -72,7 +74,7 @@ export const useShareBoostMutation = () => {
             credentialId?: string;
             shareRouteName?: string;
         }) => {
-            const baseUrl = getBaseUrl();
+            const baseUrl = new URL(tenantBaseUrl).host;
 
             // get current index data stored on ceramic for user
             // currentUser's wallet
@@ -1040,7 +1042,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 queryKey: ['boosts'],
             });
             await queryClient.cancelQueries({
-                queryKey: ['useGetIDs', didWeb],
+                queryKey: getIDsQueryKey(didWeb),
             });
 
             const currentQuery = queryClient.getQueryData([
@@ -1054,7 +1056,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 didWeb ?? '',
                 category,
             ]);
-            const currentIDQueryList = queryClient.getQueryData(['useGetIDs', didWeb ?? '']);
+            const currentIDQueryList = queryClient.getQueryData(getIDsQueryKey(didWeb));
 
             // update cache optimistically
             // remove from useGetCredentials cache
@@ -1102,10 +1104,8 @@ export const useDeleteEarnedBoostMutation = () => {
                     updatedQueryList
                 );
 
-                queryClient.setQueryData(
-                    ['useGetIDs', didWeb ?? ''],
-                    (oldData: (VC | VC_WITH_URI)[] = []) =>
-                        oldData.filter(credential => credential.uri !== boostUri)
+                queryClient.setQueryData(getIDsQueryKey(didWeb), (oldData: VC_WITH_URI[] = []) =>
+                    oldData.filter(credential => credential.uri !== boostUri)
                 );
 
                 return { currentQuery, oldStaleTime, oldListStaleTime }; //use in OnError
@@ -1128,6 +1128,7 @@ export const useDeleteEarnedBoostMutation = () => {
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', didWeb ?? '', category],
             });
+            // Invalidate both the current records key and any persisted legacy ID entries.
             queryClient.invalidateQueries({
                 queryKey: ['useGetIDs', didWeb ?? ''],
             });

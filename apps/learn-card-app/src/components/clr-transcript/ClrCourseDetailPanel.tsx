@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 
 import X from '../svgs/X';
+import { ClrCreditValues } from './ClrCreditValues';
+import { getClrCreditQuantities } from 'learn-card-base/helpers/credentials/clr/credits';
+import { ClrRecordDetails } from './ClrRecordDetails';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import ClrCompetencyBlock from './ClrCompetencyBlock';
@@ -19,12 +22,11 @@ import { useModal } from 'learn-card-base';
 import type {
     ClrTranscriptDisplayModel,
     CourseDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
-    formatClrDate,
     getLinkedCompetencies,
     getRelationshipsForRecord,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { VC } from '@learncard/types';
 
 const ClrCourseDetailPanel: React.FC<{
@@ -46,13 +48,11 @@ const ClrCourseDetailPanel: React.FC<{
     issuerLogo,
     showCloseButton = true,
 }) => {
+    const record = model?.records.find(candidate => candidate.id === course.sourceCredentialId);
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
 
-    const credits =
-        course.creditsEarned?.value ??
-        course.creditsAvailable?.value ??
-        course.creditsFromDescription?.value;
+    const credits = getClrCreditQuantities(course);
     const id = course.sourceCredentialId;
     const courseCompetencies = getLinkedCompetencies(
         id,
@@ -65,14 +65,11 @@ const ClrCourseDetailPanel: React.FC<{
             kind: 'course',
             title: course.name?.value ?? 'Course',
             humanCode: course.humanCode?.value,
-            dateLabel: course.earnedAt?.value
-                ? `Added ${formatClrDate(course.earnedAt.value)}`
-                : undefined,
         },
     };
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
+        <div className="space-y-v3-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -107,7 +104,7 @@ const ClrCourseDetailPanel: React.FC<{
                     {showCloseButton && (
                         <button
                             onClick={closeModal}
-                            className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
+                            className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2 mt-0.5"
                         >
                             <X className="w-6 h-6" />
                         </button>
@@ -115,83 +112,45 @@ const ClrCourseDetailPanel: React.FC<{
                 </div>
             </div>
 
-            <div className="px-5 space-y-5">
-                <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
-                    {/* Credits summary */}
-                    {credits !== undefined && (
-                        <div className="mb-4 flex">
-                            <div className="flex w-full flex-col items-center rounded-2xl border border-grayscale-200 bg-grayscale-50 px-6 py-4">
-                                <p className="text-2xl font-semibold leading-none text-grayscale-900">
-                                    {credits}
-                                </p>
-                                <p className="mt-1.5 text-sm font-semibold uppercase text-grayscale-600">
-                                    {course.creditsEarned !== undefined ||
-                                    course.creditsFromDescription !== undefined
-                                        ? 'Credits'
-                                        : 'Available'}
+            <div className="px-5 space-y-v3-5">
+                {(credits.length > 0 || course.description?.value || relationships.length > 0) && (
+                    <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
+                        {credits.length > 0 && (
+                            <div className="mb-4 rounded-2xl border border-grayscale-200 bg-grayscale-50 p-4">
+                                <h3 className="mb-2 text-sm font-semibold text-grayscale-900">
+                                    Credits
+                                </h3>
+                                <ClrCreditValues course={course} />
+                            </div>
+                        )}
+
+                        {course.description?.value && (
+                            <div>
+                                <h3 className="text-lg font-medium text-grayscale-900 mb-2">
+                                    Description
+                                </h3>
+                                <p className="text-base text-grayscale-700 leading-relaxed">
+                                    {course.description.value}
                                 </p>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Description + earned date */}
-                    {(course.description?.value || course.earnedAt?.value) && (
-                        <div className="space-y-2">
-                            {course.description?.value && (
-                                <div>
-                                    <h3 className="text-lg font-medium text-grayscale-900 mb-2">
-                                        Description
-                                    </h3>
-                                    <p className="text-base text-grayscale-700 leading-relaxed">
-                                        {course.description.value}
-                                    </p>
-                                </div>
-                            )}
-                            {course.earnedAt?.value && (
-                                <p className="text-base text-grayscale-600">
-                                    Earned on{' '}
-                                    <span className="font-semibold text-grayscale-600">
-                                        {formatClrDate(course.earnedAt.value)}
-                                    </span>
-                                    {issuerName && (
-                                        <>
-                                            {' '}
-                                            at{' '}
-                                            <span className="font-semibold text-grayscale-600">
-                                                {issuerName}
-                                            </span>
-                                        </>
-                                    )}
-                                </p>
-                            )}
-                        </div>
-                    )}
-
-                    {relationships.length > 0 && (
-                        <div className="mt-4 border-t border-grayscale-200 pt-4">
-                            <ClrRelationshipChips
-                                relationships={relationships}
-                                onSelectRecord={onSelectRecord}
-                            />
-                        </div>
-                    )}
-                </div>
+                        {relationships.length > 0 && (
+                            <div className="mt-4 border-t border-grayscale-200 pt-4">
+                                <ClrRelationshipChips
+                                    relationships={relationships}
+                                    onSelectRecord={onSelectRecord}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {course.results.length > 0 && (
                     <ClrResultWithScaleList results={course.results} showResultType={adminMode} />
                 )}
 
-                {/* Expires */}
-                {course.validUntil?.value && (
-                    <div>
-                        <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
-                            Expires
-                        </p>
-                        <p className="text-base text-grayscale-900">
-                            {formatClrDate(course.validUntil.value)}
-                        </p>
-                    </div>
-                )}
+                <ClrRecordDetails record={record} />
 
                 {/* Competencies collapsible */}
                 {courseCompetencies.length > 0 && (
@@ -214,11 +173,14 @@ const ClrCourseDetailPanel: React.FC<{
                             </span>
                         </button>
                         {competenciesOpen && (
-                            <div className="px-4 pb-4 space-y-4">
+                            <div className="px-4 pb-4 space-y-v3-4">
                                 {courseCompetencies.map(c => (
                                     <ClrCompetencyBlock
                                         key={c.sourceCredentialId}
                                         competency={c}
+                                        record={model?.records.find(
+                                            record => record.id === c.sourceCredentialId
+                                        )}
                                         relationships={getRelationshipsForRecord(
                                             model?.relationships ?? {},
                                             c.sourceCredentialId
@@ -254,6 +216,7 @@ const ClrCourseDetailPanel: React.FC<{
                     issuerLogo={issuerLogo}
                     skillCount={courseCompetencies.length}
                     credential={boost}
+                    record={record}
                 />
 
                 {/* Admin provenance */}

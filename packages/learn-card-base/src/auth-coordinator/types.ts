@@ -22,10 +22,17 @@ export type {
     AuthProviderType,
     RecoveryMethodInfo,
     RecoveryResult,
+    IdentityRecoverySession,
+    DidAuthVpSigner,
+    SssActivationState,
     SignInAdapter,
     SignInCapabilities,
     SocialSignInOptions,
     PhoneVerificationHandle,
+    EscrowEnrollmentState,
+    EscrowEnrollmentOptions,
+    EscrowPinStatus,
+    EscrowRecoveryExpectations,
 } from '@learncard/types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---
@@ -35,14 +42,18 @@ export type {
     RecoveryInput,
     RecoverySetupInput,
     RecoverySetupResult,
+    RecoveryConfirmationInput,
     SSSKeyDerivationStrategy,
 } from '@learncard/sss-key-manager';
 
 import type {
     AuthProvider,
     AuthUser,
+    EscrowPinStatus,
+    EscrowEnrollmentState,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
+    SssActivationState,
 } from '@learncard/types';
 
 /**
@@ -64,18 +75,57 @@ export type UnifiedAuthState =
     | { status: 'needs_migration'; authUser: AuthUser; migrationData?: Record<string, unknown> }
     | {
           status: 'needs_recovery';
+          escrowPin?: EscrowPinStatus;
           authUser: AuthUser;
           recoveryMethods: RecoveryMethodInfo[];
           recoveryReason: RecoveryReason;
           maskedRecoveryEmail?: string | null;
+          sssActivationState?: SssActivationState | null;
+          /**
+           * The account's DID as independently known from the server key-status
+           * lookup (never from an escrow status response). Required by Nitro
+           * escrow recovery (hold start and PIN release) to bind the request to
+           * this account; see `EscrowRecoveryExpectations`.
+           */
+          expectedDid?: string;
+      }
+    | {
+          status: 'identity_recovery';
+          phase: 'enter_email' | 'verify_email' | 'choose_method' | 'new_login';
+          email?: string;
+          recoverySessionToken?: string;
+          recoveryMethods: RecoveryMethodInfo[];
+          recoveredDid?: string;
+          error?: string;
+          /**
+           * The verified account's DID, independently known from the
+           * verify-recovery-session response (never from an escrow response).
+           * Required by Nitro escrow recovery (hold start/restart) to bind the
+           * request to this account when no provider session exists yet; see
+           * `expectedDid` on the `needs_recovery` state above.
+           */
+          expectedDid?: string;
+      }
+    | { status: 'awaiting_rebind'; did: string }
+    | {
+          status: 'identity_recovery_success';
+          authUser: AuthUser;
+          did: string;
+          privateKey: string;
+          sssActivationState?: SssActivationState | null;
       }
     | { status: 'deriving_key' }
     | {
           status: 'ready';
+          escrowEnrollment?: EscrowEnrollmentState['state'];
+          pendingEscrowHold?: { holdId: string; requestedAt: string; releaseAfter: string };
+          /** Whether a recovery PIN is set on the escrow release policy, and attempts remaining. */
+          escrowPin?: EscrowPinStatus;
           authUser?: AuthUser;
           did: string;
           privateKey: string;
           authSessionValid: boolean;
+          sssActivationState?: SssActivationState | null;
       }
     | { status: 'error'; error: string; canRetry: boolean; previousState?: UnifiedAuthState };
 
@@ -98,7 +148,7 @@ export interface AuthCoordinatorConfig {
      * addRecoveryMethod, etc.) with the server. The server verifies the VP JWT
      * to confirm the caller controls the private key for the claimed DID.
      */
-    signDidAuthVp?: (privateKey: string) => Promise<string>;
+    signDidAuthVp?: import('@learncard/types').DidAuthVpSigner;
 
     /**
      * Optional: retrieve a cached private key from secure storage.
@@ -113,6 +163,29 @@ export interface AuthCoordinatorConfig {
      * stores, databases, and redirecting.
      */
     onLogout?: () => Promise<void>;
+
+    /**
+     * Optional: wipe any pending escrow recovery request from the storage the
+     * app actually uses for device secrets. Called by `forgetDevice()`. When
+     * omitted the coordinator clears the web (IndexedDB / sessionStorage) copy.
+     */
+    clearPendingEscrowRecovery?: () => Promise<void>;
+
+    /**
+     * Optional: gate AUTOMATIC escrow enrollment for a specific user (staged
+     * rollout). Called with the user's DID before `refreshEscrow` invokes the
+     * strategy's `ensureEscrowEnrollment`; returning `false` skips that call
+     * for this account this cycle. A rejected promise is treated as `false`
+     * (fail closed — never silently auto-enroll on a broken gate).
+     *
+     * Only the automatic-enrollment call is gated: reads
+     * (`getEscrowEnrollmentState`, `getEscrowRecoveryStatus`) and explicit
+     * user actions (`enableEscrowRecovery`, recovery execution) are never
+     * gated, so already-enrolled users keep working even when this returns
+     * `false`. Defaults to always-allowed when omitted, which preserves
+     * existing behavior for any consumer that doesn't configure a rollout.
+     */
+    isEscrowEnrollmentAllowed?: (userKey: string) => Promise<boolean>;
 
     /**
      * Optional: threshold (in ms) for detecting legacy accounts that need migration.
@@ -146,4 +219,16 @@ export interface AuthCoordinatorConfig {
      * @default 4000
      */
     serverStatusTimeoutMs?: number;
+
+    /**
+     * P9.1 (attack C): optional, app-supplied current locale (one of the
+     * app's compiled recovery-email languages, e.g. 'en'/'es'/'fr'/'ar'),
+     * bound alongside the account email into the sealed escrow blob on every
+     * enroll/replace. The device is the source of truth for this binding —
+     * lca-api cannot read or change it afterward; changing the recovery
+     * address or language requires a fresh enrollment from the device, not
+     * an edit. Omitted/unrecognized values fail closed at the enclave for
+     * nitro/authority-mode enroll/replace, never silently defaulted.
+     */
+    getRecoveryLanguage?: () => string | undefined;
 }

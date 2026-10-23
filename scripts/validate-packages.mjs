@@ -52,6 +52,7 @@ const CANDIDATES = [
     'packages/learn-card-helpers',
     'packages/learn-card-init',
     'packages/learn-card-partner-connect-sdk',
+    'packages/partner-connect-core',
     'packages/learn-card-types',
     'packages/learn-card-network/brain-client',
     'packages/learn-card-network/cloud-client',

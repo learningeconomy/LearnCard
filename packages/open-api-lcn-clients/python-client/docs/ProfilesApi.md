@@ -1,49 +1,50 @@
 # openapi_client.ProfilesApi
 
-All URIs are relative to *https://network.learncard.com/api*
+All URIs are relative to _/api_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**inbox_approve_guardian_request**](ProfilesApi.md#inbox_approve_guardian_request) | **POST** /inbox/guardian-approval/approve | Approve Guardian Request
-[**inbox_approve_guardian_request_by_path**](ProfilesApi.md#inbox_approve_guardian_request_by_path) | **GET** /inbox/guardian-approval/{token} | Approve Guardian Request (GET)
-[**inbox_send_guardian_approval_email**](ProfilesApi.md#inbox_send_guardian_approval_email) | **POST** /inbox/guardian-approval/send | Send Guardian Approval Email
-[**profile_accept_connection_request**](ProfilesApi.md#profile_accept_connection_request) | **POST** /profile/{profileId}/accept-connection | Accept Connection Request
-[**profile_block_profile**](ProfilesApi.md#profile_block_profile) | **POST** /profile/{profileId}/block | Block another profile
-[**profile_blocked**](ProfilesApi.md#profile_blocked) | **GET** /profile/blocked | View blocked profiles
-[**profile_cancel_connection_request**](ProfilesApi.md#profile_cancel_connection_request) | **POST** /profile/{profileId}/cancel-connection-request | Cancel Connection Request
-[**profile_connect_with**](ProfilesApi.md#profile_connect_with) | **POST** /profile/{profileId}/connect | Connect with another profile
-[**profile_connect_with_invite**](ProfilesApi.md#profile_connect_with_invite) | **POST** /profile/{profileId}/connect/{challenge} | Connect using an invitation
-[**profile_connection_requests**](ProfilesApi.md#profile_connection_requests) | **GET** /profile/connection-requests | View connection requests
-[**profile_connections**](ProfilesApi.md#profile_connections) | **GET** /profile/connections | View connections
-[**profile_create_managed_service_profile**](ProfilesApi.md#profile_create_managed_service_profile) | **POST** /profile/create-managed-service | Create a managed service profile
-[**profile_create_profile**](ProfilesApi.md#profile_create_profile) | **POST** /profile/create | Create a profile
-[**profile_create_service_profile**](ProfilesApi.md#profile_create_service_profile) | **POST** /profile/create-service | Create a service profile
-[**profile_delete_profile**](ProfilesApi.md#profile_delete_profile) | **DELETE** /profile | Delete your profile
-[**profile_disconnect_with**](ProfilesApi.md#profile_disconnect_with) | **POST** /profile/{profileId}/disconnect | Disconnect with another profile
-[**profile_generate_invite**](ProfilesApi.md#profile_generate_invite) | **POST** /profile/generate-invite | Generate a connection invitation
-[**profile_get_available_profiles**](ProfilesApi.md#profile_get_available_profiles) | **POST** /profile/available-profiles | Available Profiles
-[**profile_get_managed_service_profiles**](ProfilesApi.md#profile_get_managed_service_profiles) | **GET** /profile/managed-services | Managed Service Profiles
-[**profile_get_other_profile**](ProfilesApi.md#profile_get_other_profile) | **GET** /profile/{profileId} | Get profile information
-[**profile_get_profile**](ProfilesApi.md#profile_get_profile) | **GET** /profile | Get your profile information
-[**profile_invalidate_invite**](ProfilesApi.md#profile_invalidate_invite) | **POST** /profile/invite/{challenge}/invalidate | Invalidate an invitation
-[**profile_list_invites**](ProfilesApi.md#profile_list_invites) | **GET** /profile/invites | List valid connection invitations
-[**profile_manager_create_managed_profile**](ProfilesApi.md#profile_manager_create_managed_profile) | **POST** /profile/create-managed-profile | Create a managed profile
-[**profile_manager_get_managed_profiles**](ProfilesApi.md#profile_manager_get_managed_profiles) | **POST** /profile/managed-profiles | Managed Profiles
-[**profile_paginated_connection_requests**](ProfilesApi.md#profile_paginated_connection_requests) | **GET** /profile/connection-requests/paginated | View connection requests
-[**profile_paginated_connections**](ProfilesApi.md#profile_paginated_connections) | **GET** /profile/connections/paginated | View connections
-[**profile_paginated_pending_connections**](ProfilesApi.md#profile_paginated_pending_connections) | **GET** /profile/pending-connections/paginated | View pending connections
-[**profile_pending_connections**](ProfilesApi.md#profile_pending_connections) | **GET** /profile/pending-connections | View pending connections
-[**profile_primary_signing_authority**](ProfilesApi.md#profile_primary_signing_authority) | **GET** /profile/signing-authority/get-primary | Get primary Signing Authority for user
-[**profile_register_signing_authority**](ProfilesApi.md#profile_register_signing_authority) | **POST** /profile/signing-authority/register | Register a Signing Authority
-[**profile_search_profiles**](ProfilesApi.md#profile_search_profiles) | **GET** /search/profiles/{input} | Search profiles
-[**profile_set_primary_signing_authority**](ProfilesApi.md#profile_set_primary_signing_authority) | **POST** /profile/signing-authority/set-primary | Set Primary Signing Authority
-[**profile_signing_authorities**](ProfilesApi.md#profile_signing_authorities) | **GET** /profile/signing-authority/get/all | Get Signing Authorities for user
-[**profile_signing_authority**](ProfilesApi.md#profile_signing_authority) | **GET** /profile/signing-authority/get | Get Signing Authority for user
-[**profile_unblock_profile**](ProfilesApi.md#profile_unblock_profile) | **POST** /profile/{profileId}/unblock | Unblock another profile
-[**profile_update_profile**](ProfilesApi.md#profile_update_profile) | **POST** /profile | Update your profile
-
+| Method                                                                                              | HTTP request                                            | Description                                   |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------- |
+| [**inbox_approve_guardian_request**](ProfilesApi.md#inbox_approve_guardian_request)                 | **POST** /inbox/guardian-approval/approve               | Approve Guardian Request                      |
+| [**inbox_approve_guardian_request_by_path**](ProfilesApi.md#inbox_approve_guardian_request_by_path) | **GET** /inbox/guardian-approval/{token}                | Approve Guardian Request (GET)                |
+| [**inbox_send_guardian_approval_email**](ProfilesApi.md#inbox_send_guardian_approval_email)         | **POST** /inbox/guardian-approval/send                  | Send Guardian Approval Email                  |
+| [**profile_accept_connection_request**](ProfilesApi.md#profile_accept_connection_request)           | **POST** /profile/{profileId}/accept-connection         | Accept Connection Request                     |
+| [**profile_block_profile**](ProfilesApi.md#profile_block_profile)                                   | **POST** /profile/{profileId}/block                     | Block another profile                         |
+| [**profile_blocked**](ProfilesApi.md#profile_blocked)                                               | **GET** /profile/blocked                                | View blocked profiles                         |
+| [**profile_cancel_connection_request**](ProfilesApi.md#profile_cancel_connection_request)           | **POST** /profile/{profileId}/cancel-connection-request | Cancel Connection Request                     |
+| [**profile_connect_with**](ProfilesApi.md#profile_connect_with)                                     | **POST** /profile/{profileId}/connect                   | Connect with another profile                  |
+| [**profile_connect_with_expired_invite**](ProfilesApi.md#profile_connect_with_expired_invite)       | **POST** /profile/{profileId}/connect-expired-invite    | Connect with another profile (expired invite) |
+| [**profile_connect_with_invite**](ProfilesApi.md#profile_connect_with_invite)                       | **POST** /profile/{profileId}/connect/{challenge}       | Connect using an invitation                   |
+| [**profile_connection_requests**](ProfilesApi.md#profile_connection_requests)                       | **GET** /profile/connection-requests                    | View connection requests                      |
+| [**profile_connections**](ProfilesApi.md#profile_connections)                                       | **GET** /profile/connections                            | View connections                              |
+| [**profile_create_managed_service_profile**](ProfilesApi.md#profile_create_managed_service_profile) | **POST** /profile/create-managed-service                | Create a managed service profile              |
+| [**profile_create_profile**](ProfilesApi.md#profile_create_profile)                                 | **POST** /profile/create                                | Create a profile                              |
+| [**profile_create_service_profile**](ProfilesApi.md#profile_create_service_profile)                 | **POST** /profile/create-service                        | Create a service profile                      |
+| [**profile_delete_profile**](ProfilesApi.md#profile_delete_profile)                                 | **DELETE** /profile                                     | Delete your profile                           |
+| [**profile_disconnect_with**](ProfilesApi.md#profile_disconnect_with)                               | **POST** /profile/{profileId}/disconnect                | Disconnect with another profile               |
+| [**profile_generate_invite**](ProfilesApi.md#profile_generate_invite)                               | **POST** /profile/generate-invite                       | Generate a connection invitation              |
+| [**profile_get_available_profiles**](ProfilesApi.md#profile_get_available_profiles)                 | **POST** /profile/available-profiles                    | Available Profiles                            |
+| [**profile_get_managed_service_profiles**](ProfilesApi.md#profile_get_managed_service_profiles)     | **GET** /profile/managed-services                       | Managed Service Profiles                      |
+| [**profile_get_other_profile**](ProfilesApi.md#profile_get_other_profile)                           | **GET** /profile/{profileId}                            | Get profile information                       |
+| [**profile_get_profile**](ProfilesApi.md#profile_get_profile)                                       | **GET** /profile                                        | Get your profile information                  |
+| [**profile_invalidate_invite**](ProfilesApi.md#profile_invalidate_invite)                           | **POST** /profile/invite/{challenge}/invalidate         | Invalidate an invitation                      |
+| [**profile_list_invites**](ProfilesApi.md#profile_list_invites)                                     | **GET** /profile/invites                                | List valid connection invitations             |
+| [**profile_manager_create_managed_profile**](ProfilesApi.md#profile_manager_create_managed_profile) | **POST** /profile/create-managed-profile                | Create a managed profile                      |
+| [**profile_manager_get_managed_profiles**](ProfilesApi.md#profile_manager_get_managed_profiles)     | **POST** /profile/managed-profiles                      | Managed Profiles                              |
+| [**profile_paginated_connection_requests**](ProfilesApi.md#profile_paginated_connection_requests)   | **GET** /profile/connection-requests/paginated          | View connection requests                      |
+| [**profile_paginated_connections**](ProfilesApi.md#profile_paginated_connections)                   | **GET** /profile/connections/paginated                  | View connections                              |
+| [**profile_paginated_pending_connections**](ProfilesApi.md#profile_paginated_pending_connections)   | **GET** /profile/pending-connections/paginated          | View pending connections                      |
+| [**profile_pending_connections**](ProfilesApi.md#profile_pending_connections)                       | **GET** /profile/pending-connections                    | View pending connections                      |
+| [**profile_primary_signing_authority**](ProfilesApi.md#profile_primary_signing_authority)           | **GET** /profile/signing-authority/get-primary          | Get primary Signing Authority for user        |
+| [**profile_register_signing_authority**](ProfilesApi.md#profile_register_signing_authority)         | **POST** /profile/signing-authority/register            | Register a Signing Authority                  |
+| [**profile_search_profiles**](ProfilesApi.md#profile_search_profiles)                               | **GET** /search/profiles/{input}                        | Search profiles                               |
+| [**profile_set_primary_signing_authority**](ProfilesApi.md#profile_set_primary_signing_authority)   | **POST** /profile/signing-authority/set-primary         | Set Primary Signing Authority                 |
+| [**profile_signing_authorities**](ProfilesApi.md#profile_signing_authorities)                       | **GET** /profile/signing-authority/get/all              | Get Signing Authorities for user              |
+| [**profile_signing_authority**](ProfilesApi.md#profile_signing_authority)                           | **GET** /profile/signing-authority/get                  | Get Signing Authority for user                |
+| [**profile_unblock_profile**](ProfilesApi.md#profile_unblock_profile)                               | **POST** /profile/{profileId}/unblock                   | Unblock another profile                       |
+| [**profile_update_profile**](ProfilesApi.md#profile_update_profile)                                 | **POST** /profile                                       | Update your profile                           |
 
 # **inbox_approve_guardian_request**
+
 > ContactMethodsSendChallenge200Response inbox_approve_guardian_request(inbox_approve_guardian_request_request)
 
 Approve Guardian Request
@@ -52,7 +53,7 @@ Consumes a guardian approval token and marks the requesting user profile as appr
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -61,10 +62,10 @@ from openapi_client.models.inbox_approve_guardian_request_request import InboxAp
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -81,7 +82,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    inbox_approve_guardian_request_request = openapi_client.InboxApproveGuardianRequestRequest() # InboxApproveGuardianRequestRequest | 
+    inbox_approve_guardian_request_request = openapi_client.InboxApproveGuardianRequestRequest() # InboxApproveGuardianRequestRequest |
 
     try:
         # Approve Guardian Request
@@ -92,14 +93,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->inbox_approve_guardian_request: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_approve_guardian_request_request** | [**InboxApproveGuardianRequestRequest**](InboxApproveGuardianRequestRequest.md)|  | 
+| Name                                       | Type                                                                            | Description | Notes |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ----- |
+| **inbox_approve_guardian_request_request** | [**InboxApproveGuardianRequestRequest**](InboxApproveGuardianRequestRequest.md) |             |
 
 ### Return type
 
@@ -111,22 +109,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_approve_guardian_request_by_path**
+
 > ContactMethodsSendChallenge200Response inbox_approve_guardian_request_by_path(token)
 
 Approve Guardian Request (GET)
@@ -135,7 +134,7 @@ GET endpoint to consume guardian approval token from URL path.
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -143,10 +142,10 @@ from openapi_client.models.contact_methods_send_challenge200_response import Con
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -163,7 +162,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    token = 'token_example' # str | 
+    token = 'token_example' # str |
 
     try:
         # Approve Guardian Request (GET)
@@ -174,14 +173,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->inbox_approve_guardian_request_by_path: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **token** | **str**|  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **token** | **str** |             |
 
 ### Return type
 
@@ -193,23 +189,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_send_guardian_approval_email**
+
 > InboxSendGuardianApprovalEmail200Response inbox_send_guardian_approval_email(inbox_send_guardian_approval_email_request)
 
 Send Guardian Approval Email
@@ -218,7 +215,7 @@ Generates a one-time approval token and emails a link to the guardian. When the 
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -227,10 +224,10 @@ from openapi_client.models.inbox_send_guardian_approval_email_request import Inb
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -247,7 +244,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    inbox_send_guardian_approval_email_request = openapi_client.InboxSendGuardianApprovalEmailRequest() # InboxSendGuardianApprovalEmailRequest | 
+    inbox_send_guardian_approval_email_request = openapi_client.InboxSendGuardianApprovalEmailRequest() # InboxSendGuardianApprovalEmailRequest |
 
     try:
         # Send Guardian Approval Email
@@ -258,14 +255,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->inbox_send_guardian_approval_email: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_send_guardian_approval_email_request** | [**InboxSendGuardianApprovalEmailRequest**](InboxSendGuardianApprovalEmailRequest.md)|  | 
+| Name                                           | Type                                                                                  | Description | Notes |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
+| **inbox_send_guardian_approval_email_request** | [**InboxSendGuardianApprovalEmailRequest**](InboxSendGuardianApprovalEmailRequest.md) |             |
 
 ### Return type
 
@@ -277,22 +271,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_accept_connection_request**
+
 > bool profile_accept_connection_request(profile_id)
 
 Accept Connection Request
@@ -301,17 +296,17 @@ This route uses the request header to accept a connection request from another u
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -328,7 +323,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_id = 'profile_id_example' # str | 
+    profile_id = 'profile_id_example' # str |
 
     try:
         # Accept Connection Request
@@ -339,14 +334,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_accept_connection_request: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ### Return type
 
@@ -358,22 +350,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_block_profile**
+
 > bool profile_block_profile(profile_id)
 
 Block another profile
@@ -382,17 +375,17 @@ Block another user based on their profileId
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -409,7 +402,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_id = 'profile_id_example' # str | 
+    profile_id = 'profile_id_example' # str |
 
     try:
         # Block another profile
@@ -420,14 +413,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_block_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ### Return type
 
@@ -439,22 +429,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_blocked**
+
 > List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] profile_blocked()
 
 View blocked profiles
@@ -463,7 +454,7 @@ This route shows the current user's blocked profiles
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -471,10 +462,10 @@ from openapi_client.models.boost_get_paginated_boost_recipients200_response_reco
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -501,8 +492,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_blocked: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -517,21 +506,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_cancel_connection_request**
+
 > bool profile_cancel_connection_request(profile_id)
 
 Cancel Connection Request
@@ -540,17 +530,17 @@ Cancels connection request with another profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -567,7 +557,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_id = 'profile_id_example' # str | 
+    profile_id = 'profile_id_example' # str |
 
     try:
         # Cancel Connection Request
@@ -578,14 +568,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_cancel_connection_request: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ### Return type
 
@@ -597,22 +584,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_connect_with**
+
 > bool profile_connect_with(profile_id)
 
 Connect with another profile
@@ -621,17 +609,17 @@ This route uses the request header to send a connection request to another user 
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -648,7 +636,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_id = 'profile_id_example' # str | 
+    profile_id = 'profile_id_example' # str |
 
     try:
         # Connect with another profile
@@ -659,14 +647,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_connect_with: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ### Return type
 
@@ -678,39 +663,42 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **profile_connect_with_invite**
-> bool profile_connect_with_invite(profile_id, challenge)
+# **profile_connect_with_expired_invite**
 
-Connect using an invitation
+> bool profile_connect_with_expired_invite(profile_id)
+
+Connect with another profile (expired invite)
+
+Send a connection request triggered from an expired invite link
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -727,27 +715,22 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_id = 'profile_id_example' # str | 
-    challenge = 'challenge_example' # str | 
+    profile_id = 'profile_id_example' # str |
 
     try:
-        # Connect using an invitation
-        api_response = api_instance.profile_connect_with_invite(profile_id, challenge)
-        print("The response of ProfilesApi->profile_connect_with_invite:\n")
+        # Connect with another profile (expired invite)
+        api_response = api_instance.profile_connect_with_expired_invite(profile_id)
+        print("The response of ProfilesApi->profile_connect_with_expired_invite:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ProfilesApi->profile_connect_with_invite: %s\n" % e)
+        print("Exception when calling ProfilesApi->profile_connect_with_expired_invite: %s\n" % e)
 ```
-
-
 
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
- **challenge** | **str**|  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ### Return type
 
@@ -759,22 +742,102 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **profile_connect_with_invite**
+
+> bool profile_connect_with_invite(profile_id, challenge)
+
+Connect using an invitation
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+    profile_id = 'profile_id_example' # str |
+    challenge = 'challenge_example' # str |
+
+    try:
+        # Connect using an invitation
+        api_response = api_instance.profile_connect_with_invite(profile_id, challenge)
+        print("The response of ProfilesApi->profile_connect_with_invite:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->profile_connect_with_invite: %s\n" % e)
+```
+
+### Parameters
+
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
+| **challenge**  | **str** |             |
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_connection_requests**
+
 > List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] profile_connection_requests()
 
 View connection requests
@@ -784,7 +847,7 @@ Warning! This route is deprecated and currently has a hard limit of returning on
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -792,10 +855,10 @@ from openapi_client.models.boost_get_paginated_boost_recipients200_response_reco
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -822,8 +885,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_connection_requests: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -838,21 +899,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_connections**
+
 > List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] profile_connections()
 
 View connections
@@ -862,7 +924,7 @@ Warning! This route is deprecated and currently has a hard limit of returning on
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -870,10 +932,10 @@ from openapi_client.models.boost_get_paginated_boost_recipients200_response_reco
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -900,8 +962,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_connections: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -916,21 +976,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_create_managed_service_profile**
+
 > str profile_create_managed_service_profile(profile_create_service_profile_request)
 
 Create a managed service profile
@@ -939,7 +1000,7 @@ Creates a managed service profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -947,10 +1008,10 @@ from openapi_client.models.profile_create_service_profile_request import Profile
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -967,7 +1028,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_create_service_profile_request = openapi_client.ProfileCreateServiceProfileRequest() # ProfileCreateServiceProfileRequest | 
+    profile_create_service_profile_request = openapi_client.ProfileCreateServiceProfileRequest() # ProfileCreateServiceProfileRequest |
 
     try:
         # Create a managed service profile
@@ -978,14 +1039,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_create_managed_service_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_create_service_profile_request** | [**ProfileCreateServiceProfileRequest**](ProfileCreateServiceProfileRequest.md)|  | 
+| Name                                       | Type                                                                            | Description | Notes |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_create_service_profile_request** | [**ProfileCreateServiceProfileRequest**](ProfileCreateServiceProfileRequest.md) |             |
 
 ### Return type
 
@@ -997,22 +1055,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_create_profile**
+
 > str profile_create_profile(profile_create_profile_request)
 
 Create a profile
@@ -1021,7 +1080,7 @@ Creates a profile for a user
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1029,10 +1088,10 @@ from openapi_client.models.profile_create_profile_request import ProfileCreatePr
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1049,7 +1108,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_create_profile_request = openapi_client.ProfileCreateProfileRequest() # ProfileCreateProfileRequest | 
+    profile_create_profile_request = openapi_client.ProfileCreateProfileRequest() # ProfileCreateProfileRequest |
 
     try:
         # Create a profile
@@ -1060,14 +1119,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_create_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_create_profile_request** | [**ProfileCreateProfileRequest**](ProfileCreateProfileRequest.md)|  | 
+| Name                               | Type                                                              | Description | Notes |
+| ---------------------------------- | ----------------------------------------------------------------- | ----------- | ----- |
+| **profile_create_profile_request** | [**ProfileCreateProfileRequest**](ProfileCreateProfileRequest.md) |             |
 
 ### Return type
 
@@ -1079,22 +1135,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_create_service_profile**
+
 > str profile_create_service_profile(profile_create_service_profile_request)
 
 Create a service profile
@@ -1103,7 +1160,7 @@ Creates a service profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1111,10 +1168,10 @@ from openapi_client.models.profile_create_service_profile_request import Profile
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1131,7 +1188,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_create_service_profile_request = openapi_client.ProfileCreateServiceProfileRequest() # ProfileCreateServiceProfileRequest | 
+    profile_create_service_profile_request = openapi_client.ProfileCreateServiceProfileRequest() # ProfileCreateServiceProfileRequest |
 
     try:
         # Create a service profile
@@ -1142,14 +1199,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_create_service_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_create_service_profile_request** | [**ProfileCreateServiceProfileRequest**](ProfileCreateServiceProfileRequest.md)|  | 
+| Name                                       | Type                                                                            | Description | Notes |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_create_service_profile_request** | [**ProfileCreateServiceProfileRequest**](ProfileCreateServiceProfileRequest.md) |             |
 
 ### Return type
 
@@ -1161,22 +1215,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_delete_profile**
+
 > bool profile_delete_profile()
 
 Delete your profile
@@ -1185,17 +1240,17 @@ This route deletes the profile of the current user
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1222,8 +1277,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_delete_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -1238,21 +1291,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_disconnect_with**
+
 > bool profile_disconnect_with(profile_id)
 
 Disconnect with another profile
@@ -1261,17 +1315,17 @@ This route uses the request header to disconnect with another user based on thei
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1288,7 +1342,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_id = 'profile_id_example' # str | 
+    profile_id = 'profile_id_example' # str |
 
     try:
         # Disconnect with another profile
@@ -1299,14 +1353,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_disconnect_with: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ### Return type
 
@@ -1318,22 +1369,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_generate_invite**
+
 > ProfileGenerateInvite200Response profile_generate_invite(profile_generate_invite_request=profile_generate_invite_request)
 
 Generate a connection invitation
@@ -1342,7 +1394,7 @@ Generate a connection invitation challenge. By default, invites are single-use; 
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1351,10 +1403,10 @@ from openapi_client.models.profile_generate_invite_request import ProfileGenerat
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1382,14 +1434,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_generate_invite: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_generate_invite_request** | [**ProfileGenerateInviteRequest**](ProfileGenerateInviteRequest.md)|  | [optional] 
+| Name                                | Type                                                                | Description | Notes      |
+| ----------------------------------- | ------------------------------------------------------------------- | ----------- | ---------- |
+| **profile_generate_invite_request** | [**ProfileGenerateInviteRequest**](ProfileGenerateInviteRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -1401,22 +1450,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_get_available_profiles**
+
 > ProfileGetAvailableProfiles200Response profile_get_available_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
 
 Available Profiles
@@ -1425,7 +1475,7 @@ This route gets all of your available profiles. That is, profiles you directly o
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1434,10 +1484,10 @@ from openapi_client.models.profile_get_available_profiles_request import Profile
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1465,14 +1515,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_get_available_profiles: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_get_available_profiles_request** | [**ProfileGetAvailableProfilesRequest**](ProfileGetAvailableProfilesRequest.md)|  | [optional] 
+| Name                                       | Type                                                                            | Description | Notes      |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ---------- |
+| **profile_get_available_profiles_request** | [**ProfileGetAvailableProfilesRequest**](ProfileGetAvailableProfilesRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -1484,23 +1531,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_get_managed_service_profiles**
-> BoostGetBoostAdmins200Response profile_get_managed_service_profiles(limit=limit, cursor=cursor, sort=sort, id=id)
+
+> ProfileGetManagedServiceProfiles200Response profile_get_managed_service_profiles(limit=limit, cursor=cursor, sort=sort, id=id)
 
 Managed Service Profiles
 
@@ -1508,18 +1556,18 @@ This route gets all of your managed service profiles
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
+from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1550,21 +1598,18 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_get_managed_service_profiles: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **limit** | **float**|  | [optional] [default to 25]
- **cursor** | **str**|  | [optional] 
- **sort** | **str**|  | [optional] 
- **id** | **str**|  | [optional] 
+| Name       | Type      | Description | Notes                      |
+| ---------- | --------- | ----------- | -------------------------- |
+| **limit**  | **float** |             | [optional] [default to 25] |
+| **cursor** | **str**   |             | [optional]                 |
+| **sort**   | **str**   |             | [optional]                 |
+| **id**     | **str**   |             | [optional]                 |
 
 ### Return type
 
-[**BoostGetBoostAdmins200Response**](BoostGetBoostAdmins200Response.md)
+[**ProfileGetManagedServiceProfiles200Response**](ProfileGetManagedServiceProfiles200Response.md)
 
 ### Authorization
 
@@ -1572,23 +1617,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_get_other_profile**
+
 > BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo profile_get_other_profile(profile_id)
 
 Get profile information
@@ -1597,7 +1643,7 @@ This route grabs the profile information of any user, using their profileId
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1605,10 +1651,10 @@ from openapi_client.models.boost_get_paginated_boost_recipients200_response_reco
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1625,7 +1671,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_id = 'profile_id_example' # str | 
+    profile_id = 'profile_id_example' # str |
 
     try:
         # Get profile information
@@ -1636,14 +1682,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_get_other_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ### Return type
 
@@ -1655,24 +1698,25 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_get_profile**
-> BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo profile_get_profile()
+
+> BoostGetBoostRecipients200ResponseInnerToAnyOf3 profile_get_profile()
 
 Get your profile information
 
@@ -1680,18 +1724,18 @@ This route uses the request header to grab the profile of the current user
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1718,15 +1762,13 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_get_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
 
 ### Return type
 
-[**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
+[**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)
 
 ### Authorization
 
@@ -1734,21 +1776,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_invalidate_invite**
+
 > bool profile_invalidate_invite(challenge)
 
 Invalidate an invitation
@@ -1757,17 +1800,17 @@ Invalidate a specific connection invitation by its challenge string. Idempotent:
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1784,7 +1827,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    challenge = 'challenge_example' # str | 
+    challenge = 'challenge_example' # str |
 
     try:
         # Invalidate an invitation
@@ -1795,14 +1838,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_invalidate_invite: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **challenge** | **str**|  | 
+| Name          | Type    | Description | Notes |
+| ------------- | ------- | ----------- | ----- |
+| **challenge** | **str** |             |
 
 ### Return type
 
@@ -1814,22 +1854,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_list_invites**
+
 > List[ProfileListInvites200ResponseInner] profile_list_invites()
 
 List valid connection invitations
@@ -1838,7 +1879,7 @@ List all valid connection invitation links you've created. Each item includes: c
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1846,10 +1887,10 @@ from openapi_client.models.profile_list_invites200_response_inner import Profile
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1876,8 +1917,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_list_invites: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -1892,21 +1931,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_create_managed_profile**
+
 > str profile_manager_create_managed_profile(profile_manager_create_managed_profile_request)
 
 Create a managed profile
@@ -1915,7 +1955,7 @@ Creates a managed profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1923,10 +1963,10 @@ from openapi_client.models.profile_manager_create_managed_profile_request import
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1943,7 +1983,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_manager_create_managed_profile_request = openapi_client.ProfileManagerCreateManagedProfileRequest() # ProfileManagerCreateManagedProfileRequest | 
+    profile_manager_create_managed_profile_request = openapi_client.ProfileManagerCreateManagedProfileRequest() # ProfileManagerCreateManagedProfileRequest |
 
     try:
         # Create a managed profile
@@ -1954,14 +1994,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_manager_create_managed_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_manager_create_managed_profile_request** | [**ProfileManagerCreateManagedProfileRequest**](ProfileManagerCreateManagedProfileRequest.md)|  | 
+| Name                                               | Type                                                                                          | Description | Notes |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_manager_create_managed_profile_request** | [**ProfileManagerCreateManagedProfileRequest**](ProfileManagerCreateManagedProfileRequest.md) |             |
 
 ### Return type
 
@@ -1973,23 +2010,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_managed_profiles**
-> BoostGetBoostAdmins200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
+
+> ProfileGetManagedServiceProfiles200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
 
 Managed Profiles
 
@@ -1997,19 +2035,19 @@ This route gets all of your managed profiles
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
+from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
 from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2037,18 +2075,15 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_manager_get_managed_profiles: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_manager_get_managed_profiles_request** | [**ProfileManagerGetManagedProfilesRequest**](ProfileManagerGetManagedProfilesRequest.md)|  | [optional] 
+| Name                                             | Type                                                                                      | Description | Notes      |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **profile_manager_get_managed_profiles_request** | [**ProfileManagerGetManagedProfilesRequest**](ProfileManagerGetManagedProfilesRequest.md) |             | [optional] |
 
 ### Return type
 
-[**BoostGetBoostAdmins200Response**](BoostGetBoostAdmins200Response.md)
+[**ProfileGetManagedServiceProfiles200Response**](ProfileGetManagedServiceProfiles200Response.md)
 
 ### Authorization
 
@@ -2056,22 +2091,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_paginated_connection_requests**
+
 > BoostGetBoostAdmins200Response profile_paginated_connection_requests(limit=limit, cursor=cursor, sort=sort)
 
 View connection requests
@@ -2080,7 +2116,7 @@ This route shows the current user's connection requests
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2088,10 +2124,10 @@ from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2121,16 +2157,13 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_paginated_connection_requests: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **limit** | **float**|  | [optional] [default to 25]
- **cursor** | **str**|  | [optional] 
- **sort** | **str**|  | [optional] 
+| Name       | Type      | Description | Notes                      |
+| ---------- | --------- | ----------- | -------------------------- |
+| **limit**  | **float** |             | [optional] [default to 25] |
+| **cursor** | **str**   |             | [optional]                 |
+| **sort**   | **str**   |             | [optional]                 |
 
 ### Return type
 
@@ -2142,23 +2175,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_paginated_connections**
+
 > BoostGetBoostAdmins200Response profile_paginated_connections(limit=limit, cursor=cursor, sort=sort)
 
 View connections
@@ -2167,7 +2201,7 @@ This route shows the current user's connections
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2175,10 +2209,10 @@ from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2208,16 +2242,13 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_paginated_connections: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **limit** | **float**|  | [optional] [default to 25]
- **cursor** | **str**|  | [optional] 
- **sort** | **str**|  | [optional] 
+| Name       | Type      | Description | Notes                      |
+| ---------- | --------- | ----------- | -------------------------- |
+| **limit**  | **float** |             | [optional] [default to 25] |
+| **cursor** | **str**   |             | [optional]                 |
+| **sort**   | **str**   |             | [optional]                 |
 
 ### Return type
 
@@ -2229,23 +2260,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_paginated_pending_connections**
+
 > BoostGetBoostAdmins200Response profile_paginated_pending_connections(limit=limit, cursor=cursor, sort=sort)
 
 View pending connections
@@ -2254,7 +2286,7 @@ This route shows the current user's pending connections
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2262,10 +2294,10 @@ from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2295,16 +2327,13 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_paginated_pending_connections: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **limit** | **float**|  | [optional] [default to 25]
- **cursor** | **str**|  | [optional] 
- **sort** | **str**|  | [optional] 
+| Name       | Type      | Description | Notes                      |
+| ---------- | --------- | ----------- | -------------------------- |
+| **limit**  | **float** |             | [optional] [default to 25] |
+| **cursor** | **str**   |             | [optional]                 |
+| **sort**   | **str**   |             | [optional]                 |
 
 ### Return type
 
@@ -2316,23 +2345,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_pending_connections**
+
 > List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] profile_pending_connections()
 
 View pending connections
@@ -2342,7 +2372,7 @@ Warning! This route is deprecated and currently has a hard limit of returning on
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2350,10 +2380,10 @@ from openapi_client.models.boost_get_paginated_boost_recipients200_response_reco
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2380,8 +2410,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_pending_connections: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -2396,21 +2424,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_primary_signing_authority**
+
 > ProfileSigningAuthority200Response profile_primary_signing_authority()
 
 Get primary Signing Authority for user
@@ -2419,7 +2448,7 @@ This route is used to get the primary signing authority that can sign credential
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2427,10 +2456,10 @@ from openapi_client.models.profile_signing_authority200_response import ProfileS
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2457,8 +2486,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_primary_signing_authority: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -2473,21 +2500,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_register_signing_authority**
+
 > bool profile_register_signing_authority(profile_register_signing_authority_request)
 
 Register a Signing Authority
@@ -2496,7 +2524,7 @@ This route is used to register a signing authority that can sign credentials on 
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2504,10 +2532,10 @@ from openapi_client.models.profile_register_signing_authority_request import Pro
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2524,7 +2552,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_register_signing_authority_request = openapi_client.ProfileRegisterSigningAuthorityRequest() # ProfileRegisterSigningAuthorityRequest | 
+    profile_register_signing_authority_request = openapi_client.ProfileRegisterSigningAuthorityRequest() # ProfileRegisterSigningAuthorityRequest |
 
     try:
         # Register a Signing Authority
@@ -2535,14 +2563,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_register_signing_authority: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_register_signing_authority_request** | [**ProfileRegisterSigningAuthorityRequest**](ProfileRegisterSigningAuthorityRequest.md)|  | 
+| Name                                           | Type                                                                                    | Description | Notes |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_register_signing_authority_request** | [**ProfileRegisterSigningAuthorityRequest**](ProfileRegisterSigningAuthorityRequest.md) |             |
 
 ### Return type
 
@@ -2554,22 +2579,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_search_profiles**
+
 > List[ProfileSearchProfiles200ResponseInner] profile_search_profiles(input, limit=limit, include_self=include_self, include_connection_status=include_connection_status, include_service_profiles=include_service_profiles)
 
 Search profiles
@@ -2578,7 +2604,7 @@ This route searches for profiles based on their profileId
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2586,10 +2612,10 @@ from openapi_client.models.profile_search_profiles200_response_inner import Prof
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2606,7 +2632,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    input = 'input_example' # str | 
+    input = 'input_example' # str |
     limit = 25 # int |  (optional) (default to 25)
     include_self = False # bool |  (optional) (default to False)
     include_connection_status = False # bool |  (optional) (default to False)
@@ -2621,18 +2647,15 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_search_profiles: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **input** | **str**|  | 
- **limit** | **int**|  | [optional] [default to 25]
- **include_self** | **bool**|  | [optional] [default to False]
- **include_connection_status** | **bool**|  | [optional] [default to False]
- **include_service_profiles** | **bool**|  | [optional] [default to False]
+| Name                          | Type     | Description | Notes                         |
+| ----------------------------- | -------- | ----------- | ----------------------------- |
+| **input**                     | **str**  |             |
+| **limit**                     | **int**  |             | [optional] [default to 25]    |
+| **include_self**              | **bool** |             | [optional] [default to False] |
+| **include_connection_status** | **bool** |             | [optional] [default to False] |
+| **include_service_profiles**  | **bool** |             | [optional] [default to False] |
 
 ### Return type
 
@@ -2644,23 +2667,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_set_primary_signing_authority**
+
 > bool profile_set_primary_signing_authority(profile_set_primary_signing_authority_request)
 
 Set Primary Signing Authority
@@ -2669,7 +2693,7 @@ This route is used to set a signing authority as the primary one for the current
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2677,10 +2701,10 @@ from openapi_client.models.profile_set_primary_signing_authority_request import 
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2697,7 +2721,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_set_primary_signing_authority_request = openapi_client.ProfileSetPrimarySigningAuthorityRequest() # ProfileSetPrimarySigningAuthorityRequest | 
+    profile_set_primary_signing_authority_request = openapi_client.ProfileSetPrimarySigningAuthorityRequest() # ProfileSetPrimarySigningAuthorityRequest |
 
     try:
         # Set Primary Signing Authority
@@ -2708,14 +2732,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_set_primary_signing_authority: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_set_primary_signing_authority_request** | [**ProfileSetPrimarySigningAuthorityRequest**](ProfileSetPrimarySigningAuthorityRequest.md)|  | 
+| Name                                              | Type                                                                                        | Description | Notes |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_set_primary_signing_authority_request** | [**ProfileSetPrimarySigningAuthorityRequest**](ProfileSetPrimarySigningAuthorityRequest.md) |             |
 
 ### Return type
 
@@ -2727,22 +2748,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_signing_authorities**
+
 > List[ProfileSigningAuthorities200ResponseInner] profile_signing_authorities()
 
 Get Signing Authorities for user
@@ -2751,7 +2773,7 @@ This route is used to get registered signing authorities that can sign credentia
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2759,10 +2781,10 @@ from openapi_client.models.profile_signing_authorities200_response_inner import 
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2789,8 +2811,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_signing_authorities: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -2805,21 +2825,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_signing_authority**
+
 > ProfileSigningAuthority200Response profile_signing_authority(endpoint, name)
 
 Get Signing Authority for user
@@ -2828,7 +2849,7 @@ This route is used to get a named signing authority that can sign credentials on
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -2836,10 +2857,10 @@ from openapi_client.models.profile_signing_authority200_response import ProfileS
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2856,8 +2877,8 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    endpoint = 'endpoint_example' # str | 
-    name = 'name_example' # str | 
+    endpoint = 'endpoint_example' # str |
+    name = 'name_example' # str |
 
     try:
         # Get Signing Authority for user
@@ -2868,15 +2889,12 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_signing_authority: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **endpoint** | **str**|  | 
- **name** | **str**|  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **endpoint** | **str** |             |
+| **name**     | **str** |             |
 
 ### Return type
 
@@ -2888,23 +2906,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_unblock_profile**
+
 > bool profile_unblock_profile(profile_id)
 
 Unblock another profile
@@ -2913,17 +2932,17 @@ Unblock another user based on their profileId
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2940,7 +2959,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_id = 'profile_id_example' # str | 
+    profile_id = 'profile_id_example' # str |
 
     try:
         # Unblock another profile
@@ -2951,14 +2970,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_unblock_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ### Return type
 
@@ -2970,22 +2986,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_update_profile**
+
 > bool profile_update_profile(profile_update_profile_request)
 
 Update your profile
@@ -2994,7 +3011,7 @@ This route updates the profile of the current user
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -3002,10 +3019,10 @@ from openapi_client.models.profile_update_profile_request import ProfileUpdatePr
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -3022,7 +3039,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_update_profile_request = openapi_client.ProfileUpdateProfileRequest() # ProfileUpdateProfileRequest | 
+    profile_update_profile_request = openapi_client.ProfileUpdateProfileRequest() # ProfileUpdateProfileRequest |
 
     try:
         # Update your profile
@@ -3033,14 +3050,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfilesApi->profile_update_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_update_profile_request** | [**ProfileUpdateProfileRequest**](ProfileUpdateProfileRequest.md)|  | 
+| Name                               | Type                                                              | Description | Notes |
+| ---------------------------------- | ----------------------------------------------------------------- | ----------- | ----- |
+| **profile_update_profile_request** | [**ProfileUpdateProfileRequest**](ProfileUpdateProfileRequest.md) |             |
 
 ### Return type
 
@@ -3052,18 +3066,17 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
