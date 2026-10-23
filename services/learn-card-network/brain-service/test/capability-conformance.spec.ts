@@ -139,6 +139,24 @@ const nonSubjectDataCapabilities = capabilities.filter(
 );
 const supportedConsentTier = assertSupportedConsentTiers([ConsentTierEnum.options[0]])[0];
 
+// ADR-013 §3.1: record-provisioning Bindings must carry their record-lane declaration.
+const RECORD_LANE_METADATA = {
+    capability: 'record-provisioning' as const,
+    mode: 'TRANSACTIONAL' as const,
+    recordClass: 'academic' as const,
+    legalBasis: 'Conformance fixture',
+    identityBinding: 'roster-mapped' as const,
+    transactional: {
+        triggerAuthority: 'system-event' as const,
+        purpose: 'Conformance fixture',
+        fields: ['recordId'],
+        idempotencyKeyField: 'recordId',
+        timeoutMs: 1000,
+        maxRetries: 0,
+        retentionDays: 1,
+    },
+};
+
 const proposeBindingForCapability = async (capability: (typeof CapabilityEnum.options)[number]) => {
     const ecosystem = await createOperatorEcosystem();
     const { providerId, consumerId } = await createBindingEndpoints(ecosystem.id);
@@ -156,6 +174,9 @@ const proposeBindingForCapability = async (capability: (typeof CapabilityEnum.op
             resourceId: consumerId,
             ecosystemId: ecosystem.id,
         },
+        ...(capability === 'record-provisioning'
+            ? { capabilityMetadata: RECORD_LANE_METADATA }
+            : {}),
     });
 
     expect(BindingValidator.parse(proposed)).toMatchObject({
@@ -429,6 +450,7 @@ describe('Capability conformance harness', () => {
                         resourceId: consumer.targetId,
                         ecosystemId: ecosystem.id,
                     },
+                    capabilityMetadata: RECORD_LANE_METADATA,
                 })
             ).rejects.toThrow(/does not include record-provisioning/i);
         },

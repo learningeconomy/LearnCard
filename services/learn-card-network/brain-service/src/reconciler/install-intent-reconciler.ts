@@ -711,6 +711,7 @@ const proposeSpecBindings = async (
             provider: proposal.provider,
             consumer: proposal.consumer,
             status: 'PROPOSED',
+            capabilityMetadata: proposal.capabilityMetadata,
         });
 
         await createInstallIntentAuditEvent({

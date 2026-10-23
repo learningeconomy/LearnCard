@@ -16,14 +16,19 @@ export const IntegrationGroupMetadata = z.object({
     parent: z.string().nullable(),
 });
 
-/** Closed Phase C classification: metadata only, NOT roster/directory subject data.
- * No capability-scoped operation is currently exposed. Adding one requires a
- * server-owned classification and an ACTIVE Binding; callers cannot classify ops.
+/** Closed classification: group metadata is NOT roster/directory subject data.
+ * SUBJECT_RECORD operations are served only by the record-release boundary, which
+ * requires an ACTIVE Binding and subject consent; callers cannot classify ops.
  */
 export const serviceOperationClassification = (
     resource: string,
     action: string
-): 'NON_SUBJECT' | 'DENY' => (resource === 'group' && action === 'read' ? 'NON_SUBJECT' : 'DENY');
+): 'NON_SUBJECT' | 'SUBJECT_RECORD' | 'DENY' => {
+    if (resource === 'group' && action === 'read') return 'NON_SUBJECT';
+    if (resource === 'completion' && action === 'ingest') return 'SUBJECT_RECORD';
+
+    return 'DENY';
+};
 
 export const requireServiceAccountAccess = async (input: {
     principal?: ServiceAccountPrincipal;

@@ -22,6 +22,7 @@ export const Binding = ModelFactory<FlatBindingType, BindingRelationships>(
             approvedBy: { type: 'string', required: false },
             approvedAt: { type: 'string', required: false },
             revisions: { type: 'string', required: true },
+            capabilityMetadata: { type: 'string', required: false },
             revision: { type: 'number', required: true },
             createdAt: { type: 'string', required: true },
             updatedAt: { type: 'string', required: true },

@@ -33,6 +33,7 @@ export const createBinding = async (
         approvedBy: input.approvedBy,
         approvedAt: input.approvedAt,
         revisions: { bindingRevision: 0, policyRevision: input.policyRevision },
+        capabilityMetadata: input.capabilityMetadata,
     });
 
     const record: BindingRecordType = {

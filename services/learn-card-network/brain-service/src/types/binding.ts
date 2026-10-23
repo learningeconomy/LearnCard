@@ -13,9 +13,11 @@ export const FlatBindingValidator = BindingRecordValidator.omit({
     provider: true,
     consumer: true,
     revisions: true,
+    capabilityMetadata: true,
 }).extend({
     provider: z.string(),
     consumer: z.string(),
     revisions: z.string(),
+    capabilityMetadata: z.string().optional(),
 });
 export type FlatBindingType = z.infer<typeof FlatBindingValidator>;

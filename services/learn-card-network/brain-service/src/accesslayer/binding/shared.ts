@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 
 import {
+    BindingCapabilityMetadataValidator,
     BindingEndpoint,
     BindingEndpointValidator,
     BindingRevisionsValidator,
@@ -26,12 +27,24 @@ const nodeLabelForEndpoint = (endpoint: BindingEndpoint): string => {
     }
 };
 
+/** Unparseable stored metadata reads as absent: record lanes then fail closed, other reads work. */
+const parseStoredCapabilityMetadata = (raw?: string) => {
+    if (!raw) return undefined;
+    try {
+        const parsed = BindingCapabilityMetadataValidator.safeParse(JSON.parse(raw));
+        return parsed.success ? parsed.data : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 export const inflateBinding = (flat: FlatBindingType): BindingRecordType => {
     return BindingRecordValidator.parse({
         ...flat,
         provider: BindingEndpointValidator.parse(JSON.parse(flat.provider)),
         consumer: BindingEndpointValidator.parse(JSON.parse(flat.consumer)),
         revisions: BindingRevisionsValidator.parse(JSON.parse(flat.revisions)),
+        capabilityMetadata: parseStoredCapabilityMetadata(flat.capabilityMetadata),
     });
 };
 
@@ -51,12 +64,17 @@ export const requireBindingRecord = async (bindingId: string): Promise<BindingRe
     return binding;
 };
 
-export const serializeBindingRecord = (record: BindingRecordType): FlatBindingType => ({
-    ...record,
-    provider: JSON.stringify(record.provider),
-    consumer: JSON.stringify(record.consumer),
-    revisions: JSON.stringify(record.revisions),
-});
+export const serializeBindingRecord = (record: BindingRecordType): FlatBindingType => {
+    const { capabilityMetadata, ...rest } = record;
+
+    return {
+        ...rest,
+        provider: JSON.stringify(record.provider),
+        consumer: JSON.stringify(record.consumer),
+        revisions: JSON.stringify(record.revisions),
+        ...(capabilityMetadata ? { capabilityMetadata: JSON.stringify(capabilityMetadata) } : {}),
+    };
+};
 
 export const writeBindingRecord = async (record: BindingRecordType): Promise<void> => {
     await neogma.queryRunner.run(

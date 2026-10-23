@@ -4,6 +4,11 @@ import {
     IntegrationGroupMetadata,
     requireServiceAccountAccess,
 } from '@helpers/ecosystem-access.helpers';
+import {
+    SubmitRecordInputValidator,
+    SubmitRecordResultValidator,
+    submitProvisionedRecord,
+} from '@helpers/record-release.helpers';
 
 export const integrationServiceRouter = t.router({
     // Deliberately not the normal Group router: that router can expose subjects.
@@ -18,5 +23,10 @@ export const integrationServiceRouter = t.router({
                 target: input.groupId,
             })
         ),
+    // ADR-012 Transactional record-provisioning push; input is never logged or captured.
+    submitRecord: openRouteWithoutInputCapture
+        .input(SubmitRecordInputValidator)
+        .output(SubmitRecordResultValidator)
+        .mutation(({ ctx, input }) => submitProvisionedRecord(ctx.serviceAccount, input)),
 });
 export type IntegrationServiceRouter = typeof integrationServiceRouter;

@@ -209,6 +209,7 @@ const ProposeBindingInputValidator = z.object({
     capability: BindingValidator.shape.capability,
     provider: BindingValidator.shape.provider,
     consumer: BindingValidator.shape.consumer,
+    capabilityMetadata: BindingValidator.shape.capabilityMetadata,
 });
 const RevokeBindingInputValidator = z.object({
     bindingId: z.string(),
@@ -1370,6 +1371,24 @@ export const installIntentsRouter = t.router({
                 });
             }
 
+            // ADR-013 §3.1: record lanes declare their contract detail on the Binding itself.
+            if (input.capability === 'record-provisioning' && !input.capabilityMetadata) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'record-provisioning Bindings require capabilityMetadata.',
+                });
+            }
+
+            if (
+                input.capabilityMetadata &&
+                input.capabilityMetadata.capability !== input.capability
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'capabilityMetadata does not match the Binding capability.',
+                });
+            }
+
             const proposal = BindingProposalValidator.parse(input);
             await assertBindingRefsExist([proposal]);
             await assertBindingCapabilityVersionsCompatible(proposal);
@@ -1381,6 +1400,7 @@ export const installIntentsRouter = t.router({
                 provider: input.provider,
                 consumer: input.consumer,
                 status: 'PROPOSED',
+                capabilityMetadata: input.capabilityMetadata,
             });
 
             await createInstallIntentAuditEvent({

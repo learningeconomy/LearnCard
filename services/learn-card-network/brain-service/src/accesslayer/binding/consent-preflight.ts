@@ -25,6 +25,7 @@ import {
 } from '@helpers/consent-preflight-hash.helpers';
 import type { BindingRecordType } from 'types/binding';
 import { requireBindingRecord } from './shared';
+import { resolveRecordLaneGaps } from './record-lane';
 
 type Missing = BindingConsentPreflight['missing'];
 type PlanDependency = {
@@ -60,16 +61,12 @@ export const resolveRequirements = async (
         missing: [],
         dependencies: [],
     };
-    // ADR-012 §3.2 and ADR-013 §3.1–3.3: the current approved-plan/Binding
-    // schemas cannot pin a capability-specific class/mode/identity declaration.
-    // Do not turn an unrelated install tier into record-lane readiness.
+    // ADR-012 §3.2 and ADR-013 §3.1–3.3: record lanes are approvable only with a complete
+    // Binding declaration whose class both endpoints' reviewed declarations support.
     if (BINDING_CONSENT_REQUIREMENTS[binding.capability].requiresRecordClass) {
-        result.missing.push(
-            ...missing(
-                'REQUIREMENTS_UNRESOLVED',
-                'A binding-specific approved record class, mode, legal basis, and identity/retention declaration are required; this plan format cannot express them yet.'
-            )
-        );
+        for (const gap of await resolveRecordLaneGaps(binding)) {
+            result.missing.push(...missing('REQUIREMENTS_UNRESOLVED', gap));
+        }
     }
     for (const endpoint of [binding.provider, binding.consumer]) {
         if (endpoint.ecosystemId !== binding.ecosystemId) {
