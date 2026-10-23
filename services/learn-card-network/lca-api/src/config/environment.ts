@@ -31,6 +31,20 @@ export const lcaApiEnvironmentShape = {
     NETWORK_BRAIN_SERVICE_URL: optionalEnvironmentUrl,
     GOOGLE_APPLICATION_CREDENTIAL: optionalEnvironmentString,
     OPENAI_API_KEY: optionalEnvironmentString,
+    BEDROCK_BASE_URL: optionalEnvironmentString,
+    IMAGE_PROVIDER: optionalEnvironmentString
+        .transform(value => value ?? 'bedrock')
+        .pipe(z.enum(['openai', 'bedrock'])),
+    BEDROCK_IMAGE_REGION: optionalEnvironmentString
+        .transform(value => value ?? 'us-west-2')
+        .pipe(z.literal('us-west-2')),
+    BEDROCK_IMAGE_MODEL_ID: optionalEnvironmentString
+        .transform(value => value ?? 'stability.stable-image-core-v1:1')
+        .pipe(z.literal('stability.stable-image-core-v1:1')),
+    // Must finish inside the 29-second Lambda timeout (same 25-second ceiling as text generation).
+    IMAGE_TIMEOUT_MS: optionalEnvironmentString
+        .transform(value => (value === undefined ? 25_000 : Number(value)))
+        .pipe(z.number().int().min(1_000).max(25_000)),
     METABASE_SECRET_KEY: optionalEnvironmentString,
     SCOUTS_SSO_CLIENT_SECRET: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,
