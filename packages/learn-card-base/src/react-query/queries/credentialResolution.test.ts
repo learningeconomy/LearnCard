@@ -100,3 +100,38 @@ describe('shared credential resolution', () => {
         expect(read).toHaveBeenCalledTimes(3);
     });
 });
+
+it('does not automatically retry missing data and allows an explicit later recovery', async () => {
+    const client = makeClient();
+    client.setDefaultOptions({ queries: { retry: 3, retryDelay: 0 } });
+    const { wallet, read } = makeWallet('account-a', vi.fn().mockResolvedValue(undefined));
+    const observer = new QueryObserver(client, resolvedCredentialQueryOptions(wallet, 'missing'));
+    const missing = await observer.refetch();
+    expect(missing.isError).toBe(true);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(client.getQueryData(resolvedCredentialQueryKey('missing', 'account-a'))).toBeUndefined();
+    read.mockResolvedValue(credential);
+    expect((await observer.refetch()).data).toEqual(credential);
+    expect(read).toHaveBeenCalledTimes(2);
+});
+
+it.each([false, 1, (failureCount: number) => failureCount < 1])(
+    'honors the configured transport retry policy (%s)',
+    async retry => {
+        const client = makeClient();
+        client.setDefaultOptions({ queries: { retry, retryDelay: 0 } });
+        const { wallet, read } = makeWallet(
+            'account-a',
+            vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(credential)
+        );
+        if (retry === false) {
+            await expect(fetchResolvedCredential(client, wallet, 'uri')).rejects.toThrow('offline');
+            expect(read).toHaveBeenCalledTimes(1);
+        } else {
+            await expect(fetchResolvedCredential(client, wallet, 'uri')).resolves.toEqual(
+                credential
+            );
+            expect(read).toHaveBeenCalledTimes(2);
+        }
+    }
+);

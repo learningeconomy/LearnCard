@@ -29,7 +29,11 @@ import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGet
 import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
 import { getLogger } from '../../logging/logger';
 import { walletStore } from '../../stores/walletStore';
-import { fetchResolvedCredential, resolvedCredentialQueryOptions } from './credentialResolution';
+import {
+    fetchResolvedCredential,
+    tryFetchResolvedCredential,
+    resolvedCredentialQueryOptions,
+} from './credentialResolution';
 const log = getLogger('vc-queries');
 
 // Global set to track processed credentials across all hook instances
@@ -44,8 +48,13 @@ const useCredentialReader = () => {
 
 export const useGetResolvedCredential = (uri: string | undefined, enabled = true) => {
     const wallet = useCredentialReader();
+    const queryClient = useQueryClient();
     return useQuery({
-        ...resolvedCredentialQueryOptions(wallet, uri),
+        ...resolvedCredentialQueryOptions(
+            wallet,
+            uri,
+            queryClient.getDefaultOptions().queries?.retry
+        ),
         enabled: enabled && Boolean(wallet && uri),
     });
 };
@@ -63,7 +72,9 @@ export const useResolveManyCredentials = (uris: string[] | undefined, enabled = 
         queryKey: ['useResolveManyCredentials', uris, wallet?.id.did() ?? ''],
         queryFn: async () => {
             if (!wallet || !uris) return [];
-            return Promise.all(uris.map(uri => fetchResolvedCredential(queryClient, wallet, uri)));
+            return Promise.all(
+                uris.map(uri => tryFetchResolvedCredential(queryClient, wallet, uri))
+            );
         },
         staleTime: 1000 * 60 * 60 * 24 * 7,
         enabled: enabled && Boolean(wallet && uris?.length),
@@ -72,11 +83,16 @@ export const useResolveManyCredentials = (uris: string[] | undefined, enabled = 
 
 export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled = true) => {
     const wallet = useCredentialReader();
+    const queryClient = useQueryClient();
     return useQueries({
         queries:
             enabled && uris
                 ? uris.map(uri => ({
-                      ...resolvedCredentialQueryOptions(wallet, uri),
+                      ...resolvedCredentialQueryOptions(
+                          wallet,
+                          uri,
+                          queryClient.getDefaultOptions().queries?.retry
+                      ),
                       enabled: Boolean(wallet && uri),
                   }))
                 : [],
@@ -370,7 +386,11 @@ export const useGetCredentials = (
                         await Promise.all(
                             credentialsList.map(
                                 async record =>
-                                    await fetchResolvedCredential(queryClient, wallet, record.uri)
+                                    await tryFetchResolvedCredential(
+                                        queryClient,
+                                        wallet,
+                                        record.uri
+                                    )
                             )
                         )
                     ).filter(Boolean) as VC[];
@@ -385,18 +405,17 @@ export const useGetCredentials = (
 
                 const resolvedCredentials = (
                     await Promise.all(
-                        credentialsList?.map(async record => {
-                            const vc = (await fetchResolvedCredential(
+                        credentialsList?.map(async (record): Promise<VC_WITH_URI | undefined> => {
+                            const vc = await tryFetchResolvedCredential(
                                 queryClient,
                                 wallet,
                                 record.uri
-                            )) as VC;
-                            const uri = record?.uri;
-
-                            return { vc, uri };
+                            );
+                            if (!vc) return undefined;
+                            return { vc, uri: record.uri };
                         })
                     )
-                ).filter(Boolean);
+                ).filter((entry): entry is VC_WITH_URI => Boolean(entry));
 
                 return resolvedCredentials.sort((a, b) => {
                     const aDate = getIssuanceDate(a.vc) ?? '';
@@ -482,7 +501,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     await Promise.all(
                         credentialsList.map(
                             async record =>
-                                await fetchResolvedCredential(queryClient, wallet, record.uri)
+                                await tryFetchResolvedCredential(queryClient, wallet, record.uri)
                         )
                     )
                 ).filter(Boolean) as VC[];
@@ -590,7 +609,11 @@ export const useGetCredentialsPaginated = (
                         await Promise.all(
                             credentialsList?.records?.map(
                                 async record =>
-                                    await fetchResolvedCredential(queryClient, wallet, record.uri)
+                                    await tryFetchResolvedCredential(
+                                        queryClient,
+                                        wallet,
+                                        record.uri
+                                    )
                             )
                         )
                     ).filter(Boolean) as VC[];

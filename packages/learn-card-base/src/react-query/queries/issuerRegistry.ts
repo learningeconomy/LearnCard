@@ -93,7 +93,8 @@ const lookupIssuers = async (
                     if (!issuer) return {};
                     return { match: { issuer: issuer.metadata, registry: anchor!.metadata } };
                 }
-                return {};
+                // Runtime registry lists may introduce types this client cannot check yet.
+                return { unchecked: entry };
             } catch {
                 // Preserve the registry client's partial-failure behavior without caching errors.
                 return { unchecked: entry };

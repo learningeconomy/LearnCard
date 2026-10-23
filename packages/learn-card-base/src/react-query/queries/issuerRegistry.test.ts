@@ -118,3 +118,17 @@ it('retains an untrusted warning during a trusted-registry outage and rechecks a
     expect(await lookup('did:c')).toMatchObject({ source: 'untrusted', incomplete: false });
     expect(calls(legacy)).toBe(2);
 });
+
+it('marks unsupported registry types as unchecked instead of claiming a complete lookup', async () => {
+    const originalFetch = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (url: string) =>
+        url === list
+            ? Response.json([
+                  { type: 'future-registry', name: 'Future', url: 'https://example.com/future' },
+              ])
+            : originalFetch(url)
+    );
+    expect(await lookup('did:c')).toMatchObject({ source: 'untrusted', incomplete: true });
+    expect(await lookup('did:unknown')).toMatchObject({ source: 'unknown', incomplete: true });
+    expect(calls('https://example.com/future')).toBe(0);
+});

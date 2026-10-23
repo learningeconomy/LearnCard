@@ -155,3 +155,113 @@ it('keeps readable paginated credentials, category metadata and shared document 
     expect(read.mock.calls.filter(([uri]) => uri === 'uri')).toHaveLength(1);
     expect(vc).not.toHaveProperty('uri');
 });
+
+const listConsumers = [
+    ['category', () => useGetCredentials(), false],
+    ['category with URIs', () => useGetCredentials(undefined, undefined, true), true],
+    ['skills', () => useGetCredentialsForSkills(), false],
+    ['paginated', () => useGetCredentialsPaginated(), false],
+    ['paginated with URIs', () => useGetCredentialsPaginated(undefined, undefined, true), true],
+] as const;
+
+describe.each(['missing', 'unreadable'] as const)('%s credential isolation', failure => {
+    it.each(listConsumers)('keeps healthy records in %s lists', async (_name, useList, withUri) => {
+        const { get, read } = makeWallet();
+        const older = { ...vc, issuanceDate: '2026-09-29' } as VC;
+        const records = [
+            { uri: 'older', category: 'ID' },
+            { uri: 'bad', category: 'ID' },
+            { uri: 'newer', category: 'ID' },
+        ];
+        get.mockResolvedValue(records);
+        host.wallet!.index.LearnCloud.getPage = vi.fn().mockResolvedValue({
+            records,
+            hasMore: false,
+        });
+        read.mockImplementation(async uri => {
+            if (uri === 'bad') {
+                if (failure === 'unreadable') throw new Error('offline');
+                return undefined;
+            }
+            return uri === 'older' ? older : vc;
+        });
+        const { result } = renderHook(useList, { wrapper });
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        const entries = result.current.data!;
+        const resolved = withUri ? entries.map(entry => (entry as { vc: VC }).vc) : entries;
+        const copies = _name === 'skills' ? 9 : 1;
+        expect(resolved).toEqual([...Array(copies).fill(vc), ...Array(copies).fill(older)]);
+        if (withUri) {
+            expect(entries.map(entry => (entry as { uri: string }).uri)).toEqual([
+                'newer',
+                'older',
+            ]);
+        }
+        expect(vc).not.toHaveProperty('uri');
+    });
+
+    it('preserves URI positions in many-credential results', async () => {
+        const { read } = makeWallet();
+        read.mockImplementation(async uri => {
+            if (uri === 'bad') {
+                if (failure === 'unreadable') throw new Error('offline');
+                return undefined;
+            }
+            return vc;
+        });
+        const { result } = renderHook(() => useResolveManyCredentials(['uri', 'bad', 'uri']), {
+            wrapper,
+        });
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(result.current.data).toEqual([vc, undefined, vc]);
+        expect(read.mock.calls.filter(([uri]) => uri === 'uri')).toHaveLength(1);
+    });
+});
+
+it('skips missing-data retries in mounted single and plural hooks with the app retry default', async () => {
+    client.setDefaultOptions({ queries: { retry: 3, retryDelay: 0 } });
+    const { read } = makeWallet();
+    read.mockResolvedValue(undefined);
+    const { result } = renderHook(
+        () => ({
+            single: useGetResolvedCredential('bad'),
+            plural: useGetResolvedCredentials(['bad']),
+        }),
+        { wrapper }
+    );
+    await waitFor(() =>
+        expect(result.current.single.isError && result.current.plural[0].isError).toBe(true)
+    );
+    expect(read).toHaveBeenCalledTimes(1);
+    read.mockResolvedValue(vc);
+    await result.current.single.refetch();
+    await waitFor(() => expect(result.current.single.data).toEqual(vc));
+    expect(result.current.plural[0].data).toEqual(vc);
+    expect(read).toHaveBeenCalledTimes(2);
+});
+
+it('resumes same-account cached reads after reader re-initialization without re-fetching', async () => {
+    const { read } = makeWallet();
+    const readyWallet = host.wallet;
+    const { result, rerender } = renderHook(
+        () => ({
+            single: useGetResolvedCredential('uri'),
+            many: useResolveManyCredentials(['uri']),
+        }),
+        { wrapper }
+    );
+    await waitFor(() =>
+        expect(result.current.single.isSuccess && result.current.many.isSuccess).toBe(true)
+    );
+    host.wallet = null;
+    rerender();
+    expect(result.current.single.fetchStatus).toBe('idle');
+    expect(result.current.single.data).toBeUndefined();
+    expect(result.current.many.data).toBeUndefined();
+    host.wallet = readyWallet;
+    rerender();
+    await waitFor(() => expect(result.current.single.data).toEqual(vc));
+    expect(result.current.many.data).toEqual([vc]);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(host.init).not.toHaveBeenCalled();
+});
