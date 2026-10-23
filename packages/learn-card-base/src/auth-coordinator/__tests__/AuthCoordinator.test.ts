@@ -326,6 +326,7 @@ describe('AuthCoordinator', () => {
                     hasPendingIdentityRecovery: vi.fn().mockReturnValue(false),
                     completeIdentityRecovery,
                 },
+                config: { getRecoveryLanguage: () => 'es' },
             });
             await coordinator.initialize();
             vi.mocked(keyDerivation.hasPendingIdentityRecovery!).mockReturnValue(true);
@@ -336,6 +337,11 @@ describe('AuthCoordinator', () => {
                 clientEphemeralPrivateKey: 'ephemeral',
             });
             expect(completeIdentityRecovery).toHaveBeenCalledTimes(1);
+            expect(completeIdentityRecovery).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    options: { recoveryEmail: mockUser.email, recoveryLanguage: 'es' },
+                })
+            );
             expect(keyDerivation.executeRecovery).not.toHaveBeenCalled();
             expect(coordinator.getState().status).toBe('ready');
         });
@@ -584,6 +590,7 @@ describe('AuthCoordinator', () => {
                 // PIN release, which has no persisted hold of its own to carry it.
                 input: { ...input, expectedDid: 'did:key:z123' },
                 didFromPrivateKey: expect.any(Function),
+                options: { recoveryEmail: mockUser.email, recoveryLanguage: undefined },
             });
         });
         it('exposes escrowPin on the ready state via refreshEscrow', async () => {
@@ -643,6 +650,71 @@ describe('AuthCoordinator', () => {
         });
 
         describe('staged rollout gate (isEscrowEnrollmentAllowed)', () => {
+            it.each(['initialize', 'escrow', 'escrow-pin'] as const)(
+                'repairs a recovered account outside rollout via %s, then consumes the exemption',
+                async path => {
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                    const getEscrowEnrollmentState = vi
+                        .fn()
+                        .mockResolvedValue({ state: 'not-enrolled' });
+                    const ensureEscrowEnrollment = vi.fn().mockImplementation(async () => {
+                        getEscrowEnrollmentState.mockResolvedValue({
+                            state: 'enrolled',
+                            escrowPin: { enabled: false },
+                        });
+                        return { enrolled: true, changed: true };
+                    });
+                    const { coordinator, keyDerivation, stateChanges } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            hasPendingIdentityRecovery: vi
+                                .fn()
+                                .mockReturnValue(path === 'initialize'),
+                            completeIdentityRecovery: vi.fn().mockResolvedValue({
+                                privateKey: 'recovered-pk',
+                                did: 'did:key:z123',
+                            }),
+                            ensureEscrowEnrollment,
+                            getEscrowEnrollmentState,
+                        },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+                    if (path === 'initialize') coordinator.finishIdentityRecovery();
+                    else {
+                        vi.mocked(keyDerivation.hasPendingIdentityRecovery!).mockReturnValue(true);
+                        await coordinator.recover(
+                            path === 'escrow-pin'
+                                ? { method: 'escrow-pin', pin: '135790' }
+                                : {
+                                      method: 'escrow',
+                                      holdId: 'hold',
+                                      resumeToken: 'resume',
+                                      clientEphemeralPrivateKey: 'key',
+                                  }
+                        );
+                    }
+                    expect(stateChanges).toContainEqual(
+                        expect.objectContaining({ status: 'ready', did: 'did:key:z123' })
+                    );
+                    await vi.waitFor(() =>
+                        expect(coordinator.getState()).toMatchObject({
+                            escrowEnrollment: 'enrolled',
+                        })
+                    );
+                    expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+                    expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
+
+                    getEscrowEnrollmentState.mockResolvedValue({ state: 'not-enrolled' });
+                    vi.mocked(keyDerivation.hasPendingIdentityRecovery!).mockReturnValue(false);
+                    vi.mocked(keyDerivation.hasLocalKey).mockResolvedValue(true);
+                    await coordinator.initialize();
+                    await vi.waitFor(() =>
+                        expect(isEscrowEnrollmentAllowed).toHaveBeenCalledWith('did:key:z123')
+                    );
+                    expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+                }
+            );
             it('calls ensureEscrowEnrollment with the DID when the gate allows it (no status prefetch available)', async () => {
                 const ensureEscrowEnrollment = vi
                     .fn()
@@ -2103,6 +2175,7 @@ describe('AuthCoordinator', () => {
                 providerType: 'firebase',
                 input,
                 didFromPrivateKey: expect.any(Function),
+                options: { recoveryEmail: mockUser.email, recoveryLanguage: undefined },
             });
         });
 
@@ -2742,6 +2815,7 @@ describe('AuthCoordinator', () => {
                     hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
                     completeIdentityRecovery,
                 },
+                config: { getRecoveryLanguage: () => 'fr' },
             });
 
             const result = await coordinator.initialize();
@@ -2751,6 +2825,7 @@ describe('AuthCoordinator', () => {
                 token: 'mock-token',
                 providerType: 'firebase',
                 signDidAuthVp: undefined,
+                options: { recoveryEmail: mockUser.email, recoveryLanguage: 'fr' },
             });
             expect(authProvider.getCurrentUser).toHaveBeenCalled();
             expect(result).toMatchObject({

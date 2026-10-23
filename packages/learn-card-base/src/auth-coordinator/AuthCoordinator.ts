@@ -104,6 +104,7 @@ export class AuthCoordinator {
     private recoveryGeneration = 0;
     private escrowRecoveryInFlight = false;
     private escrowStatusGeneration = 0;
+    private recoveredEscrowAccount?: { did: string; userId: string };
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
@@ -149,6 +150,7 @@ export class AuthCoordinator {
     }
 
     private setState(newState: UnifiedAuthState): void {
+        if (newState.status === 'idle') this.recoveredEscrowAccount = undefined;
         if (newState.status !== 'ready') this.escrowStatusGeneration++;
         const enteringReady =
             newState.status === 'ready' &&
@@ -325,7 +327,14 @@ export class AuthCoordinator {
             let publishedEnrollment = false;
             let enrollmentVerificationFailed = false;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
-                const gate = await this.resolveEscrowEnrollmentGate(ready.did, credentials);
+                // Recovery rotates away the old enrollment; this is maintenance, not rollout.
+                const recovered = this.recoveredEscrowAccount;
+                const repairingRecovery =
+                    recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
+                this.recoveredEscrowAccount = undefined;
+                const gate = repairingRecovery
+                    ? { allowed: true }
+                    : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
                 if (gate.allowed) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
@@ -641,9 +650,9 @@ export class AuthCoordinator {
      * enclave fail closed for nitro/authority-mode enroll/replace rather
      * than silently default a jargon-adjacent placeholder.
      */
-    private recoveryContactOptions(
-        ready: Extract<UnifiedAuthState, { status: 'ready' }>
-    ): { recoveryEmail?: string; recoveryLanguage?: string } | undefined {
+    private recoveryContactOptions(ready: {
+        authUser?: AuthUser;
+    }): { recoveryEmail?: string; recoveryLanguage?: string } | undefined {
         const recoveryEmail = ready.authUser?.email;
         const recoveryLanguage = this.config.getRecoveryLanguage?.();
         if (!recoveryEmail && !recoveryLanguage) return undefined;
@@ -824,7 +833,9 @@ export class AuthCoordinator {
                     token,
                     providerType,
                     signDidAuthVp: this.config.signDidAuthVp,
+                    options: this.recoveryContactOptions({ authUser }),
                 });
+                this.recoveredEscrowAccount = { did: result.did, userId: authUser.id };
 
                 // Rebinding can require fresh recovery enrollment. Honor older servers that
                 // report active, but do not skip enrollment if the status refresh fails.
@@ -1293,6 +1304,7 @@ export class AuthCoordinator {
                     : input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
                 signDidAuthVp: this.config.signDidAuthVp,
+                options: this.recoveryContactOptions({ authUser }),
             };
             const { privateKey, did } =
                 isEscrow &&
@@ -1305,6 +1317,7 @@ export class AuthCoordinator {
                 throw new Error('This recovery request was cancelled.');
             }
 
+            if (isEscrow) this.recoveredEscrowAccount = { did, userId: authUser.id };
             this.setState({
                 status: 'ready',
                 authUser,
