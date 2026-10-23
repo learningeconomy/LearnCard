@@ -135,6 +135,11 @@ Apply order for the **existing staging account**, from the repository root:
   be denied and trigger `EscrowCloudTrailTamper`; immediately verify logging is
   still on. Never run this drill as the excepted MFA admin. Also verify a normal
   successful enclave transaction is logged but does not produce a nonwriter alert.
+  **2026-10-23 finding:** this drill previously produced zero invocations — an
+  SCP-denied `StopLogging` returns `requestParameters: null` in CloudTrail, and
+  `trail_tamper`'s pattern matched only on named `requestParameters`. Fixed in
+  `trail-monitor.tf` to also match denied calls via `errorCode`; **this drill
+  must be re-run after that fix is applied** to confirm the page actually fires.
 
 The trail is multi-region; EventBridge rules are regional. These new rules cover
 the home-region trail/log bucket and authority table. Existing forwarding covers
