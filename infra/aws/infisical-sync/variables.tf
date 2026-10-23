@@ -17,6 +17,18 @@ variable "aws_region" {
   }
 }
 
+variable "secret_regions" {
+  description = "Regions whose runtime-secret bundles Infisical may manage (LearnCard us-east-1, ScoutPass eu-west-1)"
+  type        = list(string)
+  default     = ["us-east-1", "eu-west-1"]
+  validation {
+    condition = length(var.secret_regions) > 0 && alltrue([
+      for region in var.secret_regions : can(regex("^[a-z]{2}(-[a-z]+)+-[0-9]+$", region))
+    ])
+    error_message = "Provide one or more AWS region names."
+  }
+}
+
 variable "expected_account_id" {
   description = "Account ID from the selected environment; rejects wrong-account credentials"
   type        = string
