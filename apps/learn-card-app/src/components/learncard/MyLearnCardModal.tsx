@@ -11,7 +11,7 @@ import CaretListItem from './CaretListItem';
 import LearnCardIdView from './LearnCardIdView';
 import LearnCardFooter from './LearnCardFooter';
 import EmailIcon from 'learn-card-base/svgs/EmailIcon';
-import BlocksIcon from 'learn-card-base/svgs/Blocks';
+import CodeIcon from 'learn-card-base/svgs/CodeIcon';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import SwitchAccountButton from './SwitchAccountButton';
 import IdViewDivetFrame from '../svgs/IdViewDivetFrame';
@@ -40,6 +40,8 @@ import {
     useGetCurrentLCNUser,
     useCurrentUser,
     useWallet,
+    useToast,
+    ToastTypeEnum,
     getAuthConfig,
     isEmailRelayConfigured,
 } from 'learn-card-base';
@@ -88,12 +90,14 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { initWallet } = useWallet();
     const history = useHistory();
     const currentUser = useCurrentUser();
-    const { currentLCNUser, refetch } = useGetCurrentLCNUser();
+    const { currentLCNUser, currentLCNUserLoading, refetch } = useGetCurrentLCNUser();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { gate } = useLCNGatedAction();
 
     const { newModal, newModalWithToken, closeModal, forceCloseModalByToken } = useModal();
     const { handleLogout, isLoggingOut } = useLogout();
+    const { presentToast } = useToast();
+    const [isJoiningDeveloperProgram, setIsJoiningDeveloperProgram] = useState(false);
 
     const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
 
@@ -177,6 +181,39 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         refetch();
     };
 
+    const handleJoinDeveloperProgram = async () => {
+        if (!currentLCNUser || isJoiningDeveloperProgram) return;
+
+        setIsJoiningDeveloperProgram(true);
+
+        try {
+            const wallet = await initWallet();
+            const updated = await wallet.invoke.updateProfile({
+                role: LearnCardRolesEnum.developer,
+            });
+
+            if (!updated) {
+                throw new Error('Developer role update returned false');
+            }
+
+            const { data: refreshedProfile } = await refetch();
+            if (refreshedProfile?.role !== LearnCardRolesEnum.developer) {
+                throw new Error('Developer role was not confirmed after profile refresh');
+            }
+
+            closeModal();
+            history.push('/app-store/developer');
+        } catch (error) {
+            log.error('Unable to join developer program', error);
+            presentToast(m['profile.menu.developerProgramError'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setIsJoiningDeveloperProgram(false);
+        }
+    };
+
     const rows: {
         id?: string;
         Icon: React.FC;
@@ -185,6 +222,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         caretText?: string;
         onClick?: () => void;
         hide?: boolean;
+        disabled?: boolean;
+        ariaBusy?: boolean;
     }[] = [];
 
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
@@ -231,12 +270,23 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         if (currentLCNUser?.role === LearnCardRolesEnum.developer) {
             rows.push({
                 title: m['launchpad.becomeAnApp.developerProgram'](),
-                Icon: BlocksIcon,
+                Icon: CodeIcon,
                 caretText: '',
                 onClick: () => {
                     closeModal();
                     history.push('/app-store/developer');
                 },
+            });
+        } else if (!currentLCNUserLoading && currentLCNUser) {
+            rows.push({
+                title: isJoiningDeveloperProgram
+                    ? m['profile.menu.joiningDeveloperProgram']()
+                    : m['profile.menu.joinDeveloperProgram'](),
+                Icon: CodeIcon,
+                caretText: '',
+                onClick: handleJoinDeveloperProgram,
+                disabled: isJoiningDeveloperProgram,
+                ariaBusy: isJoiningDeveloperProgram,
             });
         }
     }
@@ -855,7 +905,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                         <div>
                             {rows.map((r, index) => {
-                                const { title, Icon, iconVersion, caretText, onClick, hide } = r;
+                                const {
+                                    title,
+                                    Icon,
+                                    iconVersion,
+                                    caretText,
+                                    onClick,
+                                    hide,
+                                    disabled,
+                                    ariaBusy,
+                                } = r;
 
                                 if (hide) return undefined;
 
@@ -872,6 +931,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                         icon={icon}
                                         caretText={caretText}
                                         onClick={onClick}
+                                        disabled={disabled}
+                                        ariaBusy={ariaBusy}
                                     />
                                 );
                             })}
