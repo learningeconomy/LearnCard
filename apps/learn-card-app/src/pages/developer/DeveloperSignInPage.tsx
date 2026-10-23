@@ -224,15 +224,20 @@ const DeveloperSignInPage: React.FC = () => {
         ? m['login.developerSignIn.switching']()
         : m['login.developerSignIn.signingIn']();
 
+    // Rendered outside IonContent, so this page owns its main landmark.
     return (
-        <div
+        <main
             className="min-h-screen w-full flex items-center justify-center p-4"
             style={{ backgroundColor: loginBgColor }}
         >
             <div className="w-full max-w-[480px] bg-white rounded-[20px] shadow-2xl font-poppins p-8 animate-fade-in-up">
                 <div className="flex flex-col items-center text-center mb-6">
                     <div className="w-12 h-12 bg-grayscale-100 rounded-full flex items-center justify-center mb-4">
-                        <IonIcon icon={keyOutline} className="text-grayscale-900 text-2xl" />
+                        <IonIcon
+                            icon={keyOutline}
+                            className="text-grayscale-900 text-2xl"
+                            aria-hidden="true"
+                        />
                     </div>
                     <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
                         {m['login.developerSignIn.title']()}
@@ -248,6 +253,7 @@ const DeveloperSignInPage: React.FC = () => {
                             <IonIcon
                                 icon={personCircleOutline}
                                 className="text-amber-500 text-lg mt-0.5 shrink-0"
+                                aria-hidden="true"
                             />
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-amber-900 truncate">
@@ -309,7 +315,11 @@ const DeveloperSignInPage: React.FC = () => {
                         </>
                     ) : (
                         <>
-                            <IonIcon icon={clipboardOutline} className="text-lg" />
+                            <IonIcon
+                                icon={clipboardOutline}
+                                className="text-lg"
+                                aria-hidden="true"
+                            />
                             {m['login.developerSignIn.pasteAction']()}
                         </>
                     )}
@@ -317,18 +327,22 @@ const DeveloperSignInPage: React.FC = () => {
 
                 <div className="flex items-center gap-4 mb-6">
                     <div className="flex-1 h-px bg-grayscale-200" />
-                    <span className="text-xs text-grayscale-400 uppercase tracking-wider">
+                    <span className="text-xs text-grayscale-600 uppercase tracking-wider">
                         {m['login.developerSignIn.or']()}
                     </span>
                     <div className="flex-1 h-px bg-grayscale-200" />
                 </div>
 
                 <div className="mb-6">
-                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    <label
+                        htmlFor="developer-seed"
+                        className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                    >
                         {m['login.developerSignIn.seedLabel']()}
                     </label>
                     <div className="relative">
                         <input
+                            id="developer-seed"
                             ref={inputRef}
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="off"
@@ -342,11 +356,17 @@ const DeveloperSignInPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-600 p-1"
+                            aria-label={
+                                showPassword
+                                    ? m['login.developerSignIn.hideSeed']()
+                                    : m['login.developerSignIn.showSeed']()
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-600 hover:text-grayscale-900 p-1"
                         >
                             <IonIcon
                                 icon={showPassword ? eyeOffOutline : eyeOutline}
                                 className="text-xl"
+                                aria-hidden="true"
                             />
                         </button>
                     </div>
@@ -354,7 +374,7 @@ const DeveloperSignInPage: React.FC = () => {
                         <div className="text-xs text-grayscale-400">
                             {hint && <span className="text-grayscale-600">{hint}</span>}
                         </div>
-                        <div className="text-xs text-grayscale-400 font-mono">
+                        <div className="text-xs text-grayscale-600 font-mono">
                             {seed.length} / 64
                         </div>
                     </div>
@@ -365,6 +385,7 @@ const DeveloperSignInPage: React.FC = () => {
                         <IonIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-lg mt-0.5 shrink-0"
+                            aria-hidden="true"
                         />
                         <span className="text-sm text-red-700 leading-relaxed">{error}</span>
                     </div>
@@ -386,7 +407,7 @@ const DeveloperSignInPage: React.FC = () => {
                 </button>
 
                 <div className="text-center space-y-v3-2">
-                    <p className="text-xs text-grayscale-500">
+                    <p className="text-xs text-grayscale-600">
                         {m['login.developerSignIn.notDeveloper']()}
                         <button
                             onClick={() => history.push('/login')}
@@ -395,12 +416,12 @@ const DeveloperSignInPage: React.FC = () => {
                             {m['login.developerSignIn.signInNormally']()}
                         </button>
                     </p>
-                    <p className="text-xs text-grayscale-500">
+                    <p className="text-xs text-grayscale-600">
                         {m['login.developerSignIn.securityWarning']()}
                     </p>
                 </div>
             </div>
-        </div>
+        </main>
     );
 };
 

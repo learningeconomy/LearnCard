@@ -6,8 +6,9 @@ import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelp
 import { getLogger } from '../../logging/logger';
 const log = getLogger('firebase');
 
-export const useSendLoginVerificationCode = () => {
+export const useSendLoginVerificationCode = (opts?: { showAlert?: boolean }) => {
     const { initWallet } = useWallet();
+    const showAlert = opts?.showAlert ?? true;
 
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
@@ -29,6 +30,7 @@ export const useSendLoginVerificationCode = () => {
         },
         onSuccess: data => {
             if (!data?.success) {
+                if (!showAlert) return;
                 presentAlert({
                     header: 'Error',
                     message: data?.message || 'Failed to send login verification code',
@@ -141,9 +143,10 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
     );
 };
 
-export const useVerifyLoginVerificationCode = () => {
+export const useVerifyLoginVerificationCode = (opts?: { showAlert?: boolean }) => {
     const { initWallet } = useWallet();
     const [presentAlert] = useIonAlert();
+    const showAlert = opts?.showAlert ?? true;
 
     return useMutation<
         { success: boolean; token?: string; error?: string },
@@ -165,7 +168,7 @@ export const useVerifyLoginVerificationCode = () => {
                 log.error(data);
                 // Rate limit errors are shown inline in EmailForm, not as popup
                 const isRateLimitError = data?.error?.includes('Too many attempts');
-                if (!isRateLimitError) {
+                if (showAlert && !isRateLimitError) {
                     presentAlert({
                         header: 'Error',
                         message: data?.error || 'Failed to verify login verification code',

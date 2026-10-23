@@ -14,7 +14,7 @@ assert.equal(result.status, 0, result.stderr);
 
 const workflow = JSON.parse(result.stdout);
 const steps = workflow.jobs.verification.steps;
-const catalogIndex = steps.findIndex(step => step.name === 'Run fresh serial catalog');
+const catalogIndex = steps.findIndex(step => step.id === 'catalog');
 const campaignsIndex = steps.findIndex(
     step => step.name === 'Verify campaign SDK authorization boundaries'
 );
@@ -27,7 +27,9 @@ assert.ok(teardownIndex > campaignsIndex, 'owned resources must be torn down aft
 assert.ok(summaryIndex > teardownIndex, 'sanitized summary must follow teardown');
 
 const catalog = steps[catalogIndex];
-assert.match(catalog.run, /verify_args=\(run all --fresh --keep --json --dir "\$STACK_DIR"\)/);
+assert.match(catalog.run, /verify_args=\(up --json --dir "\$STACK_DIR"\)/);
+assert.match(catalog.run, /lc verify script .*verify-navigation\.mjs.*--dir "\$STACK_DIR"/);
+assert.match(catalog.run, /lc verify run all --json --dir "\$STACK_DIR"/);
 
 const campaigns = steps[campaignsIndex];
 assert.equal(campaigns.id, 'campaigns');

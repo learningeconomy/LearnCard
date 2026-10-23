@@ -1,4 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
+import { InAppMessagesAnalyticsHost } from './analytics/InAppMessagesAnalyticsHost';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
@@ -19,8 +21,6 @@ import {
     QRCodeScannerOverlay,
     ModalsProvider,
     useSQLiteInitWeb,
-    getLogger,
-    InAppMessageHost,
     ConnectionPromptCoordinator,
 } from 'learn-card-base';
 import * as m from './paraglide/messages.js';
@@ -58,13 +58,18 @@ installPathwaysDevGlobals();
 import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
-import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import { FeedbackProvider } from './feedback/reporting';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+import type { LearnCardAppEnvironment } from './config/buildEnvironment';
 import { persister } from './helpers/queryPersistence';
 
-const log = getLogger('cache');
+declare const __APP_BUILD_ENV__: LearnCardAppEnvironment;
+
+const DevDebugPanel =
+    __APP_BUILD_ENV__.DEV || __APP_BUILD_ENV__.VITE_ENABLE_AUTH_DEBUG_WIDGET
+        ? React.lazy(() => import('./components/debug/DevDebugPanel'))
+        : null;
 
 const history = createBrowserHistory();
 
@@ -237,7 +242,9 @@ const FullApp: React.FC = () => {
                                         <FeedbackProvider>
                                             <AppRouter />
                                         </FeedbackProvider>
-                                        <InAppMessageHost />
+                                        <SharedI18nProvider>
+                                            <InAppMessagesAnalyticsHost />
+                                        </SharedI18nProvider>
                                         <QRCodeScannerListener />
 
                                         {showScannerOverlay && (
@@ -263,7 +270,11 @@ const FullApp: React.FC = () => {
                                             />
                                         )}
 
-                                        <DevDebugPanel />
+                                        {DevDebugPanel && (
+                                            <Suspense fallback={null}>
+                                                <DevDebugPanel />
+                                            </Suspense>
+                                        )}
                                     </IonApp>
                                 </ModalsProvider>
                             </ExternalAuthServiceProvider>

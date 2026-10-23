@@ -32,7 +32,7 @@ const MoreAppTile: React.FC<MoreAppTileProps> = ({ listing, isInstalled, onInsta
         <AppGridTile
             title={listing.display_name}
             icon={listing.icon_url}
-            onClick={isInstalled ? handleLaunch : handleOpenDetail}
+            onClick={isInstalled ? () => handleLaunch() : handleOpenDetail}
         />
     );
 };

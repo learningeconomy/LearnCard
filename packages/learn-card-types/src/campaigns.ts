@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { inAppMessageValidator } from './inAppMessages';
+import { inAppMessageAuthoringValidator, inAppMessageValidator } from './inAppMessages';
 
 export const CampaignIdValidator = z.string().regex(/^[a-z0-9-]{3,64}$/);
 export const CampaignStatusValidator = z.enum(['draft', 'live', 'paused', 'archived']);
@@ -67,11 +67,9 @@ export const CampaignValidator = campaignDefinition
         }
     });
 
-const authoredMessage = inAppMessageValidator.extend({ id: z.string().optional() });
-
 export const CreateCampaignInputValidator = campaignDefinition
     .extend({
-        message: authoredMessage,
+        message: inAppMessageAuthoringValidator,
     })
     .superRefine(validDefinition);
 
@@ -83,7 +81,7 @@ export const CampaignUpdatesValidator = campaignDefinition
         status: CampaignStatusValidator.optional(),
         excludeMinors: z.boolean().optional(),
         selfEnroll: z.boolean().optional(),
-        message: authoredMessage.optional(),
+        message: inAppMessageAuthoringValidator.optional(),
         notification: notification.nullable().optional(),
         startsAt: timestamp.nullable().optional(),
         endsAt: timestamp.nullable().optional(),
