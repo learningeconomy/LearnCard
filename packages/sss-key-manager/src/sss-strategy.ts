@@ -1473,6 +1473,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             method.confirmationStatus === 'confirmed'))
             );
         let verifiedKey: VerifiedEnclaveIdentity | undefined;
+        // Locked, stale or unknown PIN state never satisfies a clear request.
+        let hasPin = status.escrowPin?.state !== 'none';
         if (config.escrow.attestation.mode === 'nitro') {
             if (!status.primaryDid || !params.signDidAuthVp)
                 throw new Error('Owner proof signing is required for escrow enrollment.');
@@ -1498,17 +1500,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 current.shareVersion === status.shareVersion &&
                 current.envelope?.keyId === verifiedKey.keyId;
             if (currentlyEnrolled) verifiedEscrowEnvelope = current.envelope ?? undefined;
-            // A verified, current, PIN-free enrollment already satisfies a clear request
-            // (e.g. post-recovery repair after direct enrollment succeeded).
-            if (
-                currentlyEnrolled &&
-                !forceRotate &&
-                pin === undefined &&
-                !current.hasPin &&
-                !status.escrowStale
-            )
-                clearPinForEnrollment = false;
+            hasPin = current.hasPin;
         }
+        // A current, PIN-free enrollment already satisfies a clear request
+        // (e.g. post-recovery repair after direct enrollment succeeded).
+        if (
+            currentlyEnrolled &&
+            !forceRotate &&
+            pin === undefined &&
+            !hasPin &&
+            !status.escrowStale
+        )
+            clearPinForEnrollment = false;
         // A confirmed enrollment whose sealed blob no longer matches the active
         // enclave (P6 mode migration/rollback, or a rotated enclave key) still
         // needs the same rotation a missing enrollment would get — but only one

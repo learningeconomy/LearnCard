@@ -223,6 +223,7 @@ describe('escrow strategy', () => {
                     recoveryMethods: methods,
                     escrowOptedOut: optedOut,
                     escrowPin: {
+                        state: !pinSalt ? 'none' : attemptsRemaining > 0 ? 'enabled' : 'locked',
                         enabled: !!pinSalt && attemptsRemaining > 0,
                         attemptsRemaining,
                         ...(pinSalt ? { salt: pinSalt } : {}),
@@ -737,6 +738,19 @@ describe('escrow strategy', () => {
         expect(JSON.parse(String(enrollment?.init?.body))).toMatchObject({ clearPin: true });
         expect(version).toBe(4);
         expect(pinSalt).toBeUndefined();
+        expect(blob?.pinVerifier).toBeUndefined();
+    });
+
+    it('treats a current PIN-free enrollment as satisfying a clear request', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        expect(version).toBe(2);
+        await expect(
+            strategy.ensureEscrowEnrollment!({ ...params, options: { clearPin: true } })
+        ).resolves.toEqual({ enrolled: true, changed: false });
+        expect(version).toBe(2);
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        await strategy.ensureEscrowEnrollment!({ ...params, options: { clearPin: true } });
+        expect(version).toBe(4);
         expect(blob?.pinVerifier).toBeUndefined();
     });
 
