@@ -4,6 +4,7 @@ import { readInstallIntentById } from '@accesslayer/install-intent/intent-read';
 import { readListingVersionById } from '@accesslayer/listing-version/read';
 import { assertSignedListingVersionOrThrow } from '@helpers/manifest-signature.helpers';
 import { getIntentTargetId, getTargetDeclarationId } from '@helpers/install-intent.helpers';
+import { resolveRecordIssuer } from '@helpers/platform-issuance.helpers';
 import type { BindingRecordType } from 'types/binding';
 
 /**
@@ -80,6 +81,14 @@ export const resolveRecordLaneGaps = async (binding: BindingRecordType): Promise
         !PLATFORM_SUPPORTED_RECORD_CLASSES.includes(metadata.recordClass)
     ) {
         gaps.push('The consumer must be Platform Issuance and support the declared record class.');
+    }
+
+    // Platform Issuance needs a pinned issuer identity and template (ADR-001 identity Group).
+    if (!metadata.issuance) {
+        gaps.push('Platform Issuance requires a pinned issuer Group and credential template.');
+    } else {
+        const issuer = await resolveRecordIssuer(binding.ecosystemId, metadata.issuance);
+        if (typeof issuer === 'string') gaps.push(issuer);
     }
 
     const providerClasses = await readProviderRecordClasses(binding);

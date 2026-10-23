@@ -13,11 +13,18 @@ import { ServiceAccount } from '@models';
 import { reconcileInstallIntent } from '@reconciler';
 import { exchangeServiceAccountCredential } from '@accesslayer/service-account/auth';
 import { purgeExpiredProvisionedRecords } from '@helpers/record-release.helpers';
+import { retryRecordIssuance } from '@helpers/platform-issuance.helpers';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { upsertSigningAuthority } from '@accesslayer/signing-authority/create';
+import { createUseSigningAuthorityRelationship } from '@accesslayer/signing-authority/relationships/create';
 import { setupServiceAccount, partnerClient } from './helpers/service-account.helpers';
 import { makeListingInput } from './helpers/app-store.helpers';
 import { createSignedListingVersionForKind } from './helpers/manifest.helpers';
 
+type Issuer = { groupId: string; profileId: string };
+
 const metadataFor = (
+    issuer: Issuer,
     overrides: Partial<RecordProvisioningBindingMetadata> = {}
 ): RecordProvisioningBindingMetadata => ({
     capability: 'record-provisioning',
@@ -34,8 +41,50 @@ const metadataFor = (
         maxRetries: 2,
         retentionDays: 30,
     },
+    issuance: {
+        issuerGroupId: issuer.groupId,
+        issuerIdentityProfileId: issuer.profileId,
+        template: {
+            kind: 'obv3-achievement',
+            achievementType: 'Course',
+            criteria: 'Completed every module of the course.',
+            fieldMap: {
+                achievementId: 'courseId',
+                name: 'courseTitle',
+                completedAt: 'completedAt',
+            },
+        },
+    },
     ...overrides,
 });
+
+/** ADR-001 identity-bearing Group owned by the ecosystem, with a primary signing authority. */
+const createIssuerGroup = async (
+    ecosystemId: string,
+    options: { issuanceEnabled?: boolean; signingAuthority?: boolean } = {}
+): Promise<Issuer> => {
+    const groupId = `group_${randomUUID()}`;
+    const profileId = `issuer-${randomUUID()}`;
+    await createProfile({
+        profileId,
+        did: `did:web:localhost%3A3000:users:${profileId}`,
+        displayName: 'District Issuer',
+    } as Parameters<typeof createProfile>[0]);
+    await neogma.queryRunner.run(
+        `MATCH (p:Profile {profileId: $profileId})
+         CREATE (g:Group {id: $groupId, name: 'Springfield District', type: 'INSTITUTION',
+             ownerEcosystemId: $ecosystemId, identityProfileId: $profileId,
+             identityIssuanceEnabled: $enabled, members: []})-[:HAS_IDENTITY]->(p)`,
+        { profileId, groupId, ecosystemId, enabled: options.issuanceEnabled ?? true }
+    );
+    if (options.signingAuthority ?? true) {
+        const profile = await getProfileByProfileId(profileId);
+        if (!profile) throw new Error('Missing issuer profile');
+        const sa = await upsertSigningAuthority('http://localhost:5000/api');
+        await createUseSigningAuthorityRelationship(profile, sa, 'issuer-sa', profile.did, true);
+    }
+    return { groupId, profileId };
+};
 
 const record = (completionId = `completion_${randomUUID()}`): Record<string, string> => ({
     completionId,
@@ -51,14 +100,15 @@ type OwnerClient = Awaited<ReturnType<typeof setupServiceAccount>>['client'];
 const approveRecordBinding = async (
     client: OwnerClient,
     ecosystemId: string,
-    installId: string
+    installId: string,
+    issuer: Issuer
 ) => {
     const proposed = await client.installIntent.proposeBinding({
         ecosystemId,
         capability: 'record-provisioning',
         provider: { resourceType: 'INTEGRATION_INSTALL', resourceId: installId, ecosystemId },
         consumer: { resourceType: 'ECOSYSTEM', resourceId: ecosystemId, ecosystemId },
-        capabilityMetadata: metadataFor(),
+        capabilityMetadata: metadataFor(issuer),
     });
     const preflight = await client.installIntent.prepareBindingConsentPreflight({
         bindingId: proposed.bindingId,
@@ -190,7 +240,9 @@ const setup = async (options: { learnerConsent?: LearnerConsent } = {}) => {
         profileId
     );
 
-    const binding = await approveRecordBinding(client, installEco.id, account.installId);
+    const issuer = await createIssuerGroup(installEco.id);
+    const issuerGroupId = issuer.groupId;
+    const binding = await approveRecordBinding(client, installEco.id, account.installId, issuer);
 
     // The learner: a member of the district, consenting (or not) to the governed contract.
     const learnerId = `learner-${randomUUID()}`;
@@ -229,6 +281,8 @@ const setup = async (options: { learnerConsent?: LearnerConsent } = {}) => {
         binding,
         learnerId,
         installId: account.installId,
+        issuer,
+        issuerGroupId,
         intentId: planned.intentId,
         ecosystem: installEco,
         partner: await partnerClient(token),
@@ -254,7 +308,7 @@ const storedRecords = async (subjectProfileId: string): Promise<number> => {
 
 describe('Record provisioning release (ADR-012 Transactional)', () => {
     it('approves a declared academic record lane and releases with live learner consent', async () => {
-        const { partner, learnerId, binding } = await setup();
+        const { partner, learnerId, binding, issuerGroupId } = await setup();
         expect(binding.status).toBe('ACTIVE');
         const fields = record();
 
@@ -264,11 +318,23 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
             fields,
         });
         expect(first.status).toBe('ACCEPTED');
+        expect(first.issuance?.status).toBe('ISSUED');
+        const sent = await neogma.queryRunner.run(
+            `MATCH (r:ProvisionedRecord {id: $recordId})
+             MATCH (:Group {id: $issuerGroupId})-[:HAS_IDENTITY]->(issuer:Profile)
+             MATCH (issuer)-[s:CREDENTIAL_SENT]->(c:Credential)
+             RETURN r.issuanceStatus AS status, r.credentialUri AS uri, count(c) AS sent`,
+            { recordId: first.recordId, issuerGroupId }
+        );
+        expect(sent.records[0]?.get('status')).toBe('ISSUED');
+        expect(String(sent.records[0]?.get('uri'))).toBe(first.issuance?.credentialUri);
+        expect(Number(sent.records[0]?.get('sent'))).toBe(1);
 
         const replay = await partner.integrationService.submitRecord({
             subjectProfileId: learnerId,
             fields,
         });
+        // A replay never re-issues.
         expect(replay).toEqual({ recordId: first.recordId, status: 'DUPLICATE' });
         expect(await storedRecords(learnerId)).toBe(1);
         expect(await decisions(learnerId)).toEqual(['ALLOW', 'ALLOW']);
@@ -346,7 +412,7 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
     });
 
     it('requires a record-lane declaration and blocks ETL and employment lanes at preflight', async () => {
-        const { client, ecosystem, binding } = await setup();
+        const { client, ecosystem, binding, issuer } = await setup();
         const endpoints = {
             ecosystemId: ecosystem.id,
             capability: 'record-provisioning' as const,
@@ -357,8 +423,12 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
             code: 'BAD_REQUEST',
         });
         for (const capabilityMetadata of [
-            metadataFor({ mode: 'ETL', transactional: undefined }),
-            metadataFor({ recordClass: 'employment' }),
+            metadataFor(issuer, { mode: 'ETL', transactional: undefined, issuance: undefined }),
+            metadataFor(issuer, { recordClass: 'employment' }),
+            metadataFor(issuer, { issuance: undefined }),
+            metadataFor({ ...issuer, profileId: 'someone-else' }),
+            metadataFor(await createIssuerGroup(ecosystem.id, { issuanceEnabled: false })),
+            metadataFor(await createIssuerGroup(ecosystem.id, { signingAuthority: false })),
         ]) {
             const proposed = await client.installIntent.proposeBinding({
                 ...endpoints,
@@ -439,8 +509,8 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
     });
 
     it('denies when more than one ACTIVE record Binding exists for the install', async () => {
-        const { partner, learnerId, client, ecosystem, installId } = await setup();
-        await approveRecordBinding(client, ecosystem.id, installId);
+        const { partner, learnerId, client, ecosystem, installId, issuer } = await setup();
+        await approveRecordBinding(client, ecosystem.id, installId, issuer);
         await expect(
             partner.integrationService.submitRecord({
                 subjectProfileId: learnerId,
@@ -490,5 +560,105 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
                 consentTiers: [],
             })
         ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+
+    it('keeps the record and audits a failure when the issuer is disabled after approval', async () => {
+        const { partner, learnerId, issuerGroupId } = await setup();
+        await neogma.queryRunner.run(
+            'MATCH (g:Group {id: $issuerGroupId}) SET g.identityIssuanceEnabled = false',
+            { issuerGroupId }
+        );
+        const result = await partner.integrationService.submitRecord({
+            subjectProfileId: learnerId,
+            fields: record(),
+        });
+        expect(result.status).toBe('ACCEPTED');
+        expect(result.issuance).toEqual({ status: 'ISSUE_FAILED' });
+        expect(await storedRecords(learnerId)).toBe(1);
+        const audit = await neogma.queryRunner.run(
+            `MATCH (a:InstallIntentAuditEvent {action: 'RECORD_CREDENTIAL_ISSUE_FAILED'})
+             WHERE a.afterSummary CONTAINS $recordId RETURN count(a) AS count`,
+            { recordId: result.recordId }
+        );
+        expect(Number(audit.records[0]?.get('count'))).toBe(1);
+    });
+
+    const issuanceState = async (recordId: string) => {
+        const result = await neogma.queryRunner.run(
+            `MATCH (r:ProvisionedRecord {id: $recordId})
+             OPTIONAL MATCH (:Profile)-[s:CREDENTIAL_SENT]->(:Credential)
+             WHERE s.\`metadata.educationOsRecordId\` = $recordId
+             RETURN r.issuanceStatus AS status, r.credentialUri AS uri, count(s) AS sent`,
+            { recordId }
+        );
+        const row = result.records[0];
+        return {
+            status: row?.get('status'),
+            uri: row?.get('uri'),
+            sent: Number(row?.get('sent')),
+        };
+    };
+
+    it('reconciles a lost status write on retry without re-signing', async () => {
+        const { partner, learnerId } = await setup();
+        const first = await partner.integrationService.submitRecord({
+            subjectProfileId: learnerId,
+            fields: record(),
+        });
+        await neogma.queryRunner.run(
+            `MATCH (r:ProvisionedRecord {id: $recordId})
+             SET r.issuanceStatus = 'PENDING', r.credentialUri = null`,
+            { recordId: first.recordId }
+        );
+        const retried = await retryRecordIssuance(first.recordId, 'localhost%3A3000');
+        expect(retried?.status).toBe('ISSUED');
+        const state = await issuanceState(first.recordId);
+        expect(state.status).toBe('ISSUED');
+        expect(state.sent).toBe(1);
+    });
+
+    it('re-issues a failed record once the issuer is re-enabled', async () => {
+        const { partner, learnerId, issuerGroupId } = await setup();
+        await neogma.queryRunner.run(
+            'MATCH (g:Group {id: $issuerGroupId}) SET g.identityIssuanceEnabled = false',
+            { issuerGroupId }
+        );
+        const first = await partner.integrationService.submitRecord({
+            subjectProfileId: learnerId,
+            fields: record(),
+        });
+        expect((await issuanceState(first.recordId)).status).toBe('ISSUE_FAILED');
+        await neogma.queryRunner.run(
+            'MATCH (g:Group {id: $issuerGroupId}) SET g.identityIssuanceEnabled = true',
+            { issuerGroupId }
+        );
+        expect((await retryRecordIssuance(first.recordId, 'localhost%3A3000'))?.status).toBe(
+            'ISSUED'
+        );
+        expect((await issuanceState(first.recordId)).sent).toBe(1);
+        // A delivered record is no longer eligible for retry.
+        expect(await retryRecordIssuance(first.recordId, 'localhost%3A3000')).toBeNull();
+    });
+
+    it('fails issuance when the issuer identity was replaced or the date is malformed', async () => {
+        const replaced = await setup();
+        await neogma.queryRunner.run(
+            'MATCH (g:Group {id: $issuerGroupId}) SET g.identityProfileId = $other',
+            { issuerGroupId: replaced.issuerGroupId, other: `issuer-${randomUUID()}` }
+        );
+        const swapped = await replaced.partner.integrationService.submitRecord({
+            subjectProfileId: replaced.learnerId,
+            fields: record(),
+        });
+        expect(swapped.issuance).toEqual({ status: 'ISSUE_FAILED' });
+
+        const malformed = await setup();
+        const bad = await malformed.partner.integrationService.submitRecord({
+            subjectProfileId: malformed.learnerId,
+            fields: { ...record(), completedAt: 'yesterday' },
+        });
+        expect(bad.status).toBe('ACCEPTED');
+        expect(bad.issuance).toEqual({ status: 'ISSUE_FAILED' });
+        expect((await issuanceState(bad.recordId)).sent).toBe(0);
     });
 });

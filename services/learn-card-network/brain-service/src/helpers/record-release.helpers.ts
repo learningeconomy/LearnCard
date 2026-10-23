@@ -9,6 +9,7 @@ import { SERVICE_ACCOUNT_AGGREGATE_VALID } from '@accesslayer/service-account/in
 import { getCatalogPolicyRevision } from '@helpers/catalog-policy.helpers';
 import { evaluateConsentPreflight } from '@helpers/install-intent.helpers';
 import { serviceOperationClassification } from '@helpers/ecosystem-access.helpers';
+import { issueProvisionedRecord } from '@helpers/platform-issuance.helpers';
 import {
     verifyServiceAccountToken,
     type ServiceAccountPrincipal,
@@ -31,6 +32,13 @@ export type SubmitRecordInput = z.infer<typeof SubmitRecordInputValidator>;
 export const SubmitRecordResultValidator = z.object({
     recordId: z.string(),
     status: z.enum(['ACCEPTED', 'DUPLICATE']),
+    issuance: z
+        .discriminatedUnion('status', [
+            z.object({ status: z.literal('ISSUED'), credentialUri: z.string() }),
+            z.object({ status: z.literal('ISSUE_FAILED') }),
+            z.object({ status: z.literal('PENDING') }),
+        ])
+        .optional(),
 });
 export type SubmitRecordResult = z.infer<typeof SubmitRecordResultValidator>;
 
@@ -168,7 +176,7 @@ const commitRelease = async (
                          externalSubjectId: $externalSubjectId, recordClass: $recordClass,
                          fields: $fields, payloadHash: $payloadHash,
                          consentDecisionId: $consentDecisionId, receivedAt: $now,
-                         expiresAt: $expiresAt})`,
+                         expiresAt: $expiresAt, issuanceStatus: 'PENDING'})`,
                     {
                         ...input,
                         recordId,
@@ -214,7 +222,8 @@ const commitRelease = async (
  */
 export const submitProvisionedRecord = async (
     principal: ServiceAccountPrincipal | undefined,
-    input: SubmitRecordInput
+    input: SubmitRecordInput,
+    domain: string
 ): Promise<SubmitRecordResult> => {
     let ecosystemId = 'unknown';
     let accountId: string | undefined;
@@ -275,6 +284,10 @@ export const submitProvisionedRecord = async (
         bindingId = binding.bindingId;
         const declaration = metadata?.transactional;
         if (!metadata || !declaration) return deny(reason);
+        // Records are released only for issuance; a lane without a declaration stores nothing.
+        reason = 'NO_ISSUANCE_DECLARATION';
+        const issuance = metadata.issuance;
+        if (!issuance) return deny(reason);
 
         reason = 'UNDECLARED_FIELDS';
         const declared = new Set(declaration.fields);
@@ -333,6 +346,32 @@ export const submitProvisionedRecord = async (
             return deny(reason);
         }
         outcome = committed;
+
+        // Issuance follows the committed release; its failure is recorded, never rolled back,
+        // and never turns an accepted release into an error for the partner.
+        if (committed.status === 'ACCEPTED') {
+            try {
+                const issued = await issueProvisionedRecord({
+                    recordId: committed.recordId,
+                    bindingId: binding.bindingId,
+                    ecosystemId: claims.ecosystemId,
+                    subjectProfileId: input.subjectProfileId,
+                    fields: input.fields,
+                    issuance,
+                    domain,
+                });
+                outcome = {
+                    ...committed,
+                    issuance:
+                        issued.status === 'ISSUED'
+                            ? { status: 'ISSUED', credentialUri: issued.credentialUri }
+                            : { status: 'ISSUE_FAILED' },
+                };
+            } catch (error) {
+                console.error('Platform issuance threw after release', error);
+                outcome = { ...committed, issuance: { status: 'PENDING' } };
+            }
+        }
 
         return outcome;
     } finally {

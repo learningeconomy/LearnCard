@@ -27,6 +27,8 @@ export const integrationServiceRouter = t.router({
     submitRecord: openRouteWithoutInputCapture
         .input(SubmitRecordInputValidator)
         .output(SubmitRecordResultValidator)
-        .mutation(({ ctx, input }) => submitProvisionedRecord(ctx.serviceAccount, input)),
+        .mutation(({ ctx, input }) =>
+            submitProvisionedRecord(ctx.serviceAccount, input, ctx.domain)
+        ),
 });
 export type IntegrationServiceRouter = typeof integrationServiceRouter;
