@@ -1,4 +1,34 @@
-# DCC phase 5 result — BLOCKED, not READY
+# DCC phase 5 result — PROOF COMPLETE WITH LABELS (local only), not PROOF READY
+
+## Current status (2026-10-23)
+
+This file is an append-only log; earlier sections record blockers that were later
+resolved. Current state:
+
+- **5A (issuer core):** READY locally (2026-10-21).
+- **5B (status list):** the live acceptance gap recorded on 2026-10-22 was closed by
+  the Step 4c runs. The status list was served through the read-only status gateway,
+  and credential verification checked it live.
+- **Step 4a (published exchange origin):** resolved by the generic
+  `address: 'published'` / `part: 'origin'` endpoint environment source. See the
+  "Subsequent resolution" note under Step 4a.
+- **Step 4c (exchange):** bundle 1.4.2 / package 1.0.2 finished
+  `PROOF COMPLETE WITH LABELS`:
+    - The status list is labelled non-conformant: it has 100000 entries, below the
+      131072 minimum.
+    - The issuer is not in the registry.
+    - Single-use replay was verified.
+    - Claims are NOT consent-gated.
+- **Still OPEN:**
+    - status-list size (upstream);
+    - learner claim-choice consent (deferred);
+    - issuer default tenants;
+    - non-loopback (phone) reachability;
+    - in-memory exchange state;
+    - concurrent single-use;
+    - upgrade/rollback/retirement acceptance;
+    - production gates (owners, LEF pin sign-off, security review, registry trust,
+      TLS, custody).
 
 ## 5A proof — operator harness added, execution incomplete (2026-10-20)
 
@@ -493,7 +523,7 @@ Status list / revocation (status-service-db needs a Mongo replica set — phase 
 institution `ISSUES_AS` / managed did:web custody (the issuer is the signing-service tenant
 did:key); LEF pin sign-off and named support owners.
 
-## 5B result — implementation and transactional smoke; live acceptance unverified
+## 5B result — implementation and transactional smoke; live acceptance unverified (closed by Step 4c)
 
 Observed 2026-10-22. **Not READY: no status-enabled installation/issuance/restart
 acceptance is claimed. No commit was made.** Consent/binding files were not edited.
@@ -573,7 +603,7 @@ cleanup ambiguity, queued retirement during recovery, and removed-component upgr
 Production custody, public status hosting/retirement, support ownership and LEF sign-off
 remain OPEN.
 
-## Step 4a result — BLOCKED: advertised exchange origin cannot use allocated host port
+## Step 4a result — BLOCKED: advertised exchange origin cannot use allocated host port (since resolved)
 
 Observed 2026-10-22. **Not READY; no exchange package was published or installed.**
 Stopped at the requested contract-compatibility gate. Only this evidence document
