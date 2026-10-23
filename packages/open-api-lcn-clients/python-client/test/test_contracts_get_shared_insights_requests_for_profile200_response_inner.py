@@ -35,6 +35,11 @@ class TestContractsGetSharedInsightsRequestsForProfile200ResponseInner(unittest.
         model = ContractsGetSharedInsightsRequestsForProfile200ResponseInner()
         if include_optional:
             return ContractsGetSharedInsightsRequestsForProfile200ResponseInner(
+                request_id = '',
+                requested_by = '',
+                external_reference_id = '',
+                requested_at = '',
+                message = '',
                 profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 

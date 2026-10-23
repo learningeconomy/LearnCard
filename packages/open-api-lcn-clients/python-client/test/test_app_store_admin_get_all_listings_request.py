@@ -37,7 +37,8 @@ class TestAppStoreAdminGetAllListingsRequest(unittest.TestCase):
             return AppStoreAdminGetAllListingsRequest(
                 limit = 1.337,
                 cursor = '',
-                status = 'DRAFT'
+                status = 'DRAFT',
+                pending_updates_only = True
             )
         else:
             return AppStoreAdminGetAllListingsRequest(

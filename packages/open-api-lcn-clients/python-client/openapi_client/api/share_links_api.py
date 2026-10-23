@@ -22,17 +22,23 @@ from typing_extensions import Annotated
 from uuid import UUID
 from openapi_client.models.public_share_links_acknowledge_view200_response import PublicShareLinksAcknowledgeView200Response
 from openapi_client.models.public_share_links_acknowledge_view_request import PublicShareLinksAcknowledgeViewRequest
+from openapi_client.models.public_share_links_attachment_chunk200_response import PublicShareLinksAttachmentChunk200Response
+from openapi_client.models.public_share_links_attachment_chunk_request import PublicShareLinksAttachmentChunkRequest
 from openapi_client.models.public_share_links_content200_response import PublicShareLinksContent200Response
 from openapi_client.models.public_share_links_content_request import PublicShareLinksContentRequest
 from openapi_client.models.public_share_links_resolve200_response import PublicShareLinksResolve200Response
 from openapi_client.models.public_share_links_resolve_request import PublicShareLinksResolveRequest
 from openapi_client.models.share_links_create200_response import ShareLinksCreate200Response
 from openapi_client.models.share_links_create_request import ShareLinksCreateRequest
+from openapi_client.models.share_links_delete_attachment_chunks200_response import ShareLinksDeleteAttachmentChunks200Response
+from openapi_client.models.share_links_delete_attachment_chunks_request import ShareLinksDeleteAttachmentChunksRequest
 from openapi_client.models.share_links_get200_response import ShareLinksGet200Response
 from openapi_client.models.share_links_get_content200_response import ShareLinksGetContent200Response
 from openapi_client.models.share_links_get_operation_status200_response import ShareLinksGetOperationStatus200Response
 from openapi_client.models.share_links_get_recovery200_response import ShareLinksGetRecovery200Response
 from openapi_client.models.share_links_list200_response import ShareLinksList200Response
+from openapi_client.models.share_links_put_attachment_chunk200_response import ShareLinksPutAttachmentChunk200Response
+from openapi_client.models.share_links_put_attachment_chunk_request import ShareLinksPutAttachmentChunkRequest
 from openapi_client.models.share_links_retry_request import ShareLinksRetryRequest
 from openapi_client.models.share_links_revoke_request import ShareLinksRevokeRequest
 from openapi_client.models.share_links_update_request import ShareLinksUpdateRequest
@@ -316,6 +322,282 @@ class ShareLinksApi:
         return self.api_client.param_serialize(
             method='POST',
             resource_path='/public/share-links/acknowledge-view',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def public_share_links_attachment_chunk(
+        self,
+        public_share_links_attachment_chunk_request: PublicShareLinksAttachmentChunkRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> PublicShareLinksAttachmentChunk200Response:
+        """Fetch guarded encrypted attachment chunk
+
+
+        :param public_share_links_attachment_chunk_request: (required)
+        :type public_share_links_attachment_chunk_request: PublicShareLinksAttachmentChunkRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._public_share_links_attachment_chunk_serialize(
+            public_share_links_attachment_chunk_request=public_share_links_attachment_chunk_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "PublicShareLinksAttachmentChunk200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def public_share_links_attachment_chunk_with_http_info(
+        self,
+        public_share_links_attachment_chunk_request: PublicShareLinksAttachmentChunkRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[PublicShareLinksAttachmentChunk200Response]:
+        """Fetch guarded encrypted attachment chunk
+
+
+        :param public_share_links_attachment_chunk_request: (required)
+        :type public_share_links_attachment_chunk_request: PublicShareLinksAttachmentChunkRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._public_share_links_attachment_chunk_serialize(
+            public_share_links_attachment_chunk_request=public_share_links_attachment_chunk_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "PublicShareLinksAttachmentChunk200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def public_share_links_attachment_chunk_without_preload_content(
+        self,
+        public_share_links_attachment_chunk_request: PublicShareLinksAttachmentChunkRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Fetch guarded encrypted attachment chunk
+
+
+        :param public_share_links_attachment_chunk_request: (required)
+        :type public_share_links_attachment_chunk_request: PublicShareLinksAttachmentChunkRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._public_share_links_attachment_chunk_serialize(
+            public_share_links_attachment_chunk_request=public_share_links_attachment_chunk_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "PublicShareLinksAttachmentChunk200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _public_share_links_attachment_chunk_serialize(
+        self,
+        public_share_links_attachment_chunk_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if public_share_links_attachment_chunk_request is not None:
+            _body_params = public_share_links_attachment_chunk_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/public/share-links/attachment-chunk',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -1197,6 +1479,289 @@ class ShareLinksApi:
 
 
     @validate_call
+    def share_links_delete_attachment_chunks(
+        self,
+        share_links_delete_attachment_chunks_request: ShareLinksDeleteAttachmentChunksRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ShareLinksDeleteAttachmentChunks200Response:
+        """Delete unreferenced encrypted attachment
+
+
+        :param share_links_delete_attachment_chunks_request: (required)
+        :type share_links_delete_attachment_chunks_request: ShareLinksDeleteAttachmentChunksRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._share_links_delete_attachment_chunks_serialize(
+            share_links_delete_attachment_chunks_request=share_links_delete_attachment_chunks_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ShareLinksDeleteAttachmentChunks200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def share_links_delete_attachment_chunks_with_http_info(
+        self,
+        share_links_delete_attachment_chunks_request: ShareLinksDeleteAttachmentChunksRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ShareLinksDeleteAttachmentChunks200Response]:
+        """Delete unreferenced encrypted attachment
+
+
+        :param share_links_delete_attachment_chunks_request: (required)
+        :type share_links_delete_attachment_chunks_request: ShareLinksDeleteAttachmentChunksRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._share_links_delete_attachment_chunks_serialize(
+            share_links_delete_attachment_chunks_request=share_links_delete_attachment_chunks_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ShareLinksDeleteAttachmentChunks200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def share_links_delete_attachment_chunks_without_preload_content(
+        self,
+        share_links_delete_attachment_chunks_request: ShareLinksDeleteAttachmentChunksRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Delete unreferenced encrypted attachment
+
+
+        :param share_links_delete_attachment_chunks_request: (required)
+        :type share_links_delete_attachment_chunks_request: ShareLinksDeleteAttachmentChunksRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._share_links_delete_attachment_chunks_serialize(
+            share_links_delete_attachment_chunks_request=share_links_delete_attachment_chunks_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ShareLinksDeleteAttachmentChunks200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _share_links_delete_attachment_chunks_serialize(
+        self,
+        share_links_delete_attachment_chunks_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if share_links_delete_attachment_chunks_request is not None:
+            _body_params = share_links_delete_attachment_chunks_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/share-links/attachment-chunks/delete',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def share_links_get(
         self,
         id: StrictStr,
@@ -1745,7 +2310,7 @@ class ShareLinksApi:
     @validate_call
     def share_links_get_operation_status(
         self,
-        operation_id: UUID,
+        operation_id: Optional[UUID],
         id: Optional[StrictStr],
         _request_timeout: Union[
             None,
@@ -1820,7 +2385,7 @@ class ShareLinksApi:
     @validate_call
     def share_links_get_operation_status_with_http_info(
         self,
-        operation_id: UUID,
+        operation_id: Optional[UUID],
         id: Optional[StrictStr],
         _request_timeout: Union[
             None,
@@ -1895,7 +2460,7 @@ class ShareLinksApi:
     @validate_call
     def share_links_get_operation_status_without_preload_content(
         self,
-        operation_id: UUID,
+        operation_id: Optional[UUID],
         id: Optional[StrictStr],
         _request_timeout: Union[
             None,
@@ -2582,6 +3147,289 @@ class ShareLinksApi:
         return self.api_client.param_serialize(
             method='GET',
             resource_path='/share-links',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def share_links_put_attachment_chunk(
+        self,
+        share_links_put_attachment_chunk_request: ShareLinksPutAttachmentChunkRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ShareLinksPutAttachmentChunk200Response:
+        """Stage encrypted share attachment chunk
+
+
+        :param share_links_put_attachment_chunk_request: (required)
+        :type share_links_put_attachment_chunk_request: ShareLinksPutAttachmentChunkRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._share_links_put_attachment_chunk_serialize(
+            share_links_put_attachment_chunk_request=share_links_put_attachment_chunk_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ShareLinksPutAttachmentChunk200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def share_links_put_attachment_chunk_with_http_info(
+        self,
+        share_links_put_attachment_chunk_request: ShareLinksPutAttachmentChunkRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ShareLinksPutAttachmentChunk200Response]:
+        """Stage encrypted share attachment chunk
+
+
+        :param share_links_put_attachment_chunk_request: (required)
+        :type share_links_put_attachment_chunk_request: ShareLinksPutAttachmentChunkRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._share_links_put_attachment_chunk_serialize(
+            share_links_put_attachment_chunk_request=share_links_put_attachment_chunk_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ShareLinksPutAttachmentChunk200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def share_links_put_attachment_chunk_without_preload_content(
+        self,
+        share_links_put_attachment_chunk_request: ShareLinksPutAttachmentChunkRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Stage encrypted share attachment chunk
+
+
+        :param share_links_put_attachment_chunk_request: (required)
+        :type share_links_put_attachment_chunk_request: ShareLinksPutAttachmentChunkRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._share_links_put_attachment_chunk_serialize(
+            share_links_put_attachment_chunk_request=share_links_put_attachment_chunk_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ShareLinksPutAttachmentChunk200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _share_links_put_attachment_chunk_serialize(
+        self,
+        share_links_put_attachment_chunk_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if share_links_put_attachment_chunk_request is not None:
+            _body_params = share_links_put_attachment_chunk_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/share-links/attachment-chunk/put',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

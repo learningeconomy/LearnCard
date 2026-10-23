@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.share_links_update_request_envelope import ShareLinksUpdateRequestEnvelope
+from openapi_client.models.share_links_create_request_envelope import ShareLinksCreateRequestEnvelope
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class PublicShareLinksContent200Response(BaseModel):
     """ # noqa: E501
     id: Optional[StrictStr]
     content_version: Annotated[int, Field(le=2147483647, strict=True, ge=1)] = Field(alias="contentVersion")
-    envelope: ShareLinksUpdateRequestEnvelope
+    envelope: ShareLinksCreateRequestEnvelope
     content_url: Optional[StrictStr] = Field(alias="contentUrl")
     receipt: Annotated[str, Field(min_length=22, strict=True, max_length=128)]
     additional_properties: Dict[str, Any] = {}
@@ -117,7 +117,7 @@ class PublicShareLinksContent200Response(BaseModel):
         _values = {
             "id": obj.get("id"),
             "contentVersion": obj.get("contentVersion"),
-            "envelope": ShareLinksUpdateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
+            "envelope": ShareLinksCreateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
             "contentUrl": obj.get("contentUrl"),
             "receipt": obj.get("receipt")
         }

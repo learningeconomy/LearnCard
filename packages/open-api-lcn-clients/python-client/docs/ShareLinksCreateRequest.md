@@ -15,6 +15,7 @@
 | **content_version**          | **float**                                                                                                 |             |
 | **envelope**                 | [**ShareLinksCreateRequestEnvelope**](ShareLinksCreateRequestEnvelope.md)                                 |             |
 | **owner_encrypted_recovery** | [**CredentialSendCredentialRequestCredentialAnyOf1**](CredentialSendCredentialRequestCredentialAnyOf1.md) |             |
+| **attachment**               | [**ShareLinksCreateRequestAttachment**](ShareLinksCreateRequestAttachment.md)                             |             | [optional]                    |
 
 ## Example
 

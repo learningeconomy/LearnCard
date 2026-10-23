@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner_pending_update import AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate
 from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner_submitter import AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter
 from typing import Optional, Set
 from typing_extensions import Self
@@ -53,9 +54,10 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
     highlights: Optional[List[StrictStr]] = None
     screenshots: Optional[List[StrictStr]] = None
     submitter: Optional[AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter] = None
+    pending_update: Optional[AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate] = None
     installed_at: Optional[StrictStr]
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "min_age", "age_rating", "submitted_at", "contact_email", "highlights", "screenshots", "submitter", "installed_at"]
+    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "min_age", "age_rating", "submitted_at", "contact_email", "highlights", "screenshots", "submitter", "pending_update", "installed_at"]
 
     @field_validator('app_listing_status')
     def app_listing_status_validate_enum(cls, value):
@@ -145,6 +147,9 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of submitter
         if self.submitter:
             _dict['submitter'] = self.submitter.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of pending_update
+        if self.pending_update:
+            _dict['pending_update'] = self.pending_update.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
@@ -266,6 +271,7 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
             "highlights": obj.get("highlights"),
             "screenshots": obj.get("screenshots"),
             "submitter": AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.from_dict(obj["submitter"]) if obj.get("submitter") is not None else None,
+            "pending_update": AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate.from_dict(obj["pending_update"]) if obj.get("pending_update") is not None else None,
             "installed_at": obj.get("installed_at")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

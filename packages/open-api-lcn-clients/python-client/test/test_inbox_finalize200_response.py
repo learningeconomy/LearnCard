@@ -40,16 +40,12 @@ class TestInboxFinalize200Response(unittest.TestCase):
                 errors = 1.337,
                 guardian_pending = 1.337,
                 verifiable_credentials = [
-                    {
-                        'key' : null
-                        }
+                    null
                     ],
                 deliveries = [
-                    openapi_client.models.workflows_participate_in_exchange_200_response_inbox_deliveries_inner.workflows_participateInExchange_200_response_inboxDeliveries_inner(
+                    openapi_client.models.inbox_finalize_200_response_deliveries_inner.inbox_finalize_200_response_deliveries_inner(
                         id = '', 
-                        credential = {
-                            'key' : null
-                            }, )
+                        credential = null, )
                     ]
             )
         else:
@@ -59,16 +55,12 @@ class TestInboxFinalize200Response(unittest.TestCase):
                 errors = 1.337,
                 guardian_pending = 1.337,
                 verifiable_credentials = [
-                    {
-                        'key' : null
-                        }
+                    null
                     ],
                 deliveries = [
-                    openapi_client.models.workflows_participate_in_exchange_200_response_inbox_deliveries_inner.workflows_participateInExchange_200_response_inboxDeliveries_inner(
+                    openapi_client.models.inbox_finalize_200_response_deliveries_inner.inbox_finalize_200_response_deliveries_inner(
                         id = '', 
-                        credential = {
-                            'key' : null
-                            }, )
+                        credential = null, )
                     ],
         )
         """

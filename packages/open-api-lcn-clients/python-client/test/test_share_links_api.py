@@ -33,6 +33,13 @@ class TestShareLinksApi(unittest.TestCase):
         """
         pass
 
+    def test_public_share_links_attachment_chunk(self) -> None:
+        """Test case for public_share_links_attachment_chunk
+
+        Fetch guarded encrypted attachment chunk
+        """
+        pass
+
     def test_public_share_links_content(self) -> None:
         """Test case for public_share_links_content
 
@@ -51,6 +58,13 @@ class TestShareLinksApi(unittest.TestCase):
         """Test case for share_links_create
 
         Create an owner share link
+        """
+        pass
+
+    def test_share_links_delete_attachment_chunks(self) -> None:
+        """Test case for share_links_delete_attachment_chunks
+
+        Delete unreferenced encrypted attachment
         """
         pass
 
@@ -86,6 +100,13 @@ class TestShareLinksApi(unittest.TestCase):
         """Test case for share_links_list
 
         List owner share links
+        """
+        pass
+
+    def test_share_links_put_attachment_chunk(self) -> None:
+        """Test case for share_links_put_attachment_chunk
+
+        Stage encrypted share attachment chunk
         """
         pass
 

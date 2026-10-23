@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1
-from openapi_client.models.workflows_participate_in_exchange200_response_inbox_deliveries_inner import WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner
+from openapi_client.models.inbox_finalize200_response_deliveries_inner import InboxFinalize200ResponseDeliveriesInner
+from openapi_client.models.inbox_finalize200_response_verifiable_credentials_inner import InboxFinalize200ResponseVerifiableCredentialsInner
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -33,8 +33,8 @@ class InboxFinalize200Response(BaseModel):
     claimed: Optional[Union[StrictFloat, StrictInt]]
     errors: Optional[Union[StrictFloat, StrictInt]]
     guardian_pending: Optional[Union[StrictFloat, StrictInt]] = Field(alias="guardianPending")
-    verifiable_credentials: List[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1] = Field(alias="verifiableCredentials")
-    deliveries: List[WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner]
+    verifiable_credentials: List[InboxFinalize200ResponseVerifiableCredentialsInner] = Field(alias="verifiableCredentials")
+    deliveries: List[InboxFinalize200ResponseDeliveriesInner]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["processed", "claimed", "errors", "guardianPending", "verifiableCredentials", "deliveries"]
 
@@ -132,8 +132,8 @@ class InboxFinalize200Response(BaseModel):
             "claimed": obj.get("claimed"),
             "errors": obj.get("errors"),
             "guardianPending": obj.get("guardianPending"),
-            "verifiableCredentials": [StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1.from_dict(_item) for _item in obj["verifiableCredentials"]] if obj.get("verifiableCredentials") is not None else None,
-            "deliveries": [WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner.from_dict(_item) for _item in obj["deliveries"]] if obj.get("deliveries") is not None else None
+            "verifiableCredentials": [InboxFinalize200ResponseVerifiableCredentialsInner.from_dict(_item) for _item in obj["verifiableCredentials"]] if obj.get("verifiableCredentials") is not None else None,
+            "deliveries": [InboxFinalize200ResponseDeliveriesInner.from_dict(_item) for _item in obj["deliveries"]] if obj.get("deliveries") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

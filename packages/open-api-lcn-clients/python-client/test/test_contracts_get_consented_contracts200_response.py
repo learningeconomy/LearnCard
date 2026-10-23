@@ -70,6 +70,10 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                             denied_writers = [
                                 ''
                                 ], ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         contract = openapi_client.models.contracts_get_consent_flow_contract_200_response.contracts_getConsentFlowContract_200_response(
                             contract = openapi_client.models.storage_resolve_200_response_any_of_any_of_1.storage_resolve_200_response_anyOf_anyOf_1(
                                 read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
@@ -168,7 +172,19 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                     country = '', 
                                     locale = '', 
                                     approved = True, )
-                                ], ), 
+                                ], 
+                            recipients = [
+                                openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                    profile_id = '012', 
+                                    display_name = '', 
+                                    short_bio = '', 
+                                    image = '', 
+                                    hero_image = '', 
+                                    type = '', 
+                                    is_service_profile = True, 
+                                    did = '', )
+                                ], 
+                            audience_version = 0, ), 
                         uri = '', 
                         consenter = , 
                         status = 'live', )
@@ -210,6 +226,10 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                             denied_writers = [
                                 ''
                                 ], ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         contract = openapi_client.models.contracts_get_consent_flow_contract_200_response.contracts_getConsentFlowContract_200_response(
                             contract = openapi_client.models.storage_resolve_200_response_any_of_any_of_1.storage_resolve_200_response_anyOf_anyOf_1(
                                 read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
@@ -308,7 +328,19 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                     country = '', 
                                     locale = '', 
                                     approved = True, )
-                                ], ), 
+                                ], 
+                            recipients = [
+                                openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                    profile_id = '012', 
+                                    display_name = '', 
+                                    short_bio = '', 
+                                    image = '', 
+                                    hero_image = '', 
+                                    type = '', 
+                                    is_service_profile = True, 
+                                    did = '', )
+                                ], 
+                            audience_version = 0, ), 
                         uri = '', 
                         consenter = , 
                         status = 'live', )
