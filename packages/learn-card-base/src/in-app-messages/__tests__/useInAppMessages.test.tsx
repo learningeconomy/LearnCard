@@ -11,6 +11,8 @@ const state = vi.hoisted(() => ({
     flags: {} as Record<string, unknown>,
     facts: {} as CredentialFactsState,
     factsRequired: false,
+    debug: false,
+    iamDebug: vi.fn(),
 }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => state.native } }));
 vi.mock('launchdarkly-react-client-sdk', () => ({ useFlags: () => state.flags }));
@@ -32,7 +34,10 @@ vi.mock('../useCredentialFacts', () => ({
         return state.facts;
     },
 }));
-vi.mock('../debug', () => ({ isInAppMessagesDebug: () => false, iamDebug: vi.fn() }));
+vi.mock('../debug', () => ({
+    isInAppMessagesDebug: () => state.debug,
+    iamDebug: state.iamDebug,
+}));
 
 describe('message evaluation lifecycle', () => {
     beforeEach(() => {
@@ -52,6 +57,8 @@ describe('message evaluation lifecycle', () => {
         };
         state.factsRequired = false;
         state.native = false;
+        state.debug = false;
+        state.iamDebug.mockClear();
     });
     afterEach(() => {
         cleanup();
@@ -147,6 +154,29 @@ describe('message evaluation lifecycle', () => {
         expect(state.factsRequired).toBe(true);
         expect(result.current.context?.credentials).toEqual([]);
         expect(result.current.context?.credentialsComplete).toBe(true);
+    });
+
+    it('logs the selected flag source and parse result when message tracing is enabled', () => {
+        state.debug = true;
+        state.flags = {
+            inAppMessages: { messages: [{ id: 'legacy', title: 'Legacy' }] },
+            inAppMessagesV2: false,
+        };
+
+        renderHook(() => useInAppMessages());
+
+        expect(state.iamDebug).toHaveBeenCalledWith(
+            'flag:delivery',
+            expect.objectContaining({
+                requestedKey: 'inAppMessagesV2',
+                selectedKey: 'inAppMessagesV2',
+                usedLegacyFallback: false,
+                requestedValueState: 'boolean',
+                legacyValueState: 'object',
+                acceptedMessageIds: [],
+                invalidMessages: [{ error: 'Invalid input: expected object, received boolean' }],
+            })
+        );
     });
 
     it.each([false, true])('selects iframe campaigns only on web (native: %s)', native => {

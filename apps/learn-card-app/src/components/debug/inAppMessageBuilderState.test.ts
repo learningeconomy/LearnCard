@@ -59,6 +59,20 @@ describe('message builder raw targeting validation', () => {
 });
 
 describe('message builder credential round-trip', () => {
+    it.each([
+        { type: 'openApp', listingId: 'library' },
+        { type: 'openApp', listingId: 'library', path: '/courses?unit=2#lesson' },
+        { type: 'openMessage', messageId: 'next-story' },
+    ])('round-trips message navigation without inventing a path: $type', action => {
+        const message = inAppMessageValidator.parse({
+            id: 'nav',
+            title: 'Next',
+            actions: [{ label: 'Continue', action }],
+        });
+        expect(
+            inAppMessageValidator.parse(buildDraftJson(messageToBuilderState(message))).actions
+        ).toEqual(message.actions);
+    });
     it('keeps translations attached when removing or reordering screens', () => {
         const state = {
             ...initialState,

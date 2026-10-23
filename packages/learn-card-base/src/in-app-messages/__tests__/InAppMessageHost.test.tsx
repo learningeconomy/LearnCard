@@ -12,22 +12,43 @@ import { iamDebug } from '../debug';
 import { getInAppMessageFatigueState } from '../fatigueStore';
 import { getRecentInAppMessageEvents, resetInAppMessageEventSession } from '../inAppMessageEvents';
 import { setInAppMessageOverride } from '../debugOverrideStore';
+import {
+    requestInAppMessage,
+    clearInAppMessageRequest,
+    getInAppMessageRequest,
+} from '../deepLinkRequestStore';
 import type { MessagePresentationProps, InAppMessagePresentationEvent } from '../presentationTypes';
 import { I18nProvider } from '../../i18n';
 import { ModalsProvider, useModalsContext } from '../../components/modals/ModalsContext';
 import { useModal } from '../../components/modals/useModal';
 
-const state = vi.hoisted(() => ({
-    native: false,
-    gate: false,
-    messages: [] as InAppMessage[],
-    accountDid: 'alice' as string | null,
-}));
+const launchDarkly = vi.hoisted(() => {
+    const state = {
+        native: false,
+        gate: false,
+        messages: [] as InAppMessage[],
+        accountDid: 'alice' as string | null,
+        flagDeliveryReady: true,
+        flagDeliveryResolvers: [] as Array<() => void>,
+    };
+
+    return {
+        state,
+        client: {
+            waitForInitialization: (): Promise<void> =>
+                state.flagDeliveryReady
+                    ? Promise.resolve()
+                    : new Promise(resolve => state.flagDeliveryResolvers.push(resolve)),
+        },
+    };
+});
+const { state } = launchDarkly;
 
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => state.native } }));
 
 vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ inAppMessagesV2: { messages: state.messages } }),
+    useLDClient: () => launchDarkly.client,
 }));
 vi.mock('../useRuntimeContext', () => ({
     useInAppMessageRuntimeContext: () => ({
@@ -84,12 +105,15 @@ vi.mock('framer-motion', async importOriginal => {
 
 describe('message host impressions', () => {
     beforeEach(() => {
+        clearInAppMessageRequest();
         localStorage.clear();
         resetInAppMessageDismissals();
         resetInAppMessageEventSession();
         state.gate = false;
         state.native = false;
         state.accountDid = 'alice';
+        state.flagDeliveryReady = true;
+        state.flagDeliveryResolvers = [];
         state.messages = [inAppMessageValidator.parse({ id: 'test', title: 'Claim complete' })];
     });
     afterEach(() => {
@@ -97,6 +121,91 @@ describe('message host impressions', () => {
         setInAppMessageOverride(null);
         vi.useRealTimers();
         vi.restoreAllMocks();
+    });
+
+    it('waits for the gate, bypasses targeting/trigger/seen/cap and localizes a requested message', async () => {
+        const onEvent = vi.fn();
+        const requested = inAppMessageValidator.parse({
+            id: 'direct',
+            title: 'Direct',
+            targeting: { role: ['never'] },
+            trigger: { event: 'credential.claimed' },
+            locales: { es: { title: 'Directo' } },
+        });
+        state.messages.push(requested);
+        requestInAppMessage('direct');
+        const view = render(
+            <I18nProvider locale="es" resolve={() => undefined}>
+                <InAppMessageHost onEvent={onEvent} />
+            </I18nProvider>
+        );
+        expect(screen.queryByText('Directo')).toBeNull();
+        expect(onEvent).not.toHaveBeenCalled();
+        state.gate = true;
+        view.rerender(
+            <I18nProvider locale="es" resolve={() => undefined}>
+                <InAppMessageHost onEvent={onEvent} />
+            </I18nProvider>
+        );
+        fireEvent.click(await screen.findByText('Directo'));
+        expect(onEvent.mock.calls.map(([event]) => [event.type, event.source])).toEqual([
+            ['shown', 'deepLink'],
+            ['dismissed', 'deepLink'],
+        ]);
+        expect(getMessageLastSeen('direct', 'alice')).toBeTruthy();
+        expect(getInAppMessageRequest()).toBeNull();
+        act(() => requestInAppMessage('direct'));
+        await screen.findByText('Directo');
+        await waitFor(() =>
+            expect(onEvent.mock.calls.filter(([event]) => event.type === 'shown')).toHaveLength(2)
+        );
+    });
+
+    it('expires an unknown request without clearing a newer known request', async () => {
+        vi.useFakeTimers();
+        requestInAppMessage('missing');
+        const view = render(<InAppMessageHost />);
+        await act(async () => vi.advanceTimersByTimeAsync(4999));
+        expect(getInAppMessageRequest()?.messageId).toBe('missing');
+        act(() => requestInAppMessage('test'));
+        await act(async () => vi.advanceTimersByTimeAsync(10000));
+        expect(getInAppMessageRequest()?.messageId).toBe('test');
+        act(() => requestInAppMessage('missing-again'));
+        await act(async () => vi.advanceTimersByTimeAsync(5000));
+        expect(getInAppMessageRequest()).toBeNull();
+        view.unmount();
+    });
+
+    it('keeps a known request pending while delayed flags finish loading', async () => {
+        vi.useFakeTimers();
+        state.flagDeliveryReady = false;
+        state.messages = [];
+        requestInAppMessage('delayed');
+        const view = render(<InAppMessageHost />);
+
+        await act(async () => vi.advanceTimersByTimeAsync(10_000));
+        expect(getInAppMessageRequest()?.messageId).toBe('delayed');
+
+        state.messages = [inAppMessageValidator.parse({ id: 'delayed', title: 'Delayed' })];
+        state.flagDeliveryReady = true;
+        await act(async () => {
+            state.flagDeliveryResolvers.splice(0).forEach(resolve => resolve());
+            state.gate = true;
+            view.rerender(<InAppMessageHost />);
+            await Promise.resolve();
+        });
+
+        expect(screen.getByText('Delayed')).toBeTruthy();
+    });
+
+    it('drops pending direct requests on account change without dismissal events', async () => {
+        requestInAppMessage('test');
+        const onEvent = vi.fn();
+        const view = render(<InAppMessageHost onEvent={onEvent} />);
+        state.accountDid = 'bob';
+        view.rerender(<InAppMessageHost onEvent={onEvent} />);
+        expect(getInAppMessageRequest()).toBeNull();
+        expect(onEvent).not.toHaveBeenCalled();
     });
 
     it('continues to the next campaign after another feature closes the modal stack', async () => {

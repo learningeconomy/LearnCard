@@ -24,6 +24,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import {
     AlertTriangle,
     Eye,
@@ -50,6 +51,7 @@ import {
     useInAppMessagePresentationGate,
     useInAppMessageOverride,
     useInAppMessages,
+    useInAppMessageRequest,
     type InAppMessageDiagnostic,
     type InAppMessageRuntimeContext,
     type PredicateTrace,
@@ -125,6 +127,7 @@ const MessageRow: React.FC<{
     onForceShow: (message: InAppMessage) => void;
 }> = ({ diagnostic, message, lastSeen, copied, onCopy, onForceShow }) => {
     const [expanded, setExpanded] = useState(false);
+    const history = useHistory();
 
     return (
         <div className="bg-gray-900/60 rounded-sm overflow-hidden">
@@ -205,6 +208,27 @@ const MessageRow: React.FC<{
                     )}
 
                     <div className="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            className="text-xs text-emerald-400"
+                            onClick={() =>
+                                onCopy(
+                                    `link-${diagnostic.id}`,
+                                    `${window.location.origin}/m/${encodeURIComponent(diagnostic.id)}`
+                                )
+                            }
+                        >
+                            {copied === `link-${diagnostic.id}` ? 'Copied!' : 'Copy /m/ link'}
+                        </button>
+                        <button
+                            type="button"
+                            className="text-xs text-emerald-400"
+                            onClick={() =>
+                                history.push(encodeURI(`/m/${encodeURIComponent(diagnostic.id)}`))
+                            }
+                        >
+                            Test deep link
+                        </button>
                         {message && (
                             <button
                                 type="button"
@@ -429,6 +453,7 @@ const TargetingDryRun: React.FC<{
 };
 
 export const InAppMessagesDebugTab: React.FC = () => {
+    const pendingRequest = useInAppMessageRequest();
     const [copied, copyToClipboard] = useCopyToClipboard();
 
     const { report, ready, context, credentialFacts } = useInAppMessages(undefined, {
@@ -907,6 +932,12 @@ export const InAppMessagesDebugTab: React.FC = () => {
                 ))}
             </Section>
 
+            <KVRow
+                label="Pending deep link"
+                value={pendingRequest?.messageId ?? '—'}
+                copied={copied}
+                onCopy={copyToClipboard}
+            />
             <Section
                 title="Flag messages"
                 icon={<ListChecks className="w-3 h-3 text-gray-500" />}

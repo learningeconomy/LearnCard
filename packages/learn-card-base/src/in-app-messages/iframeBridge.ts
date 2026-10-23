@@ -6,7 +6,8 @@ import {
 } from '@learncard/types';
 
 const safeTarget = inAppMessageActionTargetValidator.refine(action => {
-    if (action.type === 'capgoUpdate') return false;
+    // Remote frames cannot select privileged app destinations or bypass campaign targeting.
+    if (['capgoUpdate', 'openApp', 'openMessage'].includes(action.type)) return false;
     if (action.type === 'internalLink') {
         return inAppMessageInternalPathValidator.safeParse(action.path).success;
     }

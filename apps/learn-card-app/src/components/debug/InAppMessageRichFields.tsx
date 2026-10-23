@@ -59,6 +59,10 @@ const StepActions: React.FC<{
                                     update(index, { action: { type, path: '/' } });
                                 else if (type === 'externalLink')
                                     update(index, { action: { type, url: 'https://' } });
+                                else if (type === 'openApp')
+                                    update(index, { action: { type, listingId: '', path: '/' } });
+                                else if (type === 'openMessage')
+                                    update(index, { action: { type, messageId: '' } });
                                 else if (
                                     type === 'appStore' ||
                                     type === 'capgoUpdate' ||
@@ -73,11 +77,61 @@ const StepActions: React.FC<{
                                 'appStore',
                                 'capgoUpdate',
                                 'dismiss',
+                                'openApp',
+                                'openMessage',
                             ].map(value => (
                                 <option key={value}>{value}</option>
                             ))}
                         </select>
                     </Field>
+                    {action.action.type === 'openApp' && (
+                        <>
+                            <Field label="App listing ID">
+                                <input
+                                    className={input}
+                                    value={action.action.listingId}
+                                    onChange={e =>
+                                        update(index, {
+                                            action: {
+                                                ...action.action,
+                                                type: 'openApp',
+                                                listingId: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </Field>
+                            <Field label="App page path">
+                                <input
+                                    className={input}
+                                    value={action.action.path ?? ''}
+                                    onChange={e =>
+                                        update(index, {
+                                            action: {
+                                                ...action.action,
+                                                type: 'openApp',
+                                                listingId: String(action.action.listingId),
+                                                path: e.target.value || undefined,
+                                            },
+                                        })
+                                    }
+                                />
+                            </Field>
+                        </>
+                    )}
+                    {action.action.type === 'openMessage' && (
+                        <Field label="Message ID">
+                            <input
+                                className={input}
+                                value={action.action.messageId}
+                                onChange={e =>
+                                    update(index, {
+                                        action: { type: 'openMessage', messageId: e.target.value },
+                                    })
+                                }
+                            />
+                        </Field>
+                    )}
                     {action.action.type === 'internalLink' && (
                         <Field label="Path">
                             <input

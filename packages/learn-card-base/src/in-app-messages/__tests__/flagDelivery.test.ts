@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { readInAppMessagesFlags } from '../flagDelivery';
+import { inspectInAppMessagesFlagDelivery, readInAppMessagesFlags } from '../flagDelivery';
 
 const legacy = { id: 'legacy', title: 'Legacy modal' };
 const story = { id: 'story', title: 'Story', presentation: 'story', steps: [{ title: 'First' }] };
 
 describe('versioned campaign delivery', () => {
+    it('requires V2 for new action types even in a legacy modal presentation', () => {
+        const message = {
+            ...legacy,
+            actions: [{ label: 'Next', action: { type: 'openMessage', messageId: 'next' } }],
+        };
+        expect(
+            readInAppMessagesFlags({ inAppMessages: { messages: [message] } }).flag.messages
+        ).toEqual([]);
+        expect(
+            readInAppMessagesFlags({ inAppMessagesV2: { messages: [message] } }).flag.messages
+        ).toHaveLength(1);
+    });
     it('preserves legacy campaigns when the V2 flag is absent', () => {
         expect(
             readInAppMessagesFlags({ inAppMessages: { messages: [legacy] } }).flag.messages.map(
@@ -46,6 +58,49 @@ describe('versioned campaign delivery', () => {
         expect(
             readInAppMessagesFlags({ custom: { messages: [story] } }, 'custom').flag.messages[0]?.id
         ).toBe('story');
+    });
+
+    it('reports why an authoritative empty V2 value prevents the legacy fallback', () => {
+        const flags = {
+            inAppMessages: { messages: [legacy] },
+            inAppMessagesV2: false,
+        };
+        const parsed = readInAppMessagesFlags(flags);
+
+        expect(inspectInAppMessagesFlagDelivery(flags, parsed)).toEqual({
+            requestedKey: 'inAppMessagesV2',
+            selectedKey: 'inAppMessagesV2',
+            usedLegacyFallback: false,
+            requestedValueState: 'boolean',
+            legacyValueState: 'object',
+            rawMessageCount: null,
+            acceptedMessageIds: [],
+            invalidMessages: [{ error: 'Invalid input: expected object, received boolean' }],
+        });
+    });
+
+    it('reports accepted IDs and parse errors from the legacy fallback without flag contents', () => {
+        const flags = {
+            inAppMessages: {
+                messages: [legacy, story, { id: 'broken', title: 42 }],
+            },
+        };
+        const parsed = readInAppMessagesFlags(flags);
+        const debug = inspectInAppMessagesFlagDelivery(flags, parsed);
+
+        expect(debug).toMatchObject({
+            requestedKey: 'inAppMessagesV2',
+            selectedKey: 'inAppMessages',
+            usedLegacyFallback: true,
+            requestedValueState: 'missing',
+            legacyValueState: 'object',
+            rawMessageCount: 3,
+            acceptedMessageIds: ['legacy'],
+        });
+        expect(debug.invalidMessages).toEqual([
+            { id: 'broken', error: expect.any(String) },
+            { id: 'story', error: expect.stringContaining('inAppMessagesV2') },
+        ]);
     });
 });
 

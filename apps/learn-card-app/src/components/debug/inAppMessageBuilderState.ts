@@ -6,7 +6,13 @@ import {
 } from '@learncard/types';
 
 export type BuilderActionType =
-    'internalLink' | 'externalLink' | 'appStore' | 'capgoUpdate' | 'dismiss';
+    | 'internalLink'
+    | 'externalLink'
+    | 'appStore'
+    | 'capgoUpdate'
+    | 'dismiss'
+    | 'openApp'
+    | 'openMessage';
 
 export interface BuilderAction {
     original?: InAppMessageAction;
@@ -15,6 +21,8 @@ export interface BuilderAction {
     type: BuilderActionType;
     path: string;
     url: string;
+    listingId?: string;
+    messageId?: string;
 }
 
 export type BuilderConditionKind = 'platform' | 'role' | 'version' | 'credential' | 'raw';
@@ -200,14 +208,22 @@ export const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
         label: a.label,
         style: a.style,
         action:
-            a.type === 'internalLink'
-                ? { type: a.type, path: a.path }
-                : a.type === 'externalLink'
-                  ? { type: a.type, url: a.url }
-                  : {
-                        ...(a.original?.action.type === a.type ? a.original.action : {}),
-                        type: a.type,
-                    },
+            a.type === 'openApp'
+                ? {
+                      type: a.type,
+                      listingId: a.listingId ?? '',
+                      ...(a.path ? { path: a.path } : {}),
+                  }
+                : a.type === 'openMessage'
+                  ? { type: a.type, messageId: a.messageId ?? '' }
+                  : a.type === 'internalLink'
+                    ? { type: a.type, path: a.path }
+                    : a.type === 'externalLink'
+                      ? { type: a.type, url: a.url }
+                      : {
+                            ...(a.original?.action.type === a.type ? a.original.action : {}),
+                            type: a.type,
+                        },
     }));
     const triggerWhere = {
         ...(csvToList(s.triggerNestedIssuers).length
@@ -379,8 +395,15 @@ export const messageToBuilderState = (m: InAppMessage): BuilderState => {
             label: a.label,
             style: a.style,
             type: a.action.type,
-            path: 'path' in a.action ? String(a.action.path) : '/',
+            path:
+                'path' in a.action
+                    ? String(a.action.path ?? '')
+                    : a.action.type === 'openApp'
+                      ? ''
+                      : '/',
             url: 'url' in a.action ? String(a.action.url) : 'https://',
+            listingId: a.action.type === 'openApp' ? a.action.listingId : undefined,
+            messageId: a.action.type === 'openMessage' ? a.action.messageId : undefined,
         })),
         triggerEvent: m.trigger?.event ?? '',
         triggerIssuers: m.trigger?.where?.issuers?.join(', ') ?? '',

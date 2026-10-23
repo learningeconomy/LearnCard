@@ -462,9 +462,11 @@ export const InAppMessageBuilder: React.FC<{
                             <option value="externalLink">externalLink</option>
                             <option value="appStore">appStore</option>
                             <option value="capgoUpdate">capgoUpdate</option>
+                            <option value="openApp">openApp (LearnCard)</option>
+                            <option value="openMessage">openMessage</option>
                         </select>
 
-                        {a.type === 'internalLink' && (
+                        {(a.type === 'internalLink' || a.type === 'openApp') && (
                             <input
                                 type="text"
                                 value={a.path}
@@ -472,6 +474,29 @@ export const InAppMessageBuilder: React.FC<{
                                 placeholder="/path"
                                 style={debugFieldInputStyle}
                                 className={`${fieldInputClass} max-w-[90px]`}
+                            />
+                        )}
+
+                        {a.type === 'openApp' && (
+                            <input
+                                type="text"
+                                aria-label="App listing ID"
+                                value={a.listingId ?? ''}
+                                onChange={e => updateAction(i, { listingId: e.target.value })}
+                                placeholder="Listing ID"
+                                style={debugFieldInputStyle}
+                                className={fieldInputClass}
+                            />
+                        )}
+                        {a.type === 'openMessage' && (
+                            <input
+                                type="text"
+                                aria-label="Message ID"
+                                value={a.messageId ?? ''}
+                                onChange={e => updateAction(i, { messageId: e.target.value })}
+                                placeholder="Message ID"
+                                style={debugFieldInputStyle}
+                                className={fieldInputClass}
                             />
                         )}
 

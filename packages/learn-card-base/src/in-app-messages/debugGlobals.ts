@@ -12,6 +12,7 @@ import { setInAppMessageOverride } from './debugOverrideStore';
 import { emitInAppMessageEvent } from './inAppMessageEvents';
 import { resetInAppMessageFatigue } from './fatigueStore';
 import type { CredentialSummary } from './credentialFacts';
+import { requestInAppMessage } from './deepLinkRequestStore';
 
 export interface InAppMessagesDevApi {
     enable: () => string;
@@ -27,6 +28,7 @@ export interface InAppMessagesDevApi {
     backfill: () => Promise<string>;
     emit: (event: 'credential.claimed' | 'app.opened', credential?: CredentialSummary) => string;
     resetCap: () => string;
+    openDeepLink: (id: string) => void;
 }
 
 declare global {
@@ -36,6 +38,7 @@ declare global {
 }
 
 const api: InAppMessagesDevApi = {
+    openDeepLink: requestInAppMessage,
     enable: () => {
         setInAppMessagesDebug(true);
 

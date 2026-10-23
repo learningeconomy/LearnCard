@@ -22,7 +22,11 @@ import { useCredentialFacts, type CredentialFactsState } from './useCredentialFa
 import { onInAppMessageEventsChanged, useRecentInAppMessageEvents } from './inAppMessageEvents';
 import { shouldSuppressByFatigue, onFatigueChanged } from './fatigueStore';
 import { isInAppMessagePresentationSupported } from './presentationSupport';
-import { IN_APP_MESSAGES_FLAG_KEY, readInAppMessagesFlags } from './flagDelivery';
+import {
+    IN_APP_MESSAGES_FLAG_KEY,
+    inspectInAppMessagesFlagDelivery,
+    readInAppMessagesFlags,
+} from './flagDelivery';
 
 export { IN_APP_MESSAGES_FLAG_KEY, LEGACY_IN_APP_MESSAGES_FLAG_KEY } from './flagDelivery';
 
@@ -115,6 +119,11 @@ export const useInAppMessages = (
     const { context: baseContext, ready: baseReady } = useInAppMessageRuntimeContext();
 
     const parsed = useMemo(() => readInAppMessagesFlags(flags ?? {}, flagKey), [flags, flagKey]);
+    const flagDeliveryDebug = useMemo(
+        () => inspectInAppMessagesFlagDelivery(flags ?? {}, parsed, flagKey),
+        [flags, flagKey, parsed]
+    );
+    const debugEnabled = isInAppMessagesDebug();
     const flag = parsed.flag;
     const needsCredentialFacts =
         options.forceCredentialFacts ||
@@ -128,6 +137,10 @@ export const useInAppMessages = (
     const [timedOutFactsKey, setTimedOutFactsKey] = useState<string | null>(null);
     const [clock, setClock] = useState(() => Date.now());
     const [suppressionRevision, setSuppressionRevision] = useState(0);
+
+    useEffect(() => {
+        if (debugEnabled) iamDebug('flag:delivery', flagDeliveryDebug);
+    }, [debugEnabled, flagDeliveryDebug]);
 
     useEffect(() => onInAppMessageEventsChanged(() => setClock(Date.now())), []);
 
