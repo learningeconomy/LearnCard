@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { VC } from '@learncard/types';
+import { Boost, VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
 import { formatLocaleDate } from '../../../i18n/formatters';
 
-// @ts-ignore
-import EmptySocialBoostIcon from '../../assets/images/emptySocialBoost.svg';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
 import useGetTroopNetwork from '../../../hooks/useGetTroopNetwork';
 
@@ -30,11 +28,11 @@ import {
     CredentialCategoryEnum,
 } from 'learn-card-base';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
+import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import IdDisplayContainer from '../../../pages/ids/IdDisplayContainer';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import CredentialSubjectDisplay from 'learn-card-base/components/CredentialSubjectDisplay/CredentialSubjectDisplay';
-import VCDisplayCardWrapper from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper';
 import ShareTroopIdModal from '../../../pages/troop/ShareTroopIdModal';
 
 import {
@@ -63,7 +61,7 @@ type BoostEarnedIDCardProps = {
     uri?: string;
     defaultImg: string;
     onCheckMarkClick?: () => void;
-    selectAll?: any;
+    selectAll?: boolean;
     initialCheckmarkState?: boolean;
     categoryType: CredentialCategoryEnum;
     useWrapper?: boolean;
@@ -92,70 +90,67 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     });
 
     const openPreviewModal = () => {
+        if (!cred) return;
+
+        const Preview = isBoost ? BoostPreview : NonBoostPreview;
+
         newPreviewModal(
             <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
-                {isBoost ? (
-                    <BoostPreview
-                        credential={cred as any}
-                        categoryType={categoryType as unknown as BoostCategoryOptionsEnum}
-                        issuerOverride={issuerName}
-                        issueeOverride={issueeName}
-                        verificationItems={isBoost ? (undefined as any) : []}
-                        handleCloseModal={closePreviewModal}
-                        subjectDID={subjectDID}
-                        subjectImageComponent={subjectProfileImageElement}
-                        issuerImageComponent={issuerProfileImageElement}
-                        customThumbComponent={
-                            isID || isMembership ? (
-                                <IDDisplayCard
-                                    cred={credential as any}
-                                    idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
-                                    idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
-                                    customIssuerThumbContainerClass="id-card-issuer-thumb-preview-container"
-                                    name={cardTitle}
-                                    location={cred?.address?.streetAddress}
-                                    issuerThumbnail={issuerThumbnailSrc}
-                                    showIssuerImage={showIssuerThumbnail}
-                                    backgroundImage={cred?.boostID?.backgroundImage}
-                                    dimBackgroundImage={cred?.boostID?.dimBackgroundImage}
-                                    fontColor={cred?.boostID?.fontColor}
-                                    accentColor={cred?.boostID?.accentColor}
-                                    idIssuerName={cred?.boostID?.IDIssuerName ?? issuerName}
-                                    {...mappedInputs}
-                                />
-                            ) : (
-                                <CredentialBadge
-                                    achievementType={
-                                        cred?.credentialSubject?.achievement?.achievementType
-                                    }
-                                    boostType={categoryType as any}
-                                    badgeThumbnail={badgeThumbnail}
-                                    badgeCircleCustomClass="w-[170px] h-[170px]"
-                                    showBackgroundImage={false}
-                                    backgroundImage={cred?.display?.backgroundImage ?? ''}
-                                    backgroundColor={cred?.display?.backgroundColor ?? ''}
-                                    credential={credential as any}
-                                />
-                            )
-                        }
-                        customDescription={customDescription}
-                        titleOverride={cardTitle}
-                        qrCodeOnClick={() => {
-                            closePreviewModal();
-                            presentShareBoostLink();
-                        }}
-                        customBodyCardComponent={undefined as any}
-                        customFooterComponent={undefined as any}
-                        customIssueHistoryComponent={undefined as any}
-                    />
-                ) : (
-                    <VCDisplayCardWrapper
-                        credential={cred as any}
-                        handleCloseModal={closePreviewModal}
-                        cr={undefined as any}
-                        lc={undefined as any}
-                    />
-                )}
+                <Preview
+                    credential={cred}
+                    categoryType={categoryType as unknown as BoostCategoryOptionsEnum}
+                    issuerOverride={issuerName}
+                    issueeOverride={issueeName}
+                    verificationItems={undefined}
+                    handleCloseModal={closePreviewModal}
+                    handleShareBoost={presentShareBoostLink}
+                    onDotsClick={handlePresentBoostMenuModal}
+                    subjectDID={subjectDID}
+                    subjectImageComponent={subjectProfileImageElement}
+                    issuerImageComponent={issuerProfileImageElement}
+                    customThumbComponent={
+                        isID || isMembership ? (
+                            <IDDisplayCard
+                                cred={credential}
+                                idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
+                                idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
+                                customIssuerThumbContainerClass="id-card-issuer-thumb-preview-container"
+                                name={cardTitle}
+                                location={cred?.address?.streetAddress}
+                                issuerThumbnail={issuerThumbnailSrc}
+                                showIssuerImage={showIssuerThumbnail}
+                                backgroundImage={cred?.boostID?.backgroundImage}
+                                dimBackgroundImage={cred?.boostID?.dimBackgroundImage}
+                                fontColor={cred?.boostID?.fontColor}
+                                accentColor={cred?.boostID?.accentColor}
+                                idIssuerName={cred?.boostID?.IDIssuerName ?? issuerName}
+                                {...mappedInputs}
+                            />
+                        ) : (
+                            <CredentialBadge
+                                achievementType={
+                                    cred?.credentialSubject?.achievement?.achievementType
+                                }
+                                boostType={categoryType as unknown as BoostCategoryOptionsEnum}
+                                badgeThumbnail={badgeThumbnail}
+                                badgeCircleCustomClass="w-[170px] h-[170px]"
+                                showBackgroundImage={false}
+                                backgroundImage={cred?.display?.backgroundImage ?? ''}
+                                backgroundColor={cred?.display?.backgroundColor ?? ''}
+                                credential={credential!}
+                            />
+                        )
+                    }
+                    customDescription={customDescription}
+                    titleOverride={cardTitle}
+                    qrCodeOnClick={() => {
+                        closePreviewModal();
+                        presentShareBoostLink();
+                    }}
+                    customBodyCardComponent={undefined}
+                    customFooterComponent={undefined}
+                    customIssueHistoryComponent={undefined}
+                />
             </ErrorBoundary>
         );
     };
@@ -188,8 +183,8 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     const credImg = getUrlFromImage(getCredentialSubject(cred)?.image ?? '');
     const cardTitle = isBoost ? cred?.name : getCredentialName(cred);
 
-    const { network: networkData } = useGetTroopNetwork({ credential: cred as any });
-    const subtitle = (networkData as any)?.name;
+    const { network: networkData } = useGetTroopNetwork({ credential: cred });
+    const subtitle = networkData?.name;
 
     const mappedInputs = credential ? getIDCardDisplayInputsFromVC(credential) : {};
 
@@ -207,15 +202,14 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     } = mappedInputs;
 
     const { handlePresentBoostMenuModal } = useBoostMenu(
-        credential as any,
-        (uri || '') as string,
-        credential as any,
-        credentialCategoryType as any,
+        credential!,
+        uri || '',
+        credential as unknown as Boost,
+        credentialCategoryType ?? categoryType,
         BoostMenuType.earned
     );
 
-    const type = categoryMetadata[categoryType as unknown as CredentialCategoryEnum]
-        ?.walletSubtype as any;
+    const type = categoryMetadata[categoryType as unknown as CredentialCategoryEnum]?.walletSubtype;
     const isID = (categoryType as unknown) === BoostCategoryOptionsEnum.id;
     const isMembership = (categoryType as unknown) === BoostCategoryOptionsEnum.membership;
 
@@ -250,13 +244,9 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     let issuerThumbnailSrc: string | undefined;
     let showIssuerThumbnail: boolean | undefined;
 
-    let {
-        issuerName,
-        issuerProfileImageElement,
-        issueeName,
-        subjectProfileImageElement,
-        loading: vcInfoLoading,
-    } = useGetVCInfo(cred);
+    const vcInfo = useGetVCInfo(cred);
+    const vcInfoLoading = vcInfo.loading;
+    let { issuerName, issuerProfileImageElement, issueeName, subjectProfileImageElement } = vcInfo;
 
     const showSkeleton = loading || resolvedBoostLoading || vcInfoLoading;
 
@@ -273,7 +263,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                 />
             );
             issuerThumbnailSrc = issuerThumbnail;
-            if (!!issuerThumbnail) showIssuerThumbnail = true;
+            if (issuerThumbnail) showIssuerThumbnail = true;
         }
         if (issueeThumbnail) {
             subjectProfileImageElement = (
@@ -291,15 +281,13 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         }
     }
 
-    const credentialComponentDisplay = isBoost ? BoostPreview : VCDisplayCardWrapper;
-
     const presentShareBoostLink = () => {
         if (!credential) return;
 
         newPreviewModal(
             <ShareTroopIdModal
-                credential={(credential as any).boostCredential ?? credential}
-                uri={(credential as any).boostId ?? uri}
+                credential={credential.boostCredential ?? credential}
+                uri={credential.boostId ?? uri}
             />,
             { sectionClassName: 'bg-transparent! shadow-none! max-w-[355px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -344,7 +332,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                     customThumbComponent={
                         <CredentialBadge
                             achievementType={cred?.credentialSubject?.achievement?.achievementType}
-                            boostType={categoryType as any}
+                            boostType={categoryType as unknown as BoostCategoryOptionsEnum}
                             badgeThumbnail={badgeThumbnail}
                             showBackgroundImage
                             backgroundImage={cred?.display?.backgroundImage ?? ''}
@@ -354,7 +342,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                             badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                             badgeRibbonCustomClass="w-[26px]"
                             badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
-                            credential={credential as any}
+                            credential={credential!}
                         />
                     }
                     title={cardTitle}
