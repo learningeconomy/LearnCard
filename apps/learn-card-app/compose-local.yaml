@@ -114,6 +114,9 @@ services:
             # Zero-cost in hot paths when unset; toggle off by unsetting.
             LC_PERF_LOG: '1'
             DOMAIN_NAME: 'localhost%3A4000'
+            # Dev-only: lets local partner reference servers (examples/demo-lms) pass health
+            # probes over http://localhost. Brain refuses this flag in production.
+            INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP: 'true'
             # LC-2187 local-only trust pair; keep in sync with cloud below.
             # localhost resolves through host-gateway to the published cloud port.
             SHARE_LINK_MAINTENANCE_NAMESPACE: learncard-local
