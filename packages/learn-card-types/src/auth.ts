@@ -676,6 +676,7 @@ export interface KeyDerivationStrategy<
         didFromPrivateKey?: (privateKey: string) => Promise<string>;
         /** Optional: sign the fresh challenge required to persist rotated shares */
         signDidAuthVp?: DidAuthVpSigner;
+        options?: { recoveryEmail?: string; recoveryLanguage?: string };
     }): Promise<RecoveryResult>;
 
     /** Set up a new recovery method */
@@ -730,6 +731,7 @@ export interface KeyDerivationStrategy<
         token: string;
         providerType: AuthProviderType;
         signDidAuthVp?: DidAuthVpSigner;
+        options?: { recoveryEmail?: string; recoveryLanguage?: string };
     }): Promise<RecoveryResult>;
 
     // --- Contact method management ---

@@ -2478,6 +2478,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             input: RecoveryInput;
             didFromPrivateKey?: (privateKey: string) => Promise<string>;
             signDidAuthVp?: DidAuthVpSigner;
+            options?: { recoveryEmail?: string; recoveryLanguage?: string };
         }): Promise<RecoveryResult> {
             const storage = guardedStorage();
             const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
@@ -2569,7 +2570,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 // The OTP path uses exactly this pending state and atomic rebind operation.
                 // Without a provider session the caller completes it after signing in.
                 if (!token) return { privateKey, did: material.primaryDid };
-                return this.completeIdentityRecovery!({ token, providerType, signDidAuthVp });
+                return this.completeIdentityRecovery!({
+                    token,
+                    providerType,
+                    signDidAuthVp,
+                    options: params.options,
+                });
             }
 
             let recoveryShare: string;
@@ -3475,7 +3481,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 signDidAuthVp,
                 undefined,
                 undefined,
-                true
+                true,
+                storage.assertCurrent,
+                params.options?.recoveryEmail,
+                params.options?.recoveryLanguage
             );
             if (activeStorageId !== storageId || storageGeneration !== generation) {
                 throw new Error('This recovery request was cancelled.');

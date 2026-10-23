@@ -473,6 +473,12 @@ const setup = async (legacyEnrolled = false) => {
                 });
             }
             if (path === '/keys/escrow/opt-in') return response({ success: true });
+            if (path === '/keys/recovery-session/rebind') {
+                return response({
+                    shareVersion: ++version,
+                    recoveryMethodsRequireConfirmation: [],
+                });
+            }
             throw new Error('Unexpected test request');
         })
     );
@@ -525,6 +531,29 @@ afterEach(() => {
 });
 
 describe('Nitro recovery initiating-client bindings and measurement rollover', () => {
+    it('binds recovery contact into the enrollment intent after identity recovery', async () => {
+        const f = await setup();
+        const hold = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            expectedDid: owner.intent.did,
+        });
+        await f.strategy.executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: { method: 'escrow', ...hold, resumeToken: hold.resumeToken! },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await f.strategy.completeIdentityRecovery!({
+            ...f.params,
+            options: { recoveryEmail: 'recovered@example.com', recoveryLanguage: 'es' },
+        });
+        expect(f.intents.at(-1)?.intent).toMatchObject({
+            recoveryEmail: 'recovered@example.com',
+            recoveryLanguage: 'es',
+            action: 'enroll',
+        });
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+    });
     const start = (f: Awaited<ReturnType<typeof setup>>) =>
         f.strategy.startEscrowRecovery!({
             token: 'token',

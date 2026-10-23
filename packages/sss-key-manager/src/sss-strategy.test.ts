@@ -937,14 +937,18 @@ describe('escrow strategy', () => {
 
     it('round trips real crypto, rebinds and persists a new device share', async () => {
         await strategy.ensureEscrowEnrollment!(params);
+        const complete = vi.spyOn(strategy, 'completeIdentityRecovery');
+        const options = { recoveryEmail: 'owner@example.com', recoveryLanguage: 'es' };
         const previous = await storage.getDeviceShare();
         const start = await strategy.startEscrowRecovery!({ token, providerType });
         const recovered = await strategy.executeRecovery({
             ...params,
+            options,
             input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
             didFromPrivateKey: async key => (key === privateKey ? did : ''),
         });
         expect(recovered.privateKey === privateKey).toBe(true);
+        expect(complete).toHaveBeenCalledWith(expect.objectContaining({ options }));
         expect((await storage.getDeviceShare()) === previous).toBe(false);
         expect(
             (await reconstructFromShares([(await storage.getDeviceShare())!, authShare])) ===
