@@ -45,6 +45,100 @@ describe('restricted renderer', (): void => {
         delete p.endpoints[1]!.query;
         expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow('SPEC_INVALID');
     });
+    it('resolves published origins from allocated ports and keeps private references private', (): void => {
+        const p = plan();
+        p.execution!.components[0]!.env = [
+            {
+                name: 'PUBLIC_HOST',
+                source: {
+                    kind: 'endpoint',
+                    endpointId: 'web',
+                    part: 'origin',
+                    address: 'published',
+                },
+            },
+            {
+                name: 'PUBLIC_URL',
+                source: { kind: 'endpoint', endpointId: 'web', part: 'url', address: 'published' },
+            },
+            { name: 'SELF', source: { kind: 'endpoint', endpointId: 'web', part: 'url' } },
+        ];
+        const spec = parseSpec(JSON.stringify(p), config());
+        const env = parse(render(spec, 'id', 1, config(), { 'web:http': 21001 }).yaml).services[
+            safeName('web')
+        ].environment;
+        expect(env.PUBLIC_HOST).toBe('http://127.0.0.1:21001');
+        expect(env.PUBLIC_URL.startsWith('http://127.0.0.1:21001/')).toBe(true);
+        expect(env.SELF.startsWith(`http://${safeName('web')}:5678/`)).toBe(true);
+        expect((): unknown => render(spec, 'id', 1, config(), {})).toThrow('PORT_UNALLOCATED');
+    });
+    it('rejects published addresses for internal or non-HTTP endpoints', (): void => {
+        const p = plan();
+        p.endpoints[0]!.visibility = 'internal';
+        p.execution!.components[0]!.env = [
+            {
+                name: 'PUBLIC_HOST',
+                source: {
+                    kind: 'endpoint',
+                    endpointId: 'web',
+                    part: 'origin',
+                    address: 'published',
+                },
+            },
+        ];
+        expect((): unknown => parseSpec(JSON.stringify(p), config())).toThrow('SPEC_INVALID');
+        const q = plan();
+        q.execution!.components[0]!.env = [
+            { name: 'X', source: { kind: 'endpoint', endpointId: 'web', part: 'origin' } },
+        ];
+        expect((): unknown => parseSpec(JSON.stringify(q), config())).toThrow('SPEC_INVALID');
+        const t = plan();
+        t.endpoints[0]!.protocol = 'tcp';
+        t.execution!.components[0]!.env = [
+            {
+                name: 'PUBLIC_HOST',
+                source: { kind: 'endpoint', endpointId: 'web', part: 'url', address: 'published' },
+            },
+        ];
+        expect((): unknown => parseSpec(JSON.stringify(t), config())).toThrow('SPEC_INVALID');
+    });
+    it('projects explicit private and non-root published paths consistently', (): void => {
+        const p = plan();
+        p.endpoints[0]!.path = '/exchange';
+        p.execution!.components[0]!.env = [
+            {
+                name: 'PRIVATE_PORT',
+                source: { kind: 'endpoint', endpointId: 'web', part: 'port', address: 'private' },
+            },
+            {
+                name: 'PUBLIC_ORIGIN',
+                source: {
+                    kind: 'endpoint',
+                    endpointId: 'web',
+                    part: 'origin',
+                    address: 'published',
+                },
+            },
+            {
+                name: 'PUBLIC_URL',
+                source: { kind: 'endpoint', endpointId: 'web', part: 'url', address: 'published' },
+            },
+            {
+                name: 'PUBLIC_PORT',
+                source: { kind: 'endpoint', endpointId: 'web', part: 'port', address: 'published' },
+            },
+        ];
+        const spec = parseSpec(JSON.stringify(p), config());
+        const env = parse(render(spec, 'id', 1, config(), { 'web:http': 21001 }).yaml).services[
+            safeName('web')
+        ].environment;
+        expect(env).toMatchObject({
+            PRIVATE_PORT: '5678',
+            PUBLIC_ORIGIN: 'http://127.0.0.1:21001',
+            PUBLIC_URL: 'http://127.0.0.1:21001/exchange',
+            PUBLIC_PORT: '21001',
+        });
+    });
     it('rejects dependency cycles independently of publication', (): void => {
         const p = plan();
         p.execution!.components[0]!.dependsOn = ['web'];

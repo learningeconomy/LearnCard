@@ -103,6 +103,16 @@ export const parseSpec = (json: string, config: AgentConfig): Spec => {
                     throw new AgentError('MOUNT_FORBIDDEN');
             }
             for (const entry of component.env) {
+                if (entry.source.kind === 'endpoint' && entry.source.address === 'published') {
+                    const endpointId = entry.source.endpointId;
+                    const target = endpoints.find((e): boolean => e.id === endpointId);
+                    if (
+                        !target ||
+                        target.visibility === 'internal' ||
+                        (target.protocol !== 'http' && target.protocol !== 'https')
+                    )
+                        throw new AgentError('SPEC_INVALID');
+                }
                 if (entry.source.kind === 'secret') {
                     const name = entry.source.name;
                     if (
@@ -157,6 +167,8 @@ export const endpointUrl = (
     const component = spec.components.find((c): boolean => c.id === endpoint.component)!;
     const port = component.ports.find((p): boolean => p.name === endpoint.port)!;
     const published = endpoint.visibility !== 'internal' && ports;
+    if (published && !ports[portKey(component.id, port.name)])
+        throw new AgentError('PORT_UNALLOCATED');
     // The Compose service name, not container_name: container names embed the deployment id
     // and exceed the 63-char DNS label limit, so in-container resolvers reject them.
     const url = `${endpoint.protocol}://${published ? '127.0.0.1' : safeName(component.id)}:${published ? ports[portKey(component.id, port.name)] : port.containerPort}${endpoint.path}`;
@@ -164,6 +176,24 @@ export const endpointUrl = (
         ? `${url}?directConnection=true&replicaSet=${encodeURIComponent(endpoint.query!.replicaSet)}`
         : url;
 };
+
+/**
+ * Platform resolver for `address: 'published'` env references. The local-compose driver
+ * publishes only on host loopback; a future ingress resolver replaces this function alone.
+ */
+export const publishedEndpointUrl = (
+    spec: Spec,
+    deployment: string,
+    endpointId: string,
+    ports: Record<string, number>
+): URL => {
+    const url = new URL(endpointUrl(spec, deployment, endpointId, ports));
+    if (url.hostname !== '127.0.0.1') throw new AgentError('SPEC_INVALID');
+    return url;
+};
+
+const effectivePort = (url: URL): string =>
+    url.port || (url.protocol === 'https:' ? '443' : url.protocol === 'http:' ? '80' : '');
 
 export interface Rendered {
     yaml: string;
@@ -190,7 +220,10 @@ export const render = (
             if (source.kind === 'secret') continue;
             if (source.kind === 'literal') environment[entry.name] = source.value;
             if (source.kind === 'endpoint') {
-                const url = new URL(endpointUrl(spec, deployment, source.endpointId));
+                const url =
+                    source.address === 'published'
+                        ? publishedEndpointUrl(spec, deployment, source.endpointId, ports)
+                        : new URL(endpointUrl(spec, deployment, source.endpointId));
                 environment[entry.name] =
                     source.part === 'url'
                         ? url.href
@@ -198,7 +231,9 @@ export const render = (
                           ? url.hostname
                           : source.part === 'hostport'
                             ? url.host
-                            : url.port;
+                            : source.part === 'origin'
+                              ? url.origin
+                              : effectivePort(url);
             }
             if (source.kind === 'config') {
                 let value: unknown = spec.config;
