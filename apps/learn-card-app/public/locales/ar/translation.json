@@ -3723,6 +3723,20 @@
         "skillsHub": "مركز المهارات"
     },
     "base": {
+        "inAppMessages": {
+            "next": "التالي",
+            "previous": "السابق",
+            "done": "تم",
+            "progress": "تقدم القصة",
+            "error": "حدث خطأ ما. حاول مرة أخرى.",
+            "retry": "حاول مرة أخرى",
+            "loading": "جارٍ التحميل…",
+            "opening": "جارٍ الفتح…",
+            "checking": "جارٍ التحقق…",
+            "downloading": "جارٍ التنزيل… {{progress}}%",
+            "installing": "جارٍ التثبيت…",
+            "upToDate": "لديك أحدث إصدار."
+        },
         "verification": {
             "selfIssued": "صادر ذاتياً",
             "trustedIssuer": "جهة إصدار موثوقة",

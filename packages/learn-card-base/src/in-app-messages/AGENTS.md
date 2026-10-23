@@ -8,7 +8,7 @@ reference; this file is for making **code** changes safely.
 ## Architecture (data flow)
 
 ```
-LaunchDarkly `inAppMessagesV2` (JSON; legacy-only fallback when absent)
+LaunchDarkly `inAppMessagesV2` (JSON; legacy-only `inAppMessages` fallback when absent)
    → useFlags()                       (launchdarkly-react-client-sdk)
    → parseInAppMessagesFlagWithErrors() (@learncard/types — isolate invalid siblings)
    → useInAppMessages()               (targeting + triggers + frequency + fatigue, highest priority)
@@ -18,7 +18,7 @@ LaunchDarkly `inAppMessagesV2` (JSON; legacy-only fallback when absent)
         ├─ messageMatches()/evaluatePredicate()  (predicates.ts — PURE)
         └─ filterSuppressed()         (dismissalStore.ts)
    → InAppMessageHost                 (mounted in each app's FullApp.tsx)
-        → InAppMessageModal | InAppMessageBanner | toast
+        → modal | banner | toast | story | iframe
              ├─ useInAppMessageActions()  (internalLink/externalLink/appStore/dismiss)
              └─ useCapgoUpdate()          (capgoUpdate action: OTA download + progress)
 ```
@@ -32,7 +32,7 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
   Keep `inAppMessages` parseable by released clients; payload version numbers do not isolate it.
 - **Schema first.** Any new field/action/predicate starts in `@learncard/types/inAppMessages.ts`,
   then flows through `predicates.ts` (if it affects matching) and the UI. Keep `.passthrough()` /
-  safe defaults so old clients never break on new flag fields.
+  safe defaults for additive fields. New enum members are NOT safe on older clients; see rollout rules below.
 - **Fail closed.** Missing/unparseable data in a predicate must return `false`, never throw. A
   malformed envelope must degrade to "show nothing"; invalid messages must not discard valid siblings.
 - **`predicates.ts` stays pure** — no React, no Capacitor, no I/O. It is the unit-tested core.
@@ -56,6 +56,43 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
   entries from backfill until acceptance succeeds.
 
 ## How to extend
+
+### Rich presentations (LC-2263)
+
+- Localize the selected message with `localizeMessage` at the host, never in targeting or persisted state.
+- Stories and iframes use `InAppMessageSurface` / token-owned `useModal` cleanup; keep live content in
+  its React portal. Shared surfaces own insets and accessibility. Never close an unrelated top modal.
+  Reparent the stable portal container when responsive modal hosts change; never replace the portal
+  target or unmount action owners during a pending update. Test with actual breakpoint replacements.
+- `MessageActions` owns modal/story button and Capgo behavior. Report accepted actions separately from
+  explicit dismissal; navigation completion, retries, and gate cleanup are not new impressions.
+- Iframe bridge input is untrusted: validate window, origin, envelope, and safe target before running
+  actions. No Capgo or identity APIs. Internal destinations must exactly match the campaign's
+  `iframe.allowedInternalPaths` (default deny), including query/fragment. Required frames ignore
+  bridge close/dismiss requests; their host-owned Close button becomes available on error or after 30 seconds, including after ready.
+- Iframe campaigns are web-only: enforce `presentationSupport` in selection, host (including overrides),
+  and renderer. Native subframes can bypass the JS allowlist through Capacitor handlers; the HTML
+  sandbox is not native isolation. Do not enable native embedding without a verified native boundary.
+- Presentation analytics use `InAppMessagePresentationEvent` (distinct from credential events).
+  Keep payloads allowlisted and exclude overrides from app analytics.
+- Story actions are final-screen-only; reject earlier overrides and keep the builder editor restricted.
+  Localize overrides through `locales[locale].steps[index].actionLabels`; preserve positional fallbacks.
+- Required modals and stories need an effective action that the shared runner can actually close.
+  Respect `closeOnComplete`; do not count Capgo, environment-dependent store actions, or host-specific
+  app navigation as guaranteed exits. Required story overrides are evaluated on the final screen.
+- Mirror arrow, swipe, and tap navigation using the rendered direction, including language switches.
+- Emit actions after successful completion, excluding no-ops/failures. Include `actionSource` alongside
+  authored action indexes; bridge actions have no index/source. Capgo completion can be lost on reload.
+
+### Rollout rules for new presentations
+
+Older clients parse the whole legacy flag and reject every campaign if any presentation enum is unknown.
+`enabled: false` and on-device targeting cannot protect them: parsing comes first. New clients read
+`inAppMessagesV2`; only when absent do they fall back to legacy `inAppMessages`, rejecting rich entries
+there. An empty/off/invalid V2 value is authoritative. Never merge the two feeds. Keep all legacy-key
+variations legacy-safe indefinitely while older binaries exist; merely shipping #1729 does not update
+them. Copy still-needed legacy campaigns into V2 with the same IDs. The author confirmed existing
+test campaigns use dev/staging only; moving them to V2 is a separate LaunchDarkly configuration step.
 
 ### Add a new action type (e.g. `share`)
 
@@ -124,7 +161,8 @@ Rules when touching this:
   `startsWith(prefix)` (over-matches `/connections` for `/connect`).
 - New critical routes → add to `DEFAULT_SUPPRESSED_ROUTE_PREFIXES` (covers both apps) or pass
   `suppressedRoutePrefixes` from the app mount for app-specific paths.
-- The host's gate props are optional; both apps currently mount `<InAppMessageHost />` bare.
+- The host's gate props are optional. LearnCard wraps it with the consent-aware analytics adapter;
+  both apps provide the shared i18n context for reactive presentation localization.
 
 ## Debugging
 

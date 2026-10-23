@@ -1,7 +1,7 @@
 # In-App Messages
 
 A LaunchDarkly-driven system for **conditional, targeted user prompts** across LearnCard apps
-(`learn-card-app` + `scouts`). The JSON flag (`inAppMessagesV2`) delivers a prioritized list of
+(`learn-card-app` + `scouts`). The JSON flag `inAppMessagesV2` delivers a prioritized list of
 messages; each message carries its own **targeting predicate tree** that is evaluated _on device_
 so it can see things LaunchDarkly's own rules cannot — the Capacitor platform, the native binary
 version, and the live Capgo/OTA bundle version.
@@ -20,7 +20,7 @@ version, and the live Capgo/OTA bundle version.
 ## Quick start
 
 The host is already mounted in both apps (`FullApp.tsx`), so **you don't write any React** — you
-just author the flag value in LaunchDarkly. Create a JSON flag named **`inAppMessagesV2`** and paste
+just author the flag value in LaunchDarkly. Create a client-readable JSON flag named **`inAppMessagesV2`** and paste
 a value like:
 
 Keep `inAppMessages` compatible with older released clients: platform, role, and version targeting
@@ -123,6 +123,11 @@ resolves per-platform from tenant `links` config; add per-message overrides if y
                 "iosUrl": "https://apps.apple.com/app/id1508141215",
                 "androidUrl": "https://play.google.com/store/apps/details?id=com.learncard.app"
             }
+        },
+        {
+            "label": "Close",
+            "style": "dismiss",
+            "action": { "type": "dismiss" }
         }
     ],
     "targeting": {
@@ -167,20 +172,20 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 
 ### Message
 
-| Field          | Type                                     | Default   | Notes                                                         |
-| -------------- | ---------------------------------------- | --------- | ------------------------------------------------------------- |
-| `id`           | `string`                                 | —         | Stable key; used to persist dismissal / frequency state       |
-| `priority`     | `number`                                 | `0`       | Highest matching message wins                                 |
-| `dismissible`  | `boolean`                                | `true`    | `false` = required/blocking (no close affordance)             |
-| `frequency`    | `"once" \| "session" \| "always" \| {…}` | `"once"`  | See [Frequency](#frequency)                                   |
-| `presentation` | `"modal" \| "banner" \| "toast"`         | `"modal"` | `toast` is a glass capsule, auto-dismisses; no media/actions  |
-| `media`        | `{ type, url, aspect?, alt? }`           | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`     |
-| `emoji`        | `string`                                 | —         | Hero glyph shown when `media` is not set (modal/banner/toast) |
-| `title`        | `string`                                 | —         | Required                                                      |
-| `body`         | `string`                                 | —         | Optional                                                      |
-| `actions`      | `Action[]`                               | `[]`      | See [Actions](#actions)                                       |
-| `targeting`    | `Predicate`                              | —         | Omitted → matches everyone                                    |
-| `enabled`      | `boolean`                                | `true`    | Set `false` to disable without removing from the flag         |
+| Field          | Type                                                    | Default   | Notes                                                                         |
+| -------------- | ------------------------------------------------------- | --------- | ----------------------------------------------------------------------------- |
+| `id`           | `string`                                                | —         | Stable key; used to persist dismissal / frequency state                       |
+| `priority`     | `number`                                                | `0`       | Highest matching message wins                                                 |
+| `dismissible`  | `boolean`                                               | `true`    | `false` = required/blocking; iframes offer Close on error or after 30 seconds |
+| `frequency`    | `"once" \| "session" \| "always" \| {…}`                | `"once"`  | See [Frequency](#frequency)                                                   |
+| `presentation` | `"modal" \| "banner" \| "toast" \| "story" \| "iframe"` | `"modal"` | Stories require `steps`; iframes require `iframe.url`                         |
+| `media`        | `{ type, url, aspect?, alt? }`                          | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`                     |
+| `emoji`        | `string`                                                | —         | Hero glyph shown when `media` is not set (modal/banner/toast)                 |
+| `title`        | `string`                                                | —         | Required                                                                      |
+| `body`         | `string`                                                | —         | Optional                                                                      |
+| `actions`      | `Action[]`                                              | `[]`      | See [Actions](#actions)                                                       |
+| `targeting`    | `Predicate`                                             | —         | Omitted → matches everyone                                                    |
+| `enabled`      | `boolean`                                               | `true`    | Set `false` to disable without removing from the flag                         |
 
 ### Actions
 
@@ -195,7 +200,11 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 | `dismiss`      | —                                   | Closes the message                                                        |
 
 `closeOnComplete` (default `true`) closes the message after the action runs. `capgoUpdate` never
-auto-closes — it swaps into an inline progress state instead.
+auto-closes — it swaps into an inline progress state instead. `appStore` can no-op when no URL is
+available for the current platform. Legacy required modals remain valid, including force-update
+campaigns with only `appStore` or `capgoUpdate`. Authors should provide a closing action when
+appropriate: `dismiss`, `internalLink`, `externalLink`, or `openMessage`, with `closeOnComplete`
+left enabled. Host-dependent `openApp` can no-op in an unsupported app.
 
 ### Frequency
 
@@ -313,7 +322,7 @@ Everything is exported from `learn-card-base`:
 ```tsx
 import { useInAppMessages, evaluatePredicate, compareSemver } from 'learn-card-base';
 
-const { message, context, ready } = useInAppMessages(); // reads `inAppMessagesV2`, with legacy fallback when absent
+const { message, context, ready } = useInAppMessages(); // reads `inAppMessagesV2`, legacy fallback only when absent
 ```
 
 ```ts
@@ -456,7 +465,8 @@ interface InAppMessagesReport {
         suppressed: boolean; // frequency/dismissal suppressed it
         triggerSatisfied: boolean;
         fatigueSuppressed: boolean;
-        willShow: boolean; // matched && !suppressed && !fatigueSuppressed (gate is separate)
+        presentationSupported: boolean;
+        willShow: boolean; // presentationSupported && matched && !suppressed && !fatigueSuppressed
         trace: PredicateTrace | null; // recursive pass/fail tree with human labels
     }>;
 }
@@ -477,6 +487,218 @@ wallet's DID. The builder supports credential predicates, negation/nested JSON t
 and fatigue bypass. Simulations do not add real credentials.
 Scouts has the same console APIs without requiring the LearnCard debug panel. The panel is lazy
 loaded only for dev/debug-enabled builds; normal production builds omit it.
+
+## Stories, embedded pages, and translations (LC-2263)
+
+`presentation` also accepts `story` and `iframe`. Modal/banner/toast rendering and legacy required
+modal validation are unchanged. Targeting and triggers still
+run before presentation; both new formats use the existing blocking fatigue rules. Deploy supporting
+clients before enabling campaigns that use these values.
+Presentation fields are exclusive: only stories may define `steps`, and only iframes may define
+`iframe`. Mixed payloads are rejected per message while valid sibling campaigns remain available.
+
+### Rollout compatibility
+
+Older released clients validate the entire flag and only recognize `modal`, `banner`, and `toast`.
+Receiving one `story` or `iframe` entry can make them reject **every campaign** in the flag.
+The per-message isolation added in #1729 only protects clients that actually include that parser.
+Adding passthrough fields is different from extending an enum; neither `enabled: false` nor on-device
+version targeting protects older clients because validation runs before those checks.
+
+Rich-capable clients now read a **separate key: `inAppMessagesV2`**. Older binaries continue reading
+`inAppMessages`; shipping #1729 does not update those installed binaries. Keep every variation of the
+legacy key limited to `modal`, `banner`, and `toast`, including its default/off values.
+
+When V2 is absent, new clients fall back to the legacy key but reject rich entries there with a
+diagnostic. When V2 is present it is authoritative (including settings): empty, off, or malformed
+values never fall back or merge legacy campaigns. Copy any still-needed legacy campaigns into V2,
+keeping their IDs stable so existing frequency state carries over. The JSON envelope `version`
+field is not a delivery gate and does not need to change.
+
+Configuration rollout: create the client-readable V2 JSON flag, copy the campaigns needed by new
+clients, move story/iframe entries out of the legacy flag, and retain all unrelated legacy campaigns.
+Use `{ "messages": [] }` as an explicit V2 off/default variation. This repository change does not
+modify LaunchDarkly. The author confirmed existing test campaigns are dev/staging-only and inaccessible
+to released builds; those test entries still need to be moved to V2 before testing this revision.
+
+```json
+{
+    "id": "achievement-intro",
+    "title": "Explore your achievements",
+    "presentation": "story",
+    "steps": [
+        {
+            "title": "Your achievements, together",
+            "body": "Keep a record of what you have learned."
+        },
+        { "title": "Choose your next step" }
+    ],
+    "actions": [{ "label": "Done", "action": { "type": "dismiss" } }],
+    "locales": {
+        "es": {
+            "title": "Explora tus logros",
+            "actionLabels": ["Listo"],
+            "steps": [{ "title": "Tus logros, juntos" }]
+        }
+    }
+}
+```
+
+Stories require at least one screen. Each screen supports `title`, `body`, `media`, `emoji`, and
+optional `actions` on the **final screen only**. Earlier action overrides (including empty arrays)
+are rejected by the schema; the builder offers the action editor only on the final screen and warns
+when reordering leaves an override on an earlier screen. Earlier screens show Next; the final screen
+uses `step.actions ?? message.actions` (an explicitly empty array suppresses inherited actions).
+There is no timer or wrapping. In LTR, tap the left third to go back, the right two thirds to continue,
+swipe left to continue, or use Right/Left arrow keys for next/previous. RTL mirrors these controls:
+right third goes back, left two thirds continue, swipe right continues, and ArrowLeft advances. Interactive
+media and controls do not advance the story. Required stories should provide a completing final action.
+Final-screen action state remains mounted across navigation and responsive modal replacement. The
+same portal container moves between the mobile and desktop surfaces, preserving update progress and
+operation ownership when a learner navigates back, rotates a device, or resizes split view.
+An explicit final-screen `actions: []` still overrides message-level actions, but it is invalid when
+the story is required. Required stories need a guaranteed closing action in their effective final
+action list; optional stories may rely on the host close control.
+
+`locales` supports `title`, `body`, `actionLabels`, `steps` (title/body/actionLabels), and `iframeUrl`. Each field
+falls back independently: exact locale, language, original. Arrays are positional and never add
+screens/actions; `null` entries can skip positions. Top-level `actionLabels` translates message-level
+actions; `steps[i].actionLabels` translates that screen's override actions, independently. For example,
+`"es": { "steps": [null, { "actionLabels": ["Listo"] }] }` translates the first action on screen 2.
+Empty strings are intentional overrides. Localization
+happens after winner selection and does not change targeting or consume another impression.
+
+```json
+{
+    "id": "embedded-guide",
+    "title": "Learn more",
+    "presentation": "iframe",
+    "iframe": {
+        "url": "https://your-content.example/guide.html",
+        "title": "Guide",
+        "loadTimeoutMs": 10000,
+        "allowedInternalPaths": ["/passport"]
+    }
+}
+```
+
+**Iframe campaigns are web-only.** Capacitor iOS/Android builds exclude them before selection,
+including required campaigns, without consuming impressions or blocking supported siblings. Debug
+overrides and direct iframe rendering cannot bypass this restriction. The local diagnostic report
+sets `presentationSupported:false`. The HTML sandbox and our JavaScript action allowlist do not
+isolate WebKit's native message handlers: remote subframes can call those handlers directly.
+Native embedding must stay disabled until native main-frame/trusted-origin enforcement or an
+unprivileged WebView is implemented and verified. This gate does not modify the native bridge itself.
+
+Iframe URLs (including translated URLs) must be HTTPS, without embedded credentials. Same-origin
+embeds are refused at runtime: a scripted same-origin page could access the parent app directly. The sandbox is
+fixed to `allow-scripts allow-same-origin allow-forms allow-popups`. The app owns the close control,
+loading skeleton, timeout/offline error, and retry. Dismissible frames accept a browser load event or
+a valid `ready` message. Required frames (`dismissible:false`) require the validated `ready` handshake
+to remove the skeleton and cancel the timeout; **load does not prove the remote page succeeded**. The remote server must allow
+embedding through its CSP `frame-ancestors` / X-Frame-Options policy. These restrictions cannot be
+bypassed by the app. Retry mounts a new frame; old listeners and completions are discarded.
+`loadTimeoutMs` defaults to 10 seconds and accepts positive integer values through 30 seconds. Values
+above that limit are rejected rather than silently clamped, isolating an outdated campaign instead
+of changing its authored behavior. A required frame that never becomes ready reaches the error state
+within that bound, where the app-owned Close action is always available.
+For dismissible frames, a blocked/error-page load can still end the loading state and cancel the
+timer, leaving a blank but closable surface. Cross-origin content cannot be inspected to detect this.
+Use a required bridge-enabled frame with no `ready` handshake to verify blocked-page timeout/retry;
+an actual missing load event or an offline event can also exercise failure handling on dismissible frames.
+
+### Iframe protocol
+
+Send to the known parent origin, never `*`:
+
+```js
+parent.postMessage({ type: 'LC_IN_APP_MESSAGE', event: 'ready' }, parentOrigin);
+parent.postMessage({ type: 'LC_IN_APP_MESSAGE', event: 'close' }, parentOrigin);
+parent.postMessage(
+    {
+        type: 'LC_IN_APP_MESSAGE',
+        event: 'runAction',
+        action: { type: 'internalLink', path: '/passport' },
+    },
+    parentOrigin
+);
+```
+
+The app verifies the sender's window, the configured URL's exact origin, the envelope, and the action.
+Only existing actions are supported; `capgoUpdate` and future `openApp`/`openMessage` targets are
+rejected. Internal navigation is **denied by default**. A destination must exactly match an entry in
+the campaign's `iframe.allowedInternalPaths`, including its query string and fragment. No prefix,
+wildcard, decoding, or query-stripping match is performed. For example, approving `/passport` does
+not approve `/passport?returnTo=/request` or `/passport#other`. Declare only destinations the campaign
+actually needs; do not approve sensitive request/exchange/consent routes for untrusted content.
+Paths must start with a single `/` and contain no whitespace/backslashes;
+external/store overrides must use HTTPS. There is no identity, authentication, credential, or wallet
+API. Do not place private account data in authored URLs. The bridge has no response channel.
+Popups inherit the iframe sandbox: `allow-popups-to-escape-sandbox` is intentionally absent.
+For external links that need an ordinary browser context (such as sign-in or store pages), send a
+validated `runAction` with `externalLink` or `appStore` through the host instead of `window.open`.
+
+For `dismissible:false`, neither `close` nor a `dismiss` action is honored. A successful navigation
+action can complete the message; no-op/failed actions cannot. After an offline, timeout, frame-load,
+or same-origin error, the app-owned **Close** button is available even for required frames, alongside
+retry. Only the user can take this escape; a required frame's bridge close/dismiss requests stay
+rejected. Retrying restores the required loading state. Use required campaigns sparingly.
+
+The runnable [bridge example](examples/iframe.html) accepts a `parentOrigin` query parameter. Host it
+on a separate HTTPS origin you control and pass the web app's exact origin; no hosting service is
+created by this PR. Declare `"allowedInternalPaths": ["/passport"]` for its navigation button.
+Native campaign embedding is disabled regardless of the configured origin.
+
+#### Native isolation regression
+
+Unit tests assert that native selection skips the iframe, previews open no modal/consume no
+impression, and direct rendering never even creates an iframe element. These are mock-platform
+tests, not a native reproduction. On an isolated iOS test build, serve the
+[read-only probe](examples/native-bridge-probe.html) from a separate HTTPS origin and use it as a
+campaign URL (both dismissible/required and flag/debug-preview paths). It attempts only `App.getState`
+via the raw WebKit handler, without the JavaScript bridge allowlist. Confirm no request for the probe,
+no campaign frame, no impression, and no native dispatch with callback ID
+`lc-campaign-isolation-probe` in Xcode; confirm a lower-priority supported campaign still displays.
+Do not disable the gate in a production build. This device check must be run separately; jsdom and
+the Linux browser catalog cannot establish native isolation.
+
+### Engagement and QA
+
+The host optionally calls `onEvent` with `type` (`shown`, `action`, `dismissed`), `messageId`,
+`presentation`, `source` (`flag`, `deepLink`, `override`), and optional zero-based `actionIndex`,
+`stepIndex`, `actionSource` (`step` or `message`), and `actionType`. An `actionIndex` indexes
+`steps[stepIndex].actions` when `actionSource` is `step`, otherwise `message.actions`.
+`deepLink` is reserved for LC-2264. Bridge actions have no authored action index or action source.
+Action events are emitted after the runner succeeds, never for pending, rejected, or no-op actions.
+Capgo reports after a successful update/check; failures are excluded, and an immediate webview reload
+may prevent delivery of the completion event. Seen state is recorded before fatigue, then shown is emitted. Screen changes and retries
+do not create new impressions. Navigation completion, automatic toast expiry, and lifecycle cleanup
+are not dismissals. Tapping a toast without a navigation action is an explicit dismissal.
+LearnCard forwards these to `in_app_message_shown`, `in_app_message_action`, and
+`in_app_message_dismissed`, excluding previews. Payloads contain no credential data, URLs, or prose.
+
+1. In Dev Debug → Messages → Preview, choose **Story walkthrough**; verify Next/Previous, arrows,
+   final Done, mobile fullscreen, and desktop card layout.
+   With a native story update pending, cross the 991px breakpoint in both directions: retain progress
+   and the final screen, keep Update unavailable, and confirm exactly one download/application.
+2. In Builder, add/reorder/remove screens; preview media and final actions. Enter valid and invalid
+   locale JSON and confirm invalid drafts cannot preview. Check Spanish fallback and Arabic chrome.
+3. On web, host the bridge example separately over HTTPS. Set its URL in **Embedded HTTPS page** and test
+   ready, close, and navigation. Repeat with `dismissible:false` and confirm close/dismiss are ignored.
+4. Test offline, timeout, retry, invalid messages, another source/origin, and stale frames. For blocked
+   pages that still fire `load`, use `dismissible:false` and withhold `ready` to exercise the timeout.
+   A dismissible third-party page can appear blank after a blocked load; verify the host close control.
+   Check Safari separately; browser load alone is not proof of embedding success. On native,
+   verify campaigns and previews are blocked using the isolation regression above.
+5. Test Tab/Shift-Tab focus trapping, Escape, focus restoration, reduced motion, and `?insets=47,34`.
+6. Use staging flag messages to verify one impression, fatigue, account isolation, and analytics.
+   Preview overrides intentionally exercise none of those persisted effects.
+
+Run `lc verify script packages/learn-card-base/src/in-app-messages/examples/verify-story.mjs`
+against an owned Linux stack (from the root via the app's `lc` command). This script verifies the
+real debug-preview story path, not flag delivery, analytics, or remote iframe hosting. Run the
+`language` / `sdk` catalog journeys and the full catalog near PR readiness. macOS needs a Linux host
+or the hosted verification workflow; ScoutPass and native webviews require separate checks.
 
 ## File map
 
@@ -500,7 +722,13 @@ in-app-messages/
 ├── debug.ts                  — debug toggle (global/localStorage/?iamDebug) + gated logger
 ├── debugGlobals.ts           — installs window.__inAppMessages dev-global
 ├── MessageMedia.tsx          — YouTube / image / GIF renderer
-├── InAppMessageModal.tsx     — Overlay-based modal (Apple-glass); inline Capgo progress
+├── MessageActions.tsx        — shared modal/story actions and Capgo progress
+├── localizeMessage.ts        — pure field-level locale fallback
+├── iframeBridge.ts           — secure bridge envelope and target validation
+├── InAppMessageSurface.tsx   — token-owned shared modal surface and portal
+├── InAppMessageStory.tsx     — bounded, accessible multi-screen presentation
+├── InAppMessageIframe.tsx    — sandboxed page with retry and bridge lifecycle
+├── InAppMessageModal.tsx     — existing glass modal, sharing MessageActions
 ├── InAppMessageBanner.tsx    — non-blocking top banner
 ├── InAppMessageHost.tsx      — mounts once per app; picks presentation, manages show/close
 └── __tests__/predicates.test.ts
@@ -512,6 +740,12 @@ in-app-messages/
 cd packages/learn-card-base
 bunx vitest run src/in-app-messages/__tests__/predicates.test.ts
 ```
+
+Required iframe campaigns always gain a host-owned Close button after 30 seconds from presentation,
+even after a successful ready handshake. Errors expose Close immediately. The embedded page cannot
+invoke this escape through bridge close/dismiss events. If another feature removes a campaign's
+modal stack, dismissible campaigns release the host after exit cleanup without a user-dismissal
+analytics event; required campaigns restore the same content and in-flight action state.
 
 Staged consent-flow index entries are excluded from credential-fact backfill until acceptance is
 final. Failed, revoked, or suspended acceptance cannot emit a claim event or count a provisional

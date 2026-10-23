@@ -21,7 +21,7 @@ import { iamDebug, isInAppMessagesDebug } from './debug';
 import { useCredentialFacts, type CredentialFactsState } from './useCredentialFacts';
 import { onInAppMessageEventsChanged, useRecentInAppMessageEvents } from './inAppMessageEvents';
 import { shouldSuppressByFatigue, onFatigueChanged } from './fatigueStore';
-
+import { isInAppMessagePresentationSupported } from './presentationSupport';
 import { IN_APP_MESSAGES_FLAG_KEY, readInAppMessagesFlags } from './flagDelivery';
 
 export { IN_APP_MESSAGES_FLAG_KEY, LEGACY_IN_APP_MESSAGES_FLAG_KEY } from './flagDelivery';
@@ -36,6 +36,7 @@ export interface InAppMessageDiagnostic {
     trace: PredicateTrace | null;
     triggerSatisfied: boolean;
     fatigueSuppressed: boolean;
+    presentationSupported: boolean;
 }
 
 export type InAppMessagesReportContext = Pick<
@@ -214,7 +215,9 @@ export const useInAppMessages = (
             };
         }
 
-        const matching = flag.messages.filter(m => messageMatches(m, context));
+        const matching = flag.messages.filter(
+            m => isInAppMessagePresentationSupported(m) && messageMatches(m, context)
+        );
         const frequencyEligible = filterSuppressed(
             matching,
             context.now,
@@ -234,6 +237,7 @@ export const useInAppMessages = (
 
         const diagnostics: InAppMessageDiagnostic[] = flag.messages.map(m => {
             const explanation = explainMessage(m, context);
+            const presentationSupported = isInAppMessagePresentationSupported(m);
             const suppressed = shouldSuppressMessage(
                 m.id,
                 m.frequency,
@@ -253,10 +257,15 @@ export const useInAppMessages = (
                 enabled: m.enabled,
                 matched: explanation.matched,
                 suppressed,
-                willShow: explanation.matched && !suppressed && !fatigueSuppressed,
+                willShow:
+                    presentationSupported &&
+                    explanation.matched &&
+                    !suppressed &&
+                    !fatigueSuppressed,
                 trace: explanation.trace,
                 triggerSatisfied: explanation.triggerSatisfied,
                 fatigueSuppressed,
+                presentationSupported,
             };
         });
 

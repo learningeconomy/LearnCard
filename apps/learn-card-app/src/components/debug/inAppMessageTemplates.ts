@@ -33,6 +33,61 @@ export interface InAppMessageTemplate {
 
 export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
     {
+        key: 'story-test',
+        label: 'Story walkthrough',
+        category: 'Basics',
+        description: 'Two screens with a translated title and final action.',
+        json: {
+            id: 'debug-story',
+            title: 'Explore your achievements',
+            presentation: 'story',
+            frequency: 'always',
+            steps: [
+                {
+                    title: 'Your achievements, together',
+                    body: 'Keep a record of what you have learned.',
+                    media: {
+                        type: 'image',
+                        url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBB4LQTn0vRq4ydPLp-uTj_lEUHOHYWUU18JlCq5KuMw&s=10',
+                        aspect: '3:2',
+                        alt: 'A monarch butterfly perched on an orange flower.',
+                    },
+                },
+                {
+                    title: 'Choose your next step',
+                    body: 'You are ready to explore.',
+                    media: {
+                        type: 'image',
+                        url: 'https://sites.cc.gatech.edu/classes/AY2016/cs4476_fall/results/proj1/html/gwright31/images/cat.bmp',
+                        aspect: '3:2',
+                        alt: 'A cat.',
+                    },
+                },
+            ],
+            actions: [{ label: 'Done', style: 'primary', action: { type: 'dismiss' } }],
+            locales: {
+                es: {
+                    title: 'Explora tus logros',
+                    steps: [{ title: 'Tus logros, juntos' }, { title: 'Elige tu próximo paso' }],
+                    actionLabels: ['Listo'],
+                },
+            },
+        },
+    },
+    {
+        key: 'iframe-test',
+        label: 'Embedded HTTPS page',
+        category: 'Basics',
+        description: 'Replace the example URL with your separately hosted HTTPS bridge example.',
+        json: {
+            id: 'debug-iframe',
+            title: 'Learn more',
+            presentation: 'iframe',
+            frequency: 'always',
+            iframe: { url: 'https://example.com/', loadTimeoutMs: 10000 },
+        },
+    },
+    {
         key: 'smoke-test',
         label: 'Simple test message',
         description: 'Minimal dismissible modal — quickest way to eyeball styling.',
@@ -219,6 +274,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                     style: 'primary',
                     action: { type: 'appStore' },
                 },
+                { label: 'Close', style: 'dismiss', action: { type: 'dismiss' } },
             ],
             targeting: {
                 all: [
@@ -291,7 +347,10 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
             presentation: 'modal',
             title: 'Update required',
             body: 'We need to apply an important fix before you continue. This only takes a moment.',
-            actions: [{ label: 'Update now', style: 'primary', action: { type: 'capgoUpdate' } }],
+            actions: [
+                { label: 'Update now', style: 'primary', action: { type: 'capgoUpdate' } },
+                { label: 'Close', style: 'dismiss', action: { type: 'dismiss' } },
+            ],
             targeting: {
                 all: [
                     { platform: ['ios', 'android'] },

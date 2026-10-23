@@ -173,6 +173,21 @@ export const inAppMessageActionValidator = z
     .passthrough();
 export type InAppMessageAction = z.infer<typeof inAppMessageActionValidator>;
 
+// Keep this list aligned with action-runner outcomes. openMessage is added by the stacked
+// navigation change and always closes after recording its request; openApp is intentionally
+// excluded because it can no-op in hosts that do not provide app navigation.
+const GUARANTEED_CLOSING_ACTION_TYPES = new Set([
+    'dismiss',
+    'externalLink',
+    'internalLink',
+    'openMessage',
+]);
+
+const hasGuaranteedClosingAction = (actions: InAppMessageAction[]): boolean =>
+    actions.some(
+        action => action.closeOnComplete && GUARANTEED_CLOSING_ACTION_TYPES.has(action.action.type)
+    );
+
 export const inAppMessageMediaValidator = z
     .object({
         type: z.enum(['youtube', 'image', 'gif']),
@@ -203,7 +218,7 @@ export const inAppMessageFrequencyValidator = z
 export type InAppMessageFrequency = z.infer<typeof inAppMessageFrequencyValidator>;
 
 export const inAppMessagePresentationValidator = z
-    .enum(['modal', 'banner', 'toast'])
+    .enum(['modal', 'banner', 'toast', 'story', 'iframe'])
     .default('modal');
 export type InAppMessagePresentation = z.infer<typeof inAppMessagePresentationValidator>;
 
@@ -225,13 +240,86 @@ export const inAppMessageSettingsValidator = z
     .default({ maxBlockingPerSession: 1, blockingCooldownHours: 48 });
 export type InAppMessageSettings = z.infer<typeof inAppMessageSettingsValidator>;
 
+export const inAppMessageHttpsUrlValidator = z
+    .string()
+    .url()
+    .refine(value => {
+        try {
+            const url = new URL(value);
+            return url.protocol === 'https:' && !url.username && !url.password;
+        } catch {
+            return false;
+        }
+    }, 'An HTTPS URL without embedded credentials is required');
+
+export const inAppMessageStepValidator = z
+    .object({
+        title: z.string(),
+        body: z.string().optional(),
+        media: inAppMessageMediaValidator.optional(),
+        emoji: z.string().optional(),
+        actions: z.array(inAppMessageActionValidator).optional(),
+    })
+    .passthrough();
+export type InAppMessageStep = z.infer<typeof inAppMessageStepValidator>;
+
+/** Exact app-relative destination, including any explicitly approved query and fragment. */
+export const inAppMessageInternalPathValidator = z
+    .string()
+    .refine(
+        path =>
+            path.startsWith('/') &&
+            !path.startsWith('//') &&
+            [...path].every(
+                char =>
+                    char.charCodeAt(0) > 32 &&
+                    char.charCodeAt(0) !== 127 &&
+                    char !== '\\' &&
+                    !/\s/.test(char)
+            ),
+        'A single-slash app-relative path without whitespace or backslashes is required'
+    );
+
+export const inAppMessageIframeValidator = z
+    .object({
+        url: inAppMessageHttpsUrlValidator,
+        title: z.string().optional(),
+        loadTimeoutMs: z.number().int().positive().max(30000).default(10000),
+        allowedInternalPaths: z.array(inAppMessageInternalPathValidator).default([]),
+    })
+    .passthrough();
+
+export const inAppMessageLocalesValidator = z.record(
+    z.string(),
+    z
+        .object({
+            title: z.string().optional(),
+            body: z.string().optional(),
+            actionLabels: z.array(z.string().nullable()).optional(),
+            steps: z
+                .array(
+                    z
+                        .object({
+                            title: z.string().optional(),
+                            body: z.string().optional(),
+                            actionLabels: z.array(z.string().nullable()).optional(),
+                        })
+                        .passthrough()
+                        .nullable()
+                )
+                .optional(),
+            iframeUrl: inAppMessageHttpsUrlValidator.optional(),
+        })
+        .passthrough()
+);
+
 export const inAppMessageValidator = z
     .object({
         /** Stable identifier — used to persist dismissal / frequency state. */
         id: z.string(),
         /** Higher priority wins when multiple messages match. Default 0. */
         priority: z.number().default(0),
-        /** When false, the message is required/blocking (no dismiss affordance). */
+        /** When false, the message is required; iframe errors still allow a host-owned close. */
         dismissible: z.boolean().default(true),
         frequency: inAppMessageFrequencyValidator,
         presentation: inAppMessagePresentationValidator,
@@ -241,6 +329,9 @@ export const inAppMessageValidator = z
         title: z.string(),
         body: z.string().optional(),
         actions: z.array(inAppMessageActionValidator).default([]),
+        steps: z.array(inAppMessageStepValidator).optional(),
+        iframe: inAppMessageIframeValidator.optional(),
+        locales: inAppMessageLocalesValidator.optional(),
         /** Targeting predicate tree. Omitted → matches everyone. */
         targeting: inAppMessagePredicateValidator.optional(),
         /** Allow disabling a message without removing it from the flag. */
@@ -248,7 +339,85 @@ export const inAppMessageValidator = z
         trigger: inAppMessageTriggerValidator.optional(),
         bypassFatigue: z.boolean().default(false),
     })
-    .passthrough();
+    .passthrough()
+    .superRefine((message, ctx) => {
+        if (message.presentation === 'story') {
+            message.steps?.slice(0, -1).forEach((step, index) => {
+                if (step.actions !== undefined) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ['steps', index, 'actions'],
+                        message: 'Only the final story screen may define actions',
+                    });
+                }
+            });
+
+            if (message.iframe !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['iframe'],
+                    message: 'Stories cannot define iframe configuration',
+                });
+            }
+        }
+        if (message.presentation === 'story' && !message.steps?.length) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['steps'],
+                message: 'Stories require at least one screen',
+            });
+        }
+
+        if (message.presentation === 'iframe') {
+            if (!message.iframe) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['iframe'],
+                    message: 'Iframe configuration is required',
+                });
+            }
+            if (message.steps !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['steps'],
+                    message: 'Iframes cannot define story screens',
+                });
+            }
+        } else if (message.presentation !== 'story') {
+            if (message.steps !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['steps'],
+                    message: `${message.presentation} messages cannot define story screens`,
+                });
+            }
+            if (message.iframe !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['iframe'],
+                    message: `${message.presentation} messages cannot define iframe configuration`,
+                });
+            }
+        }
+
+        if (!message.dismissible && message.presentation === 'story' && message.steps?.length) {
+            const finalStepIndex = message.steps.length - 1;
+            const finalStepActions = message.steps[finalStepIndex]?.actions;
+            const effectiveActions = finalStepActions ?? message.actions;
+
+            if (!hasGuaranteedClosingAction(effectiveActions)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path:
+                        finalStepActions === undefined
+                            ? ['actions']
+                            : ['steps', finalStepIndex, 'actions'],
+                    message:
+                        'Required stories need at least one final-screen action that closes the message',
+                });
+            }
+        }
+    });
 export type InAppMessage = z.infer<typeof inAppMessageValidator>;
 
 export const inAppMessagesFlagValidator = z

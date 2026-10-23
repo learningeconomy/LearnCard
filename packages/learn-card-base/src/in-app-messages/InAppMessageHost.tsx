@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import type { InAppMessage } from '@learncard/types';
 
@@ -16,10 +16,26 @@ import { InAppMessageBanner } from './InAppMessageBanner';
 import { InAppMessageToast } from './InAppMessageToast';
 import { emitAppOpenedOnce } from './inAppMessageEvents';
 import { isFatigueControlled, recordBlockingShown } from './fatigueStore';
+import { useI18nLocale } from '../i18n';
+import { localizeMessage } from './localizeMessage';
+import { InAppMessageRichPresentation } from './InAppMessageSurface';
+import { isInAppMessagePresentationSupported } from './presentationSupport';
+import type {
+    InAppMessagePresentationEvent,
+    MessageInteraction,
+    MessagePresentationProps,
+} from './presentationTypes';
 
-export type InAppMessageHostProps = PresentationGateOptions;
+export interface InAppMessageHostProps extends PresentationGateOptions {
+    onEvent?: (event: InAppMessagePresentationEvent) => void;
+}
 
-export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => {
+export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({ onEvent, ...gateOptions }) => {
+    const locale = useI18nLocale();
+    const eventRef = useRef(onEvent);
+    useLayoutEffect(() => {
+        eventRef.current = onEvent;
+    }, [onEvent]);
     const { message, messages, credentialFacts } = useInAppMessages();
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
@@ -88,8 +104,28 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
     const realActive = candidate && messageKey && !closedIds.has(messageKey) ? candidate : null;
     const openingReady = !accountDid || (opening.accountDid === accountDid && opening.ready);
-    const active = override ?? (canPresent && openingReady ? realActive : null);
+    const requested = override ?? (canPresent && openingReady ? realActive : null);
+    // Preview overrides bypass targeting and frequency, never platform security policy.
+    const active = requested && isInAppMessagePresentationSupported(requested) ? requested : null;
     const isOverride = Boolean(override);
+    const localized = active ? localizeMessage(active, locale) : null;
+    const emit = useCallback(
+        (type: InAppMessagePresentationEvent['type'], details: MessageInteraction = {}) => {
+            if (!active) return;
+            try {
+                eventRef.current?.({
+                    type,
+                    messageId: active.id,
+                    presentation: active.presentation,
+                    source: isOverride ? 'override' : 'flag',
+                    ...details,
+                });
+            } catch {
+                // Optional telemetry must never prevent presentation or dismissal.
+            }
+        },
+        [active, isOverride]
+    );
 
     // Retain a presented message after its own impression makes it ineligible.
     if (presented && !retained) setPresented(null);
@@ -118,7 +154,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         [accountDid, override]
     );
 
-    useEffect(() => {
+    const onShown = useCallback(() => {
         // Clearing a preview permits another preview without forgetting the retained campaign.
         if (!isOverride) shownOverrideRef.current = null;
         if (!active) return;
@@ -147,26 +183,65 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
 
             if (isFatigueControlled(active)) recordBlockingShown(Date.now(), accountDid);
         }
-    }, [accountDid, active, isOverride]);
+        emit('shown');
+    }, [accountDid, active, isOverride, emit]);
+
+    useEffect(() => {
+        if (!active || (active.presentation !== 'story' && active.presentation !== 'iframe'))
+            onShown();
+    }, [active, onShown]);
 
     // AnimatePresence must live here, in the always-mounted host: the
     // presented component is removed wholesale on close, so exit animations
     // only play if the presence boundary survives that unmount.
-    const key = active ? `${active.id}:${active.presentation}` : null;
+    const key = active
+        ? `${accountDid ?? 'anonymous'}:${isOverride}:${active.id}:${active.presentation}`
+        : null;
+    const onClose: MessagePresentationProps['onClose'] = (reason = 'dismissed', details): void => {
+        if (!active) return;
+        if (reason === 'dismissed') emit('dismissed', details);
+        close(active.id);
+    };
+    const onAction = (details: MessageInteraction): void => emit('action', details);
 
     return (
         <AnimatePresence>
-            {active && active.presentation === 'toast' && (
-                <InAppMessageToast key={key} message={active} onClose={() => close(active.id)} />
+            {localized && localized.presentation === 'toast' && (
+                <InAppMessageToast
+                    key={key}
+                    message={localized}
+                    onClose={onClose}
+                    onAction={onAction}
+                />
             )}
 
-            {active && active.presentation === 'banner' && (
-                <InAppMessageBanner key={key} message={active} onClose={() => close(active.id)} />
+            {localized && localized.presentation === 'banner' && (
+                <InAppMessageBanner
+                    key={key}
+                    message={localized}
+                    onClose={onClose}
+                    onAction={onAction}
+                />
             )}
 
-            {active && active.presentation === 'modal' && (
-                <InAppMessageModal key={key} message={active} onClose={() => close(active.id)} />
+            {localized && localized.presentation === 'modal' && (
+                <InAppMessageModal
+                    key={key}
+                    message={localized}
+                    onClose={onClose}
+                    onAction={onAction}
+                />
             )}
+            {localized &&
+                (localized.presentation === 'story' || localized.presentation === 'iframe') && (
+                    <InAppMessageRichPresentation
+                        key={key}
+                        message={localized}
+                        onClose={onClose}
+                        onShown={onShown}
+                        onAction={onAction}
+                    />
+                )}
         </AnimatePresence>
     );
 };

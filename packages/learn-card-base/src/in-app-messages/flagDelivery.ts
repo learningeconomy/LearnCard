@@ -27,7 +27,10 @@ export const readInAppMessagesFlags = (
     if (!legacy && flagKey !== LEGACY_IN_APP_MESSAGES_FLAG_KEY) return result;
     const rejected = result.flag.messages.filter(
         message =>
-            message.trigger || (message.targeting && usesCredentialTargeting(message.targeting))
+            message.presentation === 'story' ||
+            message.presentation === 'iframe' ||
+            message.trigger ||
+            (message.targeting && usesCredentialTargeting(message.targeting))
     );
     return {
         flag: {
@@ -38,7 +41,7 @@ export const readInAppMessagesFlags = (
             ...result.invalid,
             ...rejected.map(message => ({
                 id: message.id,
-                error: `Credential targeting and triggered campaigns must be delivered through ${IN_APP_MESSAGES_FLAG_KEY}, not ${LEGACY_IN_APP_MESSAGES_FLAG_KEY}`,
+                error: `Credential-targeted, triggered, and rich campaigns must be delivered through ${IN_APP_MESSAGES_FLAG_KEY}, not ${LEGACY_IN_APP_MESSAGES_FLAG_KEY}`,
             })),
         ],
     };

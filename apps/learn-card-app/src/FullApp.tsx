@@ -1,4 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
+import { InAppMessagesAnalyticsHost } from './analytics/InAppMessagesAnalyticsHost';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
@@ -19,7 +21,6 @@ import {
     QRCodeScannerOverlay,
     ModalsProvider,
     useSQLiteInitWeb,
-    InAppMessageHost,
     ConnectionPromptCoordinator,
 } from 'learn-card-base';
 import * as m from './paraglide/messages.js';
@@ -241,7 +242,9 @@ const FullApp: React.FC = () => {
                                         <FeedbackProvider>
                                             <AppRouter />
                                         </FeedbackProvider>
-                                        <InAppMessageHost />
+                                        <SharedI18nProvider>
+                                            <InAppMessagesAnalyticsHost />
+                                        </SharedI18nProvider>
                                         <QRCodeScannerListener />
 
                                         {showScannerOverlay && (

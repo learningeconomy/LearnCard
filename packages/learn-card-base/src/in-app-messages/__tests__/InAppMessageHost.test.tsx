@@ -12,12 +12,19 @@ import { iamDebug } from '../debug';
 import { getInAppMessageFatigueState } from '../fatigueStore';
 import { getRecentInAppMessageEvents, resetInAppMessageEventSession } from '../inAppMessageEvents';
 import { setInAppMessageOverride } from '../debugOverrideStore';
+import type { MessagePresentationProps, InAppMessagePresentationEvent } from '../presentationTypes';
+import { I18nProvider } from '../../i18n';
+import { ModalsProvider, useModalsContext } from '../../components/modals/ModalsContext';
+import { useModal } from '../../components/modals/useModal';
 
 const state = vi.hoisted(() => ({
+    native: false,
     gate: false,
     messages: [] as InAppMessage[],
     accountDid: 'alice' as string | null,
 }));
+
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => state.native } }));
 
 vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ inAppMessagesV2: { messages: state.messages } }),
@@ -48,15 +55,32 @@ vi.mock('../usePresentationGate', () => ({
 }));
 vi.mock('../debugGlobals', () => ({ installInAppMessagesDebugGlobals: () => undefined }));
 vi.mock('../InAppMessageModal', () => ({
-    InAppMessageModal: ({ message, onClose }: { message: InAppMessage; onClose: () => void }) => (
-        <button onClick={onClose}>{message.title}</button>
+    InAppMessageModal: ({ message, onClose, onAction }: MessagePresentationProps) => (
+        <>
+            <button onClick={() => onClose('dismissed')}>{message.title}</button>
+            <button
+                onClick={() => {
+                    onAction?.({ actionIndex: 0, actionType: 'internalLink' });
+                    onClose('action');
+                }}
+            >
+                Navigate
+            </button>
+        </>
     ),
 }));
 vi.mock('../InAppMessageBanner', () => ({ InAppMessageBanner: () => null }));
-vi.mock('../InAppMessageToast', () => ({ InAppMessageToast: () => null }));
-vi.mock('framer-motion', () => ({
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+vi.mock('../useInAppMessageActions', () => ({
+    useInAppMessageActions: () => ({ runAction: vi.fn().mockResolvedValue('closed') }),
 }));
+vi.mock('framer-motion', async importOriginal => {
+    const original = await importOriginal<typeof import('framer-motion')>();
+    return {
+        ...original,
+        AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+        useReducedMotion: () => true,
+    };
+});
 
 describe('message host impressions', () => {
     beforeEach(() => {
@@ -64,13 +88,185 @@ describe('message host impressions', () => {
         resetInAppMessageDismissals();
         resetInAppMessageEventSession();
         state.gate = false;
+        state.native = false;
         state.accountDid = 'alice';
         state.messages = [inAppMessageValidator.parse({ id: 'test', title: 'Claim complete' })];
     });
     afterEach(() => {
         cleanup();
         setInAppMessageOverride(null);
+        vi.useRealTimers();
         vi.restoreAllMocks();
+    });
+
+    it('continues to the next campaign after another feature closes the modal stack', async () => {
+        state.gate = true;
+        state.messages = ['First campaign', 'Second campaign'].map((title, index) =>
+            inAppMessageValidator.parse({
+                id: `stack-${index}`,
+                title,
+                priority: 2 - index,
+                presentation: 'story',
+                bypassFatigue: true,
+                steps: [{ title }],
+                actions: [{ label: 'Done', action: { type: 'dismiss' } }],
+            })
+        );
+        const Stack = () => {
+            const { modals } = useModalsContext();
+            const { closeAllModals } = useModal();
+            return (
+                <>
+                    <button onClick={closeAllModals}>Close stack</button>
+                    {modals
+                        .filter(modal => modal.open)
+                        .map(modal => (
+                            <section key={modal.id}>{modal.component}</section>
+                        ))}
+                </>
+            );
+        };
+        const onEvent = vi.fn();
+        render(
+            <ModalsProvider>
+                <InAppMessageHost onEvent={onEvent} />
+                <Stack />
+            </ModalsProvider>
+        );
+        await screen.findByRole('heading', { name: 'First campaign' });
+        fireEvent.click(screen.getByText('Close stack'));
+        await screen.findByRole('heading', { name: 'Second campaign' });
+        expect(onEvent.mock.calls.map(([event]) => [event.type, event.messageId])).toEqual([
+            ['shown', 'stack-0'],
+            ['shown', 'stack-1'],
+        ]);
+    });
+
+    it('removes a required iframe and its owned surface when the user closes a load error', async () => {
+        state.gate = true;
+        state.messages = [
+            inAppMessageValidator.parse({
+                id: 'failed-required',
+                title: 'Required guide',
+                presentation: 'iframe',
+                dismissible: false,
+                iframe: { url: 'https://campaign.example/guide' },
+            }),
+        ];
+        const OpenModals = () => {
+            const { modals } = useModalsContext();
+            return (
+                <>
+                    {modals
+                        .filter(modal => modal.open)
+                        .map(modal => (
+                            <section key={modal.id} data-testid="owned-surface">
+                                {modal.component}
+                            </section>
+                        ))}
+                </>
+            );
+        };
+        const onEvent = vi.fn();
+        render(
+            <ModalsProvider>
+                <InAppMessageHost onEvent={onEvent} />
+                <OpenModals />
+            </ModalsProvider>
+        );
+        const frame = await screen.findByTitle('Required guide');
+        expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+        fireEvent.error(frame);
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        await waitFor(() => expect(screen.queryByTestId('owned-surface')).toBeNull());
+        expect(screen.queryByTitle('Required guide')).toBeNull();
+        expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual(['shown', 'dismissed']);
+    });
+
+    it.each([false, true])(
+        'only emits toast dismissal for a user tap (tapped: %s)',
+        async tapped => {
+            vi.useFakeTimers();
+            state.gate = true;
+            state.messages = [
+                inAppMessageValidator.parse({
+                    id: 'toast-event',
+                    title: 'Saved',
+                    presentation: 'toast',
+                }),
+            ];
+            const onEvent = vi.fn();
+            await act(async () => {
+                render(<InAppMessageHost onEvent={onEvent} />);
+            });
+            const toast = screen.getByRole('button', { name: 'Saved' });
+            if (tapped) fireEvent.click(toast);
+            await act(async () => vi.advanceTimersByTimeAsync(5000));
+            expect(screen.queryByRole('button', { name: 'Saved' })).toBeNull();
+            expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual(
+                tapped ? ['shown', 'dismissed'] : ['shown']
+            );
+        }
+    );
+
+    it('records seen and fatigue before shown, localizes live, and emits no dismissal for navigation', async () => {
+        state.gate = true;
+        state.messages = [
+            inAppMessageValidator.parse({
+                id: 'localized',
+                title: 'Hello',
+                locales: { es: { title: 'Hola' } },
+            }),
+        ];
+        const impressions: Array<{ seen: boolean; count: number }> = [];
+        const onEvent = vi.fn((event: InAppMessagePresentationEvent) => {
+            if (event.type === 'shown') {
+                impressions.push({
+                    seen: shouldSuppressMessage('localized', 'once', Date.now(), 'alice'),
+                    count: getInAppMessageFatigueState('alice').blockingShownThisSession,
+                });
+            }
+        });
+        const view = render(
+            <I18nProvider locale="en" resolve={() => undefined}>
+                <InAppMessageHost onEvent={onEvent} />
+            </I18nProvider>
+        );
+        await screen.findByText('Hello');
+        await waitFor(() => expect(impressions).toEqual([{ seen: true, count: 1 }]));
+        view.rerender(
+            <I18nProvider locale="es" resolve={() => undefined}>
+                <InAppMessageHost onEvent={onEvent} />
+            </I18nProvider>
+        );
+        expect(screen.getByText('Hola')).toBeTruthy();
+        expect(onEvent.mock.calls.filter(([event]) => event.type === 'shown')).toHaveLength(1);
+        fireEvent.click(screen.getByText('Navigate'));
+        expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual(['shown', 'action']);
+        expect(onEvent).toHaveBeenLastCalledWith({
+            type: 'action',
+            messageId: 'localized',
+            presentation: 'modal',
+            source: 'flag',
+            actionIndex: 0,
+            actionType: 'internalLink',
+        });
+    });
+
+    it('reports override dismissal without writing impression state', async () => {
+        const onEvent = vi.fn();
+        act(() =>
+            setInAppMessageOverride(
+                inAppMessageValidator.parse({ id: 'preview-event', title: 'Preview event' })
+            )
+        );
+        render(<InAppMessageHost onEvent={onEvent} />);
+        fireEvent.click(await screen.findByText('Preview event'));
+        expect(onEvent.mock.calls.map(([event]) => [event.type, event.source])).toEqual([
+            ['shown', 'override'],
+            ['dismissed', 'override'],
+        ]);
+        expect(getInAppMessageFatigueState('alice').blockingShownThisSession).toBe(0);
     });
 
     it('waits for the gate, records one impression, and retains the visible message despite its own cap', async () => {
@@ -158,6 +354,7 @@ describe('message host impressions', () => {
                 id: 'required',
                 title: 'Required action',
                 dismissible: false,
+                actions: [{ label: 'Continue', action: { type: 'dismiss' } }],
             });
             state.messages = [required];
             const { rerender } = render(<InAppMessageHost />);
@@ -182,7 +379,8 @@ describe('message host impressions', () => {
             const now = vi.spyOn(Date, 'now').mockReturnValue(firstShown);
             vi.mocked(iamDebug).mockClear();
             state.gate = true;
-            render(<InAppMessageHost />);
+            const onEvent = vi.fn();
+            render(<InAppMessageHost onEvent={onEvent} />);
             await waitFor(() => expect(screen.getByText('Claim complete')).toBeTruthy());
             const fatigue = getInAppMessageFatigueState('alice');
             expect(fatigue).toEqual({
@@ -213,6 +411,11 @@ describe('message host impressions', () => {
                 ['shown', expect.objectContaining({ override: true })],
                 ['shown', expect.objectContaining({ override: true })],
             ]);
+            expect(
+                onEvent.mock.calls
+                    .filter(([event]) => event.type === 'shown')
+                    .map(([event]) => event.source)
+            ).toEqual(['flag', 'override', 'override']);
             fireEvent.click(screen.getByText('Claim complete'));
             expect(screen.queryByText('Claim complete')).toBeNull();
         }
@@ -225,4 +428,31 @@ describe('message host impressions', () => {
         expect(getInAppMessageFatigueState('alice').blockingShownThisSession).toBe(0);
         expect(shouldSuppressMessage('test', 'once', Date.now(), 'alice')).toBe(false);
     });
+
+    it.each(['flag', 'override'] as const)(
+        'blocks native iframe %s messages before opening a modal or recording impressions',
+        async source => {
+            state.native = true;
+            state.gate = true;
+            const message = inAppMessageValidator.parse({
+                id: 'native-iframe',
+                title: 'Native bridge probe',
+                presentation: 'iframe',
+                dismissible: false,
+                iframe: { url: 'https://campaign.example/native-bridge-probe.html' },
+            });
+            state.messages = source === 'flag' ? [message] : [];
+            if (source === 'override') setInAppMessageOverride(message);
+            const onEvent = vi.fn();
+            let view: ReturnType<typeof render>;
+            await act(async () => {
+                // No ModalsProvider: attempting to mount a rich surface would throw.
+                view = render(<InAppMessageHost onEvent={onEvent} />);
+            });
+            expect(view!.container.childElementCount).toBe(0);
+            expect(onEvent).not.toHaveBeenCalled();
+            expect(shouldSuppressMessage(message.id, 'once', Date.now(), 'alice')).toBe(false);
+            expect(getInAppMessageFatigueState('alice').blockingShownThisSession).toBe(0);
+        }
+    );
 });
