@@ -287,6 +287,39 @@ const provisionManagedSigningAuthority = async (
     }
 };
 
+/**
+ * Gets or provisions an LCA-managed primary signing authority for a Profile that issues as
+ * itself, e.g. an ADR-001 Group identity used by Platform Issuance. The key never leaves LCA.
+ */
+export const ensureManagedSigningAuthorityForProfile = async (
+    profile: ProfileType,
+    domain: string,
+    name = 'issuer'
+): Promise<SigningAuthorityForUserType> => {
+    const existing = await getPrimarySigningAuthorityForUser(profile);
+    if (existing) return existing;
+
+    const did = await provisionManagedSigningAuthority(
+        DEFAULT_SIGNING_AUTHORITY_ENDPOINT,
+        getDidWeb(domain, profile.profileId),
+        name
+    );
+    const signingAuthority = await upsertSigningAuthority(DEFAULT_SIGNING_AUTHORITY_ENDPOINT);
+
+    await createUseSigningAuthorityRelationship(profile, signingAuthority, name, did, true);
+    await deleteDidDocForProfile(profile.profileId);
+
+    const created = await getPrimarySigningAuthorityForUser(profile);
+    if (!created) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Managed signing authority could not be registered.',
+        });
+    }
+
+    return created;
+};
+
 export const ensureManagedSigningAuthorityForListing = async (
     listing: AppStoreListingType,
     integration: IntegrationType,

@@ -27,6 +27,10 @@
  * console surface as `surfaceId|slug|Nav Label|navIcon|navSection|minimumRole[|requiredCaps,csv[|entryUrl]]`.
  *   bun run seed:dev-integration --profile my-owner --version 1.1.0
  *   bun run seed:dev-integration --ecosystem eco_dev_root
+ *   bun run seed:dev-integration --scopes completion:ingest --capabilities-provided record-provisioning
+ *
+ * `--scopes` takes comma-separated `resource:action` verbs, each granted over the installing
+ * ecosystem tree (default `group:sync`).
  *
  * Signing (see src/helpers/manifest-signature.helpers.ts): the publisher key is an
  * Ed25519 did:key derived from `--publisher-seed` (64 hex chars). The payload is the
@@ -132,6 +136,7 @@ const main = async (): Promise<void> => {
     const consumed = listArg('capabilities-consumed', []);
     const recordClasses = listArg('record-classes', ['academic']);
     const consentRequirements = listArg('consent-requirements', ['directory']);
+    const scopeVerbs = listArg('scopes', ['group:sync']);
     const subscribes = arg('subscribes', '')
         .split(';')
         .map(entry => entry.trim())
@@ -285,15 +290,22 @@ const main = async (): Promise<void> => {
         listingKind: 'INTEGRATION',
         publisherDid,
         category: category as IntegrationManifest['category'],
-        scopes: [
-            {
-                resource: 'group',
-                action: 'sync',
-                selectorKind: 'tree',
+        scopes: scopeVerbs.map(verb => {
+            const [resource, action] = verb.split(':');
+            if (!resource || !action)
+                throw new Error(`--scopes entry "${verb}" must be resource:action`);
+            return {
+                resource,
+                action,
+                selectorKind: 'tree' as const,
                 selectorValue: '$installEcosystemId',
-                reason: `Sync ${category} data for the installing ecosystem`,
-            },
-        ] as IntegrationManifest['scopes'],
+                // Unchanged default text keeps previously seeded manifests byte-identical.
+                reason:
+                    verb === 'group:sync'
+                        ? `Sync ${category} data for the installing ecosystem`
+                        : `${resource}:${action} for the installing ecosystem (${category})`,
+            };
+        }),
         consentRequirements: consentRequirements as IntegrationManifest['consentRequirements'],
         capabilities: {
             provided: provided as IntegrationManifest['capabilities']['provided'],
