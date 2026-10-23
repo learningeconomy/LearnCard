@@ -30,6 +30,10 @@ resolved. Current state:
     - production gates (owners, LEF pin sign-off, security review, registry trust,
       TLS, custody).
 
+- **Phase E frozen (2026-10-23):** by user decision, Phase E stops at
+  `PROOF COMPLETE WITH LABELS`. Upgrade/rollback acceptance is out of the MVP; see
+  "Lifecycle path finding (2026-10-23)" at the end of this file.
+
 ## 5A proof — operator harness added, execution incomplete (2026-10-20)
 
 **NOT READY. No installation or issuance acceptance is claimed by this attempt.**
@@ -1433,3 +1437,27 @@ deferred learner claim choice, loopback-only phone reachability, inherited issue
 default tenants, in-memory exchange durability, unproven concurrent-claim atomicity,
 and production TLS/key custody/operational ownership. Sequential single-use rejection
 is proven; it does not close those other gates. No commits or delegation occurred.
+
+## Lifecycle path finding (2026-10-23) — no product upgrade/rollback path; Phase E frozen
+
+Read-only source trace; nothing was built or executed.
+
+- Deployment ids are `target_<intentId>_<declarationId>`
+  (`brain-service/src/helpers/install-intent.helpers.ts:211`).
+- Approval is single-use and is the only place `specRevision` increments, 0 → 1
+  (`brain-service/src/accesslayer/install-intent/intent-approval.ts:33,63`). No route
+  moves an existing intent to a new bundle version.
+- The reconciler's UPGRADE branch (`install-intent-reconciler.ts:651`) is therefore
+  unreachable through product routes. It is exercised only by store-level tests
+  (`workload-deployments.spec.ts:468`).
+- A "new version" today means retiring the intent and installing a new one. That
+  yields a new deployment id and new, empty `lcnwl-<id>-*` volumes. Retired volumes are
+  kept (`compose down` without `-v`) but nothing reattaches them, so previously issued
+  credentials would lose their status list. Rollback has the same limitation.
+- The status-list size patch (100000 → 131072) only affects lists created after
+  install or rollover. An in-place upgrade would not make an existing list conformant.
+
+**Not verified:** upgrade, rollback, data continuity. A real lifecycle needs a new
+brain operation that revises an existing intent to a new bundle version while keeping
+its deployment id. That is a contract extension and needs user approval and an Oracle
+review. Phase E is frozen at `PROOF COMPLETE WITH LABELS`; this work is post-MVP.
