@@ -741,6 +741,20 @@ describe('escrow strategy', () => {
         expect(blob?.pinVerifier).toBeUndefined();
     });
 
+    it('repairs only a prior enrollment when requirePriorEnrollment is set', async () => {
+        const options = { clearPin: true, requirePriorEnrollment: true };
+        await expect(strategy.ensureEscrowEnrollment!({ ...params, options })).resolves.toEqual({
+            enrolled: false,
+            reason: 'not-enrolled',
+        });
+        expect(version).toBe(1);
+        await strategy.ensureEscrowEnrollment!(params);
+        expect(version).toBe(2);
+        await expect(
+            strategy.ensureEscrowEnrollment!({ ...params, options })
+        ).resolves.toMatchObject({ enrolled: true });
+    });
+
     it('treats a current PIN-free enrollment as satisfying a clear request', async () => {
         await strategy.ensureEscrowEnrollment!(params);
         expect(version).toBe(2);

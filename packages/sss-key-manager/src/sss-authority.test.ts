@@ -624,7 +624,7 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
         expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
         expect(f.intents).toHaveLength(intents);
     });
-    it('leaves enrollment after non-escrow identity recovery to the rollout gate', async () => {
+    it('repairs a prior enrollment after non-escrow identity recovery outside rollout', async () => {
         const f = await setup();
         await f.strategy.ensureEscrowEnrollment!({
             ...f.params,
@@ -641,15 +641,33 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
             escrowRecovery: false,
         });
         expect(f.intents).toHaveLength(intents);
-        // An allowed gated repair still clears the retired PIN instead of carrying it.
+        // Outside rollout the verified authority proves prior enrollment, so the
+        // repair still runs and clears the retired PIN instead of carrying it.
         await expect(
             f.strategy.ensureEscrowEnrollment!({
                 ...f.params,
-                options: { ...f.params.options, clearPin: true },
+                options: { ...f.params.options, clearPin: true, requirePriorEnrollment: true },
             })
         ).resolves.toMatchObject({ enrolled: true });
         expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'replace', pinAction: 'clear' });
         expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+    });
+    it('does not enroll a never-enrolled account through prior-enrollment repair', async () => {
+        const f = await setup();
+        await f.strategy.prepareIdentityRecovery!({
+            recoverySessionToken: 'session',
+            input: { method: 'email', emailShare: f.emailShare() },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await f.strategy.completeIdentityRecovery!(f.params);
+        await expect(
+            f.strategy.ensureEscrowEnrollment!({
+                ...f.params,
+                options: { ...f.params.options, clearPin: true, requirePriorEnrollment: true },
+            })
+        ).resolves.toEqual({ enrolled: false, reason: 'not-enrolled' });
+        expect(f.intents).toHaveLength(0);
+        expect(f.state()).toMatchObject({ status: 'empty' });
     });
     it('binds recovery contact into the enrollment intent after identity recovery', async () => {
         const f = await setup();

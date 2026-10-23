@@ -333,7 +333,7 @@ export class AuthCoordinator {
             let publishedEnrollment = false;
             let enrollmentVerificationFailed = false;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
-                // Escrow recovery rotates away the old enrollment; repairing it is maintenance, not rollout.
+                // Recovery rotates away the old enrollment; repairing it is maintenance, not rollout.
                 const recovered = this.recoveredEscrowAccount;
                 const repairingRecovery =
                     recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
@@ -341,7 +341,9 @@ export class AuthCoordinator {
                     repairingRecovery && recovered.bypassRolloutGate
                         ? { allowed: true }
                         : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
-                if (gate.allowed) {
+                // Outside rollout, a non-escrow recovery may only repair a verified prior enrollment.
+                const requirePriorEnrollment = repairingRecovery && !gate.allowed;
+                if (gate.allowed || requirePriorEnrollment) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
                             ? this.keyDerivation.ensureEscrowEnrollment?.({
@@ -352,6 +354,9 @@ export class AuthCoordinator {
                                       ? {
                                             ...this.recoveryContactOptions(ready),
                                             clearPin: recovered.clearPin,
+                                            ...(requirePriorEnrollment
+                                                ? { requirePriorEnrollment: true }
+                                                : {}),
                                         }
                                       : this.recoveryContactOptions(ready),
                               })
@@ -360,10 +365,12 @@ export class AuthCoordinator {
                         enrollmentVerificationFailed = true;
                         log.warn('escrow.enrollment.failed', err);
                     });
-                    // Keep the scoped intent through transient failures for the next refresh.
+                    // Keep the scoped intent through transient failures for the next refresh;
+                    // drop it once repaired or once there is no prior enrollment to repair.
                     if (
                         repairingRecovery &&
-                        enrollmentResult?.enrolled &&
+                        (enrollmentResult?.enrolled ||
+                            (enrollmentResult && enrollmentResult.reason === 'not-enrolled')) &&
                         isCurrentAccount() &&
                         this.recoveredEscrowAccount === recovered
                     ) {

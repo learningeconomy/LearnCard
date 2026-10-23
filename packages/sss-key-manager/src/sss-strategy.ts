@@ -193,7 +193,7 @@ const describeHttpStatus = (response: Response): string =>
     response.statusText ? `${response.status} ${response.statusText}` : `${response.status}`;
 
 type EscrowEnrollmentResult =
-    | { enrolled: false; reason: 'disabled' | 'opted-out' }
+    | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
     | { enrolled: true; changed: false }
     | { enrolled: true; changed: true; shareVersion: number };
 
@@ -1474,6 +1474,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         ('confirmationStatus' in method &&
                             method.confirmationStatus === 'confirmed'))
             );
+        if (
+            params.options?.requirePriorEnrollment &&
+            config.escrow.attestation.mode !== 'nitro' &&
+            !status.recoveryMethods.some(method => method.type === 'escrow')
+        )
+            return { enrolled: false, reason: 'not-enrolled' };
         let verifiedKey: VerifiedEnclaveIdentity | undefined;
         // Locked, stale or unknown PIN state never satisfies a clear request.
         let hasPin = status.escrowPin?.state !== 'none';
@@ -1490,6 +1496,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 verifiedKey,
                 storage.assertCurrent
             );
+            // The signed authority survives the identity rebind that drops Mongo's blob.
+            if (params.options?.requirePriorEnrollment && current.status === 'empty')
+                return { enrolled: false, reason: 'not-enrolled' };
             if (current.status === 'disabled') {
                 verifiedEscrowEnvelope = undefined;
                 if (!allowDisabledEnrollment) return { enrolled: false, reason: 'opted-out' };
@@ -2237,7 +2246,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         providerType: params.providerType,
                     }),
                 });
-                return ensureEscrowEnrollmentUnguarded(this, params, storage, false, true);
+                const result = await ensureEscrowEnrollmentUnguarded(
+                    this,
+                    params,
+                    storage,
+                    false,
+                    true
+                );
+                // Explicit enable never requests prior-enrollment-only repair.
+                if (result.enrolled) return result;
+                if (result.reason === 'not-enrolled')
+                    throw new Error('Escrow enrollment did not complete');
+                return { enrolled: false as const, reason: result.reason };
             });
         },
 

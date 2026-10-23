@@ -567,9 +567,11 @@ export interface KeyDerivationStrategy<
         options?: EscrowEnrollmentOptions & {
             /** Clear the retired PIN when repairing enrollment after identity recovery. */
             clearPin?: boolean;
+            /** Repair only an account with verified prior escrow enrollment; never enroll a new one. */
+            requirePriorEnrollment?: boolean;
         };
     }): Promise<
-        | { enrolled: false; reason: 'disabled' | 'opted-out' }
+        | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
         | { enrolled: true; changed: false }
         | { enrolled: true; changed: true; shareVersion: number }
     >;
