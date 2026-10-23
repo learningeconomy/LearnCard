@@ -1,5 +1,19 @@
 import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
+import type {
+    Campaign,
+    CampaignAudienceInput,
+    CampaignEvent,
+    CampaignStats,
+    CampaignStatus,
+    CreateCampaignInput,
+    UpdateCampaignInput,
+    ListCampaignsInput,
+    MyCampaign,
+    PageCampaignAudienceInput,
+    PaginatedCampaigns,
+    PaginatedCampaignAudience,
+} from '@learncard/types';
 import {
     LCNProfile,
     LCNVisibleProfile,
@@ -1106,6 +1120,20 @@ export type LearnCardNetworkPluginMethods = {
     }>;
 
     isAppStoreAdmin: () => Promise<boolean>;
+    campaignsIsAdmin: () => Promise<boolean>;
+    campaignsCreate: (input: CreateCampaignInput) => Promise<Campaign>;
+    campaignsUpdate: (input: UpdateCampaignInput) => Promise<Campaign>;
+    campaignsGet: (campaignId: string) => Promise<Campaign>;
+    campaignsList: (input?: ListCampaignsInput) => Promise<PaginatedCampaigns>;
+    campaignsDelete: (campaignId: string) => Promise<boolean>;
+    campaignsSetStatus: (campaignId: string, status: CampaignStatus) => Promise<Campaign>;
+    campaignsPreviewAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
+    campaignsAddAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
+    campaignsPageAudience: (input: PageCampaignAudienceInput) => Promise<PaginatedCampaignAudience>;
+    campaignsGetStats: (campaignId: string) => Promise<CampaignStats>;
+    getMyCampaigns: () => Promise<MyCampaign[]>;
+    recordCampaignEvent: (campaignId: string, event: CampaignEvent) => Promise<boolean>;
+    enrollInCampaign: (campaignId: string) => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
     adminUpdatePromotionLevel: (
         listingId: string,

@@ -19,6 +19,7 @@ import { skillFrameworksRouter, SkillFrameworksRouter } from '@routes/skill-fram
 import { skillsRouter, SkillsRouter } from '@routes/skills';
 import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
 import { appStoreRouter, AppStoreRouter } from '@routes/app-store';
+import { campaignsRouter, CampaignsRouter } from '@routes/campaigns';
 import { activityRouter, ActivityRouter } from '@routes/activity';
 import { federationRouter, FederationRouter } from '@routes/federation';
 import { shareLinksRouter, ShareLinksRouter } from '@routes/share-links';
@@ -52,6 +53,7 @@ export const appRouter = t.router<{
     skills: SkillsRouter;
     integrations: IntegrationsRouter;
     appStore: AppStoreRouter;
+    campaigns: CampaignsRouter;
     activity: ActivityRouter;
     federation: FederationRouter;
     shareLinks: ShareLinksRouter;
@@ -78,6 +80,7 @@ export const appRouter = t.router<{
     skills: skillsRouter,
     integrations: integrationsRouter,
     appStore: appStoreRouter,
+    campaigns: campaignsRouter,
     activity: activityRouter,
     federation: federationRouter,
     shareLinks: shareLinksRouter,

@@ -758,6 +758,10 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 path: testInfo.outputPath('import-review.png'),
             });
             await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            // Autosave inserts a banner above the mapper; wait before clicking a shifting target.
+            await expect(
+                page.getByText('Draft saved on this device', { exact: true })
+            ).toBeVisible();
             await page.getByRole('button', { name: 'Map columns', exact: true }).click();
             await expect(
                 page.getByRole('button', { name: 'Include Quiz Score', exact: true })
