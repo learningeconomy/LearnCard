@@ -223,6 +223,7 @@ describe('escrow strategy', () => {
                     recoveryMethods: methods,
                     escrowOptedOut: optedOut,
                     escrowPin: {
+                        state: !pinSalt ? 'none' : attemptsRemaining > 0 ? 'enabled' : 'locked',
                         enabled: !!pinSalt && attemptsRemaining > 0,
                         attemptsRemaining,
                         ...(pinSalt ? { salt: pinSalt } : {}),
@@ -740,6 +741,33 @@ describe('escrow strategy', () => {
         expect(blob?.pinVerifier).toBeUndefined();
     });
 
+    it('repairs only a prior enrollment when requirePriorEnrollment is set', async () => {
+        const options = { clearPin: true, requirePriorEnrollment: true };
+        await expect(strategy.ensureEscrowEnrollment!({ ...params, options })).resolves.toEqual({
+            enrolled: false,
+            reason: 'not-enrolled',
+        });
+        expect(version).toBe(1);
+        await strategy.ensureEscrowEnrollment!(params);
+        expect(version).toBe(2);
+        await expect(
+            strategy.ensureEscrowEnrollment!({ ...params, options })
+        ).resolves.toMatchObject({ enrolled: true });
+    });
+
+    it('treats a current PIN-free enrollment as satisfying a clear request', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        expect(version).toBe(2);
+        await expect(
+            strategy.ensureEscrowEnrollment!({ ...params, options: { clearPin: true } })
+        ).resolves.toEqual({ enrolled: true, changed: false });
+        expect(version).toBe(2);
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        await strategy.ensureEscrowEnrollment!({ ...params, options: { clearPin: true } });
+        expect(version).toBe(4);
+        expect(blob?.pinVerifier).toBeUndefined();
+    });
+
     it.each(['set', 'clear'])('rejects %s PIN when disabled without opting in', async action => {
         config.escrow!.enabled = false;
         await expect(
@@ -792,7 +820,7 @@ describe('escrow strategy', () => {
     it('recovers with a PIN and rotates to hold-only material', async () => {
         await strategy.setEscrowPin!({ ...params, pin: '135790' });
         const recovered = await recoverPin();
-        expect(recovered).toEqual({ privateKey, did });
+        expect(recovered).toEqual({ privateKey, did, escrowEnrolled: true, escrowRecovery: true });
         expect(version).toBe(3);
         expect(blob?.pinVerifier).toBeUndefined();
         expect(await reconstructFromShares([(await storage.getDeviceShare())!, authShare])).toBe(
@@ -811,7 +839,12 @@ describe('escrow strategy', () => {
         expect(burned).toEqual(['escrow-hold']);
         expect(storage.storeDeviceShare).not.toHaveBeenCalled();
         expect(storage.storeShareVersion).not.toHaveBeenCalled();
-        await expect(recoverPin()).resolves.toEqual({ privateKey, did });
+        await expect(recoverPin()).resolves.toEqual({
+            privateKey,
+            did,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+        });
         const starts = calls.filter(call => call.path === '/keys/escrow/recover');
         const completes = calls.filter(call => call.path === '/keys/escrow/complete');
         expect(starts).toHaveLength(2);
@@ -937,14 +970,18 @@ describe('escrow strategy', () => {
 
     it('round trips real crypto, rebinds and persists a new device share', async () => {
         await strategy.ensureEscrowEnrollment!(params);
+        const complete = vi.spyOn(strategy, 'completeIdentityRecovery');
+        const options = { recoveryEmail: 'owner@example.com', recoveryLanguage: 'es' };
         const previous = await storage.getDeviceShare();
         const start = await strategy.startEscrowRecovery!({ token, providerType });
         const recovered = await strategy.executeRecovery({
             ...params,
+            options,
             input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
             didFromPrivateKey: async key => (key === privateKey ? did : ''),
         });
         expect(recovered.privateKey === privateKey).toBe(true);
+        expect(complete).toHaveBeenCalledWith(expect.objectContaining({ options }));
         expect((await storage.getDeviceShare()) === previous).toBe(false);
         expect(
             (await reconstructFromShares([(await storage.getDeviceShare())!, authShare])) ===
@@ -2032,6 +2069,8 @@ describe('createSSSStrategy', () => {
             await expect(strategy.completeIdentityRecovery!(fixture.params)).resolves.toEqual({
                 privateKey: fixture.privateKey,
                 did: fixture.did,
+                escrowEnrolled: false,
+                escrowRecovery: false,
             });
             expect(fixture.getRebindCalls()).toBe(1);
             expect(vi.mocked(storage.storeDeviceShare).mock.calls.slice(writes)).toEqual([
